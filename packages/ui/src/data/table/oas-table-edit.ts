@@ -29,14 +29,17 @@ export interface TableEditHost {
   paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void
   /** 翻译内置文案（就近 config-provider / locale） */
   translateText(key: string, params?: Record<string, string | number>): string
-  /** 派发编辑结果事件（提交/取消；事件名集中于此，detail 由本 controller 组好） */
+  /** 派发编辑结果事件（提交/取消/校验拒绝；事件名集中于此，detail 由本 controller 组好） */
   notifyEdit(
-    kind: 'edit' | 'edit-cancel',
+    kind: 'edit' | 'edit-cancel' | 'edit-invalid',
     detail: {
       rowIndex: number
       key: string
       column: string
       value: string
+      oldValue?: string
+      oldRawValue?: unknown
+      message?: string
     },
   ): void
   /** 行数据（提交回写时经此取当前全量） */
@@ -485,6 +488,11 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       st.td.dataset.invalid = 'true'
       ;(st.componentEl as HTMLElement | null)?.focus?.({ preventScroll: true })
       st.td.querySelector<HTMLInputElement | HTMLSelectElement>('input, select')?.focus({ preventScroll: true })
+      // 校验拒绝事件：宿主可监听做错误汇总/日志/埋点（detail.message 为列 validate 返回文案）
+      this.hostEl.notifyEdit('edit-invalid', {
+        ...this.editDetail(st, value),
+        message: typeof err === 'string' ? err : undefined,
+      })
       return
     }
     st.td.removeAttribute('data-invalid')

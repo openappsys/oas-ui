@@ -346,6 +346,20 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
       data: JSON.stringify(data),
     })
 
+  it('CSS：校验失败态压过行 hover 底/行选中底/editing 底（特异性回归——失效时红底被不透明 hover 底盖住不可见）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/tr\.row:hover td\.editing\[data-invalid='true'\][^{]*\{[^}]*var\(--oas-color-danger-soft/)
+    expect(css).toMatch(
+      /tr\.row\[data-selected='true'\] td\.editing\[data-invalid='true'\][^{]*\{[^}]*var\(--oas-color-danger-soft/,
+    )
+    expect(css).toMatch(/td\.editing\[data-invalid='true'\] \.cell-editor:focus\s*\{[^}]*var\(--oas-color-danger\)/)
+    expect(css).toMatch(
+      /td\.editing\[data-invalid='true'\] \.cell-editor-overlay::part\(wrapper\)\s*\{[^}]*var\(--oas-color-danger\)/,
+    )
+    expect(css).toMatch(/\.edit-error\s*\{[^}]*position:\s*absolute/)
+  })
+
   it('type=number 编辑提交：回写保持 number 类型', () => {
     const el = editableMount([{ key: 'v', title: '数值', type: 'number', editable: true }], [{ id: 1, v: 5 }])
     const td = enterEdit(el, 'v')
@@ -477,6 +491,61 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     input.value = '2026-04-01'
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, d: '2026-04-01' }])
+  })
+
+  it('自定义 validate：拒绝提交（保持编辑态 + 错误消息 + data-invalid）、派发 oas-edit-invalid，修正后成功清除', () => {
+    const el = mount({ editable: '', 'row-key': 'id' })
+    el.columns = [
+      {
+        key: 'age',
+        title: '年龄',
+        editable: true,
+        validate: (v: string) => (Number(v) > 0 ? '' : '必须为正数'),
+      },
+    ]
+    el.data = [{ id: 1, age: 30 }]
+    const events: Array<{ type: string; detail: Record<string, unknown> }> = []
+    el.addEventListener('oas-edit-invalid', (e) => events.push({ type: 'invalid', detail: (e as CustomEvent).detail }))
+    el.addEventListener('oas-edit', (e) => events.push({ type: 'edit', detail: (e as CustomEvent).detail }))
+    const td = enterEdit(el, 'age')
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = '-5'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    // 拒绝：不提交、留编辑态、错误标记 + 消息、事件 detail 带消息
+    expect(JSON.parse(el.getAttribute('data')!), '拒绝提交不改数据').toEqual([{ id: 1, age: 30 }])
+    expect(td.querySelectorAll('input.cell-editor').length, '保持编辑态').toBe(1)
+    expect(td.getAttribute('data-invalid')).toBe('true')
+    expect(td.querySelector('.edit-error')?.textContent).toBe('必须为正数')
+    expect(
+      events.map((e) => e.type),
+      '先派发 invalid 且不派发 edit',
+    ).toEqual(['invalid'])
+    expect(events[0]!.detail.message).toBe('必须为正数')
+    expect(events[0]!.detail.column).toBe('age')
+    expect(events[0]!.detail.value).toBe('-5')
+    // 修正重试 → 清除错误、正常提交
+    input.value = '42'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, age: 42 }])
+    expect(td.getAttribute('data-invalid'), '成功后清除错误标记').toBeNull()
+    expect(td.querySelector('.edit-error'), '成功后清除消息').toBeNull()
+    expect(events.map((e) => e.type)).toEqual(['invalid', 'edit'])
+  })
+
+  it('validate 返回 boolean false 同样拒绝（内置 date 校验同路径）且 oas-edit-invalid 消息为空', () => {
+    const el = mount({ editable: '', 'row-key': 'id' })
+    el.columns = [{ key: 'n', title: '数', editable: true, validate: () => false }]
+    el.data = [{ id: 1, n: '1' }]
+    const invalids: CustomEvent[] = []
+    el.addEventListener('oas-edit-invalid', (e) => invalids.push(e as CustomEvent))
+    const td = enterEdit(el, 'n')
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = '9'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(JSON.parse(el.getAttribute('data')!)).toEqual([{ id: 1, n: '1' }])
+    expect(td.getAttribute('data-invalid')).toBe('true')
+    expect(invalids.length).toBe(1)
+    expect(invalids[0]!.detail.message, 'boolean 形态无自定义消息').toBeUndefined()
   })
 
   it('type=select 编辑：下拉选项自动同步 options（既有 select 编辑器通道）', () => {

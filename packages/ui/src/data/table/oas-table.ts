@@ -150,7 +150,7 @@ export interface EditOption {
   value: string | number
 }
 
-/** oas-edit / oas-edit-cancel 事件 detail 契约 */
+/** oas-edit / oas-edit-cancel / oas-edit-invalid 事件 detail 契约 */
 export interface TableEditDetail {
   rowIndex: number
   key: string
@@ -160,6 +160,8 @@ export interface TableEditDetail {
   oldValue?: string
   /** 编辑前的原始数据形态（保留 number / boolean / string[] 等类型，供撤销精确回写） */
   oldRawValue?: unknown
+  /** 仅 oas-edit-invalid：校验失败消息（列 validate 返回的字符串；boolean false 无消息为 undefined） */
+  message?: string
 }
 
 /**
@@ -712,17 +714,21 @@ td[data-editing='true'],
 tr[data-sticky='true'] td[data-editing='true'] {
   background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
 }
-td[data-invalid='true'] {
-  background: var(--oas-color-danger-soft, color-mix(in srgb, var(--oas-color-danger) 8%, transparent));
-}
-td[data-invalid='true'] .cell-editor {
-  border-color: var(--oas-color-danger);
-}
 .edit-error {
+  /* 校验消息 = 单元格顶部警示条（absolute 覆于编辑器上沿，z-index 压过编辑器）：
+     行高固定/虚拟滚动模型下挂 td 下方会被 .table-scroll overflow:auto 在视口底缘裁掉
+     （末行滚不到 = 永远不可见）；条带形态在 td 内部，任何行位/滚动位置都完整可见。
+     danger 实底 + 文字安全档 token，暗色自适应 */
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  z-index: 4;
   display: block;
-  padding: 2px 6px;
+  padding: 1px 6px;
   font-size: var(--oas-font-size-xs, 12px);
-  color: var(--oas-color-danger);
+  line-height: 16px;
+  color: var(--oas-color-danger-text, #fff);
+  background: var(--oas-color-danger);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -746,6 +752,23 @@ td.editing .cell-editor:focus {
   outline: none;
   background: var(--oas-color-bg);
   box-shadow: inset 0 0 0 2px var(--oas-color-primary);
+}
+/* 校验失败态：特异性压过行 hover 底/行选中底/editing 底色与编辑器 focus 环
+   （鼠标悬停在被编辑行 + 行选中时都必须可见；danger 语义，token 暗色自适应）。
+   12% 混合与编辑态 8% 主色底可区分；消息浮层见 .edit-error */
+tr.row:hover td.editing[data-invalid='true'],
+tr.row[data-selected='true'] td.editing[data-invalid='true'],
+tr[data-sticky='true'][data-selected='true'] td.editing[data-invalid='true'],
+td.editing[data-invalid='true'] {
+  background: var(--oas-color-danger-soft, color-mix(in srgb, var(--oas-color-danger) 12%, transparent));
+}
+td.editing[data-invalid='true'] .cell-editor:focus {
+  box-shadow: inset 0 0 0 2px var(--oas-color-danger);
+}
+/* 浮层编辑器通道（oas-select / oas-date-picker）：invalid 后焦点落在宿主内部 input，
+   .cell-editor:focus 不命中——wrapper part 补 danger 内环，两通道错误视觉同口径 */
+td.editing[data-invalid='true'] .cell-editor-overlay::part(wrapper) {
+  box-shadow: inset 0 0 0 2px var(--oas-color-danger);
 }
 /* 浮层类编辑器（select/date-picker 组件通道）：组件宿主的触发器自带内边距与控高，
    通用规则的单元格 padding 会压缩其内容盒（trigger 被压到内容宽→文字逐字换行+行高裁剪）——
@@ -3187,10 +3210,12 @@ export class OASTableBase extends OASElement {
     this.runStructuralSlot('bodyCell', () => this.structuralCap?.bodyCell?.({ el: td, row, rowIndex, column: col }))
   }
 
-  /** 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此，
+  /** 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此，
       供 api 扫描静态识别事件清单；未 import 编辑能力时不会有任何调用 */
-  notifyEdit(kind: 'edit' | 'edit-cancel', detail: TableEditDetail): void {
-    this.emit(kind === 'edit' ? 'edit' : 'edit-cancel', detail)
+  notifyEdit(kind: 'edit' | 'edit-cancel' | 'edit-invalid', detail: TableEditDetail): void {
+    if (kind === 'edit') this.emit('edit', detail)
+    else if (kind === 'edit-cancel') this.emit('edit-cancel', detail)
+    else this.emit('edit-invalid', detail)
   }
 
   /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） */

@@ -324,8 +324,8 @@
     },
     {
       "name": "notifyEdit",
-      "signature": "notifyEdit(kind: 'edit' | 'edit-cancel', detail: TableEditDetail): void",
-      "description": "派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此，"
+      "signature": "notifyEdit(kind: 'edit' | 'edit-cancel' | 'edit-invalid', detail: TableEditDetail): void",
+      "description": "派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此，"
     },
     {
       "name": "setColumnOrder",
@@ -374,6 +374,9 @@
     },
     {
       "name": "oas-edit-cancel"
+    },
+    {
+      "name": "oas-edit-invalid"
     },
     {
       "name": "oas-column-order",

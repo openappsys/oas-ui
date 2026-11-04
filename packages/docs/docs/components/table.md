@@ -202,6 +202,37 @@
 
 `oas-select` 的编辑选项同步列配置：`editOptions` 优先，回落 `options`（与展示侧同一份选项语义）。`type: 'multi-select'` 列的默认编辑器即本通道的 `oas-select multiple`（见下方「字段类型」）。
 
+### 单元格校验（validate）
+
+列配置 `validate`（**property 函数通道**，attribute JSON 声明式通道无法携带函数）在提交前拦截非法值：`(value, row) => 错误消息 | false | 空串/undefined 通过`。校验失败：**不提交、保持编辑态**（可直接修正重试）、单元格红底（`data-invalid`）+ 顶部 danger 警示条消息（`.edit-error`，覆于编辑器上沿、行高固定/虚拟滚动下也不被滚动容器裁切）、编辑器 focus 环 danger 色（浮层编辑器通道同步）、焦点回编辑器，并派发 `oas-edit-invalid`（`detail: { rowIndex, key, column, value, oldValue, oldRawValue, message }`——宿主可监听做错误汇总/日志）；修正重试成功后标记与消息自动清除。`type: 'date'` 列未自定义 validate 时内置 `YYYY-MM-DD` 形态校验（旧值为 ISO/时间戳形态时「未改动提交」豁免，不被误拦）。错误视觉走 danger 语义 token（`--oas-color-danger-soft` 底 / `--oas-color-danger` 环与警示条 / `--oas-color-danger-text` 警示条文字，暗色自动适配）。
+
+<DemoBlock title="validate 拦截：金额为正数，失败保持编辑态 + 行内消息 + oas-edit-invalid 事件">
+  <div style="width: 100%">
+    <oas-table id="table-edit-validate" editable row-key="item" style="width: 100%"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      校验拦截：<span id="table-edit-validate-feedback">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
+```ts
+// 列定义走 property 通道（validate 是函数，attribute JSON 带不了）：
+table.columns = [
+  { key: 'item', title: '项目', editable: true },
+  {
+    key: 'amount',
+    title: '金额',
+    editable: true,
+    validate: (v) => (Number(v) > 0 ? '' : '金额必须为正数'),
+  },
+]
+table.addEventListener('oas-edit-invalid', (e) => {
+  console.log('拦截：', e.detail.column, e.detail.value, e.detail.message)
+})
+```
+
+> 校验只作用于**编辑提交**通道：程序化写 `data` / 属性赋值不经 validate（数据清洗归宿主）；行内错误汇总条属宿主组合（监听 `oas-edit-invalid` + 条件格式即可拼出）。
+
 ## 受控编辑
 
 <DemoBlock title="受控编辑（edit-controlled）">
@@ -594,6 +625,45 @@ onMounted(() => {
         })
       },
     }
+  })
+})
+
+// validate demo：金额列提交前校验（property 通道函数）——失败保持编辑态 + 行内消息 + 事件反馈
+onMounted(() => {
+  const t = document.getElementById('table-edit-validate')
+  const fb = document.getElementById('table-edit-validate-feedback')
+  if (!t) return
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'item', title: '项目', editable: true },
+      { key: 'amount', title: '金额', editable: true },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { item: '云服务续费', amount: 1200 },
+      { item: '域名续费', amount: 80 },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(() => {
+    t.columns = [
+      { key: 'item', title: '项目', editable: true },
+      {
+        key: 'amount',
+        title: '金额',
+        editable: true,
+        validate: (v) => (Number(v) > 0 ? '' : '金额必须为正数'),
+      },
+    ]
+    t.addEventListener('oas-edit-invalid', (e) => {
+      const d = e.detail
+      if (fb) fb.textContent = `${d.column} = ${d.value}（${d.message ?? '非法值'}）`
+    })
+    t.addEventListener('oas-edit', () => {
+      if (fb) fb.textContent = '—'
+    })
   })
 })
 
@@ -1787,7 +1857,7 @@ const visible = applyQuery(orders, state.query)
 | `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | 受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组） | `string[] \| string` | `[]` |
 | `column-virtual` | 横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局 | `boolean` | — |
-| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]` | `TableColumn[] \| string` | `[]` |
+| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, validate?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]` | `TableColumn[] \| string` | `[]` |
 | `current` | 当前页码（内置分页，受控） | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
@@ -1838,7 +1908,7 @@ const visible = applyQuery(orders, state.query)
 | `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | 展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改 |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
-| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此， |
+| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此， |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
@@ -1854,6 +1924,7 @@ const visible = applyQuery(orders, state.query)
 | `oas-column-resize` | 列宽拖拽调整后派发，`detail: { key, width }` |
 | `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（oldValue 为提交前字符串值，oldRawValue 为编辑前原始形态，如 number / boolean / string[]）；受控模式组件不回写 `data` |
 | `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`（value / oldValue 均为原值，oldRawValue 为原始形态） |
+| `oas-edit-invalid` | 编辑提交被列 validate 拒绝时派发（不提交、保持编辑态）。detail: { rowIndex, key, column, value, message }——message 为校验返回文案（boolean false 形态为 undefined）；宿主可监听做错误汇总/日志 |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }`；视觉协议（visual-total + visual-start）生效时仅作为宿主通道派发（组件不本地改写 expanded） |
 | `oas-export` | 导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }` |
 | `oas-filter-change` | 列过滤值变化时派发，`detail: { filters }`（filters 为列 key → 选中值标量的对象） |

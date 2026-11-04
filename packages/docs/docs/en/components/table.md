@@ -202,6 +202,37 @@ Overlay components (`editComponent: 'oas-select'` / `'oas-date-picker'`) automat
 
 `oas-select` edit options sync from the column config: `editOptions` first, falling back to `options` (the same option semantics as the display side). The default editor of a `type: 'multi-select'` column is this channel's `oas-select multiple` (see "Field Types" below).
 
+### Cell validation (validate)
+
+Column config `validate` (**property function channel** — the attribute JSON declarative channel cannot carry functions) intercepts illegal values before commit: `(value, row) => error message | false | empty string/undefined to pass`. On failure: **no commit, the edit state is kept** (retry in place), the cell shows a danger background (`data-invalid`) plus a top danger banner message (`.edit-error`, overlaid on the editor's top edge — never clipped by the scroll container even with fixed row heights / virtual scrolling), the editor focus ring turns danger (overlay editor channel included), focus returns to the editor, and `oas-edit-invalid` is dispatched (`detail: { rowIndex, key, column, value, oldValue, oldRawValue, message }` — listen for error summaries/logging); a successful retry clears the marker and message automatically. `type: 'date'` columns get a built-in `YYYY-MM-DD` shape check when no custom `validate` is given (a "commit without changes" with an ISO/timestamp old value is exempted, so it is never blocked by mistake). The error visuals use danger semantic tokens (`--oas-color-danger-soft` background / `--oas-color-danger` ring and banner / `--oas-color-danger-text` banner text; dark mode adapts automatically).
+
+<DemoBlock title="validate interception: amount must be positive — failure keeps the edit state, inline message, oas-edit-invalid event">
+  <div style="width: 100%">
+    <oas-table id="table-edit-validate" editable row-key="item" style="width: 100%"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      Blocked: <span id="table-edit-validate-feedback">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
+```ts
+// Columns go through the property channel (validate is a function the attribute JSON cannot carry):
+table.columns = [
+  { key: 'item', title: 'Item', editable: true },
+  {
+    key: 'amount',
+    title: 'Amount',
+    editable: true,
+    validate: (v) => (Number(v) > 0 ? '' : 'Amount must be positive'),
+  },
+]
+table.addEventListener('oas-edit-invalid', (e) => {
+  console.log('blocked:', e.detail.column, e.detail.value, e.detail.message)
+})
+```
+
+> Validation applies to the **edit-commit path only**: programmatic `data` writes / property assignments bypass `validate` (data cleaning is the host's job); an inline error summary bar is a host composition (listen to `oas-edit-invalid` + conditional formatting).
+
 ## Controlled Editing
 
 <DemoBlock title="Controlled editing (edit-controlled)">
@@ -595,6 +626,46 @@ onMounted(() => {
         })
       },
     }
+  })
+})
+
+// validate demo: amount column validated before commit (property-channel function) —
+// failure keeps the edit state + inline message + event feedback
+onMounted(() => {
+  const t = document.getElementById('table-edit-validate')
+  const fb = document.getElementById('table-edit-validate-feedback')
+  if (!t) return
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'item', title: 'Item', editable: true },
+      { key: 'amount', title: 'Amount', editable: true },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { item: 'Cloud renewal', amount: 1200 },
+      { item: 'Domain renewal', amount: 80 },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(() => {
+    t.columns = [
+      { key: 'item', title: 'Item', editable: true },
+      {
+        key: 'amount',
+        title: 'Amount',
+        editable: true,
+        validate: (v) => (Number(v) > 0 ? '' : 'Amount must be positive'),
+      },
+    ]
+    t.addEventListener('oas-edit-invalid', (e) => {
+      const d = e.detail
+      if (fb) fb.textContent = `${d.column} = ${d.value} (${d.message ?? 'invalid'})`
+    })
+    t.addEventListener('oas-edit', () => {
+      if (fb) fb.textContent = '—'
+    })
   })
 })
 
@@ -1799,7 +1870,7 @@ const visible = applyQuery(orders, state.query)
 | `checkable` | Row selection: present = multi-select (checkboxes + select-all header); `="radio"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | Controlled column visibility and order (key array or comma list): header tree and data columns re-order to the effective leaf order (same-ancestor leaves grouped) | `string[] \| string` | `[]` |
 | `column-virtual` | Column virtualization (column windowing): only visible-window columns render; off-window columns collapse into placeholder cells (colSpan-summed via colgroup). Constraints: explicit width on all columns recommended; grouped header / span-method / summary rows incompatible (warns and degrades) | `boolean` | — |
-| `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`, JSON string (declarative attribute channel; property assignment takes precedence); `type` declares the field type (number/currency/select/multi-select/date/checkbox/link/progress/rate) driving default cell rendering and the default editor, `currency` is the currency symbol for currency columns (default ¥), `options` are select/multi-select options `[{ value, label, color? }]` | `TableColumn[] \| string` | `[]` |
+| `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, validate?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`, JSON string (declarative attribute channel; property assignment takes precedence); `type` declares the field type (number/currency/select/multi-select/date/checkbox/link/progress/rate) driving default cell rendering and the default editor, `currency` is the currency symbol for currency columns (default ¥), `options` are select/multi-select options `[{ value, label, color? }]` | `TableColumn[] \| string` | `[]` |
 | `current` | Current page (built-in pagination, controlled) | `string` | `1` |
 | `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself | `boolean` | — |
@@ -1850,7 +1921,7 @@ const visible = applyQuery(orders, state.query)
 | `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | Readonly display-set snapshot for range capabilities: maps row keys to absolute data-row and flat scroll indices (windowed offsets included), with a structural fingerprint and keysByIndex. Built lazily and shared; callers must not mutate the returned maps |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here) |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate) |
-| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel', detail: TableEditDetail): void` | Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here |
+| `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it) |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | Export matrix: headers (column title / headerTemplate text) + currently visible data rows |
@@ -1866,6 +1937,7 @@ const visible = applyQuery(orders, state.query)
 | `oas-column-resize` | Fired after a column width drag, `detail: { key, width }` |
 | `oas-edit` | Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value, oldValue, oldRawValue }` (`oldValue` is the pre-submit string value, `oldRawValue` keeps the original shape such as number / boolean / string[]); in controlled mode the component does not write back `data` |
 | `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value, oldValue, oldRawValue }` (`value` / `oldValue` are the original value; `oldRawValue` keeps the original shape) |
+| `oas-edit-invalid` | Dispatched when a commit is rejected by the column validate (no commit; the edit state is kept). detail: { rowIndex, key, column, value, message } — message is the validator-returned text (undefined for boolean false); listen for error summaries/logging |
 | `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }`; when the visual protocol (visual-total + visual-start) is active this is host-channel only (the component does not modify expanded locally) |
 | `oas-export` | Export triggered (button or exportData), `detail: { format, fileName, rowCount }` |
 | `oas-filter-change` | Fired when a column filter value changes, `detail: { filters }` (filters maps a column key to its selected scalar value) |

@@ -5642,3 +5642,49 @@ test('table structural-render：demo 三槽真实生效 + 未设 hooks 零开销
 
   expect(errors, 'console 零 error').toEqual([])
 })
+// validate 校验 demo 真实浏览器回归：双击金额列 → 输入非法值 Enter →
+// 不提交 + 保持编辑态 + data-invalid 红框 + 行内消息 + oas-edit-invalid 反馈文案；
+// 修正后提交成功、标记清除、反馈复位；console 零告警。
+test('table validate：demo 真实拦截（保持编辑态/红框/消息/事件反馈）+ 重试成功清除', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  const t = page.locator('#table-edit-validate')
+  await expect(t).toBeAttached()
+  const amount = t.locator('td[data-col="amount"]').first()
+  await amount.dblclick()
+  const editor = amount.locator('input.cell-editor')
+  await expect(editor).toBeAttached()
+
+  // 非法值提交 → 拦截
+  await editor.fill('-5')
+  await editor.press('Enter')
+  await expect(editor, '校验失败保持编辑态').toBeAttached()
+  await expect(amount, 'data-invalid 红框').toHaveAttribute('data-invalid', 'true')
+  await expect(amount.locator('.edit-error'), '行内错误消息').toHaveText('金额必须为正数')
+  // 计算样式闭环（防 CSS 特异性回归：红底必须实际生效，不能只查属性/文本）
+  const bg = await amount.evaluate((td) => {
+    const c = getComputedStyle(td).backgroundColor
+    // 兼容两种序列化：rgb(254,240,240) 与现代 color(srgb 0.86 0.15 0.15 / 0.12)（0-1 刻度）
+    const nums = (c.match(/[\d.]+/g) ?? []).map(Number)
+    const scale = nums.length >= 4 || (nums.length === 3 && nums[0]! <= 1) ? 255 : 1
+    return { c, r: nums[0]! * scale, b: nums[2]! * scale }
+  })
+  expect(bg.r, `失败态底色应为 danger 软底（computed=${bg.c}）`).toBeGreaterThan(bg.b + 15)
+  await expect(page.locator('#table-edit-validate-feedback'), '事件反馈').toContainText('amount = -5')
+  await expect(page.locator('#table-edit-validate-feedback')).toContainText('金额必须为正数')
+
+  // 修正重试 → 成功提交、标记清除、反馈复位
+  await editor.fill('99')
+  await editor.press('Enter')
+  await expect(editor, '成功后退出编辑态').toHaveCount(0)
+  await expect(amount).not.toHaveAttribute('data-invalid', 'true')
+  await expect(amount.locator('.edit-error')).toHaveCount(0)
+  await expect(amount).toHaveText('99')
+  await expect(page.locator('#table-edit-validate-feedback')).toHaveText('—')
+
+  expect(errors, 'console 零 error').toEqual([])
+})

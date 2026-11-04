@@ -3242,7 +3242,7 @@
       "aria-label": "表格的可访问名（转发到内部 table 元素；开启 grid-navigation 时为 `role=\"grid\"`；缺省不设置）",
       "bordered": "完整边框：单元格网格描边（外框由组件自带）",
       "checkable": "行选择开关：存在即多选（复选框 + 全选头）；`=\"radio\"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1",
-      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]`",
+      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, validate?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]`",
       "data": "行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
       "editable": "行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理）",
       "edit-controlled": "受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data`",
@@ -3302,7 +3302,8 @@
       "oas-row-dblclick": "双击数据行派发，`detail: { row, rowIndex }`",
       "oas-export": "导出触发（按钮或 exportData），`detail: { format, fileName, rowCount }`",
       "oas-row-reorder": "行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data）",
-      "oas-window-request": "windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason, visualStart?, visualEnd }（start/end 半开区间、绝对数据行下标，永远是数据坐标；reason 为 init / scroll / resize / data）。切片内含展开行或视觉协议生效时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行），并附带 visualStart / visualEnd（当前可视窗口的视觉坐标，供宿主视觉取数；不是切片 visual-start）。同一期望区间（含视觉字段）不重复派发"
+      "oas-window-request": "windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason, visualStart?, visualEnd }（start/end 半开区间、绝对数据行下标，永远是数据坐标；reason 为 init / scroll / resize / data）。切片内含展开行或视觉协议生效时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行），并附带 visualStart / visualEnd（当前可视窗口的视觉坐标，供宿主视觉取数；不是切片 visual-start）。同一期望区间（含视觉字段）不重复派发",
+      "oas-edit-invalid": "编辑提交被列 validate 拒绝时派发（不提交、保持编辑态）。detail: { rowIndex, key, column, value, message }——message 为校验返回文案（boolean false 形态为 undefined）；宿主可监听做错误汇总/日志"
     },
     "methods": {
       "setCapabilityOptions": "Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染"
