@@ -3284,7 +3284,8 @@
       "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片，组件不持有全量数据。开启后按可视行窗口（前后各 8 行缓冲）计算期望区间，未被已装载区间覆盖时派发 oas-window-request 由宿主回填；本地排序/筛选/分组/分页/树形展开交由宿主负责（组件跳过本地执行并 devWarn）。切片内含行内嵌展开行时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行）。缺省关闭时行为不变",
       "window-start": "windowed 模式下 data[0] 在全量数据集中的行下标（绝对行号）：组件按绝对行渲染与占位；非 windowed 时忽略",
       "visual-total": "可选视觉协议（须与 visual-start 同时提供才生效，仅 windowed）：全量视觉行数（数据行 + 行内嵌展开内容行），有限正整数（截断取整）且不小于 total。生效后渲染与滚动总高按视觉行数计，行展开由宿主完全控制——本地点击展开钮只派发 oas-expand 并 devWarn，不修改 expanded（宿主回写 expanded / data / visual 属性驱动重渲染）。缺失 / 非法 / 只有其一 / 小于 total 时 devWarn 一次并整体回落当前窗口模型",
-      "visual-start": "可选视觉协议（须与 visual-total 同时提供才生效，仅 windowed）：当前切片 data[0] 的视觉行号，0 ≤ visual-start ≤ visual-total。支持切片前已有展开行的宿主场景——生效后渲染 flow 从 visual-start × 行高起、按视觉行号铺位；绝对数据行号（data-row-index / 事件 rowIndex / ARIA / displaySnapshot）不受影响。缺失 / 非法 / 只有其一时 devWarn 一次并整体回落当前窗口模型"
+      "visual-start": "可选视觉协议（须与 visual-total 同时提供才生效，仅 windowed）：当前切片 data[0] 的视觉行号，0 ≤ visual-start ≤ visual-total。支持切片前已有展开行的宿主场景——生效后渲染 flow 从 visual-start × 行高起、按视觉行号铺位；绝对数据行号（data-row-index / 事件 rowIndex / ARIA / displaySnapshot）不受影响。缺失 / 非法 / 只有其一时 devWarn 一次并整体回落当前窗口模型",
+      "row-auto-height": "逐行动态行高（布尔，默认关，虚拟滚动生效）：行随内容自动撑高——RO 逐行测量、未测行按 row-height 预估（滚动条长度先估计后收敛），高度修正按（行身份, 行内偏移）锚定视口不跳。需 import `@oas-ui/ui/data/table/auto-height` 注册能力；列 `wrap: true` 参与多行测量。windowed 下为混合模型：切片内实测、切片外预估"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",

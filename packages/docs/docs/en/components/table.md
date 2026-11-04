@@ -2076,6 +2076,7 @@ const visible = applyQuery(orders, state.query)
 | `multi-sort` | Multi-column sort (JSON array: [{ key, order }], applied in array order) | `string` | — |
 | `page-size` | Rows per page (built-in pagination, default 10) | `string` | `10` |
 | `pagination` | Built-in pagination switch (footer pager; leave unset when the host paginates) | `boolean` | — |
+| `row-auto-height` | Auto row height (boolean, off by default, virtual scrolling only): rows grow with their content — ResizeObserver measures each row, unmeasured rows use the row-height estimate (scrollbar length converges as measurements arrive), and height corrections anchor by (row identity, in-row offset) so the viewport never jumps. Requires importing `@oas-ui/ui/data/table/auto-height` to register the capability; a `wrap: true` column participates in multi-line measurement. Under windowed it uses a mixed model: measured inside the loaded slice, estimated outside | `boolean` | — |
 | `row-draggable` | Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling | `boolean` | — |
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
@@ -2111,6 +2112,7 @@ const visible = applyQuery(orders, state.query)
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | Export matrix: headers (column title / headerTemplate text) + currently visible data rows |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | Export and trigger a download: generate content → Blob download → dispatch `oas-export` |
+| `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
 
 #### Events
 

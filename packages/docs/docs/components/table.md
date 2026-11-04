@@ -2063,6 +2063,7 @@ const visible = applyQuery(orders, state.query)
 | `multi-sort` | 多列排序（JSON 数组：[{ key, order }]，按数组序依次排序） | `string` | — |
 | `page-size` | 每页条数（内置分页，默认 10） | `string` | `10` |
 | `pagination` | 内置分页开关（页脚分页条；宿主自管分页时不设） | `boolean` | — |
+| `row-auto-height` | 逐行动态行高（布尔，默认关，虚拟滚动生效）：行随内容自动撑高——RO 逐行测量、未测行按 row-height 预估（滚动条长度先估计后收敛），高度修正按（行身份, 行内偏移）锚定视口不跳。需 import `@oas-ui/ui/data/table/auto-height` 注册能力；列 `wrap: true` 参与多行测量。windowed 下为混合模型：切片内实测、切片外预估 | `boolean` | — |
 | `row-draggable` | 行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次 | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
@@ -2098,6 +2099,7 @@ const visible = applyQuery(orders, state.query)
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
+| `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
 
 #### 事件
 
