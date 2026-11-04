@@ -571,7 +571,9 @@ describe('OASTable 虚拟滚动', () => {
       ),
     })
     const trs = rows(el)
-    expect(trs.length).toBeGreaterThan(0)
+    // 窗口化不变量：数据 20 行、视口 200px / 行高 40px → 渲染行数 ≥ 可见行数 5，且不越出数据总量
+    expect(trs.length).toBeGreaterThanOrEqual(200 / 40)
+    expect(trs.length).toBeLessThanOrEqual(20)
     // 几何锁：虚拟路径 tr.style.height 内联定高，长文本行与短行口径全等（happy-dom 无布局，
     // 断言内联值本身——内容撑高由 e2e boundingBox 断言覆盖）
     const heights = new Set(trs.map((tr) => tr.style.height))
@@ -579,7 +581,9 @@ describe('OASTable 虚拟滚动', () => {
     expect(trs[0]!.style.height).toBe('40px')
     // 红线锁：wrap 缺省不添加任何新 class
     const tds = el.shadowRoot!.querySelectorAll('tbody td')
-    expect(tds.length).toBeGreaterThan(0)
+    // 每个渲染数据行恰好 2 个 td（name + desc 两列）；tbody 另含虚拟占位 tr，td 总数只多不少
+    for (const tr of trs) expect(tr.querySelectorAll('td').length).toBe(2)
+    expect(tds.length).toBeGreaterThanOrEqual(trs.length * 2)
     for (const td of tds) {
       expect(td.classList.contains('cell-wrap')).toBe(false)
       expect(td.classList.contains('cell-ellipsis')).toBe(false)
@@ -597,10 +601,11 @@ describe('OASTable 虚拟滚动', () => {
       data: BIG_DATA,
     })
     const nameTds = [...el.shadowRoot!.querySelectorAll('tbody td[data-col="name"]')]
-    expect(nameTds.length).toBeGreaterThan(0)
+    // 每个渲染行恰好一个 name 列 td
+    expect(nameTds.length).toBe(rows(el).length)
     for (const td of nameTds) expect(td.classList.contains('cell-wrap')).toBe(true)
     const ageTds = [...el.shadowRoot!.querySelectorAll('tbody td[data-col="age"]')]
-    expect(ageTds.length).toBeGreaterThan(0)
+    expect(ageTds.length).toBe(rows(el).length)
     for (const td of ageTds) expect(td.classList.contains('cell-wrap')).toBe(false)
   })
 
@@ -633,7 +638,8 @@ describe('OASTable 虚拟滚动', () => {
     expect(on.shadowRoot!.querySelector('td[data-col="age"]')!.classList.contains('cell-wrap')).toBe(false)
     const off = mount()
     const tds = off.shadowRoot!.querySelectorAll('td')
-    expect(tds.length).toBeGreaterThan(0)
+    // 非虚拟全量渲染：默认数据 3 行 × 2 列 = 6 个 body td
+    expect(tds.length).toBe(3 * 2)
     for (const td of tds) {
       expect(td.classList.contains('cell-wrap')).toBe(false)
       expect(td.classList.contains('cell-ellipsis')).toBe(false)
@@ -3918,16 +3924,16 @@ describe('table 主动滚动写入：帧内写入优先于旧滚动位', () => {
     expect(wrap.scrollTop, '一行高的键盘滚动属于用户意图，不得被写回').toBe(440)
   })
 
-  it('断开复位意图状态：savedScroll / scrollWriteSeq / ignoreNextScroll 不跨连接遗留', async () => {
+  it('断开复位意图状态：savedScroll / scrollWriteSeq / swallowScrollSeq 不跨连接遗留', async () => {
     const el = mountVirtual()
     const internalsOf = internals(el)
     el.writeScrollPosition(320)
     internalsOf.savedScroll = { top: 400, left: 0, seq: 1 }
-    internalsOf.ignoreNextScroll = true
+    internalsOf.swallowScrollSeq = 2
     el.remove()
     expect(internalsOf.savedScroll).toBeNull()
     expect(internalsOf.scrollWriteSeq).toBe(0)
-    expect(internalsOf.ignoreNextScroll).toBe(false)
+    expect(internalsOf.swallowScrollSeq).toBe(-1)
   })
 
   it('意图守卫有窗口期：写入 3 帧后不再拦回旧位置的位移', async () => {
@@ -3938,6 +3944,53 @@ describe('table 主动滚动写入：帧内写入优先于旧滚动位', () => {
     wrap.scrollTop = 400
     wrap.dispatchEvent(new Event('scroll'))
     expect(wrap.scrollTop, '窗口期过后按普通滚动处理').toBe(400)
+  })
+
+  it('帧尾恢复布防的回波按写入代次吞：同代次回波被吞、后续滚动正常处理', async () => {
+    const el = mountVirtual()
+    const wrap = await frameAt(el, 1960)
+    const events: unknown[] = []
+    el.addEventListener('oas-scroll', () => events.push(1))
+    // 模拟清空 tbody 钳回 0 → 帧尾恢复写回保存值：写回走 writeScrollPosition（bump 代次）
+    // 并布防「本次写回代次」的回波吞位（钳制自愈语义，弹回顶保护不变）
+    wrap.scrollTop = 0
+    internals(el).restoreScrollPosition(internals(el).scrollWriteSeq, 1960, 0)
+    expect(wrap.scrollTop).toBe(1960)
+    expect(internals(el).swallowScrollSeq, '写回后已布防回波吞位').toBe(internals(el).scrollWriteSeq)
+    // 写回自身引发的回波（同代次）：被吞——吞位路径在派发滚动事件之前返回
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(events.length, '同代次回波被吞，不派发 oas-scroll').toBe(0)
+    // 吞位一次性消费：后续普通滚动不再被吞，照常走滚动帧（重建 + 派发）
+    wrap.scrollTop = 400
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(events.length, '后续滚动正常派发').toBe(1)
+  })
+
+  it('主动写入清除陈旧回波吞位：帧尾恢复布防未消费时，单发主动滚动的 scroll 事件不被吞（tbody 按新位重建）', async () => {
+    const el = mountVirtual()
+    const wrap = await frameAt(el, 1960)
+    // 帧尾恢复布防回波吞位（模拟真实浏览器：写回的 scroll 回波晚于帧尾写入异步到达，
+    // 布防在回波触发前残留）
+    wrap.scrollTop = 0
+    internals(el).restoreScrollPosition(internals(el).scrollWriteSeq, 1960, 0)
+    expect(internals(el).swallowScrollSeq, '布防残留（回波尚未触发）').toBe(internals(el).scrollWriteSeq)
+    // 单发主动滚动（Ctrl+Home 越界导航的 writeScrollPosition 同口径）：陈旧布防必须被清掉。
+    // 旧布尔守卫在这里吞掉主动写入引发的唯一 scroll 事件 → tbody 永不重建 → 导航死锁
+    el.writeScrollPosition(400)
+    expect(internals(el).swallowScrollSeq, '主动写入清除陈旧布防').toBe(-1)
+    // 主动写入引发的唯一 scroll 事件：正常处理——tbody 按新位重建（首可见行 floor(400/40)-4=6）
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(
+      rows(el).some((row) => row.textContent?.includes('行6')),
+      'tbody 按主动写入位重建',
+    ).toBe(true)
+    expect(
+      rows(el).some((row) => row.textContent?.includes('行49')),
+      '旧窗口（末行区）已被替换',
+    ).toBe(false)
   })
 })
 

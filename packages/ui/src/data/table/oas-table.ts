@@ -1411,8 +1411,15 @@ export class OASTableBase extends OASElement {
   private childColumnsObserver: MutationObserver | null = null
   private _data: Array<Record<string, unknown>> = []
   private scrollRaf = 0
-  /** 恢复 scrollTop 触发的下一次 scroll 事件需忽略，防止重入死循环 */
-  private ignoreNextScroll = false
+  /** 程序写入引发的 scroll 回波吞位：布防「写入代次」（-1 = 未布防）。
+      旧布尔守卫（ignoreNextScroll）只认「下一个 scroll 事件」、不分来源——帧尾恢复布防后若
+      回波尚未触发就来了单发主动写入（如 Ctrl+Home 越界导航的 writeScrollPosition），主动写入
+      引发的唯一 scroll 事件被陈旧守卫吞掉：handleScroll 首行 return、tbody 永不重建、键盘导航
+      的 pendingFocus 永不落地（连续滚动流因事件多次触发能自愈，单发程序滚动死锁——真实浏览器
+      插桩定案）。改为按写入代次吞：只吞「布防代次 === 当前写入代次」的下一个事件；主动写入
+      （writeScrollPosition）显式清布防并 bump 代次，陈旧守卫双重失效。
+      「吞自身写入回波」的钳制自愈语义（帧尾恢复/意图守卫写回引发的弹回顶）保留不变。 */
+  private swallowScrollSeq = -1
   /** 主动滚动写入代次：键盘导航 / 程序化滚动 / 帧尾恢复每写一次 +1。帧尾恢复只在代次未变时
       回写（同帧「先滚动、后按 Ctrl+End」时，更新的写入优先于帧首保存的旧值） */
   private scrollWriteSeq = 0
@@ -1583,10 +1590,10 @@ export class OASTableBase extends OASElement {
   override disconnectedCallback(): void {
     this.unsubCaps?.()
     this.unsubCaps = undefined
-    // 主动滚动写入的意图状态随断开复位：重连后不继承上一次连接的保存位/代次/吞事件标志
+    // 主动滚动写入的意图状态随断开复位：重连后不继承上一次连接的保存位/代次/回波吞位
     this.savedScroll = null
     this.scrollWriteSeq = 0
-    this.ignoreNextScroll = false
+    this.swallowScrollSeq = -1
     super.disconnectedCallback()
   }
 
@@ -3481,10 +3488,10 @@ export class OASTableBase extends OASElement {
     }
     // 有布局环境按 scrollHeight 上界夹取；无布局（happy-dom scrollHeight=0）直写——
     // 真实浏览器的 scrollTop setter 本就会自行钳制，双环境语义一致。
-    // 锚定写scrollTop 前先清「程序写滚动」吞事件守卫：同 update 周期内 restoreScrollPosition
-    // 可能已布防 ignoreNextScroll（收起钳制场景），不清则本次滚动引发的 window 请求被吞、
-    // 锚定视口边缘的 margin 行无人回填（第二轮交叉审实抓）。
-    this.ignoreNextScroll = false
+    // 锚定写 scrollTop 前先清「程序写滚动」回波吞位：同 update 周期内 restoreScrollPosition
+    // 可能已布防（收起钳制场景），不清则本次滚动引发的 window 请求被吞、
+    // 锚定视口边缘的 margin 行无人回填（第二轮交叉审实抓）
+    this.swallowScrollSeq = -1
     const max = this.wrap.scrollHeight - this.wrap.clientHeight
     this.wrap.scrollTop = max > 0 ? Math.min(top, max) : top
     return true
@@ -4994,8 +5001,10 @@ export class OASTableBase extends OASElement {
         : locateAnchor(cap.offsets(), this.wrap.scrollTop)
     const top = restoreAnchor(cap.offsets(), anchor)
     if (Math.abs(top - this.wrap.scrollTop) > 0.5) {
-      this.ignoreNextScroll = true
       this.wrap.scrollTop = top
+      // 写后布防：锚定写位引发的回波按「本次写入代次」吞（直写不 bump 代次）；
+      // 若此后有更新的主动写入（bump 代次），布防自动失效、不吞新写入的事件
+      this.armScrollSwallow()
     }
     // 标记 update 由测量同步触发：焦点回锚禁用 scrollIntoView——否则每帧测量都可能把
     // 视口/页面滚回焦点格（sync-via-update 与 update 焦点恢复路径的相互作用，二轮审 I-4）
@@ -5216,6 +5225,10 @@ export class OASTableBase extends OASElement {
   writeScrollPosition(top: number, left?: number): void {
     const wrap = this.wrap
     if (!wrap) return
+    // 主动写入是权威位：清掉既有回波吞位。帧尾恢复/意图守卫布防的吞位若因回波尚未触发而
+    // 残留，不清则主动写入引发的唯一 scroll 事件被吞——tbody 不按新位重建、键盘导航死锁。
+    // 写入随后 bump 代次，陈旧布防即使不清也会因代次比对失效；显式清是语义表达 + 双保险
+    this.swallowScrollSeq = -1
     const targetLeft = left ?? wrap.scrollLeft
     this.scrollWriteSeq += 1
     this.armScrollIntent(top, targetLeft)
@@ -5237,8 +5250,14 @@ export class OASTableBase extends OASElement {
     if (!wrap) return
     if (this.scrollWriteSeq !== seqAtSave) return
     if (wrap.scrollTop === top && wrap.scrollLeft === left) return
-    this.ignoreNextScroll = true
+    // 统一入口写回（bump 代次 + 布意图位），写回**之后**布防——吞的是「本次写回代次」
+    // 引发的 scroll 回波（清空 tbody 后钳制回 0 的自愈写回，弹回顶语义不变）。取舍：
+    // 不用「不 bump 序的直写+布防」——直写绕过统一入口会丢意图位与代次记账，且让
+    // 「主动写入清陈旧布防」出现绕行路径；代次布防让本吞位在回波未触发就来了更新的
+    // 主动写入时自动失效（writeScrollPosition 显式清 + 代次比对），不会再吞掉
+    // Ctrl+Home 等单发主动滚动的唯一 scroll 事件（导航死锁根因）
     this.writeScrollPosition(top, left)
+    this.armScrollSwallow()
   }
 
   /** 布防意图：写入位在 SCROLL_INTENT_FRAMES 帧内是权威位（用户手势立即解除） */
@@ -5257,6 +5276,16 @@ export class OASTableBase extends OASElement {
       this.scrollIntentRaf = requestAnimationFrame(tick)
     }
     this.scrollIntentRaf = requestAnimationFrame(tick)
+  }
+
+  /**
+   * 布防回波吞位：吞掉「当前写入代次」写入引发的下一个 scroll 事件。
+   * 必须在写入落位**之后**调用（布防值 = 引发回波的写入代次；writeScrollPosition 内含
+   * 清布防，写入前布防会被它自己清掉）。布防后代次再 bump（更新的主动写入）即自动失效——
+   * handleScroll 只吞同代次事件，陈旧吞位不会跨写入存活。
+   */
+  private armScrollSwallow(): void {
+    this.swallowScrollSeq = this.scrollWriteSeq
   }
 
   /** 用户手势（滚轮 / 触摸 / 按下滚动条）取消意图守卫：用户滚动永远优先于组件写入 */
@@ -5299,16 +5328,22 @@ export class OASTableBase extends OASElement {
     const nearSaved = Math.abs(top - saved.top) <= this.rowHeightPx() && Math.abs(left - saved.left) <= 1
     this.scrollIntent = null
     if (!nearSaved) return
-    // 落回旧位置：写回主动写入位，并吞掉这次位移触发的 scroll 事件（窗口按意图位重建）
-    this.ignoreNextScroll = true
+    // 落回旧位置：写回主动写入位，并吞掉这次位移触发的 scroll 事件（窗口按意图位重建）。
+    // 直写不 bump 代次：布防的是当前写入代次（意图位布防时的代次）——此后若有更新的
+    // 主动写入（bump 代次），本吞位同样陈旧失效，不吞新写入的事件
     wrap.scrollTop = intent.top
     wrap.scrollLeft = intent.left
+    this.armScrollSwallow()
   }
 
   private handleScroll = (): void => {
-    if (this.ignoreNextScroll) {
-      this.ignoreNextScroll = false
-      return
+    if (this.swallowScrollSeq >= 0) {
+      const armed = this.swallowScrollSeq
+      this.swallowScrollSeq = -1
+      // 只吞「布防代次」自身写入引发的回波。布防后若有更新的主动写入（writeScrollPosition
+      // 已清布防并 bump 代次），本次 scroll 事件按新写入位正常处理——tbody 按新位重建、
+      // 键盘导航的 pendingFocus 落地（旧布尔守卫不分代次吞事件，曾致单发导航死锁）
+      if (this.scrollWriteSeq === armed) return
     }
     // 同帧竞态：浏览器内部位移（焦点 reveal / 锚定）落回旧位置时让位于主动写入
     this.guardScrollIntent()
