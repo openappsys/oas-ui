@@ -95,6 +95,51 @@
 
 ---
 
+## 未发布：table windowed × 树形懒加载（设计稿，实现待批）
+
+### 背景与目标
+
+windowed（服务端行窗口）模式现行明确跳过树形（本地不展开 + devWarn）；组织架构树 / 会计科目树 / 品类树等「万级节点 + 树形」场景无法窗口化。目标：windowed 与树形共存、子孙懒装载，**默认零变化**（非树形 windowed 用户零感知——红线：非 windowed 任何路径、纯 windowed 请求语义零变化，改动前后同场景 oas-window-request 逐值快照对比锁定）。
+
+### 关键架构判断：拍平模型下坐标口径问题自然消解
+
+树形输入在组件内本就「嵌套 children 自动拍平」——**children 行拍平后就是普通数据行**，`data-row-index` / 事件 `rowIndex` / ARIA 与纯 windowed 完全同口径（树形缩进与 toggle 只是首列渲染层，不占独立行）。懒装载场景下行号语义不变：未展开 = 子孙不在 data = 不存在这些行。**因此不需要新坐标系，不引入 visual 协议的强制依赖**（visual 协议保持可选优化：宿主想按「展开态全量」表达时可自行启用）。
+
+### 协议形状（全部复用既有通道，零新事件）
+
+| 项 | 契约 |
+| --- | --- |
+| 展开交互 | windowed + 树形数据在场时，点击树形 toggle **只派发 `oas-expand`（detail { key, expanded }），不本地改 `expanded`**——与 visual 协议生效时的「展开由宿主完全控制」**同款现成口径**，不新造 |
+| 数据回填 | 宿主监听 oas-expand → 取子孙 → 合并 children 后**整体重喂 data 属性**（既有通道）；`expanded` 由宿主写回（既有属性） |
+| `total` | 宿主维护 = **当前展开态下拍平总行数**（随展开/收起更新，既有属性的语义延伸） |
+| 窗口计算/渲染 | 全走**现有 windowed 机制**（行窗口 + 期望区间 + 切片渲染），零改动复用 |
+| 子孙标记 | 数据行新增保留键 **`hasChildren: boolean`**（懒装载下未展开父行无 children 数据，组件靠此字段渲染 toggle）——清洗层保留键契约（与 progress/effort 同口径，新增键入透传契约声明） |
+
+### 组件侧改动面（小）
+
+1. windowed 树形分支反转：从「跳过 + devWarn」改为「探测到树形数据（行带 children 或 hasChildren）→ toggle 派发事件等宿主」；纯切片无树形线索 → 行为逐字节不变。
+2. **收起滚动锚定**：收起 N 行子孙使 total 突变、滚动位置漂移——展开/收起时若视口位于受影响行域内，锚定到操作父行（收起时）/首个新装孙子行（展开时）。
+3. `hasChildren` 清洗保留 + toggle 渲染判定（无 children 数据但 hasChildren=true → 渲染可展开钮，expanded 状态读属性）。
+4. 文档与警告文案更新（树形不再「不支持」，改为「树形 + windowed = 宿主托管 expanded/total/hasChildren」三件套说明）。
+
+### 风险与对策（副作用账）
+
+| 风险 | 对策 |
+| --- | --- |
+| 非树形 windowed 用户感知 | 双条件 gate（windowed && 树形线索）+ 请求快照回归测试（改动前后逐值比对） |
+| 写坏宿主数据 | 数学上为零（windowed 从不写回；树形懒装载同为宿主喂数据组件只读） |
+| 收起时滚动漂移 | 锚定策略（见改动面 2）+ e2e 断言 |
+| 与 column-virtual 交集 | 沿用既有不兼容降级（两 opt-in 交集继续不支持，不扩承诺） |
+| aria-level/aria-expanded 树形语义 | 复用非 windowed 树形的现成 ARIA 实现，仅输入源切换（行在切片内才有 ARIA——窗口外不渲染，语义随窗口，文档注明） |
+
+### 验收（待批准后开工时细化）
+
+- 万节点三层组织树 demo（首层 50 节点懒展开）+ windowed e2e（展开→回填→行窗口覆盖子孙；收起→锚定；非树形 windowed 请求快照逐值不变）
+- 单测：hasChildren 清洗、toggle 事件反转、锚定数学、非树形零变化
+- 全量回归 + 交叉审（动 windowed 渲染路径，审两轮起步）
+
+---
+
 ## 未发布：D1 table 结构级渲染能力（structural-render，注册型 L3）
 
 ### 功能定义
