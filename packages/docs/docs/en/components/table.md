@@ -528,6 +528,34 @@ Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (abs
 
 In windowed mode **local sort / filter / group / pagination / tree-expand / summary / merge (`merge`, `span-method`) / `column-virtual` are the host's responsibility** (the component skips them with a devWarn) — listen to the existing `oas-sort-change` / `oas-filter-change` / `oas-page-change` events, process the full dataset, then refill the window slice. Off by default: behavior unchanged.
 
+**Exception — tree lazy-loading (the hasChildren contract, unreleased)**: a windowed slice row carrying `hasChildren: true` enters tree lazy-loading mode (a nested `children` array keeps its legacy ignored semantics and does NOT trigger this mode). The contract is a three-piece set:
+
+- **Expand interaction**: clicking the tree toggle only dispatches `oas-expand` (`detail { key, expanded }`) — the component does **not** modify `expanded` locally. The host fetches descendants, merges them into the slice as **flat rows** (with `depth` metadata), refeeds `data`, and updates `total` (the flattened row count in the current expand state) plus the `expanded` attribute.
+- **Row metadata**: `hasChildren: boolean` (**only the boolean `true` is recognized** — string forms do not trigger) — marks the row as a parent and renders the toggle even when descendants are not loaded; plus `depth: number` (indent level, default 0). Row fields pass through the attribute JSON untouched — there is no cleaning whitelist. When combined with the optional visual protocol, expansion is also host-controlled and **`total` must be updated as well** (the two protocols are orthogonal and composable, not mutually exclusive).
+- **Coordinate semantics**: after flattening, children rows ARE regular data rows — `data-row-index`, event `rowIndex` and ARIA stay **exactly the same as plain windowed**; no new coordinate system is introduced. The visual protocol remains an optional optimization (hosts can opt in to express the full expanded extent).
+- **Collapse anchoring**: collapsing N descendant rows shifts `total` and the viewport — host recipe: record the anchor row key before refeeding, then call `scrollToRow(key)` after (scrolls to the row in a virtual/windowed viewport; returns false when not found).
+- The mode is judged per render from the slice data (any `hasChildren` row in the slice = tree mode; once they all disappear the `depth` metadata stops taking effect and interaction falls back to the plain channel, leaving no residual visuals). A row carrying both `hasChildren` and an inline `expand` field keeps both channels: the tree toggle goes through the host channel while the trailing expand button stays local (the inline content row occupies an independent visual slot).
+
+```ts
+// Host-side expand handling (illustrative):
+table.addEventListener('oas-expand', async (e) => {
+  const { key, expanded } = e.detail
+  const anchor = key // collapse anchor = the operated parent row
+  const slice = expanded ? await loadDescendantsInto(key) : await collapseTo(key)
+  table.setAttribute('data', JSON.stringify(slice)) // flat rows + depth
+  table.setAttribute('total', String(sliceFullLength))
+  table.setAttribute('expanded', nextExpandedSet)
+  table.scrollToRow(anchor) // restore the viewport after a collapse
+})
+```
+
+<DemoBlock title="windowed × tree lazy-loading: a three-level org tree with click-to-load descendants (host refeed + scrollToRow anchoring)">
+  <oas-table id="table-wintree" windowed row-key="name" height="160" row-height="32" style="width: 100%"></oas-table>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+    Expanded: <span id="table-wintree-feedback">3 root nodes (total 3)</span>
+  </p>
+</DemoBlock>
+
 Inline row expansion (the row `expand` field) occupies an **independent visual slot** in windowed virtual scrolling but does not consume an absolute data row number: `data-row-index`, event row numbers and ARIA semantics still count data rows only. The visible window and the scroll height are computed as `total + expansions in the current slice`, so multiple expansions and the expansion of the last loaded row stay visible; when the slice is out of range (length exceeds `total - window-start`), out-of-range rows and their expansions are not rendered, while the expansion of the last in-range data row is kept. When the slice contains expand rows, the `oas-window-request` expected range is no longer guessed from a uniform data grid: the visible window is **mapped back to data coordinates** through the visual slots (covering the actually visible data rows and their expand owner rows), and `visualStart` / `visualEnd` carry the visible window's visual coordinates for host-side visual fetching — when local expand changes move the visible range, the request is re-emitted even if the data range is unchanged.
 
 ### Optional visual protocol (visual-total / visual-start)
@@ -714,6 +742,54 @@ onMounted(() => {
     })
     t.addEventListener('oas-edit', () => {
       if (fb) fb.textContent = '—'
+    })
+  })
+})
+
+onMounted(() => {
+  // windowed x tree lazy-loading demo: simulates the host's "full org tree" and refeed logic
+  const t = document.getElementById('table-wintree')
+  const fb = document.getElementById('table-wintree-feedback')
+  if (!t) return
+  t.setAttribute('columns', JSON.stringify([{ key: 'name', title: 'Org' }]))
+  const fullTree = {
+    engineering: { name: 'Engineering', depth: 0, hasChildren: true, children: ['platform', 'apps'] },
+    platform: { name: 'Platform', depth: 1, hasChildren: true, children: ['infra', 'middleware'] },
+    apps: { name: 'Apps', depth: 1 },
+    infra: { name: 'Infrastructure', depth: 2 },
+    middleware: { name: 'Middleware', depth: 2 },
+    marketing: { name: 'Marketing', depth: 0, hasChildren: true, children: ['brand'] },
+    brand: { name: 'Brand', depth: 1 },
+    ops: { name: 'Operations', depth: 0 },
+  }
+  const expandedSet = new Set()
+  const flatSlice = () => {
+    const out = []
+    const roots = ['engineering', 'marketing', 'ops']
+    const walk = (name) => {
+      const n = fullTree[name]
+      out.push({ name: n.name, depth: n.depth, ...(n.hasChildren ? { hasChildren: true } : {}) })
+      if (n.children && expandedSet.has(name)) for (const c of n.children) walk(c)
+    }
+    for (const r of roots) walk(r)
+    return out
+  }
+  const refeed = () => {
+    const slice = flatSlice()
+    t.setAttribute('data', JSON.stringify(slice))
+    t.setAttribute('total', String(slice.length))
+    t.setAttribute('expanded', [...expandedSet].join(','))
+    if (fb)
+      fb.textContent = `expanded ${expandedSet.size ? [...expandedSet].join(', ') : '(none)'} · total ${slice.length}`
+  }
+  void customElements.whenDefined('oas-table').then(() => {
+    refeed()
+    t.addEventListener('oas-expand', (e) => {
+      const d = e.detail
+      if (d.expanded) expandedSet.add(d.key)
+      else expandedSet.delete(d.key)
+      refeed() // host refeed
+      if (!d.expanded) t.scrollToRow(d.key) // collapse-only anchoring (expand leaves the viewport alone)
     })
   })
 })
@@ -2001,6 +2077,7 @@ const visible = applyQuery(orders, state.query)
 | `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | Readonly display-set snapshot for range capabilities: maps row keys to absolute data-row and flat scroll indices (windowed offsets included), with a structural fingerprint and keysByIndex. Built lazily and shared; callers must not mutate the returned maps |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here) |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate) |
+| `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`: scroll to the given row (virtual / windowed viewports only; returns false otherwise; non-windowed virtual supports flat data only). Host-recipe anchor for windowed tree lazy-loading: call it after a total-changing refeed to restore the viewport (emits one reason=scroll oas-window-request, which is expected) |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it) |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition |

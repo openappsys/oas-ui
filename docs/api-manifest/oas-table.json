@@ -323,6 +323,11 @@
       "description": "重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。"
     },
     {
+      "name": "scrollToRow",
+      "signature": "scrollToRow(key: string): boolean",
+      "description": "滚动到指定行（virtual / windowed 视口生效，其余形态返回 false）。"
+    },
+    {
       "name": "notifyEdit",
       "signature": "notifyEdit(kind: 'edit' | 'edit-cancel' | 'edit-invalid', detail: TableEditDetail): void",
       "description": "派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此，"

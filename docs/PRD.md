@@ -95,7 +95,9 @@
 
 ---
 
-## 未发布：table windowed × 树形懒加载（设计稿，实现待批）
+## 未发布：table windowed × 树形懒加载（已交付）
+
+> 设计稿（2026-11-04 批准）→ 已交付（同日）：坐标口径按拍平模型自然消解的判断经实现验证成立（data-row-index/事件行号/ARIA 与纯 windowed 同口径）；scrollToRow 收起锚定守卫修复（ignoreNextScroll 吞事件）与 e2e 锚定复位断言为交付后两轮交叉审的增量。验收全绿（单测 T1-T6b、demo e2e、全量回归）。
 
 ### 背景与目标
 

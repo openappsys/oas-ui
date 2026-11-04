@@ -5401,7 +5401,7 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
     state.strict = true
     const ws = Number(state.el.getAttribute('window-start')) || 0
     const loadedEnd = ws + (state.el.data as unknown[]).length
-    const wrap = state.el.shadowRoot.querySelector('.table-scroll')
+    const wrap = state.el.shadowRoot!.querySelector('.table-scroll')
     wrap.scrollTop = Math.max(0, loadedEnd * 40 - 200)
     wrap.dispatchEvent(new Event('scroll'))
   })
@@ -5725,6 +5725,61 @@ test('table audit：demo 编辑提交被记录（历史链/时间戳），取消
   await amount.locator('input.cell-editor').press('Enter')
   await expect(fb).toContainText('amount 共 3 次修改')
   await expect(fb).toContainText('900 → 888')
+
+  expect(errors, 'console 零 error').toEqual([])
+})
+// windowed × 树形懒装载 demo 真实浏览器回归：点击「研发部」展开钮 →
+// 组件只派发 oas-expand（demo 宿主回填：平铺子孙 + depth 渲染 + total 更新 + expanded 回写 + scrollToRow 锚定）；
+// 子孙行按 depth 缩进渲染、行号拍平连续；收起后行域收缩；console 零告警。
+test('table wintree：懒展开宿主闭环（expand 事件 → 回填子孙 → 拍平行号 → 收起收缩）', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  const t = page.locator('#table-wintree')
+  await expect(t).toBeAttached()
+  // .resolves 不带轮询（jest 式单次断言）——行数断言全部走 expect.poll（hydration + demo refeed 时序）
+  const expectRows = (n: number) =>
+    expect.poll(() => t.locator('tbody tr[data-key]').count(), { timeout: 20_000 }).toBe(n)
+  await expectRows(3)
+
+  // 展开「研发部」→ 子孙（平台组/应用组 depth1）回填
+  const engToggle = t.locator('tr[data-key="研发部"] button.toggle')
+  await expect(engToggle).toHaveAttribute('aria-expanded', 'false')
+  await engToggle.click()
+  await expect(engToggle, '宿主回写 expanded 后翻转').toHaveAttribute('aria-expanded', 'true')
+  await expectRows(5)
+  const childIndent = await t.locator('tr[data-key="平台组"] td:first-child').evaluate((td) => td.style.paddingLeft)
+  const rootIndent = await t.locator('tr[data-key="研发部"] td:first-child').evaluate((td) => td.style.paddingLeft)
+  expect(Number.parseInt(childIndent), 'depth1 缩进 > depth0').toBeGreaterThan(Number.parseInt(rootIndent))
+  const idx = await t
+    .locator('tbody tr[data-key]')
+    .evaluateAll((trs) => trs.map((tr) => tr.getAttribute('data-row-index')))
+  expect(idx, '拍平行号连续').toEqual(['0', '1', '2', '3', '4'])
+
+  // 再展开「平台组」→ 孙辈（depth2）回填（视口 160px/32 = 5 行 < 7 行 → 可滚）
+  await t.locator('tr[data-key="平台组"] button.toggle').click()
+  await expectRows(7)
+  await expect(page.locator('#table-wintree-feedback')).toContainText('total 7')
+
+  // 收起锚定：先把视口滚到底（离开锚点行「研发部」），收起后 scrollToRow 应复位到锚点附近
+  await t.evaluate((el) => {
+    const wrap = el.shadowRoot!.querySelector('.table-scroll')!
+    wrap.scrollTop = wrap.scrollHeight
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await expect
+    .poll(() => t.evaluate((el) => el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!.scrollTop), {
+      timeout: 5000,
+    })
+    .toBeGreaterThan(0)
+  await t.locator('tr[data-key="研发部"] button.toggle').click()
+  await expect(engToggle).toHaveAttribute('aria-expanded', 'false')
+  await expectRows(3)
+  const anchored = await t.evaluate((el) => el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!.scrollTop)
+  expect(anchored, '收起锚定：scrollToRow 复位视口').toBeLessThanOrEqual(32)
 
   expect(errors, 'console 零 error').toEqual([])
 })

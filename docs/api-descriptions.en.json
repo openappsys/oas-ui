@@ -3470,7 +3470,8 @@
       "setColumnOrder": "Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it)",
       "setColumnWidth": "Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition",
       "exportMatrix": "Export matrix: headers (column title / headerTemplate text) + currently visible data rows",
-      "exportData": "Export and trigger a download: generate content → Blob download → dispatch `oas-export`"
+      "exportData": "Export and trigger a download: generate content → Blob download → dispatch `oas-export`",
+      "scrollToRow": "`scrollToRow(key: string): boolean`: scroll to the given row (virtual / windowed viewports only; returns false otherwise; non-windowed virtual supports flat data only). Host-recipe anchor for windowed tree lazy-loading: call it after a total-changing refeed to restore the viewport (the anchoring scroll goes through the scroll channel and may emit a reason='scroll' oas-window-request - same semantics as scroll-driven window refills)"
     }
   },
   "oas-table-column": {

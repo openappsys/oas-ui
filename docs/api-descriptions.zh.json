@@ -3306,7 +3306,8 @@
       "oas-edit-invalid": "编辑提交被列 validate 拒绝时派发（不提交、保持编辑态）。detail: { rowIndex, key, column, value, message }——message 为校验返回文案（boolean false 形态为 undefined）；宿主可监听做错误汇总/日志"
     },
     "methods": {
-      "setCapabilityOptions": "Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染"
+      "setCapabilityOptions": "Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染",
+      "scrollToRow": "`scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义）"
     },
     "slots": {
       "template[slot=\"empty\"]": "空态富内容（优先于 empty-text 与默认空态文案）",

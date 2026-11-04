@@ -528,6 +528,34 @@ table.addEventListener('oas-edit', (e) => {
 
 windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合计 / 合并（`merge`、`span-method`）/ `column-virtual` 交由宿主负责**（组件跳过本地执行并 devWarn）——请监听既有 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 等事件，在全量数据上处理后回填窗口切片。缺省关闭时行为不变。
 
+**例外——树形懒装载（hasChildren 契约（未发布））**：windowed 切片行带 `hasChildren: true` 元数据即进入树形懒装载模式（嵌套 `children` 数组维持 legacy 忽略语义，不触发本模式）。契约三件套：
+
+- **展开交互**：点击树形 toggle 只派发 `oas-expand`（`detail { key, expanded }`），组件**不本地改 `expanded`**——宿主监听后取子孙、把子孙以**平铺行**（带 `depth` 元数据）合并进切片并重喂 `data`，同时更新 `total`（当前展开态拍平总行数）与 `expanded` 属性。
+- **行元数据**：`hasChildren: boolean`（**仅认布尔 `true`**，字符串形态不触发）——该行为父节点、子孙未随切片装载时靠它渲染展开钮；+ `depth: number`（缩进层级，缺省 0；拍平数据行的渲染层级）。数据行经属性 JSON 透传，无清洗白名单。与可选视觉协议同场时展开亦由宿主控制，且**必须同时更新 `total`**（两协议正交可叠加，非互斥）。
+- **坐标口径**：树形拍平后 children 行即普通数据行——`data-row-index` / 事件 `rowIndex` / ARIA 与纯 windowed **完全同口径**，不引入新坐标系；visual 协议保持可选优化（宿主想按展开态全量表达时自行启用）。
+- **收起锚定**：收起 N 行子孙使 `total` 突变、视口漂移——宿主配方：回填前记录锚点行 key，回填后调 `scrollToRow(key)`（虚拟/窗口化视口滚动到该行，未命中返回 false）。
+- 模式按切片数据逐帧判定（`hasChildren` 行在切片内即树形模式；全部消失后 depth 元数据即不生效、交互回落普通通道，残余元数据无残留视觉）。一行同时带 `hasChildren` 与行内嵌 `expand` 字段时两通道并存：树 toggle 走宿主通道、行尾展开钮维持本地展开（行内嵌内容行占独立视觉槽位）。
+
+```ts
+// 宿主展开处理（示意）：
+table.addEventListener('oas-expand', async (e) => {
+  const { key, expanded } = e.detail
+  const anchor = key // 收起锚点 = 被操作的父行
+  const slice = expanded ? await loadDescendantsInto(key) : await collapseTo(key)
+  table.setAttribute('data', JSON.stringify(slice)) // 平铺行 + depth
+  table.setAttribute('total', String(sliceFullLength)) // 展开态拍平总行数
+  table.setAttribute('expanded', nextExpandedSet)
+  table.scrollToRow(anchor) // 收起后复位视口
+})
+```
+
+<DemoBlock title="windowed × 树形懒装载：三层组织树，子孙点击懒展开（宿主回填 + scrollToRow 锚定）">
+  <oas-table id="table-wintree" windowed row-key="name" height="160" row-height="32" style="width: 100%"></oas-table>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+    展开态：<span id="table-wintree-feedback">首层 3 节点（total 3）</span>
+  </p>
+</DemoBlock>
+
 行内嵌展开（行数据 `expand` 字段）在 windowed 虚拟滚动中占**独立视觉槽位**，但不占绝对数据行号：`data-row-index`、事件行号与 ARIA 口径仍只按数据行计数；可视窗口与滚动总高按 `total + 当前切片内的展开数` 计算，多行展开与已装载的全量末行的展开内容均可见；切片越界（长度超出 `total - window-start`）时越界行及其展开内容不渲染，最后合法数据行的展开内容保留。切片内存在展开行时，`oas-window-request` 期望区间不再按均匀数据网格猜测，而是把可视窗口按视觉槽位**映射回数据坐标**（覆盖真实可见数据行及其展开属主行），并附带 `visualStart` / `visualEnd`（当前可视窗口的视觉坐标，供宿主视觉取数）——本地展开数变化移动可视区间时，即使数据区间相同也会重新派发。
 
 ### 可选视觉协议（visual-total / visual-start）
@@ -712,6 +740,54 @@ onMounted(() => {
     })
     t.addEventListener('oas-edit', () => {
       if (fb) fb.textContent = '—'
+    })
+  })
+})
+
+onMounted(() => {
+  // windowed × 树形懒装载 demo：模拟宿主的「全量组织树」与回填逻辑
+  const t = document.getElementById('table-wintree')
+  const fb = document.getElementById('table-wintree-feedback')
+  if (!t) return
+  t.setAttribute('columns', JSON.stringify([{ key: 'name', title: '组织' }]))
+  const fullTree = {
+    研发部: { name: '研发部', depth: 0, hasChildren: true, children: ['平台组', '应用组'] },
+    平台组: { name: '平台组', depth: 1, hasChildren: true, children: ['基础架构', '中间件'] },
+    应用组: { name: '应用组', depth: 1 },
+    基础架构: { name: '基础架构', depth: 2 },
+    中间件: { name: '中间件', depth: 2 },
+    市场部: { name: '市场部', depth: 0, hasChildren: true, children: ['品牌组'] },
+    品牌组: { name: '品牌组', depth: 1 },
+    运营部: { name: '运营部', depth: 0 },
+  }
+  const expandedSet = new Set()
+  // 展开态拍平行（DFS 序）：expanded 集合决定子孙是否在列
+  const flatSlice = () => {
+    const out = []
+    const roots = ['研发部', '市场部', '运营部']
+    const walk = (name) => {
+      const n = fullTree[name]
+      out.push({ name: n.name, depth: n.depth, ...(n.hasChildren ? { hasChildren: true } : {}) })
+      if (n.children && expandedSet.has(name)) for (const c of n.children) walk(c)
+    }
+    for (const r of roots) walk(r)
+    return out
+  }
+  const refeed = () => {
+    const slice = flatSlice()
+    t.setAttribute('data', JSON.stringify(slice))
+    t.setAttribute('total', String(slice.length))
+    t.setAttribute('expanded', [...expandedSet].join(','))
+    if (fb) fb.textContent = `展开 ${expandedSet.size ? [...expandedSet].join('、') : '（无）'} · total ${slice.length}`
+  }
+  void customElements.whenDefined('oas-table').then(() => {
+    refeed()
+    t.addEventListener('oas-expand', (e) => {
+      const d = e.detail
+      if (d.expanded) expandedSet.add(d.key)
+      else expandedSet.delete(d.key)
+      refeed() // 宿主回填
+      if (!d.expanded) t.scrollToRow(d.key) // 仅收起锚定（展开不扰动视口）
     })
   })
 })
@@ -1988,6 +2064,7 @@ const visible = applyQuery(orders, state.query)
 | `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | 展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改 |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
+| `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（会触发一次 reason=scroll 的 oas-window-request，属预期） |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此， |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |

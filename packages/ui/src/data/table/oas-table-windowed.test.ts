@@ -1257,3 +1257,146 @@ describe('OASTable windowed × 可选视觉协议（visual-total / visual-start�
     })
   })
 })
+
+// ===== windowed × 树形懒加载（hasChildren 契约，2026-11-04 设计稿落地）=====
+// 契约：windowed 切片 = 平铺行 + 行元数据 hasChildren（子孙在切片内）/ depth（缩进层级）；
+// 展开点击只派发 oas-expand（宿主控制 expanded/total/数据回填），坐标口径 = 拍平数据行序（与非树形 windowed 同）。
+
+describe('windowed × 树形懒加载（hasChildren 契约）', () => {
+  it('T1 hasChildren 行渲染展开钮 + depth 缩进 + aria-expanded（懒装载：无 children 数据）', () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '4',
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '父', age: 1, hasChildren: true },
+        { name: '子1', age: 2, depth: 1 },
+        { name: '孙', age: 3, depth: 2 },
+        { name: '行1', age: 4 },
+      ]),
+    })
+    const toggles = el.shadowRoot!.querySelectorAll('button.toggle')
+    expect(toggles.length, '仅 hasChildren 行有展开钮').toBe(1)
+    expect(toggles[0]!.getAttribute('aria-expanded')).toBe('false')
+    // depth 缩进：首列 paddingLeft = 16 + depth × indent-size(24)；depth 0 的普通行不设内联 padding（CSS 档位默认）
+    const firstTds = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr td:first-child')]
+    expect(firstTds[0]!.style.paddingLeft, 'depth0 有子孙 → 16px').toBe('16px')
+    expect(firstTds[1]!.style.paddingLeft, 'depth1').toBe('40px')
+    expect(firstTds[2]!.style.paddingLeft, 'depth2').toBe('64px')
+    expect(firstTds[3]!.style.paddingLeft, 'depth0 无子孙 → 不设内联').toBe('')
+  })
+
+  it('T2 点击展开钮：只派发 oas-expand，不改 expanded 属性、不本地展开（宿主控制）', () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '4',
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '父', age: 1, hasChildren: true },
+        { name: '子1', age: 2, depth: 1 },
+      ]),
+    })
+    const events: Array<{ key: string; expanded: boolean }> = []
+    el.addEventListener('oas-expand', (e) => events.push((e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLElement>('button.toggle')!.click()
+    expect(events).toEqual([{ key: '父', expanded: true }])
+    expect(el.getAttribute('expanded'), 'windowed 树形下本地不改 expanded').toBeNull()
+    expect(rowsOf(el).length, '行数不变（等宿主回填）').toBe(2)
+  })
+
+  it('T3 宿主回写 expanded 后 aria-expanded 翻转；行号口径 = 拍平数据行序（data-row-index 连续）', () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '4',
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '父', age: 1, hasChildren: true },
+        { name: '子1', age: 2, depth: 1 },
+        { name: '子2', age: 3, depth: 1 },
+        { name: '行1', age: 4 },
+      ]),
+      expanded: '父',
+    })
+    const btn = el.shadowRoot!.querySelector('button.toggle')!
+    expect(btn.getAttribute('aria-expanded')).toBe('true')
+    const idx = [...el.shadowRoot!.querySelectorAll('tr[data-key]')].map((tr) => tr.getAttribute('data-row-index'))
+    expect(idx, '拍平序连续（windowStart=0）').toEqual(['0', '1', '2', '3'])
+  })
+
+  it('T4 非树形 windowed 零变化：无 hasChildren 行不渲染展开钮、oas-window-request 口径不变', () => {
+    // 与既有 init 请求测试同口径（height/row-height 在场，同步派发可断言）：
+    // 改动前后 detail 形状逐值一致 = 纯 windowed 请求语义零变化锁
+    const { el, reqs } = mountWindowed({
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '200',
+      'row-height': '40',
+      'row-key': 'name',
+      data: slice(0, 5),
+    })
+    expect(el.shadowRoot!.querySelector('button.toggle')).toBeNull()
+    expect(reqs).toEqual([{ start: 0, end: 17, reason: 'init' }])
+  })
+
+  it('T5 嵌套 children（无 hasChildren，legacy 形态）在 windowed 下维持旧行为：不渲染展开钮 + 告警提示', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '10',
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '父', age: 1, children: [{ name: '子', age: 2 }] },
+        { name: '行1', age: 3 },
+      ]),
+    })
+    expect(el.shadowRoot!.querySelector('button.toggle')).toBeNull()
+    expect(rowsOf(el).length).toBe(2)
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('T6 scrollToRow(key)：虚拟/窗口化下滚动到目标行（收起锚定的宿主配方底座）', () => {
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '100',
+      height: '200',
+      'row-height': '32',
+      'row-key': 'name',
+      data: slice(0, 6),
+    })
+    const wrap = wrapOf(el)
+    expect(wrap.scrollTop).toBe(0)
+    const ok = (el as unknown as { scrollToRow(key: string): boolean }).scrollToRow('行4')
+    expect(ok).toBe(true)
+    expect(wrap.scrollTop).toBeGreaterThan(0)
+    expect(
+      (el as unknown as { scrollToRow(key: string): boolean }).scrollToRow('不存在'),
+      '未知行返回 false 不抛错',
+    ).toBe(false)
+  })
+
+  it('T6b scrollToRow 非视口表格返回 false；windowStart 偏移计入绝对行号', () => {
+    // 非 virtual / 非 windowed：无滚动语义 → false
+    const plain = new OASTable()
+    plain.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    plain.setAttribute('data', JSON.stringify([{ name: '甲' }]))
+    document.body.appendChild(plain)
+    expect((plain as unknown as { scrollToRow(key: string): boolean }).scrollToRow('甲'), '非视口表格返回 false').toBe(
+      false,
+    )
+    // windowStart 偏移：abs = windowStart + 切片内下标
+    const { el } = mountWindowed({
+      windowed: '',
+      total: '100',
+      'window-start': '5',
+      height: '200',
+      'row-height': '32',
+      'row-key': 'name',
+      data: slice(5, 6),
+    })
+    const wrap = wrapOf(el)
+    ;(el as unknown as { scrollToRow(key: string): boolean }).scrollToRow('行7')
+    expect(wrap.scrollTop, 'abs=(5+2)×32=224').toBe(224)
+  })
+})

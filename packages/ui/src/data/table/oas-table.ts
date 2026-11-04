@@ -307,6 +307,13 @@ function warnEditNotImported(): void {
   devWarn(EDIT_CAPABILITY_HINT)
 }
 
+/** windowed 树形懒装载：平铺切片行的 depth 元数据 → 渲染层级（非有限/负数/越界回落 0；上限 32 防畸形撑破） */
+function rowTreeDepth(row: Record<string, unknown>): number {
+  const d = row['depth']
+  if (typeof d !== 'number' || !Number.isFinite(d) || d <= 0) return 0
+  return Math.min(Math.floor(d), 32)
+}
+
 /**
  * windowed 模式下跨全量本地操作不执行的告警文案（实例级去重一次）。
  * windowed 下组件只持有已装载切片，排序/筛选/分组/分页/树形展开/合计等
@@ -340,6 +347,14 @@ const VISUAL_PROTOCOL_HINT =
  */
 const VISUAL_EXPAND_HINT =
   '[oas-table] 视觉协议生效：展开由宿主控制——本地 toggle 不修改 expanded，已派发 oas-expand 供宿主回写 expanded / data / visual 属性'
+
+/**
+ * windowed 树形懒装载契约下展开交互的告警文案（实例级去重一次）。
+ * 切片行带 hasChildren: true 元数据即树形模式：子孙数据由宿主懒装载回填（平铺切片 + depth 元数据），
+ * 本地 toggle 不改 expanded——只派发 oas-expand，宿主回写 expanded / data / total 后属性变更驱动重渲染。
+ */
+const WINDOWED_TREE_EXPAND_HINT =
+  '[oas-table] windowed 树形懒装载：展开由宿主控制——本地 toggle 不修改 expanded，已派发 oas-expand；宿主回填子孙（平铺切片 + depth 元数据）并更新 total / expanded 后组件按拍平行序渲染'
 
 /**
  * 视觉协议窗口越界告警文案（visual-start + display 条目数 > visual-total；实例级去重一次）。
@@ -1430,6 +1445,8 @@ export class OASTableBase extends OASElement {
   private cellTooltipEl: HTMLElement | null = null
   /** windowed 模式解析缓存（parse 时刷新）：windowed/total/windowStart/loaded 区间 */
   private _winMode: ReturnType<typeof readWindowedMode> = readWindowedMode(false, 0, 0, 0)
+  /** windowed × 树形懒装载：切片行带 hasChildren 元数据即生效（parse 期判定；展开由宿主控制） */
+  private _winTree = false
   /** windowed：最近一次派发的期望区间（同 need 去重；被覆盖后重置允许再派；含视觉字段时一并比较） */
   private winReq: { start: number; end: number; visualStart?: number; visualEnd?: number } | null = null
   /** windowed：首帧 init 请求是否已派发（之后 data/total/window-start 变更走 data 原因） */
@@ -1449,6 +1466,8 @@ export class OASTableBase extends OASElement {
   private visualOverflowWarned = false
   /** 视觉协议下本地展开接管为宿主通道的告警去重（实例级一次） */
   private visualExpandWarned = false
+  /** windowed 树形懒装载「展开由宿主控制」告警去重 */
+  private winTreeExpandWarned = false
   /** 当前展示集的数据行总数（aria-rowcount 口径；windowed 走 total 全量）。render 时刷新 */
   private _logicalRowCount = 0
 
@@ -2257,7 +2276,9 @@ export class OASTableBase extends OASElement {
         this.warnColVirtualOnce('summary', '合计行（summary）与 column-virtual 暂不兼容：已降级为普通渲染')
       }
     }
-    // windowed：跨全量本地操作的配置在场 → dev 告警一次（行为上的跳过已在上游完成）
+    // windowed：跨全量本地操作的配置在场 → dev 告警一次（行为上的跳过已在上游完成）。
+    // 嵌套 children 在 windowed 下不拍平（切片即平铺契约）——无论是否带 hasChildren 元数据，
+    // 冗余的 children 数组都不会渲染，一律告警提示（不豁免）。
     if (this.windowedOn()) {
       if (
         this.hasAttr('pagination') ||
@@ -2738,8 +2759,9 @@ export class OASTableBase extends OASElement {
       this.runUpdateAndNotify()
     })
     const children = row.children
-    // windowed：树形展开属跨全量操作（子行可能不在已装载切片内）→ 不渲染展开钮、不做本地树展开
-    const hasChildren = !this.windowedOn() && Array.isArray(children) && children.length > 0
+    // windowed：嵌套 children 属跨全量操作（子行可能不在已装载切片内）→ legacy 忽略不渲染展开钮；
+    // windowed × 树形懒装载（切片行带 hasChildren 元数据）：按元数据渲染展开钮，展开交互由宿主控制
+    const hasChildren = this.windowedOn() ? row['hasChildren'] === true : Array.isArray(children) && children.length > 0
     const effCols = this.effectiveColumns()
     // 受控合并（span-method）仅在非虚拟、非 windowed 模式生效：
     // 虚拟模式受定高限制；windowed 下切片边界会与占位行相互腐蚀（见 WINDOWED_SPAN_HINT）
@@ -2844,7 +2866,9 @@ export class OASTableBase extends OASElement {
         btn.textContent = '›'
         btn.addEventListener('click', (e) => {
           e.stopPropagation()
-          this.toggleExpand(key, !expanded.has(key))
+          // 行内嵌 expand 行占切片内独立视觉槽位（windowed 已支持本地展开）——
+          // 不受 _winTree 宿主控制通道影响（该通道只接管树形 toggle）
+          this.toggleExpand(key, !expanded.has(key), { embedded: true })
         })
         td.appendChild(btn)
       }
@@ -3023,7 +3047,15 @@ export class OASTableBase extends OASElement {
    * 由 visibleFlat 照常追加（行内嵌内容自包含，非跨全量操作）。
    */
   private buildWindowedFlat(): FlatRow[] {
-    return this._data.map((row): FlatRow => ({ row, depth: 0, kind: 'data' }))
+    // 树形懒装载契约：仅树形模式（_winTree）映射行 depth 元数据——非树形 windowed 宿主的
+    // 行数据即使自带 depth 字段（如地层/埋深）也保持零变化（无缩进），契约外字段不生效
+    return this._data.map(
+      (row): FlatRow => ({
+        row,
+        depth: this._winTree ? rowTreeDepth(row) : 0,
+        kind: 'data' as const,
+      }),
+    )
   }
 
   /**
@@ -3208,6 +3240,29 @@ export class OASTableBase extends OASElement {
     if (node) td.appendChild(node)
     const rowIndex = Number(td.closest('tr')?.getAttribute('data-row-index') ?? 0)
     this.runStructuralSlot('bodyCell', () => this.structuralCap?.bodyCell?.({ el: td, row, rowIndex, column: col }))
+  }
+
+  /** 滚动到指定行（virtual / windowed 视口生效，其余形态返回 false）。
+      virtual 非 windowed 仅支持扁平数据——嵌套树拍平坐标不在本方法口径。
+      亦是 windowed 树形收起锚定的宿主配方底座：宿主在回填数据后调它复位视口；
+      锚定滚动会正常走 scroll 通道（可能派发 reason='scroll' 的 oas-window-request，
+      与滚动驱动的窗口回填同语义）。 */
+  scrollToRow(key: string): boolean {
+    if (!this.wrap || (!this.isVirtual() && !this.windowedOn())) return false
+    const rowKey = this.getAttr('row-key', 'key')
+    const idx = this._data.findIndex((r) => String(rowKeyValue(r, rowKey)) === String(key))
+    if (idx < 0) return false
+    const abs = this.windowedOn() ? this._winMode.windowStart + idx : idx
+    const top = abs * this.rowHeightPx()
+    // 有布局环境按 scrollHeight 上界夹取；无布局（happy-dom scrollHeight=0）直写——
+    // 真实浏览器的 scrollTop setter 本就会自行钳制，双环境语义一致。
+    // 锚定写scrollTop 前先清「程序写滚动」吞事件守卫：同 update 周期内 restoreScrollPosition
+    // 可能已布防 ignoreNextScroll（收起钳制场景），不清则本次滚动引发的 window 请求被吞、
+    // 锚定视口边缘的 margin 行无人回填（第二轮交叉审实抓）。
+    this.ignoreNextScroll = false
+    const max = this.wrap.scrollHeight - this.wrap.clientHeight
+    this.wrap.scrollTop = max > 0 ? Math.min(top, max) : top
+    return true
   }
 
   /** 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此，
@@ -3814,15 +3869,26 @@ export class OASTableBase extends OASElement {
     return out
   }
 
-  /** 展开/收起某行（树形子行或可展开内容行共用），派发 oas-expand */
-  private toggleExpand(key: string, expanded: boolean): void {
-    // 可选视觉协议生效：展开由宿主完全控制——视觉坐标由宿主权威维护，本地不改 expanded
-    //（宿主监听 oas-expand 回写 expanded / data / visual 属性，属性变更驱动重渲染）。
-    // 只上报意图 + devWarn 一次（不发明全量展开状态推导）。
+  /** 展开/收起某行（树形子行或可展开内容行共用），派发 oas-expand。
+      opts.embedded = 行内嵌 expand 行（切片内独立视觉槽位）：windowed 已支持本地展开，
+      不受 _winTree 宿主控制通道影响（该通道只接管树形 toggle）。 */
+  private toggleExpand(key: string, expanded: boolean, opts?: { embedded?: boolean }): void {
+    // 宿主控制展开的两条通道（视觉协议 / windowed 树形懒装载）：
+    // 视觉协议——视觉坐标由宿主权威维护；windowed 树形——子孙懒装载由宿主回填（hasChildren 契约）。
+    // 两者本地均不改 expanded，只上报意图 + devWarn 一次（宿主监听 oas-expand 回写
+    // expanded / data [/ visual] 属性，属性变更驱动重渲染；组件不发明全量展开状态推导）。
     if (this._visualProto) {
       if (!this.visualExpandWarned) {
         this.visualExpandWarned = true
         devWarn(VISUAL_EXPAND_HINT)
+      }
+      this.emit('expand', { key, expanded })
+      return
+    }
+    if (this._winTree && !opts?.embedded) {
+      if (!this.winTreeExpandWarned) {
+        this.winTreeExpandWarned = true
+        devWarn(WINDOWED_TREE_EXPAND_HINT)
       }
       this.emit('expand', { key, expanded })
       return
@@ -5408,6 +5474,10 @@ export class OASTableBase extends OASElement {
       this._data.length,
     )
     if (!this._winMode.windowed) this.winInitDone = false
+    // windowed × 树形懒装载契约（2026-11-04 设计稿）：切片行带 hasChildren: true 元数据即树形模式——
+    // 展开由宿主控制（toggle 只派发 oas-expand），子孙经宿主回填平铺切片；行号口径 = 拍平数据行序。
+    // 仅认 hasChildren 字段（嵌套 children 数组在 windowed 下维持 legacy 忽略语义，不触发本模式）
+    this._winTree = this._winMode.windowed && this._data.some((r) => r['hasChildren'] === true)
     // 可选视觉协议解析（windowed 之上叠加；缺失/非法/只有其一 → devWarn 一次并整体回落）
     this._visualProto = this.readVisualProtocol()
   }
