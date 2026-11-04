@@ -64,11 +64,11 @@ pnpm add @oas-ui/nuxt   # Nuxt 3/4 module: isCustomElement + theme injection + S
 pnpm add @oas-ui/next   # Next.js: RSC OasComponent + client registration (Next 16: use a useEffect dynamic import, see packages/next/README.md)
 ```
 
-## Documentation
+## Documentation & Templates
 
 Full component docs and live demos: [oas-ui.dev](https://oas-ui.dev).
 
-Official starter templates (reusable admin / dashboard scenarios): [oas-ui-templates.com](https://oas-ui-templates.com).
+> Official starter templates (reusable admin / dashboard scenarios): [oas-ui-templates.com](https://oas-ui-templates.com).
 
 SSR / DSD guide: the [SSR page](https://oas-ui.dev/guide/ssr) on the docs site and the `@oas-ui/ssr` package.
 

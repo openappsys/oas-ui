@@ -64,11 +64,11 @@ pnpm add @oas-ui/nuxt   # Nuxt 3/4 module：isCustomElement + theme 注入 + SSR
 pnpm add @oas-ui/next   # Next.js：RSC OasComponent + 客户端注册引导（Next 16 暂用 useEffect 动态导入，见 packages/next/README.md）
 ```
 
-## 文档
+## 文档 & 模版
 
 完整组件文档与 demo：[oas-ui.dev](https://oas-ui.dev)。
 
-官方示例模板（多套可直接复用的后台 / 中后台场景）：[oas-ui-templates.com](https://oas-ui-templates.com)。
+> 官方示例模板（多套可直接复用的后台 / 中后台场景）：[oas-ui-templates.com](https://oas-ui-templates.com)。
 
 SSR / DSD 指南见文档站 [SSR 页](https://oas-ui.dev/guide/ssr)与 `@oas-ui/ssr` 包。
 
