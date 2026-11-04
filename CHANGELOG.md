@@ -6,6 +6,13 @@
 
 ### 新增
 
+- **`oas-table` 多行单元格三件套（D1-4）**：① **非虚拟多行**——不设 `height` 时长文本按列宽自然换行撑高，从「未验证」升为文档口径 + e2e 固化（斑马/hover/选中/合计/编辑浮层定位全过）。② **虚拟截断 + `wrap` 三态列定义**——修虚拟模式真缺口：td 原本无防护，长文本换行撑破 `row-height` 定高几何、滚动错位；现虚拟数据行默认单行不换行（`overflow hidden` 保几何），列定义 `wrap: true/false` 显式开口（true=定高内换行裁剪、false=单行省略），非虚拟缺省行为逐字节不变（零变化红线）。③ **`row-auto-height` 逐行动态行高**（注册型 L3 `@oas-ui/ui/data/table/auto-height`，实测 2.0 KB gzip / 预算 2.8 KB）：RO 逐行测量、未测行按 row-height 预估（滚动条长度先估计后收敛）、（行身份+行内偏移）锚定补偿视口不跳、tr 内联高 min 语义只增不减 + 轮询放行重测收敛变矮、编辑中的行豁免测量重建；`scrollToRow`/PageUp-Down 步进接动态几何。**零 devWarn 新增原则**：三处候选排除经论证全部不成立或属错误归因——column-virtual 直组合受支持、merge 与虚拟互斥是既有边界不挂新告警、windowed 组合为版本演进位（诚实 dev 提示，随 windowed 几何改造交付）。核心接缝为零行为变化判空钩子（row-geometry 锚定数学随默认链，亚 KB 常数），`computeVirtualWindow` 原函数不动。单测 15（锚定数学 8 + 接缝 7：几何消费/锚定不跳/编辑豁免/未注册与 windowed 提示）+ e2e 真实 RO 测量回填收敛 + zh/en 文档。
+- **`oas-table` 虚拟模式 merge/span-method 跳过告警（修旧账）**：虚拟滚动下合并跳过曾完全静默（windowed 同款场景有告警）——对齐先例补一条 devWarn（渲染零变化，独立小提交）。
+
+### 修复
+
+- **`oas-table` 虚拟滚动下行高几何破坏**：长文本单元格换行撑高行（40px 行实测被撑 64px），滚动窗口与占位高度错位——现由虚拟默认截断规则根治（见上「多行单元格三件套」②）。
+
 - **`oas-table` windowed × 树形懒装载（hasChildren 契约）**：windowed 切片行带 `hasChildren: true` 元数据即进入树形懒装载模式——点击树 toggle **只派发 `oas-expand`**（宿主控制 expanded/total/数据回填），子孙由宿主以**平铺行**（+ `depth` 缩进元数据）合并进切片重喂；**坐标口径 = 拍平数据行序**，与纯 windowed 完全同（children 行拍平后即普通数据行，不引入新坐标系；visual 协议保持可选优化）。嵌套 `children` 数组维持 legacy 忽略语义（不触发本模式、冗余数组照常告警）。新增公共方法 **`scrollToRow(key)`**（virtual/windowed 视口滚动到指定行，非视口形态/未命中返回 false）——windowed 树形**收起锚定**的宿主配方底座（锚定滚动走 scroll 通道，可能派发 reason='scroll' 的 oas-window-request）。一行同时带 hasChildren 与行内嵌 expand 字段时两通道并存（树 toggle 宿主控制、行尾展开钮本地展开）。模式按切片数据逐帧判定，全部 hasChildren 行消失即回落普通通道、残余 depth 元数据无残留视觉。**零变化红线**：非 windowed 路径与纯 windowed 无 hasChildren 场景行为逐字节不变（T4 锁 init 请求语义、既有全套回归绿）。单测 T1-T6b（toggle/缩进/事件反转/拍平行号/零变化/legacy 告警/scrollToRow 偏移）+ demo e2e 真实懒展开闭环（展开回填→拍平行号→滚底→收起锚定复位）+ zh/en 文档契约三件套。
 
 - **`table/audit` 审计记录器（helper 型 L3，D1-2）**：订阅 `oas-edit` 事件流，按「行 key × 列」记录每次成功提交的修改（旧值 → 新值 + 原始形态 oldRawValue + 时间戳），供财务凭证审计 / 医疗记录 / 实验数据等「谁改了什么」追溯场景查询。与 `table/history`（撤销栈）正交：不回放、不撤销、不参与编辑链路；取消与未变更提交不产生记录。内存环形缓冲（默认 500 条可配 `limit`），不做持久化（跨会话归宿主落库）。`createAuditLog(host, { limit })` 返回 `getCellHistory / getRowHistory / size / clear / destroy`。预算档 0.75 KB 实测 0.5 KB（类型导入零运行时依赖）；单测 6（记录/跨列时序/环形淘汰/destroy/clear/多实例隔离/oldRawValue 保留）+ e2e 历史链真实断言 + zh/en 文档节（含 structural-render 单元格审计浮层食谱——结构渲染通道的第一个真实食谱）。

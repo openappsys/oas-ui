@@ -41,6 +41,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
+| **D1-4：多行/动态行高（三件套）** | ① 非虚拟多行文档口径 + e2e 固化（探针实证现状已可用）② 虚拟截断 + wrap 三态列定义（修长文本撑破定高几何的真缺口，非虚拟零变化）③ `row-auto-height` 逐行动态行高（注册型 L3 2.0KB/预算 2.8KB：RO 测量 + 身份锚定 + 收缩轮询 + 编辑豁免；零新增 devWarn——column-virtual 直组合/merge 既有边界/windowed 演进位）——**windowed 混合模型（切片外预估+真值拼接）为剩余子项**，随 windowed 几何改造批交付 | 🔶 部分完成（①②③本地虚拟已交付；windowed 待几何改造批） |
 | **D1-3：windowed × 树形懒装载（hasChildren 契约）** | 拍平模型坐标口径不变：切片行 hasChildren 元数据触发树形模式，toggle 只派发 oas-expand（宿主控制 expanded/total/平铺回填 + depth 缩进）；新增 scrollToRow 公共方法（收起锚定宿主底座，清吞滚动守卫）；嵌套 children 维持 legacy 忽略；零变化红线（T4 锁纯 windowed 请求语义）；单测 T1-T6b + demo e2e 懒展开闭环（含锚定复位）+ zh/en 契约文档 | ✅ 已完成（未发布） |
 | **D1-2：table/audit 审计记录器（helper 型 L3）** | 订阅 oas-edit 事件流按 行 key×列 环形记录 旧值→新值+原始形态+时间戳；与 history 撤销栈正交（不回放不撤销）；内存环形 500 可配、不持久化；预算档 0.75 KB 实测 0.5 KB；单测 6 + e2e 历史链 + zh/en 文档（含 structural-render 审计浮层食谱） | ✅ 已完成（未发布） |
 | **D1-1：编辑校验收口（validate 文档化 + oas-edit-invalid + 视觉修复）** | 列 validate 拦截能力此前已实现但零文档；补事件（detail.message）、zh/en 校验节 + demo、api 语料；修复失败态被行 hover/选中底压住的特异性缺陷 + 错误消息浮层化；单测 + e2e | ✅ 已完成（未发布） |

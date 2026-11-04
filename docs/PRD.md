@@ -95,6 +95,55 @@
 
 ---
 
+## 未发布：table 多行/动态行高单元格（D1-4，已批准 2026-11-04）
+
+> 探针实证先行（2026-11-04，真实浏览器量测）：**非虚拟多行今天已可用**——td 基础 CSS 无 nowrap/定高强制，列宽受限时长文本换行撑高行；斑马/hover/选中/合计行/编辑浮层定位全过、console 零告警。先前「不工作」的判断是探针未约束表格宽度的假象（auto table-layout 下超额宽度被列分走，长文本一行放下）。**真缺口在虚拟模式**：虚拟 td 无防护（white-space=normal），长文本换行撑高（40px 行被撑到 64px）破坏定高几何、滚动后行错位。
+>
+> 设计经用户三轮 push 终局裁定：① 排除论被否——「windowed 下未装载行不可观测」的正解是**估计**（主流虚拟化电子表格同款：估计 → 装载测真值 → 锚定收敛），不是弃疗；且「大数据+长文本」恰是 windowed 与动态行高的需求交集核心。② devWarn 全清零——三处候选排除经论证全部不成立或属错误归因，最终**零新增 devWarn**；`row-auto-height` 全模式受支持，无「不支持组合」。③ 引擎不重造——仓库现成 `HeightCache`/`computeDynamicWindow`（virtual-list 动态行高模块，table 列宽前缀和已在复用）接行轴，C 的真实形态是「接线 + 锚定纪律 + 连带面收口」。
+
+### 交付 A：非虚拟多行（文档口径 + e2e 固化，零源码改动）
+
+非虚拟表格（不设 `height`/不启虚拟滚动）长文本按列宽自然换行撑高，属受支持行为。补：zh/en 文档口径一节（含「列宽必须受限才换行——auto table-layout 下表格会分走容器超额宽度」的已知特性说明）+ qa-regression e2e 固化探针矩阵（换行撑高/斑马/hover/选中/合计/编辑浮层对齐/console 零告警）。
+
+### 交付 B：虚拟模式防护 + `wrap` 列定义 + row-height 档位配方
+
+| 项 | 口径 |
+| --- | --- |
+| 缺口 | 虚拟 td 无内容防护，长文本换行撑高破坏 `rowHeightPx` 定高几何（spacer/窗口数学全部失真） |
+| 默认防护 | **仅虚拟模式**数据 td 默认 `nowrap + overflow hidden + ellipsis`（对齐非虚拟 `ellipsis` 列观感）——几何永远可信；非虚拟 td 一律不碰（保交付 A 多行行为，防 breaking） |
+| `wrap?: boolean` 列定义 | `undefined`（缺省）→ 各模式维持现状（非虚拟换行 / 虚拟截断），**零变化红线**；`true` → 两模式都换行（虚拟下在定高行内换行、溢出截断）；`false` → 两模式 nowrap+ellipsis（非虚拟侧等价既有 `ellipsis` 列，泛化开口） |
+| 配方 | 虚拟 + wrap 列 + `row-height` 调大档（64/96）= 「行内两行/三行备注」官方形态；溢出截断保几何 |
+| 连带面 | 编辑浮层（虚拟编辑行内定位按行高，wrap 行 td 高度=行高，天然对齐）；expand 行既有强制定高逻辑不受影响；stripe/hover 行级免疫 |
+| 验证 | 单测（wrap 三态渲染 class）+ e2e（虚拟长文本不再撑行、wrap 列换行截断、行号对齐）+ 全量回归 |
+
+### 交付 C：逐行动态行高（`row-auto-height`，注册型 L3，全模式支持，零 devWarn）
+
+**支持矩阵（全受支持，无排除组合）**：本地虚拟 ✅（主场：全量数据在组件内）；windowed ✅（混合模型，见表 1）；column-virtual ✅（双轴今天就是受支持形态，动态行高只是把纵轴常量换成前缀和，补双开回归即可）；merge/span-method 与虚拟的互斥是**既有边界**（动态行高不新增任何限制，不挂告警——挂在 row-auto-height 上是评审否掉的错误归因）。
+
+**表 1 测量模型**：复用 `HeightCache`（实测优先 + 预估兜底 + dirtyFrom 增量前缀）。本地虚拟：全部行可测。windowed 混合模型：**切片内行 RO 测真值，切片外行 = 预估值（缺省 row-height 档）**，前缀和 = 估计与真值拼接——文档如实写「未装载行高度为估计值，装载后收敛」（通行做法：滚动条呼吸、跳远端定位以估计为暂值，落定收敛）。预估值可选增强：逐行宿主高度提示通道（演进位，非必需）。
+
+**表 2 锚定**：锚点 = **（行身份, 行内偏移）**——非「首可见行顶」（wrap 长行可高于视口，顶锚定会跳；现有 virtual-list 锚定判据含跨顶行，有已知多补偿缺陷，不照抄）。RO 测量回填与宿主数据回填两路都走同一身份锚定通道：回填后按身份重算 scrollTop，视口永不跳。table 滚动容器补 `overflow-anchor: none`（virtual-list 有注释记载过不补的事故：浏览器锚定与自身补偿双重补偿）。
+
+**表 3 API**：`row-auto-height` 属性 opt-in（缺省关闭 = 现状定高，零变化红线 + 关闭态渲染快照锁固化）；列 `wrap: true` 参与测量（非 wrap 列恒单行高，测量面收窄）；windowed 下 expand 行维持定高（auto-height 只作用数据行，flow 记账两维度并存，文档写明）。
+
+**表 4 连带面（八条纪律）**：
+1. 测量回填走 **tbody-only 通道**——不走 `update()`（update 按像素恢复滚动 + 可能 scrollIntoView + settleEdit 会取消编辑）；
+2. **编辑中的行排除**出测量重建（否则每敲一个字编辑被取消一次）；
+3. 收缩语义：沿用 `tr.style.height` 最小高 = 只增不减（消灭振荡），内容变矮先复位 inline 高再重测；
+4. 缓存键按**展示序下标**（rowKey 的 JSON.stringify 回退有撞键病；任意淘汰会破坏前缀和——不设淘汰，随组件生命周期）；
+5. 前缀按**展示条目**记账（expand/group 行计入 display——第一版就覆盖，不是禁区）；
+6. 动态路径视口高用真实 `clientHeight`（`tableHeight()` 不含横滚条、表头覆盖——定高路径保持零变化）；
+7. `rowHeightPx()` 14 处调用点加判空钩子走动态几何（`computeVirtualWindow` 原函数不动）；「零增量」措辞改为「**零行为变化 + 亚 KB 常数**」，perf:size 如实断言；
+8. windowed flow 坐标改造（`windowedFlowItems` 的 `flowY = i × ih`、请求映射、visual 协议语义不变：一行=一视觉行只是像素不同）——**auto-height 关闭时这些路径逐字节不变**（T4 式快照锁）。
+
+**表 5 体积纪律**：注册型 L3 子路径 `@oas-ui/ui/data/table/auto-height`——import 才激活，默认 table 链零行为变化 + 亚 KB 常数（判空钩子）；几何（锚定/窗口/收敛数学）纯函数先行 TDD；预算档新增 + perf:size 断言。
+
+**修旧账（独立小提交）**：虚拟 × merge/span-method 静默忽略 vs windowed × merge 有告警的既有不一致——对齐 windowed 先例补一条组合 devWarn（渲染零变化，只加开发期信号；不加在 `row-auto-height` 上）。
+
+**工序**：修旧账独立提交 → A+B（含 wrap 三态 TDD）→ C 几何纯函数 TDD（含估计-真值拼接前缀和收敛性用例）→ 实现接线 → 两轮交叉审（≥2 模型，修复批再审）→ 全量回归 + 用户视角验证（亮/暗截图、交互真点、console 零告警）。
+
+---
+
 ## 未发布：table windowed × 树形懒加载（已交付）
 
 > 设计稿（2026-11-04 批准）→ 已交付（同日）：坐标口径按拍平模型自然消解的判断经实现验证成立（data-row-index/事件行号/ARIA 与纯 windowed 同口径）；scrollToRow 收起锚定守卫修复（ignoreNextScroll 吞事件）与 e2e 锚定复位断言为交付后两轮交叉审的增量。验收全绿（单测 T1-T6b、demo e2e、全量回归）。
