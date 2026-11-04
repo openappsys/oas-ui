@@ -75,13 +75,15 @@ class TableAutoHeightController implements TableAutoHeightCapability, ReactiveCo
     // 观测随帧刷新：回收旧行，观测新渲染的数据行（spacer/expand 行无 data-oas-display-idx）
     const rows = [...body.querySelectorAll<HTMLTableRowElement>('tr[data-oas-display-idx]')]
     this.lastRendered = rows
-    if (!this.observer) return
-    // 行数 = 窗口大小且整帧重建：disconnect + observe 全量重观测比差量维护更简单可靠
-    this.observer.disconnect()
-    for (const tr of rows) this.observer.observe(tr)
+    if (this.observer) {
+      // 行数 = 窗口大小且整帧重建：disconnect + observe 全量重观测比差量维护更简单可靠
+      this.observer.disconnect()
+      for (const tr of rows) this.observer.observe(tr)
+    }
     // 收缩轮询放行：tr 内联高是 min 语义，清空一行的高限让内容表达真高（变矮则下帧收敛）。
     // 游标跨渲染持续轮转（不在此重置）——每次渲染放行一行，N 行视口 N 帧全覆盖；
-    // 重置的话视口再大也只反复探首行（二轮交叉审 I-2）
+    // 重置的话视口再大也只反复探首行（二轮交叉审 I-2）。无 RO 环境（happy-dom）照常放行——
+    // 纯清内联样式无副作用，且使本逻辑可单测
     for (let k = 0; k < SHRINK_PROBE_PER_RENDER && rows.length > 0; k++) {
       const tr = rows[this.probeCursor % rows.length]!
       this.probeCursor += 1

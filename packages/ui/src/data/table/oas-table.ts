@@ -3106,10 +3106,12 @@ export class OASTableBase extends OASElement {
     //（排序/同数量数据替换/模式切换）HeightCache 不会自清——签名变化显式 invalidate，
     // 清实测高回退预估 + 锚定兜底（错高驻留的根治，二轮交叉审 I-3/M-4）
     if (this.autoHeightOn() && this.autoHeightCap) {
-      // 展示结构签名：行数不变的结构变化（排序/同数量数据替换/模式切换）HeightCache 不会
-      // 自清——签名变化显式 invalidate，清实测高回退预估 + 锚定兜底（二轮交叉审 I-3/M-4）。
-      // 用 flatCacheSignature 但剥除末位 propChannelVersion（能力 attach 时一次性 bump，
-      // 非展示结构变化；与字段序耦合，flatCacheSignature 变更时需同步此处）
+      // 展示结构签名（行数不变的结构变化——排序/同数量数据替换/模式切换——HeightCache 不会
+      // 自清，签名变化须显式 invalidate；二轮交叉审 I-3/M-4）。用 flatCacheSignature 但剥除
+      // 末位 propChannelVersion——它在 markRenderDirty 时递增（属性赋值/内部状态/窗口重算），
+      // 不剥则任何内部重渲染都会误清实测高。与字段序耦合：flatCacheSignature 变更时需同步此处。
+      // 残余漏面（property 换 render 等行内容变化而签名不变）与 windowed 折衷同型：更高内容
+      // RO 即时修正，更矮靠收缩轮询逐帧放行收敛
       const raw = this.flatCacheSignature(this.groupByEffective())
       const sig = `V:${raw.slice(0, raw.lastIndexOf(String.fromCharCode(3)))}`
       if (sig !== this.autoHeightSig) {
@@ -3247,8 +3249,9 @@ export class OASTableBase extends OASElement {
     // visualTotal 变化触发 HeightCache 重置重测（一次全量回退估计 + 锚定兜底，可接受）
     if (dynamic && cap) {
       // 展示结构签名：W = windowed（window-start/total/切片长——同区间回填保留实测高是特性：
-      // 回访已测窗口高度仍准；宿主同位换内容属宿主契约外的边缘，错高在被渲染时自愈）。
-      // 行数不变的结构变化 HeightCache 不会自清——签名变化显式失效（二轮交叉审 I-3/M-4）
+      // 回访已测窗口高度仍准；宿主同位换内容属契约外边缘：更高内容 RO 即时修正、更矮靠收缩
+      // 轮询逐帧放行收敛）。行数不变的结构变化 HeightCache 不会自清——签名变化显式失效
+      //（二轮交叉审 I-3/M-4）
       const sig = `W:${this._winMode.windowStart}:${this._winMode.total}:${display.length}`
       if (sig !== this.autoHeightSig) {
         this.autoHeightSig = sig

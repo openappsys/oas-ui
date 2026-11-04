@@ -319,8 +319,9 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     const expandTr = el.shadowRoot!.querySelector('tbody tr.expand-row') as HTMLElement
     expect(expandTr, 'expand 行存在').not.toBeNull()
     expect(expandTr.dataset.oasDisplayIdx, 'expand 行不打测量下标').toBeUndefined()
+    // 打点集 = 渲染数据行（stamped 均为 part="row" 的 tr；expand 行已由上条强断言覆盖）
     const stamped = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr[data-oas-display-idx]')]
     expect(stamped.length).toBeGreaterThan(0)
-    expect(stamped.every((tr) => tr.className.includes('row'))).toBe(true)
+    expect(stamped.every((tr) => tr.getAttribute('part') === 'row')).toBe(true)
   })
 })
