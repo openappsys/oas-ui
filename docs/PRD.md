@@ -126,15 +126,17 @@
 
 **表 3 API**：`row-auto-height` 属性 opt-in（缺省关闭 = 现状定高，零变化红线 + 关闭态渲染快照锁固化）；列 `wrap: true` 参与测量（非 wrap 列恒单行高，测量面收窄）；windowed 下 expand 行维持定高（auto-height 只作用数据行，flow 记账两维度并存，文档写明）。
 
-**表 4 连带面（八条纪律）**：
-1. 测量回填走 **tbody-only 通道**——不走 `update()`（update 按像素恢复滚动 + 可能 scrollIntoView + settleEdit 会取消编辑）；
-2. **编辑中的行排除**出测量重建（否则每敲一个字编辑被取消一次）；
+**表 4 连带面（八条纪律，实现期两处经实证修正——以最终实现为准）**：
+1. ~~测量回填走 tbody-only 通道~~ → **实证修正（c80fc963）**：测量回填走**常规 update() 渲染**（先写权威滚动位清吞滚动守卫，再走 battle-tested 的保存/恢复闭环）。自管 tbody 重建路径与滚动帧/焦点的保存恢复机制重叠，是 scrollTop 钳制与弹跳 scroll 事件的温床（windowed 回填被 ping 回起点的雪崩在真实浏览器实抓，happy-dom 无布局不可见）——整类消除，不留半截；
+2. **编辑中的行排除**：sync 入口整体跳过（td.editing 检查；测量照常进缓存）——编辑结束后的下一次同步自然带上；
 3. 收缩语义：沿用 `tr.style.height` 最小高 = 只增不减（消灭振荡），内容变矮先复位 inline 高再重测；
 4. 缓存键按**展示序下标**（rowKey 的 JSON.stringify 回退有撞键病；任意淘汰会破坏前缀和——不设淘汰，随组件生命周期）；
 5. 前缀按**展示条目**记账（expand/group 行计入 display——第一版就覆盖，不是禁区）；
 6. 动态路径视口高用真实 `clientHeight`（`tableHeight()` 不含横滚条、表头覆盖——定高路径保持零变化）；
 7. `rowHeightPx()` 14 处调用点加判空钩子走动态几何（`computeVirtualWindow` 原函数不动）；「零增量」措辞改为「**零行为变化 + 亚 KB 常数**」，perf:size 如实断言；
-8. windowed flow 坐标改造（`windowedFlowItems` 的 `flowY = i × ih`、请求映射、visual 协议语义不变：一行=一视觉行只是像素不同）——**auto-height 关闭时这些路径逐字节不变**（T4 式快照锁）。
+8. windowed flow 坐标改造（`windowedFlowItems` 前缀和化、像素相交请求映射 `mapVisualWindowToDataDynamic`、expand 行维持定高、滚动帧「请求先于清空 + st 直传 + stableClearBody 垫高」）——**auto-height 关闭时这些路径逐字节不变**（T4 式快照锁 + 既有 windowed 全套回归绿）。
+
+**雪崩修复的附带收益**：滚动帧请求时序修正（先于清空派发 + 权威位直传）修复了**定高 windowed 同样存在**的真实浏览器缺陷——清空 tbody 后 scrollTop 被钳回 0、请求按 0 位计算把宿主回填 ping 回起点（此前无一真实浏览器 e2e 覆盖 windowed 滚动回填，故潜伏）。
 
 **表 5 体积纪律**：注册型 L3 子路径 `@oas-ui/ui/data/table/auto-height`——import 才激活，默认 table 链零行为变化 + 亚 KB 常数（判空钩子）；几何（锚定/窗口/收敛数学）纯函数先行 TDD；预算档新增 + perf:size 断言。
 

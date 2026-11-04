@@ -218,7 +218,7 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
       height: '200',
       'row-height': '40',
       columns: JSON.stringify([{ key: 'name', title: '名称' }]),
-      data: rows100(),
+      data: JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ name: `行${i}` }))),
     })
     const stub = lastStub!
     const reqs: Array<{ start: number; end: number; reason: string }> = []
@@ -240,12 +240,9 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     // 行 0 渲染高 = 实测 100
     const tr0 = el.shadowRoot!.querySelector('tbody tr[part="row"]') as HTMLElement
     expect(tr0.style.height).toBe('100px')
-    // 高度修正后期望区间变化 → 按需补派（或去重不派）；关键是不崩、坐标连续
-    const last = reqs[reqs.length - 1]
-    if (last) {
-      expect(last.start).toBeGreaterThanOrEqual(0)
-      expect(last.end).toBeLessThanOrEqual(1000)
-    }
+    // 高度修正后期望区间重评估：happy-dom clientHeight=0 可视窗口极小、need 恒被装载覆盖
+    //（不派发）——重评估路径由 windowed 混合模型 e2e（真实浏览器）覆盖；此处由 tr0=100px
+    // 断言已证明同步走了 update 重渲染（spacer/行高全部反映新前缀和）
     // 总高 = 拼接前缀和：100+100+998×40 = 40120（scrollHeight 口径经 spacer 表达）
     const bottom = el.shadowRoot!.querySelector('tbody tr.spacer:last-child td') as HTMLElement
     const winEndPx = stub.total() - Number.parseInt(bottom.style.height)
@@ -269,12 +266,13 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     lastStub!.measure(3, 120)
     ;(el as unknown as { requestAutoHeightSync(): void }).requestAutoHeightSync()
     expect(el.shadowRoot!.querySelector('tbody')!.innerHTML).toBe(before)
-    // 编辑态清除后同步生效
+    // 编辑态清除后同步生效（走常规 update 重渲染，行 3 取到实测 120px）
     td.classList.remove('editing')
     ;(el as unknown as { requestAutoHeightSync(): void }).requestAutoHeightSync()
     const tr3 = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr[part="row"]')].find(
       (tr) => tr.dataset.oasDisplayIdx === '3',
     )
-    if (tr3) expect(tr3.style.height).toBe('120px')
+    expect(tr3, '行 3 在渲染窗口内').toBeDefined()
+    expect(tr3!.style.height).toBe('120px')
   })
 })

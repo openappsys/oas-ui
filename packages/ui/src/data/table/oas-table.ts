@@ -2528,6 +2528,8 @@ export class OASTableBase extends OASElement {
     }
 
     if (this.hasAttr('loading')) {
+      // 稳定清空的垫高在早退出口必须移除——否则空态/loading 下方残留旧表高的大块空白
+      body.style.minHeight = ''
       const loadingTr = document.createElement('tr')
       loadingTr.setAttribute('part', 'loading-row')
       const loadingTd = document.createElement('td')
@@ -2547,6 +2549,8 @@ export class OASTableBase extends OASElement {
     // windowed：display 为空只说明「可视区间尚未装载」（total>0，全量意义上数据存在）——
     // 渲染全量占位而非空态文案（空态文案会在宿主尚未回填时误导用户）
     if (display.length === 0 && !this.windowedOn()) {
+      // 稳定清空的垫高在早退出口必须移除（同 loading 分支）
+      body.style.minHeight = ''
       const emptyTr = document.createElement('tr')
       const emptyTd = document.createElement('td')
       emptyTd.colSpan = this.columnCount()

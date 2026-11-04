@@ -6029,3 +6029,42 @@ test('table auto-height windowed：混合模型测量回填 + 请求闭环 + con
   expect(idx.every((v, i) => i === 0 || v > idx[i - 1]!)).toBe(true)
   expect(errors, 'console 零 error').toEqual([])
 })
+
+// 稳定清空垫高回归：有数据渲染后清空/loading，tbody minHeight 必须移除（否则空态下方残留旧表高空白）
+test('table stable-clear：数据→空态/loading 无垫高残留', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-stableclear-e2e'
+    el.style.width = '420px'
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('virtual', '')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ name: `行${i}` }))))
+    document.body.prepend(el)
+  })
+  const t = page.locator('#table-stableclear-e2e')
+  await expect(t.locator('tbody tr[part="row"]').first()).toBeAttached()
+  // 清空数据 → 空态：tbody 垫高必须移除（真实浏览器布局断言）
+  await t.evaluate((el) => el.setAttribute('data', '[]'))
+  await expect(t.locator('tbody .empty')).toBeAttached()
+  const minHAfterEmpty = await t.evaluate(
+    (el) => (el.shadowRoot!.querySelector('tbody') as HTMLElement).style.minHeight,
+  )
+  expect(minHAfterEmpty, '空态无垫高残留').toBe('')
+  // loading 态：同样无垫高残留
+  await t.evaluate((el) => {
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ name: `行${i}` }))))
+    el.setAttribute('loading', '')
+  })
+  await expect(t.locator('tbody [part="loading-row"]')).toBeAttached()
+  const minHAfterLoading = await t.evaluate(
+    (el) => (el.shadowRoot!.querySelector('tbody') as HTMLElement).style.minHeight,
+  )
+  expect(minHAfterLoading, 'loading 无垫高残留').toBe('')
+  expect(errors, 'console 零 error').toEqual([])
+})
