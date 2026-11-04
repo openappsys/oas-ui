@@ -5688,3 +5688,43 @@ test('table validate：demo 真实拦截（保持编辑态/红框/消息/事件�
 
   expect(errors, 'console 零 error').toEqual([])
 })
+// 审计记录器（table/audit L3）demo 真实浏览器回归：编辑金额列两次 →
+// getCellHistory 返回两条旧值→新值链；取消不记录；console 零告警。
+test('table audit：demo 编辑提交被记录（历史链/时间戳），取消不记录', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  const t = page.locator('#table-audit')
+  await expect(t).toBeAttached()
+  const fb = page.locator('#table-audit-feedback')
+
+  // 第一次编辑：1200 → 1500
+  const amount = t.locator('td[data-col="amount"]').first()
+  await amount.dblclick()
+  await amount.locator('input.cell-editor').fill('1500')
+  await amount.locator('input.cell-editor').press('Enter')
+  await expect(fb).toContainText('amount 共 1 次修改')
+  await expect(fb).toContainText('1200 → 1500')
+
+  // 第二次编辑：1500 → 900（历史链累积）
+  await amount.dblclick()
+  await amount.locator('input.cell-editor').fill('900')
+  await amount.locator('input.cell-editor').press('Enter')
+  await expect(fb).toContainText('amount 共 2 次修改')
+  await expect(fb).toContainText('1500 → 900')
+
+  // 取消（Esc）不产生记录：编辑但不提交
+  await amount.dblclick()
+  await amount.locator('input.cell-editor').fill('1')
+  await amount.locator('input.cell-editor').press('Escape')
+  await amount.dblclick()
+  await amount.locator('input.cell-editor').fill('888')
+  await amount.locator('input.cell-editor').press('Enter')
+  await expect(fb).toContainText('amount 共 3 次修改')
+  await expect(fb).toContainText('900 → 888')
+
+  expect(errors, 'console 零 error').toEqual([])
+})

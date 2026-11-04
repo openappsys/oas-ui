@@ -636,6 +636,7 @@ const COMPONENT_ENTRIES = [
   { id: 'tableDetail', entry: 'data/table/detail', spec: '@oas-ui/ui/data/table/detail' },
   // table 数据加工 helper 型 L3（细分职责拆包）：透视 / 值格式化 / 查询纯函数子路径
   { id: 'tablePivot', entry: 'data/table/pivot', spec: '@oas-ui/ui/data/table/pivot' },
+  { id: 'tableAudit', entry: 'data/table/audit', spec: '@oas-ui/ui/data/table/audit' },
   { id: 'tableValueFormat', entry: 'data/table/value-format', spec: '@oas-ui/ui/data/table/value-format' },
   { id: 'tableQuery', entry: 'data/table/query', spec: '@oas-ui/ui/data/table/query' },
   // layout 家族 helper 型 L3：无限滚动 headless 控制器（不进 L1/layout 族包）
@@ -867,6 +868,15 @@ const BUDGETS = [
     limit: 1.75 * 1024,
     basis:
       'helper 纯函数子路径，按需引入；首档 2026-11-03：实测 gzip 1276 B / 1 文件（二维透视矩阵：行列分组 + 5 种聚合 + 多值指标展列 + 可选合计行/列/全表，单文件零依赖），上浮约 40% 取整定档 1.75 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/audit 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableAudit',
+    get: () => componentMeasures.tableAudit.gzipBytes,
+    limit: 0.75 * 1024,
+    basis:
+      'helper 型 L3（审计记录器：订阅 oas-edit 事件流，行 key × 列 环形记录旧值→新值+时间戳；与 history 撤销栈正交，不回放不撤销，内存环形不做持久化）；首档 2026-11-04：实测 gzip 470 B / 1 文件（类型导入零运行时依赖），上浮约 60% 定档 0.75 KB',
   },
   {
     name: '@oas-ui/ui/data/table/value-format 链 gzip',

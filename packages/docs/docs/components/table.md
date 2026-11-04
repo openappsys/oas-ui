@@ -233,6 +233,55 @@ table.addEventListener('oas-edit-invalid', (e) => {
 
 > 校验只作用于**编辑提交**通道：程序化写 `data` / 属性赋值不经 validate（数据清洗归宿主）；行内错误汇总条属宿主组合（监听 `oas-edit-invalid` + 条件格式即可拼出）。
 
+### 审计追踪（table/audit，helper 型 L3）
+
+`@oas-ui/ui/data/table/audit` 提供**审计记录器**：订阅 `oas-edit` 事件流，按「行 key × 列」记录每次提交的修改（旧值 → 新值 + 原始形态 + 时间戳），供财务凭证审计 / 医疗记录 / 实验数据等「谁改了什么」的追溯场景查询。与 `table/history`（撤销栈）**正交**：审计是观察日志，**不回放、不撤销、不参与编辑链路**；取消（`oas-edit-cancel`）与未变更提交不产生记录。内存环形缓冲（默认上限 500 条可配 `limit`），**不做持久化**——跨会话审计归宿主落库。**语义边界**：① 只审计编辑提交通道（range 批量粘贴/填充写等其它写通道 v1 不在审计面）；② `edit-controlled` 受控模式的提交请求照记，实际是否生效以宿主回写为准；③ 事件流为真相源——手工 dispatch 的 `oas-edit` 同样被记录；④ 查询返回浅拷贝，原地修改不污染日志。
+
+```ts
+import { createAuditLog } from '@oas-ui/ui/data/table/audit'
+
+const audit = createAuditLog(table, { limit: 500 })
+audit.getCellHistory('r1', 'amount') // 某行某列：时间升序 [{ key, column, oldValue, oldRawValue, value, at }]
+audit.getRowHistory('r1') // 某行跨列
+audit.size / audit.clear() / audit.destroy() // 计数 / 清空 / 解除订阅
+```
+
+**单元格审计浮层**（「改过 3 次，最近：30 → 31」这类 hover 提示）不建组件——用 structural-render 的 `bodyCell` 挂 hover 自绘即可（库的第一个结构渲染食谱；行 key 与表格 `row-key` 同口径——本食谱示例假设 `row-key="id"`）：
+
+```ts
+import '@oas-ui/ui/data/table/structural-render'
+const audit = createAuditLog(table)
+table.structuralRenderers = {
+  bodyCell({ el: td, row, column }) {
+    const show = () => {
+      const h = audit.getCellHistory(String(row.id), column.key)
+      if (h.length === 0) return
+      const last = h[h.length - 1]!
+      td.title = `改过 ${h.length} 次 · 最近 ${last.oldValue} → ${last.value}`
+    }
+    td.addEventListener('mouseenter', show)
+  },
+}
+```
+
+<DemoBlock title="审计记录器：编辑提交被记录，getCellHistory 查询旧值→新值">
+  <div style="width: 100%">
+    <oas-table id="table-audit" editable row-key="item" style="width: 100%"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      审计：<span id="table-audit-feedback">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
+```ts
+const audit = createAuditLog(table)
+table.addEventListener('oas-edit', (e) => {
+  const d = e.detail
+  const h = audit.getCellHistory(d.key, d.column)
+  // 回显该格全部修改历史
+})
+```
+
 ## 受控编辑
 
 <DemoBlock title="受控编辑（edit-controlled）">
@@ -663,6 +712,37 @@ onMounted(() => {
     })
     t.addEventListener('oas-edit', () => {
       if (fb) fb.textContent = '—'
+    })
+  })
+})
+
+// audit demo：编辑提交 → 审计记录器查询旧值→新值回显
+onMounted(() => {
+  const t = document.getElementById('table-audit')
+  const fb = document.getElementById('table-audit-feedback')
+  if (!t) return
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'item', title: '项目', editable: true },
+      { key: 'amount', title: '金额', editable: true },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { item: '云服务续费', amount: 1200 },
+      { item: '域名续费', amount: 80 },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(async () => {
+    const { createAuditLog } = await import('@oas-ui/ui/data/table/audit')
+    const audit = createAuditLog(t)
+    t.addEventListener('oas-edit', (e) => {
+      const d = e.detail
+      const h = audit.getCellHistory(d.key, d.column)
+      const last = h[h.length - 1]
+      if (fb && last) fb.textContent = `${d.column} 共 ${h.length} 次修改 · 最近 ${last.oldValue} → ${last.value}`
     })
   })
 })

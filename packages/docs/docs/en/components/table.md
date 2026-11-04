@@ -233,6 +233,55 @@ table.addEventListener('oas-edit-invalid', (e) => {
 
 > Validation applies to the **edit-commit path only**: programmatic `data` writes / property assignments bypass `validate` (data cleaning is the host's job); an inline error summary bar is a host composition (listen to `oas-edit-invalid` + conditional formatting).
 
+### Audit trail (table/audit, helper L3)
+
+`@oas-ui/ui/data/table/audit` provides an **audit log**: it subscribes to the `oas-edit` event stream and records every commit per "row key × column" (old value → new value + raw form + timestamp), for "who changed what" traceability in financial vouchers / medical records / lab data. It is **orthogonal to `table/history`** (the undo stack): the audit log is an observation log — **no replay, no undo, no participation in the edit pipeline**; cancels (`oas-edit-cancel`) and unchanged commits produce no entries. In-memory ring buffer (default limit 500, configurable via `limit`), **no persistence** — cross-session auditing is the host's job (persist to your own store). **Semantic boundaries**: (1) the edit-commit channel only — other write channels (range batch paste/fill, etc.) are not audited in v1; (2) under `edit-controlled`, commit *requests* are recorded — whether they take effect depends on the host write-back; (3) the event stream is the source of truth — a hand-dispatched `oas-edit` is recorded as-is; (4) queries return shallow copies, so in-place mutation cannot corrupt the log.
+
+```ts
+import { createAuditLog } from '@oas-ui/ui/data/table/audit'
+
+const audit = createAuditLog(table, { limit: 500 })
+audit.getCellHistory('r1', 'amount') // one cell, chronological: [{ key, column, oldValue, oldRawValue, value, at }]
+audit.getRowHistory('r1') // one row across columns
+audit.size / audit.clear() / audit.destroy() // count / clear / unsubscribe
+```
+
+A **cell audit tooltip** ("edited 3 times, latest: 30 → 31") needs no new component — build it with structural-render's `bodyCell` hook on hover (the library's first structural-render recipe; the row key follows the table's `row-key` — this recipe assumes `row-key="id"`):
+
+```ts
+import '@oas-ui/ui/data/table/structural-render'
+const audit = createAuditLog(table)
+table.structuralRenderers = {
+  bodyCell({ el: td, row, column }) {
+    const show = () => {
+      const h = audit.getCellHistory(String(row.id), column.key)
+      if (h.length === 0) return
+      const last = h[h.length - 1]!
+      td.title = `edited ${h.length}x · latest ${last.oldValue} → ${last.value}`
+    }
+    td.addEventListener('mouseenter', show)
+  },
+}
+```
+
+<DemoBlock title="Audit log: commits are recorded; getCellHistory reads old → new">
+  <div style="width: 100%">
+    <oas-table id="table-audit" editable row-key="item" style="width: 100%"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      Audit: <span id="table-audit-feedback">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
+```ts
+const audit = createAuditLog(table)
+table.addEventListener('oas-edit', (e) => {
+  const d = e.detail
+  const h = audit.getCellHistory(d.key, d.column)
+  // surface the full history of that cell
+})
+```
+
 ## Controlled Editing
 
 <DemoBlock title="Controlled editing (edit-controlled)">
@@ -665,6 +714,37 @@ onMounted(() => {
     })
     t.addEventListener('oas-edit', () => {
       if (fb) fb.textContent = '—'
+    })
+  })
+})
+
+// audit demo: commits recorded; the feedback line queries getCellHistory
+onMounted(() => {
+  const t = document.getElementById('table-audit')
+  const fb = document.getElementById('table-audit-feedback')
+  if (!t) return
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'item', title: 'Item', editable: true },
+      { key: 'amount', title: 'Amount', editable: true },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { item: 'Cloud renewal', amount: 1200 },
+      { item: 'Domain renewal', amount: 80 },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(async () => {
+    const { createAuditLog } = await import('@oas-ui/ui/data/table/audit')
+    const audit = createAuditLog(t)
+    t.addEventListener('oas-edit', (e) => {
+      const d = e.detail
+      const h = audit.getCellHistory(d.key, d.column)
+      const last = h[h.length - 1]
+      if (fb && last) fb.textContent = `${d.column}: ${h.length} edit(s) · latest ${last.oldValue} → ${last.value}`
     })
   })
 })

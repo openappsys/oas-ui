@@ -54,6 +54,13 @@ export const L3_REGISTRY = [
   // table 数据加工 helper 型 L3（细分职责拆包）：透视 / 值格式化 / 查询。
   // 激活唯一入口是显式 import 纯函数，无 HTML/属性触发面；进 L1/data 族包即死重。
   { id: 'tablePivot', entry: 'data/table/pivot', family: 'data', kind: 'helper', measured: true },
+  {
+    id: 'tableAudit',
+    entry: 'data/table/audit',
+    family: 'data',
+    kind: 'helper',
+    measured: true,
+  },
   { id: 'tableValueFormat', entry: 'data/table/value-format', family: 'data', kind: 'helper', measured: true },
   { id: 'tableQuery', entry: 'data/table/query', family: 'data', kind: 'helper', measured: true },
   // —— 非 table 注册型 L3（只做 L1/族包包含断言；不立独立预算档） ——
