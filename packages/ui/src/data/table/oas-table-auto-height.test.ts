@@ -187,7 +187,7 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     void el
   })
 
-  it('windowed + row-auto-height + 能力在场：版本范围 devWarn 一次 + 仍定高渲染', () => {
+  it('windowed + row-auto-height：受支持（混合模型）——版本提示已移除，无「仅支持本地虚拟」告警', () => {
     ensureRegistered()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { el } = mountAuto({
@@ -200,11 +200,57 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
       columns: JSON.stringify([{ key: 'name', title: '名称' }]),
       data: rows100(),
     })
-    expect(warn).toHaveBeenCalled()
-    expect(warn.mock.calls.some((c) => String(c[0]).includes('仅支持本地虚拟'))).toBe(true)
-    // windowed 路径零变化：绝对行号铺位渲染照常
-    expect(el.shadowRoot!.querySelector('tbody tr[part="row"]')).not.toBeNull()
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('仅支持本地虚拟'))).toBe(false)
+    // windowed 混合模型渲染：绝对行号铺位照常（动态模式打点视觉下标）
+    const tr = el.shadowRoot!.querySelector('tbody tr[part="row"]') as HTMLElement
+    expect(tr).not.toBeNull()
+    expect(tr.dataset.oasDisplayIdx).toBeDefined()
     warn.mockRestore()
+  })
+
+  it('windowed 混合模型：切片内行测量回填 → spacer 反映拼接前缀和 + 锚定不跳 + 按需重派请求', async () => {
+    ensureRegistered()
+    const { el, wrap } = mountAuto({
+      'row-auto-height': '',
+      windowed: '',
+      total: '1000',
+      'window-start': '0',
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: rows100(),
+    })
+    const stub = lastStub!
+    const reqs: Array<{ start: number; end: number; reason: string }> = []
+    el.addEventListener('oas-window-request', (e) => reqs.push((e as CustomEvent).detail))
+    // 滚动让滚动帧先渲染稳定（锚点缓存捕获测量前几何）
+    wrap.scrollTop = 0
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    reqs.length = 0
+    // 切片内绝对视觉下标 0/1 实测变高 100px（未装载区仍预估 40）：拼接前缀和
+    expect(stub.measure(0, 100)).toBe(true)
+    expect(stub.measure(1, 100)).toBe(true)
+    ;(el as unknown as { requestAutoHeightSync(): void }).requestAutoHeightSync()
+    // 锚定：scrollTop=0 在行 0 内 → 不变；视口内容不跳
+    expect(wrap.scrollTop).toBe(0)
+    // spacer 几何 = 拼接前缀和：渲染窗口首条目 flow 反映 100+100 起始
+    const topSpacer = el.shadowRoot!.querySelector('tbody tr.spacer td') as HTMLElement
+    expect(Number.parseInt(topSpacer.style.height)).toBe(0)
+    // 行 0 渲染高 = 实测 100
+    const tr0 = el.shadowRoot!.querySelector('tbody tr[part="row"]') as HTMLElement
+    expect(tr0.style.height).toBe('100px')
+    // 高度修正后期望区间变化 → 按需补派（或去重不派）；关键是不崩、坐标连续
+    const last = reqs[reqs.length - 1]
+    if (last) {
+      expect(last.start).toBeGreaterThanOrEqual(0)
+      expect(last.end).toBeLessThanOrEqual(1000)
+    }
+    // 总高 = 拼接前缀和：100+100+998×40 = 40120（scrollHeight 口径经 spacer 表达）
+    const bottom = el.shadowRoot!.querySelector('tbody tr.spacer:last-child td') as HTMLElement
+    const winEndPx = stub.total() - Number.parseInt(bottom.style.height)
+    expect(winEndPx).toBeGreaterThan(0)
+    expect(stub.total()).toBe(40120)
   })
 
   it('编辑中的行：同步跳过（不重建不取消编辑），编辑结束后再同步带上', () => {

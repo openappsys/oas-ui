@@ -32,6 +32,7 @@ import {
   WINDOW_MARGIN,
   expandWindow,
   mapVisualWindowToData,
+  mapVisualWindowToDataDynamic,
   readWindowedMode,
   sameWindow,
   windowCovered,
@@ -370,11 +371,6 @@ const VIRTUAL_SPAN_HINT =
  *  对齐 EDIT_CAPABILITY 先例：opt-in 请求了未注册的能力——静默按定高渲染有欺骗性。 */
 const AUTO_HEIGHT_CAPABILITY_HINT =
   '[oas-table] 检测到 row-auto-height 属性，但 @oas-ui/ui/data/table/auto-height 能力未注册（未 import）：动态行高未生效，按定高渲染。import 该子路径一次即可激活'
-
-/** row-auto-height × windowed 的版本范围告警文案（实例级去重一次）。
- *  windowed 逐行动态行高依赖 windowed flow 几何改造（随该批交付）：当前按定高渲染，不静默忽略。 */
-const AUTO_HEIGHT_WINDOWED_HINT =
-  '[oas-table] row-auto-height 当前仅支持本地虚拟模式（windowed 逐行动态行高随 windowed 几何改造交付）：windowed 下按定高渲染'
 
 /**
  * 可选视觉协议（visual-total / visual-start）配置无效/不完整的告警文案（实例级去重一次）。
@@ -1541,8 +1537,6 @@ export class OASTableBase extends OASElement {
   private virtualSpanWarned = false
   /** row-auto-height 能力未注册告警去重（实例级一次） */
   private autoHeightCapWarned = false
-  /** row-auto-height × windowed 版本范围告警去重（实例级一次） */
-  private autoHeightWindowedWarned = false
   /** windowed 切片越界（window-start + data.length > total）告警去重（实例级一次） */
   private winSliceWarned = false
   /** 可选视觉协议解析结果（parse 时刷新；null = 未生效，回落当前数据窗口模型）：
@@ -2395,7 +2389,7 @@ export class OASTableBase extends OASElement {
     if (virtual && !this.windowedOn() && (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge))) {
       this.warnVirtualSpanOnce()
     }
-    // row-auto-height：能力未注册 / windowed 范围外 → 显式提示（opt-in 请求不静默忽略）
+    // row-auto-height：能力未注册 → 显式提示（opt-in 请求不静默忽略）
     this.warnAutoHeightConfigOnce()
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
@@ -2453,7 +2447,8 @@ export class OASTableBase extends OASElement {
     const st = this.wrap ? this.wrap.scrollTop : 0
     this.saveScrollPosition(st, this.wrap ? this.wrap.scrollLeft : 0)
     head.innerHTML = ''
-    body.innerHTML = ''
+    // 稳定清空：防清空瞬间 scrollTop 被钳回 0（弹跳 scroll 事件会把 windowed 回填 ping 回起点）
+    this.stableClearBody(body)
     this.renderPagination(paginationOn, total, pageSize, current)
 
     const checkable = this.hasAttr('checkable')
@@ -2609,6 +2604,8 @@ export class OASTableBase extends OASElement {
     if (summaryConfigs.length > 0 && summaryFlat.length > 0 && summaryValues) {
       body.appendChild(this.buildSummaryRow(summaryConfigs, summaryValues, layout))
     }
+    // 稳定清空的垫高完成使命（渲染已铺满），移除以免干扰后续布局
+    body.style.minHeight = ''
     // D9 网格导航语义与 tabindex（须在行渲染后应用：editable 单元格的 tabindex=0 在此收归 -1，
     // 保证「表格单停靠点 + 方向键漫游」；重渲染后角色/tabindex 随新 DOM 重建）
     this.applyGridSemantics()
@@ -3198,27 +3195,53 @@ export class OASTableBase extends OASElement {
    * 若不截断，越界行自己的已展开 expand 会抬高视觉行数，把越界行重新渲染出来。
    */
   private windowedFlowItems(display: FlatRow[]): {
-    items: Array<{ f: FlatRow; kind: FlatRow['kind']; abs: number; flowY: number }>
+    items: Array<{ f: FlatRow; kind: FlatRow['kind']; abs: number; flowY: number; v: number }>
     /** 渲染 count / contentH / 请求可视窗口共用的视觉总行数 */
     visualTotal: number
   } {
     const ih = this.rowHeightPx()
     const proto = this._visualProto
-    const items: Array<{ f: FlatRow; kind: FlatRow['kind']; abs: number; flowY: number }> = []
+    const cap = this.autoHeightCap
+    const dynamic = this.autoHeightOn()
+    // 越界切片守卫下的合法 expand 计数（与下方主循环同一截断口径：旧实现按截断后 items 计，
+    // 保持逐值等价——越界数据行的 expand 不计入 visualTotal）
+    let legalExpands = 0
+    {
+      let scanAbs = this._winMode.windowStart
+      for (const f of display) {
+        if (f.kind === 'data' && scanAbs >= this._winMode.total) break
+        if (f.kind === 'expand') legalExpands++
+        else scanAbs++
+      }
+    }
+    const visualTotal = proto ? proto.total : this._winMode.total + legalExpands
+    // row-auto-height（windowed 混合模型）：前缀和按绝对视觉条目下标记账——切片内行可实测
+    //（RO 回填到绝对下标）、切片外行与未装载区保持 row-height 预估（估计与真值拼接）。
+    // visualTotal 变化触发 HeightCache 重置重测（一次全量回退估计 + 锚定兜底，可接受）
+    if (dynamic && cap) cap.configure(visualTotal, ih)
+    const items: Array<{ f: FlatRow; kind: FlatRow['kind']; abs: number; flowY: number; v: number }> = []
     let abs = this._winMode.windowStart
     // flow 基准：协议生效从 visual-start×行高 起（切片前已有展开的宿主场景）；
-    // 未生效从 window-start×行高 起（切片前无展开的简化模型）
-    let flowY = (proto ? proto.start : this._winMode.windowStart) * ih
+    // 未生效从 window-start×行高 起（切片前无展开的简化模型）。动态模式取前缀和——
+    // 基准以下未装载条目恒为预估（ih×n），与旧公式逐值等价
+    const base = proto ? proto.start : this._winMode.windowStart
+    let v = base
+    let flowY = dynamic && cap ? cap.offsetOf(base) : base * ih
     for (const f of display) {
       if (f.kind === 'data' && abs >= this._winMode.total) break
-      // kind 平铺在条目上：请求映射（mapVisualWindowToData）按 kind 区分 data/expand 投影，
-      // 与渲染共用同一份条目（渲染与请求共用 abs/flow 映射）
-      items.push({ f, kind: f.kind, abs, flowY })
+      // kind 平铺在条目上：请求映射按 kind 区分 data/expand 投影，与渲染共用同一份条目；
+      // v = 绝对视觉条目下标（测量回填键与锚定几何键）
+      items.push({ f, kind: f.kind, abs, flowY, v })
       if (f.kind === 'data') abs++
-      flowY += ih
+      flowY += dynamic && cap ? this.winItemHeight(cap, f.kind, v) : ih
+      v++
     }
-    const expandCount = items.reduce((n, it) => (it.kind === 'expand' ? n + 1 : n), 0)
-    return { items, visualTotal: proto ? proto.total : this._winMode.total + expandCount }
+    return { items, visualTotal }
+  }
+
+  /** windowed 条目渲染高：expand 行维持定高（auto-height 只作用数据行）；数据行动态取缓存/预估 */
+  private winItemHeight(cap: TableAutoHeightCapability, kind: string, v: number): number {
+    return kind === 'expand' ? this.rowHeightPx() : cap.heightAt(v)
   }
 
   /**
@@ -3250,15 +3273,29 @@ export class OASTableBase extends OASElement {
     // 曾完全静默会让宿主误以为切片全部可见，显式提示一次（不改渲染行为）。
     const proto = this._visualProto
     if (proto && proto.start + display.length > proto.total) this.warnVisualOverflowOnce()
-    const win = computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
-    const winTop = win.start * ih
-    const winBottom = win.end * ih
+    const cap = this.autoHeightCap
+    const dynamic = this.autoHeightOn()
+    // row-auto-height：窗口走前缀和二分（像素边界取 offsetOf）；定高路径逐字节不变。
+    // 注意 winBottom 不能用「最后命中条目底」——新切片回填后条目位移、命中集先于窗口重算，
+    // 会差出一个可视区导致期望区间超发一屏（回填雪崩）；窗口末条目底（offsetOf(win.end)）
+    // 与窗口数学同源，任意滚动位/新切片都稳定
+    const win =
+      dynamic && cap
+        ? cap.window(scrollTop, this.dynamicViewport())
+        : computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
+    const winTop = dynamic && cap ? cap.offsetOf(win.start) : win.start * ih
+    const winBottom = dynamic && cap ? cap.offsetOf(win.end) : win.end * ih
+    if (dynamic) this.autoLastWindow = Math.max(1, win.end - win.start)
+    // 渲染态锚点缓存（测量前几何）——requestAutoHeightSync 的锚定补偿用，与本地虚拟同机制
+    if (dynamic && cap) {
+      this.autoAnchor = { anchor: locateAnchor(cap.offsets(), scrollTop), scrollTop, seq: this.scrollWriteSeq }
+    }
     // 先扫描出可视区间内的待渲染条目（topSpacer 高度依赖首个命中条目的 flow 坐标，须先算好再按
     // 「topSpacer → 行 → bottomSpacer」的顺序追加，保证 DOM 顺序与视觉 flow 一致）。
-    // contentH = 视觉总行数 × 行高：协议生效 = visual-total×行高；未生效 = (数据 total + 当前
-    // 已装载 display 中的 expand 数)×行高——windowed 只知道当前切片内容行，未装载区域是否
-    // 展开不可知（不发明全量展开状态推导）。无 expand 且无协议时与旧公式逐值等价。
-    const contentH = visualTotal * ih
+    // contentH：定高 = 视觉总行数 × 行高；动态 = 前缀和总高（估计与真值拼接）。
+    // windowed 只知道当前切片内容行，未装载区域是否展开不可知（不发明全量展开状态推导）。
+    // 无 expand 且无协议时与旧公式逐值等价。
+    const contentH = dynamic && cap ? cap.total() : visualTotal * ih
     const rendered: {
       tr: HTMLTableRowElement
       row: Record<string, unknown>
@@ -3269,18 +3306,23 @@ export class OASTableBase extends OASElement {
     let lastFlowEnd = 0
     for (const item of items) {
       const y = item.flowY
-      if (y + ih <= winTop || y >= winBottom) continue
+      const h = dynamic && cap ? this.winItemHeight(cap, item.kind, item.v) : ih
+      if (y + h <= winTop || y >= winBottom) continue
       if (firstY < 0) firstY = y
       const tr =
         item.f.kind === 'expand'
           ? this.buildExpandRow(item.f)
           : this.buildRow(item.f, item.abs, rowKey, selected, expanded, layout, item.abs)
-      tr.style.height = `${ih}px`
+      tr.style.height = `${h}px`
+      if (dynamic) tr.dataset.oasDisplayIdx = String(item.v)
       rendered.push({ tr, row: item.f.row, abs: item.abs, kind: item.f.kind })
-      lastFlowEnd = y + ih
+      lastFlowEnd = y + h
     }
     const topHeight = firstY >= 0 ? firstY : Math.min(winTop, contentH)
-    const bottomHeight = Math.max(0, contentH - Math.max(lastFlowEnd, topHeight))
+    // 底 spacer = 内容总高 − 窗口末条目底（与窗口数学同源）；渲染命中可能滞后于新切片窗口
+    //（条目位移先于命中集合重算），用 lastFlowEnd 会差出一截导致可视区留白/期望区间超发
+    const bottomHeight =
+      dynamic && cap ? Math.max(0, contentH - winBottom) : Math.max(0, contentH - Math.max(lastFlowEnd, topHeight))
     const topSpacer = document.createElement('tr')
     topSpacer.className = 'spacer'
     const topTd = document.createElement('td')
@@ -3301,6 +3343,8 @@ export class OASTableBase extends OASElement {
     bottomTd.style.height = `${bottomHeight}px`
     bottomSpacer.appendChild(bottomTd)
     body.appendChild(bottomSpacer)
+    // 动态行高：tbody 重建完成通知能力重新观测渲染行（与本地虚拟同机制）
+    if (dynamic && cap?.afterRender) cap.afterRender(body)
   }
 
   /** 为 th/td 写入固定列 sticky 偏移（left/right） */
@@ -3381,8 +3425,17 @@ export class OASTableBase extends OASElement {
     const idx = this._data.findIndex((r) => String(rowKeyValue(r, rowKey)) === String(key))
     if (idx < 0) return false
     const abs = this.windowedOn() ? this._winMode.windowStart + idx : idx
-    // 动态行高：行顶 = 前缀和查询（定高路径 rowTopOffset 逐位等价 i×rowH）
-    const top = this.rowTopOffset(abs)
+    // 动态行高：行顶 = 前缀和查询。windowed 下 abs 是数据行号，前缀按键是视觉条目下标——
+    // 经 windowedFlowItems 找到该数据行所在条目取其视觉下标（定高路径 rowTopOffset 等价）
+    let top: number
+    if (this.windowedOn() && this.autoHeightOn() && this.autoHeightCap) {
+      const { items } = this.windowedFlowItems(this.windowedDisplay())
+      const hit = items.find((it) => it.kind === 'data' && it.abs === abs)
+      if (!hit) return false
+      top = this.autoHeightCap.offsetOf(hit.v)
+    } else {
+      top = this.rowTopOffset(abs)
+    }
     // 有布局环境按 scrollHeight 上界夹取；无布局（happy-dom scrollHeight=0）直写——
     // 真实浏览器的 scrollTop setter 本就会自行钳制，双环境语义一致。
     // 锚定写scrollTop 前先清「程序写滚动」吞事件守卫：同 update 周期内 restoreScrollPosition
@@ -4131,19 +4184,11 @@ export class OASTableBase extends OASElement {
     devWarn(VIRTUAL_SPAN_HINT)
   }
 
-  /** row-auto-height 能力未注册 / windowed 版本范围外告警（各自实例级去重一次） */
+  /** row-auto-height 能力未注册告警（实例级去重一次） */
   private warnAutoHeightConfigOnce(): void {
-    if (!this.hasAttr('row-auto-height')) return
-    if (this.autoHeightCap === null) {
-      if (this.autoHeightCapWarned) return
+    if (this.hasAttr('row-auto-height') && this.autoHeightCap === null && !this.autoHeightCapWarned) {
       this.autoHeightCapWarned = true
       devWarn(AUTO_HEIGHT_CAPABILITY_HINT)
-      return
-    }
-    if (this.windowedOn()) {
-      if (this.autoHeightWindowedWarned) return
-      this.autoHeightWindowedWarned = true
-      devWarn(AUTO_HEIGHT_WINDOWED_HINT)
     }
   }
 
@@ -4852,9 +4897,10 @@ export class OASTableBase extends OASElement {
   // 定高路径全部走原 computeVirtualWindow / rowHeightPx 口径，逐字节不变（零变化红线）；
   // 动态路径只在 autoHeightOn() 为真时切换，几何由注册能力（HeightCache 前缀和）提供。
 
-  /** 动态行高是否生效：属性在场 + 能力已注册 + 本地虚拟 */
+  /** 动态行高是否生效：属性在场 + 能力已注册 + 虚拟（本地或 windowed——windowed 走混合模型：
+      切片内行实测、切片外行按 row-height 预估，前缀和 = 估计与真值拼接） */
   private autoHeightOn(): boolean {
-    return this.hasAttr('row-auto-height') && this.autoHeightCap !== null && this.isVirtual() && !this.windowedOn()
+    return this.hasAttr('row-auto-height') && this.autoHeightCap !== null && this.isVirtual()
   }
 
   /** 动态路径视口高：真实 clientHeight（tableHeight 不含横滚条、会被 sticky 表头覆盖——定高路径保持零变化） */
@@ -4885,9 +4931,11 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * auto-height 能力回调：测量回填改变前缀和后，身份锚定 + tbody-only 重建。
-   * 不走 update()（update 按像素恢复滚动、且 settleEdit 会取消编辑——编辑中的行本轮跳过，
-   * 缓存已更新，编辑结束后的下一次同步自然带上）。锚点 =（行身份, 行内偏移），见 geometry.ts。
+   * auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。
+   * 不自管 tbody 重建——自管路径与滚动帧/焦点的保存恢复机制重叠，正是 scrollTop 钳制与
+   * 弹跳事件的温床（windowed 回填被 ping 回起点的雪崩实抓）；先写权威滚动位（清吞滚动守卫），
+   * update 头部捕获的即是权威位，走 battle-tested 的保存/恢复闭环。编辑中的行本轮跳过
+   *（缓存已更新，编辑结束后的下一次同步自然带上）。
    */
   requestAutoHeightSync(): void {
     const cap = this.autoHeightCap
@@ -4901,28 +4949,13 @@ export class OASTableBase extends OASElement {
       stored && stored.scrollTop === this.wrap.scrollTop && stored.seq === this.scrollWriteSeq
         ? stored.anchor
         : locateAnchor(cap.offsets(), this.wrap.scrollTop)
-    // 先按新前缀和解析恢复位，再以恢复位重建窗口——重建直接落在最终视口位置，
-    // 避免「按旧位重建 + 事后写 scrollTop」造成窗口与视口错位一节（内容铺满后写位）
     const top = restoreAnchor(cap.offsets(), anchor)
-    this.rebuildVirtualBody(body, top)
     if (Math.abs(top - this.wrap.scrollTop) > 0.5) {
       this.ignoreNextScroll = true
       this.wrap.scrollTop = top
     }
-  }
-
-  /** tbody-only 重建（与滚动帧同源的数据口径；不 settleEdit、不请求窗口；st 显式传最终视口位） */
-  private rebuildVirtualBody(body: HTMLElement, st = this.wrap ? this.wrap.scrollTop : 0): void {
-    const rowKey = this.getAttr('row-key', 'key')
-    const selected = this.getAttr('selected', '').split(',').filter(Boolean)
-    const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
-    const vis = this.displayWithCache(this.resolveSorts(), rowKey, this.groupByEffective(), expanded)
-    this._logicalRowCount = vis.logicalRows
-    body.innerHTML = ''
-    this.renderVirtualBody(body, vis.display, rowKey, selected, expanded, this.computeLayout(), st, vis.ordinals)
-    this.applyGridSemantics()
-    this.applyRowAriaSemantics()
-    this.applyStickyRows()
+    this.markRenderDirty()
+    this.runUpdateAndNotify()
   }
 
   /** 聚焦网格单元格：直接 focus + 滚入视口 + 记忆坐标（Tab 再次进入续用） */
@@ -5261,7 +5294,6 @@ export class OASTableBase extends OASElement {
         this.update()
         return
       }
-      const seqAtSave = this.scrollWriteSeq
       const st = this.wrap!.scrollTop
       // I-1：横向滚动位置同样帧前保存——清空 tbody + 回锚 focus 曾把 scrollLeft 拉回锚格处
       const sl = this.wrap!.scrollLeft
@@ -5275,21 +5307,35 @@ export class OASTableBase extends OASElement {
       // 不再每帧重跑 O(总量) 的过滤切片 / 可见性过滤 / 序号扫描（visibleBuilds 诊断锁定）
       const groupBy = this.groupByEffective()
       const vis = this.displayWithCache(this.resolveSorts(), rowKey, groupBy, expanded)
-      const display = vis.display
+      let display = vis.display
       this._logicalRowCount = vis.logicalRows
+      if (this.windowedOn()) {
+        // windowed：可视窗口变化按需请求（reason=scroll）——必须在清空 tbody **之前**派发：
+        // ① 清空后浏览器把 scrollTop 瞬时钳回 0（内容短于视口），此刻重读会算错期望区间
+        //   （曾致 windowed 滚动回填在真实浏览器静默失效；st 帧头权威位一并直传）；
+        // ② 宿主监听里常同步回填（嵌套 update）：此刻 live scrollTop 仍是权威位、嵌套渲染不歪；
+        // ③ 请求后重取展示集（缓存按签名失效），帧尾用新切片渲染，不过期
+        this.requestWindowIfNeeded('scroll', display, st)
+        const fresh = this.displayWithCache(this.resolveSorts(), rowKey, this.groupByEffective(), expanded)
+        this._logicalRowCount = fresh.logicalRows
+        display = fresh.display
+      }
       // I3：windowed 重渲染前捕获焦点锚点（清空 tbody 会连带拆掉聚焦单元格）
       this.captureWindowedFocusAnchor()
       // 滚动窗口重渲染前静默取消进行中的编辑（委托 edit 能力）
       this.editCap?.settleEdit()
-      body.innerHTML = ''
+      // 写入代次在清空**前**重新捕获：windowed 请求可能触发宿主同步回填（嵌套 update 自有的
+      // 保存/恢复会 bump 代次）——用旧代次会让帧尾恢复被「新写入优先」跳过、scrollTop 滞留
+      // 钳制位 0，随后的补偿帧在 0 位重算期望区间把切片 ping 回起点（回填雪崩）
+      const seqAtSave = this.scrollWriteSeq
+      // 稳定清空：防清空瞬间 scrollTop 被钳回 0（钳制曾把 windowed 回填 ping 回起点——雪崩）
+      this.stableClearBody(body)
       if (this.windowedOn()) {
-        // windowed：绝对行号铺位渲染 + 滚动后可视窗口变化按需请求（reason=scroll）；
-        // display 直传：请求映射与渲染共用同一份展示集（abs/flow 记账同源）
         this.renderWindowedBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
-        this.requestWindowIfNeeded('scroll', display)
       } else {
         this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st, vis.ordinals)
       }
+      body.style.minHeight = ''
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
       this.applyStickyRows()
@@ -5300,10 +5346,13 @@ export class OASTableBase extends OASElement {
       //（窗口按 st 算，纵向视觉不跳；横向停在用户滚到的位置，不被锚点拉回）
       // 帧内若有更新的主动写入（键盘导航 / 程序化滚动），新写入优先——旧值不回写
       this.restoreScrollPosition(seqAtSave, st, sl)
-      // windowed：滚动事件 detail 的窗口按全量行数计（绝对行下标；与 oas-window-request 同坐标系）
-      // row-auto-height（本地虚拟）：窗口走动态几何前缀和，坐标仍按展示序行号——一行=一视觉行，仅像素不同
+      // windowed：滚动事件 detail 的窗口按全量行数计（绝对行下标；与 oas-window-request 同坐标系）；
+      // 动态行高（windowed/本地）走前缀和几何——windowed 动态口径为视觉条目（含 expand，与
+      // 请求映射的 visualStart/visualEnd 同坐标系）；定高路径逐字节不变
       const win = this.windowedOn()
-        ? computeVirtualWindow(st, this.tableHeight(), this.rowHeightPx(), this._winMode.total)
+        ? this.autoHeightOn() && this.autoHeightCap
+          ? this.autoHeightCap.window(st, this.dynamicViewport())
+          : computeVirtualWindow(st, this.tableHeight(), this.rowHeightPx(), this._winMode.total)
         : this.rowWindow(st, this.tableHeight(), display.length)
       this.emit('scroll', { scrollTop: st, start: win.start, end: win.end })
     })
@@ -5336,10 +5385,26 @@ export class OASTableBase extends OASElement {
     const mode = this._winMode
     const ih = this.rowHeightPx()
     const { items, visualTotal } = this.windowedFlowItems(display)
-    const vis = computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
+    const cap = this.autoHeightCap
+    const dynamic = this.autoHeightOn()
+    // row-auto-height：可视窗口走前缀和二分；映射按真实像素相交（mapVisualWindowToDataDynamic）
+    const vis =
+      dynamic && cap
+        ? cap.window(scrollTop, this.dynamicViewport())
+        : computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
     const mapped = this._visualProto !== null || items.some((it) => it.kind === 'expand')
     const need = mapped
-      ? mapVisualWindowToData(vis, items, ih, mode.total, WINDOW_MARGIN)
+      ? dynamic && cap
+        ? mapVisualWindowToDataDynamic(
+            vis,
+            cap.offsetOf(vis.start),
+            cap.offsetOf(vis.end),
+            items,
+            (it) => this.winItemHeight(cap, it.kind, (it as unknown as { v: number }).v),
+            mode.total,
+            WINDOW_MARGIN,
+          )
+        : mapVisualWindowToData(vis, items, ih, mode.total, WINDOW_MARGIN)
       : expandWindow(vis.start, vis.end, mode.total, WINDOW_MARGIN)
     return { start: need.start, end: need.end, visualStart: vis.start, visualEnd: vis.end, mapped }
   }
@@ -5352,10 +5417,13 @@ export class OASTableBase extends OASElement {
    * 非虚拟（无 height）windowed：全部已装载行即视口内容，没有滚动进入未装载区的通道——
    * 不外扩请求（否则「请求 margin → 装载 → 更大 margin」发散），初始装载由宿主自理。
    */
-  private requestWindowIfNeeded(reason: WindowRequestReason, display?: FlatRow[]): void {
+  private requestWindowIfNeeded(reason: WindowRequestReason, display?: FlatRow[], scrollTop?: number): void {
     const mode = this._winMode
     if (!mode.windowed || !this.isVirtual()) return
-    const st = this.wrap?.scrollTop ?? 0
+    // scrollTop 显式传入优先：滚动帧在 request 之前会清空 tbody，浏览器随内容短于视口把
+    // scrollTop 瞬时钳回 0——此刻重读容器得到 0，期望区间算回装载区、回填静默失效
+    //（windowed 滚动回填的真实浏览器缺陷，happy-dom 无布局不钳制故单测不可见）
+    const st = scrollTop ?? this.wrap?.scrollTop ?? 0
     const need = this.windowedRequestNeed(st, display ?? this.windowedDisplay())
     if (windowCovered(need, mode.loaded)) {
       this.winReq = null
@@ -5443,6 +5511,16 @@ export class OASTableBase extends OASElement {
   }
 
   // ==================== 单元格展示辅助（core 渲染；编辑能力退出时也经 paintCell 复用 cellNode） ====================
+
+  /** 稳定清空 tbody：先垫住当前高度再清空——滚动容器在内容瞬间短于视口时会把 scrollTop
+      钳回 0，钳制生成的弹跳 scroll 事件在 windowed 下会把宿主回填 ping 回起点（回填雪崩）；
+      tbody 的 min-height 在表格布局里即最小高度语义，渲染完成后由调用方移除。
+      读 offsetHeight 强制布局是安全的：调用点内容必定铺满（清空之前） */
+  private stableClearBody(body: HTMLElement): void {
+    const h = body.offsetHeight
+    if (h > 0) body.style.minHeight = `${h}px`
+    body.innerHTML = ''
+  }
 
   /** 单元格展示文本（select 列按选项 label 展示；type 列取类型化文本形态；render 函数优先） */
   private cellText(col: TableColumn, row: Record<string, unknown>): string {

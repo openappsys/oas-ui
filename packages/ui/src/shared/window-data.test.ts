@@ -8,6 +8,7 @@ import {
   windowCovered,
   sameWindow,
   mapVisualWindowToData,
+  mapVisualWindowToDataDynamic,
   readWindowedMode,
   rangeCovered,
   parseIsoDayMs,
@@ -140,5 +141,42 @@ describe('服务端行窗口协议（window-data）', () => {
       windowStart: 0,
       loaded: { start: 0, end: 10 },
     })
+  })
+})
+
+describe('mapVisualWindowToDataDynamic（row-auto-height 像素相交投影）', () => {
+  const items = [
+    { kind: 'data', abs: 10, flowY: 0, v: 10 },
+    { kind: 'data', abs: 11, flowY: 100, v: 11 },
+    { kind: 'expand', abs: 12, flowY: 200, v: 12 },
+    { kind: 'data', abs: 12, flowY: 240, v: 13 },
+  ]
+  // 行高：行 10=100、行 11=100、expand=40、行 12=40（变高拼接）
+  const heightOf = (it: { kind: string; abs: number }) => (it.kind === 'expand' ? 40 : it.abs === 12 ? 40 : 100)
+
+  it('定高等价：heightOf 恒 40 + 像素边界=行号×40 时与 mapVisualWindowToData 逐值一致', () => {
+    const uniform = items.map((it) => ({ ...it }))
+    const fixed = (it: { kind: string }) => (it.kind === 'expand' ? 40 : 40)
+    const vis = { start: 1, end: 3 }
+    const a = mapVisualWindowToData(vis, uniform, 40, 1000, 8)
+    const b = mapVisualWindowToDataDynamic(vis, vis.start * 40, vis.end * 40, uniform, fixed, 1000, 8)
+    expect(b).toEqual(a)
+  })
+
+  it('变高相交：窗口按像素落在长行中部时投影到该数据行（含 expand 属主回连）', () => {
+    // 窗口像素 [150, 260)：命中行 11（100-200）与 expand（200-240）→ 数据区间 [11, 13)
+    const need = mapVisualWindowToDataDynamic({ start: 0, end: 0 }, 150, 260, items, heightOf, 1000, 0)
+    expect(need).toEqual({ start: 11, end: 13 })
+  })
+
+  it('长行使可视行数变少：同像素窗口只覆盖一个数据行时投影收窄（非定高的等比外推）', () => {
+    // 窗口像素 [0, 100) 只命中行 10 → expandWindow(10, 11, margin 0)
+    const need = mapVisualWindowToDataDynamic({ start: 0, end: 0 }, 0, 100, items, heightOf, 1000, 0)
+    expect(need).toEqual({ start: 10, end: 11 })
+  })
+
+  it('无相交条目：按行号窗口整体外推（与定高路径回退同语义）', () => {
+    const need = mapVisualWindowToDataDynamic({ start: 50, end: 60 }, 5000, 5100, items, heightOf, 1000, 8)
+    expect(need).toEqual(expandWindow(50, 60, 1000, 8))
   })
 })

@@ -149,6 +149,38 @@ export function mapVisualWindowToData(
 }
 
 /**
+ * 逐行动态行高（row-auto-height）版的可视窗口→数据区间投影：
+ * 与 mapVisualWindowToData 同投影规则，但相交判定按真实像素（winTopPx/winBottomPx 为像素
+ * 坐标、每条目高由 heightOf 给出）；无相交条目时按行号窗口 visRows 整体外推（回退语义与
+ * 定高路径一致——调用方传 cap.window 的行号结果与 offsetOf 的像素边界）。
+ */
+export function mapVisualWindowToDataDynamic(
+  visRows: { start: number; end: number },
+  winTopPx: number,
+  winBottomPx: number,
+  items: Array<{ kind: string; abs: number; flowY: number }>,
+  heightOf: (item: { kind: string; abs: number; flowY: number }) => number,
+  total: number,
+  margin: number = WINDOW_MARGIN,
+): { start: number; end: number } {
+  const top = Math.max(0, Number.isFinite(winTopPx) ? winTopPx : 0)
+  const bottom = Math.max(top, Number.isFinite(winBottomPx) ? winBottomPx : top)
+  let lo = Infinity
+  let hi = -Infinity
+  for (const item of items) {
+    const h = Math.max(1, Number.isFinite(heightOf(item)) ? heightOf(item) : 1)
+    if (item.flowY + h <= top || item.flowY >= bottom) continue
+    const s = item.kind === 'expand' ? item.abs - 1 : item.abs
+    const e = item.kind === 'expand' ? item.abs : item.abs + 1
+    if (s < lo) lo = s
+    if (e > hi) hi = e
+  }
+  // 无相交条目（可视区间与已装载切片错开）→ 保留可视窗口整体投影回退（行号坐标）
+  if (lo > hi) return expandWindow(visRows.start, visRows.end, total, margin)
+  return expandWindow(lo, hi, total, margin)
+}
+
+/**
  * windowed 模式的统一取值：返回 { windowed, total, windowStart, loaded }；
  * `windowed` 仅在 `windowed` 属性在场且 `total` 为合法正数时生效。
  */

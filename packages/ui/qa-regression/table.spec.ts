@@ -5961,3 +5961,71 @@ test('table auto-height：测量回填行撑高 + 滚动几何收敛 + console �
   await expect(t.locator('tbody tr[data-row-index="0"]')).toBeAttached()
   expect(errors, 'console 零 error').toEqual([])
 })
+
+// row-auto-height × windowed 混合模型真实浏览器回归：切片内测量回填 + 宿主回填闭环不破坏
+test('table auto-height windowed：混合模型测量回填 + 请求闭环 + console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-autowin-e2e'
+    el.style.width = '420px'
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-auto-height', '')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', width: '100px' },
+        { key: 'note', title: '备注', width: '280px', wrap: true },
+      ]),
+    )
+    const full = Array.from({ length: 500 }, (_, i) => ({
+      name: `行${i}`,
+      note: i === 3 ? '这是一段足够长的备注文本用来验证 windowed 混合模型下切片内行的测量回填与几何收敛' : `短${i}`,
+    }))
+    el.setAttribute('data', JSON.stringify(full.slice(0, 17)))
+    document.body.prepend(el)
+    // 宿主回填闭环（模拟真实 windowed 宿主）
+    el.addEventListener('oas-window-request', (e) => {
+      const { start, end } = (e as CustomEvent).detail
+      el.setAttribute('window-start', String(start))
+      el.setAttribute('data', JSON.stringify(full.slice(start, end)))
+    })
+  })
+  const t = page.locator('#table-autowin-e2e')
+  // RO 测量回填：行 3 撑高（混合模型：切片内实测）
+  await expect
+    .poll(
+      async () => {
+        const row3 = await t.locator('tbody tr[data-row-index="3"]').count()
+        if (!row3) return 0
+        return t.locator('tbody tr[data-row-index="3"]').evaluate((tr) => Math.round(tr.getBoundingClientRect().height))
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(56)
+  // 请求闭环仍工作：滚到远端触发回填（混合模型的估计前缀和参与可视窗口）
+  await t.evaluate((el) => {
+    const wrap = el.shadowRoot!.querySelector('.table-scroll')!
+    wrap.scrollTop = 8000
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await expect.poll(async () => t.getAttribute('window-start'), { timeout: 10_000 }).not.toBe('0')
+  // 回填后行渲染正常（无错位：data-row-index 存在且连续递增）
+  const idx = await t
+    .locator('tbody tr[data-row-index]')
+    .evaluateAll((trs) => trs.map((tr) => Number(tr.getAttribute('data-row-index'))))
+  expect(idx.length).toBeGreaterThan(0)
+  expect(idx.every((v, i) => i === 0 || v > idx[i - 1]!)).toBe(true)
+  expect(errors, 'console 零 error').toEqual([])
+})

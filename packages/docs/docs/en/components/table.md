@@ -341,11 +341,12 @@ The `wrap` column field controls cell wrapping in three states:
 
 Virtual scrolling (`height`) keeps a uniform row height across the table (the `row-height` step) by default. When rows should **grow with their content** (long notes, message-style data), import `@oas-ui/ui/data/table/auto-height` once and set the `row-auto-height` attribute:
 
-- **Measurement model**: ResizeObserver measures each rendered row; unmeasured rows use the `row-height` estimate — the scrollbar length starts estimated and converges as measurements arrive (jumping to a remote region positions by estimate until it settles).
+- **Measurement model**: ResizeObserver measures each rendered row; unmeasured rows use the `row-height` estimate — the scrollbar length starts estimated and converges as measurements arrive (jumping to a remote region positions by estimate until it settles). A `wrap: true` column participates in multi-line measurement; non-wrap columns stay single-line (narrowed measurement surface).
+- **Windowed mixed model**: also supported under windowed — rows inside the loaded slice are measured, rows outside and unloaded regions use the `row-height` estimate, and the prefix sum stitches estimate with measured values; after a height correction an `oas-window-request` is re-dispatched as needed (the expected range follows the geometry).
 - **Anchoring**: any height correction (measurement backfill / data change) compensates the scroll position by (row identity, in-row offset) — the viewport content never jumps (same behavior as spreadsheet auto-fit).
 - **Shrinking**: the tr inline height acts as a minimum in table layout (grow-only, which eliminates oscillation); rows whose content got shorter are re-measured via a per-frame round-robin probe and converge within a few frames.
 - **Rows being edited** are excluded from measurement rebuilds (so typing is never cancelled); the next sync after editing settles picks them up.
-- **Limits**: local virtual mode only (windowed auto row height ships with the windowed geometry rework — the combination warns in dev for now); merge / span-method are already inert under virtual scrolling (see the constraints above); the module is a registered L3 — without the import the default table chain only pays a sub-KB hook constant.
+- **Limits**: merge / span-method are already inert under virtual scrolling (see the constraints above); expand rows stay fixed-height under windowed (auto-height applies to data rows only); the module is a registered L3 — without the import the default table chain only pays a sub-KB hook constant.
 
 ## Stripes and Borders
 
