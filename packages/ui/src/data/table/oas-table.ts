@@ -103,6 +103,10 @@ export interface TableColumn {
   serialNumber?: boolean
   /** 省略号：单元格内容超出列宽时单行截断并以省略号显示（配合 title 悬停查看全文） */
   ellipsis?: boolean
+  /** 多行换行三态：true=允许长文本换行（虚拟滚动下覆盖默认单行截断，行高仍受 row-height 限制）；
+      false=强制单行省略号截断（不加 title，悬停提示是 ellipsis 的专有行为）；缺省=非虚拟自然换行、
+      虚拟滚动默认单行截断（保定高几何） */
+  wrap?: boolean
   /** 多级表头：子列（有 children 的列是组表头，不渲染数据单元格，按子列 colspan 合并；数据/排序/显隐/拖拽作用于叶子列） */
   children?: TableColumn[]
   /** 可过滤：表头显示过滤触发器（配合表格级 filter-values 过滤行） */
@@ -559,6 +563,12 @@ td.cell-ellipsis {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* wrap:true 列：显式声明换行（非虚拟下=默认行为的显式化，无害；虚拟下由下方
+   data-virtual 作用域内的覆盖规则生效——那里特异性更高，能压过虚拟默认截断） */
+td.cell-wrap {
+  white-space: normal;
+  overflow: hidden;
+}
 tr:last-child td {
   border-bottom: none;
 }
@@ -591,6 +601,25 @@ tr.row[data-selected='true'] td {
 .table-scroll[data-virtual='true'] td {
   padding-top: 0;
   padding-bottom: 0;
+}
+/* 虚拟默认单行截断：定高行（tr.style.height 内联）几何不容长文本换行撑破（行高漂移会导致
+   滚动窗口与占位高度错位）。只作用数据行 tr.row——expand-row 的富内容 td 是 display:block
+   自定义 HTML（buildExpandRow 内联定高），不许被 nowrap 污染；spacer 行无文本不受影响 */
+.table-scroll[data-virtual='true'] tbody tr.row td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* wrap:true 列在虚拟下恢复换行（特异性 0,3,3 高于默认规则 0,2,3，靠层叠与特异性，不用 !important）。
+   换行内容超过定高时仅 white-space/overflow 截不住——表格布局中 td 盒子高度由内容驱动
+   （cell 的 height 是 min 语义、max-height 被忽略、contain:size 在 table-cell 上不生效，
+   Chromium 纯 HTML 探针实证），行仍会被撑破。display:block 化（anonymous cell 包裹，列位
+   与列宽保持）让 height 回到普通块级语义真正钳高——与 buildExpandRow 虚拟定高同款机制；
+   height 值由 buildRow 的 wrap 分支按 row-height 内联写入 */
+.table-scroll[data-virtual='true'] tbody tr.row td.cell-wrap {
+  white-space: normal;
+  display: block;
+  box-sizing: border-box;
 }
 /* 横向虚拟（column-virtual）：窗口外列归并为占位格（colSpan 跨列求和）——
    透明无边框（bordered 全网格模式下也不画线，避免空格子线泄露） */
@@ -2854,6 +2883,19 @@ export class OASTableBase extends OASElement {
       if (col.ellipsis) {
         td.classList.add('cell-ellipsis')
         td.title = this.cellText(col, row)
+      }
+      // wrap 三态列定义：true=显式换行（cell-wrap）；false=单行截断（复用 cell-ellipsis 纯视觉，
+      // 不加 title——悬停提示是 ellipsis 列专有行为）；缺省=不加任何 class（非虚拟渲染零变化，
+      // 虚拟模式走 CSS 默认截断规则）
+      if (col.wrap === true) {
+        td.classList.add('cell-wrap')
+        // 虚拟模式下内联定高：display:block 化（见 cell-wrap 规则注释）后 height 才真正钳制
+        // 行高，值随 row-height 同源（换行内容超出部分被裁，滚动几何不被撑破）
+        if (this.wrap?.getAttribute('data-virtual') === 'true') {
+          td.style.height = `${this.rowHeightPx()}px`
+        }
+      } else if (col.wrap === false) {
+        td.classList.add('cell-ellipsis')
       }
       // 单元格装饰链（edit=10 / format=20 / range=30 等按 decorateOrder 排序）：
       // 能力内部自行判定是否命中；未 import 对应能力时链为空，零开销

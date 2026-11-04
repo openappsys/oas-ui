@@ -5783,3 +5783,104 @@ test('table wintree：懒展开宿主闭环（expand 事件 → 回填子孙 →
 
   expect(errors, 'console 零 error').toEqual([])
 })
+
+// 缺陷固化：虚拟模式（height）td 曾无截断防护，长文本换行撑破定高几何（40px 行被撑 64px、
+// 滚动窗口与占位高度错位）。修复=数据行（tr.row）默认单行截断 + wrap 三态列定义
+// （true=cell-wrap 换行仍受定高截断 / false=cell-ellipsis 无 title / 缺省=不加 class）。
+test('table 虚拟截断 + wrap 三态：定高不被长文本撑破、wrap 列换行受截、滚动行序连续', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, { timeout: 15000 })
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'qa-virtual-wrap'
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名', width: '100px', wrap: true },
+        { key: 'desc', title: '备注', width: '260px' },
+      ]),
+    )
+    const LONG = '多行备注内容用于验证虚拟滚动定高几何不被换行文本撑破滚动窗口按行高精确计算占位'
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 30 }, (_, i) => ({
+          id: i,
+          name: i % 5 === 0 ? LONG : `行${i}`,
+          desc: i % 5 === 0 ? `超长${LONG}${LONG}` : `短备注${i}`,
+        })),
+      ),
+    )
+    el.style.cssText = 'display:block;width:400px;margin:16px;'
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () => !!document.querySelector('#qa-virtual-wrap')?.shadowRoot?.querySelector('tbody tr.row'),
+    null,
+    { timeout: 15000 },
+  )
+
+  const geom = await page.evaluate(() => {
+    const el = document.querySelector('#qa-virtual-wrap') as HTMLElement & { shadowRoot: ShadowRoot }
+    const sr = el.shadowRoot
+    const heights = [...sr.querySelectorAll<HTMLElement>('tbody tr.row')].map((tr) => tr.getBoundingClientRect().height)
+    const wrapTd = sr.querySelector<HTMLElement>('tbody td[data-col="name"]')!
+    const plainTd = sr.querySelector<HTMLElement>('tbody td[data-col="desc"]')!
+    return {
+      heights,
+      wrapClass: wrapTd.classList.contains('cell-wrap'),
+      wrapScroll: wrapTd.scrollHeight,
+      wrapClient: wrapTd.clientHeight,
+      plainWrapClass: plainTd.classList.contains('cell-wrap'),
+    }
+  })
+  // 修复前：长文本行换行撑高（实测 64px）与短行 40px 不等 → 滚动窗口错位
+  expect(geom.heights.length, '窗口内有渲染行').toBeGreaterThan(0)
+  expect(Math.max(...geom.heights), '行高不超 row-height+边框口径').toBeLessThanOrEqual(41)
+  expect(Math.min(...geom.heights), '行高不低于 row-height 口径').toBeGreaterThanOrEqual(40)
+  expect(new Set(geom.heights).size, '长文本行与短行 boundingBox 高度全等（定高几何不破）').toBe(1)
+  expect(geom.wrapClass, 'wrap:true 列有 cell-wrap class').toBe(true)
+  expect(geom.plainWrapClass, 'wrap 缺省列无 cell-wrap').toBe(false)
+  expect(geom.wrapScroll, 'wrap 列换行内容被截在定高内（scrollHeight > clientHeight）').toBeGreaterThan(geom.wrapClient)
+
+  // 滚动到中部再回顶部：data-row-index 连续无错位
+  const readIndex = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#qa-virtual-wrap') as HTMLElement & { shadowRoot: ShadowRoot }
+      return [...el.shadowRoot.querySelectorAll<HTMLElement>('tbody tr.row')].map((tr) =>
+        Number(tr.getAttribute('data-row-index')),
+      )
+    })
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-virtual-wrap') as HTMLElement & { shadowRoot: ShadowRoot }
+    const wrap = el.shadowRoot.querySelector<HTMLElement>('.table-scroll')!
+    wrap.scrollTop = 400
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await settleTableScroll(page, 'qa-virtual-wrap')
+  const mid = await readIndex()
+  const midSorted = [...mid].sort((a, b) => a - b)
+  expect(midSorted.length, '中部窗口行无重复').toBe([...new Set(midSorted)].length)
+  for (let i = 1; i < midSorted.length; i++) {
+    expect(midSorted[i]! - midSorted[i - 1]!, '中部窗口行号连续').toBe(1)
+  }
+  await page.evaluate(() => {
+    const el = document.querySelector('#qa-virtual-wrap') as HTMLElement & { shadowRoot: ShadowRoot }
+    const wrap = el.shadowRoot.querySelector<HTMLElement>('.table-scroll')!
+    wrap.scrollTop = 0
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await settleTableScroll(page, 'qa-virtual-wrap')
+  const back = await readIndex()
+  expect(back, '回顶部：行号从 0 起连续无错位').toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+  expect(errors, 'console 零 error').toEqual([])
+})

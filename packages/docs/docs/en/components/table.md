@@ -321,6 +321,22 @@ Setting `height` enables virtual scrolling (with a fixed `row-height`): only row
 
 `column-virtual` enables horizontal virtualization (column windowing): only visible-window columns render; off-window columns collapse into `colSpan` placeholder cells (widths summed via `colgroup`; `table-layout: fixed` is enforced) — a 60-column table keeps only a dozen or so in the DOM. It can be combined with `height` row virtualization; fixed columns must use two-end layout and always render. Constraints (warns and degrades): grouped header / span-method / summary rows are incompatible; explicit `width` on every column is recommended (unset widths fall back to an estimated 100px). Note: horizontal scrolling that shifts the column window re-renders the whole table and silently cancels any in-progress edit.
 
+## Multi-line Cells
+
+In non-virtual tables (no `height`), long cell text wraps naturally within the column width and the row grows taller — this is supported behavior. Wrapping only happens when the **column width is constrained**: under the default auto table layout the table first claims the container's surplus width, so long text may fit on one line when the container is wide enough; set an explicit `width` on the column to constrain wrapping by column width.
+
+Under virtual scrolling (`height`), cells default to **single-line, no wrapping** (`nowrap + overflow hidden`) to preserve the fixed-row geometry: a `row-height` row never lets wrapped content push its height (height drift would misalign the scroll window against the spacer heights). Note the default rule carries no column-width cap — content wider than the column's allocated width **widens the table with a horizontal scrollbar**, and the part overflowing the cell edge is clipped. For a true ellipsis or a strict width, use an `ellipsis` / `wrap: false` column (which carries a `max-width` constraint) or explicit column widths.
+
+The `wrap` column field controls cell wrapping in three states:
+
+| `wrap` | Non-virtual (no height) | Virtual scroll (height) |
+| --- | --- | --- |
+| unset | Natural wrapping by column width (as above; no style class added) | Single-line, no wrap (no ellipsis cap; the table widens horizontally beyond the column width, overflow clipped) |
+| `true` | Explicit wrapping (`cell-wrap`) | Wrapped display, content beyond the fixed height is clipped (row height stays `row-height`) |
+| `false` | Single-line ellipsis truncation (no title; the hover tooltip is exclusive to `ellipsis` columns) | Single-line ellipsis truncation (no title) |
+
+**Recipe for multi-line notes**: virtual scrolling + a `wrap: true` column + a larger `row-height` tier (e.g. 64 / 96) — the cell shows multi-line note text within the fixed height; overflow is clipped without stretching the row.
+
 ## Stripes and Borders
 
 <DemoBlock title="Striped rows (stripe)">
@@ -2136,6 +2152,7 @@ const visible = applyQuery(orders, state.query)
 | `editable` | Column editable (double-click a cell to edit) | — | — |
 | `editor` | Editor type/configuration (select/input etc.) | — | — |
 | `ellipsis` | Single-line truncation with ellipsis for overflowing content (full text on hover title) | — | — |
+| `wrap` | Three-state cell wrapping: true=allow wrapping (row height still capped by row-height under virtual scroll); false=force single-line ellipsis truncation (no title); unset=natural wrapping non-virtual, single-line truncation under virtual scroll | — | — |
 | `filterable` | Column filterable (filter trigger rendered in the header) | — | — |
 | `filters` | Column filter options configuration | — | — |
 | `fixed` | Column fixed (left/right pinning) | — | — |

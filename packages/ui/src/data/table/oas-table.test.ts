@@ -549,6 +549,109 @@ describe('OASTable 虚拟滚动', () => {
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
+
+  // wrap 三态列定义 + 虚拟默认单行截断：
+  // 缺省（undefined）= 非虚拟渲染零变化（不加任何 class）；true = 显式换行（cell-wrap）；
+  // false = 单行省略截断但无 title（cell-ellipsis，title 是 ellipsis 列专有行为）。
+  // 虚拟模式（height）数据行（tr.row）默认 nowrap 截断保定高几何；expand-row 富内容 td 不受污染。
+  it('虚拟 + wrap 缺省：tr 定高全等（几何不被长文本撑破）且 td 无任何 wrap class（零 class 红线）', () => {
+    const el = mount({
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', width: '100px' },
+        { key: 'desc', title: '备注', width: '260px' },
+      ]),
+      data: JSON.stringify(
+        Array.from({ length: 20 }, (_, i) => ({
+          id: i,
+          name: `行${i}`,
+          desc: i % 3 === 0 ? '超长备注'.repeat(40) : '短备注',
+        })),
+      ),
+    })
+    const trs = rows(el)
+    expect(trs.length).toBeGreaterThan(0)
+    // 几何锁：虚拟路径 tr.style.height 内联定高，长文本行与短行口径全等（happy-dom 无布局，
+    // 断言内联值本身——内容撑高由 e2e boundingBox 断言覆盖）
+    const heights = new Set(trs.map((tr) => tr.style.height))
+    expect(heights.size).toBe(1)
+    expect(trs[0]!.style.height).toBe('40px')
+    // 红线锁：wrap 缺省不添加任何新 class
+    const tds = el.shadowRoot!.querySelectorAll('tbody td')
+    expect(tds.length).toBeGreaterThan(0)
+    for (const td of tds) {
+      expect(td.classList.contains('cell-wrap')).toBe(false)
+      expect(td.classList.contains('cell-ellipsis')).toBe(false)
+    }
+  })
+
+  it('虚拟 + wrap:true 列：td 有 cell-wrap；同行其他列 td 没有', () => {
+    const el = mount({
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', wrap: true },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: BIG_DATA,
+    })
+    const nameTds = [...el.shadowRoot!.querySelectorAll('tbody td[data-col="name"]')]
+    expect(nameTds.length).toBeGreaterThan(0)
+    for (const td of nameTds) expect(td.classList.contains('cell-wrap')).toBe(true)
+    const ageTds = [...el.shadowRoot!.querySelectorAll('tbody td[data-col="age"]')]
+    expect(ageTds.length).toBeGreaterThan(0)
+    for (const td of ageTds) expect(td.classList.contains('cell-wrap')).toBe(false)
+  })
+
+  it('虚拟 + wrap:false 列：td 有 cell-ellipsis 且无 title（与 col.ellipsis 的 title 行为区分）', () => {
+    const el = mount({
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', wrap: false },
+        { key: 'desc', title: '备注', ellipsis: true },
+      ]),
+      data: JSON.stringify(Array.from({ length: 20 }, (_, i) => ({ id: i, name: `行${i}`, desc: `备注${i}` }))),
+    })
+    const wrapOff = el.shadowRoot!.querySelector('tbody td[data-col="name"]')!
+    expect(wrapOff.classList.contains('cell-ellipsis')).toBe(true)
+    expect(wrapOff.hasAttribute('title')).toBe(false)
+    const ell = el.shadowRoot!.querySelector('tbody td[data-col="desc"]')!
+    expect(ell.classList.contains('cell-ellipsis')).toBe(true)
+    expect(ell.hasAttribute('title')).toBe(true)
+  })
+
+  it('非虚拟 + wrap:true：td 有 cell-wrap；非虚拟 + wrap 缺省：不添加任何新 class（渲染零变化红线）', () => {
+    const on = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', wrap: true },
+        { key: 'age', title: '年龄' },
+      ]),
+    })
+    expect(on.shadowRoot!.querySelector('td[data-col="name"]')!.classList.contains('cell-wrap')).toBe(true)
+    expect(on.shadowRoot!.querySelector('td[data-col="age"]')!.classList.contains('cell-wrap')).toBe(false)
+    const off = mount()
+    const tds = off.shadowRoot!.querySelectorAll('td')
+    expect(tds.length).toBeGreaterThan(0)
+    for (const td of tds) {
+      expect(td.classList.contains('cell-wrap')).toBe(false)
+      expect(td.classList.contains('cell-ellipsis')).toBe(false)
+    }
+  })
+
+  it('col.ellipsis 与 wrap:false 并存：cell-ellipsis class 落位、title 仍由 ellipsis 通道提供（互不冲突）', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', ellipsis: true, wrap: false },
+        { key: 'age', title: '年龄' },
+      ]),
+    })
+    const td = el.shadowRoot!.querySelector('td[data-col="name"]')!
+    expect(td.classList.contains('cell-ellipsis')).toBe(true)
+    expect(td.hasAttribute('title')).toBe(true)
+    expect(td.classList.contains('cell-wrap')).toBe(false)
+  })
 })
 
 describe('OASTable 属性/attribute 声明式通道', () => {
