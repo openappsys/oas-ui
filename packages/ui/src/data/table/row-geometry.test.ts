@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { locateAnchor, restoreAnchor } from './geometry.js'
+import { locateAnchor, restoreAnchor } from './row-geometry.js'
 
 /** 等高校验：40px × 5 行的前缀——锚定数学在定高模型下必须与既有像素语义逐位等价 */
 const UNIFORM = [0, 40, 80, 120, 160, 200]
