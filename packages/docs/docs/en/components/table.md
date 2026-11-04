@@ -2119,7 +2119,7 @@ const visible = applyQuery(orders, state.query)
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | Export matrix: headers (column title / headerTemplate text) + currently visible data rows |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | Export and trigger a download: generate content → Blob download → dispatch `oas-export` |
-| `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
+| `requestAutoHeightSync` | `requestAutoHeightSync(): void` | Auto-height capability callback: after measure backfill changes the prefix sums, re-anchors row identity and performs a regular update render. |
 
 #### Events
 
