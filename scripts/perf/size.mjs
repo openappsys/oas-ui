@@ -849,7 +849,7 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'tableRange',
     get: () => componentMeasures.tableRange.gzipBytes,
-    limit: 13.5 * 1024,
+    limit: 15 * 1024, // 15 KB（2026-11-05 重定档：fill-handle 批 +1.2 KB 实测 13.4，90% 预警线 13.5）
     basis:
       '实测 gzip 12181 B（range/index 9715 = 选区控制器本体，未内联 table 运行时；window-data 840 / interactive 626 / clipboard 363 / capability 340 / row-key 297），其中 662 B 为本链未使用的导出（window-data 534 / clipboard 128），真实消费者构建经 tree-shaking 不携带，故真实量级约 11.5 KB。2026-10-31 复核：唯一可去重项是 findRowPath 与 indexRowPaths 的双实现（69 B），低于瘦身阈值；旧宿主视图签名回退（30 B）无测试覆盖但属 getDisplaySnapshot? 兼容契约，保留。按实测上浮 13.5% 重定档 13.5 KB（利用率 88.1%）',
   },
