@@ -278,6 +278,58 @@ onMounted(() => {
       jsonMode.addEventListener('oas-change', (e) => applyJsonMode(e.detail.value))
     }
 })
+
+    // ⑦ 表格内嵌图表：render(row) 返回 oas-chart 容器（columns 走 property；whenDefined 守卫 = 全页 demo 纪律）
+    onMounted(() => {
+    const sparkTable = document.querySelector('#recipe-sparkline')
+    if (sparkTable) {
+      const sparkSeries = [
+        { name: '官网', values: [12, 18, 15, 24, 30, 28, 36] },
+        { name: 'App', values: [8, 9, 14, 12, 19, 22, 27] },
+        { name: '小程序', values: [22, 19, 24, 21, 18, 25, 23] },
+      ]
+      void customElements.whenDefined('oas-table').then(() => {
+        sparkTable.columns = [
+          { key: 'name', title: '渠道', width: 90 },
+          {
+            key: 'trend',
+            title: '近 7 日趋势',
+            width: 180,
+            render: (row) => {
+              const wrap = document.createElement('div')
+              wrap.style.cssText = 'width: 150px; height: 32px'
+              const chart = document.createElement('oas-chart')
+              chart.setAttribute('type', 'area')
+              chart.style.cssText = 'width: 100%; height: 100%; display: block'
+              chart.setAttribute('aria-label', `${row.name} 近 7 日趋势`)
+              // oas-chart 的 data/options 也是 attribute JSON 通道（无同名 property setter）
+              chart.setAttribute(
+                'data',
+                JSON.stringify({
+                  labels: ['一', '二', '三', '四', '五', '六', '日'],
+                  series: [{ name: row.name || '', data: row.trend || [] }],
+                }),
+              )
+              chart.setAttribute('options', JSON.stringify({ showLegend: false }))
+              wrap.appendChild(chart)
+              return wrap
+            },
+          },
+          { key: 'total', title: '周合计', width: 80, align: 'end' },
+        ]
+        sparkTable.setAttribute(
+          'data',
+          JSON.stringify(
+            sparkSeries.map((s) => ({
+              name: s.name,
+              trend: s.values,
+              total: s.values.reduce((a, b) => a + b, 0),
+            })),
+          ),
+        )
+      })
+    }
+    })
 </script>
 
 ## 多项目甘特树 + 资源项目优先级
@@ -350,6 +402,21 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 2. 输出行与语义色用两个数组（`lines` / `levels` 索引对齐）维护：命令回显落 `info`，成功输出落 `success`，未知命令落 `error`——语义色由 log 映射 token（暗色自动换色）
 3. 清屏有两条同效路径（工具行按钮 / `clear` 命令），都走数据通道 `lines = []`——清空后 log 内置空态自然浮现
 4. 空命令直接忽略，不产生空行；提交后清空输入框走受控 `value` 通道（不派发事件）
+
+## 表格内嵌图表：把 sparkline 放进单元格
+
+**场景**：数据看板里「趋势」列——一行一个迷你图（sparkline），比一列数字直观得多。**不需要任何新组件**：`oas-table` 的列渲染通道（`columns` 的 `render` 函数字段，JS property 通道）+ `oas-chart`（`type="area"` 关图例）就是全部材料。图表是声明式标签，塞进单元格模板即完成组合。
+
+<DemoBlock title="趋势列 = oas-chart sparkline（列 render 通道组合）">
+  <oas-table id="recipe-sparkline" aria-label="各渠道周趋势"></oas-table>
+</DemoBlock>
+
+**模式要点**：
+
+1. `columns` 带函数字段（`render`）时**必须走 JS property 赋值**（attribute 只收 JSON，函数字段无法序列化）；**签名是 `render(row)` 单参**（行对象），返回字符串走文本、**返回 Node/元素直接挂载**（富内容通道，本配方的图表容器即靠它）；`data` 本体走 attribute JSON 通道（组件无 `data` property setter）——两套通道各走各的
+2. **赋值必须在 `customElements.whenDefined('oas-table')` 之后**（组件经主题动态 import 晚注册，升级前赋值会变 expando 被吞）——同页所有 demo 的既有纪律
+3. sparkline 三件套：容器 div 定尺寸（150×32 级）+ `options.showLegend:false` 关图例 + `type="area"` 纯色半透明面（需要纵深感再开 `gradient`）；图表 `width/height:100%` 填满容器，颜色默认走 token 系暗色自动换档，要定制用 `options.colors`
+4. 大数据量/高频更新别走全量 `data` 属性反射（序列化双份开销）——看板场景喂当前页切片；需要服务端切片时走 `windowed` 模式
 
 ## JSON 格式化对照：树形 vs 文本两种读法
 

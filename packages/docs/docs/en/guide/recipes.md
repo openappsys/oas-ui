@@ -278,6 +278,58 @@ onMounted(() => {
       jsonMode.addEventListener('oas-change', (e) => applyJsonMode(e.detail.value))
     }
 })
+
+    // 7) Sparklines in table cells: render(row) returns an oas-chart wrapper (columns via property; whenDefined guard = page-wide demo discipline)
+    onMounted(() => {
+    const sparkTable = document.querySelector('#recipe-sparkline')
+    if (sparkTable) {
+      const sparkSeries = [
+        { name: 'Web', values: [12, 18, 15, 24, 30, 28, 36] },
+        { name: 'App', values: [8, 9, 14, 12, 19, 22, 27] },
+        { name: 'Mini', values: [22, 19, 24, 21, 18, 25, 23] },
+      ]
+      void customElements.whenDefined('oas-table').then(() => {
+        sparkTable.columns = [
+          { key: 'name', title: 'Channel', width: 90 },
+          {
+            key: 'trend',
+            title: 'Last 7 days',
+            width: 180,
+            render: (row) => {
+              const wrap = document.createElement('div')
+              wrap.style.cssText = 'width: 150px; height: 32px'
+              const chart = document.createElement('oas-chart')
+              chart.setAttribute('type', 'area')
+              chart.style.cssText = 'width: 100%; height: 100%; display: block'
+              chart.setAttribute('aria-label', row.name + ' 7-day trend')
+              // oas-chart data/options are attribute JSON channels too (no same-name property setters)
+              chart.setAttribute(
+                'data',
+                JSON.stringify({
+                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                  series: [{ name: row.name || '', data: row.trend || [] }],
+                }),
+              )
+              chart.setAttribute('options', JSON.stringify({ showLegend: false }))
+              wrap.appendChild(chart)
+              return wrap
+            },
+          },
+          { key: 'total', title: 'Weekly', width: 80, align: 'end' },
+        ]
+        sparkTable.setAttribute(
+          'data',
+          JSON.stringify(
+            sparkSeries.map((s) => ({
+              name: s.name,
+              trend: s.values,
+              total: s.values.reduce((a, b) => a + b, 0),
+            })),
+          ),
+        )
+      })
+    }
+    })
 </script>
 
 ## Multi-project Gantt tree + resource project priority
@@ -350,6 +402,21 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 2. Output lines and their semantics live in two parallel arrays (`lines` / `levels`, index-aligned): command echo at `info`, success output at `success`, unknown commands at `error` — the log maps levels to semantic tokens (colors adjust automatically in dark mode)
 3. Clearing has two equivalent paths (toolbar button / the `clear` command), both via the data channel `lines = []` — once empty, the log's built-in empty state appears
 4. Empty commands are ignored outright (no blank lines); clearing the input after submit goes through the controlled `value` channel (no event emitted)
+
+## Sparklines in Table Cells: Chart-per-Cell Without a New Component
+
+**Scenario**: dashboard "trend" columns — one mini chart per row reads far better than a column of numbers. **No new component needed**: the table column render channel (`render` function field on `columns`, JS property path) + `oas-chart` (`type="area"`, legend off) is the entire material. A chart is a declarative tag; drop it into the cell template and the composition is done.
+
+<DemoBlock title="Trend column = oas-chart sparkline (column render channel composition)">
+  <oas-table id="recipe-sparkline" aria-label="Weekly trend by channel"></oas-table>
+</DemoBlock>
+
+**Pattern notes**:
+
+1. `columns` with function fields (`render`) **must be assigned via JS property** (attributes only take JSON; function fields cannot be serialized); the signature is `render(row)` (the row object) — return a string for text, **return a Node/element to mount rich content** (the chart wrapper in this recipe relies on it); the `data` body itself goes through the `data` attribute JSON channel (no `data` property setter) — the two channels are separate
+2. **Assignment must happen after `customElements.whenDefined('oas-table')`** (the component registers late via the theme's dynamic import; assigning before upgrade becomes a swallowed expando) — the same discipline every demo on this page already follows
+3. Sparkline trio: a sizing wrapper div (150x32 level) + `showLegend:false` to hide the legend + `type="area"` solid translucent fill (enable `gradient` for more depth); the chart fills the wrapper at `width/height:100%`, colors default to the token family with dark-mode variants (customize via `options.colors`)
+4. Don't push big/high-frequency datasets through the full `data` attribute reflection (serialization costs) — feed the current page slice; use `windowed` mode for server-side slicing (see the component page "server row window")
 
 ## JSON Formatting Comparison: Tree vs Text
 
