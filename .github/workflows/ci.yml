@@ -115,7 +115,21 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps chromium
+      # 安装停滞自愈：下载挂死时进程不退出、shell 重试不会触发，必须命令内 timeout 把挂死翻译成
+      # 非零退出再重试（2026-11-05 实发：webkit 安装挂死 44 分钟被 cancel 拖垮整 run）。
+      # 正常安装实测 30-40s，单次给 8 分钟余量；共 3 次尝试，step 级 30 分钟兜底。
+      - name: Install Playwright browsers
+        timeout-minutes: 30
+        run: |
+          for attempt in 1 2 3; do
+            echo "== playwright install attempt $attempt/3 =="
+            if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "attempt $attempt failed, retry in 15s"
+            sleep 15
+          done
+          exit 1
       # 零重试（playwright.ssr.config.ts retries:0）：任何 flake 按真实问题处理
       - name: Fixture e2e (Next)
         run: SSR_FIXTURE=next pnpm test:e2e:ssr --project=next
@@ -156,7 +170,21 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps chromium firefox
+      # 安装停滞自愈：下载挂死时进程不退出、shell 重试不会触发，必须命令内 timeout 把挂死翻译成
+      # 非零退出再重试（2026-11-05 实发：webkit 安装挂死 44 分钟被 cancel 拖垮整 run）。
+      # 正常安装实测 30-40s，单次给 8 分钟余量；共 3 次尝试，step 级 30 分钟兜底。
+      - name: Install Playwright browsers
+        timeout-minutes: 30
+        run: |
+          for attempt in 1 2 3; do
+            echo "== playwright install attempt $attempt/3 =="
+            if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium firefox; then
+              exit 0
+            fi
+            echo "attempt $attempt failed, retry in 15s"
+            sleep 15
+          done
+          exit 1
       # 全量 e2e 分 6 片并行：大文件（table/sidebar/toolbar）不再集中压满单片关键路径。
       # WebKit 单独 job：它只有 9 条抽样，若混在 shard 6 会因 CI 未安装 webkit 而整片失败。
       - run: pnpm test:e2e --project=docs-site --project=chromium --project=firefox --shard=${{ matrix.shard }}/6
@@ -208,7 +236,21 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-webkit-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps webkit
+      # 安装停滞自愈：下载挂死时进程不退出、shell 重试不会触发，必须命令内 timeout 把挂死翻译成
+      # 非零退出再重试（2026-11-05 实发：webkit 安装挂死 44 分钟被 cancel 拖垮整 run）。
+      # 正常安装实测 30-40s，单次给 8 分钟余量；共 3 次尝试，step 级 30 分钟兜底。
+      - name: Install Playwright browsers
+        timeout-minutes: 30
+        run: |
+          for attempt in 1 2 3; do
+            echo "== playwright install attempt $attempt/3 =="
+            if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps webkit; then
+              exit 0
+            fi
+            echo "attempt $attempt failed, retry in 15s"
+            sleep 15
+          done
+          exit 1
       - run: pnpm test:e2e:webkit --shard=${{ matrix.shard }}/4
       - name: Upload Playwright artifacts
         if: always()
