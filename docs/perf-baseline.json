@@ -1292,77 +1292,77 @@
     ]
   },
   "render": {
-    "generatedAt": "2026-10-28",
+    "generatedAt": "2026-11-05",
     "env": {
       "runtime": "node v26.9.0",
-      "happyDom": "happy-dom@21.0.3",
+      "happyDom": "happy-dom@21.0.4",
       "iterations": 100,
       "note": "happy-dom 合成环境，非真实浏览器渲染口径；耗时仅供相对对比与退化监测"
     },
     "scenarios": {
       "button-first-render": {
         "label": "button",
-        "meanMs": 0.266,
-        "medianMs": 0.171,
-        "p95Ms": 0.491,
-        "minMs": 0.134,
-        "maxMs": 2.671
+        "meanMs": 0.233,
+        "medianMs": 0.136,
+        "p95Ms": 0.241,
+        "minMs": 0.095,
+        "maxMs": 3.328
       },
       "input-first-render": {
         "label": "input",
-        "meanMs": 1.182,
-        "medianMs": 0.817,
-        "p95Ms": 5.908,
-        "minMs": 0.626,
-        "maxMs": 8.133
+        "meanMs": 0.981,
+        "medianMs": 0.581,
+        "p95Ms": 7.285,
+        "minMs": 0.473,
+        "maxMs": 7.413
       },
       "table-100rows-first-render": {
         "label": "table(100 行)",
-        "meanMs": 7.575,
-        "medianMs": 6.045,
-        "p95Ms": 13.006,
-        "minMs": 4.196,
-        "maxMs": 13.417
+        "meanMs": 6.579,
+        "medianMs": 4.442,
+        "p95Ms": 10.267,
+        "minMs": 3.836,
+        "maxMs": 10.413
       },
       "select-100opt-first-render": {
         "label": "select(100 选项)",
-        "meanMs": 11.085,
-        "medianMs": 12.788,
-        "p95Ms": 14.55,
-        "minMs": 6,
-        "maxMs": 20.008
+        "meanMs": 10.794,
+        "medianMs": 11.967,
+        "p95Ms": 15.182,
+        "minMs": 6.214,
+        "maxMs": 15.954
       },
       "tabs-10panel-first-render": {
         "label": "tabs(10 面板)",
-        "meanMs": 2.427,
-        "medianMs": 2.294,
-        "p95Ms": 3.605,
-        "minMs": 2.028,
-        "maxMs": 3.64
+        "meanMs": 1.921,
+        "medianMs": 1.193,
+        "p95Ms": 7.2,
+        "minMs": 1.07,
+        "maxMs": 8.181
       },
       "form-10field-first-render": {
         "label": "form(10 字段)",
-        "meanMs": 11.09,
-        "medianMs": 13.226,
-        "p95Ms": 14.854,
-        "minMs": 6.578,
-        "maxMs": 15.713
+        "meanMs": 12.293,
+        "medianMs": 13.537,
+        "p95Ms": 16.298,
+        "minMs": 6.87,
+        "maxMs": 34.264
       },
       "table-data-update": {
         "label": "table 数据更新",
-        "meanMs": 9.868,
-        "medianMs": 8.283,
-        "p95Ms": 15.785,
-        "minMs": 4.492,
-        "maxMs": 17.055
+        "meanMs": 10.175,
+        "medianMs": 8.561,
+        "p95Ms": 16.736,
+        "minMs": 4.833,
+        "maxMs": 18.184
       },
       "select-options-update": {
         "label": "select 选项更新",
-        "meanMs": 23.646,
-        "medianMs": 4.904,
-        "p95Ms": 158.164,
-        "minMs": 3.396,
-        "maxMs": 345.159
+        "meanMs": 26.307,
+        "medianMs": 5.856,
+        "p95Ms": 71.179,
+        "minMs": 3.392,
+        "maxMs": 530.124
       }
     },
     "budgets": [
@@ -1370,56 +1370,56 @@
         "id": "button-first-render",
         "label": "button 首渲染",
         "budgetMs": 5,
-        "p95Ms": 0.491,
+        "p95Ms": 0.241,
         "pass": true
       },
       {
         "id": "input-first-render",
         "label": "input 首渲染",
         "budgetMs": 15,
-        "p95Ms": 5.908,
+        "p95Ms": 7.285,
         "pass": true
       },
       {
         "id": "table-100rows-first-render",
         "label": "table 100 行首渲染",
         "budgetMs": 50,
-        "p95Ms": 13.006,
+        "p95Ms": 10.267,
         "pass": true
       },
       {
         "id": "select-100opt-first-render",
         "label": "select 100 选项首渲染",
         "budgetMs": 50,
-        "p95Ms": 14.55,
+        "p95Ms": 15.182,
         "pass": true
       },
       {
         "id": "tabs-10panel-first-render",
         "label": "tabs 10 面板",
         "budgetMs": 15,
-        "p95Ms": 3.605,
+        "p95Ms": 7.2,
         "pass": true
       },
       {
         "id": "form-10field-first-render",
         "label": "form 10 字段",
         "budgetMs": 40,
-        "p95Ms": 14.854,
+        "p95Ms": 16.298,
         "pass": true
       },
       {
         "id": "table-data-update",
         "label": "table 数据更新",
         "budgetMs": 50,
-        "p95Ms": 15.785,
+        "p95Ms": 16.736,
         "pass": true
       },
       {
         "id": "select-options-update",
         "label": "select 选项更新",
         "budgetMs": 160,
-        "p95Ms": 158.164,
+        "p95Ms": 71.179,
         "pass": true
       }
     ]

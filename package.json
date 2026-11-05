@@ -62,16 +62,16 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@biomejs/biome": "^2.5.15",
+    "@biomejs/biome": "^2.6.4",
     "@oas-ui/theme": "workspace:*",
     "@oas-ui/ui": "workspace:*",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
     "cross-env": "^10.1.0",
-    "happy-dom": "^21.0.3",
-    "markdownlint-cli2": "^0.23.3",
+    "happy-dom": "^21.0.4",
+    "markdownlint-cli2": "^0.24.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4",
-    "vitest": "^5.0.5"
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
   }
 }

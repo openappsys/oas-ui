@@ -206,7 +206,7 @@ Astro 是 HTML 优先的 MPA / 群岛架构，**零特殊处理**：`.astro` 文
 3. **布尔空串**：Vue 静态 `<oas-ellipsis expanded>` 会写 `''`，组件按 presence 语义视为开启；不要用 `expanded="false"` 这种字符串关闭，按组件文档移除属性或写 `false`。
 4. **SSR 先注册再水合**：不要在未升级元素上写 property；需要等待 `customElements.whenDefined('oas-*')` 或使用框架集成包。
 5. **`::part()` 不能链伪类**：`::part(item):hover` 无效，用 `::part(item)` + 组件内部状态属性。
-6. **全局属性与 property 通道**：React 对 `title` 等原生 property 名走 property 赋值，但 `title` 是反射型 property（赋值同步成 attribute），`oas-modal` / `oas-drawer` 双通道都正常收到并**消费**（渲染后移除 attribute，DOM 里看不到残留是正常行为）——见上文 [全局属性与 property 通道](#全局属性与-property-通道-title-的实测行为) 节。
+6. **全局属性与 property 通道**：React 对 `title` 等原生 property 名走 property 赋值，但 `title` 是反射型 property（赋值同步成 attribute），`oas-modal` / `oas-drawer` 双通道都正常收到并**消费**（渲染后移除 attribute，DOM 里看不到残留是正常行为）——见上文 [全局属性与 property 通道](#全局属性与-property-通道title-的实测行为) 节。
 
 ## 相关页面
 

@@ -93,14 +93,14 @@
 <!-- BEGIN:generated:perf-baseline:render -->
 | 场景 | median / p95（ms） | 门槛（ms） |
 | --- | --- | --- |
-| button 首渲染 | 0.2 / 0.5 | 5 |
-| input 首渲染 | 0.8 / 5.9 | 15 |
-| table 100 行首渲染 | 6.0 / 13.0 | 50 |
-| select 100 选项首渲染 | 12.8 / 14.6 | 50 |
-| tabs 10 面板 | 2.3 / 3.6 | 15 |
-| form 10 字段 | 13.2 / 14.9 | 40 |
-| table 数据更新 | 8.3 / 15.8 | 50 |
-| select 选项更新 | 4.9 / 158.2 | 160 |
+| button 首渲染 | 0.1 / 0.2 | 5 |
+| input 首渲染 | 0.6 / 7.3 | 15 |
+| table 100 行首渲染 | 4.4 / 10.3 | 50 |
+| select 100 选项首渲染 | 12.0 / 15.2 | 50 |
+| tabs 10 面板 | 1.2 / 7.2 | 15 |
+| form 10 字段 | 13.5 / 16.3 | 40 |
+| table 数据更新 | 8.6 / 16.7 | 50 |
+| select 选项更新 | 5.9 / 71.2 | 160 |
 <!-- END:generated:perf-baseline:render -->
 
 > 渲染口径诚实声明：happy-dom 无排版/合成管线，数值仅供**相对对比与退化监测**；p95 受 GC 尾延迟支配跨轮次波动明显（如 select 选项更新曾同机测得 58~158 ms），真实浏览器首帧数字需另行用 Playwright/Lighthouse 建立基线后评估。渲染段数据由 `pnpm perf:bench` 写入 JSON，不进 CI。
