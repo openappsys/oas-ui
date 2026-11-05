@@ -77,6 +77,10 @@
       "observed": true
     },
     {
+      "name": "aria-labelledby",
+      "observed": true
+    },
+    {
       "name": "check-all",
       "observed": false
     },

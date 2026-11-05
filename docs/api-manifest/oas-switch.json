@@ -91,6 +91,10 @@
       "observed": true
     },
     {
+      "name": "aria-labelledby",
+      "observed": true
+    },
+    {
       "name": "description",
       "type": "string",
       "default": "",

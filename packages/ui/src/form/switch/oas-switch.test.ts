@@ -204,6 +204,26 @@ describe('OASSwitch', () => {
     expect(sw(el).hasAttribute('aria-label')).toBe(false)
   })
 
+  it('aria-labelledby 镜像到内部 button（idref 列表原样拷贝，移除同步摘除）', () => {
+    const el = mount()
+    expect(sw(el).hasAttribute('aria-labelledby')).toBe(false)
+    el.setAttribute('aria-labelledby', 'sw-title sw-desc')
+    expect(sw(el).getAttribute('aria-labelledby')).toBe('sw-title sw-desc')
+    el.removeAttribute('aria-labelledby')
+    expect(sw(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('空 aria-labelledby 不镜像（不产生空 idref 引用）', () => {
+    const el = mount({ 'aria-labelledby': '' })
+    expect(sw(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('aria-label 与 aria-labelledby 同时在场：两通道各自镜像互不覆盖（原生名计算 labelledby 优先）', () => {
+    const el = mount({ 'aria-label': '夜间模式', 'aria-labelledby': 'sw-title' })
+    expect(sw(el).getAttribute('aria-label')).toBe('夜间模式')
+    expect(sw(el).getAttribute('aria-labelledby')).toBe('sw-title')
+  })
+
   it('disabled 时镜像 data-disabled（label 视觉联动钩子）', () => {
     const el = mount({ disabled: '' })
     expect(el.hasAttribute('data-disabled')).toBe(true)

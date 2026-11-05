@@ -646,7 +646,8 @@
       "true-value": "勾选映射值：oas-change 的 detail.value 与 value getter 返回该值，FormData 提交该值（checkbox-group 内不生效）",
       "false-value": "取消勾选映射值（detail.value / value getter 通道；照原生「关不提交」不进 FormData；checkbox-group 内不生效）",
       "tabindex": "透传内层原生 checkbox（`-1` 移出 Tab 序）",
-      "aria-label": "可访问名镜像：宿主直设时镜像给内层原生 checkbox（显式 aria 优先于 label 包裹的标签文字；空 slot 纯勾选格场景必备，移除后同步回落）"
+      "aria-label": "可访问名镜像：宿主直设时镜像给内层原生 checkbox（显式 aria 优先于 label 包裹的标签文字；空 slot 纯勾选格场景必备，移除后同步回落）",
+      "aria-labelledby": "可访问名镜像第二通道：宿主 idref 列表原样镜像给内层原生 checkbox（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先）"
     },
     "events": {
       "oas-change": "勾选变化，`detail: { checked, value }`",
@@ -3200,6 +3201,7 @@
       "false-value": "未选中时的映射值",
       "status": "校验态：`error` / `warning` / `success`；error 联动 aria-invalid",
       "aria-label": "可访问名（宿主覆盖通道，显式设置优先于 label 推导）",
+      "aria-labelledby": "可访问名第二通道：宿主 idref 列表原样镜像到内部 button（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先）",
       "required": "必填标记（驱动原生校验链 valueMissing：关 = 未填）",
       "description": "描述副文本（label 下方的次级说明；slot[name=description] 富内容优先于属性文本），与 checkbox/radio 的 description 契约一致",
       "variant": "形态：`default`（默认拨杆）/ `card`（卡片：描边容器包住拨杆 + 标签 + 描述，整卡可点、选中描边着色，对齐 checkbox/radio 选择卡）；非法值静默回落 default"

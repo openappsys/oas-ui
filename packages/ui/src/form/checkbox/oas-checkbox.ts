@@ -259,8 +259,9 @@ export class OASCheckbox extends OASFormElement {
       'data-limit-blocked',
       // 表级 size 下发通道（oas-form[size] 注入）
       'data-form-size',
-      // 可访问名镜像通道（宿主 aria-label → 内层 input，见 update）
+      // 可访问名镜像通道（宿主 aria-label / aria-labelledby → 内层 input，见 update）
       'aria-label',
+      'aria-labelledby',
     ]
   }
 
@@ -492,6 +493,13 @@ export class OASCheckbox extends OASFormElement {
     const ariaLabel = this.getAttribute('aria-label')
     if (ariaLabel != null && ariaLabel !== '') input.setAttribute('aria-label', ariaLabel)
     else input.removeAttribute('aria-label')
+
+    // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
+    // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
+    // 忠实镜像即可（不做 auto-complete 式互斥清理）。
+    const ariaLabelledby = this.getAttribute('aria-labelledby')
+    if (ariaLabelledby != null && ariaLabelledby !== '') input.setAttribute('aria-labelledby', ariaLabelledby)
+    else input.removeAttribute('aria-labelledby')
 
     this.syncNamedSlots()
   }

@@ -1014,6 +1014,48 @@ describe('OASCheckbox 可访问名镜像（aria-label）', () => {
   })
 })
 
+describe('OASCheckbox 可访问名镜像（aria-labelledby）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('宿主 aria-labelledby 镜像给内层 input（idref 列表原样拷贝）', () => {
+    const el = mountCheckbox({ 'aria-labelledby': 'cb-title cb-desc' }, '')
+    expect(native(el).getAttribute('aria-labelledby')).toBe('cb-title cb-desc')
+  })
+
+  it('运行时设置 aria-labelledby：内层即时跟随', () => {
+    const el = mountCheckbox({}, '')
+    expect(native(el).hasAttribute('aria-labelledby')).toBe(false)
+    el.setAttribute('aria-labelledby', 'cb-hint')
+    expect(native(el).getAttribute('aria-labelledby')).toBe('cb-hint')
+  })
+
+  it('运行时移除 aria-labelledby：内层同步摘除（回落 label 包裹的 slot 文字）', () => {
+    const el = mountCheckbox({ 'aria-labelledby': 'cb-hint' }, '')
+    el.removeAttribute('aria-labelledby')
+    expect(native(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('空 aria-labelledby 不镜像（不产生空 idref 引用）', () => {
+    const el = mountCheckbox({ 'aria-labelledby': '' }, '')
+    expect(native(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('aria-label 与 aria-labelledby 同时在场：两通道各自镜像互不覆盖（原生名计算 labelledby 优先）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'cb-hint'
+    hint.textContent = '任务说明'
+    document.body.appendChild(hint)
+    const el = mountCheckbox({ 'aria-label': '任务 · 张三', 'aria-labelledby': 'cb-hint' }, '')
+    expect(native(el).getAttribute('aria-label')).toBe('任务 · 张三')
+    expect(native(el).getAttribute('aria-labelledby')).toBe('cb-hint')
+  })
+})
+
 describe('OASCheckboxGroup value property（get/set）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

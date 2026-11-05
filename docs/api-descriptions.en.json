@@ -664,7 +664,8 @@
       "true-value": "Mapped value when checked: drives detail.value, the value getter and FormData submission (not effective inside a checkbox-group)",
       "false-value": "Mapped value when unchecked (detail.value / value getter; not added to FormData per native unchecked semantics; not effective inside a checkbox-group)",
       "tabindex": "Forwarded to the inner native checkbox (`-1` removes it from the tab order)",
-      "aria-label": "Accessible name mirror: when set on the host it is mirrored to the inner native checkbox (explicit aria wins over the label-wrapped text; essential for bare check cells with no slot text, removed state falls back cleanly)"
+      "aria-label": "Accessible name mirror: when set on the host it is mirrored to the inner native checkbox (explicit aria wins over the label-wrapped text; essential for bare check cells with no slot text, removed state falls back cleanly)",
+      "aria-labelledby": "Accessible name mirror (second channel): the host idref list is mirrored as-is to the inner native checkbox (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence)"
     },
     "events": {
       "oas-change": "Checked change, `detail: { checked, value }`",
@@ -3347,6 +3348,7 @@
       "false-value": "Mapped value when unchecked",
       "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
       "aria-label": "Accessible name (host override channel; explicit value wins over label derivation)",
+      "aria-labelledby": "Accessible name second channel: the host idref list is mirrored as-is to the inner button (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence)",
       "required": "Required marker (drives the native valueMissing validation chain: off counts as unfilled)",
       "description": "Secondary description text (muted line under the label; slot[name=description] rich content wins over the attribute text), same contract as checkbox/radio description",
       "variant": "Variant: `default` (plain thumb) / `card` (a bordered card wrapping the thumb + label + description; whole card clickable, selected state tints the border, aligned with the checkbox/radio choice card); invalid values silently fall back to default"
