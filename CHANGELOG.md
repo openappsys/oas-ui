@@ -38,6 +38,8 @@
 - **`oas-upload` 表单 values-change 补齐**：`oas-change` detail 增加 `value` 键（= 与 form 读取器逐字同串的可提交元数据 JSON，`files` 键不变），upload 字段变化现在正常触发 `oas-values-change`；form 侧 `NO_WRITEBACK_CONTROLS` 防回环（不回写宿主、不反噬文件列表）。upload.md「表单集成注意」第一条转已支持。
 - **axe 无障碍审计扩到 guide 页（zh/en 26 页）**：a11y.spec 扫描面从组件页扩到指南页 `.vp-doc`，新违规 9 组全修——暗色代码主题换 github-dark-high-contrast + 5 段 token 对比度覆盖（插值/角标/表头/danger/tip，全部 oklab 复核 ≥60）；**`oas-checkbox` 组件级修复：宿主 `aria-label` 镜像进 shadow input**（对齐 oas-switch 惯例，四通道命名优先级矩阵不破）；recipes 终端配方黑底语义行对比度补齐；基线 baselineKey 加目录段消歧（zh/en 同名页不再互覆盖）；a11y-contrast-baseline 重生成（207 条，totals 自校验一致）。
 - **WSL rehearse 容器模式（`--container`）**：WSL 自带 OCI 容器 CLI（wslc）一键起一次性 Linux 环境跑发布门禁——镜像默认按 `.nvmrc` 推导（`node:24-bookworm` = CI 同款 Node），pnpm 版本取 `packageManager` 字段，挂载 rw 同写证据文件（verify-rehearsal 协议兼容，fail closed）；发行版模式零变化。lib 层 35 单测。
+- **`oas-table` 拖拽填充柄（fill-handle）**：区域选区右下角菱形柄拖拽填充——auto 语义（单值复制/数值首差/ISO 日期日差/双向周期平铺），提交走既有 range-write 通道（一条撤销事务）；真浏览器两层根因修复（指针捕获重定向 + elementFromPoint 不穿透 shadow——move/up 双注册 + SR 级 API）；table 默认链零增量（opt-in range 能力包 13.4/15）；i18n `table.fillHandle` ×10 语言；三引擎 e2e 8 条。
+- **gantt 巨型文件模块化（7390→5161 行）**：STYLE/公开类型/纯函数簇/30 个低 this 方法拆为 gantt-style/types/utils/helpers 四模块——API 面零漂移、500 单测绿；链值 +2.9 KB 为 preserveModules 逐文件 gzip 边界成本（归因实验在案，仍 PASS）；碰撞面与 review 盲区显著收敛。scan.mjs 配套 `*-style.ts` cssVars 收割约定。
 
 ### 修复
 

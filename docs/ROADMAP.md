@@ -24,7 +24,9 @@
 | **T11 values-change** | upload detail 加 value 键 + NO_WRITEBACK 防回环（9 单测含无回环证据） | ✅ 已完成（未发布） |
 | **T12 axe 扩 guide** | 26 页全扫 9 组修复（含 checkbox 组件级 aria-label 镜像）；baselineKey 消歧 | ✅ 已完成（未发布） |
 | **T13 form 链审计** | 无安全冗余；core 子路径导出=架构级候选；form 行文案待版本刷新 | ✅ 已完成（未发布） |
-| **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像）+ Ubuntu Node 版本随 `.nvmrc`（26.13.0）/pnpm 12.5.1 就位 | ✅ 已完成（未发布） |
+| **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像，Node 随 .nvmrc 升级自动跟随）+ pnpm 12.5.1 就位 | ✅ 已完成（未发布） |
+| **fill-handle 批** | table 拖拽填充柄（auto 语义序列推导 + 真浏览器两层根因修复 + 三引擎 e2e 8 条；默认链零增量，range 档 13.4/15） | ✅ 已完成（未发布） |
+| **gantt 模块化批** | 7390→5161 行四模块拆分（style/types/utils/helpers；API 零漂移；+2.9 KB 边界成本归因存档） | ✅ 已完成（未发布） |
 
 ## 未发布（决策批：再捞待决项按原则清零）
 
