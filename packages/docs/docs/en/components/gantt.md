@@ -417,7 +417,7 @@ pool.register([{ id: 'alice', name: 'Alice (Canvas A)', costRate: 120 }])
 ganttEl.resourcePool = pool // instance isolation; write null to restore the shared singleton
 ```
 
-> Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; still not in scope: resource swimlane view (future batch), automatic schedule avoidance — `pool` only detects and marks, it never moves tasks.
+> Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; the resource swimlane is delivered by `group-by-resource` (see the section above); still not in scope: automatic schedule avoidance — `pool` only detects and marks, it never moves tasks.
 
 ## Resource Load View (show-resource-load)
 

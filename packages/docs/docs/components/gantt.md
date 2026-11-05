@@ -418,7 +418,7 @@ pool.register([{ id: 'alice', name: '张三（画布 A）', costRate: 120 }])
 ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
 ```
 
-> 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；仍不做：资源泳道视图（留后续批）、超配自动排程避让——`pool` 只做检测与视觉标注，不移动任何任务。
+> 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；资源泳道已由 `group-by-resource` 承载（见上节）；仍不做：超配自动排程避让——`pool` 只做检测与视觉标注，不移动任何任务。
 
 ## 资源负荷视图（show-resource-load）
 
