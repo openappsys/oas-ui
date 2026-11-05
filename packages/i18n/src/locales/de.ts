@@ -170,6 +170,7 @@ export const de: LocaleMessages = {
   'table.empty': 'Keine Daten',
   'table.selectRow': 'Zeile {key} auswählen',
   'table.rangeSelection': '{rows} Zeilen × {cols} Spalten ausgewählt',
+  'table.fillHandle': 'Ausfüllgriff',
   'table.expand': 'Ausklappen/Einklappen',
   'table.summary': 'Summe',
   'table.edit': 'Bearbeiten',

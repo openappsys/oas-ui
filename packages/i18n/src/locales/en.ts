@@ -134,6 +134,7 @@ export const en: LocaleMessages = {
   'table.empty': 'No data',
   'table.selectRow': 'Select row {key}',
   'table.rangeSelection': '{rows} rows × {cols} columns selected',
+  'table.fillHandle': 'Fill handle',
   'table.expand': 'Expand/Collapse',
   'table.summary': 'Total',
   'table.edit': 'Edit',

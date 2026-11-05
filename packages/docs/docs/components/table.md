@@ -1467,6 +1467,36 @@ onMounted(() => {
     render()
   })
 })
+
+// —— 拖拽填充柄 demo：选区激活后右下角菱形柄，auto 语义（单值复制/数值首差/日期日步进/循环平铺）——
+onMounted(() => {
+  const fillTable = document.querySelector('#table-fill')
+  if (!fillTable) return
+  const fillStatus = document.querySelector('#table-fill-status')
+  void customElements.whenDefined('oas-table').then(() => {
+    enableRangeSelection(fillTable)
+  })
+  fillTable.addEventListener('oas-range-write', (event) => {
+    const detail = event.detail
+    if (detail.kind === 'fill' && fillStatus) {
+      fillStatus.textContent = `已填充 ${detail.changes.length} 格（oas-range-write · 一条撤销事务）`
+    }
+  })
+  fillTable.addEventListener('oas-range-change', (event) => {
+    if (!event.detail && fillStatus) fillStatus.textContent = '已清空选区'
+  })
+  document.querySelector('#table-fill-select')?.addEventListener('click', () => {
+    setRangeSelection(fillTable, { row: 0, col: 'day' }, { row: 1, col: 'owner' })
+  })
+  document.querySelector('#table-fill-off')?.addEventListener('click', () => {
+    fillTable.setAttribute('fill-handle', 'false')
+    if (fillStatus) fillStatus.textContent = '填充柄已关闭（fill-handle="false"）'
+  })
+  document.querySelector('#table-fill-on')?.addEventListener('click', () => {
+    fillTable.removeAttribute('fill-handle')
+    if (fillStatus) fillStatus.textContent = '填充柄已恢复，选中区域后拖拽右下角'
+  })
+})
 </script>
 
 ## 表头显隐
@@ -1763,6 +1793,31 @@ fillRange(table, { mode: 'series', cells: 2 }) // 以方向边界行为源做数
 
 多选区复制按矩形分块并以空行分隔，`header: true` 只给第一个非空块带表头。事件：`oas-range-change`（活动选区或 `null`）、`oas-range-copy`（含 `selections`）、`oas-range-paste`（含 `startKey`）、`oas-range-write`（`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`，统一供 history 合并成一条撤销事务）。`cutRange` / `applyRangePaste` / `fillRange` 与填充柄在默认非受控模式会直接写回 `data`；设置 `edit-controlled` 后仅派发 `oas-range-write`，由宿主决定是否写回。只需选区/复制而不允许写入时，使用 `edit-controlled` 或不调用写入 API。
 
+### 拖拽填充（填充柄）
+
+区域选择激活后，活动选区右下角出现**填充柄**（菱形角标）：按住向下/向上/向左/向右拖拽，选区描边实时外扩为预览，松开提交填充。提交与批量粘贴共用同一写回通道——一次拖拽只派发一条 `oas-range-write`（kind `fill`），history 合并为**一条撤销事务**。填充语义自动推导（等价 `fillRange(table, { mode: 'auto' })`）：**源区单值 → 复制**；**数值列 → 按首差递增序列**（`1,5` 拖两格得 `9,13`）；**日期 → 按日步进**（`2026-01-01, 2026-01-04` 拖一格得 `2026-01-07`）；其余文本/布尔列 → **循环平铺源区模式**（`张三,李四` 向下拖两格得 `张三,李四`）。
+
+`Esc` 取消（清空选区且不写入）；拖回源区（无位移）释放 = 无操作；windowed/虚拟表下拖到未装载区域**只填充已装载行，不静默扩行**（扩行填充需要新行模板与行键生成语义，不在当前版本）；任一格处于编辑态时手柄不渲染（拖拽填充不得越过编辑草稿）。`fill-handle="false"` 可整体关闭（缺省开启，但仅在已有激活选区时渲染——空表/未启用 range 能力零影响）。触屏（coarse 指针）下手柄命中区放大到 44px、菱形视觉保持小尺寸。颜色经 `--oas-table-fill-handle-color` / `--oas-table-fill-handle-outline` token 出口自定义，缺省主色 + 表面描边，暗色主题自动换档。手柄为指针触达入口（`role="button"` + 本地化 `aria-label`）；拖拽类交互的键盘等价路径暂未提供。
+
+<DemoBlock title="拖拽填充：日期步进 / 数值首差 / 文本循环">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-fill-select" size="small">选中前三列前两行</oas-button>
+      <oas-button id="table-fill-off" size="small">关闭填充柄</oas-button>
+      <oas-button id="table-fill-on" size="small">恢复填充柄</oas-button>
+      <span id="table-fill-status" role="status" aria-live="polite" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">按住选区右下角菱形角标向下拖拽</span>
+    </div>
+    <oas-table
+      id="table-fill"
+      row-key="id"
+      columns='[{"key":"id","title":"ID","hidden":true},{"key":"day","title":"日期"},{"key":"seq","title":"序号","align":"right","type":"number"},{"key":"owner","title":"负责人"}]'
+      data='[{"id":"r1","day":"2026-01-01","seq":1,"owner":"张三"},{"id":"r2","day":"2026-01-04","seq":5,"owner":"李四"},{"id":"r3","day":"","seq":0,"owner":""},{"id":"r4","day":"","seq":0,"owner":""},{"id":"r5","day":"","seq":0,"owner":""}]'
+    ></oas-table>
+  </div>
+</DemoBlock>
+
+`fillRange(table, { mode: 'auto', direction, cells, source })` 是同一语义的程序化通道；拖拽柄内部即调用它提交。
+
 ### 撤销/重做（`table/history`）
 
 ```ts
@@ -2058,6 +2113,7 @@ const visible = applyQuery(orders, state.query)
 | `export-file-name` | 导出文件名（不含扩展名；路径分隔符与保留字符自动净化） | `string` | `export` |
 | `export-format` | 导出格式：`csv`（默认）/ `excel`，或逗号组合 `csv,excel`（两个按钮）；非法回落 csv | `string` | `csv` |
 | `exportable` | 导出开关：表格顶部渲染导出工具栏（默认 CSV，可配 CSV/Excel），并开放 exportData 方法 | `boolean` | — |
+| `fill-handle` | 拖拽填充柄开关（缺省开启，`"false"` 关闭）：区域选择激活区右下角菱形角标，拖拽实时预览扩展区、松开提交填充（单值复制 / 数值首差序列 / 日期按日步进 / 其余循环平铺，走 oas-range-write kind=fill 单事务）。读取与消费在 range 能力（data/table/range），未 import 该能力时本属性无任何效果 | — | — |
 | `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值标量） | `string` | — |
 | `grid-navigation` | 键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件） | `boolean` | — |
 | `group-by` | 分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method / row-draggable 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽） | `string` | — |

@@ -170,6 +170,7 @@ export const es: LocaleMessages = {
   'table.empty': 'Sin datos',
   'table.selectRow': 'Seleccionar fila {key}',
   'table.rangeSelection': '{rows} filas × {cols} columnas seleccionadas',
+  'table.fillHandle': 'Controlador de relleno',
   'table.expand': 'Expandir/Contraer',
   'table.summary': 'Total',
   'table.edit': 'Editar',

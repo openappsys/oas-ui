@@ -1397,6 +1397,9 @@ export class OASTableBase extends OASElement {
       'header-align',
       // 单元格溢出提示：纯文本格溢出时 hover 显示全文（表格级单例浮层；"false" 关闭）
       'cell-tooltip',
+      // 拖拽填充柄开关（区域选择激活区右下角的菱形角标；"false" 关闭——渲染与拖拽均停用）。
+      // 读取与消费在 range 能力（data/table/range，未 import 该能力时本属性无任何效果）
+      'fill-handle',
       // 宿主 aria-label：命名内部 table（无 caption 机制，宿主命名是唯一通道；见 syncHostAriaLabel）
       'aria-label',
     ]

@@ -170,6 +170,7 @@ export const zhCN = {
   'table.empty': '暂无数据',
   'table.selectRow': '选择行 {key}',
   'table.rangeSelection': '已选 {rows} 行 {cols} 列',
+  'table.fillHandle': '填充柄',
   'table.expand': '展开/收起',
   'table.summary': '合计',
   'table.edit': '编辑',

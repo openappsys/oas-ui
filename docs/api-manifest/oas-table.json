@@ -259,6 +259,10 @@
       "observed": true
     },
     {
+      "name": "fill-handle",
+      "observed": true
+    },
+    {
       "name": "aria-label",
       "observed": true
     }

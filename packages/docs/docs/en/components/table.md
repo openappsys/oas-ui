@@ -1480,6 +1480,37 @@ onMounted(() => {
     render()
   })
 })
+
+// —— Fill handle demo: diamond at the active selection's corner; auto semantics
+// (single-value copy / numeric first-diff series / date day-step / cyclic tiling) ——
+onMounted(() => {
+  const fillTable = document.querySelector('#table-fill')
+  if (!fillTable) return
+  const fillStatus = document.querySelector('#table-fill-status')
+  void customElements.whenDefined('oas-table').then(() => {
+    enableRangeSelection(fillTable)
+  })
+  fillTable.addEventListener('oas-range-write', (event) => {
+    const detail = event.detail
+    if (detail.kind === 'fill' && fillStatus) {
+      fillStatus.textContent = `Filled ${detail.changes.length} cells (oas-range-write · one undo transaction)`
+    }
+  })
+  fillTable.addEventListener('oas-range-change', (event) => {
+    if (!event.detail && fillStatus) fillStatus.textContent = 'Selection cleared'
+  })
+  document.querySelector('#table-fill-select')?.addEventListener('click', () => {
+    setRangeSelection(fillTable, { row: 0, col: 'day' }, { row: 1, col: 'owner' })
+  })
+  document.querySelector('#table-fill-off')?.addEventListener('click', () => {
+    fillTable.setAttribute('fill-handle', 'false')
+    if (fillStatus) fillStatus.textContent = 'Fill handle disabled (fill-handle="false")'
+  })
+  document.querySelector('#table-fill-on')?.addEventListener('click', () => {
+    fillTable.removeAttribute('fill-handle')
+    if (fillStatus) fillStatus.textContent = 'Fill handle re-enabled — select a range and drag its bottom-right corner'
+  })
+})
 </script>
 
 ## Header visibility
@@ -1776,6 +1807,31 @@ fillRange(table, { mode: 'series', cells: 2 }) // numeric series from the bounda
 
 Multi-selection copy is split into blocks separated by blank lines; `header: true` adds a header only to the first non-empty block. Events: `oas-range-change` (active selection or `null`), `oas-range-copy` (includes `selections`), `oas-range-paste` (includes `startKey`), and `oas-range-write` (`{ kind: 'paste'|'cut'|'fill', changes: [{ key, column, value, oldValue, oldRawValue }] }`, which history merges into one undo transaction). `cutRange` / `applyRangePaste` / `fillRange` and the fill handle write directly to `data` in the default uncontrolled mode; with `edit-controlled`, they only emit `oas-range-write` and let the host decide whether to write back. For selection/copy without writes, use `edit-controlled` or do not call the write APIs.
 
+### Drag fill (fill handle)
+
+Once a range selection is active, a **fill handle** (diamond marker) appears at the bottom-right corner of the active selection. Press and drag down / up / left / right — the selection outline expands live as the preview; releasing commits the fill. The commit shares the batch write-back channel with batch paste: one drag dispatches exactly one `oas-range-write` (kind `fill`), which history merges into **a single undo transaction**. Fill semantics are inferred automatically (equivalent to `fillRange(table, { mode: 'auto' })`): **single source value → copy**; **numeric column → linear series by the first difference** (`1,5` dragged two cells yields `9,13`); **dates → step by day** (`2026-01-01, 2026-01-04` dragged one cell yields `2026-01-07`); other text/boolean columns → **cyclic tiling of the source pattern** (`Ann,Bob` dragged two cells yields `Ann,Bob`).
+
+`Esc` cancels (clears the selection without writing); releasing back on the source (no movement) is a no-op; in windowed / virtual tables dragging into unloaded regions **fills only loaded rows and never silently extends the table** (row-creating fills need row-template and key-generation semantics — not in the current version); while any cell is being edited the handle is not rendered (drag fill must not trample an in-progress draft). `fill-handle="false"` disables it entirely (on by default, but rendered only while an active selection exists — zero impact on empty tables or when the range capability is not imported). On touch (coarse pointer) the handle's hit area expands to 44px while the diamond visual stays small. Colors are exposed via the `--oas-table-fill-handle-color` / `--oas-table-fill-handle-outline` tokens; defaults are primary color with a surface outline, and dark theme switches automatically. The handle is a pointer-reachable affordance (`role="button"` + localized `aria-label`); a keyboard-equivalent path for this drag interaction is not provided yet.
+
+<DemoBlock title="Drag fill: date stepping / numeric series / text tiling">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-fill-select" size="small">Select first two rows (date / seq / owner)</oas-button>
+      <oas-button id="table-fill-off" size="small">Disable fill handle</oas-button>
+      <oas-button id="table-fill-on" size="small">Re-enable fill handle</oas-button>
+      <span id="table-fill-status" role="status" aria-live="polite" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">Drag the diamond at the selection's bottom-right corner</span>
+    </div>
+    <oas-table
+      id="table-fill"
+      row-key="id"
+      columns='[{"key":"id","title":"ID","hidden":true},{"key":"day","title":"Date"},{"key":"seq","title":"Seq","align":"right","type":"number"},{"key":"owner","title":"Owner"}]'
+      data='[{"id":"r1","day":"2026-01-01","seq":1,"owner":"Ann"},{"id":"r2","day":"2026-01-04","seq":5,"owner":"Bob"},{"id":"r3","day":"","seq":0,"owner":""},{"id":"r4","day":"","seq":0,"owner":""},{"id":"r5","day":"","seq":0,"owner":""}]'
+    ></oas-table>
+  </div>
+</DemoBlock>
+
+`fillRange(table, { mode: 'auto', direction, cells, source })` is the programmatic channel with the same semantics; the drag handle calls it internally to commit.
+
 ### Undo / redo (`table/history`)
 
 ```ts
@@ -2071,6 +2127,7 @@ const visible = applyQuery(orders, state.query)
 | `export-file-name` | Export file name (without extension; path separators and reserved characters are sanitized) | `string` | `export` |
 | `export-format` | Export format: `csv` (default) / `excel`, or the comma list `csv,excel` (both buttons); invalid falls back to csv | `string` | `csv` |
 | `exportable` | Enables export: renders export buttons in a toolbar above the table (CSV by default, CSV/Excel configurable), and exposes the exportData method | `boolean` | — |
+| `fill-handle` | Drag fill handle switch (on by default, `"false"` disables): a diamond marker at the bottom-right corner of the active range selection; drag to preview the extension live and release to commit (single-value copy / numeric first-diff series / date day-step / cyclic tiling otherwise, committed as one oas-range-write transaction of kind fill). Read and consumed by the range capability (data/table/range); without importing it this attribute has no effect | — | — |
 | `filter-values` | Controlled column filter values (JSON object: column key → selected scalar value) | `string` | — |
 | `grid-navigation` | Keyboard grid navigation: role=grid, single Tab stop for the data region, arrow keys roam cells (Home/End/PageUp-Down, Enter/Space activate in-cell controls) | `boolean` | — |
 | `group-by` | Grouped view: render sections by field value (section header = value + row count + collapse arrow, click to collapse/expand, expanded by default); groups ordered by first occurrence, sorting applies within groups; empty values fall into the "(empty)" group; combined with merge columns / span-method / row-draggable it warns once and degrades to plain rendering; works with column-virtual / virtual scrolling (section header spans the full width) | `string` | — |

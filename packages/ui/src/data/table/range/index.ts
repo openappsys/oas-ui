@@ -4,6 +4,7 @@ import { isInteractiveEvent } from '../oas-table-interactive.js'
 import { rowKeyValue } from '../oas-table-row-key.js'
 import { expandWindow, loadedRange, windowCovered, WINDOW_MARGIN } from '../../../shared/window-data.js'
 import { parseTsv } from '../advanced/clipboard.js'
+import { inferFillValue, type FillDirection } from './fill-series.js'
 import type { RangeWriteChange, RangeWriteDetail, RangeWriteKind } from '../oas-table-range-write.js'
 
 export type { RangeWriteChange, RangeWriteDetail, RangeWriteKind } from '../oas-table-range-write.js'
@@ -57,10 +58,14 @@ export interface RangeCopyOptions {
 
 export interface RangeFillOptions {
   direction?: 'down' | 'up' | 'left' | 'right'
-  mode?: 'copy' | 'series'
-  /** 数值序列步长绝对值（默认 1；正负由 direction 决定） */
+  /**
+   * copy（默认）= 边界行/列值原样复制；series = 数值序列（配合 step）；
+   * auto = 填充柄语义：单值复制、数值列首差序列、日期按日步进、其余循环平铺（见 fill-series.ts）
+   */
+  mode?: 'copy' | 'series' | 'auto'
+  /** 数值序列步长绝对值（默认 1；正负由 direction 决定；仅 copy/series 模式消费） */
   step?: number
-  /** 填充行/列数（默认 1；以方向边界行/列为源，不做源块循环） */
+  /** 填充行/列数（默认 1；以方向边界行/列为源，不做源块循环——循环平铺见 mode: 'auto'） */
   cells?: number
   /** 内部：拖拽填充柄时的源选区（不传则用当前活动选区） */
   source?: RangeSelection
@@ -162,15 +167,44 @@ td.range-focus {
 td.range-focus {
   position: relative;
 }
+/* 填充柄：本体透明只做命中区，菱形角标由 ::after 绘制（token 出口见 api cssVars：
+   --oas-table-fill-handle-color / --oas-table-fill-handle-outline，暗色经语义 token 回退自动换档） */
 .range-fill-handle {
   position: absolute;
-  inset-inline-end: -1px;
-  bottom: -1px;
+  inset-inline-end: -3px;
+  bottom: -3px;
   width: 6px;
   height: 6px;
-  background: var(--oas-color-primary);
   cursor: crosshair;
   z-index: 1;
+  background: transparent;
+  /* 触屏拖柄不滚动：coarse 命中区压在单元格上，缺省 touch-action 会让拖拽被滚动
+     手势劫持成 pointercancel（拖拽取消、不写入） */
+  touch-action: none;
+}
+.range-fill-handle::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--oas-table-fill-handle-color, var(--oas-color-primary));
+  outline: 1px solid var(--oas-table-fill-handle-outline, var(--oas-color-bg-elevated));
+  transform: rotate(45deg);
+}
+/* 触屏（coarse）：命中区放大到 44px，菱形视觉保持小尺寸并居中（4×4 语义不变） */
+@media (pointer: coarse) {
+  .range-fill-handle {
+    width: 44px;
+    height: 44px;
+    inset-inline-end: -22px;
+    bottom: -22px;
+  }
+  .range-fill-handle::after {
+    inset: auto;
+    inset-inline-start: calc(50% - 3px);
+    top: calc(50% - 3px);
+    width: 6px;
+    height: 6px;
+  }
 }
 .range-live {
   position: absolute;
@@ -405,8 +439,17 @@ class RangeSelectionController {
     this.connected = true
     // 捕获阶段：先于表格自身的网格导航处理 Shift+方向键，避免两套导航各移一格
     this.host.shadowRoot.addEventListener('pointerdown', this.onPointerDown as EventListener)
+    // pointermove/up 双注册（shadowRoot + 宿主），覆盖两种事件形态：
+    // ① 真浏览器 setPointerCapture 到宿主后，move/up 被重定向为 target=宿主，传播路径只含
+    //    宿主及 light 祖先——不穿 shadowRoot（shadowRoot 是宿主的子节点而非祖先），只挂
+    //    shadowRoot 会让捕获态拖拽整段失聪：预览永不算、松开提交空操作（real-drag e2e 曾
+    //    整体失败）。② happy-dom 的合成事件从 shadow 树冒泡不外达宿主，只挂宿主则既有
+    //    shadow 树内合成事件用例全部失聪。两个监听点都命中时处理幂等：scheduleMove 按
+    //    rAF 合帧、onPointerUp 由 filling/dragging 旗标守卫，双发无副作用。
     this.host.shadowRoot.addEventListener('pointermove', this.onPointerMove as EventListener)
     this.host.shadowRoot.addEventListener('pointerup', this.onPointerUp as EventListener)
+    this.host.addEventListener('pointermove', this.onPointerMove as EventListener)
+    this.host.addEventListener('pointerup', this.onPointerUp as EventListener)
     this.host.shadowRoot.addEventListener('selectstart', this.onSelectStart as EventListener)
     this.host.shadowRoot.addEventListener('keydown', this.onKeyDown as EventListener, true)
     this.host.shadowRoot.addEventListener('focusin', this.onFocusIn as EventListener)
@@ -437,6 +480,8 @@ class RangeSelectionController {
     this.host.shadowRoot.removeEventListener('pointerdown', this.onPointerDown as EventListener)
     this.host.shadowRoot.removeEventListener('pointermove', this.onPointerMove as EventListener)
     this.host.shadowRoot.removeEventListener('pointerup', this.onPointerUp as EventListener)
+    this.host.removeEventListener('pointermove', this.onPointerMove as EventListener)
+    this.host.removeEventListener('pointerup', this.onPointerUp as EventListener)
     this.host.shadowRoot.removeEventListener('selectstart', this.onSelectStart as EventListener)
     this.host.shadowRoot.removeEventListener('keydown', this.onKeyDown as EventListener, true)
     this.host.shadowRoot.removeEventListener('focusin', this.onFocusIn as EventListener)
@@ -555,6 +600,11 @@ class RangeSelectionController {
     return this.host.getCapabilityOptions<RangeSelectionOptions>('range') ?? { enabled: false }
   }
 
+  /** 填充柄开关：`fill-handle="false"` 显式关闭；缺省/其它值开启（渲染与拖拽共用以读为准，无内部状态） */
+  private fillHandleEnabled(): boolean {
+    return this.host.getAttribute('fill-handle') !== 'false'
+  }
+
   private injectStyle(): void {
     if (!this.liveEl) {
       this.liveEl = this.host.shadowRoot.querySelector<HTMLElement>('.range-live')
@@ -671,12 +721,20 @@ class RangeSelectionController {
   private onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0 || !this.options().enabled) return
     const target = event.target as HTMLElement | null
-    if (target?.closest('.range-fill-handle') && this.getSelection()) {
+    if (target?.closest('.range-fill-handle') && this.getSelection() && this.fillHandleEnabled()) {
       // 填充柄：进入填充预览，不启动普通选区拖拽
       event.preventDefault()
       event.stopPropagation()
       this.filling = true
       this.fillSource = this.getSelection()
+      // 指针捕获挂在宿主上（柄元素会在预览中随 syncDom 迁移，捕获宿主最稳）：
+      // 拖出表格（乃至视口内任意位置）仍持续收到 pointermove/up，
+      // 由 positionFromEvent 按坐标命中真实单元格（捕获后 event.target 恒为宿主）
+      try {
+        ;(this.host as HTMLElement).setPointerCapture?.(event.pointerId)
+      } catch {
+        /* 捕获不可用（旧环境/已释放）时退化为 shadowRoot 内 target 命中 */
+      }
       return
     }
     const td = target?.closest<HTMLElement>('td[data-col]')
@@ -709,18 +767,36 @@ class RangeSelectionController {
     if (this.dragging) event.preventDefault()
   }
 
+  /** 拖拽移动的目标格解析：优先 event.target（未捕获时即指针下的格）；捕获态 target 恒为宿主，按坐标回查 */
+  private positionFromEvent(event: PointerEvent): PositionKey | null {
+    const fromTarget = (event.target as HTMLElement | null)?.closest<HTMLElement>('td[data-col]')
+    if (fromTarget) return this.cellPositionOf(fromTarget)
+    // 指针捕获生效（target = 宿主）或指针悬在表格外非单元格区域：按视口坐标命中。
+    // 实测（chromium，playwright 真浏览器）：document.elementFromPoint 对 open shadow 树
+    // 不穿透——返回宿主本身，elementsFromPoint 链直接跳过 shadow 子元素；必须用
+    // shadowRoot.elementFromPoint（DocumentOrShadowRoot API，同视口坐标）才能命中格内
+    // 元素。表格全部数据格都在本 shadow 树内，SR 级 API 是主通道；document 级仅作
+    // 旧引擎降级兜底（SR API 缺失或未命中时）。
+    const sr = this.host.shadowRoot as unknown as { elementFromPoint?: (x: number, y: number) => Element | null }
+    if (typeof sr?.elementFromPoint === 'function') {
+      const under = sr.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null
+      const td = under?.closest?.('td[data-col]') as HTMLElement | null
+      if (td) return this.cellPositionOf(td)
+    }
+    if (typeof document === 'undefined' || typeof document.elementFromPoint !== 'function') return null
+    const deep = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null
+    const deepTd = deep?.closest?.('td[data-col]') as HTMLElement | null
+    return deepTd ? this.cellPositionOf(deepTd) : null
+  }
+
   private onPointerMove = (event: PointerEvent): void => {
     if (this.filling) {
-      const target = event.target as HTMLElement | null
-      const td = target?.closest<HTMLElement>('td[data-col]')
-      const position = td ? this.cellPositionOf(td) : null
+      const position = this.positionFromEvent(event)
       if (position) this.scheduleMove(position)
       return
     }
     if (!this.dragging || !this.dragAnchor) return
-    const target = event.target as HTMLElement | null
-    const td = target?.closest<HTMLElement>('td[data-col]')
-    const position = td ? this.cellPositionOf(td) : null
+    const position = this.positionFromEvent(event)
     if (position) this.scheduleMove(position)
   }
 
@@ -795,8 +871,12 @@ class RangeSelectionController {
       this.filling = false
       this.fillSource = null
       this.fillPreview = null
-      // 只有发生方向/格数位移才写入；点击/无预览/取消不填
-      if (source && preview) fillRange(this.host, { source, direction: preview.direction, cells: preview.cells })
+      // 只有发生方向/格数位移才写入；点击/无预览/取消不填。
+      // 提交走既有批量写回事务（oas-range-write kind 'fill' 单事件，history 合并为一条撤销）；
+      // 语义为填充柄 auto 推导（单值复制/数值首差序列/日期日步进/其余循环平铺）。
+      if (source && preview) {
+        fillRange(this.host, { source, direction: preview.direction, cells: preview.cells, mode: 'auto' })
+      }
       return
     }
     this.dragging = false
@@ -1130,6 +1210,9 @@ class RangeSelectionController {
       else grid.removeAttribute('aria-multiselectable')
     }
     const firstCol = cols[0]
+    // 编辑中（任一格存在编辑器，input/select/component/overlay 通道都挂 .cell-editor）不渲染填充柄：
+    // 拖拽填充会越过正在编辑的草稿值；编辑器挂载/移除经 childList 观察触发本同步，实时跟随
+    const editing = this.host.shadowRoot.querySelector('.cell-editor') != null
     for (let row = 0; row < rows.length; row++) {
       const rowEl = rows[row]!
       const rowKey = rowEl.getAttribute('data-key')
@@ -1148,14 +1231,18 @@ class RangeSelectionController {
         const isFocus = Boolean(selected && keys && rowKey === keys.focus.key && col === keys.focus.col)
         td.classList.toggle('range-anchor', isAnchor)
         td.classList.toggle('range-focus', isFocus)
-        if (options.enabled && isFocus) {
-          if (!td.querySelector('.range-fill-handle')) {
-            const handle = document.createElement('span')
+        if (options.enabled && isFocus && this.fillHandleEnabled() && !editing) {
+          let handle = td.querySelector<HTMLElement>('.range-fill-handle')
+          if (!handle) {
+            handle = document.createElement('span')
             handle.className = 'range-fill-handle'
             handle.setAttribute('part', 'fill-handle')
-            handle.setAttribute('aria-hidden', 'true')
+            // 指针触达的拖拽入口（键盘等价路径 MVP 不做，注释留后续）：role + 本地化 aria-label
+            // 供读屏/辅助工具发现；i18n key `table.fillHandle`，translateText 不可用时回退中文
+            handle.setAttribute('role', 'button')
             td.appendChild(handle)
           }
+          handle.setAttribute('aria-label', this.host.translateText?.('table.fillHandle') || '填充柄')
         } else {
           td.querySelector('.range-fill-handle')?.remove()
         }
@@ -1556,7 +1643,7 @@ export function applyRangePaste(table: HTMLElement, text: string, options: Range
   return writeRangeChanges(host, 'paste', changes)
 }
 
-/** 按当前选区/源选区填充（复制或数值序列）；返回写入单元格数 */
+/** 按当前选区/源选区填充（copy 复制 / series 数值序列 / auto 填充柄语义）；返回写入单元格数 */
 export function fillRange(table: HTMLElement, options: RangeFillOptions = {}): number {
   const host = table as RangeHost
   const controller = controllerOf(table)
@@ -1613,7 +1700,55 @@ export function fillRange(table: HTMLElement, options: RangeFillOptions = {}): n
     }
     changes.push({ key, column: targetCol, value, ...cellOld(target, targetCol) })
   }
-  if (direction === 'down' || direction === 'up') {
+  if (mode === 'auto') {
+    // 填充柄语义（fill-series.ts 纯函数推导）：单值复制 / 数值首差序列 / 日期日步进 / 其余循环平铺。
+    // windowed/虚拟表边界：目标行只解析已渲染且已装载的行，越界目标静默跳过——
+    // 不静默扩行（扩行填充需要新行模板/行键生成语义，不在 MVP，见 PRD 拖拽填充节）。
+    // 源切片任一格不可读（离窗/未装载）时该列/行整体跳过，不做半源推导（防止错值写回）。
+    const pushInferred = (targetRow: number, targetCol: string, slice: readonly unknown[], step: number): void => {
+      if (slice.some((v) => v === undefined)) return
+      const value = inferFillValue(slice, step, direction)
+      if (value === undefined) return
+      const tr = rowAtIndex(host, targetRow)
+      const key = tr?.getAttribute('data-key')
+      if (!key) return
+      const path = findRowPath(host.data ?? [], key, rowKey)
+      const target = path ? rowAtPath(host.data ?? [], path) : null
+      if (!target) return
+      changes.push({ key, column: targetCol, value, ...cellOld(target, targetCol) })
+    }
+    if (direction === 'down' || direction === 'up') {
+      const startCol = cols.indexOf(source.start.col)
+      const endCol = cols.indexOf(source.end.col)
+      for (let col = startCol; col <= endCol; col++) {
+        const column = cols[col]
+        if (!column) continue
+        const slice: unknown[] = []
+        for (let r = source.start.row; r <= source.end.row; r++) slice.push(sourceValue(r, column)?.value)
+        for (let offset = 1; offset <= cells; offset++) {
+          const targetRow = direction === 'down' ? source.end.row + offset : source.start.row - offset
+          if (targetRow < 0) continue
+          pushInferred(targetRow, column, slice, offset)
+        }
+      }
+    } else {
+      const startCol = cols.indexOf(source.start.col)
+      const endCol = cols.indexOf(source.end.col)
+      for (let row = source.start.row; row <= source.end.row; row++) {
+        const slice: unknown[] = []
+        for (let c = startCol; c <= endCol; c++) {
+          const column = cols[c]
+          slice.push(column ? sourceValue(row, column)?.value : undefined)
+        }
+        for (let offset = 1; offset <= cells; offset++) {
+          const targetColIndex = direction === 'right' ? endCol + offset : startCol - offset
+          const column = cols[targetColIndex]
+          if (!column) continue
+          pushInferred(row, column, slice, offset)
+        }
+      }
+    }
+  } else if (direction === 'down' || direction === 'up') {
     const sign = direction === 'down' ? 1 : -1
     const startRow = direction === 'down' ? source.end.row : source.start.row
     const startCol = cols.indexOf(source.start.col)

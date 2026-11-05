@@ -14,8 +14,9 @@
  *   layout/scroll-area/infinite、framework/config-provider——均为被主入口
  *   （data/table、layout/scroll-area）或宿主组件代注册覆盖的内部 helper/能力包，
  *   闭包无 key 字面量；独立消费路径不存在，注册反而制造重复注册与包体膨胀；
- * - 唯一注册豁免：data/table/range——闭包恰好只命中 `table.rangeSelection` 一键，
- *   设计明确本批不处理该能力的读屏文案（见 ui-spec 表格能力节），豁免登记于此，
+ * - 唯一注册豁免：data/table/range——闭包命中 `table.rangeSelection` 与 `table.fillHandle` 两键，
+ *   均为运行时 translateText 通道（locale 全量包/slices 注册覆盖），能力自身零注册；
+ *   读屏文案不随能力包注册（避免重复注册与包体膨胀），豁免登记于此，
  *   防其被当作「缺失注册」误报；若闭包命中的 key 集合发生变化须回到设计评审。
  *
  * 根入口 `src/index.ts` 是全家族聚合入口：其闭包覆盖全库（哨兵断言保证分析未
@@ -77,7 +78,7 @@ const HELPER_NO_REGISTER: readonly string[] = [
   'framework/config-provider',
 ]
 
-/** 唯一注册豁免：闭包只命中 table.rangeSelection，设计明确本批不处理 */
+/** 唯一注册豁免：闭包只命中 table.rangeSelection / table.fillHandle（translateText 运行时通道），设计明确本批不处理 */
 const REGISTER_EXEMPT: readonly string[] = ['data/table/range']
 
 // ---------------------------------------------------------------------------
@@ -621,7 +622,7 @@ describe('i18n 入口注册完备性（静态：入口 import 闭包 × 切片 k
     expect(violations, `\nhelper 白名单出现注册（共 ${violations.length} 处）：\n${violations.join('\n')}`).toEqual([])
   })
 
-  it('唯一注册豁免 data/table/range：零注册，且闭包恰好只命中 table.rangeSelection（变化须回设计评审）', {
+  it('唯一注册豁免 data/table/range：零注册，且闭包只命中 rangeSelection/fillHandle（变化须回设计评审）', {
     timeout: 60_000,
   }, () => {
     const entry = join(UI_SRC, 'data', 'table', 'range', 'index.ts')
@@ -635,7 +636,7 @@ describe('i18n 入口注册完备性（静态：入口 import 闭包 × 切片 k
     expect(
       [...hits.keys()].sort(),
       'data/table/range 闭包命中的 key 集合已变化——豁免前提不再成立，须回设计评审更新例外清单',
-    ).toEqual(['table.rangeSelection'])
+    ).toEqual(['table.fillHandle', 'table.rangeSelection'])
   })
 
   it('根入口 src/index.ts（全家族聚合）：零注册——注册职责由其闭包内的各组件子入口承担', { timeout: 60_000 }, () => {

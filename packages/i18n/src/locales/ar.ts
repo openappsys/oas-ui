@@ -170,6 +170,7 @@ export const ar: LocaleMessages = {
   'table.empty': 'لا توجد بيانات',
   'table.selectRow': 'تحديد الصف {key}',
   'table.rangeSelection': 'تم تحديد {rows} صفوف و {cols} أعمدة',
+  'table.fillHandle': 'مقبض التعبئة',
   'table.expand': 'توسيع/طي',
   'table.summary': 'الإجمالي',
   'table.edit': 'تحرير',

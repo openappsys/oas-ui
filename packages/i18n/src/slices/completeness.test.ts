@@ -453,8 +453,8 @@ describe('i18n 家族切片完备性', () => {
     expect(slices.conversation['promptInput.placeholder']).toBe('输入消息…')
   })
 
-  it('运行时：整包入口下 447 键全部可解析（t() 不回退 raw key）', () => {
-    expect(zhKeys.length).toBe(447)
+  it('运行时：整包入口下 448 键全部可解析（t() 不回退 raw key）', () => {
+    expect(zhKeys.length).toBe(448)
     for (const key of zhKeys) {
       expect(t(key as never), `整包入口下 ${key} 应解析为中文`).not.toBe(key)
     }

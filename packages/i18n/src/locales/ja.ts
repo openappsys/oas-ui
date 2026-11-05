@@ -170,6 +170,7 @@ export const ja: LocaleMessages = {
   'table.empty': 'データなし',
   'table.selectRow': '行 {key} を選択',
   'table.rangeSelection': '{rows} 行 × {cols} 列を選択中',
+  'table.fillHandle': 'フィルハンドル',
   'table.expand': '展開/折りたたみ',
   'table.summary': '合計',
   'table.edit': '編集',
