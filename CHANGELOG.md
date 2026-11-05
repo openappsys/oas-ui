@@ -103,6 +103,8 @@
 ### 构建
 
 - **开发/CI 运行时升级到 Node 26 LTS**：`.nvmrc` 24.22.2 → **26.13.0**（2026-10-28 进入 Active LTS，EOL 2029-04）；`@types/node` ^24.19.2 → ^26.6.6 与运行时对齐；CI / Release 继续读 `.nvmrc` 自动跟随，`release.yml` 的 npm@12 前置版本说明同步。`engines.node` 维持 `^22.18.0 || ^24.0.0 || >=26.0.0` 不变（不在 minor 中抬高消费方最低 Node；Node 22 / 24 仍在支持窗口）。
+- **发布子包补齐 `engines.node`**：core / i18n / icons / theme / ssr / ui / next / nuxt 的 `package.json` 显式声明同一范围 `^22.18.0 || ^24.0.0 || >=26.0.0`。根 `engines` 不会被 npm 消费方继承，此前只在根声明导致子包安装时缺少前置校验；本次为元数据补齐，不改公开 API。
+- **CI 新增 `node-compat` 兼容矩阵**：matrix `22.18.0`（最低支持线）/ `24.22.2`（上一 LTS），各跑 `pnpm test` + `pnpm build`，防止「只在 Node 26 上验证、却用了 22 不可用的 API / 语法」的静默漂移；主 `test` job 仍随 `.nvmrc` 跑 Node 26。不跑 e2e 以控制成本。
 - **i18n 构建加 `removeComments`**（发布产物去注释，d.ts 保留文档注释）；`packages/i18n` 的 `sideEffects` 增 `./dist/registry.js`（registry 含真实模块级副作用，须防消费方 tree-shake 摇掉）。
 - **4 条贴边链预算按实测重定档**：`table/advanced` 8→9 KB、`table/range` 13→13.5 KB、`table/detail` 4→4.5 KB、`theme glass-fluid` 8.5→9.5 KB。四条链均逐文件复读确认**无冗余可清**（可安全移除项合计 136 B），此前 2.2%~5.1% 余量让 90% 预警线失去意义；新档按实测上浮 13.5%~18%，利用率回到 82%~88%（依据写入 `perf:size` 各条 `basis` 与 `docs/perf-baseline.md`）。
 

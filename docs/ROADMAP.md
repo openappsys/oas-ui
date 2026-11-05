@@ -6,7 +6,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **开发/CI 运行时升级到 Node 26 LTS** | `.nvmrc` 24.22.2 → **26.13.0**（Active LTS，2026-10-28 起，EOL 2029-04）；`@types/node` ^24.19.2 → ^26.6.6 与运行时对齐；CI / Release 均读 `.nvmrc` 自动跟随；`release.yml` 的 npm@12 说明同步。**`engines.node` 保持 `^22.18.0 \|\| ^24.0.0 \|\| >=26.0.0` 不变**——组件库不在 minor 抬高消费方最低 Node，Node 22 / 24 仍在支持窗口内。验证：typecheck / 全量单测 12320 / build / perf:size / api / llms / ssr / stats / smoke+console e2e 311 | ✅ 已完成（未发布） |
+| **开发/CI 运行时升级到 Node 26 LTS** | `.nvmrc` 24.22.2 → **26.13.0**（Active LTS，2026-10-28 起，EOL 2029-04）；`@types/node` ^24.19.2 → ^26.6.6 与运行时对齐；CI / Release 均读 `.nvmrc` 自动跟随；`release.yml` 的 npm@12 说明同步。**`engines.node` 保持 `^22.18.0 \|\| ^24.0.0 \|\| >=26.0.0` 不变**——组件库不在 minor 抬高消费方最低 Node，Node 22 / 24 仍在支持窗口内。**配套**：8 个发布子包补齐同一 `engines.node`（根 `engines` 不被 npm 消费方继承）；CI 新增 `node-compat` matrix（22.18.0 / 24.22.2，各跑 test + build）守住兼容窗口。验证：typecheck / 全量单测 12320 / build / perf:size / api / llms / ssr / stats / smoke+console e2e 311 | ✅ 已完成（未发布） |
 
 ## 未发布（T 批：demands 编号立项）
 

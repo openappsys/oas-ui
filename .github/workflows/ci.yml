@@ -54,6 +54,25 @@ jobs:
       - run: pnpm ssr:check
       # /llms.txt 防漂移（llmstxt.org 规范；由 docs 侧栏 + 组件 md 生成，入库的是精选索引）
       - run: pnpm llms:check
+  # 兼容窗口：engines 声明 22.18 / 24 / 26，CI 除最新 LTS 外再跑最低支持线与上一 LTS，
+  # 防「只在 26 上验证、却在 22 上用了新 API/语法」的静默漂移。不跑 e2e（成本），保留单测 + build。
+  node-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['22.18.0', '24.22.2']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+
   ssr-fixtures:
     # Next / Nuxt 生产构建 fixture：独立 job，不并入 e2e 分片（fixture 不在根 workspace，
     # 需要单独 install/build；E2E 端口 4301/4302 与文档站 4173 隔离）。
