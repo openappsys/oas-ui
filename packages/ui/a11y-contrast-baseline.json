@@ -9,7 +9,7 @@
     "exempt": 692,
     "skipped": {
       "local": 3850,
-      "ci": 4120
+      "ci": 4140
     }
   },
   "topPairs": [],
@@ -2002,7 +2002,7 @@
       "exempt": 11,
       "skipped": {
         "local": 35,
-        "ci": 35
+        "ci": 44
       }
     },
     "guide/ssr.html": {
@@ -2189,7 +2189,7 @@
       "exempt": 11,
       "skipped": {
         "local": 36,
-        "ci": 36
+        "ci": 47
       }
     },
     "en/resource-management.html": {
