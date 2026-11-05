@@ -37,6 +37,10 @@
       "observed": true
     },
     {
+      "name": "aria-labelledby",
+      "observed": true
+    },
+    {
       "name": "show-total",
       "type": "boolean",
       "observed": true

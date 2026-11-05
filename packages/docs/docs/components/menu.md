@@ -488,6 +488,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `accordion` | 手风琴互斥（inline 模式同级只展开一个子菜单） | `boolean` | — |
+| `aria-labelledby` | 可访问名第二通道：宿主 idref 列表原样镜像给内部菜单容器（ul；移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
 | `close-on-select` | 选中叶子项后是否收起展开的子菜单。缺省分形态：inline 侧边导航不收、浮出形态收；checkbox 项勾选切换永不收起 | `string` | — |
 | `collapsed` | 收起态（vertical / inline 生效，horizontal 不适用）：只显示图标，子菜单向右浮出 | `boolean` | — |
 | `disabled` | 整单禁用：点击/悬停/键盘全拦截，降饱和 + aria-disabled | `boolean` | — |
@@ -582,4 +583,4 @@ onMounted(() => {
 
 键盘轴向按形态区分：竖向菜单与任意层级子菜单用 ↑/↓ 移动、`ArrowRight` 进子菜单、`ArrowLeft` 返回；水平模式顶层改用 ←/→ 沿行移动、`ArrowDown` 进子菜单、`ArrowUp`/Esc 收起。RTL 下方向镜像（子菜单向左浮出，进出改用 `ArrowLeft` 进入、`ArrowRight` 返回）。
 
-读屏语义：焦点始终留在 `role="menu"` 列表上（单一 Tab 落点，不引入 roving tabindex），键盘当前项通过 `aria-activedescendant` 暴露给辅助技术；列表可访问名称取宿主 `aria-label`，未提供时回退默认「导航」，水平模式同时声明 `aria-orientation="horizontal"`。
+读屏语义：焦点始终留在 `role="menu"` 列表上（单一 Tab 落点，不引入 roving tabindex），键盘当前项通过 `aria-activedescendant` 暴露给辅助技术；列表可访问名称取宿主 `aria-label`，未提供时回退默认「导航」，也可用 `aria-labelledby` 关联页内元素（idref 列表原样镜像；与 `aria-label` 同时设置时原生可访问名计算以 `aria-labelledby` 优先），水平模式同时声明 `aria-orientation="horizontal"`。

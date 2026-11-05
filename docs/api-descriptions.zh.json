@@ -1715,7 +1715,8 @@
       "search-shortcut": "组件内聚焦时拦截 Ctrl/Cmd+F 聚焦搜索框；`false` 关闭",
       "compact": "紧凑模式（默认行高 20、字号 11px、更小工具栏内边距）",
       "indent": "复制容器 JSON 时的缩进空格数（默认 2）",
-      "aria-label": "树的可读名称（默认「JSON 树」）"
+      "aria-label": "树的可读名称（默认「JSON 树」）",
+      "aria-labelledby": "可访问名镜像第二通道：宿主 idref 列表原样镜像给树容器（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先）"
     },
     "props": {
       "data": "对象/数组通道（property）；与 text 最近写入者生效",
@@ -2025,6 +2026,7 @@
   },
   "oas-menu": {
     "attrs": {
+      "aria-labelledby": "可访问名第二通道：宿主 idref 列表原样镜像给内部菜单容器（ul；移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先）",
       "collapsed": "收起态（vertical / inline 生效，horizontal 不适用）：只显示图标，子菜单向右浮出",
       "close-on-select": "选中叶子项后是否收起展开的子菜单。缺省分形态：inline 侧边导航不收、浮出形态收；checkbox 项勾选切换永不收起",
       "items": "菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单）",
@@ -2383,6 +2385,7 @@
   "oas-pagination": {
     "attrs": {
       "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「分页」",
+      "aria-labelledby": "可访问名第二通道：宿主 idref 列表原样镜像到内部 navigation landmark（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先）",
       "current": "当前页（受控，翻页会更新该属性）",
       "page-size": "每页条数",
       "page-sizes": "每页条数下拉选项（JSON 数组），如 `[10,20,50]`；切换后回到第 1 页",
@@ -2778,6 +2781,7 @@
   "oas-segmented": {
     "attrs": {
       "aria-label": "单选组的可访问名（转发到内部 `role=\"radiogroup\"` 容器；缺省不设置）",
+      "aria-labelledby": "可访问名第二通道：宿主 idref 列表原样转发到内部 `role=\"radiogroup\"` 容器（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先）",
       "disabled": "禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承）",
       "options": "`[{ label, value, disabled? }]` JSON 字符串",
       "value": "选中值（缺省选第一项，受控属性）",

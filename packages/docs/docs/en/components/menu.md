@@ -488,6 +488,7 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accordion` | Accordion mutual exclusion (inline mode: only one sibling submenu open at a time) | `boolean` | — |
+| `aria-labelledby` | Accessible name second channel: the host idref list is mirrored as-is to the inner menu container (the ul; removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `close-on-select` | Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle | `string` | — |
 | `collapsed` | Collapsed state (vertical / inline; not applicable to horizontal): icons only, submenus pop to the right | `boolean` | — |
 | `disabled` | Disables the whole menu: click/hover/keyboard intercepted, dimmed with aria-disabled | `boolean` | — |
@@ -582,4 +583,4 @@ Keyboard navigation: arrow keys move (auto-skipping group titles, dividers, disa
 
 Keyboard axis follows the mode: vertical menus and submenus at any depth use ↑/↓ to move, `ArrowRight` to enter a submenu and `ArrowLeft` to go back; horizontal top level uses ←/→ to move along the row, `ArrowDown` to enter a submenu and `ArrowUp`/Escape to collapse. In RTL the directions mirror (submenus open to the left, so `ArrowLeft` enters and `ArrowRight` goes back).
 
-Screen reader semantics: focus stays on the `role="menu"` list (a single tab stop, no roving tabindex) and the keyboard-active item is exposed via `aria-activedescendant`; the list takes its accessible name from the host `aria-label`, falling back to a default "Navigation" label, and horizontal mode declares `aria-orientation="horizontal"`.
+Screen reader semantics: focus stays on the `role="menu"` list (a single tab stop, no roving tabindex) and the keyboard-active item is exposed via `aria-activedescendant`; the list takes its accessible name from the host `aria-label`, falling back to a default "Navigation" label, or references in-page elements via `aria-labelledby` (the idref list is mirrored as-is; when both are set, native accessible-name computation gives `aria-labelledby` precedence), and horizontal mode declares `aria-orientation="horizontal"`.

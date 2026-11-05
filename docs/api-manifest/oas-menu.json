@@ -75,6 +75,10 @@
       "name": "searchable",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "aria-labelledby",
+      "observed": true
     }
   ],
   "props": [

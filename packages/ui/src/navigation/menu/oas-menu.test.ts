@@ -2431,6 +2431,52 @@ describe('OASMenu 读屏语义（aria-activedescendant）', () => {
   })
 })
 
+// ===== 可访问名镜像（aria-labelledby 第二通道） =====
+// 焦点容器是 shadow 内的 ul（宿主 aria-label/aria-labelledby 不跨 shadow 生效）；
+// aria-labelledby 忠实镜像给 ul（与 aria-label 独立不互斥——原生可访问名计算
+// labelledby 优先，ul aria-label 恒有 locale 回退名「导航」不动）。
+describe('OASMenu 可访问名镜像（aria-labelledby）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const menuOf = (el: OASMenu): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.menu')!
+
+  it('宿主 aria-labelledby 镜像给 ul（idref 列表原样拷贝）', () => {
+    const el = mount({ 'aria-labelledby': 'menu-title menu-desc' })
+    expect(menuOf(el).getAttribute('aria-labelledby')).toBe('menu-title menu-desc')
+  })
+
+  it('运行时设置 aria-labelledby：ul 即时跟随', () => {
+    const el = mount()
+    expect(menuOf(el).hasAttribute('aria-labelledby')).toBe(false)
+    el.setAttribute('aria-labelledby', 'menu-hint')
+    expect(menuOf(el).getAttribute('aria-labelledby')).toBe('menu-hint')
+  })
+
+  it('运行时移除 aria-labelledby：ul 同步摘除（aria-label 回落 locale 默认名「导航」）', () => {
+    const el = mount({ 'aria-labelledby': 'menu-hint' })
+    el.removeAttribute('aria-labelledby')
+    expect(menuOf(el).hasAttribute('aria-labelledby')).toBe(false)
+    expect(menuOf(el).getAttribute('aria-label')).toBe('导航')
+  })
+
+  it('空 aria-labelledby 不镜像（不产生空 idref 引用）', () => {
+    const el = mount({ 'aria-labelledby': '' })
+    expect(menuOf(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('aria-label 与 aria-labelledby 同时在场：两通道各自镜像互不覆盖', () => {
+    const el = mount({ 'aria-label': '操作菜单', 'aria-labelledby': 'menu-hint' })
+    expect(menuOf(el).getAttribute('aria-label')).toBe('操作菜单')
+    expect(menuOf(el).getAttribute('aria-labelledby')).toBe('menu-hint')
+  })
+})
+
 // ===== 水平模式键盘轴 + RTL 镜像 =====
 // 缺陷：水平顶层沿用竖排模型——ArrowDown/Up 沿横排移动、ArrowRight 进子菜单；
 // RTL 下子菜单从左侧浮出，键盘却仍 ArrowRight 进 / ArrowLeft 出。

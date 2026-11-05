@@ -45,6 +45,37 @@ describe('OASPagination', () => {
     expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('分页')
   })
 
+  it('宿主 aria-labelledby 镜像到 navigation landmark（idref 列表原样拷贝）', () => {
+    const el = mount({ 'aria-labelledby': 'pg-title pg-desc' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-labelledby')).toBe('pg-title pg-desc')
+  })
+
+  it('运行时移除 aria-labelledby：landmark 同步摘除（aria-label 回落 locale 默认名「分页」）', () => {
+    const el = mount({ 'aria-labelledby': 'pg-hint' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-labelledby')).toBe('pg-hint')
+    el.removeAttribute('aria-labelledby')
+    const group = el.shadowRoot!.querySelector('[part="group"]')!
+    expect(group.hasAttribute('aria-labelledby')).toBe(false)
+    expect(group.getAttribute('aria-label')).toBe('分页')
+  })
+
+  it('空 aria-labelledby 不镜像（不产生空 idref 引用）', () => {
+    const el = mount({ 'aria-labelledby': '' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('aria-label 与 aria-labelledby 同时在场：两通道各自镜像互不覆盖', () => {
+    const el = mount({ 'aria-label': '结果分页', 'aria-labelledby': 'pg-hint' })
+    const group = el.shadowRoot!.querySelector('[part="group"]')!
+    expect(group.getAttribute('aria-label')).toBe('结果分页')
+    expect(group.getAttribute('aria-labelledby')).toBe('pg-hint')
+  })
+
+  it('hide-on-single 单页自隐分支同样镜像 aria-labelledby', () => {
+    const el = mount({ total: '10', 'page-size': '10', 'hide-on-single': '', 'aria-labelledby': 'pg-hint' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-labelledby')).toBe('pg-hint')
+  })
+
   it('下一页切换并派发 oas-change', () => {
     const el = mount({ current: '1' })
     let detail: unknown

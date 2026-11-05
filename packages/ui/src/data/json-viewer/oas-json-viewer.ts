@@ -262,6 +262,8 @@ export class OASJsonViewer extends OASElement {
       'compact',
       'indent',
       'aria-label',
+      // 可访问名镜像通道（宿主 aria-label / aria-labelledby → 树容器视口，见 syncToolbar）
+      'aria-labelledby',
     ]
   }
 
@@ -858,6 +860,12 @@ export class OASJsonViewer extends OASElement {
     if (viewport) {
       const label = this.getAttribute('aria-label')?.trim() || this.t('jsonViewer.tree')
       viewport.setAttribute('aria-label', label)
+      // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
+      // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
+      // 忠实镜像即可（viewport aria-label 恒有 locale 回退名，不动）。
+      const ariaLabelledby = this.getAttribute('aria-labelledby')
+      if (ariaLabelledby != null && ariaLabelledby !== '') viewport.setAttribute('aria-labelledby', ariaLabelledby)
+      else viewport.removeAttribute('aria-labelledby')
     }
     this.toggleAttribute('data-compact', this.hasAttribute('compact'))
   }

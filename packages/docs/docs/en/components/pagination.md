@@ -376,6 +376,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Host accessible name for the inner navigation landmark; empty falls back to “Pagination” | — | — |
+| `aria-labelledby` | Accessible name second channel: the host idref list is mirrored as-is to the inner navigation landmark (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `current` | Current page (controlled; flipping updates this attribute) | `string` | `1` |
 | `disabled` | Disables everything: all page buttons with aria-disabled, plus the page-size dropdown and jumper input | `boolean` | — |
 | `hide-on-single` | Hides the whole component when there is a single page (pageCount ≤ 1) | `boolean` | — |

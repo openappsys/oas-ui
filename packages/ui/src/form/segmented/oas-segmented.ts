@@ -185,6 +185,8 @@ export class OASSegmented extends OASElement {
       'name',
       'readonly',
       'aria-label',
+      // 可访问名镜像通道（宿主 aria-label / aria-labelledby → 内部 radiogroup，见 update）
+      'aria-labelledby',
     ]
   }
 
@@ -280,6 +282,12 @@ export class OASSegmented extends OASElement {
     const hostLabel = this.getAttribute('aria-label')?.trim()
     if (hostLabel) group.setAttribute('aria-label', hostLabel)
     else group.removeAttribute('aria-label')
+    // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
+    // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
+    // 忠实镜像即可（不做互斥清理）。
+    const hostLabelledby = this.getAttribute('aria-labelledby')
+    if (hostLabelledby != null && hostLabelledby !== '') group.setAttribute('aria-labelledby', hostLabelledby)
+    else group.removeAttribute('aria-labelledby')
     if (this.hasAttr('readonly')) group.setAttribute('aria-readonly', 'true')
     else group.removeAttribute('aria-readonly')
 

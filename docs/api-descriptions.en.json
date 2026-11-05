@@ -1781,7 +1781,8 @@
       "search-shortcut": "Intercept Ctrl/Cmd+F to focus search while focus is inside; `false` disables it",
       "compact": "Compact mode (20px rows, 11px type and tighter toolbar padding by default)",
       "indent": "Indent width for copied JSON (default 2)",
-      "aria-label": "Accessible name of the tree (defaults to “JSON tree”)"
+      "aria-label": "Accessible name of the tree (defaults to “JSON tree”)",
+      "aria-labelledby": "Accessible name mirror (second channel): the host idref list is mirrored as-is to the tree container (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence)"
     },
     "props": {
       "data": "Object/array channel (property); whichever of data or text was written last wins",
@@ -2105,6 +2106,7 @@
   },
   "oas-menu": {
     "attrs": {
+      "aria-labelledby": "Accessible name second channel: the host idref list is mirrored as-is to the inner menu container (the ul; removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence)",
       "collapsed": "Collapsed state (vertical / inline; not applicable to horizontal): icons only, submenus pop to the right",
       "close-on-select": "Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle",
       "items": "Menu items JSON (supports disabled / loading, icon, children submenus)",
@@ -2487,6 +2489,7 @@
   "oas-pagination": {
     "attrs": {
       "aria-label": "Host accessible name for the inner navigation landmark; empty falls back to “Pagination”",
+      "aria-labelledby": "Accessible name second channel: the host idref list is mirrored as-is to the inner navigation landmark (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence)",
       "current": "Current page (controlled; flipping updates this attribute)",
       "page-size": "Records per page",
       "page-sizes": "Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1",
@@ -2912,6 +2915,7 @@
   "oas-segmented": {
     "attrs": {
       "aria-label": "Accessible name of the radio group (forwarded to the inner `role=\"radiogroup\"` container; unset by default)",
+      "aria-labelledby": "Accessible name second channel: the host idref list is forwarded as-is to the inner `role=\"radiogroup\"` container (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence)",
       "disabled": "Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection)",
       "options": "`[{ label, value, disabled? }]` JSON string",
       "value": "Selected value (defaults to the first option; controlled)",

@@ -546,6 +546,8 @@ export class OASMenu extends OASElement {
       // searchable：顶部过滤输入框，键入实时过滤可见项
       'searchable',
       'dir',
+      // 可访问名镜像通道（宿主 aria-labelledby → shadow 内 ul，见 syncA11y）
+      'aria-labelledby',
     ]
   }
 
@@ -729,14 +731,21 @@ export class OASMenu extends OASElement {
   }
 
   /**
-   * ul 的可访问名称与方向语义：焦点容器是 shadow 内的 ul（宿主 aria-label 不会跨 shadow 生效），
-   * 读屏需要 ul 自身有名称；水平模式同时声明 aria-orientation（role=menu 缺省为 vertical）。
+   * ul 的可访问名称与方向语义：焦点容器是 shadow 内的 ul（宿主 aria-label/aria-labelledby
+   * 都不跨 shadow 生效），读屏需要 ul 自身有名称；水平模式同时声明 aria-orientation
+   * （role=menu 缺省为 vertical）。
    */
   private syncA11y(): void {
     const menuEl = this.menuEl
     if (!menuEl) return
     const label = this.getAttribute('aria-label') || this.t('navigationMenu.label')
     if (label) menuEl.setAttribute('aria-label', label)
+    // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
+    // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
+    // 忠实镜像即可（ul aria-label 恒有 locale 回退名，不动）。
+    const ariaLabelledby = this.getAttribute('aria-labelledby')
+    if (ariaLabelledby != null && ariaLabelledby !== '') menuEl.setAttribute('aria-labelledby', ariaLabelledby)
+    else menuEl.removeAttribute('aria-labelledby')
     menuEl.setAttribute('aria-orientation', this.getAttr('mode') === 'horizontal' ? 'horizontal' : 'vertical')
   }
 

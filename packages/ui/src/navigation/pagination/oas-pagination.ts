@@ -241,6 +241,8 @@ export class OASPagination extends OASElement {
       'siblings',
       'pager-count',
       'aria-label',
+      // 可访问名镜像通道（宿主 aria-label / aria-labelledby → 内部 navigation landmark，见 syncNavName）
+      'aria-labelledby',
       'show-total',
       'page-sizes',
       'show-jumper',
@@ -268,6 +270,19 @@ export class OASPagination extends OASElement {
    * 一律不触碰（曾在 update 末尾无条件 removeAttribute('hidden') 把宿主的隐藏撕掉）
    */
   private hidSelf = false
+
+  /**
+   * navigation landmark（[part=group]）可访问名双通道：宿主 aria-label 优先（缺省回落
+   * locale 名「分页」），aria-labelledby 忠实镜像（idref 列表原样拷贝，宿主移除内层同步
+   * 摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先）。
+   * hide-on-single 自隐分支与常规渲染分支共用（group 每轮 innerHTML 重建，名称同步随行）。
+   */
+  private syncNavName(group: HTMLElement): void {
+    group.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('pagination.nav'))
+    const ariaLabelledby = this.getAttribute('aria-labelledby')
+    if (ariaLabelledby != null && ariaLabelledby !== '') group.setAttribute('aria-labelledby', ariaLabelledby)
+    else group.removeAttribute('aria-labelledby')
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -299,7 +314,7 @@ export class OASPagination extends OASElement {
   }
 
   protected override update(): void {
-    const group = this.shadow.querySelector('.group')
+    const group = this.shadow.querySelector<HTMLElement>('.group')
     if (!group) return
     // 全局禁用（config-provider 注入：组件显式 disabled > 豁免 > provider 注入）
     const disabled = this.injectDisabled()
@@ -358,7 +373,7 @@ export class OASPagination extends OASElement {
         this.hidSelf = !this.hasAttribute('hidden')
         if (this.hidSelf) this.setAttribute('hidden', '')
       }
-      group.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('pagination.nav'))
+      this.syncNavName(group)
       group.innerHTML = ''
       return
     }
@@ -369,7 +384,7 @@ export class OASPagination extends OASElement {
     }
 
     // 内置文案走 locale registry（setLocale 切换自动刷新）
-    group.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('pagination.nav'))
+    this.syncNavName(group)
     group.innerHTML = ''
     // 导航钮工厂：链接模式（href-template）渲染 <a>；disabled/边界禁用降级 span（不可点）；
     // 默认渲染 button。事件统一由 goto 处理（链接模式在 before-change veto 时阻止原生导航）

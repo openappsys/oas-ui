@@ -102,7 +102,7 @@ await viewer.copyJson()   // "hello"
 
 ## 键盘与可访问性
 
-树容器是单一 Tab 焦点，使用 `aria-activedescendant` 指向活动行；行带 `role="treeitem"`、`aria-level`、`aria-posinset`、`aria-setsize` 与 `aria-expanded`。
+树容器是单一 Tab 焦点，使用 `aria-activedescendant` 指向活动行；行带 `role="treeitem"`、`aria-level`、`aria-posinset`、`aria-setsize` 与 `aria-expanded`。可访问名称支持宿主 `aria-label`（缺省回落「JSON 树」），也可用 `aria-labelledby` 关联页内元素（idref 列表原样镜像给树容器；与 `aria-label` 同时设置时原生可访问名计算以 `aria-labelledby` 优先）。
 
 | 按键 | 行为 |
 | --- | --- |
@@ -219,6 +219,7 @@ if (typeof window !== 'undefined') {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 树的可读名称（默认「JSON 树」） | — | — |
+| `aria-labelledby` | 可访问名镜像第二通道：宿主 idref 列表原样镜像给树容器（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
 | `compact` | 紧凑模式（默认行高 20、字号 11px、更小工具栏内边距） | — | — |
 | `copyable` | 复制按钮开关；`false` 只隐藏按钮，复制方法仍可调用 | `string` | — |
 | `default-expand-depth` | 初始展开深度：0 只显示根，1 展开根（默认），依此类推 | `string` | `1` |

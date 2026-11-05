@@ -430,3 +430,37 @@ describe('segmented 宿主 aria-label 转发', () => {
     expect(groupOf(el).getAttribute('aria-label')).toBe('时间粒度')
   })
 })
+
+// ===== 宿主可访问名第二通道（宿主 aria-labelledby → 内部 radiogroup） =====
+// 与 aria-label 通道独立不互斥：idref 列表原样拷贝，宿主移除内层同步摘除；
+// 原生可访问名计算 aria-labelledby 优先，忠实镜像即可（不做互斥清理）。
+describe('segmented 宿主 aria-labelledby 转发', () => {
+  function groupOf(el: OASSegmented): HTMLElement {
+    return el.shadowRoot!.querySelector('[role="radiogroup"]')!
+  }
+
+  it('宿主 aria-labelledby 转发到内部 radiogroup（idref 列表原样拷贝）；缺省不写', () => {
+    const el = mount()
+    expect(groupOf(el).hasAttribute('aria-labelledby')).toBe(false)
+    el.setAttribute('aria-labelledby', 'seg-title seg-desc')
+    expect(groupOf(el).getAttribute('aria-labelledby')).toBe('seg-title seg-desc')
+  })
+
+  it('运行时移除 aria-labelledby：radiogroup 同步摘除', () => {
+    const el = mount({ 'aria-labelledby': 'seg-hint' })
+    expect(groupOf(el).getAttribute('aria-labelledby')).toBe('seg-hint')
+    el.removeAttribute('aria-labelledby')
+    expect(groupOf(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('空 aria-labelledby 不转发（不产生空 idref 引用）', () => {
+    const el = mount({ 'aria-labelledby': '' })
+    expect(groupOf(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('aria-label 与 aria-labelledby 同时在场：两通道各自转发互不覆盖', () => {
+    const el = mount({ 'aria-label': '时间粒度', 'aria-labelledby': 'seg-hint' })
+    expect(groupOf(el).getAttribute('aria-label')).toBe('时间粒度')
+    expect(groupOf(el).getAttribute('aria-labelledby')).toBe('seg-hint')
+  })
+})

@@ -117,6 +117,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name of the radio group (forwarded to the inner `role="radiogroup"` container; unset by default) | — | — |
+| `aria-labelledby` | Accessible name second channel: the host idref list is forwarded as-is to the inner `role="radiogroup"` container (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `block` | Fill the parent width (options share equally) | — | — |
 | `direction` | Orientation: `horizontal` (default) / `vertical` (mirrors aria-orientation and axis keys) | `string` | `horizontal` |
 | `disabled` | Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection) | `boolean` | — |
@@ -144,4 +145,4 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="option"]` | Custom option template (`<template slot="option">`) |
 
-The container is `role="radiogroup"`; each item is backed by a native `<input type="radio">` (the label itself has no `role` / `aria-checked`; checked state and accessible name come from the inner native radio, while the `aria-disabled` state attribute is kept).
+The container is `role="radiogroup"`; each item is backed by a native `<input type="radio">` (the label itself has no `role` / `aria-checked`; checked state and accessible name come from the inner native radio, while the `aria-disabled` state attribute is kept). The host can name the whole group via `aria-label` (forwarded to the radiogroup) or reference in-page elements with `aria-labelledby` (the idref list is forwarded as-is; when both are set, native accessible-name computation gives `aria-labelledby` precedence).

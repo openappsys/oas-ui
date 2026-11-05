@@ -595,3 +595,50 @@ describe('OASJsonViewer 自定义展开模板 + 纯滚动刷新', () => {
     expect(rows(el)[0]!.querySelector('.twisty')!.getAttribute('data-custom')).toBeNull()
   })
 })
+
+// ===== 可访问名镜像（aria-labelledby 第二通道） =====
+// 树容器（role=tree 视口）在 shadow 内，宿主 aria-label/aria-labelledby 不跨 shadow 生效；
+// aria-labelledby 忠实镜像给视口（与 aria-label 独立不互斥——原生可访问名计算
+// labelledby 优先，aria-label 恒有 locale 回退名不动）。
+describe('OASJsonViewer 可访问名镜像（aria-labelledby）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('宿主 aria-labelledby 镜像给树容器（idref 列表原样拷贝）', () => {
+    const el = mount({ text: SAMPLE, 'aria-labelledby': 'jv-title jv-desc' })
+    expect(tree(el).getAttribute('aria-labelledby')).toBe('jv-title jv-desc')
+  })
+
+  it('运行时设置 aria-labelledby：树容器即时跟随', () => {
+    const el = mount({ text: SAMPLE })
+    expect(tree(el).hasAttribute('aria-labelledby')).toBe(false)
+    el.setAttribute('aria-labelledby', 'jv-hint')
+    expect(tree(el).getAttribute('aria-labelledby')).toBe('jv-hint')
+  })
+
+  it('运行时移除 aria-labelledby：树容器同步摘除（aria-label 回落 locale 默认名）', () => {
+    const el = mount({ text: SAMPLE, 'aria-labelledby': 'jv-hint' })
+    el.removeAttribute('aria-labelledby')
+    expect(tree(el).hasAttribute('aria-labelledby')).toBe(false)
+    expect(tree(el).getAttribute('aria-label')).toBe(t('jsonViewer.tree'))
+  })
+
+  it('空 aria-labelledby 不镜像（不产生空 idref 引用）', () => {
+    const el = mount({ text: SAMPLE, 'aria-labelledby': '' })
+    expect(tree(el).hasAttribute('aria-labelledby')).toBe(false)
+  })
+
+  it('aria-label 与 aria-labelledby 同时在场：两通道各自镜像互不覆盖', () => {
+    const hint = document.createElement('span')
+    hint.id = 'jv-hint'
+    hint.textContent = '接口响应说明'
+    document.body.appendChild(hint)
+    const el = mount({ text: SAMPLE, 'aria-label': '接口响应', 'aria-labelledby': 'jv-hint' })
+    expect(tree(el).getAttribute('aria-label')).toBe('接口响应')
+    expect(tree(el).getAttribute('aria-labelledby')).toBe('jv-hint')
+  })
+})

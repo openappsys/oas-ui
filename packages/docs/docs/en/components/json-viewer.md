@@ -102,7 +102,7 @@ Use `compact` for tighter spacing (20px rows and 11px type by default), `toolbar
 
 ## Keyboard and accessibility
 
-The tree container is a single tab stop and uses `aria-activedescendant` for the active row. Rows expose `role="treeitem"`, `aria-level`, `aria-posinset`, `aria-setsize` and `aria-expanded`.
+The tree container is a single tab stop and uses `aria-activedescendant` for the active row. Rows expose `role="treeitem"`, `aria-level`, `aria-posinset`, `aria-setsize` and `aria-expanded`. The accessible name supports host `aria-label` (falling back to “JSON tree”) or `aria-labelledby` pointing to in-page elements (the idref list is mirrored as-is to the tree container; when both are set, native accessible-name computation gives `aria-labelledby` precedence).
 
 | Key | Behavior |
 | --- | --- |
@@ -219,6 +219,7 @@ The pure model helpers are also exported from `@oas-ui/ui/data/json-viewer` (or 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name of the tree (defaults to “JSON tree”) | — | — |
+| `aria-labelledby` | Accessible name mirror (second channel): the host idref list is mirrored as-is to the tree container (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `compact` | Compact mode (20px rows, 11px type and tighter toolbar padding by default) | — | — |
 | `copyable` | Copy button switch; `false` hides buttons while copy methods remain available | `string` | — |
 | `default-expand-depth` | Initial expand depth: 0 keeps only the root, 1 expands the root (default), and so on | `string` | `1` |

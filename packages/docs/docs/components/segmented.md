@@ -117,6 +117,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 单选组的可访问名（转发到内部 `role="radiogroup"` 容器；缺省不设置） | — | — |
+| `aria-labelledby` | 可访问名第二通道：宿主 idref 列表原样转发到内部 `role="radiogroup"` 容器（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
 | `block` | 铺满父容器（各项等宽均分） | — | — |
 | `direction` | 排列方向：`horizontal`（默认）/ `vertical`（联动 aria-orientation 与轴向键） | `string` | `horizontal` |
 | `disabled` | 禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承） | `boolean` | — |
@@ -144,4 +145,4 @@ onMounted(() => {
 | --- | --- |
 | `template[slot="option"]` | 选项自定义模板（`<template slot="option">`） |
 
-容器 `role="radiogroup"`；每项为原生 `<input type="radio">` 底座（label 自身无 `role` / `aria-checked`，选中态与可访问名由内部原生 radio 承载；`aria-disabled` 状态属性保留）。
+容器 `role="radiogroup"`；每项为原生 `<input type="radio">` 底座（label 自身无 `role` / `aria-checked`，选中态与可访问名由内部原生 radio 承载；`aria-disabled` 状态属性保留）。宿主可经 `aria-label` 命名整组（转发到 radiogroup），也可用 `aria-labelledby` 关联页内元素（idref 列表原样转发；与 `aria-label` 同时设置时原生可访问名计算以 `aria-labelledby` 优先）。

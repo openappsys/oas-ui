@@ -48,6 +48,10 @@
     {
       "name": "aria-label",
       "observed": true
+    },
+    {
+      "name": "aria-labelledby",
+      "observed": true
     }
   ],
   "props": [
