@@ -397,7 +397,7 @@ computeVariance(el.tasks, 'plan-b')
 - **跨任务超配检测**：update 时对**同资源**的任务做时间区间重叠检测——区间求交 >0 即超配（半开区间，**相切不算**；日精度 end 含端，共享一天即算交叠）；里程碑按点处理不触发、summary 不参与；只检测**池内已登记**的资源（池外 id 视为宿主遗留数据）。超配任务条与左侧行名加 `.conflict`（复用违约视觉通道 `--oas-gantt-conflict-color`）。
 - **`oas-resource-conflict` 事件**：`detail: { conflicts }`，每项 `{ taskA, taskB, resourceId, overlapStart, overlapEnd }`（交叠区间日精度含端）。**幂等**——同一快照不重复派发，数据/池变化重算后签名变化才发，消解时发空数组。事件在**数据/池变更的 `update` 中同步派发**：宿主须先挂监听再写数据（如先 `addEventListener` 再写 `tasks`），否则首轮结果到达不了监听器。同一资源同时段被 >2 个任务并发占用时 dev 控制台告警一次。
 - **池登记变化不自动通知组件**：宿主改池后须触发重算（如重写 `tasks`）。windowed 切片上跳过检测并 devWarn（全量判定才正确）。
-- **量级边界**：超配检测每 update 全量重算（每资源内两两求交，O(n²)）。任务量级在数百级（项目排程常态）无感；若单资源密集到千级以上且 update 频繁，先实测帧耗时再考虑增量检测（未做，注释留档）。
+- **量级边界**：超配检测每 update 全量重算——每资源内按**扫描线**（开始时间排序 + 活跃集剪枝）求交，O(k log k + P)（P 为实际相交对数，稀疏分布下远低于任务数平方；输出序契约不变：资源按首次出现序、组内冲突对按输入序）。千级任务不再有 O(k²) 卡顿；若单资源极端密集（大量任务全时段互叠，冲突对本身就平方量级）且 update 频繁，先实测帧耗时再考虑增量检测（未做，注释留档）。
 
 ```ts
 import { getSharedResourcePool } from '@oas-ui/ui/data/resource/pool'
@@ -430,7 +430,7 @@ ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
 `show-resource-load` 属性（opt-in，默认关；显式 `"false"` 关闭）在图表下方渲染**资源负荷面板**：每资源一行，行内按时间轴对齐的负荷桶条。
 
 - **负荷口径**（与 pool 超配检测同语义，只是按桶聚合并可视化）：每桶负荷 = 该资源每条任务与桶求交的覆盖日数**逐任务累计**（日精度含端）——同资源任务在桶内交叠时累计算出 **>100%**（上例张三 03-05..03-06 双任务同占 → 200%），桶条走 danger 通道 `--oas-gantt-load-over-bg`；≤100% 走 primary 族 `--oas-gantt-load-bg`（暗色变体随 token）。里程碑按点计 0 天、summary 不参与；池外资源 id 一样列出（负荷视图不要求登记池）。
-- **粒度随 scale 映射**：hour/day → 日桶、week → 周桶（锚定周起始日）、month/quarter/year → 月桶。面板行名列宽与左侧列表同 token（`--oas-gantt-list-width`），桶条与图表时间轴逐列对齐，**缩放/平移同步**（复用 update 时的轴参数不重算；横向滚动跟随内容层平移，RTL 同式）。行高 token `--oas-gantt-load-row-height`（缺省 24px）。
+- **粒度随 scale 映射**：hour/day → 日桶、week → 周桶（锚定周起始日）、month/quarter/year → 月桶。面板行名列宽与左侧列表同 token（`--oas-gantt-list-width`），桶条与图表时间轴逐列对齐，**缩放/平移同步**（复用 update 时的轴参数不重算；横向滚动跟随内容层平移，RTL 同式）。行高 token `--oas-gantt-load-row-height`（缺省 24px）。桶条按横向列窗口虚拟化：只渲染可视窗口（±缓冲）相交的桶（万级桶轴滚动不逐桶重建 DOM），桶层总宽不变（滚动条长度保持）、无测量环境回落全量渲染。
 - **行名**：`pool` 开启时取池内名称（上例「张三」「李四」），关闭时取资源 id。
 - **ARIA**：面板 `role="img"` + aria-label 摘要（资源数 · 峰值最高的资源与百分比），纯可视化不进 Tab 序——读屏走摘要，不逐桶播报。桶条原生 `title` 显示负荷百分比（悬停可见）。
 - **性能**：负荷基于全量数据一次计算并按签名缓存（数据/轴区间/粒度/池变化才重算；虚拟行窗口只裁渲染不裁统计）。空数据/无资源引用时走 i18n 空态。windowed 切片上跳过渲染并 devWarn（切片上统计会少算，对齐 pool 检测口径）。

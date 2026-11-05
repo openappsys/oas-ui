@@ -2267,11 +2267,15 @@ export class OASGantt extends OASElement {
       this.winStart = win.start
       this.winEnd = win.end
     }
-    // 列窗口变化（横向滚动/视口宽变）→ 表头按新窗口重切片；纵向滚动窗口不变则跳过重建
+    // 列窗口变化（横向滚动/视口宽变）→ 表头与负荷桶层按新窗口重切片；纵向滚动窗口不变则跳过重建
     const prevColStart = this.winColStart
     const prevColEnd = this.winColEnd
     this.computeColWindow()
-    if (this.winColStart !== prevColStart || this.winColEnd !== prevColEnd) this.renderHeader()
+    if (this.winColStart !== prevColStart || this.winColEnd !== prevColEnd) {
+      this.renderHeader()
+      // 负荷面板桶条列窗口同步重切片（面板 hidden/空态时内部短路；行骨架不动，只换桶层）
+      this.renderLoadBuckets()
+    }
     this.renderSideRows()
     this.renderStripes()
     this.renderRowHover()
@@ -2348,10 +2352,14 @@ export class OASGantt extends OASElement {
   }
 
   /**
-   * 渲染负荷面板（update / 视口 resize 时调用；滚动路径只走 syncHeaderOffset 平移，不重建）：
+   * 渲染负荷面板（update / 视口 resize 时调用；滚动路径只走 syncHeaderOffset 平移 + 列窗口
+   * 变化时 renderLoadBuckets 重切片，不重建行骨架）：
    * - 行名列宽 = 左侧列表 token（--oas-gantt-list-width）→ 桶条与图表时间轴逐列对齐；
    * - 桶条定位/宽度走 xOf（复用 update() 时的 units/colW 轴参数，不重算），RTL 经 mirrorCellLeft 镜像；
    * - 桶高 ∝ 负荷%（覆盖日数/桶天数，≤100%；>100% 加 .over 走 danger 通道）；
+   * - 桶条**横向列虚拟化**（renderLoadBuckets）：只渲染可视列窗口相交的桶（对齐表头列窗口，
+   *   5000 桶×行全量 DOM 不再出现）；.load-inner 宽度仍 = canvasW 撑起总宽（spacer），
+   *   cell left/width 按全局像素写（容器经 syncHeaderOffset 整体平移，平移基准不变）；
    * - 空态（无任务/无 resources 引用）走 i18n 空态文案；windowed 跳过并 devWarn 一次。
    */
   private renderResourceLoad(): void {
@@ -2430,13 +2438,60 @@ export class OASGantt extends OASElement {
       track.className = 'load-track'
       const inner = document.createElement('div')
       inner.className = 'load-inner'
+      // spacer：窗口化后只渲染窗口内桶条，inner 总宽仍 = 画布全宽（撑起横向滚动条长度）
       inner.style.width = `${this.canvasW}px`
-      for (let i = 0; i < row.buckets.length; i++) {
+      track.appendChild(inner)
+      rowEl.appendChild(track)
+      body.appendChild(rowEl)
+    }
+    panel.appendChild(body)
+    this.renderLoadBuckets()
+    this.syncHeaderOffset()
+  }
+
+  /**
+   * 负荷桶条列窗口重切片（renderResourceLoad 面板重建 / renderWindow 列窗口滑动共用）：
+   * 只渲染与可视列窗口 [winColStart, winColEnd) 时间域相交的桶——桶 startMs 单调（loadBucketStartMs
+   * 按日/周/月历推进）→ 二分定位首个相交桶（bucketEnd > winStartMs），顺序输出到桶起点越过窗口
+   * 右界（对齐表头列窗口 renderHeader 的「二分 + 顺序输出」模式，每帧 O(log 桶数 + 窗口桶数)）。
+   * 无测量环境（happy-dom：viewportW 回落画布全宽）→ 窗口覆盖全部列 → 输出与全量渲染逐节点一致。
+   * 行骨架不动（只清 .load-inner 桶层），行序 == DOM 序 == loadResult().resources 序。
+   */
+  private renderLoadBuckets(): void {
+    const panel = this.loadPanelEl
+    if (!panel || panel.hidden) return
+    const result = this.loadResult()
+    const rows = result?.resources ?? []
+    if (!result || rows.length === 0 || result.bucketDays.length === 0) return
+    const units = this.units
+    if (units.length === 0) return
+    const bucketCount = result.bucketDays.length
+    // 列窗口 → 时间窗口：桶与窗口的相交判据走时间域（半开 [start, end)），与像素域相交等价
+    //（xOf 单调；首桶可早于轴首被 clamp 到 x=0，时间域判据同样保留它——bucketEnd > winStartMs）
+    const winStartMs = units[this.winColStart]!.startMs
+    const endCol = Math.min(this.winColEnd, units.length)
+    const winEndMs = endCol >= units.length ? units[units.length - 1]!.endMs : units[endCol]!.startMs
+    let lo = 0
+    let hi = bucketCount
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (this.loadBucketStartMs(result, mid + 1) > winStartMs) hi = mid
+      else lo = mid + 1
+    }
+    const inners = panel.querySelectorAll<HTMLElement>('.load-inner')
+    for (let r = 0; r < inners.length; r++) {
+      const row = rows[r]
+      const inner = inners[r]!
+      if (!row) break
+      inner.innerHTML = ''
+      const frag = document.createDocumentFragment()
+      for (let i = lo; i < bucketCount; i++) {
+        const startMs = this.loadBucketStartMs(result, i)
+        if (startMs >= winEndMs) break
         const load = row.buckets[i]!
         if (load <= 0) continue
         const days = result.bucketDays[i] ?? 0
         if (days <= 0) continue
-        const startMs = this.loadBucketStartMs(result, i)
         const endMs = this.loadBucketStartMs(result, i + 1)
         const x = this.xOf(startMs)
         const width = Math.max(this.xOf(endMs) - x, 0)
@@ -2449,14 +2504,10 @@ export class OASGantt extends OASElement {
         // 高 ∝ 负荷%：封顶 100%（超配信息由 .over 颜色通道 + title 数值承载，不改几何上限）
         cell.style.height = `${Math.min(100, Math.round(pct))}%`
         cell.title = `${Math.round(pct)}%`
-        inner.appendChild(cell)
+        frag.appendChild(cell)
       }
-      track.appendChild(inner)
-      rowEl.appendChild(track)
-      body.appendChild(rowEl)
+      inner.appendChild(frag)
     }
-    panel.appendChild(body)
-    this.syncHeaderOffset()
   }
 
   /**

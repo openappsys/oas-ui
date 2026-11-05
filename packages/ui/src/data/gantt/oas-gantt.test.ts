@@ -4,7 +4,15 @@ import { pickVisibleLabels, ganttRenderDiag } from './oas-gantt.js'
 import { computeEvm } from './evm/index.js'
 import { getSharedResourcePool, createResourcePool, ResourcePool } from '../resource/pool/index.js'
 import { computeResourceConflicts } from './oas-gantt.js'
-import type { GanttTask, GanttBaselineVariance, GanttReparentDetail, GanttResourceConflictDetail } from './index.js'
+import { stableStringify, parseTaskDate, addLocalDays } from './gantt-utils.js'
+import { toISODate } from '../../form/calendar/date-grid.js'
+import type {
+  GanttTask,
+  GanttBaselineVariance,
+  GanttReparentDetail,
+  GanttResourceConflict,
+  GanttResourceConflictDetail,
+} from './index.js'
 import type { GanttTaskAddDetail } from './oas-gantt.js'
 
 /** 测试内任务类型别名（组件清洗后的任务：id 必有）——与组件源码 TG 同构 */
@@ -8880,6 +8888,139 @@ describe('OASGantt 资源池接入与跨任务超配检测（pool）', () => {
   })
 })
 
+describe('computeResourceConflicts 扫描线等价性与性能（千级任务防 O(n²) 回归）', () => {
+  /** LCG 固定种子伪随机（无依赖、跨环境确定性：同一 seed 恒同序列） */
+  function lcg(seed: number): () => number {
+    let s = seed >>> 0
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0
+      return s / 4294967296
+    }
+  }
+
+  /** 固定种子数据集：n 任务 × resourceCount 资源，随机长度区间稀疏散布（重叠对 P = O(n) 量级） */
+  function genConflictsDataset(n: number, resourceCount: number, seed: number): TG[] {
+    const rand = lcg(seed)
+    const out: TG[] = []
+    for (let i = 0; i < n; i++) {
+      const startDay = Math.floor(rand() * n * 6)
+      const lenDays = 3 + Math.floor(rand() * 10)
+      const start = toISODate(new Date(2026, 0, 5 + startDay))
+      const end = toISODate(new Date(2026, 0, 5 + startDay + lenDays))
+      out.push({ id: `t${i}`, name: `任务${i}`, start, end, resources: [`r${i % resourceCount}`] } as TG)
+    }
+    return out
+  }
+
+  /** 朴素双循环参考实现（与重构前实现逐行同构，行为基线 Oracle：分组 Map 序 + 组内 i<j 求交 + 扫描线 peak） */
+  function naiveConflicts(
+    tasks: TG[],
+    registeredIds: Set<string>,
+    onOverCapacity?: (resourceId: string, peak: number) => void,
+  ): GanttResourceConflict[] {
+    const hasChildren = new Set<string>()
+    for (const t of tasks) if (t.parent) hasChildren.add(t.parent)
+    const byResource = new Map<string, Array<{ task: TG; startMs: number; endMs: number }>>()
+    for (const t of tasks) {
+      if (hasChildren.has(t.id)) continue
+      if (t.type === 'milestone' || !t.end) continue
+      if (!Array.isArray(t.resources)) continue
+      const s = parseTaskDate(t.start)
+      if (!s) continue
+      const e = parseTaskDate(t.end)
+      if (!e) continue
+      const startMs = s.getTime()
+      const endMs = t.end.length > 10 ? e.getTime() : addLocalDays(e.getTime(), 1)
+      if (endMs <= startMs) continue
+      for (const rid of t.resources) {
+        if (!registeredIds.has(rid)) continue
+        let list = byResource.get(rid)
+        if (!list) {
+          list = []
+          byResource.set(rid, list)
+        }
+        list.push({ task: t, startMs, endMs })
+      }
+    }
+    const out: GanttResourceConflict[] = []
+    for (const [resourceId, list] of byResource) {
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i]!
+          const b = list[j]!
+          if (a.startMs < b.endMs && b.startMs < a.endMs) {
+            const ovStart = Math.max(a.startMs, b.startMs)
+            const ovEndEx = Math.min(a.endMs, b.endMs)
+            out.push({
+              taskA: a.task.id,
+              taskB: b.task.id,
+              resourceId,
+              overlapStart: toISODate(new Date(ovStart)),
+              overlapEnd: toISODate(new Date(ovEndEx - 1)),
+            })
+          }
+        }
+      }
+      if (onOverCapacity) {
+        const events: Array<[number, number]> = []
+        for (const item of list) events.push([item.startMs, 1], [item.endMs, -1])
+        events.sort((x, y) => x[0] - y[0] || x[1] - y[1])
+        let cur = 0
+        let peak = 0
+        for (const [, delta] of events) {
+          cur += delta
+          if (cur > peak) peak = cur
+        }
+        if (peak > 2) onOverCapacity(resourceId, peak)
+      }
+    }
+    return out
+  }
+
+  it('正确性：2000 任务×5 资源固定种子，与朴素双循环参考实现逐字节全等（含 onOverCapacity 回调序列）', () => {
+    const tasks = genConflictsDataset(2000, 5, 20260301)
+    const registered = new Set(['r0', 'r1', 'r2', 'r3', 'r4'])
+    const naivePeaks: Array<[string, number]> = []
+    const fastPeaks: Array<[string, number]> = []
+    const naive = naiveConflicts(tasks, registered, (rid, peak) => naivePeaks.push([rid, peak]))
+    const fast = computeResourceConflicts(tasks, registered, (rid, peak) => fastPeaks.push([rid, peak]))
+    // sanity：数据集形态锁（固定种子 → 相交对数 / 超配回调序列恒定；数据生成器被改坏立即红灯）
+    expect(naive.length).toBe(571)
+    expect(naivePeaks).toEqual([
+      ['r0', 4],
+      ['r1', 3],
+      ['r2', 4],
+      ['r3', 4],
+      ['r4', 4],
+    ])
+    // 输出逐字节全等（含顺序：资源首次出现序 + 组内 pair 输入序）
+    expect(stableStringify(fast)).toBe(stableStringify(naive))
+    expect(fastPeaks).toEqual(naivePeaks)
+  })
+
+  it('性能：两万任务稀疏数据耗时防 O(n²) 回归（预热后取 min；规模增长比 + 绝对宽松上限双保险）', async () => {
+    const registered = new Set(['r0', 'r1', 'r2', 'r3', 'r4'])
+    const dataSmall = genConflictsDataset(2000, 5, 20260301)
+    const dataLarge = genConflictsDataset(20000, 5, 20260301)
+    // 预热一轮（热 JIT + 单态化内层路径），计时丢弃
+    computeResourceConflicts(dataLarge, registered)
+    const timeIt = (tasks: TG[]): number => {
+      const t0 = performance.now()
+      computeResourceConflicts(tasks, registered)
+      return performance.now() - t0
+    }
+    // min-of-5：取「理想运行时间」估计，滤掉 GC / 调度单次长尾，抗 happy-dom 抖动
+    const small = Math.min(...Array.from({ length: 5 }, () => timeIt(dataSmall)))
+    const large = Math.min(...Array.from({ length: 5 }, () => timeIt(dataLarge)))
+    const ratio = large / Math.max(small, 0.5)
+    // 扫描线 O(n log n + P)：10× 规模实测增长 ~10×（O(n) 分组底噪主导比值的下界）；
+    // O(n²) 回归实测增长 ~34×（同底噪同样压低）。界限 20 在两侧各留 ~2× 余量。
+    expect(ratio, `规模增长比 ${ratio.toFixed(1)}× 应接近线性（O(n²) 回归时 ~34×+）`).toBeLessThan(20)
+    // 绝对宽松上限（防灾难级退化；不承担抓 O(n²) 主责，200ms 为正常值 ~10× 余量防 CI flake）
+    expect(large, `两万任务实际耗时 ${large.toFixed(1)}ms`).toBeLessThan(200)
+  }, 15000)
+})
+
 describe('OASGantt 资源负荷面板（show-resource-load，opt-in）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -9107,6 +9248,168 @@ describe('OASGantt 资源负荷面板（show-resource-load，opt-in）', () => {
       /\.load-body \{[^}]*max-height: var\(--oas-gantt-load-max-height, 240px\)/,
     )
     expect(css, '超限靠纵向滚动').toMatch(/\.load-body \{[^}]*overflow-y: auto/)
+  })
+})
+
+describe('OASGantt 负荷面板桶条列虚拟化（横向时间轴窗口）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+  })
+
+  /** 3 年跨度整轴覆盖任务（day 档桶 ≈ 全列数 ~1095）：alice/bob 各占一行 */
+  const LONG_LOAD_TASKS = JSON.stringify([
+    { id: 'a', name: 'A', start: '2026-01-01', end: '2028-12-31', resources: ['alice', 'bob'] },
+  ])
+
+  interface GanttLoadPriv {
+    units: Array<{ startMs: number; endMs: number; major: string; minor: string }>
+    colW(): number
+    canvasW: number
+    winColStart: number
+    winColEnd: number
+    renderWindow(): void
+    onViewportResize(): void
+  }
+  const priv = (el: OASGantt): GanttLoadPriv => el as unknown as GanttLoadPriv
+
+  function stubViewport(el: OASGantt, width: number): HTMLElement {
+    const tbody = shadowOf(el).querySelector<HTMLElement>('.tbody')!
+    Object.defineProperty(tbody, 'clientWidth', { value: width, configurable: true })
+    priv(el).onViewportResize()
+    return tbody
+  }
+
+  function loadCells(el: OASGantt): HTMLElement[] {
+    return [...shadowOf(el).querySelectorAll<HTMLElement>('.load-panel .load-cell')]
+  }
+
+  function loadInner(el: OASGantt): HTMLElement {
+    return shadowOf(el).querySelector<HTMLElement>('.load-panel .load-inner')!
+  }
+
+  function loadRows(el: OASGantt): HTMLElement[] {
+    return [...shadowOf(el).querySelectorAll<HTMLElement>('.load-panel .load-row')]
+  }
+
+  function panelOf(el: OASGantt): HTMLElement {
+    return shadowOf(el).querySelector<HTMLElement>('.load-panel')!
+  }
+
+  it('无测量环境回落：clientWidth=0 → 列窗口覆盖全部列，桶全量渲染（既有行为不变）', () => {
+    const el = mount({ 'show-resource-load': '', tasks: LONG_LOAD_TASKS })
+    const g = priv(el)
+    const totalBuckets = loadCells(el).length
+    expect(totalBuckets, '整轴覆盖任务 day 桶应远超视口容量').toBeGreaterThan(1000)
+    // 每行桶数一致（两资源同行数同行内桶数）
+    expect(shadowOf(el).querySelectorAll('.load-panel .load-row').length).toBe(2)
+    expect(loadCells(el).length).toBe(totalBuckets)
+    // spacer：inner 总宽仍 = 画布全宽（滚动条长度保持）
+    expect(Number.parseFloat(loadInner(el).style.width)).toBe(g.canvasW)
+  })
+
+  it('列数远超视口：只渲染窗口相交桶（≪ 全量）；cell 像素域全与窗口相交；inner 总宽不变；行数/行名不变', () => {
+    const el = mount({ 'show-resource-load': '', tasks: LONG_LOAD_TASKS })
+    const g = priv(el)
+    const total = loadCells(el).length
+    stubViewport(el, 600)
+    const colW = g.colW()
+    const cells = loadCells(el)
+    expect(g.winColEnd - g.winColStart, '视口窗口远小于总列数').toBeLessThan(100)
+    expect(cells.length, '窗口化后桶数骤减').toBeLessThan(100)
+    expect(cells.length, '全量 → 窗口化必须实际裁剪').toBeLessThan(total)
+    // 结构不变量：每行渲染同一窗口桶集（桶数一致），cell 总数 = 每行桶数 × 行数；
+    // 每行桶数 ≤ 窗口列数（窗口内 load>0 桶 ⊆ 窗口相交桶；pad 区 load=0 桶不渲染，可小于上界）
+    const rows = loadRows(el)
+    const perRow = rows.map((r) => r.querySelectorAll('.load-cell').length)
+    expect(new Set(perRow).size, '两行渲染同一窗口桶集 → 每行桶数一致').toBe(1)
+    expect(perRow[0], '每行桶数不超过窗口列数').toBeLessThanOrEqual(g.winColEnd - g.winColStart)
+    expect(cells.length).toBe(perRow[0]! * rows.length)
+    // 每个 cell 的物理区间与窗口像素域 [winColStart×colW, winColEnd×colW) 相交（LTR：left 即逻辑 x）
+    const winStartPx = g.winColStart * colW
+    const winEndPx = g.winColEnd * colW
+    for (const c of cells) {
+      const left = Number.parseFloat(c.style.left)
+      const width = Number.parseFloat(c.style.width)
+      expect(left + width, 'cell 右缘在窗口起点之后（相交）').toBeGreaterThan(winStartPx)
+      expect(left, 'cell 左缘在窗口终点之前（相交）').toBeLessThan(winEndPx)
+      expect(Number.parseFloat(c.style.height)).toBe(100)
+    }
+    // spacer：inner 总宽不变（撑起横向滚动条）
+    expect(Number.parseFloat(loadInner(el).style.width)).toBe(g.canvasW)
+    // 行结构不受列窗口化影响：行数、行名、aria 摘要全部保留
+    expect(rows.length).toBe(2)
+    expect(rows.map((r) => r.querySelector<HTMLElement>('.load-name')!.textContent)).toEqual(['alice', 'bob'])
+    expect(panelOf(el).getAttribute('aria-label')).toContain('资源负荷')
+  })
+
+  it('横向滚动窗口滑动：首个渲染桶全局 left 变大、行数不变、inner transform 平移保持', () => {
+    const el = mount({ 'show-resource-load': '', tasks: LONG_LOAD_TASKS })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    const colW = g.colW()
+    const firstBefore = Number.parseFloat(loadCells(el)[0]!.style.left)
+    const cbs: FrameRequestCallback[] = []
+    const orig = globalThis.requestAnimationFrame
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      cbs.push(cb)
+      return cbs.length
+    }) as typeof requestAnimationFrame
+    try {
+      Object.defineProperty(tbody, 'scrollLeft', { value: 400 * colW, configurable: true, writable: true })
+      tbody.dispatchEvent(new Event('scroll'))
+      cbs[0]!(0)
+      const cells = loadCells(el)
+      expect(g.winColStart, '窗口平移到滚动处（−buffer）').toBe(400 - 4)
+      const firstAfter = Number.parseFloat(cells[0]!.style.left)
+      expect(firstAfter, '首个渲染桶全局 left 变大').toBeGreaterThan(firstBefore)
+      expect(loadRows(el).length, '行数不因窗口滑动变化').toBe(2)
+      // inner transform 平移链路不断（syncHeaderOffset 由 scroll 同步段维护）
+      expect(loadInner(el).style.transform).toContain('translateX')
+    } finally {
+      globalThis.requestAnimationFrame = orig
+    }
+  })
+
+  it('RTL 负值 scrollLeft：切出与 LTR 同一桶窗口；镜像 left = canvasW − 逻辑x − 宽', () => {
+    const el = mount({ dir: 'rtl', 'show-resource-load': '', tasks: LONG_LOAD_TASKS })
+    const g = priv(el)
+    const tbody = stubViewport(el, 600)
+    const colW = g.colW()
+    Object.defineProperty(tbody, 'scrollLeft', { value: -(200 * colW), configurable: true, writable: true })
+    g.renderWindow()
+    expect(g.winColStart, '负值取绝对值后与 LTR 同窗口').toBe(200 - 4)
+    const cells = loadCells(el)
+    const rowCount = loadRows(el).length
+    // 结构不变量：每行桶数一致、总数 = 每行桶数 × 行数、每行桶数 ≤ 窗口列数
+    const perRow = loadRows(el).map((r) => r.querySelectorAll('.load-cell').length)
+    expect(new Set(perRow).size, '各行渲染同一窗口桶集').toBe(1)
+    expect(perRow[0]).toBeLessThanOrEqual(g.winColEnd - g.winColStart)
+    expect(cells.length).toBe(perRow[0]! * rowCount)
+    expect(rowCount).toBe(2)
+    const canvasW = g.canvasW
+    for (const c of cells) {
+      const left = Number.parseFloat(c.style.left)
+      const width = Number.parseFloat(c.style.width)
+      // RTL 镜像后物理区间仍落在画布内
+      expect(left).toBeGreaterThanOrEqual(0)
+      expect(left + width).toBeLessThanOrEqual(canvasW)
+    }
+  })
+
+  it('桶窗口重切片复用同一窗口数学：表头列窗口与负荷桶窗口起点一致（首个 cell 逻辑 x ∈ 窗口首列邻域）', () => {
+    const el = mount({ 'show-resource-load': '', tasks: LONG_LOAD_TASKS })
+    const g = priv(el)
+    stubViewport(el, 600)
+    const colW = g.colW()
+    // LTR 下首个渲染桶的物理 left 即逻辑 x：应 ≥ winColStart×colW − 1 桶宽（首桶可自窗口首列起）
+    const firstLeft = Number.parseFloat(loadCells(el)[0]!.style.left)
+    expect(firstLeft).toBeGreaterThanOrEqual((g.winColStart - 1) * colW)
+    expect(firstLeft).toBeLessThan(g.winColEnd * colW)
   })
 })
 

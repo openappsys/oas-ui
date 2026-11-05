@@ -637,11 +637,14 @@ export function formatEffortCell(v: unknown): string {
 
 /**
  * 资源池超配检测（pool 属性 opt-in 纯函数，亦导出供宿主/测试复用）：
- * - 同资源两两任务区间求交（半开 [start, end)，**相切不算**）；
+ * - 同资源任务区间求交（半开 [start, end)，**相切不算**）；
  * - 里程碑按点处理不触发（无时长不占用产能）；summary（被 parent 指向）不触发（聚合形态无资源语义）；
  * - registeredIds = 池内已登记资源 id 集：任务引用池外资源一律忽略（pool 模式下池是唯一权威，
  *   未登记 id 视为宿主遗留数据）；池登记变化不会自动通知组件——宿主改池后须触发重算（如重写 tasks）；
- * - 输出确定性：资源按首次出现序分组（Map 插入序），组内按输入序 i<j 双循环；
+ * - 输出确定性：资源按首次出现序分组（Map 插入序），组内对按输入序 i<j 字典序产出；
+ * - 复杂度：每资源扫描线 O(k log k + P)（P = 实际相交对数，稀疏数据 ≪ k²）——按 start 排序 +
+ *   活跃集剪枝（活跃集内任务 start ≤ 当前 start 且 end > 当前 start，必然与当前任务相交），
+ *   替代旧版组内 i<j 双循环 O(k²)（千级任务卡顿根因）；
  * - onOverCapacity：某资源最大并发 >2（任一时刻 ≥3 任务同时活跃）时逐资源回调一次，
  *   供组件侧 devWarn。扫描线统计：同刻先处理结束（-1）后处理开始（+1），相切不累计并发。
  * - 交叠区间按日精度含端日期输出（hour 档同样按日期表达）；判定本身按 ms 精度。
@@ -680,22 +683,40 @@ export function computeResourceConflicts(
   }
   const out: GanttResourceConflict[] = []
   for (const [resourceId, list] of byResource) {
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i]!
-        const b = list[j]!
-        if (a.startMs < b.endMs && b.startMs < a.endMs) {
-          const ovStart = Math.max(a.startMs, b.startMs)
-          const ovEndEx = Math.min(a.endMs, b.endMs) // 半开右缘
-          out.push({
-            taskA: a.task.id,
-            taskB: b.task.id,
-            resourceId,
-            overlapStart: toISODate(new Date(ovStart)),
-            overlapEnd: toISODate(new Date(ovEndEx - 1)), // 含端末日
-          })
+    // 扫描线找相交对：按 start 升序处理（索引数组排序，免包装对象分配），活跃集 = 已开始且
+    // end > 当前 start 的任务——组内全部与当前任务相交（start ≤ 当前 start 由处理序保证），
+    // 一次遍历同时清理过期与产出对，总成本 O(k log k + Σ|活跃集|) = O(k log k + P)。
+    const pairs: Array<[number, number]> = []
+    const order: number[] = Array.from(list, (_, idx) => idx)
+    order.sort((x, y) => list[x]!.startMs - list[y]!.startMs)
+    let active: number[] = []
+    for (const cur of order) {
+      const curStart = list[cur]!.startMs
+      const still: number[] = []
+      for (const a of active) {
+        // 半开区间严格判交（endMs == curStart 相切不算，与旧双循环口径一致）
+        if (list[a]!.endMs > curStart) {
+          still.push(a)
+          pairs.push(a < cur ? [a, cur] : [cur, a])
         }
       }
+      still.push(cur)
+      active = still
+    }
+    // 输出契约：组内 pair 按输入序 i<j 字典序（== 旧双循环产出顺序），扫描线按时间序产出后重排
+    pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1])
+    for (const [i, j] of pairs) {
+      const a = list[i]!
+      const b = list[j]!
+      const ovStart = Math.max(a.startMs, b.startMs)
+      const ovEndEx = Math.min(a.endMs, b.endMs) // 半开右缘
+      out.push({
+        taskA: a.task.id,
+        taskB: b.task.id,
+        resourceId,
+        overlapStart: toISODate(new Date(ovStart)),
+        overlapEnd: toISODate(new Date(ovEndEx - 1)), // 含端末日
+      })
     }
     if (onOverCapacity) {
       // 最大并发扫描线：>2 即超限（3 个任务任一时刻同时活跃）
