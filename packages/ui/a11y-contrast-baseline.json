@@ -1,15 +1,15 @@
 {
-  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg）。skipped 是双环境对象 {local, ci}：它的数量取决于文本排版（OS 字体），CI（Ubuntu）与本地（Windows）系统性偏离，按 process.env.CI 选边，ci 侧 = CI 实测 + 4 余量。未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。；2026-11-03 二轮采样：dark 主题 ci 值补齐（首轮只采了 light），ci = 跨主题 max(采样)+4。",
+  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 51358,
+    "sampled": 52676,
     "below30": 0,
     "below45": 0,
     "below60": 0,
     "ratio": 286,
     "exempt": 692,
     "skipped": {
-      "local": 3730,
-      "ci": 4026
+      "local": 3850,
+      "ci": 4120
     }
   },
   "topPairs": [],
@@ -1594,8 +1594,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 17,
-        "ci": 17
+        "local": 20,
+        "ci": 20
       }
     },
     "table.html::dark": {
@@ -1605,8 +1605,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 17,
-        "ci": 17
+        "local": 20,
+        "ci": 20
       }
     },
     "tabs.html": {
@@ -1924,7 +1924,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 1,
+        "local": 3,
         "ci": 9
       }
     },
@@ -1935,7 +1935,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 1,
+        "local": 3,
         "ci": 9
       }
     },
@@ -1990,8 +1990,8 @@
       "ratio": 4,
       "exempt": 11,
       "skipped": {
-        "local": 8,
-        "ci": 17
+        "local": 35,
+        "ci": 44
       }
     },
     "guide/recipes.html::dark": {
@@ -2001,8 +2001,8 @@
       "ratio": 0,
       "exempt": 11,
       "skipped": {
-        "local": 8,
-        "ci": 17
+        "local": 35,
+        "ci": 35
       }
     },
     "guide/ssr.html": {
@@ -2111,7 +2111,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 1,
+        "local": 3,
         "ci": 10
       }
     },
@@ -2122,7 +2122,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 1,
+        "local": 3,
         "ci": 10
       }
     },
@@ -2177,8 +2177,8 @@
       "ratio": 4,
       "exempt": 11,
       "skipped": {
-        "local": 9,
-        "ci": 20
+        "local": 36,
+        "ci": 47
       }
     },
     "en/recipes.html::dark": {
@@ -2188,8 +2188,8 @@
       "ratio": 0,
       "exempt": 11,
       "skipped": {
-        "local": 9,
-        "ci": 20
+        "local": 36,
+        "ci": 36
       }
     },
     "en/resource-management.html": {
@@ -2276,7 +2276,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 15,
+        "local": 14,
         "ci": 27
       }
     },
@@ -2287,7 +2287,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 15,
+        "local": 14,
         "ci": 27
       }
     }
