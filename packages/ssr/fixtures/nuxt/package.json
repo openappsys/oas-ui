@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "^22.18.0 || ^24.0.0 || >=26.0.0"
+  },
   "description": "T11 fixture：Nuxt 4 生产构建下的 @oas-ui/nuxt DSD + Vue 模板验收（不随 npm 包分发）",
   "scripts": {
     "prebuild": "node scripts/embed-theme.mjs",

@@ -4,6 +4,10 @@
 > 不在根 `pnpm-workspace.yaml`（`packages/*`）中，不会被根 `pnpm install` / `pnpm build` 安装或构建，
 > 也不进入任何 npm 包的 `files` 清单。
 
+## Node 版本
+
+fixture 与根仓库共享同一 Node 支持范围：`^22.18.0 || ^24.0.0 || >=26.0.0`（已写入各自 `engines`）；CI 随根 `.nvmrc` 跑 Node 26.13.0。`@types/node` 仍钉 `^22.18.0`，用于按最低支持线做类型检查，不代表 fixture 只能运行在 Node 22。
+
 | fixture | 技术栈 | 端口 | 入口 |
 | --- | --- | --- | --- |
 | `next/` | Next.js 16 App Router + React 19 | 4301 | `app/[locale]/page.tsx`（RSC + DSD） |

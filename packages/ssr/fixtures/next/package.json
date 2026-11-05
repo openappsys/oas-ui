@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "^22.18.0 || ^24.0.0 || >=26.0.0"
+  },
   "description": "T11 fixture：Next.js 16 App Router + @oas-ui/ssr 的生产构建 DSD 验收（真实消费 @oas-ui/next 的 OasRegistry；不随 npm 包分发）",
   "scripts": {
     "build": "next build",
