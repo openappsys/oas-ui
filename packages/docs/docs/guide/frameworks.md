@@ -1,6 +1,8 @@
-# 框架接入（React / Vue / Next / Nuxt）
+# 框架接入（React、Vue 等）
 
-> OAS-UI 是 Web Components 组件库，**不需要官方 wrapper 也能直接用**。本页只说明各框架的原生用法、常见坑和可选集成，不引入新的组件封装层。
+> OAS-UI 是 Web Components 组件库，**不需要官方 wrapper 也能直接用**。本页说明各框架的原生用法、常见坑和可选集成，不引入新的组件封装层。
+>
+> 已验证的接入路径包括 React、Vue、Svelte、Angular、Astro、Next.js、Nuxt 等；未列出的框架按原生 Web Components 使用即可。
 
 ## 先选路径
 

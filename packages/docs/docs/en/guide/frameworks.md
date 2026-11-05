@@ -1,6 +1,8 @@
-# Framework Integration (React / Vue / Next / Nuxt)
+# Framework Integration (React, Vue, etc.)
 
 > OAS-UI is a Web Components library. **You do not need an official wrapper to use it.** This page covers native usage per framework, common pitfalls, and optional integrations. It does not introduce a new component wrapper layer.
+>
+> Verified integration paths include React, Vue, Svelte, Angular, Astro, Next.js, Nuxt, and others; frameworks not listed here can use the native Web Components API directly.
 
 ## Choose a path
 
