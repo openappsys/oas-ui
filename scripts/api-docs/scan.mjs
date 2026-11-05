@@ -20,7 +20,7 @@
  * 不编造。
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from 'node:fs'
-import { join, relative, dirname } from 'node:path'
+import { join, relative, dirname, basename } from 'node:path'
 import { execSync } from 'node:child_process'
 import { API } from 'typescript/unstable/sync'
 import * as tsast from 'typescript/unstable/ast'
@@ -102,6 +102,34 @@ function extractCssVars(source, tag) {
     out.push({ name, default: normDefault(fallback) ?? normDefault(declared.get(name)) ?? null })
   }
   return collapseIndexRuns(out)
+}
+
+/**
+ * 组件源闭包：类文件 + 其同目录相对导入的 `*-style.ts` 样式模块（样式拆分约定）。
+ * 背景：组件样式可拆分到兄弟模块（命名约定 `<stem>-style.ts`，如 gantt 的
+ * gantt-style.ts），CSS 出口（var(--oas-*)）随之迁移——收割须覆盖样式模块；
+ * 其他同目录实现模块与跨目录导入不纳入（避免改变既有组件的出口口径）。
+ * 拼接顺序 = 样式模块在前、类文件在后（与「样式位于类定义之前」的既有单文件
+ * 布局一致，保障 default 取首处声明与 var() 出现序稳定）。
+ */
+function readComponentClosure(classFileAbs) {
+  const dir = dirname(classFileAbs)
+  const seen = new Set()
+  const parts = []
+  const visit = (fileAbs) => {
+    if (seen.has(fileAbs)) return
+    seen.add(fileAbs)
+    const text = readFileSync(fileAbs, 'utf8')
+    for (const m of text.matchAll(/from '\.\/([^']+\.js)'/g)) {
+      const dep = join(dir, m[1].replace(/\.js$/, '.ts'))
+      if (!existsSync(dep)) continue
+      if (!basename(dep).endsWith('-style.ts')) continue
+      visit(dep)
+    }
+    parts.push(text)
+  }
+  visit(classFileAbs)
+  return parts.join('\n')
 }
 
 /** 同前缀数字出口（-1/-2/...）≥3 个折叠为 `--x-{1..N}`，避免逐条刷屏 */
@@ -1077,7 +1105,7 @@ function scanDir(project, dir, unresolvedGlobal) {
     for (const name of SUPPLEMENT_SLOTS[tag] ?? []) {
       if (!slots.some((s) => s.name === name)) slots.push({ name })
     }
-    const cssVars = classFile ? extractCssVars(readFileSync(join(ROOT, classFile), 'utf8'), tag) : []
+    const cssVars = classFile ? extractCssVars(readComponentClosure(join(ROOT, classFile)), tag) : []
 
     manifest[tagKey] = {
       className: cls,

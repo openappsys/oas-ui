@@ -44,1840 +44,134 @@ const _RANGE_WINDOW_EVENT_CHECK: typeof RANGE_WINDOW_EVENT = 'oas-range-request'
 void _ROW_WINDOW_EVENT_CHECK
 void _RANGE_WINDOW_EVENT_CHECK
 
-const STYLE = `
-:host {
-  display: block;
-  font-family: inherit;
-  min-width: 0;
-}
-:host([hidden]) {
-  display: none;
-}
-.gantt {
-  display: flex;
-  align-items: stretch;
-  /* height 属性由 update() 映射为宿主自定义属性 --oas-gantt-height（写宿主自定义属性而非 height 内联，
-     组件从不触碰宿主 height 内联）。高度挂在**内部画布（.gantt）**上：宿主自身 height 内联只框定外盒，
-     内部画布高度仍由本规则（token / height 属性）决定，不会被宿主内联 height 拉伸；整体调高请改用
-     height 属性或 --oas-gantt-height */
-  height: var(--oas-gantt-height, 320px);
-  border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-md);
-  background: var(--oas-color-bg);
-  color: var(--oas-color-text-primary);
-  overflow: hidden;
-  position: relative;
-  font-size: var(--oas-font-size-sm);
-}
-.side {
-  width: var(--oas-gantt-list-width, 220px);
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  border-inline-end: 1px solid var(--oas-color-border);
-  background: var(--oas-gantt-header-bg, var(--oas-color-bg));
-}
-.side-head {
-  height: var(--oas-gantt-header-height, 44px);
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
-}
-/* 工时列（show-effort，opt-in 默认关）：表头与行名共用同一两列模板（名称自适应 | 工时定宽右对齐）。
-   关闭时无 .effort 节点、表头保持空 div——既有单列形态 DOM 逐节点不变 */
-.side-head.has-effort {
-  display: flex;
-  align-items: center;
-  gap: var(--oas-space-1);
-  padding-inline: var(--oas-space-2);
-  box-sizing: border-box;
-  font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary-strong);
-}
-.side-head .head-name {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.side-head .head-effort {
-  flex: none;
-  width: var(--oas-gantt-effort-width, 56px);
-  text-align: end;
-}
-.side-body {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-  /* 左侧列表不可原生滚动 → 触屏上纵向拖用于行带框选（不交浏览器手势） */
-  touch-action: none;
-}
-.side-inner {
-  position: relative;
-  height: 100%;
-}
-.row-name {
-  position: absolute;
-  inset-inline-start: 0;
-  width: 100%;
-  height: var(--oas-gantt-row-height, 36px);
-  display: flex;
-  align-items: center;
-  gap: var(--oas-space-1);
-  padding-inline-start: var(--indent, 8px);
-  padding-inline-end: var(--oas-space-2);
-  box-sizing: border-box;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--oas-color-text-primary);
-  cursor: grab;
-  user-select: none;
-}
-:host([readonly]) .row-name {
-  cursor: default;
-}
-.row-name[disabled] {
-  cursor: default;
-}
-/* 斑马纹行名（stripe 属性 + 绝对行号奇数）：与时间轴条纹同 token 同奇偶口径；
-   定义在选中底色规则之前（同特异性后者胜）→ 选中覆盖斑马纹 */
-.row-name[data-stripe] {
-  background: var(--oas-gantt-row-stripe-bg, var(--oas-color-bg-hover));
-}
-/* 行 hover 底色（hover 属性，默认开；hover="false" 经 --_row-hover-bg 置透明关闭，不改写本规则）。
-   与斑马纹独立 token（--oas-gantt-row-hover-bg），可分别自定义；定义在斑马纹之后、selected 之前
-   （同特异性后者胜）→ 优先级序：条纹 < hover < 选中。
-   媒体守卫与 JS 侧 pointerType=touch 守卫配套：触屏（hover: none）上原生 :hover 会粘住，
-   造成「左侧行名高亮、时间轴却不出装饰层」的左右不一致 → 仅在真实悬停设备上声明。 */
-:host([hover='false']) {
-  --_row-hover-bg: transparent;
-}
-@media (hover: hover) {
-  .row-name:hover {
-    background: var(--_row-hover-bg, var(--oas-gantt-row-hover-bg, var(--oas-color-bg-hover)));
-  }
-}
-.row-name.selected {
-  background: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
-  box-shadow: inset 2px 0 0 var(--oas-color-primary);
-}
-/* RTL 下高亮条镜像到 inline-start（右缘） */
-:host([data-rtl]) .row-name.selected {
-  box-shadow: inset -2px 0 0 var(--oas-color-primary);
-}
-/* 关键路径行名（show-critical-path）：文本强调色；不改选中态背景/描边 */
-.row-name.critical {
-  color: var(--oas-gantt-critical-color, var(--oas-color-danger));
-}
-/* 违约行名（总时差为负 = 已违反后继约束）：虚线强调色 */
-.row-name.conflict {
-  color: var(--oas-gantt-conflict-color, var(--oas-color-danger-text));
-  text-decoration: underline dashed;
-}
-/* 行重排手柄：任务名可选中后，拖拽改由右侧手柄承载；
-   粗指针下常显（整行拖与纵向滚动冲突），细指针下悬停/聚焦时显形 */
-.row-drag {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  touch-action: none;
-  cursor: grab;
-  color: var(--oas-color-text-secondary);
-  padding-inline: 2px;
-  min-width: 24px;
-  min-height: 24px;
-  letter-spacing: -3px;
-  opacity: 0;
-  pointer-events: none;
-}
-@media (pointer: coarse) {
-  .row-drag {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-@media (pointer: fine) {
-  .row-name:hover .row-drag,
-  .row-name:focus-within .row-drag {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-.row-name:focus-visible {
-  outline: 2px solid var(--oas-color-primary);
-  outline-offset: -2px;
-}
-/* 行内新建「＋」：默认不渲染（仅 creatable 且非只读/非禁用行）；写入 DOM 的按钮靠 :host([creatable]) 显示 */
-.row-add {
-  display: none;
-}
-:host([creatable]) .row-add {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  padding-inline: 2px;
-  background: transparent;
-  border: 0;
-  border-radius: var(--oas-radius-xs);
-  color: var(--oas-color-text-secondary);
-  font: inherit;
-  font-size: var(--oas-font-size-xs);
-  line-height: 1;
-  cursor: pointer;
-}
-:host([creatable]) .row-add:hover {
-  color: var(--oas-color-text-primary);
-  background: var(--oas-color-bg-hover);
-}
-:host([creatable]) .row-add:focus-visible {
-  outline: 2px solid var(--oas-color-primary);
-  outline-offset: -2px;
-}
-.rename-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 22px;
-  font: inherit;
-  color: inherit;
-  background: var(--oas-color-bg);
-  border: 1px solid var(--oas-color-primary);
-  border-radius: var(--oas-radius-sm);
-  padding: 0 var(--oas-space-1);
-  outline: none;
-}
-/* 关键路径条（show-critical-path）：描边强调；置于选中态描边规则之前，选中态优先级更高 */
-.bar.critical {
-  outline: 2px solid var(--oas-gantt-critical-color, var(--oas-color-danger));
-  outline-offset: 1px;
-}
-/* 违约条（总时差为负）：虚线描边与关键路径区分 */
-.bar.conflict {
-  outline: 2px dashed var(--oas-gantt-conflict-color, var(--oas-color-danger));
-  outline-offset: 1px;
-}
-.bar.selected {
-  outline: 2px solid var(--oas-color-primary);
-  outline-offset: 1px;
-}
-svg.links .link-hit:focus-visible {
-  outline: 2px solid var(--oas-color-primary);
-}
-/* SVG path 的 outline 在部分引擎不渲染 → 命中的可见线同时加粗高亮作焦点指示 */
-svg.links .link-hit:focus-visible + .link {
-  stroke: var(--oas-color-primary);
-  stroke-width: 2.5;
-}
-@media (pointer: coarse) {
-  .bar.touch-active .link-dot {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-.drop-line {
-  position: absolute;
-  inset-inline-start: 0;
-  inset-inline-end: 8px;
-  height: 2px;
-  background: var(--oas-color-primary);
-  border-radius: var(--oas-radius-full, 999px);
-  pointer-events: none;
-  z-index: 5;
-}
-.drop-line[data-mode='inside'] {
-  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
-  border: 1px solid var(--oas-color-primary);
-  box-sizing: border-box;
-}
-/* 空白拖拽覆盖层：框选多任务（B）与拖拽建任务预览（C）共用；纯装饰、不拦指针 */
-.marquee {
-  position: absolute;
-  pointer-events: none;
-  box-sizing: border-box;
-  border: 1px solid var(--oas-color-primary);
-  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
-  border-radius: var(--oas-radius-xs);
-  z-index: 6;
-}
-.row-name .name {
-  /* flex 子项默认 min-width:auto 不收缩，父级 text-overflow 对 flex 项不生效——
-     长任务名会硬裁无省略号；显式 min-width:0 + 自身 ellipsis 才能出「…」 */
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  /* 任务名是数据文本：允许选中复制；行拖拽改由右侧手柄承载 */
-  user-select: text;
-}
-.variance {
-  flex: none;
-  font-size: var(--oas-font-size-xs);
-  font-variant-numeric: tabular-nums;
-  color: var(--oas-color-text-secondary-strong);
-  white-space: nowrap;
-}
-.variance[data-late] {
-  color: var(--oas-color-danger);
-}
-.variance[data-early] {
-  color: var(--oas-color-success);
-}
-/* 工时单元格（show-effort 开启）：与表头同列模板——定宽右对齐 tabular-nums，数值稳定不跳动；
-   颜色沿用行标签次级文本 token（暗色变体随 token 自动切换） */
-.row-name .effort {
-  flex: none;
-  width: var(--oas-gantt-effort-width, 56px);
-  text-align: end;
-  font-variant-numeric: tabular-nums;
-  font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary-strong);
-  white-space: nowrap;
-}
-.toggle {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--oas-color-text-secondary-strong);
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: var(--oas-radius-xs);
-  padding: 0;
-  font-size: var(--oas-font-size-xs);
-  line-height: 1;
-}
-.toggle:hover {
-  background: var(--oas-color-bg-hover);
-  color: var(--oas-color-primary);
-}
-.toggle:focus-visible {
-  outline: 2px solid var(--oas-color-primary);
-  outline-offset: -2px;
-}
-.main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.thead {
-  height: var(--oas-gantt-header-height, 44px);
-  flex-shrink: 0;
-  overflow: hidden;
-  border-bottom: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
-  background: var(--oas-gantt-header-bg, var(--oas-color-bg));
-  position: relative;
-}
-.head-major,
-.head-minor {
-  position: relative;
-  height: 50%;
-}
-.head-minor {
-  border-top: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
-}
-.head-major .unit,
-.head-minor .unit {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--oas-color-text-secondary-strong);
-  font-size: var(--oas-font-size-xs);
-  white-space: nowrap;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-.head-major .unit {
-  /* 主刻度合并格可能远宽于视口（如 day 档下 31 天的月格）：标签必须靠 inline-start 对齐，
-     居中会把标签推到视口外——窄容器下整月无可见标签（实测 2026-01 标签落在 x≈1250 处）。 */
-  justify-content: flex-start;
-  padding-inline-start: var(--oas-space-2);
-}
-.head-minor .unit {
-  border-inline-start: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
-}
-/* 轴首格（全局第 0 列）不画左缘线；窗口切片后首个渲染格可能是轴中段，按类名而非 :first-child 判定 */
-.head-minor .unit.axis-start {
-  border-inline-start: none;
-}
-.tbody {
-  flex: 1;
-  overflow: auto;
-  position: relative;
-  overscroll-behavior: contain;
-  /* 窗口滚动期重建 DOM 会触发 Chrome 滚动锚定，把滚轮增量逐帧放大成加速循环（同 oas-virtual-list .viewport） */
-  overflow-anchor: none;
-}
-.inner {
-  position: relative;
-}
-/* 行斑马纹容器（stripe 属性，opt-in，懒创建）：绝对行号奇数行整行底色。
-   纯装饰且不拦指针（条拖拽/框选/连线命中不受影响）；DOM 序插在 .grid-canvas 之前
-   （同为 absolute 无 z-index → 先者先绘）。周末/假日列使用相对 --oas-color-bg 的不透明混合：
-   若用 transparent 会与下方斑马纹二次叠加，斑马行上的周末列会被染成条纹色。 */
-.stripe-canvas {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.stripe-canvas .stripe {
-  position: absolute;
-  inset-inline-start: 0;
-  background: var(--oas-gantt-row-stripe-bg, var(--oas-color-bg-hover));
-  pointer-events: none;
-}
-/* 行 hover 时间轴装饰层（单元素，跟随 hover 行；插在 .grid-canvas 之前 = 条纹之上、周末/假日列之下）。
-   同 token 链 --_row-hover-bg / --oas-gantt-row-hover-bg，与左侧行名 hover 同源同色 */
-.row-hover {
-  position: absolute;
-  inset-inline-start: 0;
-  pointer-events: none;
-  background: var(--_row-hover-bg, var(--oas-gantt-row-hover-bg, var(--oas-color-bg-hover)));
-}
-.grid-canvas {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.grid-canvas .cell {
-  position: absolute;
-  top: 0;
-  background: var(--oas-gantt-weekend-bg, color-mix(in srgb, var(--oas-color-bg-hover) 60%, var(--oas-color-bg)));
-}
-.grid-canvas .cell.holiday {
-  background: var(--oas-gantt-holiday-bg, color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg)));
-}
-svg.links {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: visible;
-}
-svg.links path {
-  fill: none;
-  stroke: var(--oas-gantt-link-color, var(--oas-color-primary));
-  stroke-width: 1.5;
-}
-svg.links marker path {
-  fill: var(--oas-gantt-link-color, var(--oas-color-primary));
-  stroke: none;
-}
-svg.links .link {
-  pointer-events: none;
-}
-svg.links .link-hit {
-  pointer-events: stroke;
-  stroke: transparent;
-  stroke-width: 12;
-  cursor: pointer;
-}
-svg.links .link-hit.selected + .link {
-  stroke: var(--oas-color-danger);
-  stroke-width: 2.5;
-}
-/* 依赖 lag/lead 可见标签（非 0 时渲染在连线竖段中点） */
-svg.links .link-label {
-  fill: var(--oas-color-text-secondary);
-  font-size: var(--oas-font-size-xs, 11px);
-  pointer-events: none;
-  /* 底色描边：叠在连线/任务条上仍清晰可读（paint-order 先描边后填充） */
-  paint-order: stroke;
-  stroke: var(--oas-color-bg);
-  stroke-width: 2px;
-}
-svg.links .temp-link {
-  pointer-events: none;
-  stroke: var(--oas-gantt-link-color, var(--oas-color-primary));
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3;
-}
-.link-dot {
-  position: absolute;
-  top: -6px;
-  width: 10px;
-  height: 10px;
-  border-radius: var(--oas-radius-full, 999px);
-  background: var(--oas-color-bg);
-  border: 2px solid var(--oas-gantt-link-color, var(--oas-color-primary));
-  box-sizing: border-box;
-  opacity: 0;
-  pointer-events: none;
-  cursor: crosshair;
-  touch-action: none;
-  transition: opacity 0.12s;
-  z-index: 2;
-}
-.bar:hover .link-dot,
-.bar:focus-within .link-dot {
-  opacity: 1;
-  pointer-events: auto;
-}
-.link-dot.link-start {
-  inset-inline-start: -6px;
-}
-.link-dot.link-end {
-  inset-inline-end: -6px;
-}
-.bars {
-  position: absolute;
-  inset: 0;
-  /* 整层放行命中：否则盖住下方 svg.links 里的 .link-hit，连线点选不可达（条/基线/连线点各自 auto） */
-  pointer-events: none;
-}
-.bar {
-  position: absolute;
-  pointer-events: auto;
-  height: var(--oas-gantt-bar-height, 22px);
-  border-radius: var(--oas-radius-sm);
-  background: var(--oas-gantt-bar-bg, color-mix(in srgb, var(--oas-gantt-bar-color, var(--oas-color-primary)) 22%, var(--oas-color-bg)));
-  cursor: grab;
-  box-sizing: border-box;
-  overflow: visible;
-  /* 短任务在粗档（1 天 vs month/quarter）下宽度趋近 0 不可见/不可点 → 视觉下限保底（数据不变） */
-  min-width: 8px;
-  /* 触屏纵向滚动优先；横向拖拽由条自身处理（拖拽中浏览器判定为滚动则触发 pointercancel） */
-  touch-action: pan-y;
-  user-select: none;
-}
-.baseline {
-  position: absolute;
-  height: 4px;
-  border-radius: var(--oas-radius-full, 999px);
-  background: var(--oas-gantt-baseline-color, color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent));
-  pointer-events: auto;
-  min-width: 8px;
-  z-index: 0;
-}
-.baseline-progress {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--oas-gantt-baseline-progress-color, var(--oas-color-text-secondary-strong));
-}
-.deadline {
-  position: absolute;
-  width: 2px;
-  border-inline-start: 1px dashed var(--oas-gantt-deadline-color, var(--oas-color-danger));
-  pointer-events: auto;
-  cursor: help;
-  opacity: 0.75;
-  z-index: 1;
-}
-.float-label {
-  position: absolute;
-  inset-inline-start: calc(100% + 4px);
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
-  font-size: var(--oas-font-size-xs, 11px);
-  color: var(--oas-color-text-secondary);
-  background: var(--oas-color-bg);
-  padding-inline: 2px;
-  border-radius: var(--oas-radius-sm);
-  pointer-events: none;
-}
-.float-inline {
-  margin-inline-start: 4px;
-  color: inherit;
-  font-size: var(--oas-font-size-xs, 11px);
-  font-weight: normal;
-}
-.bar.has-float.label-right .bar-label,
-.bar.has-float.label-left .bar-label {
-  max-width: 360px;
-}
-.bar:active {
-  cursor: grabbing;
-}
-.bar:focus-visible {
-  outline: 2px solid var(--oas-color-primary);
-  outline-offset: 2px;
-}
-.bar[disabled] {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.bar-progress {
-  position: absolute;
-  inset-inline-start: 0;
-  top: 0;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--oas-gantt-bar-progress-bg, var(--oas-gantt-bar-color, var(--oas-color-primary)));
-  opacity: 0.9;
-  pointer-events: none;
-}
-.bar-label {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-  /* 条标签是数据文本：允许选中复制；条拖拽从标签外区域/手柄开始 */
-  pointer-events: auto;
-  user-select: text;
-  color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-xs);
-}
-.bar.label-inside .bar-label {
-  inset-inline-start: 8px;
-  max-width: calc(100% - 16px);
-  /* 底衬 scrim：条底（半透明色）与进度实色两种情况都保证文字可读；
-     底色混入 bg-elevated 提高不透明度（玻璃主题的 bg-elevated 亦非全不透明，故只提高衬底实度），
-     文字用 text-on-primary（各主题均为不透明 token，且与 scrim 极性相反） */
-  background: color-mix(in srgb, var(--oas-color-text-primary) 62%, var(--oas-color-bg-elevated));
-  color: var(--oas-color-text-on-primary);
-  padding-inline: var(--oas-space-1);
-  border-radius: var(--oas-radius-xs);
-}
-.bar.label-right .bar-label {
-  inset-inline-start: calc(100% + 6px);
-}
-.bar.label-left .bar-label {
-  inset-inline-end: calc(100% + 6px);
-}
-.handle {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: 8px;
-  cursor: ew-resize;
-  /* 手柄是明确的拖拽热区：触摸手势全部交给拖拽，避免滚动打断 */
-  touch-action: none;
-}
-.handle-start {
-  inset-inline-start: -4px;
-}
-.handle-end {
-  inset-inline-end: -4px;
-}
-.progress-handle {
-  position: absolute;
-  top: 50%;
-  width: 10px;
-  height: 10px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: var(--oas-gantt-bar-progress-bg, var(--oas-gantt-bar-color, var(--oas-color-primary)));
-  border: 2px solid var(--oas-color-bg);
-  box-shadow: var(--oas-shadow-sm);
-  cursor: ew-resize;
-  box-sizing: border-box;
-  touch-action: none;
-}
-.bar.milestone {
-  background: transparent;
-  overflow: visible;
-}
-.bar.milestone .dia {
-  position: absolute;
-  top: 50%;
-  width: 15px;
-  height: 15px;
-  transform: translate(-50%, -50%) rotate(45deg);
-  background: var(--oas-gantt-milestone-color, var(--oas-color-warning));
-  border-radius: 2px;
-}
-.bar.summary {
-  height: 8px;
-  background: var(--oas-gantt-summary-bg, var(--oas-color-text-secondary-strong));
-  border-radius: var(--oas-radius-xs);
-  cursor: default;
-}
-.bar.summary::before,
-.bar.summary::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  width: 0;
-  height: 0;
-  border-inline: 4px solid transparent;
-  border-top: 5px solid var(--oas-gantt-summary-bg, var(--oas-color-text-secondary-strong));
-}
-.bar.summary::before {
-  inset-inline-start: 0;
-}
-.bar.summary::after {
-  inset-inline-end: 0;
-}
-.today-line {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  background: var(--oas-gantt-today-color, var(--oas-color-danger));
-  pointer-events: none;
-  z-index: 1;
-}
-.today-line[hidden] {
-  display: none !important;
-}
-/* 状态线（show-status-line，opt-in 默认关）：与 today-line 同路径渲染，独立 token
-   缺省取 warning 色族（进度线语义色，与「今天」的 danger 区分）；装饰层不拦指针 */
-.status-line {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  background: var(--oas-gantt-status-line-color, var(--oas-color-warning));
-  pointer-events: none;
-  z-index: 1;
-}
-.status-line[hidden] {
-  display: none !important;
-}
-/* 计划进度刻度（show-status-line 开启）：任务条内按 planned%（status-date 时刻在
-   [start, end] 的时间流逝占比）画的窄竖线，与状态线同 token 同色——只画刻度、不染色不告警。
-   milestone 内为二值刻度（0/1）；条 overflow:hidden 裁掉出条部分，RTL 走逻辑属性自动镜像 */
-.plan-tick {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--oas-gantt-status-line-color, var(--oas-color-warning));
-  pointer-events: none;
-  z-index: 2;
-}
-.tooltip {
-  position: absolute;
-  z-index: 7;
-  max-width: 280px;
-  padding: var(--oas-space-2) var(--oas-space-3);
-  border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-sm);
-  background: var(--oas-color-bg);
-  color: var(--oas-color-text-primary);
-  box-shadow: var(--oas-shadow-md);
-  font-size: var(--oas-font-size-xs);
-  pointer-events: none;
-}
-.tooltip[hidden] {
-  display: none !important;
-}
-.tooltip .tip-name {
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-.tooltip .tip-line {
-  color: var(--oas-color-text-secondary-strong);
-}
-.empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--oas-color-text-secondary-strong);
-  background: var(--oas-color-bg);
-  z-index: 2;
-}
-.empty[hidden] {
-  display: none !important;
-}
-/* ===== 资源负荷面板（show-resource-load，opt-in 默认关） =====
-   图表下方按同一时间轴对齐的负荷桶条：每资源一行，桶高 ∝ 负荷%（桶内覆盖天数/桶天数），
-   同资源任务在桶内重叠时逐任务累计 → >100% 走 danger 通道（与 pool 超配检测同语义）。
-   纯可视化摘要：面板 role="img" + i18n aria-label 摘要，不进 Tab 序（读屏走摘要）；
-   横向平移跟随图表内容层（syncHeaderOffset 同一 rect 差公式，RTL/任意滚动模型一致），
-   缩放/平移复用 update() 时的轴参数（xOf/units/colW），不重算负荷。
-   行名列宽与左侧列表同 token（--oas-gantt-list-width）→ 桶条与图表时间轴逐列对齐。
-   .load-body 有高度上限（--oas-gantt-load-max-height，缺省 240px）+ 纵向滚动：资源行多时不撑高宿主布局，
-   数据不截断（全量 DOM，滚动只裁剪视口）。 */
-.load-panel {
-  border: 1px solid var(--oas-color-border);
-  border-top: 0;
-  border-radius: 0 0 var(--oas-radius-md) var(--oas-radius-md);
-  background: var(--oas-color-bg);
-  color: var(--oas-color-text-primary);
-  overflow: hidden;
-}
-.load-panel[hidden] {
-  display: none !important;
-}
-.load-head {
-  height: 28px;
-  display: flex;
-  align-items: center;
-  padding-inline: var(--oas-space-2);
-  font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary-strong);
-  border-bottom: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
-  background: var(--oas-gantt-header-bg, var(--oas-color-bg));
-}
-/* 资源行数无上限：按 24px/行随资源数无限撑高会挤坏宿主布局（面板是图表下方的摘要块，不是主区）
-   → 纵向滚动承载，高度上限 token 开口（缺省 240px = 10 行）。数据不做截断：DOM 仍全量渲染，
-   滚动只是视口裁剪（本面板不做虚拟滚动，行数级另有 windowed 口径，见 renderResourceLoad）。
-   横向不滚动（.load-track 为 flex:1 + min-width:0，桶层超宽由 track 自身 overflow:hidden 裁），
-   行名列因此天然常驻可见——纵向滚动不改变列位置，sticky 左列在此无意义（留待将来支持横向滚动再补）。 */
-.load-body {
-  max-height: var(--oas-gantt-load-max-height, 240px);
-  overflow-y: auto;
-}
-.load-row {
-  display: flex;
-  align-items: stretch;
-  height: var(--oas-gantt-load-row-height, 24px);
-  font-size: var(--oas-font-size-xs);
-}
-.load-row .load-name {
-  flex: none;
-  width: var(--oas-gantt-list-width, 220px);
-  display: flex;
-  align-items: center;
-  padding-inline: var(--oas-space-2);
-  box-sizing: border-box;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--oas-color-text-primary);
-  border-inline-end: 1px solid var(--oas-gantt-grid-line-color, var(--oas-color-border));
-  background: var(--oas-gantt-header-bg, var(--oas-color-bg));
-}
-.load-row .load-track {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  overflow: hidden;
-}
-.load-row .load-inner {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  /* 物理左锚定（非 inset-inline-start）：桶条 left 已由 mirrorCellLeft 按物理坐标镜像（与表头/网格格同款），
-     内层画布必须与图表内容层同锚（syncHeaderOffset 按 rect 差 translateX 对齐，RTL 同式成立） */
-  left: 0;
-}
-.load-cell {
-  position: absolute;
-  bottom: 0;
-  min-width: 2px;
-  background: var(--oas-gantt-load-bg, color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg)));
-  border-radius: 1px;
-}
-/* 超配桶（覆盖日数 > 桶天数）：danger 通道（暗色变体随 token 自动切换） */
-.load-cell.over {
-  background: var(--oas-gantt-load-over-bg, var(--oas-color-danger));
-}
-.load-empty {
-  padding: var(--oas-space-2);
-  font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary-strong);
-}
-/* ===== 高对比模式（forced-colors: active）兜底 =====
-   系统强制色会覆盖 background、禁用 box-shadow：凡「只凭底色/阴影」传达信息的元素
-   （今日线/状态线/进度刻度、周末与假日列、基线条、行选中态、任务条本体、进度填充、
-   里程碑菱形）在高对比下会整体不可见。以下在媒体查询内追加 outline/border 兜底——
-   两者保留宽度与线型，颜色由强制色接管（CanvasText，高对比可见），常态样式不动。 */
-@media (forced-colors: active) {
-  /* 竖线与细条类（2px 线 / 4px 基线 / 里程碑菱形）：outline 不占布局，线宽与定位零漂移 */
-  .today-line,
-  .status-line,
-  .plan-tick,
-  .baseline,
-  .bar.milestone .dia {
-    outline: 1px solid;
-  }
-  /* 周末列 / 假日列高亮：底色被强制后整列消失 → 内缩 1px 列描边标出非工作日边界 */
-  .grid-canvas .cell {
-    outline: 1px solid;
-    outline-offset: -1px;
-  }
-  /* 行名选中态：选中靠「主色底 + inset 阴影」表达，两者同时失效 → 内缩 outline 兜底
-     （RTL 选中态选择器特异性更高，需并列声明才能覆盖其 inset 阴影） */
-  .row-name.selected,
-  :host([data-rtl]) .row-name.selected {
-    box-shadow: none;
-    outline: 2px solid;
-    outline-offset: -2px;
-  }
-  /* 任务条本体：底色被强制后只剩文字 → 1px 边框找回条体轮廓（border-box，几何不变）；
-     里程碑条透明底、靠菱形表达，排除以免长框被误读为普通条 */
-  .bar:not(.milestone) {
-    border: 1px solid;
-  }
-  /* 负荷桶条：只凭底色传达信息 → 1px 描边找回轮廓（常态样式不动，颜色由强制色接管） */
-  .load-cell {
-    outline: 1px solid;
-  }
-  /* 进度填充：进度只凭填充色 → 条内右缘 2px 描边标出进度前沿（RTL 走逻辑属性自动镜像） */
-  .bar-progress {
-    border-inline-end: 2px solid;
-  }
-  /* 行内重命名输入框：基规则压掉 UA outline，强制色下无其他焦点线索 */
-  .rename-input:focus {
-    outline: 1px solid CanvasText;
-    outline-offset: 1px;
-    box-shadow: none;
-  }
-}
-`
+// ===== 模块拆分（纯机械迁移，零行为 / 零公开 API 变更）=====
+// - gantt-style.ts：STYLE 样式字符串（scoped CSS）
+// - gantt-types.ts：数据契约类型 + 内部结构类型（纯类型，零运行时）
+// - gantt-utils.ts：模块级纯函数与常量（清洗 / 日期数学 / 标签抽稀 / 基线 / 冲突 / 诊断）
+// - gantt-helpers.ts：类方法抽出的无状态纯函数（本文件方法仅薄转发，调用点不变）
+// 公开导入面经本文件 re-export 保持稳定（index.ts / ssr.ts / 子模块的导入路径不变）。
+import { STYLE } from './gantt-style.js'
+import type {
+  DatedConstraint,
+  DragCtx,
+  DragMode,
+  GanttBaseline,
+  GanttDependenciesChangeDetail,
+  GanttDependency,
+  GanttExpandChangeDetail,
+  GanttHistoryChangeDetail,
+  GanttMajorGroup,
+  GanttProgressChangeDetail,
+  GanttReparentDetail,
+  GanttRescheduleDetail,
+  GanttResource,
+  GanttResourceConflict,
+  GanttResourceConflictDetail,
+  GanttRow,
+  GanttScale,
+  GanttScaleChangeDetail,
+  GanttSelectionChangeDetail,
+  GanttTask,
+  GanttTaskAddDetail,
+  GanttTaskChangeDetail,
+  GanttTaskClickDetail,
+  GanttTaskRenderDetail,
+  GanttTasksChangeDetail,
+  TG,
+  TimeUnit,
+} from './gantt-types.js'
+import {
+  DAY_MS,
+  DEP_TYPES,
+  MARQUEE_THRESHOLD,
+  SCALES,
+  SCALE_COL,
+  SCALE_MIN_COL,
+  SCALE_PAD_END,
+  SCALE_PAD_START,
+  SCALE_STRIDES,
+  SNAP_MAX_DAYS,
+  addLocalDays,
+  buildMajorGroups,
+  computeResourceConflicts,
+  computeVariance,
+  escId,
+  formatEffortCell,
+  ganttRenderDiag,
+  localWallClockMs,
+  parseTaskDate,
+  parseWorkdays,
+  pickVisibleLabels,
+  sanitizeDeps,
+  sanitizeLag,
+  sanitizeTasks,
+  stableStringify,
+  taskBaselines,
+} from './gantt-utils.js'
+import {
+  addUnits,
+  canReparent,
+  childStructure,
+  constraintOf,
+  criticalPathIds,
+  deadlineConflictIds,
+  dependencyCyclicNodes,
+  endMsOfTask,
+  fmtDay,
+  fmtEnd,
+  fmtIso,
+  groupTasksByProject,
+  groupTasksByResource,
+  isDescendantOf,
+  isInteractiveTarget,
+  isWholeDayTask,
+  linkType,
+  loadBucketStartMs,
+  loadUnit,
+  majorLabel,
+  minorLabel,
+  plannedRatio,
+  poolResourceText,
+  shiftByDuration,
+  shiftWindows,
+  startMsOfTask,
+  taskSnapshot,
+  upPoint,
+  writeBarSelectionState,
+  writeRowSelectionState,
+} from './gantt-helpers.js'
 
-/** 甘特任务（数据契约：扁平 `parent` 指针为主；嵌套 `children` 输入在清洗层自动拍平兼容） */
-/** gantt 资源日历（逐资源工作日/假期/班次）；只影响 auto-schedule 的工作日吸附 */
-export interface GanttResource {
-  id: string
-  name?: string
-  /** 工作日（0=周日…6=周六）；缺省沿用全局 workdays，[] 表示不可用 */
-  workdays?: number[]
-  /** 资源假期（YYYY-MM-DD）；与全局 holidays 取并集 */
-  holidays?: string[]
-  /** 班次窗口（小时级展示/宿主排程使用；空数组表示该资源不可用） */
-  shifts?: Array<{ start: string; end: string }>
-}
-
-export interface GanttTask {
-  id?: string
-  /** 任务名（必填，缺失丢弃） */
-  name: string
-  /** 开始 'YYYY-MM-DD'（hour 档支持 'YYYY-MM-DD HH:mm'） */
-  start: string
-  /** 结束；缺省 = 里程碑（单点） */
-  end?: string
-  /** 类型；缺省推导：有子 = summary、无 end = milestone、其余 task */
-  type?: 'task' | 'milestone' | 'summary'
-  /** 进度 0-100（越界 clamp；缺省 0） */
-  progress?: number
-  /** 父任务 id（扁平指针；悬空按根渲染并告警一次） */
-  parent?: string
-  /** 嵌套子任务（兼容输入通道；清洗层拍平为 parent 指针） */
-  children?: GanttTask[]
-  /** 依赖（id 指向其他任务；type 缺省 fs） */
-  dependencies?: GanttDependency[]
-  /**
-   * 条色覆盖（走 CSS 变量解析，写入条元素 `--oas-gantt-bar-color`）：只作用于**普通任务条**底色
-   * 与其进度/进度手柄（bar-progress 同步取该 token）。milestone 走 `--oas-gantt-milestone-color`
-   * 语义色、summary 走 `--oas-gantt-summary-bg` 语义色，均不受 task.color 影响（形态色即语义，
-   * 不随单任务数据漂移）。
-   */
-  color?: string
-  /**
-   * 排程约束模式（opt-in；缺省 = 无约束，排程行为与旧版一致）：
-   * - asap  越早越好（等同无约束，清洗层直接丢弃）
-   * - snet  不早于 constraintDate（start ≥ 约束日，只前推不提前）
-   * - mso   固定于 constraintDate（依赖不得前推；数据偏离约束日时由排程拉回）
-   * - fnlt  不晚于 constraintDate（不自动移动，仅参与违约判定 → `.conflict`）
-   * snet/mso/fnlt 必须携带合法 constraintDate，否则整体丢弃并告警一次。
-   */
-  constraint?: 'asap' | 'snet' | 'mso' | 'fnlt'
-  /** 约束日期 'YYYY-MM-DD'（hour 档可带 'HH:mm'）；缺失/非法时约束整体丢弃 */
-  constraintDate?: string
-  /** 任务级禁拖 / 禁改自身（时间/进度/顺序/被依赖写入）；可作他任务前置与重排前/后同级目标 */
-  disabled?: boolean
-  /** summary 初始展开（缺省全展开，显式 false 为收起例外；expanded 属性受控优先——见 effectiveExpandedSet） */
-  expanded?: boolean
-  /** 所属项目键（配合 group-by-project 自动生成项目根摘要） */
-  project?: string
-  /** 分配的 gantt 资源 id（配合 resources 属性使用逐资源工作日/假期） */
-  resources?: string[]
-  /** 截止日（'YYYY-MM-DD'；hour 档可带时刻）；结束晚于截止日时标 .conflict 并渲染截止标记 */
-  deadline?: string
-  /** 多个截止日（可选；与 deadline 合并，去重并只保留合法日期） */
-  deadlines?: string[]
-  /** 基线计划（对比用；由宿主保存，组件只读）：start 必填；end 缺省 = 单点；progress 为基线进度 0-100。
-   *  等价于 `baselines: [{ id: 'default', ... }]` 的单条写法（清洗层归一，不 deprecate）；
-   *  两通道并存时 `baselines` 优先 */
-  baseline?: { start: string; end?: string; progress?: number }
-  /**
-   * 多基线（opt-in 数据扩展）：清洗层逐条校验（id 必填非空、start 必填合法、end/progress 非法丢弃），
-   * 全部无效时整组不落；单 `baseline` 字段会归一为 `[{ id: 'default', ...baseline }]`。
-   * 渲染取数走 `baseline-id` 属性（缺省第一条）。
-   */
-  baselines?: GanttBaseline[]
-  /**
-   * 工时估算（单位：天，可为小数如 2.5；**纯展示数据**，不参与排程/布局/依赖计算）。
-   * `show-effort` 开启时在行标签区右列显示；缺失/非有限显示空。索引签名本已允许透传，
-   * 此处显式声明并纳入清洗层（非有限数值丢弃）。
-   */
-  effort?: number
-  [key: string]: unknown
-}
-
-/** 多基线条目（show-baseline 渲染与 computeVariance 的取数来源；`baseline` 单字段归一为 id 'default'） */
-export interface GanttBaseline {
-  /** 基线 id（baselines 内唯一；缺失/空串该条丢弃） */
-  id: string
-  /** 基线开始 'YYYY-MM-DD'（hour 档可带时刻）；必填，非法整条丢弃 */
-  start: string
-  /** 基线结束；缺省 = 单点（= start） */
-  end?: string
-  /** 基线进度 0-100（越界 clamp；缺省不参与进度差） */
-  progress?: number
-}
-
-/** 基线与当前排期的差值（日精度；正数 = 当前晚于基线/工期更长/进度更多） */
-export interface GanttBaselineVariance {
-  id: string
-  /** 当前开始 − 基线开始（天） */
-  startDelta: number
-  /** 当前结束 − 基线结束（天） */
-  endDelta: number
-  /** 当前工期 − 基线工期（天） */
-  durationDelta: number
-  /** 当前进度 − 基线进度；基线未提供 progress 时为 null */
-  progressDelta: number | null
-}
-
-/** 依赖关系 */
-export interface GanttDependency {
-  /** 被依赖任务 id（不存在则该线跳过） */
-  id: string
-  /** 依赖类型：fs 完成-开始（缺省）/ ss 开始-开始 / ff 完成-完成 / sf 开始-完成 */
-  type?: 'fs' | 'ss' | 'ff' | 'sf'
-  /** 滞后/提前（天）：正值为 lag（推迟后继），负值为 lead（提前/允许重叠）；缺省 0 */
-  lag?: number
-}
-
-/** 时间刻度档 */
-export type GanttScale = 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'
-
-/** task-click / task-dblclick 事件载荷 */
-export interface GanttTaskClickDetail {
-  id: string
-  task: GanttTask
-}
-
-/** task-change 事件载荷（拖拽/拉伸/键盘改期收口，含旧值） */
-export interface GanttTaskChangeDetail {
-  id: string
-  task: GanttTask
-  oldStart: string
-  oldEnd: string
-  start: string
-  end: string
-}
-
-/** progress-change 事件载荷 */
-export interface GanttProgressChangeDetail {
-  id: string
-  task: GanttTask
-  progress: number
-}
-
-/** tasks-change 事件载荷 */
-export interface GanttTasksChangeDetail {
-  tasks: GanttTask[]
-}
-
-/** expand-change 事件载荷 */
-export interface GanttExpandChangeDetail {
-  id: string
-  expanded: boolean
-}
-
-/** history-change 事件载荷（undo/redo 与每次可撤销提交后派发） */
-export interface GanttHistoryChangeDetail {
-  canUndo: boolean
-  canRedo: boolean
-  action: 'change' | 'undo' | 'redo' | 'clear'
-}
-
-/** scale-change 事件载荷 */
-export interface GanttScaleChangeDetail {
-  scale: GanttScale
-}
-
-/** task-render 事件载荷 */
-export interface GanttTaskRenderDetail {
-  task: GanttTask
-  element: HTMLElement
-}
-
-/** reparent 事件载荷（行拖拽改父子 / 重排收口）：parent 为 null 表示根级，index 为同级序号 */
-export interface GanttReparentDetail {
-  id: string
-  parent: string | null
-  index: number
-}
-
-/** dependencies-change 事件载荷（连线拖拽建依赖 / 选中删除）：taskId 为依赖变化的后继任务 */
-export interface GanttDependenciesChangeDetail {
-  taskId: string
-  dependencies: GanttDependency[]
-}
-
-/** selection-change 事件载荷（多选集合变化） */
-export interface GanttSelectionChangeDetail {
-  ids: string[]
-}
-
-/** task-add 事件载荷（命令式创作通道新增/复制任务收口）：id 为新任务 id，task 为快照 */
-export interface GanttTaskAddDetail {
-  id: string
-  task: GanttTask
-}
-
-/** reschedule 事件载荷（auto-schedule 联动排程收口）：ids 为被联动改期的任务 id 列表 */
-export interface GanttRescheduleDetail {
-  ids: string[]
-}
-
-/**
- * 资源超配冲突对（pool 属性 opt-in 检测产物）：同资源两个任务的时间区间交叠 >0。
- * taskA / taskB 按任务在 tasks 输入序（taskA 在前）；交叠区间按日精度含端日期表达
- * （hour 档任务同样按日期输出——秒级精度交叠对甘特视图无展示意义）。
- *
- * 本通道只做**检测与视觉标注**（.conflict 复用违约视觉通道 + oas-resource-conflict 事件）；
- * 不做：资源泳道视图（留后续批）、自动排程避让（超配不触发重排）。负荷可视化（负荷桶条）
- * 由 `show-resource-load` 属性承载（shared/resource-load.ts 同一份日桶口径，>100% 即交叠超配）。
- */
-export interface GanttResourceConflict {
-  /** 任务 A id（tasks 输入序在前） */
-  taskA: string
-  /** 任务 B id（tasks 输入序在后） */
-  taskB: string
-  /** 冲突资源 id（池内已登记） */
-  resourceId: string
-  /** 交叠首日 'YYYY-MM-DD'（含） */
-  overlapStart: string
-  /** 交叠末日 'YYYY-MM-DD'（含端） */
-  overlapEnd: string
-}
-
-/** resource-conflict 事件载荷：conflicts 为全量冲突对快照（消解时为空数组） */
-export interface GanttResourceConflictDetail {
-  conflicts: GanttResourceConflict[]
-}
-
-type TG = GanttTask & { id: string }
-
-interface GanttRow {
-  task: TG
-  depth: number
-  startMs: number
-  endMs: number
-  progress: number
-  isSummary: boolean
-  isMilestone: boolean
-  hasChildren: boolean
-  posinset: number
-  setsize: number
-}
-
-interface TimeUnit {
-  startMs: number
-  endMs: number
-  major: string
-  minor: string
-}
-
-/** 主刻度合并组（列区间 [startCol, endCol) 共用同一 major 标签） */
-interface GanttMajorGroup {
-  startCol: number
-  endCol: number
-  label: string
-}
-
-/**
- * 主刻度相邻同标签分组（纯函数）：buildUnits 时对**全列**预计算一次，renderHeader 的窗口切片
- * 只做二分定位 + 相交子集输出——旧实现逐帧对全列做相邻合并扫描，长跨度横向滚动每帧 O(总列数)；
- * 分组语义与旧「逐帧全量相邻合并」完全一致（产物逐格一致，见 oas-gantt.test.ts 回归）。
- */
-function buildMajorGroups(units: TimeUnit[]): GanttMajorGroup[] {
-  const groups: GanttMajorGroup[] = []
-  const n = units.length
-  let i = 0
-  while (i < n) {
-    let j = i
-    const label = units[i]!.major
-    while (j + 1 < n && units[j + 1]!.major === label) j++
-    groups.push({ startCol: i, endCol: j + 1, label })
-    i = j + 1
-  }
-  return groups
-}
-
-type DragMode = 'move' | 'resize-start' | 'resize-end' | 'progress'
-
-interface DragCtx {
-  id: string
-  mode: DragMode
-  startX: number
-  /** 拖拽起点时的横向滚动位置：自动滚动期间指针可静止，位移须叠加滚动增量，条才会随指针走 */
-  startScrollLeft: number
-  origStartMs: number
-  origEndMs: number
-  origProgress: number
-  datetime: boolean
-  touch: boolean
-  bar: HTMLElement
-  newStartMs?: number
-  newEndMs?: number
-  newProgress?: number
-}
-
-const SCALES: GanttScale[] = ['hour', 'day', 'week', 'month', 'quarter', 'year']
-/** 各档列宽（px） */
-const SCALE_COL: Record<GanttScale, number> = { hour: 44, day: 36, week: 90, month: 110, quarter: 150, year: 130 }
-/** 各档列宽下限（px）：保证抽稀后的最小标签仍有呼吸位。
- *  旧实现统一取基准的 40%（day 档 14.4px），两位数日号在窄容器下首尾相接成一团不可读。 */
-const SCALE_MIN_COL: Record<GanttScale, number> = { hour: 22, day: 16, week: 36, month: 44, quarter: 60, year: 52 }
-/** 各档辅刻度抽稀步进阶梯（格）：取首个满足「步进 × 列宽 ≥ 标签估宽 + 间隙」者 */
-const SCALE_STRIDES: Record<GanttScale, number[]> = {
-  hour: [1, 2, 3, 4, 6, 12, 24],
-  day: [1, 2, 7, 14, 28],
-  week: [1, 2, 4, 13, 26],
-  month: [1, 2, 3, 6, 12],
-  quarter: [1, 2, 4],
-  year: [1, 2, 5, 10],
-}
-/** 标签估宽（px）：xs 字号下 ASCII 数字/字母/冒号/连字符的平均字宽 */
-const LABEL_CHAR_W = 6.6
-/** 相邻可见标签之间的最小间隙（px） */
-const LABEL_GAP = 6
-/** 起始留白（档位数）：保持小值——旧值 7 天在窄容器下把首个任务推到可见区右缘、左侧大片空白，
- *  今日线/里程碑随之滚出视口；起始留白只需留出条缘手柄的呼吸位。 */
-const SCALE_PAD_START: Record<GanttScale, number> = { hour: 1, day: 1, week: 1, month: 1, quarter: 1, year: 1 }
-/** 末端留白（档位数）：给条外标签与依赖出线留余地 */
-const SCALE_PAD_END: Record<GanttScale, number> = { hour: 6, day: 3, week: 1, month: 1, quarter: 1, year: 1 }
-const DAY_MS = 86_400_000
-
-/**
- * 按「本地日历日」平移时间戳：保留墙钟时分秒。
- * 用于 day/week 刻度步进、日期右界（次日零点）、工作日吸附与整日任务工期换算——
- * 直接 ±n × DAY_MS 在 DST 切换日（23/25 小时）会漂到 01:00/23:00，刻度错位、标签重复、数据被写脏。
- */
-function addLocalDays(ms: number, n: number): number {
-  const d = new Date(ms)
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate() + n,
-    d.getHours(),
-    d.getMinutes(),
-    d.getSeconds(),
-    d.getMilliseconds(),
-  ).getTime()
-}
-
-/** 本地墙钟（时:分）→ epoch ms：DST 切换日不能「当日零点 + 分钟数」（跳变那段不是 60 分钟/小时） */
-function localWallClockMs(y: number, month: number, day: number, minutes: number): number {
-  return new Date(y, month, day, Math.floor(minutes / 60), minutes % 60).getTime()
-}
-
-/** 空白拖拽判拖阈值（px）：低于此位移视作点按（框选清空 / 不建任务） */
-const MARQUEE_THRESHOLD = 4
-
-/**
- * 全量重算诊断计数（**仅内部诊断，非公开 API**）：模块级累加、只增不减，不参与任何渲染逻辑
- * （整块删除不影响组件行为；`index.ts` 不导出该符号，也不进 api-manifest）。
- * - `rowBuilds`：`buildRows` 调用次数（O(总量) 行树构建 + 摘要聚合）
- * - `unitBuilds`：`buildUnits` 调用次数（O(轴长) 刻度构建 + 主刻度分组）
- * - `cpComputes`：`criticalPathIds` 调用次数（O(V+E) 关键路径 / 违约判定）
- * 用途：测试锁定增量性能契约——**仅选择变化**（tasks / 依赖 / scale / expanded 等未变）时三者
- * 计数必须零增长（选择走局部 patch 路径，复用缓存 rows/units/criticalIds）；数据或刻度变化时
- * 必须增长（证明缓存正确失效，计数不是恒 0 的假绿）。
- */
-export const ganttRenderDiag = { rowBuilds: 0, unitBuilds: 0, cpComputes: 0 }
-
-const DEP_TYPES = new Set(['fs', 'ss', 'ff', 'sf'])
-
-/** 任务约束白名单（asap 等同无约束，清洗层丢弃，不落数据） */
-const CONSTRAINTS = new Set(['asap', 'snet', 'mso', 'fnlt'])
-/** 组件已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
-const RESERVED_TASK_KEYS = new Set([
-  'id',
-  'name',
-  'start',
-  'end',
-  'type',
-  'progress',
-  'parent',
-  'children',
-  'dependencies',
-  'color',
-  'disabled',
-  'expanded',
-  'baseline',
-  'baselines',
-  'project',
-  'resources',
-  'deadline',
-  'deadlines',
-  'constraint',
-  'constraintDate',
-  'effort',
-])
-
-/** 需携带 constraintDate 方能生效的约束模式 */
-type DatedConstraint = 'snet' | 'mso' | 'fnlt'
-
-/** 工作日吸附步进上限（天）：防 workdays + holidays 组合意外占满时死循环 */
-const SNAP_MAX_DAYS = 400
-
-/** 轴标签估宽（px，纯函数）：按字符数估算（刻度标签均为 ASCII，字宽近似等宽） */
-export function estimateLabelWidth(text: string): number {
-  return text.length * LABEL_CHAR_W
-}
-
-/**
- * 轴标签抽稀（纯函数）：返回应显示标签的下标集合。
- * 从 strides 阶梯取首个满足「步进 × 列宽 ≥ 最长标签估宽 + 间隙」的步进，
- * 列宽被压窄时按 N 取一显示，保证相邻可见标签不堆叠（密集日期轴可读性的通行做法）。
- * 列宽不可用（<=0，如无布局环境）或阶梯为空时全显示。
- */
-export function pickVisibleLabels(labels: string[], colW: number, strides: number[], gap = LABEL_GAP): number[] {
-  const n = labels.length
-  if (n === 0) return []
-  if (!(colW > 0) || strides.length === 0) return labels.map((_, i) => i)
-  let maxW = 0
-  for (const l of labels) {
-    const w = estimateLabelWidth(l)
-    if (w > maxW) maxW = w
-  }
-  const target = maxW + gap
-  let step = strides[strides.length - 1]!
-  for (const s of strides) {
-    if (s * colW >= target) {
-      step = s
-      break
-    }
-  }
-  const out: number[] = []
-  for (let i = 0; i < n; i += step) out.push(i)
-  return out
-}
-
-function parseTaskDate(s: unknown): Date | null {
-  if (typeof s !== 'string') return null
-  return parseISODate(s.trim())
-}
-
-/** 两组已排序日内班次窗口求交集（[start,end) 分钟；无交集返回 []） */
-function intersectShiftWindows(
-  a: Array<{ start: number; end: number }>,
-  b: Array<{ start: number; end: number }>,
-): Array<{ start: number; end: number }> {
-  const out: Array<{ start: number; end: number }> = []
-  let i = 0
-  let j = 0
-  while (i < a.length && j < b.length) {
-    const start = Math.max(a[i]!.start, b[j]!.start)
-    const end = Math.min(a[i]!.end, b[j]!.end)
-    if (start < end) out.push({ start, end })
-    if (a[i]!.end <= b[j]!.end) i++
-    else j++
-  }
-  return out
-}
-
-/** 本地日历日序号（UTC 归一，规避 DST 的 23/25 小时误差）；日期非法返回 null */
-function dayIndex(s: unknown): number | null {
-  const d = parseTaskDate(s)
-  if (!d) return null
-  return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY_MS)
-}
-
-/** 结束日索引：带时刻且恰为 00:00 时按前一日（渲染的 end 为右缘、日精度含端） */
-function endDayIndex(s: unknown): number | null {
-  const idx = dayIndex(s)
-  if (idx === null) return null
-  return typeof s === 'string' && s.length > 10 && s.slice(11, 16) === '00:00' ? idx - 1 : idx
-}
-
-/**
- * 基线差异（纯函数，日精度）：逐任务比较当前 start/end/progress 与选中基线。
- * - 基线取数走 taskBaselines（baselines 数组优先，单 baseline 字段归一为 id 'default'）；
- *   无 id / 无合法基线 start 的任务跳过；基线 end 缺省按单点（= start）处理。
- * - 当前 end 缺省按里程碑（= start）处理；差值正数表示当前晚于基线/工期更长/进度更多。
- * - 基线 progress 未提供时 progressDelta=null（不把缺失当成 0）。
- * - baselineId（可选，对应组件 baseline-id 属性）：指定 id 命中该条基线；未命中回落每任务
- *   第一条并 devWarn 一次（模块级去重）。缺省 = 每任务第一条基线（既有调用不破坏）。
- */
-export function computeVariance(tasks: GanttTask[], baselineId?: string): GanttBaselineVariance[] {
-  const out: GanttBaselineVariance[] = []
-  const want = typeof baselineId === 'string' ? baselineId.trim() : ''
-  for (const t of tasks) {
-    if (!t || typeof t.id !== 'string' || t.id === '') continue
-    const bases = taskBaselines(t)
-    if (bases.length === 0) continue
-    // 选基线：指定 id 命中取命中，未命中回落第一条（模块级告警一次，防刷屏）；缺省取第一条
-    let base = bases[0]!
-    if (want !== '') {
-      const hit = bases.find((b) => b.id === want)
-      if (hit) base = hit
-      else if (!varianceBaselineIdWarned) {
-        varianceBaselineIdWarned = true
-        devWarn(`[oas-gantt] computeVariance 未找到 id 为 "${want}" 的基线，已回落每任务第一条基线`)
-      }
-    }
-    const curStart = dayIndex(t.start)
-    const baseStart = dayIndex(base.start)
-    if (curStart === null || baseStart === null) continue
-    const curEnd = endDayIndex(t.end) ?? curStart
-    const baseEnd = endDayIndex(base.end) ?? baseStart
-    const baseProgress = parseProgress(base.progress)
-    out.push({
-      id: t.id,
-      startDelta: curStart - baseStart,
-      endDelta: curEnd - baseEnd,
-      durationDelta: curEnd - curStart - (baseEnd - baseStart),
-      progressDelta: baseProgress === undefined ? null : (parseProgress(t.progress) ?? 0) - baseProgress,
-    })
-  }
-  return out
-}
-
-/** computeVariance 指定 baseline-id 未命中的模块级告警去重（纯函数无实例可挂，仅提示一次） */
-let varianceBaselineIdWarned = false
-
-function parseProgress(v: unknown): number | undefined {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return undefined
-  return Math.min(100, Math.max(0, Math.round(v)))
-}
-
-/**
- * 多基线清洗（纯函数）：非数组返回 null；逐条校验——id 必填非空字符串、start 必填可解析、
- * end 缺省省略（非法丢弃 end 保条目）、progress 越界 clamp；全组无效（无合法条目）返回 null。
- * 条内 start 晚于 end 时按渲染语义交换（同单 baseline 口径）。不做去重：同 id 保留首个
- * （baseline-id 取数按首个命中，后续同 id 条目不参与）。
- */
-function sanitizeBaselines(v: unknown): GanttBaseline[] | null {
-  if (!Array.isArray(v)) return null
-  const out: GanttBaseline[] = []
-  const seen = new Set<string>()
-  for (const item of v) {
-    if (typeof item !== 'object' || item === null) continue
-    const b = item as Record<string, unknown>
-    const id = typeof b.id === 'string' ? b.id.trim() : ''
-    if (id === '' || seen.has(id)) continue
-    const s = typeof b.start === 'string' ? b.start.trim() : ''
-    if (!s || !parseTaskDate(s)) continue
-    seen.add(id)
-    const one: GanttBaseline = { id, start: s }
-    const e = typeof b.end === 'string' ? b.end.trim() : ''
-    if (e && parseTaskDate(e)) {
-      const sD = parseTaskDate(s)!
-      const eD = parseTaskDate(e)!
-      const eMs = e.length > 10 ? eD.getTime() : addLocalDays(eD.getTime(), 1)
-      if (eMs < sD.getTime()) {
-        one.start = e
-        one.end = s
-      } else {
-        one.end = e
-      }
-    }
-    const bp = parseProgress(b.progress)
-    if (bp !== undefined) one.progress = bp
-    out.push(one)
-  }
-  return out.length > 0 ? out : null
-}
-
-/**
- * 单 baseline 字段 → GanttBaseline 的归一（纯函数）：id 固定 'default'，end/progress 缺省省略。
- * taskBaselines（读侧）与未来清洗侧共用同一条归一路径，避免双实现漂移。
- */
-function normalizeSingleBaseline(b: { start: string; end?: string; progress?: number }): GanttBaseline {
-  const one: GanttBaseline = { id: 'default', start: b.start }
-  if (b.end !== undefined) one.end = b.end
-  if (b.progress !== undefined) one.progress = b.progress
-  return one
-}
-
-/**
- * 任务的多基线读取（**读时归一**；纯函数通道对未清洗输入兜底兼容）：
- * 显式 baselines 数组非空优先；否则单 baseline 字段**在读侧**归一为 `[{ id: 'default', ... }]`
- * （清洗层不物化派生数组——否则 updateTask/updateTasks 的 patch 合并 {...旧, ...patch} 会保留旧
- * 派生数组、令 patch.baseline 的新值/删除被静默遮蔽，回归见「updateTask 改/删单 baseline」用例）；两者皆无返回 []。
- */
-export function taskBaselines(t: GanttTask | undefined | null): GanttBaseline[] {
-  if (!t) return []
-  if (Array.isArray(t.baselines) && t.baselines.length > 0) return t.baselines
-  if (t.baseline) return [normalizeSingleBaseline(t.baseline)]
-  return []
-}
-
-/**
- * 任务约束清洗（纯函数）：白名单外的 constraint 一律丢弃（→ 无约束）；
- * `asap` 等同无约束（丢弃）；`snet`/`mso`/`fnlt` 必须携带可解析的 constraintDate，
- * 否则整体丢弃该约束并告警一次（key `constraint:${id}` 由调用方 warnOnce 去重）。
- */
-function sanitizeConstraint(
-  raw: Record<string, unknown>,
-  id: string,
-  onWarn?: (key: string, msg: string) => void,
-): { mode: DatedConstraint; date: string } | null {
-  const mode = raw.constraint
-  if (typeof mode !== 'string' || !CONSTRAINTS.has(mode)) return null
-  if (mode === 'asap') return null
-  const date = typeof raw.constraintDate === 'string' ? raw.constraintDate.trim() : ''
-  if (!parseTaskDate(date)) {
-    onWarn?.(
-      `constraint:${id}`,
-      `[oas-gantt] 任务 "${id}" 的 constraint="${mode}" 缺少可解析的 constraintDate，该约束已丢弃`,
-    )
-    return null
-  }
-  return { mode: mode as DatedConstraint, date }
-}
-
-/**
- * workdays 属性解析（纯函数）：JSON 周几数组（0=周日 … 6=周六）。
- * opt-in：属性缺省 / JSON 非法 / 非数组 / 过滤非法项后为空 → 返回 null = 不限制（全周工作）。
- */
-function parseWorkdays(raw: string): Set<number> | null {
-  if (!raw) return null
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
-  if (!Array.isArray(parsed)) return null
-  const days = new Set<number>()
-  for (const x of parsed) {
-    if (typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 6) days.add(x)
-  }
-  return days.size > 0 ? days : null
-}
-
-/**
- * lag 安全域上限（ms）：lag 必须有限且 |lag × DAY_MS| ≤ LAG_MS_LIMIT。
- * 背景：Date 合法域为 ±8.64e15 ms；极大有限 lag（1e8~1e10 天）能通过 `Number.isFinite`
- * 检查，但叠加到任务日期后会把排程运算的 ms 推出 Date 域 → `new Date(huge)` 为 Invalid
- * Date → `fmtIso` 内 `Intl.formatToParts` 抛 RangeError（auto-schedule 场景整图白屏）。
- * 取 1e12 ms（= 1e12 / 86_400_000 ≈ 11574 天 ≈ 31.7 年）：远大于业务可能的 lag（按年计）；
- * 常见 4 位年份（如 2026）叠加后仍为 4 位年份——写回日期经 toISODate 序列化后能再被
- * parseTaskDate 回读（parseISODate 只收 4 位年）；边界年份（如 9999）由
- * writeStartKeepingDuration 的写回域守卫兜底（结果不可回读则跳过本次写回）。
- * 旧上限 1e15 ms 实为 ≈1.15e7 天（≈3.17 万年）：lag=1e7 天即可写出 29405-…（5 位年份），
- * parseTaskDate 无法回读 → `el.tasks = el.tasks` 这类回写会静默丢任务。
- */
-const LAG_MS_LIMIT = 1e12
-
-/**
- * lag 清洗（纯函数，三条入口共用：sanitizeDeps / addDependency / updateDependency）：
- * 合法（有限数值且在安全域内）原样返回；否则返回 undefined = 调用方丢弃该 lag（等价 0/缺省，
- * 依赖本身保留——与既有「NaN/非数值丢弃为无 lag」清洗口径一致）。
- */
-function sanitizeLag(v: unknown): number | undefined {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return undefined
-  if (Math.abs(v * DAY_MS) > LAG_MS_LIMIT) return undefined
-  return v
-}
-
-function sanitizeDeps(
-  v: unknown,
-  id: string,
-  onWarn?: (key: string, msg: string) => void,
-): GanttDependency[] | undefined {
-  if (!Array.isArray(v)) return undefined
-  const out: GanttDependency[] = []
-  const seen = new Set<string>()
-  for (const item of v) {
-    if (typeof item !== 'object' || item === null) continue
-    const it = item as Record<string, unknown>
-    if (typeof it.id !== 'string' || it.id === '') continue
-    const dep: GanttDependency = { id: it.id }
-    if (typeof it.type === 'string' && DEP_TYPES.has(it.type)) dep.type = it.type as GanttDependency['type']
-    // lag（天，可负=提前/重叠）：有限且在安全域内才保留，否则丢弃为无 lag（防 Invalid Date / 5 位年份）
-    const lag = sanitizeLag(it.lag)
-    if (lag !== undefined) dep.lag = lag
-    else if (typeof it.lag === 'number' && Number.isFinite(it.lag)) {
-      // 属性通道越域告警（实例级一次，key 固定）：NaN/字符串等非法值保持既有静默丢弃口径
-      onWarn?.(
-        'lag-domain',
-        `[oas-gantt] 依赖 lag=${String(it.lag)}（任务 "${id}"）超出安全域（|lag×天| ≤ 1e12 ms，约 11574 天），已按 0 处理`,
-      )
-    }
-    // 同源同型去重（重复项会渲染重合连线，且一处删除会连带删掉）；lag 不参与去重键
-    const key = `${dep.id}|${dep.type ?? 'fs'}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push(dep)
-  }
-  return out.length > 0 ? out : undefined
-}
-
-/** 展开中的嵌套输入先拍平（保 DFS 序：父在前、子随后），再统一清洗；fromNest 标记 parent 来自嵌套推导 */
-function flattenInput(
-  v: unknown,
-  out: Array<{ raw: Record<string, unknown>; parent: string | null; fromNest: boolean }>,
-  parent: string | null,
-): void {
-  if (!Array.isArray(v)) return
-  for (const item of v) {
-    if (typeof item !== 'object' || item === null) continue
-    const raw = item as Record<string, unknown>
-    out.push({ raw, parent, fromNest: parent !== null })
-    if (Array.isArray(raw.children)) {
-      const pid = typeof raw.id === 'string' && raw.id !== '' ? raw.id : null
-      flattenInput(raw.children, out, pid)
-    }
-  }
-}
-
-/**
- * 清洗任务数组：坏数据丢弃；children 嵌套拍平为 parent 指针；缺 id 自动分配并避让
- * （显式 id 重复/冲突时自动避让，对齐 scheduler 语义）；type 推导在渲染模型层完成。
- * onWarn：数据自愈告警通道（key 去重由调用方持有，模块函数保持无状态）。
- */
-function sanitizeTasks(
-  v: unknown,
-  allocId: (used: Set<string>) => string,
-  onWarn?: (key: string, msg: string) => void,
-): TG[] {
-  const flat: Array<{ raw: Record<string, unknown>; parent: string | null; fromNest: boolean }> = []
-  flattenInput(v, flat, null)
-
-  // 首趟：校验 + 定 id（自动 id 避让「显式 id + 本批已分配」）
-  const avoid = new Set<string>()
-  for (const { raw } of flat) if (typeof raw.id === 'string' && raw.id !== '') avoid.add(raw.id)
-  const seen = new Set<string>()
-  const idOf = new Map<number, string>()
-  for (let i = 0; i < flat.length; i++) {
-    const { raw } = flat[i]!
-    if (typeof raw.name !== 'string' || raw.name === '') continue
-    if (!parseTaskDate(raw.start)) continue
-    let id: string
-    if (typeof raw.id === 'string' && raw.id !== '' && !seen.has(raw.id)) {
-      id = raw.id
-    } else {
-      id = allocId(avoid)
-      avoid.add(id)
-    }
-    seen.add(id)
-    avoid.add(id)
-    idOf.set(i, id)
-  }
-  const validIds = new Set(idOf.values())
-  // 二趟：组装。parent 处理：
-  // - 指向本批真实任务 → 保留指针
-  // - 来自显式 parent 字段且悬空 → 保留（渲染层按根渲染并告警一次，帮宿主发现数据错误）
-  // - 来自嵌套拍平且父被丢弃（如父缺名）→ 静默丢弃（级联悬空不是宿主写错的 parent）
-  const out: TG[] = []
-  for (let i = 0; i < flat.length; i++) {
-    const id = idOf.get(i)
-    if (!id) continue
-    const { raw, parent, fromNest } = flat[i]!
-    const t: TG = { id, name: raw.name as string, start: (raw.start as string).trim() }
-    // 自定义字段透传（GanttTask 的 `[key: string]: unknown` 契约）：白名单之外的键原样保留，
-    // 供宿主携带 owner/assignee/tag 等业务字段（已知字段随后按校验口径覆盖或丢弃）
-    for (const [k, v] of Object.entries(raw)) {
-      if (!RESERVED_TASK_KEYS.has(k)) (t as Record<string, unknown>)[k] = v
-    }
-    const endRaw = typeof raw.end === 'string' && raw.end.trim() !== '' ? raw.end.trim() : undefined
-    if (endRaw && parseTaskDate(endRaw)) {
-      // start 晚于 end（日期颠倒）自愈：按渲染语义交换（不静默渲染 2px 假条）。
-      // 颠倒判定与渲染层 endMsOf 同口径：日精度 end 含当日（区间右缘 = 次日 00:00）
-      const startD = parseTaskDate(t.start)!
-      const endD = parseTaskDate(endRaw)!
-      const endMs = endRaw.length > 10 ? endD.getTime() : addLocalDays(endD.getTime(), 1)
-      let endStr = endRaw
-      if (endMs < startD.getTime()) {
-        onWarn?.(t.id, `[oas-gantt] 任务 "${t.id}" start 晚于 end（日期颠倒），已自动交换`)
-        const tmp = t.start
-        t.start = endStr
-        endStr = tmp
-      }
-      t.end = endStr
-    }
-    const progress = parseProgress(raw.progress)
-    if (progress !== undefined) t.progress = progress
-    const parentVal = fromNest ? parent : typeof raw.parent === 'string' && raw.parent !== '' ? raw.parent : undefined
-    if (parentVal) {
-      if (validIds.has(parentVal) && parentVal !== id) t.parent = parentVal
-      else if (!fromNest) t.parent = parentVal
-    }
-    const deps = sanitizeDeps(raw.dependencies, t.id, onWarn)
-    if (deps) t.dependencies = deps
-    // 排程约束（opt-in）：白名单 + snet/mso/fnlt 必须带合法 constraintDate，否则丢弃并告警一次
-    const con = sanitizeConstraint(raw, t.id, onWarn)
-    if (con) {
-      t.constraint = con.mode
-      t.constraintDate = con.date
-    }
-    if (typeof raw.color === 'string' && raw.color !== '') t.color = raw.color
-    if (raw.disabled === true) t.disabled = true
-    if (raw.expanded === true || raw.expanded === false) t.expanded = raw.expanded
-    if (raw.type === 'task' || raw.type === 'milestone' || raw.type === 'summary') t.type = raw.type
-    if (typeof raw.project === 'string' && raw.project.trim() !== '') t.project = raw.project.trim()
-    if (Array.isArray(raw.resources)) {
-      const resources = [
-        ...new Set(
-          raw.resources.filter((x): x is string => typeof x === 'string' && x.trim() !== '').map((x) => x.trim()),
-        ),
-      ]
-      if (resources.length > 0) t.resources = resources
-    }
-    const deadline = typeof raw.deadline === 'string' ? raw.deadline.trim() : ''
-    if (deadline && parseTaskDate(deadline)) t.deadline = deadline
-    else if (deadline) {
-      onWarn?.(`deadline:${t.id}`, `[oas-gantt] 任务 "${t.id}" 的 deadline 非法，已丢弃`)
-    }
-    if (Array.isArray(raw.deadlines)) {
-      const list: string[] = []
-      for (const x of raw.deadlines) {
-        if (typeof x !== 'string') continue
-        const value = x.trim()
-        if (!value || !parseTaskDate(value) || list.includes(value)) continue
-        list.push(value)
-      }
-      if (list.length > 0) t.deadlines = list
-    }
-    const base = raw.baseline
-    if (typeof base === 'object' && base !== null) {
-      const b = base as Record<string, unknown>
-      const s = typeof b.start === 'string' ? b.start.trim() : ''
-      if (s && parseTaskDate(s)) {
-        const bb: { start: string; end?: string; progress?: number } = { start: s }
-        const e = typeof b.end === 'string' ? b.end.trim() : ''
-        if (e && parseTaskDate(e)) {
-          const sD = parseTaskDate(s)!
-          const eD = parseTaskDate(e)!
-          const eMs = e.length > 10 ? eD.getTime() : addLocalDays(eD.getTime(), 1)
-          if (eMs < sD.getTime()) {
-            onWarn?.(`baseline:${t.id}`, `[oas-gantt] 任务 "${t.id}" baseline start 晚于 end，已自动交换`)
-            bb.start = e
-            bb.end = s
-          } else {
-            bb.end = e
-          }
-        }
-        const bp = parseProgress(b.progress)
-        if (bp !== undefined) bb.progress = bp
-        t.baseline = bb
-      }
-    }
-    const baselines = sanitizeBaselines(raw.baselines)
-    if (baselines) {
-      // 多基线通道（显式 baselines）优先：与单 baseline 并存时单字段被忽略（数据面归一口径）。
-      // **只物化显式数组**——单 baseline 字段保持原样不派生（否则 updateTask(patch.baseline) 会被
-      // 旧对象的派生 baselines 遮蔽：patch 合并 {...旧, ...patch} 后 baselines 仍在、单字段被忽略）。
-      // 读侧归一统一走 taskBaselines()（单字段 → [{ id: 'default', ... }]）。
-      t.baselines = baselines
-    }
-    // 工时估算（纯展示，单位天）：仅保留有限**非负**数值；NaN/±Infinity/负数/非 number 丢弃为无工时（显示空）
-    if (typeof raw.effort === 'number' && Number.isFinite(raw.effort) && raw.effort >= 0) t.effort = raw.effort
-    out.push(t)
-  }
-  return out
-}
-
-/**
- * 键序无关的稳定序列化（语义判等用）：对象键排序、数组保序、undefined 值按 JSON 语义省略。
- * 同 scheduler 的 sameEvents 口径——宿主受控回写常带键序/自定义字段顺序差异，不应被当成数据变更。
- */
-function stableStringify(v: unknown): string {
-  if (v === undefined) return 'null'
-  if (v === null || typeof v !== 'object') {
-    const s = JSON.stringify(v)
-    return s === undefined ? 'null' : s
-  }
-  if (Array.isArray(v)) return `[${v.map((item) => stableStringify(item)).join(',')}]`
-  const obj = v as Record<string, unknown>
-  const keys = Object.keys(obj)
-    .filter((k) => obj[k] !== undefined)
-    .sort()
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`
-}
-
-/** 选择器 id 转义（宿主 id 可能含引号/方括号，直接拼接会抛 DOMException） */
-function escId(s: string): string {
-  return typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(s) : s.replace(/["\\\]]/g, '\\$&')
-}
-
-/**
- * 工时单元格格式化（show-effort）：单位天，最多保留两位小数并去掉尾随零（3 → '3'、2.5 → '2.5'、
- * 1.25 → '1.25'）；非有限/负值返回空串（清洗层已按 costRate 同口径丢弃负数/非有限，此处双保险）。
- * 不加单位——单位语义由单元格 aria-label（gantt.effortValue）与列头（gantt.effort）承载。
- * 超大值（≥ 1e12，字符串 13+ 位）转科学计数，防 21 位长数字撑破列宽（1e21 → '1.00e+21'）。
- */
-function formatEffortCell(v: unknown): string {
-  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return ''
-  const rounded = Math.round(v * 100) / 100
-  const s = String(rounded)
-  return rounded >= 1e12 || s.length > 13 ? rounded.toExponential(2) : s
-}
-
-/**
- * 资源池超配检测（pool 属性 opt-in 纯函数，亦导出供宿主/测试复用）：
- * - 同资源两两任务区间求交（半开 [start, end)，**相切不算**）；
- * - 里程碑按点处理不触发（无时长不占用产能）；summary（被 parent 指向）不触发（聚合形态无资源语义）；
- * - registeredIds = 池内已登记资源 id 集：任务引用池外资源一律忽略（pool 模式下池是唯一权威，
- *   未登记 id 视为宿主遗留数据）；池登记变化不会自动通知组件——宿主改池后须触发重算（如重写 tasks）；
- * - 输出确定性：资源按首次出现序分组（Map 插入序），组内按输入序 i<j 双循环；
- * - onOverCapacity：某资源最大并发 >2（任一时刻 ≥3 任务同时活跃）时逐资源回调一次，
- *   供组件侧 devWarn。扫描线统计：同刻先处理结束（-1）后处理开始（+1），相切不累计并发。
- * - 交叠区间按日精度含端日期输出（hour 档同样按日期表达）；判定本身按 ms 精度。
- */
-export function computeResourceConflicts(
-  tasks: TG[],
-  registeredIds: Set<string>,
-  onOverCapacity?: (resourceId: string, peak: number) => void,
-): GanttResourceConflict[] {
-  // summary 判定与 unschedulableIds 同源：被 parent 指向即有子级（清洗层已拍平嵌套）
-  const hasChildren = new Set<string>()
-  for (const t of tasks) if (t.parent) hasChildren.add(t.parent)
-  // 资源 → 区间列表分组（只收池内已注册 id；里程碑 / summary 不参与）
-  const byResource = new Map<string, Array<{ task: TG; startMs: number; endMs: number }>>()
-  for (const t of tasks) {
-    if (hasChildren.has(t.id)) continue
-    if (t.type === 'milestone' || !t.end) continue
-    if (!Array.isArray(t.resources)) continue
-    const s = parseTaskDate(t.start)
-    if (!s) continue
-    const e = parseTaskDate(t.end)
-    if (!e) continue
-    const startMs = s.getTime()
-    // 日精度 end 含端 → 次日本地零点（与 endMsOfTask 渲染口径一致）；时间精度按绝对 ms
-    const endMs = t.end.length > 10 ? e.getTime() : addLocalDays(e.getTime(), 1)
-    if (endMs <= startMs) continue
-    for (const rid of t.resources) {
-      if (!registeredIds.has(rid)) continue
-      let list = byResource.get(rid)
-      if (!list) {
-        list = []
-        byResource.set(rid, list)
-      }
-      list.push({ task: t, startMs, endMs })
-    }
-  }
-  const out: GanttResourceConflict[] = []
-  for (const [resourceId, list] of byResource) {
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i]!
-        const b = list[j]!
-        if (a.startMs < b.endMs && b.startMs < a.endMs) {
-          const ovStart = Math.max(a.startMs, b.startMs)
-          const ovEndEx = Math.min(a.endMs, b.endMs) // 半开右缘
-          out.push({
-            taskA: a.task.id,
-            taskB: b.task.id,
-            resourceId,
-            overlapStart: toISODate(new Date(ovStart)),
-            overlapEnd: toISODate(new Date(ovEndEx - 1)), // 含端末日
-          })
-        }
-      }
-    }
-    if (onOverCapacity) {
-      // 最大并发扫描线：>2 即超限（3 个任务任一时刻同时活跃）
-      const events: Array<[number, number]> = []
-      for (const item of list) {
-        events.push([item.startMs, 1], [item.endMs, -1])
-      }
-      // 同刻先 -1 后 +1（相切不累计）；delta 升序使 -1 排前
-      events.sort((x, y) => x[0] - y[0] || x[1] - y[1])
-      let cur = 0
-      let peak = 0
-      for (const [, delta] of events) {
-        cur += delta
-        if (cur > peak) peak = cur
-      }
-      if (peak > 2) onOverCapacity(resourceId, peak)
-    }
-  }
-  return out
-}
+export {
+  computeResourceConflicts,
+  computeVariance,
+  estimateLabelWidth,
+  ganttRenderDiag,
+  pickVisibleLabels,
+  taskBaselines,
+} from './gantt-utils.js'
+export type {
+  GanttBaseline,
+  GanttBaselineVariance,
+  GanttDependenciesChangeDetail,
+  GanttDependency,
+  GanttExpandChangeDetail,
+  GanttHistoryChangeDetail,
+  GanttProgressChangeDetail,
+  GanttReparentDetail,
+  GanttRescheduleDetail,
+  GanttResource,
+  GanttResourceConflict,
+  GanttResourceConflictDetail,
+  GanttScale,
+  GanttScaleChangeDetail,
+  GanttSelectionChangeDetail,
+  GanttTask,
+  GanttTaskAddDetail,
+  GanttTaskChangeDetail,
+  GanttTaskClickDetail,
+  GanttTaskRenderDetail,
+  GanttTasksChangeDetail,
+} from './gantt-types.js'
 
 export class OASGantt extends OASElement {
   static override get observedAttributes(): string[] {
@@ -2795,31 +1089,8 @@ export class OASGantt extends OASElement {
     return ms
   }
 
-  /** 任务的班次窗口：所有声明 shifts 的分配资源取交集；未声明 shifts 的资源不约束 */
   private shiftWindows(task?: GanttTask): Array<{ start: number; end: number }> | null {
-    if (!task?.resources?.length) return null
-    const resources = this.resourceCalendars()
-    let acc: Array<{ start: number; end: number }> | null = null
-    let sawShifts = false
-    for (const id of task.resources) {
-      const shifts = resources.get(id)?.shifts
-      if (shifts === undefined) continue
-      sawShifts = true
-      const windows: Array<{ start: number; end: number }> = []
-      for (const shift of shifts) {
-        const [sh, sm] = shift.start.split(':').map(Number)
-        const [eh, em] = shift.end.split(':').map(Number)
-        const start = sh! * 60 + sm!
-        const end = eh! * 60 + em!
-        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue
-        windows.push({ start, end })
-      }
-      windows.sort((a, b) => a.start - b.start)
-      acc = acc === null ? windows : intersectShiftWindows(acc, windows)
-      if (acc.length === 0) break
-    }
-    if (!sawShifts) return null
-    return acc ?? []
+    return shiftWindows(task, this.resourceCalendars())
   }
 
   /** hour 档按资源班次吸附起点：班次内保留，班次间/班次后落到下一个班次起点 */
@@ -2840,19 +1111,8 @@ export class OASGantt extends OASElement {
     return localWallClockMs(y, mo, day + 1, windows[0]!.start)
   }
 
-  /**
-   * 任务约束快照：mode + 约束日起点 ms + 约束日右缘 ms（fnlt 判定用；日精度 +DAY_MS 含端日）。
-   * 缺省/非法（清洗层已兜底，此处再防御一次）→ null = 无约束。
-   */
   private constraintOf(t: TG): { mode: DatedConstraint; ms: number; endMs: number; dateOnly: boolean } | null {
-    const mode = t.constraint
-    if (mode !== 'snet' && mode !== 'mso' && mode !== 'fnlt') return null
-    const dateStr = typeof t.constraintDate === 'string' ? t.constraintDate.trim() : ''
-    const d = parseTaskDate(dateStr)
-    if (!d) return null
-    const ms = d.getTime()
-    const dateOnly = dateStr.length <= 10
-    return { mode, ms, endMs: dateOnly ? addLocalDays(ms, 1) : ms, dateOnly }
+    return constraintOf(t)
   }
 
   private weekStart(): number {
@@ -2876,11 +1136,7 @@ export class OASGantt extends OASElement {
   /** 按 scale 步进 n 个单位（month/quarter/year 走日历运算防月末溢出；day/week 走日历日防 DST 漂移；
    *  hour 按绝对小时——跨跳变时本地标签自然跳过一个/重复一小时，是时间轴的正确语义） */
   private static addUnits(d: Date, scale: GanttScale, n: number): Date {
-    if (scale === 'hour') return new Date(d.getTime() + n * 3_600_000)
-    if (scale === 'day') return new Date(addLocalDays(d.getTime(), n))
-    if (scale === 'week') return new Date(addLocalDays(d.getTime(), n * 7))
-    const months = n * (scale === 'month' ? 1 : scale === 'quarter' ? 3 : 12)
-    return new Date(d.getFullYear(), d.getMonth() + months, 1)
+    return addUnits(d, scale, n)
   }
 
   /**
@@ -2974,27 +1230,11 @@ export class OASGantt extends OASElement {
   }
 
   private majorLabel(d: Date, scale: GanttScale, locale: string): string {
-    if (scale === 'hour') return formatToken(d, 'MM-dd', locale)
-    if (scale === 'day' || scale === 'week' || scale === 'month') return formatToken(d, 'yyyy-MM', locale)
-    if (scale === 'quarter') return formatToken(d, 'yyyy', locale)
-    return `${Math.floor(d.getFullYear() / 10) * 10}`
+    return majorLabel(d, scale, locale)
   }
 
   private minorLabel(d: Date, scale: GanttScale, locale: string): string {
-    switch (scale) {
-      case 'hour':
-        return formatToken(d, 'HH:mm', locale)
-      case 'day':
-        return formatToken(d, 'dd', locale)
-      case 'week':
-        return `W${isoWeek(d)}`
-      case 'month':
-        return formatToken(d, 'yyyy-MM', locale)
-      case 'quarter':
-        return `Q${Math.floor(d.getMonth() / 3) + 1}`
-      case 'year':
-        return formatToken(d, 'yyyy', locale)
-    }
+    return minorLabel(d, scale, locale)
   }
 
   /** 时间 → LTR 画布 x（px）：单位索引 + 单位内比例（月/季/年不等长按比例内插） */
@@ -3029,110 +1269,12 @@ export class OASGantt extends OASElement {
 
   // ===== 渲染模型（行树 + 摘要聚合）=====
 
-  /** 按 project 把根任务收进合成项目根（仅展示层克隆，不改原任务） */
   private groupTasksByProject(tasks: TG[]): TG[] {
-    const groups = new Map<string, TG[]>()
-    const order: string[] = []
-    for (const t of tasks) {
-      if (t.parent || !t.project) continue
-      const list = groups.get(t.project)
-      if (list) list.push(t)
-      else {
-        groups.set(t.project, [t])
-        order.push(t.project)
-      }
-    }
-    if (order.length === 0) return tasks
-    const used = new Set(tasks.map((t) => t.id))
-    const groupRoots = new Map<string, TG>()
-    for (const project of order) {
-      let id = `__oas_project__:${project}`
-      let n = 2
-      while (used.has(id)) id = `__oas_project__:${project}#${n++}`
-      used.add(id)
-      const members = groups.get(project)!
-      let start = members[0]!.start
-      let end = members[0]!.end ?? members[0]!.start
-      for (const t of members) {
-        if (t.start < start) start = t.start
-        const e = t.end ?? t.start
-        if (e > end) end = e
-      }
-      groupRoots.set(project, { id, name: project, start, end, type: 'summary', project } as TG)
-    }
-    const out: TG[] = []
-    const emitted = new Set<string>()
-    for (const t of tasks) {
-      if (!t.parent && t.project) {
-        if (emitted.has(t.project)) continue
-        emitted.add(t.project)
-        out.push(groupRoots.get(t.project)!)
-        for (const member of groups.get(t.project)!) {
-          out.push({ ...member, parent: groupRoots.get(t.project)!.id, children: undefined })
-        }
-      } else {
-        out.push(t)
-      }
-    }
-    return out
+    return groupTasksByProject(tasks)
   }
 
-  /** 按首个分配资源把根任务收进合成资源泳道（仅展示层克隆，不改原任务；未分配任务保持顶层） */
   private groupTasksByResource(tasks: TG[]): TG[] {
-    const groups = new Map<string, TG[]>()
-    const order: string[] = []
-    for (const t of tasks) {
-      if (t.parent) continue
-      const resource = t.resources?.[0]
-      if (!resource) continue
-      const list = groups.get(resource)
-      if (list) list.push(t)
-      else {
-        groups.set(resource, [t])
-        order.push(resource)
-      }
-    }
-    if (order.length === 0) return tasks
-    const calendars = this.resourceCalendars()
-    const used = new Set(tasks.map((t) => t.id))
-    const groupRoots = new Map<string, TG>()
-    for (const resource of order) {
-      let id = `__oas_resource__:${resource}`
-      let n = 2
-      while (used.has(id)) id = `__oas_resource__:${resource}#${n++}`
-      used.add(id)
-      const members = groups.get(resource)!
-      let start = members[0]!.start
-      let end = members[0]!.end ?? members[0]!.start
-      for (const t of members) {
-        if (t.start < start) start = t.start
-        const e = t.end ?? t.start
-        if (e > end) end = e
-      }
-      groupRoots.set(resource, {
-        id,
-        name: calendars.get(resource)?.name ?? resource,
-        start,
-        end,
-        type: 'summary',
-      } as TG)
-    }
-    const out: TG[] = []
-    const grouped = new Set([...groups.values()].flat().map((t) => t.id))
-    for (const t of tasks) {
-      if (grouped.has(t.id)) {
-        const root = groupRoots.get(t.resources![0]!)
-        if (root && !out.includes(root)) {
-          out.push(root)
-          for (const member of groups.get(t.resources![0]!)!) {
-            out.push({ ...member, parent: root.id, children: undefined })
-          }
-        }
-        continue
-      }
-      out.push(t)
-    }
-    return out
+    return groupTasksByResource(tasks, this.resourceCalendars())
   }
 
   private buildRows(): void {
@@ -4157,12 +2299,8 @@ export class OASGantt extends OASElement {
 
   // ===== 资源负荷面板（show-resource-load，opt-in 默认关） =====
 
-  /** 图表 scale → 负荷桶粒度映射：hour/day → day、week → week、month/quarter/year → month */
   private loadUnit(): 'day' | 'week' | 'month' {
-    const scale = this.scaleMode()
-    if (scale === 'week') return 'week'
-    if (scale === 'month' || scale === 'quarter' || scale === 'year') return 'month'
-    return 'day'
+    return loadUnit(this.scaleMode())
   }
 
   /**
@@ -4193,13 +2331,8 @@ export class OASGantt extends OASElement {
     return result
   }
 
-  /** 负荷桶 i 的起始本地零点 ms（与 xOf 同一 local 时区坐标系）：day/week 按日历日推进、month 按月历推进 */
   private loadBucketStartMs(result: ResourceLoadResult, i: number): number {
-    const d = parseTaskDate(result.bucketStart)
-    if (!d) return 0
-    if (result.unit === 'month') return new Date(d.getFullYear(), d.getMonth() + i, 1).getTime()
-    const step = result.unit === 'week' ? i * 7 : i
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + step).getTime()
+    return loadBucketStartMs(result, i)
   }
 
   /**
@@ -4739,16 +2872,11 @@ export class OASGantt extends OASElement {
   }
 
   private fmtDay(ms: number): string {
-    return toISODate(new Date(ms))
+    return fmtDay(ms)
   }
 
   private taskSnapshot(t: TG): GanttTask {
-    const copy: GanttTask = { ...t }
-    if (copy.dependencies) copy.dependencies = copy.dependencies.map((d) => ({ ...d }))
-    if (copy.baseline) copy.baseline = { ...copy.baseline }
-    if (copy.baselines) copy.baselines = copy.baselines.map((b) => ({ ...b }))
-    delete copy.children
-    return copy
+    return taskSnapshot(t)
   }
 
   private bindBar(bar: HTMLElement, row: GanttRow): void {
@@ -4903,28 +3031,12 @@ export class OASGantt extends OASElement {
     this.hideDropLine()
   }
 
-  /** 目标不得是拖拽件自身或其后代（防环；成环数据用访问集防死循环；byId 由调用方缓存传入） */
   private canReparent(dragId: string, targetId: string, byId: Map<string, TG>): boolean {
-    if (dragId === targetId) return false
-    const seen = new Set<string>()
-    let cur = byId.get(targetId)
-    while (cur && cur.parent && !seen.has(cur.id)) {
-      seen.add(cur.id)
-      if (cur.parent === dragId) return false
-      cur = byId.get(cur.parent)
-    }
-    return true
+    return canReparent(dragId, targetId, byId)
   }
 
   private isDescendantOf(node: TG, ancestorId: string, byId: Map<string, TG>): boolean {
-    const seen = new Set<string>()
-    let cur: TG | undefined = byId.get(node.id)
-    while (cur && cur.parent && !seen.has(cur.id)) {
-      seen.add(cur.id)
-      if (cur.parent === ancestorId) return true
-      cur = byId.get(cur.parent)
-    }
-    return false
+    return isDescendantOf(node, ancestorId, byId)
   }
 
   private showDropLine(idx: number, target: GanttRow, mode: 'before' | 'after' | 'inside', rowH: number): void {
@@ -5408,27 +3520,12 @@ export class OASGantt extends OASElement {
     this.emit('selection-change', { ids: this.selection } satisfies GanttSelectionChangeDetail)
   }
 
-  /**
-   * 行名选中态写入（**建行与局部 patch 共用**，两条路径产物恒一致）：class `.selected` +
-   * `aria-selected`（role=treeitem 支持该属性）+ `data-selected`（宿主可观测的选中标记）。
-   * 值相同不写（局部 patch 每帧要对窗口内全部行求值，无谓的 setAttribute 属白工）。
-   */
   private writeRowSelectionState(el: HTMLElement, on: boolean): void {
-    if (el.classList.contains('selected') !== on) el.classList.toggle('selected', on)
-    const v = String(on)
-    if (el.getAttribute('aria-selected') !== v) el.setAttribute('aria-selected', v)
-    if (el.getAttribute('data-selected') !== v) el.setAttribute('data-selected', v)
+    return writeRowSelectionState(el, on)
   }
 
-  /**
-   * 任务条选中态写入（建条与局部 patch 共用）。条 `role=button`，`aria-selected` 对 button
-   * 非合法属性（会被 ARIA 校验判错）→ 只写 class + `data-selected`，选中语义由行名（treeitem）
-   * 的 aria-selected 承载。
-   */
   private writeBarSelectionState(el: HTMLElement, on: boolean): void {
-    if (el.classList.contains('selected') !== on) el.classList.toggle('selected', on)
-    const v = String(on)
-    if (el.getAttribute('data-selected') !== v) el.setAttribute('data-selected', v)
+    return writeBarSelectionState(el, on)
   }
 
   /**
@@ -5557,14 +3654,8 @@ export class OASGantt extends OASElement {
     if (row && nameEl) this.startRename(row, nameEl)
   }
 
-  /** 命中交互元素（行名/任务条/连线点/折叠钮/重命名框/新建钮）时忽略空白双击 */
   private isInteractiveTarget(target: EventTarget | null): boolean {
-    return (
-      target instanceof Element &&
-      target.closest(
-        '.row-name, .bar, .link-dot, .link-hit, .baseline, .toggle, .rename-input, .row-add, input, select, textarea, button, [contenteditable], [data-no-row-drag]',
-      ) !== null
-    )
+    return isInteractiveTarget(target)
   }
 
   /** 双击左侧列表空白：按今天新建根级任务并进入重命名（仅 creatable 且非只读） */
@@ -5734,10 +3825,8 @@ export class OASGantt extends OASElement {
     this.marqueeEl = null
   }
 
-  /** pointerup 落点：事件未带坐标（合成事件）时回落最后一次 move 的坐标 */
   private upPoint(e: PointerEvent, fx: number, fy: number): { x: number; y: number } {
-    if (e.clientX === 0 && e.clientY === 0 && (fx !== 0 || fy !== 0)) return { x: fx, y: fy }
-    return { x: e.clientX, y: e.clientY }
+    return upPoint(e, fx, fy)
   }
 
   /** 覆盖层几何：以 `.gantt`（position: relative + overflow: hidden）为参照系，纯装饰不拦指针 */
@@ -6128,12 +4217,8 @@ export class OASGantt extends OASElement {
     this.unbindDocLink()
   }
 
-  /** 端点组合 → 依赖类型（后继 = 命中任务，前置 = 拖拽起点任务） */
   private linkType(src: 'start' | 'end', tgt: 'start' | 'end'): GanttDependency['type'] {
-    if (src === 'end' && tgt === 'start') return 'fs'
-    if (src === 'start' && tgt === 'start') return 'ss'
-    if (src === 'end' && tgt === 'end') return 'ff'
-    return 'sf'
+    return linkType(src, tgt)
   }
 
   /** 命中指针下的任务条（就近取可视窗口内条形，回避 elementFromPoint 的 happy-dom 缺口） */
@@ -6420,17 +4505,12 @@ export class OASGantt extends OASElement {
     return true
   }
 
-  /** 时间戳 → 数据串：非整日时刻（非 snap 半格位移）强制带时间，防数据与视觉脱节 */
   private fmtIso(ms: number, datetimeHint: boolean): string {
-    const d = new Date(ms)
-    const hasTime = d.getHours() !== 0 || d.getMinutes() !== 0
-    return hasTime || datetimeHint ? formatToken(d, 'yyyy-MM-dd HH:mm', this.effectiveLocale()) : toISODate(d)
+    return fmtIso(ms, datetimeHint, this.effectiveLocale())
   }
 
-  /** 区间右缘（exclusive）→ 结束数据串：日精度 -1ms 回含端日；时间精度按原时刻 */
   private fmtEnd(ms: number, datetimeHint: boolean): string {
-    if (datetimeHint) return formatToken(new Date(ms), 'yyyy-MM-dd HH:mm', this.effectiveLocale())
-    return toISODate(new Date(ms - 1))
+    return fmtEnd(ms, datetimeHint, this.effectiveLocale())
   }
 
   // ===== 依赖联动排程（auto-schedule）=====
@@ -6440,296 +4520,37 @@ export class OASGantt extends OASElement {
   // 仅当违反时把 t **向后推迟**（不提前），保持 t 工期不变（日精度 end 含端，口径与 buildRows 的 endMs 一致）。
   // 迭代松弛直到无变化或达上限（成环不死循环）；跳过 disabled、有子级的摘要（日期派生）、前置不存在者。
 
-  /** 任务起点 ms（数据非法回 0，与 buildRows 同口径） */
   private startMsOfTask(t: TG): number {
-    return parseTaskDate(t.start)?.getTime() ?? 0
+    return startMsOfTask(t)
   }
 
-  /** 任务区间右缘 ms（exclusive）：里程碑 = 起点；日精度 end 含端 → 次日本地零点 */
   private endMsOfTask(t: TG): number {
-    if (t.type === 'milestone' || !t.end) return this.startMsOfTask(t)
-    const e = parseTaskDate(t.end)
-    if (!e) return this.startMsOfTask(t)
-    return t.end.length > 10 ? e.getTime() : addLocalDays(e.getTime(), 1)
+    return endMsOfTask(t)
   }
 
-  /** 整日任务（start / end 均日期精度）：工期按日历日计，跨 DST 的绝对毫秒差是 23/25 小时的倍数 */
   private isWholeDayTask(t: TG): boolean {
-    return typeof t.start === 'string' && t.start.length <= 10 && (t.end === undefined || t.end.length <= 10)
+    return isWholeDayTask(t)
   }
 
-  /** 按工期平移端点：整日任务按日历日（跨 DST 不漂 1 小时），时间精度按绝对毫秒 */
   private shiftByDuration(ms: number, duration: number, wholeDay: boolean): number {
-    return wholeDay ? addLocalDays(ms, Math.round(duration / DAY_MS)) : ms + duration
+    return shiftByDuration(ms, duration, wholeDay)
   }
 
-  /** 与 buildRows 同源的树结构：childMap（有效父级且本节点非断环）与 hasChildren 集 */
   private childStructure(byId: Map<string, TG>): { childMap: Map<string, string[]>; hasChildren: Set<string> } {
-    const tasks = this._tasks
-    const childMap = new Map<string, string[]>()
-    const color = new Map<string, 1 | 2>()
-    const broken = new Set<string>()
-    for (const t of tasks) {
-      if (color.has(t.id)) continue
-      const stack: TG[] = []
-      let cur: TG | undefined = t
-      while (cur && cur.parent && byId.has(cur.parent) && !color.has(cur.id)) {
-        color.set(cur.id, 1)
-        stack.push(cur)
-        cur = byId.get(cur.parent)
-      }
-      if (cur && cur.parent && byId.has(cur.parent) && color.get(cur.id) === 1) broken.add(cur.id)
-      for (const n of stack) color.set(n.id, 2)
-    }
-    for (const t of tasks) {
-      if (t.parent && byId.has(t.parent) && !broken.has(t.id)) {
-        const list = childMap.get(t.parent) ?? []
-        list.push(t.id)
-        childMap.set(t.parent, list)
-      }
-    }
-    return { childMap, hasChildren: new Set(childMap.keys()) }
+    return childStructure(this._tasks, byId)
   }
 
-  /**
-   * 依赖图中「处于环内」的节点集合：所在强连通分量（SCC）大小 > 1，或自身成环（自环）。
-   * 实现为**迭代式 Tarjan**（显式栈；递归版在超长依赖链下会爆调用栈）。
-   *
-   * 用途：环内节点排程无解，只让位它们（保持现网日期），环外节点照常前推；
-   * 关键路径也把环内节点排除在节点集之外——替代旧版「整图有环即整体停摆/返回空集」。
-   */
   private dependencyCyclicNodes(byId: Map<string, TG>): Set<string> {
-    const index = new Map<string, number>()
-    const low = new Map<string, number>()
-    const onStack = new Set<string>()
-    const stack: string[] = []
-    const cyclic = new Set<string>()
-    let counter = 0
-    for (const root of byId.keys()) {
-      if (index.has(root)) continue
-      index.set(root, counter)
-      low.set(root, counter)
-      counter++
-      stack.push(root)
-      onStack.add(root)
-      const work: Array<{ id: string; i: number }> = [{ id: root, i: 0 }]
-      while (work.length > 0) {
-        const frame = work[work.length - 1]!
-        const deps = byId.get(frame.id)?.dependencies ?? []
-        if (frame.i < deps.length) {
-          const depId = deps[frame.i]!.id
-          frame.i++
-          if (!byId.has(depId)) continue // 前置不存在 → 该边不参与（与排程同口径）
-          if (depId === frame.id) {
-            cyclic.add(frame.id) // 自环：自身即环内
-            continue
-          }
-          if (!index.has(depId)) {
-            index.set(depId, counter)
-            low.set(depId, counter)
-            counter++
-            stack.push(depId)
-            onStack.add(depId)
-            work.push({ id: depId, i: 0 })
-          } else if (onStack.has(depId)) {
-            low.set(frame.id, Math.min(low.get(frame.id)!, index.get(depId)!))
-          }
-          continue
-        }
-        work.pop()
-        const parent = work[work.length - 1]
-        if (parent) low.set(parent.id, Math.min(low.get(parent.id)!, low.get(frame.id)!))
-        if (low.get(frame.id) === index.get(frame.id)) {
-          const comp: string[] = []
-          for (;;) {
-            const w = stack.pop()!
-            onStack.delete(w)
-            comp.push(w)
-            if (w === frame.id) break
-          }
-          if (comp.length > 1) for (const c of comp) cyclic.add(c)
-        }
-      }
-    }
-    return cyclic
+    return dependencyCyclicNodes(byId)
   }
 
-  /**
-   * 关键路径任务 id 集合（CPM 前后向计算，日精度）：
-   * - 工期 dur = endMsOfTask − startMsOfTask（日精度 end 含端，与 buildRows 一致）；里程碑 dur=0。
-   * - 前向 ES_i 取任务**当前排期**的 startMs（以现网数据为基准，不做重排）。
-   * - 项目完成 projectEnd = max(endMsOfTask)（里程碑也算；摘要取自身 data 日期）。
-   * - 反向：无后继任务起 LF = projectEnd，按依赖约束 + lag 反推前置 LS/LF。**按拓扑序**：
-   *   节点集在**排除依赖环内节点**后为 DAG，故按逆拓扑序一趟即得精确 LF（O(V+E)，替代旧版迭代松弛）：
-   *     fs: LF_pred = LS_succ − lag      ss: LF_pred = LS_succ − lag（LF_pred = LS_pred + dur_pred）
-   *     ff: LF_pred = LF_succ − lag      sf: LF_pred = LS_succ − lag（LF_pred = LS_pred + dur_pred）
-   * - 每个任务 LS = LF − dur、float = LS − ES；|float| < 1e-6（日精度）判为关键。
-   * - 摘要（有子级，日期派生）不参与；disabled 照算（不特殊处理，仅作可视化）。
-   * - 依赖环内节点不参与 CP（排程端让位后无法定义 CP 序），环外节点照常计算；全为环内 → 空集。
-   * - 违约集 conflict = 负总时差 ∪ 约束违反（snet 未达约束日 / mso 未落在约束日 / fnlt 超出约束日右缘）。
-   */
   private criticalPathIds(): {
     critical: Set<string>
     conflict: Set<string>
     totalFloat: Map<string, number>
     freeFloat: Map<string, number>
   } {
-    ganttRenderDiag.cpComputes++ // 仅内部诊断（见 ganttRenderDiag）
-    const empty = {
-      critical: new Set<string>(),
-      conflict: new Set<string>(),
-      totalFloat: new Map<string, number>(),
-      freeFloat: new Map<string, number>(),
-    }
-    const tasks = this._tasks
-    if (tasks.length === 0) return empty
-    const byId = new Map<string, TG>()
-    for (const t of tasks) byId.set(t.id, t)
-    const { hasChildren } = this.childStructure(byId)
-    // 环内节点让位：不进入节点集（旧版「有环即返回空集」会让环外关键链也无从高亮）
-    const cyclic = this.dependencyCyclicNodes(byId)
-    const nodes = tasks.filter((t) => !hasChildren.has(t.id) && !cyclic.has(t.id))
-    if (nodes.length === 0) return empty
-    const dur = new Map<string, number>()
-    const es = new Map<string, number>()
-    for (const t of nodes) {
-      const s = this.startMsOfTask(t)
-      es.set(t.id, s)
-      dur.set(t.id, Math.max(this.endMsOfTask(t) - s, 0))
-    }
-    let projectEnd = Number.NEGATIVE_INFINITY
-    // 仅按 CP 节点（叶子/里程碑，摘要已排除）取项目完成：摘要自身 data 日期可能过期，
-    // 其派生日期由子级（节点）覆盖，故不参与（与渲染/排程的聚合口径一致）
-    for (const t of nodes) {
-      const e = this.endMsOfTask(t)
-      if (e > projectEnd) projectEnd = e
-    }
-    if (!Number.isFinite(projectEnd)) projectEnd = 0
-    // 后继表：predId → 引用它的依赖（succ/type/lag）；仅连接「双方均为节点」的边
-    const successors = new Map<string, Array<{ succ: string; type: string; lag: number }>>()
-    const indeg = new Map<string, number>()
-    for (const t of nodes) indeg.set(t.id, 0)
-    for (const t of nodes) {
-      for (const d of t.dependencies ?? []) {
-        if (!dur.has(d.id)) continue // 前置为摘要/环内/不存在/非法 → 该边不参与
-        const lag = typeof d.lag === 'number' && Number.isFinite(d.lag) ? d.lag : 0
-        const list = successors.get(d.id) ?? []
-        list.push({ succ: t.id, type: d.type ?? 'fs', lag })
-        successors.set(d.id, list)
-        indeg.set(t.id, (indeg.get(t.id) ?? 0) + 1)
-      }
-    }
-    // Kahn 拓扑序（节点集为 DAG，环内节点已排除）：入度 0 起逐层出队
-    const topo: string[] = []
-    const queue: string[] = []
-    for (const t of nodes) if ((indeg.get(t.id) ?? 0) === 0) queue.push(t.id)
-    for (let qi = 0; qi < queue.length; qi++) {
-      const id = queue[qi]!
-      topo.push(id)
-      for (const { succ } of successors.get(id) ?? []) {
-        const next = (indeg.get(succ) ?? 0) - 1
-        indeg.set(succ, next)
-        if (next === 0) queue.push(succ)
-      }
-    }
-    // 防御：DAG 下 topo 应覆盖全部节点；万一有残留（理论不可达）按剩余顺序补入，保证 LF 全部有值
-    if (topo.length < nodes.length) {
-      const seen = new Set(topo)
-      for (const t of nodes) if (!seen.has(t.id)) topo.push(t.id)
-    }
-    // 逆拓扑序反向松弛：LF_pred = min(projectEnd, 各后继约束隐含值)；后继 LF 此时已定
-    const lf = new Map<string, number>()
-    for (let i = topo.length - 1; i >= 0; i--) {
-      const id = topo[i]!
-      const durPred = dur.get(id)!
-      let value = projectEnd
-      for (const { succ, type, lag } of successors.get(id) ?? []) {
-        const lfSucc = lf.get(succ)!
-        const lsSucc = lfSucc - dur.get(succ)!
-        const lagMs = lag * DAY_MS
-        const implied =
-          type === 'fs'
-            ? lsSucc - lagMs
-            : type === 'ss'
-              ? lsSucc - lagMs + durPred
-              : type === 'ff'
-                ? lfSucc - lagMs
-                : lfSucc - lagMs + durPred // sf
-        if (implied < value) value = implied
-      }
-      lf.set(id, value)
-    }
-    // 总浮时 = LF − EF；自由浮时 = 不被任何后继约束压缩的最大可延后量。
-    // 自由浮时按依赖类型逐边计算后取最小值；无后继任务可延后到项目完成。
-    const totalFloat = new Map<string, number>()
-    const freeFloat = new Map<string, number>()
-    for (const t of nodes) {
-      const start = es.get(t.id)!
-      const duration = dur.get(t.id)!
-      const end = start + duration
-      totalFloat.set(t.id, lf.get(t.id)! - end)
-      let ff = projectEnd - end
-      for (const { succ, type, lag } of successors.get(t.id) ?? []) {
-        const succStart = es.get(succ)!
-        const succEnd = succStart + dur.get(succ)!
-        const lagMs = lag * DAY_MS
-        const implied =
-          type === 'fs'
-            ? succStart - end - lagMs
-            : type === 'ss'
-              ? succStart - start - lagMs
-              : type === 'ff'
-                ? succEnd - end - lagMs
-                : succEnd - start - lagMs
-        if (implied < ff) ff = implied
-      }
-      freeFloat.set(t.id, ff)
-    }
-    const critical = new Set<string>()
-    const conflict = new Set<string>()
-    for (const t of nodes) {
-      const float = totalFloat.get(t.id)!
-      if (Math.abs(float) < 1e-6) critical.add(t.id)
-      else if (float < -1e-6) conflict.add(t.id) // 负总时差 = 已违反后继约束（违约）
-      // 约束违反并入违约集（与负总时差同样呈现 .conflict）；日精度约束按**日历日**比较（本地时区安全）
-      const con = this.constraintOf(t)
-      if (!con) continue
-      const dayStr = (ms: number): string => toISODate(new Date(ms))
-      const startMs = this.startMsOfTask(t)
-      if (con.mode === 'snet') {
-        if (con.dateOnly ? dayStr(startMs) < dayStr(con.ms) : startMs < con.ms) conflict.add(t.id)
-      } else if (con.mode === 'mso') {
-        if (con.dateOnly ? dayStr(startMs) !== dayStr(con.ms) : startMs !== con.ms) conflict.add(t.id)
-        // mso：被依赖要求的起点晚于锚点 → 该任务自身违约
-        let required = Number.NEGATIVE_INFINITY
-        for (const [predId, list] of successors) {
-          for (const e of list) {
-            if (e.succ !== t.id) continue
-            const pS = es.get(predId)
-            const pD = dur.get(predId)
-            if (pS === undefined || pD === undefined) continue
-            const lagMs = e.lag * DAY_MS
-            const dSelf = dur.get(t.id)!
-            const need =
-              e.type === 'fs'
-                ? pS + pD + lagMs
-                : e.type === 'ss'
-                  ? pS + lagMs
-                  : e.type === 'ff'
-                    ? pS + pD + lagMs - dSelf
-                    : pS + lagMs - dSelf
-            if (need > required) required = need
-          }
-        }
-        if (required > con.ms + 1e-6) conflict.add(t.id)
-      } else if (con.mode === 'fnlt') {
-        const endInclusive = this.endMsOfTask(t) - 1
-        if (con.dateOnly ? dayStr(endInclusive) > dayStr(con.ms) : this.endMsOfTask(t) > con.endMs) {
-          conflict.add(t.id)
-        }
-      }
-    }
-    return { critical, conflict, totalFloat, freeFloat }
+    return criticalPathIds(this._tasks)
   }
 
   /** 不可排程任务集：任务日历显式为空（资源 shifts: [] / workdays 交集为空）。
@@ -6747,26 +4568,8 @@ export class OASGantt extends OASElement {
     return out
   }
 
-  /** 截止日违约集：结束日晚于 deadline（日精度按含端日期比较；时刻精度按 ms） */
   private deadlineConflictIds(): Set<string> {
-    const out = new Set<string>()
-    for (const t of this._tasks) {
-      const values = [...(t.deadline ? [t.deadline] : []), ...(t.deadlines ?? [])]
-      if (values.length === 0) continue
-      const end = this.endMsOfTask(t)
-      if (end <= 0) continue
-      for (const value of values) {
-        const d = parseTaskDate(value)
-        if (!d) continue
-        const dateOnly = value.length <= 10
-        const late = dateOnly ? toISODate(new Date(end - 1)) > toISODate(new Date(d.getTime())) : end > d.getTime()
-        if (late) {
-          out.add(t.id)
-          break
-        }
-      }
-    }
-    return out
+    return deadlineConflictIds(this._tasks)
   }
 
   /** 连线 lag 提示文案（aria-label 末尾）：lag>0 作「滞后」、lag<0 作「提前」，0 不附 */
@@ -7274,47 +5077,14 @@ export class OASGantt extends OASElement {
     line.title = toISODate(new Date(statusMs))
   }
 
-  /**
-   * 计划进度比（0-1，**含端日粒度**口径，与 evm computeEvm 的 planned 同构）：
-   * 已耗天数 = status 日与 start 之间的日历日数（含 status 当日、start 当日 = 1），clamp 到工期；
-   * ratio = 已耗天数 / 工期天数（0 工期防护为 0）。里程碑保持二值（未到 0 / 已到 1）。
-   * 日差按「本地日历日 → UTC 零点」归一计算，DST 23/25h 日不漂（同 evm/dst.test 的 dayDiff 口径）。
-   */
   private plannedRatio(row: GanttRow, statusMs: number): number {
-    if (row.isMilestone) return statusMs >= row.startMs ? 1 : 0
-    const durationDays = Math.round((row.endMs - row.startMs) / DAY_MS)
-    if (durationDays <= 0) return statusMs >= row.endMs ? 1 : 0
-    const startDay = new Date(row.startMs)
-    const statusDay = new Date(statusMs)
-    const dayDiff = Math.round(
-      (Date.UTC(statusDay.getFullYear(), statusDay.getMonth(), statusDay.getDate()) -
-        Date.UTC(startDay.getFullYear(), startDay.getMonth(), startDay.getDate())) /
-        DAY_MS,
-    )
-    const elapsed = Math.min(durationDays, Math.max(0, dayDiff + 1))
-    return elapsed / durationDays
+    return plannedRatio(row, statusMs)
   }
 
   // ===== tooltip（单例浮层：名称 + 区间 + 进度；template[slot=tooltip] 覆盖内容）=====
 
-  /**
-   * pool 模式 tooltip 资源行文本：任务 resources 逐 id 从共享池取名称（costRate 有限正值附
-   * 「N/h」费率）；池未登记 id 忽略。纯取数不看开关——poolOn 判断在调用侧。
-   */
   private poolResourceText(t: TG): string {
-    if (!Array.isArray(t.resources) || t.resources.length === 0) return ''
-    const pool = getSharedResourcePool()
-    const parts: string[] = []
-    for (const rid of t.resources) {
-      const item = pool.get(rid)
-      if (!item) continue
-      parts.push(
-        typeof item.costRate === 'number' && Number.isFinite(item.costRate) && item.costRate > 0
-          ? `${item.name} ${item.costRate}/h`
-          : item.name,
-      )
-    }
-    return parts.join(' · ')
+    return poolResourceText(t)
   }
 
   private showTooltip(row: GanttRow, bar: HTMLElement): void {
