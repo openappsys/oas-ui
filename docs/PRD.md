@@ -23,7 +23,7 @@
 10. **T11 values-change 补齐**：upload `oas-change` detail 加 `value` 键（与 form 读取器同串），NO_WRITEBACK 防回环。
 11. **T12 axe 扩 guide**：26 页全扫，9 组违规全修（暗色代码主题/5 段对比度/checkbox aria-label 镜像组件级修复/终端配方），baselineKey 目录段消歧。
 12. **T13 form 链审计**：无安全冗余可清；「余量 4 B」系过时数据（实际 80.7%）；core 子路径导出列为架构级候选项。
-13. **T14 WSL 容器模式**：`--container`（wslc）镜像按 .nvmrc 推导、证据协议兼容；发行版模式 Ubuntu 升 Node 24.22.2（=.nvmrc）+ pnpm 12.5.1；首次真跑实证 /mnt/d 全量 Wall-clock 伪影形态。
+13. **T14 WSL 容器模式**：`--container`（wslc）镜像按 .nvmrc 推导、证据协议兼容；发行版模式 Ubuntu Node 版本由 `.nvmrc` 决定（26.13.0）+ pnpm 12.5.1；首次真跑实证 /mnt/d 全量 Wall-clock 伪影形态。
 
 ### 验收标准
 

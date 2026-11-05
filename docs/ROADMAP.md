@@ -2,6 +2,12 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（工具链 Node 26 LTS）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **开发/CI 运行时升级到 Node 26 LTS** | `.nvmrc` 24.22.2 → **26.13.0**（Active LTS，2026-10-28 起，EOL 2029-04）；`@types/node` ^24.19.2 → ^26.6.6 与运行时对齐；CI / Release 均读 `.nvmrc` 自动跟随；`release.yml` 的 npm@12 说明同步。**`engines.node` 保持 `^22.18.0 \|\| ^24.0.0 \|\| >=26.0.0` 不变**——组件库不在 minor 抬高消费方最低 Node，Node 22 / 24 仍在支持窗口内。验证：typecheck / 全量单测 12320 / build / perf:size / api / llms / ssr / stats / smoke+console e2e 311 | ✅ 已完成（未发布） |
+
 ## 未发布（T 批：demands 编号立项）
 
 | 范围 | 内容 | 状态 |
@@ -17,7 +23,7 @@
 | **T11 values-change** | upload detail 加 value 键 + NO_WRITEBACK 防回环（9 单测含无回环证据） | ✅ 已完成（未发布） |
 | **T12 axe 扩 guide** | 26 页全扫 9 组修复（含 checkbox 组件级 aria-label 镜像）；baselineKey 消歧 | ✅ 已完成（未发布） |
 | **T13 form 链审计** | 无安全冗余；core 子路径导出=架构级候选；form 行文案待版本刷新 | ✅ 已完成（未发布） |
-| **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像）+ Ubuntu Node 24.22.2/pnpm 12.5.1 就位 | ✅ 已完成（未发布） |
+| **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像）+ Ubuntu Node 版本随 `.nvmrc`（26.13.0）/pnpm 12.5.1 就位 | ✅ 已完成（未发布） |
 
 ## 未发布（决策批：再捞待决项按原则清零）
 

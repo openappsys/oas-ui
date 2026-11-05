@@ -47,7 +47,7 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
       # Trusted Publishing 要求 npm CLI >= 11.5.1；npm@latest（12.x）要求 Node >=22.22.2——
-      # .nvmrc 已升 Node 24.22.2（满足），固定 npm@12 大版本内最新（比浮动 latest 可复现）
+      # .nvmrc 已升 Node 26.13.0（Active LTS，满足 npm@12 要求），固定 npm@12 大版本内最新（比浮动 latest 可复现）
       - run: npm install -g npm@12
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
