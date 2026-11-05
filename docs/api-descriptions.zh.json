@@ -4508,7 +4508,8 @@
     },
     "props": {
       "tasks": "甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change）",
-      "selection": "选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代）"
+      "selection": "选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代）",
+      "resourcePool": "资源池实例（实例隔离通道，JS-only property）：`el.resourcePool = createResourcePool()` 后池消费面（tooltip 资源名 / 超配冲突 / 负荷面板）改取该实例，写后立即重算（无需手动 update）；写 `null` / 非实例值恢复共享单例 `getSharedResourcePool()`（默认通道，向后兼容）；读为当前生效池"
     },
     "cssVars": {
       "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）",

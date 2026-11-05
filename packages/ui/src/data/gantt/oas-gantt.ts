@@ -31,8 +31,9 @@ import { devWarn } from '../../shared/dev-warn.js'
 // slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
 import { cloneSlotContent } from '../../shared/slot-template.js'
 // 共享资源池（pool 属性 opt-in 时消费）：运行时 import 只带进 pool 纯数据结构模块（零组件/零 i18n），
-// 与 oas-resource 的 helper 子路径共享同一份 globalThis 状态（写入互见）
-import { getSharedResourcePool } from '../resource/pool/index.js'
+// 与 oas-resource 的 helper 子路径共享同一份 globalThis 状态（写入互见）；ResourcePool 为值导入
+// 仅供 resourcePool property 的 instanceof 校验（同模块，零 bundle 增量）
+import { getSharedResourcePool, ResourcePool } from '../resource/pool/index.js'
 // 资源负荷计算（show-resource-load 属性 opt-in 时消费）：本体居 shared/（纯函数零依赖），
 // 与 `data/resource/load` Pro helper 入口共用同一份实现（见 shared/resource-load.ts 头注释）
 import { computeResourceLoad } from '../../shared/resource-load.js'
@@ -380,6 +381,8 @@ export class OASGantt extends OASElement {
   private loadPanelEl: HTMLElement | null = null
   /** 负荷计算缓存（签名 = tasks JSON + 粒度/周起/轴区间/池开关与版本）：数据/轴/池变化才重算 */
   private loadCache: { sig: string; result: ResourceLoadResult } | null = null
+  /** 宿主注入的资源池实例（resourcePool property，实例隔离通道）：null = 走共享单例（默认） */
+  private poolOverride: ResourcePool | null = null
   /** windowed 下负荷渲染跳过告警（实例级一次；对齐 pool 超配检测的 windowed 口径） */
   private warnedLoadWindowed = false
   private winStart = 0
@@ -901,6 +904,15 @@ export class OASGantt extends OASElement {
   /** 资源池开关（opt-in 缺省关；显式 "false" 视作关，同 stripe）：池驱动资源展示 + 跨任务超配检测 */
   private poolOn(): boolean {
     return this.hasAttr('pool') && this.getAttr('pool', '') !== 'false'
+  }
+
+  /**
+   * 当前生效资源池（实例感知取池）：宿主经 resourcePool property 注入实例优先（实例隔离通道），
+   * 缺省回落进程共享单例（getSharedResourcePool，向后兼容默认）。池的全部消费点
+   * （tooltip 资源名 / 超配冲突 / 负荷面板）一律经本方法取池，禁止直呼 getSharedResourcePool。
+   */
+  private effectivePool(): ResourcePool {
+    return this.poolOverride ?? getSharedResourcePool()
   }
 
   /** 资源负荷面板开关（opt-in 缺省关；显式 "false" 视作关，同 stripe） */
@@ -2032,7 +2044,7 @@ export class OASGantt extends OASElement {
       this.resourceConflicts = []
     } else if (poolOn) {
       const registeredIds = new Set<string>()
-      for (const r of getSharedResourcePool().list()) {
+      for (const r of this.effectivePool().list()) {
         if (typeof r.id === 'string' && r.id !== '') registeredIds.add(r.id)
       }
       this.resourceConflicts = computeResourceConflicts(this._tasks, registeredIds, (resourceId, peak) => {
@@ -2314,7 +2326,7 @@ export class OASGantt extends OASElement {
     const unit = this.loadUnit()
     const weekStart = this.weekStart()
     const poolOn = this.poolOn()
-    const poolVersion = poolOn ? getSharedResourcePool().version : 0
+    const poolVersion = poolOn ? this.effectivePool().version : 0
     const from = toISODate(new Date(units[0]!.startMs))
     const to = toISODate(new Date(units[units.length - 1]!.endMs - 1))
     const sig = `${JSON.stringify(this._tasks)}\u0000${unit}\u0000${weekStart}\u0000${from}\u0000${to}\u0000${poolOn}:${poolVersion}`
@@ -2325,7 +2337,7 @@ export class OASGantt extends OASElement {
       from,
       to,
       weekStart,
-      pool: poolOn ? getSharedResourcePool().list() : undefined,
+      pool: poolOn ? this.effectivePool().list() : undefined,
     })
     this.loadCache = { sig, result }
     return result
@@ -3115,6 +3127,23 @@ export class OASGantt extends OASElement {
     this.selectionAnchor = null
     this.syncSelection()
     if (!same) this.emitSelectionChange()
+  }
+
+  /**
+   * @apiProperty 资源池实例（实例隔离通道，JS-only property 不进 attribute）：写入宿主自建的
+   * `ResourcePool`（`createResourcePool()`）后，池的全部消费面——tooltip 资源名 / 跨任务超配
+   * 冲突 / 负荷面板——改从该实例取数，写后立即重算资源相关面（不经手动 update）；写 `null` /
+   * `undefined` / 非实例值恢复共享单例（`getSharedResourcePool()`，默认通道，向后兼容）。
+   * 读为当前生效池（注入实例引用相等；未注入时为共享池包装，语义等价 `getSharedResourcePool()`）。
+   */
+  get resourcePool(): ResourcePool {
+    return this.effectivePool()
+  }
+  set resourcePool(pool: ResourcePool | null) {
+    // 容错口径：仅 ResourcePool 实例生效（跨副本的类身份不同——结构守卫不可用，
+    // instanceof 对同副本实例是准确的；跨副本注入走共享单例本身即天然互通）
+    this.poolOverride = pool instanceof ResourcePool ? pool : null
+    this.requestUpdate()
   }
 
   /** 批量删除任务（连同其后代）；找不到即忽略 */
@@ -5084,7 +5113,7 @@ export class OASGantt extends OASElement {
   // ===== tooltip（单例浮层：名称 + 区间 + 进度；template[slot=tooltip] 覆盖内容）=====
 
   private poolResourceText(t: TG): string {
-    return poolResourceText(t)
+    return poolResourceText(t, this.effectivePool())
   }
 
   private showTooltip(row: GanttRow, bar: HTMLElement): void {

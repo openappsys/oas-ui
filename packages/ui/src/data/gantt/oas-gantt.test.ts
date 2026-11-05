@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASGantt, computeVariance } from './index.js'
 import { pickVisibleLabels, ganttRenderDiag } from './oas-gantt.js'
 import { computeEvm } from './evm/index.js'
-import { getSharedResourcePool } from '../resource/pool/index.js'
+import { getSharedResourcePool, createResourcePool, ResourcePool } from '../resource/pool/index.js'
 import { computeResourceConflicts } from './oas-gantt.js'
 import type { GanttTask, GanttBaselineVariance, GanttReparentDetail, GanttResourceConflictDetail } from './index.js'
 import type { GanttTaskAddDetail } from './oas-gantt.js'
@@ -9107,5 +9107,122 @@ describe('OASGantt 资源负荷面板（show-resource-load，opt-in）', () => {
       /\.load-body \{[^}]*max-height: var\(--oas-gantt-load-max-height, 240px\)/,
     )
     expect(css, '超限靠纵向滚动').toMatch(/\.load-body \{[^}]*overflow-y: auto/)
+  })
+})
+
+describe('OASGantt 资源池实例隔离（resourcePool property，默认共享单例）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+    vi.restoreAllMocks()
+  })
+
+  /** 共享池登记 alice（供「自定义池同 id 覆盖显示」与「恢复共享」断言区分） */
+  function registerShared(): void {
+    getSharedResourcePool().register([{ id: 'alice', name: '共享张三', costRate: 120 }])
+  }
+
+  /** 独立实例池：同 id alice 但名字/费率不同 + 独有 solo（冲突检测走实例池的探针资源） */
+  function makePool(): ResourcePool {
+    const pool = createResourcePool()
+    pool.register([
+      { id: 'alice', name: '实例李四', costRate: 88 },
+      { id: 'solo', name: '实例独占' },
+    ])
+    return pool
+  }
+
+  const POOL_TASKS = [
+    { id: 'a', name: '设计', start: '2026-03-02', end: '2026-03-06', resources: ['alice'] },
+    { id: 'b', name: '评审', start: '2026-03-05', end: '2026-03-09', resources: ['solo'] },
+    { id: 'c', name: '复核', start: '2026-03-06', end: '2026-03-08', resources: ['solo'] },
+  ]
+
+  function tooltipText(el: OASGantt, id: string): string {
+    barOf(el, id).dispatchEvent(new Event('mouseenter'))
+    const tip = shadowOf(el).querySelector<HTMLElement>('.tooltip')!
+    return tip.hidden ? '' : (tip.textContent ?? '')
+  }
+
+  it('默认零变化：不设 resourcePool 时共享池生效，getter 读回为当前生效池', () => {
+    registerShared()
+    const el = mount({ pool: '', tasks: JSON.stringify(POOL_TASKS) })
+    expect(el.resourcePool.get('alice')?.name).toBe('共享张三')
+    expect(el.resourcePool.version).toBe(getSharedResourcePool().version)
+    // tooltip 走共享池名
+    expect(tooltipText(el, 'a')).toContain('共享张三')
+    // solo 未登记 → b/c 无冲突
+    expect(barOf(el, 'b').classList.contains('conflict')).toBe(false)
+  })
+
+  it('传实例池：tooltip / 冲突检测 / 负荷面板全部改取实例池数据（同 id 覆盖生效）', () => {
+    registerShared()
+    const pool = makePool()
+    const el = mount({ pool: '', 'show-resource-load': '', tasks: JSON.stringify(POOL_TASKS) })
+    el.resourcePool = pool
+    // tooltip：同 id alice 显示实例池名（共享名不可见）+ 实例费率
+    const tip = tooltipText(el, 'a')
+    expect(tip).toContain('实例李四')
+    expect(tip).toContain('88/h')
+    expect(tip).not.toContain('共享张三')
+    // 冲突检测：solo 在实例池登记 → b/c 交叠冲突（共享池未登记 solo 时不会产出）
+    expect(barOf(el, 'b').classList.contains('conflict')).toBe(true)
+    expect(barOf(el, 'c').classList.contains('conflict')).toBe(true)
+    // 负荷面板：行名取实例池（alice=实例李四；共享张三不可见）
+    const names = [...shadowOf(el).querySelectorAll<HTMLElement>('.load-panel .load-name')].map((n) => n.textContent)
+    expect(names).toContain('实例李四')
+    expect(names.join('|')).not.toContain('共享张三')
+  })
+
+  it('写实例池后立即重算（不经手动 update）：冲突/负荷同步刷新', () => {
+    registerShared()
+    const el = mount({ pool: '', 'show-resource-load': '', tasks: JSON.stringify(POOL_TASKS) })
+    // 写入前：solo 未登记（共享池）→ 无冲突
+    expect(barOf(el, 'b').classList.contains('conflict')).toBe(false)
+    // 写入实例池（solo 已登记）→ 不调任何 update，冲突/负荷立即按实例池重算
+    el.resourcePool = makePool()
+    expect(barOf(el, 'b').classList.contains('conflict')).toBe(true)
+    expect(barOf(el, 'c').classList.contains('conflict')).toBe(true)
+    const names = [...shadowOf(el).querySelectorAll<HTMLElement>('.load-panel .load-name')].map((n) => n.textContent)
+    expect(names).toContain('实例李四')
+  })
+
+  it('写 null / 非实例值恢复共享单例；getter 读回实例引用', () => {
+    registerShared()
+    const el = mount({ pool: '', tasks: JSON.stringify(POOL_TASKS) })
+    const pool = makePool()
+    el.resourcePool = pool
+    expect(el.resourcePool).toBe(pool) // 读回 = 注入实例（引用相等）
+    expect(tooltipText(el, 'a')).toContain('实例李四')
+    // null 恢复共享
+    el.resourcePool = null
+    expect(el.resourcePool.get('alice')?.name).toBe('共享张三')
+    expect(el.resourcePool.get('solo')).toBeUndefined()
+    expect(tooltipText(el, 'a')).toContain('共享张三')
+    // 非实例值（宿主误传字符串/布尔）容错 = 恢复共享，不抛异常
+    ;(el as unknown as { resourcePool: unknown }).resourcePool = 'oops'
+    expect(el.resourcePool.get('alice')?.name).toBe('共享张三')
+    ;(el as unknown as { resourcePool: unknown }).resourcePool = true
+    expect(el.resourcePool.get('alice')?.name).toBe('共享张三')
+  })
+
+  it('实例池隔离：实例池登记不泄漏进共享池；换实例池即时切换数据源', () => {
+    const el = mount({ pool: '', tasks: JSON.stringify(POOL_TASKS) })
+    const poolA = createResourcePool()
+    poolA.register([{ id: 'alice', name: '甲池' }])
+    el.resourcePool = poolA
+    expect(tooltipText(el, 'a')).toContain('甲池')
+    // 实例池写入不进共享池
+    expect(getSharedResourcePool().get('alice')).toBeUndefined()
+    // 换另一个实例池：数据源即时切换
+    const poolB = createResourcePool()
+    poolB.register([{ id: 'alice', name: '乙池' }])
+    el.resourcePool = poolB
+    expect(tooltipText(el, 'a')).toContain('乙池')
+    expect(el.resourcePool).toBe(poolB)
   })
 })

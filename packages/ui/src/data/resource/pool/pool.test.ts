@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { getSharedResourcePool, ResourcePool } from './index.js'
+import { createResourcePool, getSharedResourcePool, ResourcePool } from './index.js'
 import type { ResourceItem } from '../oas-resource.js'
 
 const res = (id: string, name = `资源-${id}`): ResourceItem => ({ id, name })
@@ -89,5 +89,64 @@ describe('resource/pool ResourcePool', () => {
     expect(shared).not.toBeInstanceOf(modA.ResourcePool)
     expect((shared as { version: number }).version).toBe(poolA.version)
     expect(Array.isArray((shared as { items: unknown }).items)).toBe(true)
+  })
+
+  it('createResourcePool：两实例互不可见（独立状态，版本各自计）', () => {
+    const poolA = createResourcePool()
+    const poolB = createResourcePool()
+    poolA.register([res('a', '甲池')])
+    expect(poolA.get('a')?.name).toBe('甲池')
+    expect(poolB.get('a')).toBeUndefined()
+    expect(poolB.list()).toEqual([])
+    // 版本独立：A 的变更不抬 B 的版本
+    expect(poolA.version).toBe(1)
+    expect(poolB.version).toBe(0)
+    poolB.register([res('b', '乙池')])
+    expect(poolA.get('b')).toBeUndefined()
+    expect(poolB.get('b')?.name).toBe('乙池')
+    // B 的 remove/clear 也不影响 A
+    poolB.clear()
+    expect(poolA.get('a')?.name).toBe('甲池')
+  })
+
+  it('createResourcePool：与共享单例完全隔离；getSharedResourcePool 跨调用仍共享同一状态', () => {
+    const sharedV = getSharedResourcePool().version
+    const isolated = createResourcePool()
+    isolated.register([res('iso', '隔离池')])
+    // 独立实例写入不进共享池（双向不可见）
+    expect(getSharedResourcePool().get('iso')).toBeUndefined()
+    expect(getSharedResourcePool().version).toBe(sharedV)
+    const sharedProbe = res('shared-probe', '共享池')
+    getSharedResourcePool().register([sharedProbe])
+    expect(isolated.get('shared-probe')).toBeUndefined()
+    // 同副本 getSharedResourcePool 跨调用仍共享（Symbol.for 全局唯一键 → 同一份纯对象状态）
+    expect(getSharedResourcePool().get('shared-probe')?.name).toBe('共享池')
+    expect(getSharedResourcePool().version).toBe(sharedV + 1)
+    // 清理探测数据（共享池是跨测试全局态，不得泄漏给其他用例）
+    getSharedResourcePool().remove(['shared-probe'])
+  })
+
+  it('createResourcePool：不触碰 globalThis 共享状态；state 注入路径不回归（注入共享状态即作用于共享）', () => {
+    // createResourcePool 每次新建私有状态，不污染 globalThis（即便共享池为空也不挂键外状态）
+    const before = (globalThis as unknown as Record<symbol, unknown>)[Symbol.for('@oas-ui/ui/resource-pool/v1')]
+    createResourcePool().register([res('probe-never-shared')])
+    const after = (globalThis as unknown as Record<symbol, unknown>)[Symbol.for('@oas-ui/ui/resource-pool/v1')]
+    if (before === undefined) {
+      expect(after).toBeUndefined() // 共享池从未初始化时，独立实例不得触发挂载
+    } else {
+      expect(after).toBe(before) // 已初始化时引用不变（无写入）
+    }
+    // state 注入路径：显式传入共享状态对象 → 操作作用于共享状态（getSharedResourcePool 的实现机制）
+    const sharedState = (globalThis as unknown as Record<symbol, unknown>)[Symbol.for('@oas-ui/ui/resource-pool/v1')] as
+      | { items: ResourceItem[]; version: number }
+      | undefined
+    const injected = new ResourcePool(sharedState ?? { items: [], version: 0 })
+    injected.register([res('via-injection', '注入通道')])
+    if (sharedState) {
+      expect(getSharedResourcePool().get('via-injection')?.name).toBe('注入通道')
+      getSharedResourcePool().remove(['via-injection'])
+    } else {
+      expect(injected.get('via-injection')?.name).toBe('注入通道')
+    }
   })
 })

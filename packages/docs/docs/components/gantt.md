@@ -408,6 +408,16 @@ pool.register([{ id: 'alice', name: '张三', costRate: 120 }])
 ganttEl.tasks = ganttEl.tasks
 ```
 
+**实例隔离**——共享单例可选不必选。多视图 / 多画布 / 多租户需要各自独立登记时，用 `createResourcePool()` 创建独立池（私有状态，与共享单例及彼此互不可见），经 `resourcePool` property（JS-only，不进 attribute）注入组件：tooltip 资源名、超配冲突检测、负荷面板立即改取该实例（写后即重算，无需手动 update）；写 `null` 恢复共享单例（默认通道，向后兼容）：
+
+```ts
+import { createResourcePool } from '@oas-ui/ui/data/resource/pool'
+
+const pool = createResourcePool()
+pool.register([{ id: 'alice', name: '张三（画布 A）', costRate: 120 }])
+ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
+```
+
 > 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；仍不做：资源泳道视图（留后续批）、超配自动排程避让——`pool` 只做检测与视觉标注，不移动任何任务。
 
 ## 资源负荷视图（show-resource-load）
@@ -911,6 +921,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `resourcePool` | 资源池实例（实例隔离通道，JS-only property）：`el.resourcePool = createResourcePool()` 后池消费面（tooltip 资源名 / 超配冲突 / 负荷面板）改取该实例，写后立即重算（无需手动 update）；写 `null` / 非实例值恢复共享单例 `getSharedResourcePool()`（默认通道，向后兼容）；读为当前生效池 | `ResourcePool \| null` | — |
 | `selection` | 选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代） | `string[]` | — |
 | `tasks` | 甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change） | `GanttTask[]` | `[]` |
 

@@ -1,9 +1,12 @@
 /**
  * 资源池（Pro helper 子路径，进程内共享状态可选）：
- * - 按需引入：`@oas-ui/ui/data/resource/pool`（`import { ResourcePool, getSharedResourcePool }`）；
+ * - 按需引入：`@oas-ui/ui/data/resource/pool`（`import { ResourcePool, getSharedResourcePool, createResourcePool }`）；
  *   运行闭包不含 oas-resource 组件本体 / core / i18n（类型仅 `import type`，构建期擦除）。
  * - 纯数据结构：无 customElements、无 i18n、无 CSS、无模块级副作用
  *   （共享状态的 globalThis 挂载发生在 getSharedResourcePool() 首次调用时，非 import 时）。
+ * - 双通道（2026-11 Z4 小批）：想跨模块/跨视图共享登记状态的用 `getSharedResourcePool()`
+ *   （globalThis 单例，多副本互见，默认推荐）；想多租户/多画布互不干扰的用 `createResourcePool()`
+ *   （独立实例，私有状态，不触碰 globalThis）。两态都支持，默认行为不变。
  */
 
 import type { ResourceItem } from '../oas-resource.js'
@@ -121,4 +124,14 @@ export class ResourcePool {
  */
 export function getSharedResourcePool(): ResourcePool {
   return new ResourcePool(getOrCreateState())
+}
+
+/**
+ * 独立资源池实例（实例隔离通道）：返回持有**全新私有状态**的 `ResourcePool`，
+ * 与共享单例（`getSharedResourcePool`）及彼此完全隔离，且不触碰 globalThis——
+ * 适合多租户 / 多画布各自维护资源集合、或测试需要状态隔离的场景。
+ * 需要跨模块/跨视图共享登记状态时用 `getSharedResourcePool()`（默认推荐）。
+ */
+export function createResourcePool(): ResourcePool {
+  return new ResourcePool()
 }

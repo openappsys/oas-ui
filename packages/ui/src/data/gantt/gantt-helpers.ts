@@ -5,7 +5,7 @@
  * 类型见 gantt-types.ts，清洗与日期数学见 gantt-utils.ts，样式见 gantt-style.ts。
  */
 import { formatToken, isoWeek, toISODate } from '../../form/calendar/date-grid.js'
-import { getSharedResourcePool } from '../resource/pool/index.js'
+import type { ResourcePool } from '../resource/pool/index.js'
 import type { ResourceLoadResult } from '../../shared/resource-load.js'
 import { DAY_MS, addLocalDays, ganttRenderDiag, intersectShiftWindows, parseTaskDate } from './gantt-utils.js'
 import type {
@@ -241,12 +241,12 @@ export function fmtEnd(ms: number, datetimeHint: boolean, locale: string): strin
 }
 
 /**
- * pool 模式 tooltip 资源行文本：任务 resources 逐 id 从共享池取名称（costRate 有限正值附
- * 「N/h」费率）；池未登记 id 忽略。纯取数不看开关——poolOn 判断在调用侧。
+ * pool 模式 tooltip 资源行文本：任务 resources 逐 id 从传入池取名称（costRate 有限正值附
+ * 「N/h」费率）；池未登记 id 忽略。纯取数不看开关、不自行取池（实例感知取池在调用侧——
+ * 组件传当前生效池：宿主注入实例优先，缺省共享单例）。
  */
-export function poolResourceText(t: TG): string {
+export function poolResourceText(t: TG, pool: ResourcePool): string {
   if (!Array.isArray(t.resources) || t.resources.length === 0) return ''
-  const pool = getSharedResourcePool()
   const parts: string[] = []
   for (const rid of t.resources) {
     const item = pool.get(rid)

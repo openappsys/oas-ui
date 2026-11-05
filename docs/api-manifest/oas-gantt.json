@@ -249,6 +249,11 @@
       "name": "selection",
       "type": "string[]",
       "api": true
+    },
+    {
+      "name": "resourcePool",
+      "type": "ResourcePool | null",
+      "api": true
     }
   ],
   "methods": [

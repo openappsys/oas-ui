@@ -407,6 +407,16 @@ pool.register([{ id: 'alice', name: 'Alice', costRate: 120 }])
 ganttEl.tasks = ganttEl.tasks
 ```
 
+**Instance isolation** — shared singleton is optional, not mandatory. When multiple views / multiple canvases / multi-tenant scenarios need separate registries, create an independent pool with `createResourcePool()` (private state, invisible to the shared singleton and to each other) and inject it via the JS-only `resourcePool` property; tooltip resource names, over-allocation detection, and the load panel all switch to that instance at once (recomputed on write, no manual update needed). Writing `null` restores the shared singleton (default channel, backward compatible):
+
+```ts
+import { createResourcePool } from '@oas-ui/ui/data/resource/pool'
+
+const pool = createResourcePool()
+pool.register([{ id: 'alice', name: 'Alice (Canvas A)', costRate: 120 }])
+ganttEl.resourcePool = pool // instance isolation; write null to restore the shared singleton
+```
+
 > Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; still not in scope: resource swimlane view (future batch), automatic schedule avoidance — `pool` only detects and marks, it never moves tasks.
 
 ## Resource Load View (show-resource-load)
@@ -913,6 +923,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
+| `resourcePool` | Resource pool instance (isolation channel, JS-only property): `el.resourcePool = createResourcePool()` switches the pool consumers (tooltip resource names / over-allocation conflicts / load panel) to that instance, recomputing immediately on write (no manual update); `null` / non-instance values restore the shared singleton `getSharedResourcePool()` (default channel, backward compatible); reads return the active pool | `ResourcePool \| null` | — |
 | `selection` | Selected task ids (`string[]`): `el.selection` reads (copy); `el.selection = [...]` writes (re-renders selection + dispatches oas-selection-change); `removeTasks(ids)` batch-removes (with descendants) | `string[]` | — |
 | `tasks` | Gantt tasks (`GanttTask[]`): `el.tasks` reads (copy; nested input already flattened to parent pointers); `el.tasks = [...]` writes (syncs the tasks attribute + re-renders + dispatches oas-tasks-change) | `GanttTask[]` | `[]` |
 
