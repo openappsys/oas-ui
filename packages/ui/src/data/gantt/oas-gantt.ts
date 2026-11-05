@@ -61,6 +61,9 @@ import type {
   GanttDependency,
   GanttExpandChangeDetail,
   GanttHistoryChangeDetail,
+  GanttLevelDetail,
+  GanttLevelOptions,
+  GanttLevelResult,
   GanttMajorGroup,
   GanttProgressChangeDetail,
   GanttReparentDetail,
@@ -141,6 +144,9 @@ import {
   writeBarSelectionState,
   writeRowSelectionState,
 } from './gantt-helpers.js'
+// 超配自动排程避让纯引擎（Z2）：判据与 computeResourceConflicts 同源，本文件仅薄封装
+//（守卫 + 事件序 + updateTasks 应用），实现见 gantt-level.ts
+import { levelGanttConflicts } from './gantt-level.js'
 
 export {
   computeResourceConflicts,
@@ -157,6 +163,13 @@ export type {
   GanttDependency,
   GanttExpandChangeDetail,
   GanttHistoryChangeDetail,
+  GanttLevelCalendar,
+  GanttLevelDetail,
+  GanttLevelMoved,
+  GanttLevelOptions,
+  GanttLevelResult,
+  GanttLevelSkipped,
+  GanttLevelUnresolved,
   GanttProgressChangeDetail,
   GanttReparentDetail,
   GanttRescheduleDetail,
@@ -283,6 +296,10 @@ export class OASGantt extends OASElement {
   private lastConflictSig: string | null = null
   /** windowed 下超配检测跳过告警（实例级一次） */
   private warnedPoolWindowed = false
+  /** levelConflicts 守卫告警去重（pool 关 / windowed / 只读，各实例级一次） */
+  private warnedLevelNoPool = false
+  private warnedLevelWindowed = false
+  private warnedLevelReadonly = false
   /** 资源并发超限（>2 任务同资源同时段）devWarn（实例级一次，不逐资源/逐 update 刷屏） */
   private warnedPoolOverCapacity = false
   /** show-float 开启时的总浮时/自由浮时（ms，仅叶子/里程碑；摘要不参与 CPM） */
@@ -3543,6 +3560,65 @@ export class OASGantt extends OASElement {
     this._tasks = next
     this.commitTasks()
     return applied
+  }
+
+  /**
+   * 超配自动排程避让（pool opt-in，手动触发；纯引擎见 gantt-level.ts）：对当前任务的池内
+   * 资源冲突做「整体后移受害者」迭代，直到无冲突或达 maxIter（缺省 500，达上限 truncated:true
+   * 且 unresolved 如实返回，不静默）。判据与超配检测同源（computeResourceConflicts 扫描线 +
+   * 同款半开区间谓词，相切不算、日精度 end 含端）；受害者排序：disabled / 资源日历 days 空集 /
+   * constraint==='mso' 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs
+   * 晚者先让位，输入序靠后者先让位。平移 day 步进保墙钟时刻（DST 不漂移）、保工期；工作日
+   * 吸附放收敛后最终落点（workdays + holidays + 资源日历逐日前进，上限同款），吸附后复检
+   * 一次交叠，复检不过继续迭代。里程碑 / summary / 池外资源不参与（skipped 如实回报）。
+   *
+   * 应用与事件：有移动时先派发 `oas-level`（detail 带 moved/unresolved/truncated），随后经
+   * updateTasks 一次提交（= 一条 undo + 一次 oas-tasks-change，数据写回 `.conflict` 视觉
+   * 通道随下一次 update 重算缩小）；零移动 = 零写入零事件零 history（幂等，可安全重复调用）。
+   * 守卫（devWarn 一次 + 空结果）：pool 关（避让以池内资源冲突为对象）/ windowed（切片上
+   * 避让会得到错误结果）/ readonly / dates-readonly（只读态禁止改排期）。
+   *
+   * @returns 避让结果；moved 已应用到组件数据（宿主无需再写回），纯数据诊断见 skipped
+   */
+  levelConflicts(options: GanttLevelOptions = {}): GanttLevelResult {
+    const empty: GanttLevelResult = { moved: [], unresolved: [], truncated: false, skipped: [] }
+    if (!this.poolOn()) {
+      if (!this.warnedLevelNoPool) {
+        this.warnedLevelNoPool = true
+        devWarn('[oas-gantt] levelConflicts 需要 pool 属性开启（避让以池内资源冲突为对象）；本次调用返回空结果')
+      }
+      return empty
+    }
+    if (this._winMode.windowed) {
+      if (!this.warnedLevelWindowed) {
+        this.warnedLevelWindowed = true
+        devWarn(
+          '[oas-gantt] windowed 模式下超配避让需要全量数据，已跳过（切片上避让会得到错误结果）；请宿主在全量数据上自行排程',
+        )
+      }
+      return empty
+    }
+    if (this.datesReadonlyOn()) {
+      if (!this.warnedLevelReadonly) {
+        this.warnedLevelReadonly = true
+        devWarn('[oas-gantt] readonly / dates-readonly 只读态下超配避让不可用（禁止改排期）；本次调用返回空结果')
+      }
+      return empty
+    }
+    const registeredIds = new Set<string>()
+    for (const r of this.effectivePool().list()) {
+      if (typeof r.id === 'string' && r.id !== '') registeredIds.add(r.id)
+    }
+    const result = levelGanttConflicts(this._tasks, registeredIds, (task) => this.taskCalendar(task), options)
+    if (result.moved.length === 0) return result
+    // 事件序契约：oas-level（应用前）→ oas-tasks-change（updateTasks 一次提交）
+    this.emit('level', {
+      moved: result.moved.map((m) => ({ ...m })),
+      unresolved: result.unresolved.map((u) => ({ ...u })),
+      truncated: result.truncated,
+    } satisfies GanttLevelDetail)
+    this.updateTasks(result.moved.map((m) => ({ id: m.id, start: m.start, end: m.end })))
+    return result
   }
 
   /** 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op */

@@ -13,7 +13,7 @@ import type {
   GanttResourceConflict,
   GanttResourceConflictDetail,
 } from './index.js'
-import type { GanttTaskAddDetail } from './oas-gantt.js'
+import type { GanttLevelDetail, GanttLevelResult, GanttTasksChangeDetail, GanttTaskAddDetail } from './oas-gantt.js'
 
 /** 测试内任务类型别名（组件清洗后的任务：id 必有）——与组件源码 TG 同构 */
 type TG = GanttTask & { id: string }
@@ -9527,5 +9527,198 @@ describe('OASGantt 资源池实例隔离（resourcePool property，默认共享�
     el.resourcePool = poolB
     expect(tooltipText(el, 'a')).toContain('乙池')
     expect(el.resourcePool).toBe(poolB)
+  })
+})
+
+describe('OASGantt levelConflicts（超配避让）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+    vi.restoreAllMocks()
+  })
+
+  const LEVEL_TASKS = [
+    { id: 't1', name: 'T1', start: '2026-03-02', end: '2026-03-05', resources: ['alice'] },
+    { id: 't2', name: 'T2', start: '2026-03-04', end: '2026-03-07', resources: ['alice'] },
+  ]
+
+  /** 挂载前挂监听（首帧事件在 connectedCallback 同步派发，事后挂监听会漏） */
+  function mountRecording(attrs: Record<string, string>): {
+    el: OASGantt
+    level: GanttLevelDetail[]
+    tasksChange: GanttTasksChangeDetail[]
+  } {
+    const el = new OASGantt()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const level: GanttLevelDetail[] = []
+    const tasksChange: GanttTasksChangeDetail[] = []
+    el.addEventListener('oas-level', (e) => level.push((e as CustomEvent<GanttLevelDetail>).detail))
+    el.addEventListener('oas-tasks-change', (e) => tasksChange.push((e as CustomEvent<GanttTasksChangeDetail>).detail))
+    document.body.appendChild(el)
+    return { el, level, tasksChange }
+  }
+
+  it('守卫：pool 关 → devWarn + 空结果 + 零事件零写入零 history', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el, level, tasksChange } = mountRecording({
+      history: '',
+      tasks: JSON.stringify(LEVEL_TASKS),
+    })
+    const before = JSON.stringify(el.tasks)
+    const r = el.levelConflicts()
+    expect(r).toEqual({ moved: [], unresolved: [], truncated: false, skipped: [] })
+    expect(level.length).toBe(0)
+    expect(tasksChange.length).toBe(0)
+    expect(JSON.stringify(el.tasks)).toBe(before)
+    expect(el.canUndo).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]?.[0])).toContain('levelConflicts')
+  })
+
+  it('守卫：windowed → devWarn + 空结果（切片上避让会得到错误结果）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el, level } = mountRecording({
+      pool: '',
+      windowed: '',
+      total: '5',
+      tasks: JSON.stringify(LEVEL_TASKS),
+    })
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([])
+    expect(level.length).toBe(0)
+    expect(
+      warn.mock.calls.some((c) => String(c[0]).includes('超配避让')),
+      '含避让专属告警',
+    ).toBe(true)
+  })
+
+  it('守卫：readonly 与 dates-readonly → devWarn + 空结果（只读态禁止改排期）', () => {
+    for (const attr of ['readonly', 'dates-readonly']) {
+      document.body.innerHTML = ''
+      getSharedResourcePool().clear()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+      const { el, level, tasksChange } = mountRecording({ pool: '', [attr]: '', tasks: JSON.stringify(LEVEL_TASKS) })
+      const r = el.levelConflicts()
+      expect(r.moved, attr).toEqual([])
+      expect(level.length, attr).toBe(0)
+      expect(tasksChange.length, attr).toBe(0)
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(String(warn.mock.calls[0]?.[0])).toContain('只读')
+      warn.mockRestore()
+    }
+  })
+
+  it('无冲突：空结果且零事件零写入零 history（幂等通道）', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el, level, tasksChange } = mountRecording({
+      pool: '',
+      history: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-03', resources: ['alice'] },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-06', resources: ['alice'] },
+      ]),
+    })
+    const before = JSON.stringify(el.tasks)
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([])
+    expect(r.truncated).toBe(false)
+    expect(level.length).toBe(0)
+    expect(tasksChange.length).toBe(0)
+    expect(JSON.stringify(el.tasks)).toBe(before)
+    expect(el.canUndo).toBe(false)
+  })
+
+  it('事件序：oas-level（detail 带 moved/unresolved/truncated）→ oas-tasks-change（一次提交一次事件）', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const el = new OASGantt()
+    for (const [k, v] of Object.entries({ pool: '', history: '', tasks: JSON.stringify(LEVEL_TASKS) }))
+      el.setAttribute(k, v)
+    const order: string[] = []
+    let levelDetail: GanttLevelDetail | null = null
+    let tasksChangeCount = 0
+    el.addEventListener('oas-level', ((e: CustomEvent<GanttLevelDetail>) => {
+      order.push('level')
+      levelDetail = e.detail
+    }) as EventListener)
+    el.addEventListener('oas-tasks-change', () => {
+      order.push('tasks-change')
+      tasksChangeCount++
+    })
+    document.body.appendChild(el)
+    order.length = 0 // 吸收首帧事件（挂载不触发 level/tasks-change；防御性清零）
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-06', end: '2026-03-09' }])
+    expect(order).toEqual(['level', 'tasks-change'])
+    expect(tasksChangeCount).toBe(1)
+    const detail = levelDetail as GanttLevelDetail | null
+    expect(detail === null, 'oas-level 应携带 detail').toBe(false)
+    expect(detail!.moved).toEqual(r.moved)
+    expect(detail!.unresolved).toEqual([])
+    expect(detail!.truncated).toBe(false)
+    // 数据已应用（宿主无需写回）
+    expect(el.tasks.find((t) => t.id === 't2')!.start).toBe('2026-03-06')
+  })
+
+  it('一次事务：多条移动一次 tasks-change + 一条 undo（undo 还原原日期）', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el, tasksChange } = mountRecording({
+      pool: '',
+      history: '',
+      tasks: JSON.stringify([
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-08', resources: ['alice'] },
+        { id: 'b', name: 'B', start: '2026-03-04', end: '2026-03-09', resources: ['alice'] },
+        { id: 'c', name: 'C', start: '2026-03-05', end: '2026-03-07', resources: ['alice'] },
+      ]),
+    })
+    const before = JSON.stringify(el.tasks)
+    const r = el.levelConflicts()
+    expect(r.moved.length).toBeGreaterThanOrEqual(2)
+    expect(tasksChange.length, '一次提交一条 tasks-change').toBe(1)
+    expect(el.canUndo).toBe(true)
+    expect(el.undo()).toBe(true)
+    expect(JSON.stringify(el.tasks), 'undo 还原避让前数据').toBe(before)
+    expect(el.canUndo).toBe(false)
+  })
+
+  it('maxIter 透传：截断时 truncated 与 unresolved 如实返回（移动已应用的部分保留）', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el } = mountRecording({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 't1', name: 'T1', start: '2026-03-02', end: '2026-03-05', resources: ['alice'] },
+        { id: 't2', name: 'T2', start: '2026-03-02', end: '2026-03-05', resources: ['alice'] },
+      ]),
+    })
+    const r = el.levelConflicts({ maxIter: 1 })
+    expect(r.truncated).toBe(true)
+    expect(r.unresolved).toEqual([{ taskA: 't1', taskB: 't2', resourceId: 'alice' }])
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-03', end: '2026-03-06' }])
+  })
+
+  it('躲避后 .conflict 缩小：避让前条/行名带标记，避让后重算归零', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el } = mountRecording({
+      pool: '',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+      tasks: JSON.stringify(LEVEL_TASKS),
+    })
+    const conflictsOf = () => el.shadowRoot!.querySelectorAll('.conflict').length
+    expect(conflictsOf(), '避让前 t1/t2 均带 .conflict').toBeGreaterThanOrEqual(1)
+    const r = el.levelConflicts()
+    expect(r.moved.length).toBe(1)
+    expect(conflictsOf(), '避让后冲突标记清零').toBe(0)
+    // 幂等：再调一次零移动零事件
+    let levelCount = 0
+    el.addEventListener('oas-level', () => levelCount++)
+    const r2 = el.levelConflicts()
+    expect(r2.moved).toEqual([])
+    expect(levelCount).toBe(0)
   })
 })

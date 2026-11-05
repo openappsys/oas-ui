@@ -418,7 +418,34 @@ pool.register([{ id: 'alice', name: '张三（画布 A）', costRate: 120 }])
 ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
 ```
 
-> 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；资源泳道已由 `group-by-resource` 承载（见上节）；仍不做：超配自动排程避让——`pool` 只做检测与视觉标注，不移动任何任务。
+> 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；资源泳道已由 `group-by-resource` 承载（见上节）；超配自动排程避让已由 `levelConflicts()` 方法承载（手动触发，见下方「超配避让」小节）。
+
+## 超配避让（levelConflicts）
+
+<DemoBlock title="超配避让：张三双任务交叠 → 一键整体后移受害者消除冲突（撤销可回位）">
+  <oas-gantt id="gantt-level-demo" pool history range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"la","name":"设计（张三）","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"lb","name":"评审（张三，交叠）","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]}]'></oas-gantt>
+  <div style="margin-top:var(--oas-space-2);display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
+    <oas-button id="gantt-level-run" size="small">执行避让 levelConflicts()</oas-button>
+    <oas-button id="gantt-level-undo" size="small" variant="outline">撤销回位</oas-button>
+    <span id="gantt-level-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">避让前 lb 与 la 交叠（张三超配）——点「执行避让」看结果</span>
+  </div>
+</DemoBlock>
+
+`levelConflicts(options?)`（手动触发，pool 开启时可用）对当前任务的**池内资源冲突**做「整体后移受害者」迭代，直到无冲突或达上限。返回 `{ moved, unresolved, truncated, skipped }`：`moved` 为被移动任务的终态（`{ id, start, end }`，**已应用到组件数据**，宿主无需写回）；`unresolved` 为终检仍残留的冲突对（双侧不可让位或截断时非空）；`truncated` 表示达 `maxIter`（缺省 500，对齐 resource 的 `levelResources`）截断——**不静默**；`skipped` 为不参与的任务与原因（`summary` / `milestone` / `off-pool` / `invalid-dates`，与超配检测同口径）。
+
+- **受害者排序**：`disabled`、资源日历 days 空集（该资源无可排日）、`constraint: "mso"` 的任务**永不让位**；有 `deadline` 者后让位（都有按最晚 deadline 后让位）；并列时 startMs 晚者先让位、输入序靠后者先让位。
+- **平移与吸附**：每次整体后移 1 天（保墙钟时刻，跨夏令时不漂移；工期不变）；收敛后把落点吸附到工作日（`workdays` + `holidays` + 资源日历，逐日前进上限同款 400 天），吸附后复检一次交叠，复检不过继续迭代。每步只向后移动（单调），终止有界。
+- **应用与事件**：有移动时先派发 `oas-level`（`detail: { moved, unresolved, truncated }`），随后经 `updateTasks` 一次提交 = 一条 undo + 一次 `oas-tasks-change`；**零移动 = 零写入零事件零 history**（幂等，可安全重复调用）。
+- **守卫**（devWarn 一次 + 空结果）：`pool` 关、`windowed`（切片上避让会得到错误结果）、`readonly` / `dates-readonly`。
+
+```ts
+const r = ganttEl.levelConflicts() // 或 levelConflicts({ maxIter: 200 })
+if (r.truncated) console.warn('迭代达上限，仍有残留冲突', r.unresolved)
+ganttEl.addEventListener('oas-level', (e) => {
+  console.log(`避让移动 ${e.detail.moved.length} 条，残留 ${e.detail.unresolved.length} 对`)
+})
+```
 
 ## 资源负荷视图（show-resource-load）
 
@@ -801,6 +828,31 @@ onMounted(async () => {
   // 资源负荷面板 demo：池登记晚于组件首帧 → 重写 tasks 触发一次负荷重算（行名取池名称）
   const loadDemo = document.getElementById('gantt-load-demo')
   if (loadDemo) loadDemo.tasks = loadDemo.tasks
+
+  // 超配避让 demo：按钮调 levelConflicts() → 结果区反馈移动 N 条 / 残留 M 对 / 截断提示；撤销回位
+  const levelDemo = document.getElementById('gantt-level-demo')
+  const levelOut = document.getElementById('gantt-level-out')
+  if (levelDemo && levelOut) {
+    levelDemo.tasks = levelDemo.tasks // 池登记晚于组件首帧：重写 tasks 触发一次超配重算（避让前 .conflict 可见）
+    document.getElementById('gantt-level-run')?.addEventListener('click', () => {
+      const r = levelDemo.levelConflicts()
+      if (r.moved.length === 0) {
+        levelOut.textContent = r.truncated
+          ? `迭代达上限仍有 ${r.unresolved.length} 对残留冲突（可能双侧不可让位）`
+          : '当前无冲突，未移动任何任务（幂等）'
+        return
+      }
+      const movedText = r.moved.map((m) => `${m.id} → ${m.start}`).join('、')
+      const parts = [`移动 ${r.moved.length} 条：${movedText}`]
+      if (r.unresolved.length > 0) parts.push(`残留 ${r.unresolved.length} 对：${r.unresolved.map((u) => `${u.taskA}×${u.taskB}（${u.resourceId}）`).join('、')}`)
+      if (r.truncated) parts.push('已达迭代上限（truncated）')
+      levelOut.textContent = parts.join('；')
+    })
+    document.getElementById('gantt-level-undo')?.addEventListener('click', () => {
+      const ok = levelDemo.undo()
+      levelOut.textContent = ok ? '已撤销回位（恢复避让前日期）' : '没有可撤销的提交'
+    })
+  }
 })
 </script>
 
@@ -891,7 +943,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `hover` | 行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`"false"` 关闭 | `string` | — |
 | `label-position` | 任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none | `string` | — |
 | `locale` | 本地化（覆盖 config-provider 注入与全局 locale） | `string` | — |
-| `pool` | 资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；不做泳道视图与自动排程避让 | `string` | — |
+| `pool` | 资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；超配自动排程避让由 levelConflicts() 方法承载（手动触发，见组件方法） | `string` | — |
 | `progress-readonly` | 禁改进度（改期仍可拖） | `boolean` | — |
 | `range-end` | 宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用 | `string` | — |
 | `range-start` | 宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度） | `string` | — |
@@ -944,6 +996,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | 删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。 |
 | `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。 |
 | `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | 批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗， |
+| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | 超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果 |
 | `zoomIn` | `zoomIn(): void` | 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op |
 | `zoomOut` | `zoomOut(): void` | 向更粗一档步进；最粗档 no-op |
 | `fit` | `fit(): void` | 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档 |
@@ -955,6 +1008,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `oas-dependencies-change` | 连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务） |
 | `oas-expand-change` | 行树折叠/展开时派发，detail: { id, expanded } |
 | `oas-history-change` | history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear） |
+| `oas-level` | 超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change |
 | `oas-progress-change` | 拖进度手柄收口时派发，detail: { id, task, progress } |
 | `oas-range-request` | 宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发 |
 | `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |

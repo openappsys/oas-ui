@@ -5,6 +5,40 @@
 
 ---
 
+## 未发布：Z2 gantt 超配自动排程避让（B 路线裁定实施）
+
+### 功能定义
+
+pool 超配检测（T10）只做检测与视觉标注；本批补齐**手动触发的自动排程避让**：组件公开方法
+`levelConflicts(options?)` 对当前任务的池内资源冲突做「整体后移受害者」迭代，直到无冲突或达迭代上限。
+
+- **纯引擎** `packages/ui/src/data/gantt/gantt-level.ts`（零组件依赖）：判据与检测同源
+  （初始冲突对与终检直接调 `computeResourceConflicts` 扫描线；迭代内同款半开区间谓词局部重检，
+  相切不算、日精度 end 含端）。返回 `{ moved, unresolved, truncated, skipped }`，不改入参。
+- **受害者排序**（裁定口径）：disabled / 资源日历 days 空集 / constraint==='mso' 永不让位；
+  有 deadline 者后让位（都有按最晚 deadline 后让位）；startMs 晚者先让位；输入序靠后者先让位。
+- **平移与吸附**：day 步进 `addLocalDays` 保墙钟时刻（DST 不漂移），end 按保工期推导；
+  工作日吸附放收敛后最终落点（calendar 回调逐日前进，上限同款 SNAP_MAX_DAYS），吸附后复检一次
+  交叠，复检不过继续迭代；每步纯 day 步进保单调；maxIter 缺省 500，达上限 `truncated: true`
+  且 unresolved 如实返回（不静默）。
+- **组件集成**：`levelConflicts(options?): GanttLevelResult`（守卫：pool 关 / windowed /
+  readonly / dates-readonly → devWarn + 空结果）；应用走既有 `updateTasks(patches)`
+  （一次提交 = 一条 undo + 一次 oas-tasks-change）；事件序 `oas-level`（detail 带
+  moved/unresolved/truncated）→ 应用 → tasks-change；零移动 = 零写入零事件零 history（幂等）。
+- 里程碑 / summary / 池外资源不参与（与检测同口径），以 `skipped` 如实回报。
+
+### 验收标准
+
+- 引擎单测：机制（收敛 / 排序各分支 / 截断 / 确定性 / 不改入参）+ DST 对拍（America/New_York
+  春秋令跨日避让后 start/end 恒本地零点纯日期、工期日历日不变、复检无冲突）+ 朴素 O(n²) 参考实现
+  对拍（固定 seed 500 组：写回后无冲突 + 工期不变量 + 引擎步数 ≤ 参考，不逐值等价）+ 边界
+  （单任务 / 池外过滤 / 里程碑 summary / hour 档保时刻）。
+- 组件测试：事件序 / 一次事务 / history undo 还原 / 守卫分支 / 无冲突零事件 / 避让后 `.conflict` 缩小。
+- 文档 zh/en「超配避让」小节 + demo；API 生成物（api:scan/gen/check）与 llms 同步；gantt 链
+  perf:size 预算 80 KB 内（超预警线 72 KB 须报数归因）。
+
+---
+
 ## 未发布：T 批（T4/T5/T6/T8/T10/T11/T12/T15 立项交付）
 
 ### 功能定义

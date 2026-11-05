@@ -4484,7 +4484,7 @@
       "status-date": "状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值）",
       "baseline-id": "多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一）",
       "hover": "行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`\"false\"` 关闭",
-      "pool": "资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；不做泳道视图与自动排程避让",
+      "pool": "资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；超配自动排程避让由 levelConflicts() 方法承载（手动触发，见组件方法）",
       "show-resource-load": "资源负荷面板（布尔，默认关）：图表下方渲染按时间轴对齐的负荷桶条（每资源一行，行高 token --oas-gantt-load-row-height；行名列宽与左侧列表同 token --oas-gantt-list-width）。负荷口径：桶内覆盖日数逐任务累计（任务∩桶求交，日精度含端；里程碑按点计 0 天、summary 不参与），负荷% = 覆盖日数/桶天数，>100%（同资源任务交叠超配）走 danger 通道 --oas-gantt-load-over-bg，≤100% 走 primary 族 --oas-gantt-load-bg（暗色变体随 token）。粒度随 scale 映射（hour/day→日桶、week→周桶（锚定周起始）、month/quarter/year→月桶），与图表时间轴同步缩放/平移（复用 update 时轴参数不重算；滚动平移经 syncHeaderOffset 同款 rect 差公式，RTL 同式）。负荷基于全量数据签名缓存（数据/轴/池变化重算，虚拟行窗口不影响）；空数据/无资源引用走 i18n 空态。ARIA：面板 role=\"img\" + aria-label 摘要（资源数 · 峰值最高的资源与百分比），不进 Tab 序。pool 开启时行名取池名称、关时取 id。windowed 切片上跳过渲染并 devWarn（全量统计口径）。纯函数实现见 shared/resource-load.ts（data/resource/load helper 入口共用）"
     },
     "events": {
@@ -4504,7 +4504,8 @@
       "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发",
       "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发",
       "oas-history-change": "history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear）",
-      "oas-resource-conflict": "pool 开启时资源超配检测结果派发（幂等：同一快照不重复派发，数据/池变化重算后签名变化才发，消解发空数组），detail: { conflicts }（[{ taskA, taskB, resourceId, overlapStart, overlapEnd }]，taskA 在 tasks 输入序在前，交叠区间为日精度含端日期）"
+      "oas-resource-conflict": "pool 开启时资源超配检测结果派发（幂等：同一快照不重复派发，数据/池变化重算后签名变化才发，消解发空数组），detail: { conflicts }（[{ taskA, taskB, resourceId, overlapStart, overlapEnd }]，taskA 在 tasks 输入序在前，交叠区间为日精度含端日期）",
+      "oas-level": "超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change"
     },
     "slots": {
       "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
@@ -4528,6 +4529,9 @@
       "--oas-gantt-load-max-height": "负荷面板行区最大高度（show-resource-load，超出纵向滚动；默认 240px，数据不截断）",
       "--oas-gantt-load-bg": "负荷桶条底色（≤100%，缺省 primary 45% 混底色；暗色变体随 token）",
       "--oas-gantt-load-over-bg": "负荷桶条超配色（>100%，缺省 danger；暗色变体随 token）"
+    },
+    "methods": {
+      "levelConflicts": "超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果"
     }
   },
   "oas-picker": {

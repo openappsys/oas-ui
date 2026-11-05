@@ -27,6 +27,7 @@
 | **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像，Node 随 .nvmrc 升级自动跟随）+ pnpm 12.5.1 就位 | ✅ 已完成（未发布） |
 | **fill-handle 批** | table 拖拽填充柄（auto 语义序列推导 + 真浏览器两层根因修复 + 三引擎 e2e 8 条；默认链零增量，range 档 13.4/15） | ✅ 已完成（未发布） |
 | **Z3/Z6 批（gantt 性能债）** | 超配检测扫描线化（等价性对拍实证）+ 负荷面板桶条列虚拟化（列窗口同源数学）；gantt 链持平 | ✅ 已完成（未发布） |
+| **Z2 gantt 超配自动排程避让（B 路线）** | `levelConflicts()` 方法 + 纯引擎 gantt-level.ts（判据同源 computeResourceConflicts；受害者排序 disabled/days 空集/mso 不让位 → deadline 后让位 → startMs 晚 → 输入序后；day 步进保墙钟 + 收敛后工作日吸附 + 复检续迭代 + maxIter 截断如实回报）；事件序 oas-level → updateTasks → tasks-change，零移动零事件零 history；引擎单测（机制/DST 对拍/朴素参考 500 组对拍/边界）+ 组件测试 + zh/en 文档 demo | ✅ 已完成（未发布） |
 | **Z5/Z8 批（a11y 与降耗重验）** | 六组件 aria-labelledby 镜像（axe 终审零违规）；Z5=content-visibility 降耗重验维持原判（首帧锚定失准纯 CSS 不可修，注释+文档对齐实证）；Z7=windowed 混合模型语义确认为设计（文档化+测试固化），销项 | ✅ 已完成（未发布） |
 | **pool 可选化批（Z4/Z9）** | ResourcePool 双通道（createResourcePool 实例隔离 + gantt resourcePool 属性）；Z9 调查=设计差异不修关闭 | ✅ 已完成（未发布） |
 | **gantt 模块化批** | 7390→5161 行四模块拆分（style/types/utils/helpers；API 零漂移；+2.9 KB 边界成本归因存档） | ✅ 已完成（未发布） |

@@ -208,8 +208,10 @@ export interface GanttRescheduleDetail {
  * （hour 档任务同样按日期输出——秒级精度交叠对甘特视图无展示意义）。
  *
  * 本通道只做**检测与视觉标注**（.conflict 复用违约视觉通道 + oas-resource-conflict 事件）；
- * 不做：资源泳道视图（留后续批）、自动排程避让（超配不触发重排）。负荷可视化（负荷桶条）
- * 由 `show-resource-load` 属性承载（shared/resource-load.ts 同一份日桶口径，>100% 即交叠超配）。
+ * 自动排程避让（整体后移受害者消除冲突）由组件 `levelConflicts()` 方法承载（手动触发，
+ * 见 GanttLevelResult / GanttLevelDetail）；不做：资源泳道视图（group-by-resource 已承载
+ * 资源分组）。负荷可视化（负荷桶条）由 `show-resource-load` 属性承载（shared/resource-load.ts
+ * 同一份日桶口径，>100% 即交叠超配）。
  */
 export interface GanttResourceConflict {
   /** 任务 A id（tasks 输入序在前） */
@@ -227,6 +229,64 @@ export interface GanttResourceConflict {
 /** resource-conflict 事件载荷：conflicts 为全量冲突对快照（消解时为空数组） */
 export interface GanttResourceConflictDetail {
   conflicts: GanttResourceConflict[]
+}
+
+/** ===== 超配自动排程避让（levelConflicts 方法 / gantt-level.ts 纯引擎共享契约）===== */
+
+/** levelConflicts 的逐任务资源日历（与组件 taskCalendar 同构：days 为周几集合 0=周日…6=周六，null = 不限） */
+export interface GanttLevelCalendar {
+  /** 可工作周几集合（0=周日…6=周六，getDay 口径）；null = 不限制（全周可排）；空集 = 永不可排（该任务永不让位） */
+  days: Set<number> | null
+  /** 假期日期串集合（'YYYY-MM-DD'）；命中即非工作日（与 workdays 是否开启无关） */
+  holidays: Set<string>
+}
+
+/** levelConflicts 选项 */
+export interface GanttLevelOptions {
+  /** 迭代上限（每次 +1 天平移或吸附推进各计一步）；缺省 500（对齐 resource levelResources），达上限 truncated:true */
+  maxIter?: number
+}
+
+/** 避让移动的单任务终态（start/end 为写回就绪的数据串；hour 档任务保墙钟时刻） */
+export interface GanttLevelMoved {
+  id: string
+  /** 终态开始 'YYYY-MM-DD'（hour 档 'YYYY-MM-DD HH:mm'） */
+  start: string
+  /** 终态结束（整日任务按日历日保工期推导；时间精度同步平移） */
+  end: string
+}
+
+/** 避让后仍残留的冲突对（computeResourceConflicts 终检产物如实透传） */
+export interface GanttLevelUnresolved {
+  taskA: string
+  taskB: string
+  resourceId: string
+}
+
+/** 不参与避让的任务与原因（与检测同口径：里程碑 / summary / 池外资源） */
+export interface GanttLevelSkipped {
+  id: string
+  /** summary=被 parent 指向（聚合形态无资源语义）；milestone=按点处理不触发；off-pool=引用的资源全部未登记；invalid-dates=日期非法/退化（end ≤ start） */
+  reason: 'summary' | 'milestone' | 'off-pool' | 'invalid-dates'
+}
+
+/** levelConflicts 返回值（纯函数通道与组件方法共用） */
+export interface GanttLevelResult {
+  /** 被移动任务的终态（按 tasks 输入序；写回后就绪，组件内已应用，宿主纯函数通道自行写回） */
+  moved: GanttLevelMoved[]
+  /** 终检仍残留的冲突对（双侧永不让位 / 达 maxIter 截断时非空） */
+  unresolved: GanttLevelUnresolved[]
+  /** 达 maxIter 截断（预算用尽时尚未收敛；unresolved 配合如实反映残留） */
+  truncated: boolean
+  /** 不参与避让的任务（输入序；无资源引用的普通任务不在此列——检测同样静默忽略） */
+  skipped: GanttLevelSkipped[]
+}
+
+/** level 事件载荷（组件 levelConflicts 应用前派发；detail 不含 skipped——那是返回值的事前诊断） */
+export interface GanttLevelDetail {
+  moved: GanttLevelMoved[]
+  unresolved: GanttLevelUnresolved[]
+  truncated: boolean
 }
 
 export type TG = GanttTask & { id: string }

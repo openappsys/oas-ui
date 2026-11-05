@@ -333,6 +333,11 @@
       "description": "批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗，"
     },
     {
+      "name": "levelConflicts",
+      "signature": "levelConflicts(options: GanttLevelOptions): GanttLevelResult",
+      "description": "超配自动排程避让（pool opt-in，手动触发；纯引擎见 gantt-level.ts）：对当前任务的池内"
+    },
+    {
       "name": "zoomIn",
       "signature": "zoomIn(): void",
       "description": "向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op"
@@ -400,6 +405,10 @@
     {
       "name": "oas-task-add",
       "detail": "{ id, task: this.taskSnapshot(clean) } satisfies GanttTaskAddDetail | { id: newRoot.id, task: this.taskSnapshot(newRoot) } satisfies GanttTaskAddDetail"
+    },
+    {
+      "name": "oas-level",
+      "detail": "{ moved: result.moved.map((m) => ({ ...m })), unresolved: result.unresolved.map((u) => ({ ...u })), truncated: result.truncated, } satisfies GanttLevelDetail"
     },
     {
       "name": "oas-selection-change",

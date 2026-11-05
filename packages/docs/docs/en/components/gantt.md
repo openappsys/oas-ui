@@ -417,7 +417,34 @@ pool.register([{ id: 'alice', name: 'Alice (Canvas A)', costRate: 120 }])
 ganttEl.resourcePool = pool // instance isolation; write null to restore the shared singleton
 ```
 
-> Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; the resource swimlane is delivered by `group-by-resource` (see the section above); still not in scope: automatic schedule avoidance — `pool` only detects and marks, it never moves tasks.
+> Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; the resource swimlane is delivered by `group-by-resource` (see the section above); automatic schedule avoidance is delivered by the `levelConflicts()` method (invoked manually, see the "Over-allocation Avoidance" section below).
+
+## Over-allocation Avoidance (levelConflicts)
+
+<DemoBlock title="Over-allocation avoidance: Alice's overlapping tasks → one click shifts the victim forward until the conflict clears (undo restores)">
+  <oas-gantt id="gantt-level-demo" pool history range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"la","name":"Design (Alice)","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"lb","name":"Review (Alice, overlapping)","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]}]'></oas-gantt>
+  <div style="margin-top:var(--oas-space-2);display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
+    <oas-button id="gantt-level-run" size="small">Run levelConflicts()</oas-button>
+    <oas-button id="gantt-level-undo" size="small" variant="outline">Undo</oas-button>
+    <span id="gantt-level-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">Before: lb overlaps la (Alice over-allocated) — click "Run" to see the result</span>
+  </div>
+</DemoBlock>
+
+`levelConflicts(options?)` (manual, requires `pool` on) iteratively shifts the victim task of each **registered-resource conflict** forward until no conflict remains or the iteration cap is hit. Returns `{ moved, unresolved, truncated, skipped }`: `moved` is the final state of shifted tasks (`{ id, start, end }`, **already applied to the component**, no write-back needed); `unresolved` lists conflict pairs still present in the final check (non-empty when both sides cannot yield or the run was truncated); `truncated` means the `maxIter` cap (default 500, aligned with the resource `levelResources`) was reached — **never silent**; `skipped` reports non-participating tasks with reasons (`summary` / `milestone` / `off-pool` / `invalid-dates`, same scope as the detection).
+
+- **Victim order**: tasks that are `disabled`, have an empty resource-calendar `days` set (no bookable day), or carry `constraint: "mso"` **never yield**; tasks with a `deadline` yield after those without (among deadline holders the latest deadline yields last); ties break by later start first, then later input order first.
+- **Shift and snap**: each step moves a task forward by exactly 1 day (wall-clock preserved across DST; duration unchanged); after convergence the resting positions snap forward to working days (`workdays` + `holidays` + resource calendars, day-by-day with the same 400-day cap), then overlaps are rechecked once — if the snap created new conflicts the iteration continues. Every step moves strictly forward (monotone), so termination is bounded.
+- **Apply and events**: when tasks moved, `oas-level` is emitted first (`detail: { moved, unresolved, truncated }`), then one commit through `updateTasks` = one undo entry + one `oas-tasks-change`; **zero moves = zero writes, zero events, zero history** (idempotent, safe to call repeatedly).
+- **Guards** (one devWarn + empty result): `pool` off, `windowed` (leveling on a slice would produce wrong results), `readonly` / `dates-readonly`.
+
+```ts
+const r = ganttEl.levelConflicts() // or levelConflicts({ maxIter: 200 })
+if (r.truncated) console.warn('iteration cap reached with residual conflicts', r.unresolved)
+ganttEl.addEventListener('oas-level', (e) => {
+  console.log(`avoidance moved ${e.detail.moved.length} tasks, ${e.detail.unresolved.length} conflicts remain`)
+})
+```
 
 ## Resource Load View (show-resource-load)
 
@@ -803,6 +830,34 @@ onMounted(async () => {
   // Resource load panel demo: pool registration happens after the first frame → re-assign tasks to trigger a load recalc (row names take pool names)
   const loadDemo = document.getElementById('gantt-load-demo')
   if (loadDemo) loadDemo.tasks = loadDemo.tasks
+
+  // Over-allocation avoidance demo: button calls levelConflicts() → result area reports moved N / residual M / truncation; undo restores
+  const levelDemo = document.getElementById('gantt-level-demo')
+  const levelOut = document.getElementById('gantt-level-out')
+  if (levelDemo && levelOut) {
+    levelDemo.tasks = levelDemo.tasks // pool registration happens after the first frame: re-assign tasks to trigger a conflict recalc (.conflict visible before avoidance)
+    document.getElementById('gantt-level-run')?.addEventListener('click', () => {
+      const r = levelDemo.levelConflicts()
+      if (r.moved.length === 0) {
+        levelOut.textContent = r.truncated
+          ? `Iteration cap reached with ${r.unresolved.length} residual conflicts (both sides may be unable to yield)`
+          : 'No conflict right now, nothing moved (idempotent)'
+        return
+      }
+      const movedText = r.moved.map((m) => `${m.id} → ${m.start}`).join(', ')
+      const parts = [`Moved ${r.moved.length}: ${movedText}`]
+      if (r.unresolved.length > 0)
+        parts.push(
+          `${r.unresolved.length} residual: ${r.unresolved.map((u) => `${u.taskA}×${u.taskB} (${u.resourceId})`).join(', ')}`,
+        )
+      if (r.truncated) parts.push('iteration cap reached (truncated)')
+      levelOut.textContent = parts.join('; ')
+    })
+    document.getElementById('gantt-level-undo')?.addEventListener('click', () => {
+      const ok = levelDemo.undo()
+      levelOut.textContent = ok ? 'Undone (pre-avoidance dates restored)' : 'Nothing to undo'
+    })
+  }
 })
 </script>
 
@@ -893,7 +948,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `hover` | Row hover background switch (on by default): hovering a row name or task bar lights up the whole row (name + timeline share the same background). Color via `--oas-gantt-row-hover-bg` (defaults to `--oas-color-bg-hover`, independent of the zebra stripe); `"false"` disables | `string` | — |
 | `label-position` | Bar label position: inside / right / left; default `none` (the row-name column already shows the name, so the bar does not repeat it); invalid values fall back to `none` | `string` | — |
 | `locale` | Localization (overrides config-provider injection and the global locale) | `string` | — |
-| `pool` | Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; load visualization lives in show-resource-load (load% >100% shares this semantics); no swimlane view and no auto-schedule avoidance | `string` | — |
+| `pool` | Resource pool mode (boolean, default off): task resources reference the shared resource pool (getSharedResourcePool() from @oas-ui/ui/data/resource/pool) — hovering a bar shows pool resource names and rates (costRate; unregistered ids ignored); plus cross-task over-allocation detection for the same resource: tasks whose time ranges overlap (half-open, touching edges excluded; milestones treated as points, summaries excluded) get .conflict on bar and row name, conflict pairs emitted via oas-resource-conflict. Pool changes do not notify the component automatically — retrigger a recalc (e.g. re-assign tasks) after registering; detection is skipped in windowed mode with a devWarn; load visualization lives in show-resource-load (load% >100% shares this semantics); automatic schedule avoidance is delivered by the levelConflicts() method (manual, see Methods) | `string` | — |
 | `progress-readonly` | No progress dragging (dates still draggable) | `boolean` | — |
 | `range-end` | Host-managed time-axis end (ISO date YYYY-MM-DD, inclusive); pair with range-start | `string` | — |
 | `range-start` | Host-managed time-axis start (ISO date YYYY-MM-DD): when provided the axis extent is no longer derived from data; use with range-end to support windowed mode (the slice may not span the full date range) | `string` | — |
@@ -946,6 +1001,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | Remove a dependency: when dep.type is given only that (id,type) is removed; otherwise all types for that id are removed. Returns false when not found |
 | `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | Rewrite a dependency: returns false when from is not found, to.id does not exist or points to itself, or nothing actually changes (including lag) |
 | `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | Shallow-merge in bulk (per item: skip when the id does not exist; skip the item when a non-empty end fails to parse; otherwise run sanitize per item) |
+| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | Automatic schedule avoidance (manual, requires pool): shifts the victim of each registered-resource conflict forward until conflict-free or maxIter (default 500; truncation reported honestly). Victim order: disabled / empty calendar days / constraint=mso never yield; deadline holders yield after non-holders (among holders the latest deadline yields last); later start first; later input order first. Day steps preserve wall clock and duration; working-day snap after convergence with a recheck loop. Returns { moved, unresolved, truncated, skipped }; moved is already applied (zero moves = zero writes, zero events, zero history, idempotent); guards (pool off / windowed / readonly / dates-readonly) devWarn + empty result |
 | `zoomIn` | `zoomIn(): void` | Step one level finer (writes the scale attribute; existing callbacks dispatch oas-scale-change); no-op at the finest level |
 | `zoomOut` | `zoomOut(): void` | Step one level coarser; no-op at the coarsest level |
 | `fit` | `fit(): void` | Zoom to fit all tasks: picks the **finest** level where "columns for the span in that unit × the minimum column width at that level ≤ available width" |
@@ -957,6 +1013,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `oas-dependencies-change` | Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed) |
 | `oas-expand-change` | Dispatched on row tree collapse/expand, detail: { id, expanded } |
 | `oas-history-change` | With history enabled, dispatched after each undoable commit/undo/redo/clear, detail: { canUndo, canRedo, action } (change/undo/redo/clear) |
+| `oas-level` | Emitted before avoidance results are applied (levelConflicts with actual movement; zero moves emit nothing), detail: { moved, unresolved, truncated } (moved = final state of shifted tasks [{ id, start, end }], already applied by the call; unresolved = conflict pairs remaining in the final check; truncated = maxIter cap reached). Event order: oas-level → oas-tasks-change |
 | `oas-progress-change` | Dispatched when a progress handle drag settles, detail: { id, task, progress } |
 | `oas-range-request` | Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice |
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
