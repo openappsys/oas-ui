@@ -60,9 +60,13 @@ const STYLE = `
 .content ::slotted(*) {
   scroll-margin: var(--oas-space-2);
 }
-/* 性能注记：长会话降耗（离屏行跳过渲染）不在本批——实测 slotted 元素上
-   content-visibility:auto 会卡在 contain-intrinsic-size 占位高度不展开（引擎行为，
-   scrollHeight 失真），错误换性能不值；降耗随虚拟化一起做 */
+/* 性能注记：长会话降耗（离屏行跳过渲染）不在此做——2026-11-05 chromium 重验
+   content-visibility:auto + contain-intrinsic-size（auto none / auto 56px 两种写法）：
+   last-remembered-size 已生效，全量渲染过一遍后 scrollHeight 与基线逐像素一致、
+   抽样行高零塌陷（引擎已修复早年「卡占位不展开」）；但首渲染前行高未知，
+   首帧 default-position=end 锚定末条必失准（N=220 行：末条在视口下方 233～3278px、
+   scrollHeight −31%～−38%；N=1000 行：−33%～−79%；偏差不随规模收敛）——
+   纯 CSS 规则不可修，正确性换性能不值；降耗随虚拟化一起做 */
 /* 跳底按钮：悬浮右下，离开底部且可向下滚时出现 */
 .jump {
   position: absolute;
