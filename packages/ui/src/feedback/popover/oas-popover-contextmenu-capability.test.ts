@@ -116,10 +116,15 @@ describe('OASPopover contextmenu 能力边界（纯核 core 入口：未 import 
     expect(warnSpy.mock.calls.filter(isCtxHint).length).toBe(0)
   })
 
-  it('普通 hover/click 浮层不告警、功能正常（无右键族配置不触发 false positive）', () => {
+  it('普通 hover/click 浮层不告警、功能正常（无右键族配置不触发 false positive）', async () => {
     const el = mount({ trigger: 'click hover', 'hover-delay': '0' })
     ;(el.querySelector('button') as HTMLElement).click()
-    expect(el.hasAttribute('open')).toBe(true)
+    // waitFor 而非同步断言：CI 2 核满负荷下事件→属性刷新的微任务边界可能被饥饿推迟
+    // （2026-11-06 CI 实发 expected false to be true；本地空闲 3/3 绿），轮询等 open 落定
+    await vi.waitFor(() => expect(el.hasAttribute('open'), 'click 后浮层应打开').toBe(true), {
+      timeout: 2000,
+      interval: 10,
+    })
     const ctxWarns = warnSpy.mock.calls.filter((call: unknown[]) =>
       String(call[0]).includes('feedback/popover/contextmenu'),
     )
