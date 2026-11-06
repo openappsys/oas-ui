@@ -31,6 +31,7 @@
 | **Z5/Z8 批（a11y 与降耗重验）** | 六组件 aria-labelledby 镜像（axe 终审零违规）；Z5=content-visibility 降耗重验维持原判（首帧锚定失准纯 CSS 不可修，注释+文档对齐实证）；Z7=windowed 混合模型语义确认为设计（文档化+测试固化），销项 | ✅ 已完成（未发布） |
 | **pool 可选化批（Z4/Z9）** | ResourcePool 双通道（createResourcePool 实例隔离 + gantt resourcePool 属性）；Z9 调查=设计差异不修关闭 | ✅ 已完成（未发布） |
 | **gantt 模块化批** | 7390→5161 行四模块拆分（style/types/utils/helpers；API 零漂移；+2.9 KB 边界成本归因存档） | ✅ 已完成（未发布） |
+| **table 补齐小批** | TSV/CSV 导入 L3 helper（`data/table/import`：嗅探 + RFC 4180 状态机 + 重名后缀 + 不齐如实计数，16 单测 + 预算档 1.75 KB）；打印视图（print 媒体感知全量渲染：虚拟行/列窗口展开、windowed 守卫切片口径、打印几何 CSS，单测 5 + e2e 3）；主链 63.7→64.2 KB 预警线内 | ✅ 已完成（未发布） |
 
 ## 未发布（决策批：再捞待决项按原则清零）
 

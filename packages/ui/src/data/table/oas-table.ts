@@ -1303,6 +1303,34 @@ tr.group-header .toggle {
     box-shadow: none;
   }
 }
+
+/* 打印视图（@media print）：容器几何解除 + sticky 定位复位。
+   行/列「全量渲染」由 JS 接缝负责（print 媒体下行窗口/列窗口恒全量——窗口外内容不在 DOM，
+   CSS 无法唤回），此处只管容器：滚动限高（height / max-height 属性会内联写入 maxHeight，
+   必须 !important 压制）与溢出裁剪解除、外框圆角归零、吸顶表头/固定列/吸顶行的 sticky 复位
+   （th/td 元素选择器已覆盖 data-fixed / data-sticky 变体；static 下 top/z-index 自动作废，
+   内联 left 同理无需清理）。行形态与屏显一致（虚拟定高行的截断语义保留，不做打印特化排版）。 */
+@media print {
+  :host {
+    border: 0;
+    border-radius: 0;
+  }
+  .table-scroll {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  th,
+  td {
+    position: static;
+  }
+  /* 占位行不占纸面：本地虚拟 print 全量下 spacer 高度本就归零；windowed 切片按绝对行铺位、
+     spacer 承载 window-start 之前的空白（绝对铺位是滚动正确性核心，JS 不为打印分叉）——
+     打印时隐藏，纸面从已装载切片首行开始（「打印输出 = 已装载切片」口径的几何配套） */
+  tr.spacer {
+    display: none;
+  }
+}
 `
 
 const CHECK_CELL_WIDTH = 40
@@ -1568,6 +1596,19 @@ export class OASTableBase extends OASElement {
   private visualExpandWarned = false
   /** windowed 树形懒装载「展开由宿主控制」告警去重 */
   private winTreeExpandWarned = false
+  /** windowed × print「仅输出已装载切片」守卫告警去重（实例级一次） */
+  private windowedPrintWarned = false
+  /** 打印媒体查询（connectedCallback 捕获；null = 环境不支持 / 已断开） */
+  private printMql: MediaQueryList | null = null
+  /** 当前是否处于 print 媒体（打印/打印预览）：窗口外行不在 DOM、CSS 无法唤回，此态下行/列窗口恒全量 */
+  private printModeOn(): boolean {
+    return this.printMql?.matches ?? false
+  }
+  /** print 媒体切换 → 重渲染（进入：全量；退出：恢复窗口渲染） */
+  private readonly onPrintMediaChange = (): void => {
+    this.markRenderDirty()
+    this.runUpdateAndNotify()
+  }
   /** 当前展示集的数据行总数（aria-rowcount 口径；windowed 走 total 全量）。render 时刷新 */
   private _logicalRowCount = 0
 
@@ -1587,6 +1628,22 @@ export class OASTableBase extends OASElement {
     // 已连接后再注册则走订阅通知即时 attach（之后任一次重建行即补齐）
     this.unsubCaps = onTableCapabilityRegistered(() => this.attachCapabilities())
     this.attachCapabilities()
+    // 打印媒体感知（print 视图）：虚拟滚动/windowed 的窗口外行不在 DOM、CSS 无法唤回，
+    // 必须组件在 print 媒体下自行全量渲染（见 rowWindow / columnWindowSequence 的 print 分支）。
+    // matchMedia('print') 在进入打印/打印预览时触发 change → 重渲染全量，退出后恢复窗口渲染。
+    if (typeof window.matchMedia === 'function') {
+      try {
+        this.printMql = window.matchMedia('print')
+        this.printMql.addEventListener('change', this.onPrintMediaChange)
+        this.onCleanup(() => {
+          this.printMql?.removeEventListener('change', this.onPrintMediaChange)
+          this.printMql = null
+        })
+      } catch {
+        // matchMedia 不可用的环境（非浏览器宿主）：打印感知关闭，行为与旧版一致
+        this.printMql = null
+      }
+    }
     super.connectedCallback()
   }
 
@@ -3315,6 +3372,17 @@ export class OASTableBase extends OASElement {
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
     scrollTop: number,
   ): void {
+    // windowed × print 守卫：全量数据在服务端、客户端只有已装载切片——「打印全量」无从谈起，
+    // 输出 = 已装载切片（所见即所装载），显式提示一次（不改渲染行为；需全量打印请宿主预装载
+    // 全部切片或关闭 windowed）。守卫放渲染入口：初始挂载即在 print 媒体下的路径同样覆盖。
+    if (this.printModeOn()) {
+      if (!this.windowedPrintWarned) {
+        this.windowedPrintWarned = true
+        devWarn(
+          '[oas-table] windowed 模式下打印仅输出已装载切片（全量数据在服务端，客户端无从渲染全量）：需要全量打印请让宿主预装载全部切片或关闭 windowed',
+        )
+      }
+    }
     const ih = this.rowHeightPx()
     const colSpan = this.columnCount()
     const { items, visualTotal } = this.windowedFlowItems(display)
@@ -3328,13 +3396,19 @@ export class OASTableBase extends OASElement {
     // row-auto-height：窗口走前缀和二分（像素边界取 offsetOf）；定高路径逐字节不变。
     // 注意 winBottom 不能用「最后命中条目底」——新切片回填后条目位移、命中集先于窗口重算，
     // 会差出一个可视区导致期望区间超发一屏（回填雪崩）；窗口末条目底（offsetOf(win.end)）
-    // 与窗口数学同源，任意滚动位/新切片都稳定
-    const win =
-      dynamic && cap
+    // 与窗口数学同源，任意滚动位/新切片都稳定。
+    // print 媒体：窗口展开到已装载切片全量（windowed × print 守卫口径——打印输出 = 已装载
+    // 切片的每一行；items 只含已装载条目，窗口放大不渲染未装载区域，不发明全量数据）。
+    // contentH 前置（不依赖窗口；print 全量窗口的 winBottom 引用）。
+    const contentH = dynamic && cap ? cap.total() : visualTotal * ih
+    const printFull = this.printModeOn()
+    const win = printFull
+      ? { start: 0, end: visualTotal }
+      : dynamic && cap
         ? cap.window(scrollTop, this.dynamicViewport())
         : computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
-    const winTop = dynamic && cap ? cap.offsetOf(win.start) : win.start * ih
-    const winBottom = dynamic && cap ? cap.offsetOf(win.end) : win.end * ih
+    const winTop = printFull ? 0 : dynamic && cap ? cap.offsetOf(win.start) : win.start * ih
+    const winBottom = printFull ? contentH : dynamic && cap ? cap.offsetOf(win.end) : win.end * ih
     if (dynamic) this.autoLastWindow = Math.max(1, win.end - win.start)
     // 渲染态锚点缓存（测量前几何）——requestAutoHeightSync 的锚定补偿用，与本地虚拟同机制
     if (dynamic && cap) {
@@ -3342,10 +3416,8 @@ export class OASTableBase extends OASElement {
     }
     // 先扫描出可视区间内的待渲染条目（topSpacer 高度依赖首个命中条目的 flow 坐标，须先算好再按
     // 「topSpacer → 行 → bottomSpacer」的顺序追加，保证 DOM 顺序与视觉 flow 一致）。
-    // contentH：定高 = 视觉总行数 × 行高；动态 = 前缀和总高（估计与真值拼接）。
     // windowed 只知道当前切片内容行，未装载区域是否展开不可知（不发明全量展开状态推导）。
     // 无 expand 且无协议时与旧公式逐值等价。
-    const contentH = dynamic && cap ? cap.total() : visualTotal * ih
     const rendered: {
       tr: HTMLTableRowElement
       row: Record<string, unknown>
@@ -4961,8 +5033,12 @@ export class OASTableBase extends OASElement {
     return this.wrap?.clientHeight ?? this.tableHeight()
   }
 
-  /** 可视行窗口：定高走共享 computeVirtualWindow；动态走能力的前缀和二分 */
+  /** 可视行窗口：定高走共享 computeVirtualWindow；动态走能力的前缀和二分。
+   *  print 媒体恒全量（打印视图）：虚拟窗口外的行不在 DOM、CSS 无法唤回——本地虚拟的数据
+   *  全量在客户端，print 下窗口展开为 [0, count)，spacer 自然归零（windowed 数据在服务端，
+   *  只有已装载切片可打印，见 renderWindowedBody 的守卫）。 */
   private rowWindow(scrollTop: number, viewport: number, count: number): { start: number; end: number } {
+    if (this.printModeOn()) return { start: 0, end: count }
     const cap = this.autoHeightCap
     if (this.autoHeightOn() && cap) return cap.window(scrollTop, this.dynamicViewport())
     return computeVirtualWindow(scrollTop, viewport, this.rowHeightPx(), count)
@@ -5144,6 +5220,10 @@ export class OASTableBase extends OASElement {
   private columnWindowSequence(): Array<{ span: number; col: TableColumn | null }> {
     const segs = this._colSegments
     if (!segs) return this.effectiveColumns().map((col) => ({ span: 1, col }))
+    // print 媒体恒全列（打印视图）：窗口外列是 colSpan 占位格、打印会缺列——与行窗口同口径展开
+    if (this.printModeOn()) {
+      return [...segs.left, ...segs.middle, ...segs.right].map((col) => ({ span: 1, col }))
+    }
     const seq: Array<{ span: number; col: TableColumn | null }> = segs.left.map((col) => ({ span: 1, col }))
     const start = Math.min(Math.max(0, this.colWin.start), segs.middle.length)
     const end = Math.min(Math.max(start, this.colWin.end), segs.middle.length)

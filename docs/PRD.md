@@ -5,6 +5,26 @@
 
 ---
 
+## 未发布：table 补齐小批（TSV/CSV 导入 L3 helper + 打印视图）
+
+### 功能定义
+
+table 业务对齐层两个小洞：① 数据导入 helper 子路径（`@oas-ui/ui/data/table/import`）——TSV/CSV 文本 → 二维矩阵 → 对象数组，补齐「导入」侧与既有 `parseTsv`/导出矩阵的对称面；② 打印视图（`@media print`）——虚拟滚动/windowed 的窗口外行不在 DOM、CSS 无法唤回，print 媒体下组件感知并全量渲染，打印/导出 PDF 不再缺行缺列。
+
+### 详细需求
+
+- **导入 helper**（纯函数、零 DOM 依赖、不进 L1/CDN，显式 import）：`parseTableText`（文本 → 矩阵；分隔符 `\t`/`,`/`;` 引号外嗅探，TSV 分支复用 `parseTsv`，CSV 走本地 RFC 4180 状态机）、`matrixToRecords`（矩阵 → 对象数组；首行表头列名 → key、重名列加 `.N` 后缀、空名按列序补 `cN`；值保持字符串不推断类型）、`importTableText`（两步合一）、`importTableFile`（File 走 `file.text()`；粘贴板入口只收字符串、由宿主读取）。行列不齐（缺列补空/超长截断）与中间空行**如实计数返回，不静默丢数据**。
+- **打印视图**：`matchMedia('print')` 感知 + change 重渲染。本地虚拟（`height`）print 下行窗口恒全量；`column-virtual` 列窗口同口径全列；windowed 全量数据在服务端、客户端只有切片——**无法全量**，守卫 devWarn 一次 + 打印输出 = 已装载切片（文档写明限制，宿主预装载或关闭 windowed 可解）。打印 CSS：滚动限高解除（压过内联 maxHeight）、外框圆角归零、表头吸顶/固定列 sticky 复位、占位行不占纸面；行形态与屏显一致。
+
+### 验收
+
+- 导入 helper 单测 16 条全绿（TSV/CSV/嗅探/转义/重名后缀/不齐计数/File 入口/空文本边界/零 DOM）；table 域 ×2 + 全量 test 绿。
+- 打印单测 5 条（print 全量行 / change 双向恢复 / column-virtual 全列 / windowed 守卫去重 / 断开清理）+ e2e 3 条（emulateMedia print 全量行进 DOM + 打印几何 + screen 恢复 / column-virtual 全列 / windowed 切片渲染）。
+- perf：`tableImport` 链新预算档（helper 型，实测 gzip 1.4 KB 上浮 25% 定档 1.75 KB）；table 主链 63.7 → 64.2 KB（预算 74 / 预警 66.6 内）；连带 edit 链 93.5 → 94.0 KB 触预警线 93.6（预算饱和 + print 增量 0.5 KB 连带，重定档待批准）。
+- zh/en 文档「数据导入」节 + demo（文件 + 粘贴板双入口、结果区反馈 N 行 M 列）+ 虚拟滚动节打印说明 + windowed 节打印限制。
+
+---
+
 ## 未发布：Z2 gantt 超配自动排程避让（B 路线裁定实施）
 
 ### 功能定义

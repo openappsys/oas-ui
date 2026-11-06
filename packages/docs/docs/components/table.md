@@ -313,7 +313,7 @@ table.addEventListener('oas-edit', (e) => {
   </div>
 </DemoBlock>
 
-设置 `height` 开启虚拟滚动（搭配 `row-height` 定高），表格只渲染可见窗口内的行，配合固定列与排序/多选使用；滚动派发 `oas-scroll`。
+设置 `height` 开启虚拟滚动（搭配 `row-height` 定高），表格只渲染可见窗口内的行，配合固定列与排序/多选使用；滚动派发 `oas-scroll`。**打印视图**：浏览器打印 / 导出 PDF 时（`print` 媒体）组件自动感知并**全量渲染**——窗口外的行不在 DOM、CSS 无法唤回，进入打印/打印预览时 `matchMedia('print')` 触发重渲染把全部行铺进 DOM（打印几何同步生效：滚动限高解除、表头吸顶/固定列 sticky 复位、占位行不占纸面），退出打印后恢复窗口渲染。行形态与屏显一致（定高行的截断语义保留）。
 
 <DemoBlock title="column-virtual：宽表横向虚拟滚动">
   <oas-table id="table-col-virtual" column-virtual height="300" checkable></oas-table>
@@ -561,6 +561,8 @@ table.addEventListener('oas-edit', (e) => {
 ```
 
 windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合计 / 合并（`merge`、`span-method`）/ `column-virtual` 交由宿主负责**（组件跳过本地执行并 devWarn）——请监听既有 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 等事件，在全量数据上处理后回填窗口切片。缺省关闭时行为不变。
+
+**打印限制**：全量数据在服务端、客户端只有已装载切片——打印 / 导出 PDF（`print` 媒体）时**无法全量渲染**，输出 = 已装载切片的每一行（组件 devWarn 提示一次）。需要全量打印请让宿主预装载全部切片，或对该场景关闭 windowed。打印几何（占位行不占纸面、sticky 复位）与本地虚拟同口径。
 
 **例外——树形懒装载（hasChildren 契约（未发布））**：windowed 切片行带 `hasChildren: true` 元数据即进入树形懒装载模式（嵌套 `children` 数组维持 legacy 忽略语义，不触发本模式）。契约三件套：
 
@@ -1151,6 +1153,42 @@ onMounted(() => {
     if (el) el.textContent = `${fileName} · ${format.toUpperCase()} · ${rowCount} rows`
   })
 
+  // 数据导入 demo（table/import helper）：文件选择 + 粘贴板两个入口，导入后写入表格并回显统计
+  {
+    const importTable = document.querySelector('#table-import-demo')
+    const feedback = document.querySelector('#table-import-feedback')
+    if (importTable && feedback) {
+      const apply = (r, source) => {
+        importTable.columns = r.columns.map((key) => ({ key, title: key }))
+        importTable.data = r.records
+        const skipped = r.skippedRows + r.skippedCells
+        const delim = r.delimiter === '\t' ? 'TAB' : r.delimiter
+        feedback.textContent =
+          `从${source}导入了 ${r.rowCount} 行 ${r.columns.length} 列（分隔符 ${delim}` +
+          (skipped > 0 ? `；跳过空行 ${r.skippedRows}、补齐/截断 ${r.skippedCells} 格）` : '）')
+      }
+      document.querySelector('#table-import-file')?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const { importTableFile } = await import('@oas-ui/ui/data/table/import')
+        apply(await importTableFile(file), '文件')
+      })
+      document.querySelector('#table-import-paste')?.addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText()
+          if (!text) {
+            feedback.textContent = '粘贴板为空或不可读——请先复制一段 TSV/CSV 文本'
+            return
+          }
+          const { importTableText } = await import('@oas-ui/ui/data/table/import')
+          apply(importTableText(text), '粘贴板')
+        } catch {
+          feedback.textContent = '粘贴板不可读（浏览器权限限制）——请改用文件选择入口'
+        }
+      })
+    }
+  }
+
   // 网格导航 demo：单元格点击反馈（键盘漫游看单元格焦点环）
   const gridNavTable = document.querySelector('#table-grid-nav')
   gridNavTable?.addEventListener('oas-cell-click', (e) => {
@@ -1603,6 +1641,64 @@ onMounted(() => {
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">最近导出：<span id="table-export-feedback">—</span></p>
   </div>
 </DemoBlock>
+
+## 数据导入（table/import，helper 型 L3）
+
+`@oas-ui/ui/data/table/import` 提供**TSV/CSV 导入纯函数**：文本 → 二维矩阵 → 对象数组，与上面按需引入的 Pro helper 同口径（纯函数、零组件运行时、零 DOM 依赖，可在 SSR / Node 直接调用；显式 import 才进构建产物）。激活入口：
+
+- **`parseTableText(text, options?)`**：文本 → 二维矩阵。`options.delimiter` 缺省 `'auto'`——统计 `\t` / `,` / `;` 在**引号外**的出现次数（引号内的分隔符是数据不是结构），最多者胜（并列按 `\t` > `,` > `;`，Excel 粘贴板的标准 TSV 优先），全部为零回落单列。TSV 分支复用 `parseTsv`（CRLF 归一 + 末尾空行忽略）；`,` / `;` 走本地 RFC 4180 状态机（引号内分隔符/换行不分裂、`""` 转义引号）。返回 `{ matrix, delimiter, skippedRows }`——`skippedRows` 计**中间完全空行**（末尾空行按惯例忽略不计）。
+- **`matrixToRecords(matrix, options?)`**：矩阵 → 对象数组。`header: true`（缺省）首行为列名（trim；空名按列序生成 `c1`/`c2`；重名第 N 次出现追加 `.N` 后缀——首个保留原名）；`header: false` 用 `options.columns`（不足按 `c{列序号}` 补齐）。列数基准为表头行（或全矩阵最大行长）：数据行缺列补空串、超长截断，计数进 `skippedCells`。**值保持字符串**——数值/日期化归宿主，不做魔法类型推断。
+- **`importTableText(text, options?)`**：两步合一，返回 `{ records, columns, delimiter, rowCount, skippedRows, skippedCells }`——行列异常**如实报告、不静默丢数据**。
+- **`importTableFile(file, options?)`**：File 入口，走 `file.text()` 后同上。粘贴板入口只收字符串——由宿主自行 `navigator.clipboard.readText()` 后传给 `importTableText`（本模块不读粘贴板）。
+
+```ts
+import { importTableText, importTableFile } from '@oas-ui/ui/data/table/import'
+
+// 粘贴板文本（宿主取文本，helper 只收字符串）
+const text = await navigator.clipboard.readText()
+const r1 = importTableText(text)
+table.data = r1.records
+
+// 文件（.csv / .tsv）
+const r2 = await importTableFile(fileInput.files[0])
+// r2 = { records, columns, delimiter, rowCount, skippedRows, skippedCells }
+```
+
+<DemoBlock title="数据导入：文件选择 + 粘贴板两个入口，导入后写入表格并反馈 N 行 M 列">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <input type="file" id="table-import-file" accept=".csv,.tsv,.txt" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)" />
+      <oas-button id="table-import-paste" size="small">从粘贴板导入</oas-button>
+    </div>
+    <oas-table id="table-import-demo" row-height="32" bordered row-key="姓名"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      <span id="table-import-feedback" role="status" aria-live="polite">尚无导入——选择 CSV/TSV 文件，或复制一段 TSV/CSV 文本后点「从粘贴板导入」</span>
+    </p>
+  </div>
+</DemoBlock>
+
+```ts
+// demo 接线（节选）：两个入口都走 importTableText / importTableFile，结果写入表格并回显统计
+const feedback = document.getElementById('table-import-feedback')
+const table = document.getElementById('table-import-demo')
+const apply = (r, source) => {
+  table.columns = r.columns.map((key) => ({ key, title: key }))
+  table.data = r.records
+  const skipped = r.skippedRows + r.skippedCells
+  feedback.textContent =
+    `从${source}导入了 ${r.rowCount} 行 ${r.columns.length} 列（分隔符 ${r.delimiter === '\t' ? 'TAB' : r.delimiter}` +
+    (skipped > 0 ? `；跳过空行 ${r.skippedRows}、补齐/截断 ${r.skippedCells} 格）` : '）')
+}
+document.getElementById('table-import-file').addEventListener('change', async (e) => {
+  const { importTableFile } = await import('@oas-ui/ui/data/table/import')
+  if (e.target.files[0]) apply(await importTableFile(e.target.files[0]), '文件')
+})
+document.getElementById('table-import-paste').addEventListener('click', async () => {
+  const { importTableText } = await import('@oas-ui/ui/data/table/import')
+  const text = await navigator.clipboard.readText()
+  if (text) apply(importTableText(text), '粘贴板')
+})
+```
 
 ## 网格导航（grid-navigation）
 

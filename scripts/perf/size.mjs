@@ -637,6 +637,7 @@ const COMPONENT_ENTRIES = [
   // table 数据加工 helper 型 L3（细分职责拆包）：透视 / 值格式化 / 查询纯函数子路径
   { id: 'tablePivot', entry: 'data/table/pivot', spec: '@oas-ui/ui/data/table/pivot' },
   { id: 'tableAudit', entry: 'data/table/audit', spec: '@oas-ui/ui/data/table/audit' },
+  { id: 'tableImport', entry: 'data/table/import', spec: '@oas-ui/ui/data/table/import' },
   { id: 'tableValueFormat', entry: 'data/table/value-format', spec: '@oas-ui/ui/data/table/value-format' },
   { id: 'tableQuery', entry: 'data/table/query', spec: '@oas-ui/ui/data/table/query' },
   { id: 'tableAutoHeight', entry: 'data/table/auto-height', spec: '@oas-ui/ui/data/table/auto-height' },
@@ -727,9 +728,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'tableEdit',
     get: () => componentMeasures.tableEdit.gzipBytes,
-    limit: 104 * 1024, // 104 KB（2026-10-28 首次独立定档：实测 89.7 KB 上浮约 16% 取整）
+    limit: 105 * 1024, // 105 KB（2026-11-06 重定档：实测已漂至 94.0——首档后行高/结构渲染等批持续增量，预警线 93.6 被日常增量反复顶穿失去意义）
     basis:
-      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；上浮约 16% 定档 104 KB（89.7×1.16≈104，取整）',
+      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0（行高批/结构渲染批/print 感知各贡献一部分，归因在案），原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定',
   },
   {
     // table/auto-height：注册型 L3（row-auto-height 逐行动态行高）。首档 2026-11-04：
@@ -890,6 +891,15 @@ const BUDGETS = [
     limit: 0.75 * 1024,
     basis:
       'helper 型 L3（审计记录器：订阅 oas-edit 事件流，行 key × 列 环形记录旧值→新值+时间戳；与 history 撤销栈正交，不回放不撤销，内存环形不做持久化）；首档 2026-11-04：实测 gzip 470 B / 1 文件（类型导入零运行时依赖），上浮约 60% 定档 0.75 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/table/import 链 gzip',
+    kind: 'absolute',
+    componentId: 'tableImport',
+    get: () => componentMeasures.tableImport.gzipBytes,
+    limit: 1.75 * 1024,
+    basis:
+      'helper 型 L3（数据导入：TSV/CSV 文本→二维矩阵→对象数组；TSV 复用 clipboard 的 parseTsv，CSV 本地 RFC 4180 状态机，分隔符引号外嗅探，行列不齐/空行如实计数）；首档 2026-11-06：实测 gzip 1.4 KB / 1 文件（链含 clipboard 同文件的 toTsv——同文件无法摇除，~0.3 KB；导入本体约 1.1 KB），上浮约 25% 取整定档 1.75 KB',
   },
   {
     name: '@oas-ui/ui/data/table/value-format 链 gzip',

@@ -6084,3 +6084,150 @@ test('table stable-clear：数据→空态/loading 无垫高残留', async ({ pa
   expect(minHAfterLoading, 'loading 无垫高残留').toBe('')
   expect(errors, 'console 零 error').toEqual([])
 })
+
+// 打印视图回归：print 媒体下虚拟滚动全量渲染（窗口外行不在 DOM、CSS 无法唤回，组件经
+// matchMedia('print') 感知后重渲染全量）；打印几何（spacer 隐藏 / sticky 复位）随媒体生效。
+test('table 打印视图：emulateMedia print → 虚拟表全量行进 DOM + 打印几何生效，screen 恢复窗口行', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-print-e2e'
+    el.style.width = '420px'
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ name: `行${i}` }))))
+    document.body.prepend(el)
+  })
+  const t = page.locator('#table-print-e2e')
+  await expect(t.locator('tbody tr[part="row"]').first()).toBeAttached()
+  // 屏显：虚拟窗口有界（100 行只渲染可视窗口 + margin）
+  const screenRows = await t.locator('tbody tr[part="row"]').count()
+  expect(screenRows, '屏显窗口行有界').toBeLessThan(100)
+  // 打印媒体：matchMedia('print') change → 重渲染全量（Playwright emulateMedia 不派发 beforeprint，
+  // 断言的是 matchMedia change 通道——与真实浏览器打印预览的感知通道一致）
+  await page.emulateMedia({ media: 'print' })
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(100)
+  // 打印几何：占位行隐藏（windowed 绝对铺位/虚拟 spacer 不占纸面）+ sticky 复位（static）
+  const spacerDisplay = await t.evaluate((el) => getComputedStyle(el.shadowRoot!.querySelector('tr.spacer')!).display)
+  expect(spacerDisplay, '打印下占位行不占纸面').toBe('none')
+  const thPosition = await t.evaluate((el) => getComputedStyle(el.shadowRoot!.querySelector('th')!).position)
+  expect(thPosition, '打印下表头吸顶复位').toBe('static')
+  const wrapMaxH = await t.evaluate((el) => getComputedStyle(el.shadowRoot!.querySelector('.table-scroll')!).maxHeight)
+  expect(wrapMaxH, '打印下滚动限高解除（内联 maxHeight 被压过）').toBe('none')
+  // 退出打印：恢复屏显窗口行
+  await page.emulateMedia({ media: 'screen' })
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(screenRows)
+  expect(errors, 'console 零 error').toEqual([])
+})
+
+// 打印视图回归：column-virtual 打印全列（窗口外列是占位格、打印会缺列——print 下全列真实渲染）
+test('table 打印视图 × column-virtual：print 下窗口外列真实渲染（无占位归并格）', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-print-col-e2e'
+    el.style.width = '420px'
+    el.setAttribute('height', '160')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('column-virtual', '')
+    const cols = [{ key: 'name', title: '名称', width: '90px' }]
+    for (let i = 1; i <= 30; i++) cols.push({ key: `m${i}`, title: `指标${i}`, width: '90px' })
+    el.setAttribute('columns', JSON.stringify(cols))
+    el.setAttribute(
+      'data',
+      JSON.stringify(
+        Array.from({ length: 6 }, (_, r) => {
+          const row: Record<string, unknown> = { name: `行${r}` }
+          for (let i = 1; i <= 30; i++) row[`m${i}`] = `${i}-${r}`
+          return row
+        }),
+      ),
+    )
+    document.body.prepend(el)
+  })
+  const t = page.locator('#table-print-col-e2e')
+  await expect(t.locator('tbody tr[part="row"]').first()).toBeAttached()
+  // 屏显：列窗口外归并为占位格
+  expect(await t.locator('.col-virtual-placeholder').count(), '屏显有占位归并格').toBeGreaterThan(0)
+  await page.emulateMedia({ media: 'print' })
+  await expect(t.locator('.col-virtual-placeholder')).toHaveCount(0)
+  const cellText = await t.evaluate((el) => {
+    const lastRow = el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')[0]!
+    const cells = [...lastRow.querySelectorAll('td')]
+    return { count: cells.length, last: cells[cells.length - 1]!.textContent }
+  })
+  expect(cellText.count, 'print 全列（31 列 = 名称 + 30 指标）').toBe(31)
+  expect(cellText.last, '末列内容真实渲染（非占位）').toBe('30-0')
+  await page.emulateMedia({ media: 'screen' })
+  // 恢复屏显：matchMedia change → 重渲染是异步到达（实测 ~几百 ms），用 auto-retry 断言等占位归并回来
+  await expect(t.locator('.col-virtual-placeholder').first(), '恢复屏显占位归并').toBeAttached()
+  expect(errors, 'console 零 error').toEqual([])
+})
+
+// 打印视图回归：windowed × print 守卫——切片照渲染（数据在服务端无法全量）+ devWarn 提示一次
+test('table 打印视图 × windowed：已装载切片照常渲染（数据在服务端无法全量）', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-print-win-e2e'
+    el.style.width = '420px'
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('row-key', 'id')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'id', title: 'ID' },
+        { key: 'name', title: '名称' },
+      ]),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ id: String(i + 1), name: `行${i}` }))),
+    )
+    document.body.prepend(el)
+  })
+  const t = page.locator('#table-print-win-e2e')
+  await expect(t.locator('tbody tr[part="row"]').first()).toBeAttached()
+  await page.emulateMedia({ media: 'print' })
+  // windowed：客户端只有切片——print 下渲染已装载切片全量（10 行，不是 500 也不是视口窗口）。
+  // devWarn 守卫断言在 happy-dom 单测（oas-table-print.test.ts）——e2e 跑 dist 生产构建，
+  // devWarn 在 NODE_ENV=production 下静默，此处只固化渲染行为。
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(10)
+  await page.emulateMedia({ media: 'screen' })
+  expect(errors, 'console 零 error').toEqual([])
+})
+
+// 数据导入 demo：文件入口真实上传 CSV → 表格出数据 + 结果区反馈 N 行 M 列（demo 交互可见反馈固化）
+test('table 数据导入 demo：上传 CSV 文件 → 表格渲染导入数据 + 反馈「导入了 N 行 M 列」', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  const feedback = page.locator('#table-import-feedback')
+  await expect(feedback).toBeVisible()
+  const table = page.locator('#table-import-demo')
+  const before = await table.evaluate((el) => JSON.parse(el.getAttribute('data') ?? '[]').length)
+  await page.locator('#table-import-file').setInputFiles({
+    name: 'people.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('姓名,年龄,城市\n张三,30,北京\n李四,25,上海\n王五,35,深圳', 'utf8'),
+  })
+  await expect(feedback).toContainText('导入了 3 行 3 列', { timeout: 8000 })
+  const after = await table.evaluate((el) => JSON.parse(el.getAttribute('data') ?? '[]'))
+  expect(after.length, '导入数据写入表格 data').toBe(3)
+  expect(after[0], '首行记录列名 → key').toEqual({ 姓名: '张三', 年龄: '30', 城市: '北京' })
+  expect(before, 'demo 表格初始无数据（导入驱动）').toBe(0)
+  expect(errors, 'console 零 error').toEqual([])
+})

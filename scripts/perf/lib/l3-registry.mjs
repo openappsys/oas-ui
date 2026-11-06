@@ -61,6 +61,15 @@ export const L3_REGISTRY = [
     kind: 'helper',
     measured: true,
   },
+  // table 数据导入 helper（2026-11-06 批）：TSV/CSV 文本 → 二维矩阵 → 对象数组。
+  // 纯函数宿主侧变换层（不接触组件实例），激活唯一入口是显式 import；进 L1/data 族包即死重。
+  {
+    id: 'tableImport',
+    entry: 'data/table/import',
+    family: 'data',
+    kind: 'helper',
+    measured: true,
+  },
   { id: 'tableValueFormat', entry: 'data/table/value-format', family: 'data', kind: 'helper', measured: true },
   { id: 'tableQuery', entry: 'data/table/query', family: 'data', kind: 'helper', measured: true },
   // 逐行动态行高（row-auto-height 注册型 capability L3；核心接缝为亚 KB 常数判空钩子）

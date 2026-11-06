@@ -313,7 +313,7 @@ table.addEventListener('oas-edit', (e) => {
   </div>
 </DemoBlock>
 
-Setting `height` enables virtual scrolling (with a fixed `row-height`): only rows within the visible window are rendered. It works together with fixed columns, sorting, and multi-select; scrolling emits `oas-scroll`.
+Setting `height` enables virtual scrolling (with a fixed `row-height`): only rows within the visible window are rendered. It works together with fixed columns, sorting, and multi-select; scrolling emits `oas-scroll`. **Print view**: when the browser prints or exports to PDF (`print` media), the component detects it automatically and renders **all rows** — off-window rows are not in the DOM and CSS cannot bring them back, so entering print/print-preview fires `matchMedia('print')` which re-renders the full row set into the DOM (print geometry applies too: scroll height caps removed, sticky header/fixed columns reset, spacer rows take no paper space). Window rendering resumes after printing. Row shape matches the on-screen form (fixed-height truncation semantics are preserved).
 
 <DemoBlock title="column-virtual: horizontal virtualization for wide tables">
   <oas-table id="table-col-virtual" column-virtual height="300" checkable></oas-table>
@@ -561,6 +561,8 @@ Attributes: `windowed` (enable) + `total` (full row count) + `window-start` (abs
 ```
 
 In windowed mode **local sort / filter / group / pagination / tree-expand / summary / merge (`merge`, `span-method`) / `column-virtual` are the host's responsibility** (the component skips them with a devWarn) — listen to the existing `oas-sort-change` / `oas-filter-change` / `oas-page-change` events, process the full dataset, then refill the window slice. Off by default: behavior unchanged.
+
+**Print limitation**: the full dataset lives on the server and the client only holds the loaded slice — printing / PDF export (`print` media) **cannot render the full set**; the output is exactly the loaded slice rows (the component devWarns once). To print everything, have the host preload the entire slice range or turn windowed off for that scenario. Print geometry (spacer rows take no paper space, sticky reset) matches the local virtualization path.
 
 **Exception — tree lazy-loading (the hasChildren contract, unreleased)**: a windowed slice row carrying `hasChildren: true` enters tree lazy-loading mode (a nested `children` array keeps its legacy ignored semantics and does NOT trigger this mode). The contract is a three-piece set:
 
@@ -1157,6 +1159,42 @@ onMounted(() => {
     if (el) el.textContent = `${fileName} · ${format.toUpperCase()} · ${rowCount} rows`
   })
 
+  // Data import demo (table/import helper): file picker + clipboard entries, results land in the table
+  {
+    const importTable = document.querySelector('#table-import-demo')
+    const feedback = document.querySelector('#table-import-feedback')
+    if (importTable && feedback) {
+      const apply = (r, source) => {
+        importTable.columns = r.columns.map((key) => ({ key, title: key }))
+        importTable.data = r.records
+        const skipped = r.skippedRows + r.skippedCells
+        const delim = r.delimiter === '\t' ? 'TAB' : r.delimiter
+        feedback.textContent =
+          `Imported ${r.rowCount} rows × ${r.columns.length} columns from ${source} (delimiter ${delim}` +
+          (skipped > 0 ? `; ${r.skippedRows} blank rows skipped, ${r.skippedCells} cells padded/truncated)` : ')')
+      }
+      document.querySelector('#table-import-file')?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const { importTableFile } = await import('@oas-ui/ui/data/table/import')
+        apply(await importTableFile(file), 'file')
+      })
+      document.querySelector('#table-import-paste')?.addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText()
+          if (!text) {
+            feedback.textContent = 'Clipboard is empty or unreadable — copy some TSV/CSV text first'
+            return
+          }
+          const { importTableText } = await import('@oas-ui/ui/data/table/import')
+          apply(importTableText(text), 'clipboard')
+        } catch {
+          feedback.textContent = 'Clipboard is unreadable (browser permission) — use the file picker instead'
+        }
+      })
+    }
+  }
+
   // Grid navigation demo: cell click feedback (keyboard roaming shows the cell focus ring)
   const gridNavTable = document.querySelector('#table-grid-nav')
   gridNavTable?.addEventListener('oas-cell-click', (e) => {
@@ -1617,6 +1655,65 @@ Clicking a data cell dispatches `oas-cell-click` (detail: `row / column / value 
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Last export: <span id="table-export-feedback">—</span></p>
   </div>
 </DemoBlock>
+
+## Data import (table/import, helper L3)
+
+`@oas-ui/ui/data/table/import` provides **TSV/CSV import pure functions**: text → 2-D matrix → record array, in the same spirit as the on-demand Pro helpers above (pure functions, zero component runtime, zero DOM dependency — callable directly in SSR / Node; they only enter your bundle when explicitly imported). Entry points:
+
+- **`parseTableText(text, options?)`**: text → 2-D matrix. `options.delimiter` defaults to `'auto'` — counts occurrences of `\t` / `,` / `;` **outside quotes** (a delimiter inside quotes is data, not structure); the most frequent wins (ties fall back in the order `\t` > `,` > `;`, prioritizing the standard TSV form pasted from spreadsheets); when all counts are zero it degrades to one column per row. The TSV branch reuses `parseTsv` (CRLF normalization + trailing blank-line trimming); `,` / `;` go through a local RFC 4180 state machine (delimiters/newlines inside quotes don't split, `""` escapes a quote). Returns `{ matrix, delimiter, skippedRows }` — `skippedRows` counts **interior completely-empty rows** (trailing blank lines are trimmed by convention and not counted).
+- **`matrixToRecords(matrix, options?)`**: matrix → record array. With `header: true` (default) the first row provides the column names (trimmed; empty names become `c1`/`c2` by position; the Nth occurrence of a duplicate name gets a `.N` suffix — the first keeps the bare name); with `header: false` the names come from `options.columns` (shortfalls filled as `c{position}`). The column-count baseline is the header row (or the longest row): data rows missing cells are padded with empty strings and overlong rows are truncated, both counted in `skippedCells`. **Values stay strings** — number/date coercion is the host's job; no magic type inference.
+- **`importTableText(text, options?)`**: the two steps combined, returning `{ records, columns, delimiter, rowCount, skippedRows, skippedCells }` — irregularities are **reported faithfully, never silently dropped**.
+- **`importTableFile(file, options?)`**: the File entry point — reads via `file.text()` then behaves as above. The clipboard entry only accepts a string: the host calls `navigator.clipboard.readText()` itself and passes the result to `importTableText` (this module never touches the clipboard).
+
+```ts
+import { importTableText, importTableFile } from '@oas-ui/ui/data/table/import'
+
+// Clipboard text (host reads the clipboard; the helper only accepts strings)
+const text = await navigator.clipboard.readText()
+const r1 = importTableText(text)
+table.data = r1.records
+
+// File (.csv / .tsv)
+const r2 = await importTableFile(fileInput.files[0])
+// r2 = { records, columns, delimiter, rowCount, skippedRows, skippedCells }
+```
+
+<DemoBlock title="Data import: file picker + clipboard entries, imported rows land in the table with an N rows × M columns report">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <input type="file" id="table-import-file" accept=".csv,.tsv,.txt" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)" />
+      <oas-button id="table-import-paste" size="small">Import from clipboard</oas-button>
+    </div>
+    <oas-table id="table-import-demo" row-height="32" bordered row-key="Name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      <span id="table-import-feedback" role="status" aria-live="polite">Nothing imported yet — pick a CSV/TSV file, or copy some TSV/CSV text and click "Import from clipboard"</span>
+    </p>
+  </div>
+</DemoBlock>
+
+```ts
+// demo wiring (excerpt): both entries go through importTableText / importTableFile,
+// results land in the table and the stats are echoed back
+const feedback = document.getElementById('table-import-feedback')
+const table = document.getElementById('table-import-demo')
+const apply = (r, source) => {
+  table.columns = r.columns.map((key) => ({ key, title: key }))
+  table.data = r.records
+  const skipped = r.skippedRows + r.skippedCells
+  feedback.textContent =
+    `Imported ${r.rowCount} rows × ${r.columns.length} columns from ${source} (delimiter ${r.delimiter === '\t' ? 'TAB' : r.delimiter}` +
+    (skipped > 0 ? `; ${r.skippedRows} blank rows skipped, ${r.skippedCells} cells padded/truncated)` : ')')
+}
+document.getElementById('table-import-file').addEventListener('change', async (e) => {
+  const { importTableFile } = await import('@oas-ui/ui/data/table/import')
+  if (e.target.files[0]) apply(await importTableFile(e.target.files[0]), 'file')
+})
+document.getElementById('table-import-paste').addEventListener('click', async () => {
+  const { importTableText } = await import('@oas-ui/ui/data/table/import')
+  const text = await navigator.clipboard.readText()
+  if (text) apply(importTableText(text), 'clipboard')
+})
+```
 
 ## Grid navigation (grid-navigation)
 
