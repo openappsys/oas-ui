@@ -304,7 +304,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 可访问名镜像：宿主直设时镜像给内层原生 checkbox（显式 aria 优先于 label 包裹的标签文字；空 slot 纯勾选格场景必备，移除后同步回落） | — | — |
-| `aria-labelledby` | 可访问名镜像第二通道：宿主 idref 列表原样镜像给内层原生 checkbox（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
+| `aria-labelledby` | 可访问名第二通道（跨根解析）：宿主 idref 列表原样镜像给内层原生 checkbox，同时解析引用元素——支持 `ariaLabelledByElements` 引用反射的引擎（Chromium 128+）写活引用，其余以引用文本快照写内层 aria-label 兜底（idref 不跨 shadow 解析，纯镜像读屏读不到名）；引用缺失或宿主移除后回落宿主 aria-label 通道；引用文本为快照语义（后续变化不自动追踪） | — | — |
 | `check-all` | 组内全选标记：勾选 ↔ 子项全选/清空联动，子项变化实时回写勾选/半选态；该项不参与组 value（跨组件属性，由 oas-checkbox-group 读取） | — | — |
 | `checked` | 是否选中 | `boolean` | — |
 | `description` | 辅助文本：渲染为标签下方次要说明；`slot="description"` 分发富文本时优先 | `string` | — |

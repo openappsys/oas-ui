@@ -4,6 +4,7 @@ import { lookupIcon } from '@oas-ui/icons/runtime'
 import { isRtl } from '../../shared/direction.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import { normalizeChoice } from '../../shared/choice.js'
+import { syncCrossRootAccessibleName } from '../../shared/aria-named.js'
 
 export interface SegmentedOption {
   label: string
@@ -277,17 +278,12 @@ export class OASSegmented extends OASElement {
     this.setAttribute('data-direction', direction)
     group.setAttribute('aria-orientation', direction)
     // 宿主 aria-label → 内部 radiogroup 可访问名：选项文本是每个 radio 的名称，组本身没有
-    // 可见名称来源；宿主命名是唯一通道（同页多组 segmented 靠它区分）。缺省不写（无内置
-    // 文案可回落）；只写 radiogroup，不触碰选项自身的 aria-label（图标项仍用图标名兜底）。
-    const hostLabel = this.getAttribute('aria-label')?.trim()
-    if (hostLabel) group.setAttribute('aria-label', hostLabel)
-    else group.removeAttribute('aria-label')
-    // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
-    // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
-    // 忠实镜像即可（不做互斥清理）。
-    const hostLabelledby = this.getAttribute('aria-labelledby')
-    if (hostLabelledby != null && hostLabelledby !== '') group.setAttribute('aria-labelledby', hostLabelledby)
-    else group.removeAttribute('aria-labelledby')
+    // 可见名称来源；宿主命名是唯一通道（同页多组 segmented 靠它区分）。aria-labelledby 的
+    // idref 不跨 shadow 解析——经 shared/aria-named 混合通道：引用元素解析成功时写活引用
+    // （Chrome 128+ ariaLabelledByElements）+ 引用文本快照进组 aria-label 兜底；引用缺失/
+    // 通道关闭回落宿主 aria-label（trim 后镜像，缺省不写）。只写 radiogroup，不触碰选项
+    // 自身的 aria-label（图标项仍用图标名兜底）。
+    syncCrossRootAccessibleName(this, group, this.getAttribute('aria-label')?.trim() || null)
     if (this.hasAttr('readonly')) group.setAttribute('aria-readonly', 'true')
     else group.removeAttribute('aria-readonly')
 

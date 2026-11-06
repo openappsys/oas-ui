@@ -2,6 +2,7 @@ import { OASFormElement } from '@oas-ui/core/form-element'
 import { stableHash36 } from '../../shared/stable-id.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import { normalizeChoice } from '../../shared/choice.js'
+import { syncCrossRootAccessibleName } from '../../shared/aria-named.js'
 
 /** size 尺寸档（对齐全局三档：勾选框 14/16/18px + 字号联动） */
 const VALID_SIZES = ['small', 'medium', 'large'] as const
@@ -487,19 +488,12 @@ export class OASCheckbox extends OASFormElement {
     input.id = this.inputId
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)
 
-    // 可访问名称便捷通道（对齐 oas-switch）：宿主直设 aria-label 时镜像给内层 input。
-    // 缺省可访问名来自 label 包裹的 slot 文字（implicit label）；宿主显式 aria 优先——
-    // 空 slot 的纯勾选格（表格/分配矩阵场景）靠宿主 aria-label 提供名称（axe: label）。
-    const ariaLabel = this.getAttribute('aria-label')
-    if (ariaLabel != null && ariaLabel !== '') input.setAttribute('aria-label', ariaLabel)
-    else input.removeAttribute('aria-label')
-
-    // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
-    // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
-    // 忠实镜像即可（不做 auto-complete 式互斥清理）。
-    const ariaLabelledby = this.getAttribute('aria-labelledby')
-    if (ariaLabelledby != null && ariaLabelledby !== '') input.setAttribute('aria-labelledby', ariaLabelledby)
-    else input.removeAttribute('aria-labelledby')
+    // 可访问名称混合通道（shared/aria-named，对齐 oas-switch）：宿主 aria-label /
+    // aria-labelledby 都不跨 shadow 生效——labelledby 引用经活引用属性（Chrome 128+
+    // ariaLabelledByElements）+ 引用文本快照写进内层 aria-label 兜底（axe: label 规则认它）；
+    // 引用缺失/通道关闭回落宿主 aria-label 镜像。缺省可访问名来自 label 包裹的 slot 文字
+    // （implicit label）；空 slot 的纯勾选格（表格/分配矩阵场景）靠宿主 aria 通道提供名称。
+    syncCrossRootAccessibleName(this, input, this.getAttribute('aria-label') || null)
 
     this.syncNamedSlots()
   }

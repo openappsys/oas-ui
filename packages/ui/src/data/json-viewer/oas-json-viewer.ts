@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core/oas-element'
 import { devWarn } from '../../shared/dev-warn.js'
 // slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
 import { cloneSlotContent } from '../../shared/slot-template.js'
+import { syncCrossRootAccessibleName } from '../../shared/aria-named.js'
 import {
   buildJsonTree,
   collectAncestorPaths,
@@ -858,14 +859,11 @@ export class OASJsonViewer extends OASElement {
     }
     const viewport = this.viewportEl
     if (viewport) {
-      const label = this.getAttribute('aria-label')?.trim() || this.t('jsonViewer.tree')
-      viewport.setAttribute('aria-label', label)
-      // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
-      // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
-      // 忠实镜像即可（viewport aria-label 恒有 locale 回退名，不动）。
-      const ariaLabelledby = this.getAttribute('aria-labelledby')
-      if (ariaLabelledby != null && ariaLabelledby !== '') viewport.setAttribute('aria-labelledby', ariaLabelledby)
-      else viewport.removeAttribute('aria-labelledby')
+      // 可访问名混合通道（shared/aria-named）：宿主 aria-label / aria-labelledby 都不跨
+      // shadow 生效——labelledby 引用经活引用属性（Chrome 128+ ariaLabelledByElements）+
+      // 引用文本快照进 viewport aria-label（覆盖 locale 回退名）；引用缺失/通道关闭回落
+      // 宿主 aria-label || locale 默认树名。
+      syncCrossRootAccessibleName(this, viewport, this.getAttribute('aria-label')?.trim() || this.t('jsonViewer.tree'))
     }
     this.toggleAttribute('data-compact', this.hasAttribute('compact'))
   }

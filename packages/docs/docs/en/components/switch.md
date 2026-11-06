@@ -31,7 +31,7 @@ The `label` attribute renders a text label next to the switch; clicking the labe
   </oas-space>
 </DemoBlock>
 
-Hit-area note: the host shrinks to the actual control width (`width: fit-content`), so by default the visual width always matches the clickable area. When the host is explicitly stretched (e.g. `align-stretch` in a vertical `oas-space`, or `width: 100%`), **clicking anywhere on the row toggles it** — the iOS settings row semantics (the inner button and `label` areas still use their own channels, so no double toggling). Use `label` for a text hit target beside the switch. Without `label`, the host can set `aria-label` (mirrored onto the inner button as the accessible name). `aria-labelledby` pointing to in-page elements is mirrored the same way; when both are set, native accessible-name computation gives `aria-labelledby` precedence.
+Hit-area note: the host shrinks to the actual control width (`width: fit-content`), so by default the visual width always matches the clickable area. When the host is explicitly stretched (e.g. `align-stretch` in a vertical `oas-space`, or `width: 100%`), **clicking anywhere on the row toggles it** — the iOS settings row semantics (the inner button and `label` areas still use their own channels, so no double toggling). Use `label` for a text hit target beside the switch. Without `label`, the host can set `aria-label` (mirrored onto the inner button as the accessible name). `aria-labelledby` pointing to in-page elements resolves the referenced elements across the shadow boundary and writes them into the inner button: engines supporting `ariaLabelledByElements` get live references, others fall back to a reference-text snapshot on the inner aria-label (idref does not cross the shadow boundary, so a bare mirror cannot be resolved); missing references fall back to the host aria-label channel, and the snapshot text is not auto-tracked on reference changes.
 
 <DemoBlock title="Full-row click when stretched">
   <oas-switch id="switch-block" label="Full row (click the empty right side)" style="width: 100%"></oas-switch>
@@ -235,7 +235,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name (host override channel; explicit value wins over label derivation) | — | — |
-| `aria-labelledby` | Accessible name second channel: the host idref list is mirrored as-is to the inner button (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
+| `aria-labelledby` | Accessible name second channel (cross-root): the host idref list is mirrored as-is to the inner button while the referenced elements are resolved — engines supporting the `ariaLabelledByElements` reflection (Chromium 128+) get live references, others fall back to a reference-text snapshot written to the inner aria-label (idref does not cross the shadow boundary, so a bare mirror is unreadable by screen readers); missing references or removal falls back to the host aria-label channel; reference text is a snapshot (not auto-tracked) | — | — |
 | `checked` | Whether on | `boolean` | — |
 | `checked-icon` | Checked-state thumb icon (oas-icon name) | `string` | — |
 | `checked-text` | Label shown when on; inside the track at medium/large/xl, outside at xs/small | `string` | — |

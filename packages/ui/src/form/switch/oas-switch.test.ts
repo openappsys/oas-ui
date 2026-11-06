@@ -224,6 +224,55 @@ describe('OASSwitch', () => {
     expect(sw(el).getAttribute('aria-labelledby')).toBe('sw-title')
   })
 
+  it('跨根引用解析：引用元素存在时内层 aria-label 写引用文本快照（真实 AT 可用名）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'sw-live'
+    hint.textContent = '夜间模式开关'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'sw-live' })
+    expect(sw(el).getAttribute('aria-labelledby')).toBe('sw-live')
+    expect(sw(el).getAttribute('aria-label')).toBe('夜间模式开关')
+  })
+
+  it('aria-labelledby 有有效引用：可访问名以引用文本优先（覆盖 aria-label 通道）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'sw-hint'
+    hint.textContent = '引用优先名'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-label': '宿主名', 'aria-labelledby': 'sw-hint' })
+    expect(sw(el).getAttribute('aria-label')).toBe('引用优先名')
+    expect(sw(el).getAttribute('aria-labelledby')).toBe('sw-hint')
+  })
+
+  it('部分 idref 缺失容错：跳过缺失项，只用可解析元素文本', () => {
+    const hint = document.createElement('span')
+    hint.id = 'sw-part'
+    hint.textContent = '有效项'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'sw-ghost sw-part' })
+    expect(sw(el).getAttribute('aria-label')).toBe('有效项')
+  })
+
+  it('引用全缺失容错：aria-label 回落宿主 aria-label 通道（不写空名）', () => {
+    const el = mount({ 'aria-label': '宿主名', 'aria-labelledby': 'sw-ghost-only' })
+    expect(sw(el).getAttribute('aria-label')).toBe('宿主名')
+  })
+
+  it('运行时移除 aria-labelledby（引用曾解析成功）：内层摘除且 aria-label 恢复宿主通道', () => {
+    const hint = document.createElement('span')
+    hint.id = 'sw-rm'
+    hint.textContent = '引用名'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'sw-rm' })
+    expect(sw(el).getAttribute('aria-label')).toBe('引用名')
+    el.removeAttribute('aria-labelledby')
+    expect(sw(el).hasAttribute('aria-labelledby')).toBe(false)
+    expect(sw(el).hasAttribute('aria-label')).toBe(false)
+    // 宿主 aria-label 通道恢复独立可用
+    el.setAttribute('aria-label', '宿主名')
+    expect(sw(el).getAttribute('aria-label')).toBe('宿主名')
+  })
+
   it('disabled 时镜像 data-disabled（label 视觉联动钩子）', () => {
     const el = mount({ disabled: '' })
     expect(el.hasAttribute('data-disabled')).toBe(true)

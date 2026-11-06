@@ -1045,14 +1045,54 @@ describe('OASCheckbox 可访问名镜像（aria-labelledby）', () => {
     expect(native(el).hasAttribute('aria-labelledby')).toBe(false)
   })
 
-  it('aria-label 与 aria-labelledby 同时在场：两通道各自镜像互不覆盖（原生名计算 labelledby 优先）', () => {
+  it('aria-labelledby 有有效引用：可访问名以引用文本优先（跨根解析，覆盖 aria-label 通道）', () => {
     const hint = document.createElement('span')
     hint.id = 'cb-hint'
     hint.textContent = '任务说明'
     document.body.appendChild(hint)
     const el = mountCheckbox({ 'aria-label': '任务 · 张三', 'aria-labelledby': 'cb-hint' }, '')
-    expect(native(el).getAttribute('aria-label')).toBe('任务 · 张三')
     expect(native(el).getAttribute('aria-labelledby')).toBe('cb-hint')
+    expect(native(el).getAttribute('aria-label')).toBe('任务说明')
+  })
+
+  it('跨根引用解析：引用元素存在时内层 aria-label 写引用文本快照（真实 AT 可用名）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'cb-live'
+    hint.textContent = '同步开关说明'
+    document.body.appendChild(hint)
+    const el = mountCheckbox({ 'aria-labelledby': 'cb-live' }, '')
+    expect(native(el).getAttribute('aria-labelledby')).toBe('cb-live')
+    expect(native(el).getAttribute('aria-label')).toBe('同步开关说明')
+  })
+
+  it('部分 idref 缺失容错：跳过缺失项，只用可解析元素文本', () => {
+    const hint = document.createElement('span')
+    hint.id = 'cb-part'
+    hint.textContent = '有效项'
+    document.body.appendChild(hint)
+    const el = mountCheckbox({ 'aria-labelledby': 'cb-ghost cb-part' }, '')
+    expect(native(el).getAttribute('aria-label')).toBe('有效项')
+  })
+
+  it('引用全缺失容错：aria-label 回落宿主 aria-label 通道（不写空名）', () => {
+    const el = mountCheckbox({ 'aria-label': '宿主名', 'aria-labelledby': 'cb-ghost-only' }, '')
+    expect(native(el).getAttribute('aria-labelledby')).toBe('cb-ghost-only')
+    expect(native(el).getAttribute('aria-label')).toBe('宿主名')
+  })
+
+  it('运行时移除 aria-labelledby（引用曾解析成功）：内层摘除且 aria-label 恢复宿主通道', () => {
+    const hint = document.createElement('span')
+    hint.id = 'cb-rm'
+    hint.textContent = '引用名'
+    document.body.appendChild(hint)
+    const el = mountCheckbox({ 'aria-labelledby': 'cb-rm' }, '')
+    expect(native(el).getAttribute('aria-label')).toBe('引用名')
+    el.removeAttribute('aria-labelledby')
+    expect(native(el).hasAttribute('aria-labelledby')).toBe(false)
+    expect(native(el).hasAttribute('aria-label')).toBe(false)
+    // 宿主 aria-label 通道恢复独立可用
+    el.setAttribute('aria-label', '宿主名')
+    expect(native(el).getAttribute('aria-label')).toBe('宿主名')
   })
 })
 

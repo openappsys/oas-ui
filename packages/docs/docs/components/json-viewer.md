@@ -102,7 +102,7 @@ await viewer.copyJson()   // "hello"
 
 ## 键盘与可访问性
 
-树容器是单一 Tab 焦点，使用 `aria-activedescendant` 指向活动行；行带 `role="treeitem"`、`aria-level`、`aria-posinset`、`aria-setsize` 与 `aria-expanded`。可访问名称支持宿主 `aria-label`（缺省回落「JSON 树」），也可用 `aria-labelledby` 关联页内元素（idref 列表原样镜像给树容器；与 `aria-label` 同时设置时原生可访问名计算以 `aria-labelledby` 优先）。
+树容器是单一 Tab 焦点，使用 `aria-activedescendant` 指向活动行；行带 `role="treeitem"`、`aria-level`、`aria-posinset`、`aria-setsize` 与 `aria-expanded`。可访问名称支持宿主 `aria-label`（缺省回落「JSON 树」），也可用 `aria-labelledby` 关联页内元素（引用元素经跨根解析写入树容器：支持 `ariaLabelledByElements` 的引擎写活引用，其余以引用文本快照写树容器 `aria-label` 兜底——idref 不跨 shadow 边界，纯镜像读屏解析不到；引用缺失时回落宿主 `aria-label` 通道，快照文本不随引用变化自动追踪）。
 
 | 按键 | 行为 |
 | --- | --- |
@@ -219,7 +219,7 @@ if (typeof window !== 'undefined') {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 树的可读名称（默认「JSON 树」） | — | — |
-| `aria-labelledby` | 可访问名镜像第二通道：宿主 idref 列表原样镜像给树容器（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
+| `aria-labelledby` | 可访问名第二通道（跨根解析）：宿主 idref 列表原样镜像给树容器，同时解析引用元素——支持 `ariaLabelledByElements` 引用反射的引擎（Chromium 128+）写活引用，其余以引用文本快照写内层 aria-label 兜底（idref 不跨 shadow 解析，纯镜像读屏读不到名）；引用缺失或宿主移除后回落宿主 aria-label 通道；引用文本为快照语义（后续变化不自动追踪） | — | — |
 | `compact` | 紧凑模式（默认行高 20、字号 11px、更小工具栏内边距） | — | — |
 | `copyable` | 复制按钮开关；`false` 只隐藏按钮，复制方法仍可调用 | `string` | — |
 | `default-expand-depth` | 初始展开深度：0 只显示根，1 展开根（默认），依此类推 | `string` | `1` |

@@ -2475,6 +2475,44 @@ describe('OASMenu 可访问名镜像（aria-labelledby）', () => {
     expect(menuOf(el).getAttribute('aria-label')).toBe('操作菜单')
     expect(menuOf(el).getAttribute('aria-labelledby')).toBe('menu-hint')
   })
+
+  it('跨根引用解析：引用元素存在时 ul aria-label 写引用文本快照（覆盖 locale 回退名）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'menu-live'
+    hint.textContent = '文件操作菜单'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'menu-live' })
+    expect(menuOf(el).getAttribute('aria-labelledby')).toBe('menu-live')
+    expect(menuOf(el).getAttribute('aria-label')).toBe('文件操作菜单')
+  })
+
+  it('部分 idref 缺失容错：跳过缺失项，只用可解析元素文本', () => {
+    const hint = document.createElement('span')
+    hint.id = 'menu-part'
+    hint.textContent = '有效项'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'menu-ghost menu-part' })
+    expect(menuOf(el).getAttribute('aria-label')).toBe('有效项')
+  })
+
+  it('引用全缺失容错：aria-label 回落宿主 aria-label 通道（locale 回退兜底）', () => {
+    const el = mount({ 'aria-label': '宿主名', 'aria-labelledby': 'menu-ghost-only' })
+    expect(menuOf(el).getAttribute('aria-label')).toBe('宿主名')
+    const el2 = mount({ 'aria-labelledby': 'menu-ghost-2' })
+    expect(menuOf(el2).getAttribute('aria-label')).toBe('导航')
+  })
+
+  it('运行时移除 aria-labelledby（引用曾解析成功）：ul 摘除且 aria-label 回落 locale 默认名', () => {
+    const hint = document.createElement('span')
+    hint.id = 'menu-rm'
+    hint.textContent = '引用名'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'menu-rm' })
+    expect(menuOf(el).getAttribute('aria-label')).toBe('引用名')
+    el.removeAttribute('aria-labelledby')
+    expect(menuOf(el).hasAttribute('aria-labelledby')).toBe(false)
+    expect(menuOf(el).getAttribute('aria-label')).toBe('导航')
+  })
 })
 
 // ===== 水平模式键盘轴 + RTL 镜像 =====

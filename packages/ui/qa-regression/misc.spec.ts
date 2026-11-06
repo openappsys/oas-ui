@@ -490,3 +490,60 @@ test('empty 组合：illustration 插槽头像组替换内置插画、默认插�
   expect(r.inputAssigned, '输入框投影到默认插槽').toBe(true)
   expect(r.descHidden, '默认插槽有内容时描述属性/内置文案隐藏').toBe(true)
 })
+
+// 跨 shadow aria-labelledby：idref 不跨 shadow 边界解析——宿主引用列表即使镜像给内层
+// 控件，真实引擎可访问名计算也解析不到 light DOM 引用元素（name 为空 / 回退名）。
+// 混合通道修复（shared/aria-named：ariaLabelledByElements 活引用 + 引用文本快照兜底）
+// 后，在真实 Chromium AX 树里内层控件 name 必须等于引用文本。六组件逐一实测；
+// menu/pagination/json-viewer 的 locale 回退名恒非空，「name 非空」证明不了修复——
+// 必须断言「等于引用文本」才能证明引用通道真实生效而非走了回退名。
+test('aria-labelledby 跨 shadow：真实 Chromium AX 树内层控件 name 等于引用文本（六组件）', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'CDP Accessibility 域仅 Chromium 实现')
+  const cdp = await page.context().newCDPSession(page)
+
+  // [组件标签, 注入页面, 内层控件 AX role, 唯一引用文本, 额外属性]
+  // json-viewer 空 text 态会把 viewport role 降级为 group（空树不是 tree）——带数据保持 role=tree
+  const CASES: Array<[string, string, string, string, Record<string, string>]> = [
+    ['oas-checkbox', '/components/checkbox.html', 'checkbox', 'AX引用名·勾选', {}],
+    ['oas-switch', '/components/switch.html', 'switch', 'AX引用名·开关', {}],
+    ['oas-segmented', '/components/segmented.html', 'radiogroup', 'AX引用名·分段', {}],
+    ['oas-menu', '/components/menu.html', 'menu', 'AX引用名·菜单', {}],
+    ['oas-pagination', '/components/pagination.html', 'navigation', 'AX引用名·分页', {}],
+    ['oas-json-viewer', '/components/json-viewer.html', 'tree', 'AX引用名·树', { text: '{"a":1}' }],
+  ]
+
+  for (const [tag, pageUrl, role, name, extraAttrs] of CASES) {
+    await page.goto(pageUrl, { waitUntil: 'domcontentloaded' })
+    await up(page, tag)
+    await page.evaluate(
+      ({ tag, name, extraAttrs }) => {
+        const hint = document.createElement('span')
+        hint.id = 'ax-labelledby-src'
+        hint.textContent = name
+        document.body.appendChild(hint)
+        const host = document.createElement(tag)
+        for (const [k, v] of Object.entries(extraAttrs)) host.setAttribute(k, v)
+        host.setAttribute('aria-labelledby', 'ax-labelledby-src')
+        document.body.appendChild(host)
+      },
+      { tag, name, extraAttrs },
+    )
+    await expect
+      .poll(
+        async () => {
+          const tree = (await cdp.send('Accessibility.getFullAXTree', {})) as {
+            nodes: Array<{ role?: { value?: unknown }; name?: { value?: unknown } }>
+          }
+          return tree.nodes.some((n) => n.role?.value === role && n.name?.value === name)
+        },
+        {
+          timeout: 10000,
+          message: `${tag} 内层控件（role=${role}）AX 树 name 应等于引用文本「${name}」（跨根引用不生效时为空/回退名）`,
+        },
+      )
+      .toBe(true)
+  }
+})

@@ -4,6 +4,7 @@ import { normalizeSizeStrict, ALL_SIZES, type OasSize } from '../../shared/size.
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { safeUrl } from '../../shared/safe-url.js'
+import { syncCrossRootAccessibleName } from '../../shared/aria-named.js'
 
 export type PaginationSize = OasSize
 
@@ -272,16 +273,15 @@ export class OASPagination extends OASElement {
   private hidSelf = false
 
   /**
-   * navigation landmark（[part=group]）可访问名双通道：宿主 aria-label 优先（缺省回落
-   * locale 名「分页」），aria-labelledby 忠实镜像（idref 列表原样拷贝，宿主移除内层同步
-   * 摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先）。
-   * hide-on-single 自隐分支与常规渲染分支共用（group 每轮 innerHTML 重建，名称同步随行）。
+   * navigation landmark（[part=group]）可访问名混合通道（shared/aria-named）：宿主
+   * aria-label 优先（缺省回落 locale 名「分页」）；aria-labelledby 的 idref 不跨 shadow
+   * 解析——引用元素解析成功时写活引用（Chrome 128+ ariaLabelledByElements）+ 引用文本
+   * 快照进 landmark aria-label（覆盖 locale 回退名），引用缺失/通道关闭回落宿主 aria-label
+   * 通道现状。hide-on-single 自隐分支与常规渲染分支共用（group 每轮 innerHTML 重建，
+   * 名称同步随行）。
    */
   private syncNavName(group: HTMLElement): void {
-    group.setAttribute('aria-label', this.getAttribute('aria-label')?.trim() || this.t('pagination.nav'))
-    const ariaLabelledby = this.getAttribute('aria-labelledby')
-    if (ariaLabelledby != null && ariaLabelledby !== '') group.setAttribute('aria-labelledby', ariaLabelledby)
-    else group.removeAttribute('aria-labelledby')
+    syncCrossRootAccessibleName(this, group, this.getAttribute('aria-label')?.trim() || this.t('pagination.nav'))
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

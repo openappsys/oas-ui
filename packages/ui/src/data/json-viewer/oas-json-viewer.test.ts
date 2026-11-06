@@ -632,13 +632,51 @@ describe('OASJsonViewer 可访问名镜像（aria-labelledby）', () => {
     expect(tree(el).hasAttribute('aria-labelledby')).toBe(false)
   })
 
-  it('aria-label 与 aria-labelledby 同时在场：两通道各自镜像互不覆盖', () => {
+  it('aria-labelledby 有有效引用：可访问名以引用文本优先（跨根解析，覆盖 aria-label 通道）', () => {
     const hint = document.createElement('span')
     hint.id = 'jv-hint'
     hint.textContent = '接口响应说明'
     document.body.appendChild(hint)
     const el = mount({ text: SAMPLE, 'aria-label': '接口响应', 'aria-labelledby': 'jv-hint' })
-    expect(tree(el).getAttribute('aria-label')).toBe('接口响应')
     expect(tree(el).getAttribute('aria-labelledby')).toBe('jv-hint')
+    expect(tree(el).getAttribute('aria-label')).toBe('接口响应说明')
+  })
+
+  it('跨根引用解析：引用元素存在时树容器 aria-label 写引用文本快照（覆盖 locale 回退名）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'jv-live'
+    hint.textContent = '部署配置 JSON 树'
+    document.body.appendChild(hint)
+    const el = mount({ text: SAMPLE, 'aria-labelledby': 'jv-live' })
+    expect(tree(el).getAttribute('aria-labelledby')).toBe('jv-live')
+    expect(tree(el).getAttribute('aria-label')).toBe('部署配置 JSON 树')
+  })
+
+  it('部分 idref 缺失容错：跳过缺失项，只用可解析元素文本', () => {
+    const hint = document.createElement('span')
+    hint.id = 'jv-part'
+    hint.textContent = '有效项'
+    document.body.appendChild(hint)
+    const el = mount({ text: SAMPLE, 'aria-labelledby': 'jv-ghost jv-part' })
+    expect(tree(el).getAttribute('aria-label')).toBe('有效项')
+  })
+
+  it('引用全缺失容错：aria-label 回落宿主 aria-label 通道（locale 回退兜底）', () => {
+    const el = mount({ text: SAMPLE, 'aria-label': '宿主名', 'aria-labelledby': 'jv-ghost-only' })
+    expect(tree(el).getAttribute('aria-label')).toBe('宿主名')
+    const el2 = mount({ text: SAMPLE, 'aria-labelledby': 'jv-ghost-2' })
+    expect(tree(el2).getAttribute('aria-label')).toBe(t('jsonViewer.tree'))
+  })
+
+  it('运行时移除 aria-labelledby（引用曾解析成功）：树容器摘除且 aria-label 回落 locale 默认名', () => {
+    const hint = document.createElement('span')
+    hint.id = 'jv-rm'
+    hint.textContent = '引用名'
+    document.body.appendChild(hint)
+    const el = mount({ text: SAMPLE, 'aria-labelledby': 'jv-rm' })
+    expect(tree(el).getAttribute('aria-label')).toBe('引用名')
+    el.removeAttribute('aria-labelledby')
+    expect(tree(el).hasAttribute('aria-labelledby')).toBe(false)
+    expect(tree(el).getAttribute('aria-label')).toBe(t('jsonViewer.tree'))
   })
 })

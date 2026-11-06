@@ -76,6 +76,46 @@ describe('OASPagination', () => {
     expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-labelledby')).toBe('pg-hint')
   })
 
+  it('跨根引用解析：引用元素存在时 landmark aria-label 写引用文本快照（覆盖 locale 回退名）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'pg-live'
+    hint.textContent = '结果列表分页'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'pg-live' })
+    const group = el.shadowRoot!.querySelector('[part="group"]')!
+    expect(group.getAttribute('aria-labelledby')).toBe('pg-live')
+    expect(group.getAttribute('aria-label')).toBe('结果列表分页')
+  })
+
+  it('部分 idref 缺失容错：跳过缺失项，只用可解析元素文本', () => {
+    const hint = document.createElement('span')
+    hint.id = 'pg-part'
+    hint.textContent = '有效项'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'pg-ghost pg-part' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('有效项')
+  })
+
+  it('引用全缺失容错：aria-label 回落宿主 aria-label 通道（locale 回退兜底）', () => {
+    const el = mount({ 'aria-label': '宿主名', 'aria-labelledby': 'pg-ghost-only' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('宿主名')
+    const el2 = mount({ 'aria-labelledby': 'pg-ghost-2' })
+    expect(el2.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('分页')
+  })
+
+  it('运行时移除 aria-labelledby（引用曾解析成功）：landmark 摘除且 aria-label 回落 locale 默认名', () => {
+    const hint = document.createElement('span')
+    hint.id = 'pg-rm'
+    hint.textContent = '引用名'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'pg-rm' })
+    expect(el.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label')).toBe('引用名')
+    el.removeAttribute('aria-labelledby')
+    const group = el.shadowRoot!.querySelector('[part="group"]')!
+    expect(group.hasAttribute('aria-labelledby')).toBe(false)
+    expect(group.getAttribute('aria-label')).toBe('分页')
+  })
+
   it('下一页切换并派发 oas-change', () => {
     const el = mount({ current: '1' })
     let detail: unknown

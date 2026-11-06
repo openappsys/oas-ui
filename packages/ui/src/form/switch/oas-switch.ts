@@ -7,6 +7,7 @@ import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { stableHash36 } from '../../shared/stable-id.js'
 import { normalizeChoice } from '../../shared/choice.js'
+import { syncCrossRootAccessibleName } from '../../shared/aria-named.js'
 
 export type SwitchSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -502,17 +503,11 @@ export class OASSwitch extends OASFormElement {
     if (!sizeValid) warnInvalidSize(sizeRaw)
     btn.className = size
 
-    // 可访问名称便捷通道：宿主直设 aria-label 时镜像给内部 button（显式 aria 优先于 label 关联名）
-    const ariaLabel = this.getAttribute('aria-label')
-    if (ariaLabel != null && ariaLabel !== '') btn.setAttribute('aria-label', ariaLabel)
-    else btn.removeAttribute('aria-label')
-
-    // aria-labelledby 镜像（第二通道，与 aria-label 同路径）：idref 列表原样拷贝，宿主移除
-    // 内层同步摘除；与 aria-label 同时在场不互斥——原生可访问名计算 aria-labelledby 优先，
-    // 忠实镜像即可（不做 auto-complete 式互斥清理）。
-    const ariaLabelledby = this.getAttribute('aria-labelledby')
-    if (ariaLabelledby != null && ariaLabelledby !== '') btn.setAttribute('aria-labelledby', ariaLabelledby)
-    else btn.removeAttribute('aria-labelledby')
+    // 可访问名称混合通道（shared/aria-named）：宿主 aria-label / aria-labelledby 都不跨
+    // shadow 生效——labelledby 引用经活引用属性（Chrome 128+ ariaLabelledByElements）+
+    // 引用文本快照写进内部 button aria-label 兜底（axe: label 规则认它）；引用缺失/通道
+    // 关闭回落宿主 aria-label 镜像（显式 aria 优先于 label 关联名）。
+    syncCrossRootAccessibleName(this, btn, this.getAttribute('aria-label') || null)
 
     // 开关文案：开启显示 checked-text，关闭显示 unchecked-text；
     // xs/small 尺寸时文案放轨道外侧（小轨道塞不下文字），其余尺寸显示在轨道内滑块对侧

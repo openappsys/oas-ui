@@ -463,4 +463,53 @@ describe('segmented 宿主 aria-labelledby 转发', () => {
     expect(groupOf(el).getAttribute('aria-label')).toBe('时间粒度')
     expect(groupOf(el).getAttribute('aria-labelledby')).toBe('seg-hint')
   })
+
+  it('跨根引用解析：引用元素存在时 radiogroup aria-label 写引用文本快照（真实 AT 可用名）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'seg-live'
+    hint.textContent = '时间粒度选择'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'seg-live' })
+    expect(groupOf(el).getAttribute('aria-labelledby')).toBe('seg-live')
+    expect(groupOf(el).getAttribute('aria-label')).toBe('时间粒度选择')
+  })
+
+  it('aria-labelledby 有有效引用：可访问名以引用文本优先（覆盖 aria-label 通道）', () => {
+    const hint = document.createElement('span')
+    hint.id = 'seg-pri'
+    hint.textContent = '引用优先名'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-label': '宿主名', 'aria-labelledby': 'seg-pri' })
+    expect(groupOf(el).getAttribute('aria-label')).toBe('引用优先名')
+    expect(groupOf(el).getAttribute('aria-labelledby')).toBe('seg-pri')
+  })
+
+  it('部分 idref 缺失容错：跳过缺失项，只用可解析元素文本', () => {
+    const hint = document.createElement('span')
+    hint.id = 'seg-part'
+    hint.textContent = '有效项'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'seg-ghost seg-part' })
+    expect(groupOf(el).getAttribute('aria-label')).toBe('有效项')
+  })
+
+  it('引用全缺失容错：aria-label 回落宿主 aria-label 通道（不写空名）', () => {
+    const el = mount({ 'aria-label': '宿主名', 'aria-labelledby': 'seg-ghost-only' })
+    expect(groupOf(el).getAttribute('aria-label')).toBe('宿主名')
+  })
+
+  it('运行时移除 aria-labelledby（引用曾解析成功）：radiogroup 摘除且 aria-label 恢复宿主通道', () => {
+    const hint = document.createElement('span')
+    hint.id = 'seg-rm'
+    hint.textContent = '引用名'
+    document.body.appendChild(hint)
+    const el = mount({ 'aria-labelledby': 'seg-rm' })
+    expect(groupOf(el).getAttribute('aria-label')).toBe('引用名')
+    el.removeAttribute('aria-labelledby')
+    expect(groupOf(el).hasAttribute('aria-labelledby')).toBe(false)
+    expect(groupOf(el).hasAttribute('aria-label')).toBe(false)
+    // 宿主 aria-label 通道恢复独立可用
+    el.setAttribute('aria-label', '宿主名')
+    expect(groupOf(el).getAttribute('aria-label')).toBe('宿主名')
+  })
 })

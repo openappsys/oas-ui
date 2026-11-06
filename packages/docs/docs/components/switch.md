@@ -31,7 +31,7 @@
   </oas-space>
 </DemoBlock>
 
-热区说明：开关宿主宽度收缩为控件实际宽度（`width: fit-content`），默认形态下视觉宽度与点击热区一致；当宿主被显式拉宽（竖向 `oas-space` 的 `align-stretch`、宿主 `width: 100%`）时，**整行空白区点击同样切换**——对齐 iOS 设置项的整行点击语义（内部按钮与 `label` 标签区域仍走各自通道，不会重复触发）。需要旁侧文本热区时用 `label` 提供可点标签。无 `label` 时宿主也可自设 `aria-label`（自动镜像到内部按钮作可访问名称）；也可用 `aria-labelledby` 关联页内元素（同样自动镜像，与 `aria-label` 同时设置时原生可访问名计算以 `aria-labelledby` 优先）。
+热区说明：开关宿主宽度收缩为控件实际宽度（`width: fit-content`），默认形态下视觉宽度与点击热区一致；当宿主被显式拉宽（竖向 `oas-space` 的 `align-stretch`、宿主 `width: 100%`）时，**整行空白区点击同样切换**——对齐 iOS 设置项的整行点击语义（内部按钮与 `label` 标签区域仍走各自通道，不会重复触发）。需要旁侧文本热区时用 `label` 提供可点标签。无 `label` 时宿主也可自设 `aria-label`（自动镜像到内部按钮作可访问名称）；也可用 `aria-labelledby` 关联页内元素（引用元素经跨根解析写入内部按钮：支持 `ariaLabelledByElements` 的引擎写活引用，其余以引用文本快照写内层 `aria-label` 兜底——idref 不跨 shadow 边界，纯镜像读屏解析不到；引用缺失时回落宿主 `aria-label` 通道，快照文本不随引用变化自动追踪）。
 
 <DemoBlock title="块级拉伸整行可点">
   <oas-switch id="switch-block" label="整行点击（点右侧空白试试）" style="width: 100%"></oas-switch>
@@ -233,7 +233,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 可访问名（宿主覆盖通道，显式设置优先于 label 推导） | — | — |
-| `aria-labelledby` | 可访问名第二通道：宿主 idref 列表原样镜像到内部 button（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
+| `aria-labelledby` | 可访问名第二通道（跨根解析）：宿主 idref 列表原样镜像到内部 button，同时解析引用元素——支持 `ariaLabelledByElements` 引用反射的引擎（Chromium 128+）写活引用，其余以引用文本快照写内层 aria-label 兜底（idref 不跨 shadow 解析，纯镜像读屏读不到名）；引用缺失或宿主移除后回落宿主 aria-label 通道；引用文本为快照语义（后续变化不自动追踪） | — | — |
 | `checked` | 是否开启 | `boolean` | — |
 | `checked-icon` | 选中态滑块图标（oas-icon 图标名） | `string` | — |
 | `checked-text` | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | `string` | — |
