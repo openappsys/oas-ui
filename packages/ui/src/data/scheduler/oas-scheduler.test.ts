@@ -2320,6 +2320,323 @@ describe('scheduler 跨日几何 / ICS 类型 / byDay 计数回归（I-1/I-2/I-3
   })
 })
 
+// 资源时间轴视图（第 7 档）：行 = 资源、横向连续日轴跨多天、事件 = 跨列横条。
+// 与 resource（单日）/resource-week（周矩阵格内纵排）并列；跨日事件画连续单条（week 视图 band-span 同款交互）。
+describe('OASScheduler 资源时间轴视图（resource-timeline）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const TL_RES = [
+    { id: 'r1', title: '会议室 A', color: '#2563eb' },
+    { id: 'r2', title: '会议室 B' },
+  ]
+
+  it('视图注册：第 7 个视图按钮 + aria-pressed；重复点击同视图不派发 view-change，切换才派发', () => {
+    const el = mount({ view: 'resource-timeline', 'first-day-of-week': '1', 'page-show-date': '2026-08-10' })
+    const btns = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="views"] button')
+    expect(btns.length).toBe(7)
+    const tlBtn = btns[6]!
+    expect(tlBtn.dataset.view).toBe('resource-timeline')
+    expect(tlBtn.classList.contains('on')).toBe(true)
+    expect(tlBtn.getAttribute('aria-pressed')).toBe('true')
+    let views: string[] = []
+    el.addEventListener('oas-view-change', (e) => views.push((e as CustomEvent<{ view: string }>).detail.view))
+    tlBtn.click()
+    expect(views, '重复点击当前视图不派发').toEqual([])
+    ;(btns[0] as HTMLButtonElement).click()
+    expect(views).toEqual(['month'])
+  })
+
+  it('轴与横条：行 = 资源 + 未分配行、7 天刻度、跨日事件连续单条（宽 = 3/7）、定时条带时间标签', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([
+        { id: 's1', date: '2026-08-11', endDate: '2026-08-13', title: '驻场', resource: 'r1' },
+        { id: 's2', date: '2026-08-14', title: '巡检', start: '09:00', end: '10:00', resource: 'r2' },
+        { id: 's3', date: '2026-08-10', title: '未归属', resource: 'ghost' },
+      ]),
+    })
+    // 轴 7 天刻度：首刻度 08-10
+    const ticks = el.shadowRoot!.querySelectorAll<HTMLElement>('.res-tl-tick')
+    expect(ticks.length).toBe(7)
+    expect(ticks[0]!.textContent).toBe('08-10')
+    // 行：r1 / r2 / 未分配（ghost 归行）
+    const rows = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.res-tl-row')]
+    expect(rows.map((r) => r.dataset.resource)).toEqual(['r1', 'r2', ''])
+    // 跨日连续单条：08-11..08-13 = 轴第 2~4 天（idx 1..3）→ 起点 1/7、宽 3/7
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('.res-tl-row[data-resource="r1"] .res-tl-bar')!
+    expect(bar.textContent).toBe('驻场')
+    expect(bar.dataset.id).toBe('s1')
+    expect(bar.style.getPropertyValue('inset-inline-start')).toBe(`${(1 / 7) * 100}%`)
+    expect(bar.style.getPropertyValue('width')).toBe(`${(3 / 7) * 100}%`)
+    // 定时条带时间标签
+    const bar2 = el.shadowRoot!.querySelector<HTMLElement>('.res-tl-row[data-resource="r2"] .res-tl-bar')!
+    expect(bar2.textContent).toBe('09:00–10:00 巡检')
+    expect(bar2.style.getPropertyValue('width')).toBe(`${(1 / 7) * 100}%`)
+    // 未分配行归属
+    expect(el.shadowRoot!.querySelector('.res-tl-row[data-resource=""] .res-tl-bar')?.textContent).toBe('未归属')
+    // 标题 = 轴跨度（末端短格式，对齐 week/agenda 标题口径）
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026-08-10 ~ 08-16')
+  })
+
+  it('轴外事件裁剪：完全在轴外的条不渲染，跨轴边界的条夹进轴内', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([
+        { id: 'out', date: '2026-08-05', endDate: '2026-08-07', title: '轴外', resource: 'r1' },
+        { id: 'clip', date: '2026-08-08', endDate: '2026-08-12', title: '跨界', resource: 'r1' },
+      ]),
+    })
+    const bars = el.shadowRoot!.querySelectorAll<HTMLElement>('.res-tl-row[data-resource="r1"] .res-tl-bar')
+    expect(bars.length, '轴外条不渲染').toBe(1)
+    expect(bars[0]!.textContent).toBe('跨界')
+    // 08-08 夹到轴首 08-10（idx 0），08-12（idx 2，含端）→ 宽 3/7
+    expect(bars[0]!.style.getPropertyValue('inset-inline-start')).toBe('0%')
+    expect(bars[0]!.style.getPropertyValue('width')).toBe(`${(3 / 7) * 100}%`)
+  })
+
+  it('重叠分层：同资源重叠条上下分层（top 不同），首尾相接不占同层冲突', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([
+        { id: 'a', date: '2026-08-10', endDate: '2026-08-13', title: 'A', resource: 'r1' },
+        { id: 'b', date: '2026-08-12', endDate: '2026-08-15', title: 'B', resource: 'r1' },
+        { id: 'c', date: '2026-08-14', endDate: '2026-08-16', title: 'C', resource: 'r1' },
+      ]),
+    })
+    const tops = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.res-tl-row[data-resource="r1"] .res-tl-bar')].map(
+      (b) => b.style.top,
+    )
+    expect(tops.length).toBe(3)
+    expect(new Set(tops).size, '重叠条分层（C 复用 A 的层）').toBe(2)
+  })
+
+  it('repeat 事件：轴内 occurrence 逐日单日条（不画连续条）', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([
+        { id: 'rep', date: '2026-08-10', title: '每日站会', repeat: { freq: 'daily' }, resource: 'r1' },
+      ]),
+    })
+    expect(el.shadowRoot!.querySelectorAll('.res-tl-row[data-resource="r1"] .res-tl-bar').length).toBe(7)
+  })
+
+  it('range 托管：轴跟随 range-start/range-end（20 天刻度），区间已覆盖不派发 range-request', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([{ id: 's1', date: '2026-08-11', endDate: '2026-08-13', title: '驻场', resource: 'r1' }]),
+    })
+    let reqs = 0
+    el.addEventListener('oas-range-request', () => reqs++)
+    el.setAttribute('range-start', '2026-08-01')
+    el.setAttribute('range-end', '2026-08-20')
+    expect(el.shadowRoot!.querySelectorAll('.res-tl-tick').length).toBe(20)
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026-08-01 ~ 08-20')
+    expect(reqs, '可见范围 = 托管轴自身 → 已覆盖不派发').toBe(0)
+  })
+
+  it('range 跨度超上限：裁剪到 400 天刻度', () => {
+    const el = mount({ view: 'resource-timeline' })
+    el.setAttribute('range-start', '2026-01-01')
+    el.setAttribute('range-end', '2027-06-30')
+    expect(el.shadowRoot!.querySelectorAll('.res-tl-tick').length).toBeLessThanOrEqual(400)
+  })
+
+  it('键盘：←/→ 整天平移 + Alt 缩放终点 + 重建后焦点回同条', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([{ id: 's1', date: '2026-08-11', endDate: '2026-08-13', title: '驻场', resource: 'r1' }]),
+    })
+    const bar = (): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('.res-tl-bar[data-id="s1"]')!
+    expect(bar().getAttribute('aria-keyshortcuts')).toBe('ArrowLeft ArrowRight Alt+ArrowLeft Alt+ArrowRight')
+    bar().focus()
+    bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.events[0]!.date).toBe('2026-08-12')
+    expect(el.events[0]!.endDate, '平移 date/endDate 一起走').toBe('2026-08-14')
+    expect(el.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('s1')
+    bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }))
+    expect(el.events[0]!.endDate).toBe('2026-08-15')
+    bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(el.events[0]!.endDate).toBe('2026-08-14')
+    bar().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(el.events[0]!.date).toBe('2026-08-11')
+    expect(el.events[0]!.endDate).toBe('2026-08-13')
+  })
+
+  it('移出轴跟随：末日条 → 平移一天，轴翻到下周且条仍渲染（焦点保持）', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([{ id: 's1', date: '2026-08-16', endDate: '2026-08-16', title: '末日', resource: 'r1' }]),
+    })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('.res-tl-bar[data-id="s1"]')!
+    bar.focus()
+    bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.events[0]!.date).toBe('2026-08-17')
+    expect(el.events[0]!.endDate).toBe('2026-08-17')
+    // 轴跟随翻到 08-17 起的一周
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026-08-17 ~ 08-23')
+    expect(el.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('s1')
+    expect(el.shadowRoot!.querySelector('.res-tl-bar[data-id="s1"]')).toBeInstanceOf(HTMLElement)
+  })
+
+  it('末端手柄拖拽：按列宽吸附拉长 endDate；pointercancel 不写数据', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([{ id: 's1', date: '2026-08-11', endDate: '2026-08-12', title: '驻场', resource: 'r1' }]),
+    })
+    const axis = el.shadowRoot!.querySelector<HTMLElement>('.res-tl-axis')!
+    Object.defineProperty(axis, 'clientWidth', { value: 700, configurable: true })
+    const handle = el.shadowRoot!.querySelector<HTMLElement>('.res-tl-bar .span-resize')!
+    handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 9, clientX: 0 }))
+    handle.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 9, clientX: 200 }))
+    handle.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 9, clientX: 200 }))
+    expect(el.events[0]!.endDate).toBe('2026-08-14')
+    expect(el.events[0]!.date).toBe('2026-08-11')
+
+    const el2 = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([{ id: 's2', date: '2026-08-11', endDate: '2026-08-12', title: '驻场', resource: 'r1' }]),
+    })
+    const axis2 = el2.shadowRoot!.querySelector<HTMLElement>('.res-tl-axis')!
+    Object.defineProperty(axis2, 'clientWidth', { value: 700, configurable: true })
+    const handle2 = el2.shadowRoot!.querySelector<HTMLElement>('.res-tl-bar .span-resize')!
+    handle2.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 9, clientX: 0 }))
+    handle2.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 9, clientX: 100 }))
+    handle2.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: 9 }))
+    const barEl = handle2.parentElement as HTMLElement
+    expect(barEl.classList.contains('dragging')).toBe(false)
+    expect(barEl.style.getPropertyValue('width')).toBe('')
+    handle2.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 9 }))
+    expect(el2.events[0]!.endDate).toBe('2026-08-12')
+  })
+
+  it('整体拖拽平移：按列宽吸附平移 date/endDate 并回写', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([{ id: 's1', date: '2026-08-11', endDate: '2026-08-12', title: '驻场', resource: 'r1' }]),
+    })
+    const axis = el.shadowRoot!.querySelector<HTMLElement>('.res-tl-axis')!
+    Object.defineProperty(axis, 'clientWidth', { value: 700, configurable: true })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('.res-tl-bar[data-id="s1"]')!
+    bar.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 3, clientX: 0 }))
+    bar.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 3, clientX: 100 }))
+    bar.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 3, clientX: 100 }))
+    expect(el.events[0]!.date).toBe('2026-08-12')
+    expect(el.events[0]!.endDate).toBe('2026-08-13')
+  })
+
+  it('windowed：aria-rowcount 用 total、绝对行号、spacer 守恒总高（行高 61px 定高模型）', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      windowed: '',
+      total: '100',
+      'window-start': '40',
+      resources: JSON.stringify(Array.from({ length: 20 }, (_, i) => ({ id: `r${40 + i}`, title: `R${40 + i}` }))),
+    })
+    expect(el.shadowRoot!.querySelector('[role="grid"]')!.getAttribute('aria-rowcount')).toBe('100')
+    expect(el.shadowRoot!.querySelector('.res-row[data-resource="r40"]')!.getAttribute('aria-rowindex')).toBe('41')
+    const padTop = parseFloat(
+      el.shadowRoot!.querySelector<HTMLElement>('.res-pad-top')!.style.getPropertyValue('height'),
+    )
+    const padBottom = parseFloat(
+      el.shadowRoot!.querySelector<HTMLElement>('.res-pad-bottom')!.style.getPropertyValue('height'),
+    )
+    const rendered = el.shadowRoot!.querySelectorAll('.res-tl-row').length
+    expect(padTop + rendered * 61 + padBottom, 'spacer + 渲染行守恒全量总高').toBe(100 * 61)
+  })
+
+  it('windowed 空切片：渲染 loading 空态（role=status）', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'page-show-date': '2026-08-10',
+      windowed: '',
+      total: '10',
+      'window-start': '0',
+      resources: '[]',
+    })
+    const empty = el.shadowRoot!.querySelector('.res-empty')!
+    expect(empty.getAttribute('role')).toBe('status')
+    expect(empty.textContent).not.toBe('')
+  })
+
+  it('行头与行内空白点击派发 oas-day-click（带 resource）；条点击派发 oas-event-click 不冒泡日点击', () => {
+    const el = mount({
+      view: 'resource-timeline',
+      'first-day-of-week': '1',
+      'page-show-date': '2026-08-10',
+      resources: JSON.stringify(TL_RES),
+      events: JSON.stringify([{ id: 's1', date: '2026-08-11', title: '驻场', resource: 'r1' }]),
+    })
+    const clicks: Array<Record<string, unknown>> = []
+    let eventClicks = 0
+    el.addEventListener('oas-day-click', (e) => clicks.push((e as CustomEvent).detail))
+    el.addEventListener('oas-event-click', () => eventClicks++)
+    // 行头按钮
+    const label = el.shadowRoot!.querySelector<HTMLButtonElement>('.res-row[data-resource="r1"] .res-label')!
+    label.click()
+    expect(clicks.at(-1)).toEqual({ date: '2026-08-10', resource: 'r1' })
+    // 条点击
+    ;(el.shadowRoot!.querySelector<HTMLElement>('.res-tl-bar[data-id="s1"]') as HTMLElement).click()
+    expect(eventClicks).toBe(1)
+    expect(clicks.length).toBe(1)
+  })
+
+  it('RTL：容器带 data-rtl；切 dir 即时更新', () => {
+    const ltr = mount({ view: 'resource-timeline', 'page-show-date': '2026-08-10' })
+    expect(ltr.shadowRoot!.querySelector('[part="resource"]')!.hasAttribute('data-rtl')).toBe(false)
+    const rtl = mount({ view: 'resource-timeline', dir: 'rtl', 'page-show-date': '2026-08-10' })
+    expect(rtl.shadowRoot!.querySelector('[part="resource"]')!.hasAttribute('data-rtl')).toBe(true)
+    rtl.setAttribute('dir', 'ltr')
+    expect(rtl.shadowRoot!.querySelector('[part="resource"]')!.hasAttribute('data-rtl')).toBe(false)
+  })
+
+  it('打印与样式契约：print 块覆盖横条（break-inside avoid + 手柄隐藏），暗色 token 全走 CSS 变量', () => {
+    const el = mount({ view: 'resource-timeline', 'page-show-date': '2026-08-10' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const printStart = css.indexOf('@media print')
+    expect(printStart, '存在 @media print 块').toBeGreaterThan(-1)
+    expect(css.slice(printStart)).toContain('.res-tl-bar')
+    // 颜色只走 token：新视图规则不得出现硬编码色值
+    const tlBlock = css.slice(css.indexOf('.res-tl-axis'), printStart)
+    expect(tlBlock).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+    expect(tlBlock).not.toMatch(/rgba?\(/)
+  })
+})
+
 // 高对比（forced-colors: active）兜底契约：当前时刻线与起点圆点只凭 danger 底色表达，
 // 系统强制 background 后整线消失，必须在 forced-colors 媒体查询内有 outline 兜底。
 describe('OASScheduler forced-colors 高对比兜底', () => {

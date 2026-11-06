@@ -78,6 +78,10 @@ For events with `remind` (minutes), the component dispatches `oas-remind` (`deta
   <oas-scheduler id="scheduler-res-week" view="resource-week" page-show-date="2026-08-10" resources='[{"id":"a","title":"Room A","color":"#2563eb"},{"id":"b","title":"Room B"}]' events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-11","title":"Review","start":"13:00","end":"14:00","resource":"b"},{"date":"2026-08-12","title":"All-day inspection","resource":"a"}]'></oas-scheduler>
 </DemoBlock>
 
+<DemoBlock title="Resource timeline (view=resource-timeline: rows = resources, continuous multi-day axis, events = cross-column bars)">
+  <oas-scheduler id="scheduler-res-timeline" view="resource-timeline" page-show-date="2026-08-10" first-day-of-week="1" resources='[{"id":"a","title":"Room A","color":"#2563eb"},{"id":"b","title":"Room B"}]' events='[{"date":"2026-08-11","endDate":"2026-08-14","title":"On-site rework","color":"#dc2626","resource":"a"},{"date":"2026-08-10","title":"Weekly meeting","resource":"a"},{"date":"2026-08-13","title":"Review","start":"14:00","end":"15:30","resource":"b"},{"date":"2026-08-12","endDate":"2026-08-15","title":"Field support","resource":"ghost"}]'></oas-scheduler>
+</DemoBlock>
+
 <DemoBlock title="Resource groups + secondary timezone (group + secondary-timezone)">
   <oas-scheduler id="scheduler-res-group" view="resource" page-show-date="2026-08-10" start-hour="8" end-hour="18" secondary-timezone="UTC" resources='[{"id":"a","title":"Room A","group":"East","color":"#2563eb"},{"id":"b","title":"Room B","group":"East"},{"id":"c","title":"Equipment","group":"Shared"}]' events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30","resource":"b"}]'></oas-scheduler>
 </DemoBlock>
@@ -94,6 +98,8 @@ For events with `remind` (minutes), the component dispatches `oas-remind` (`deta
 </DemoBlock>
 
 `view="resource"` renders a single-day schedule with resources as rows and hours across; `view="resource-week"` is a week x resource matrix (rows = resources, columns = 7 days of the week). Events are assigned to a resource row via their `resource` field; absent or unknown ids go to the "Unassigned" row. Dragging a range (>=15 minutes) on an empty time cell dispatches `oas-create` (`detail: { date, start, end, resource? }`) — the component does not create the event; the host calls `addEvent`. A shorter drag is treated as a click and dispatches `oas-day-click`. `show-now` (on by default) renders a now line at the current time. A non-empty `resources[].group` inserts a group header row before its resources (once per name, input order preserved); windowed slices do not auto-generate group rows. `secondary-timezone` appends a second timezone label to the day/week/resource-day time gutter (invalid IANA is ignored with a devWarn).
+
+`view="resource-timeline"` is the **resource timeline** (7th tier: rows = resources, columns = one continuous day axis): the horizontal axis is no longer sliced by hour or by cell — multi-day events render as **one continuous bar** (cross-day events that break into two halves in resource-week stay unbroken here). The axis follows the existing range/nav mechanics — without `range-start`/`range-end` it is the current week (7 days, aligned to `first-day-of-week`); with them, the axis equals the host-managed span (spans beyond 400 days are clipped with a one-time devWarn; the axis is then fixed, so prev/next leave it unchanged — extending is the host's job via `range-*`). Resource rows, group header rows, the "Unassigned" row and windowed slices follow the same semantics as `resource` / `resource-week`; overlapping bars within one resource stack vertically (max 3 lanes, excess clipped, matching the fixed-height row model). Bar interactions mirror the week view's cross-day bars: drag the bar to shift `date`/`endDate` with day snapping, drag the end handle to extend only `endDate`, and once focused use `←`/`→` to shift and `Alt+←`/`Alt+→` to resize the end (mirrored visually under RTL); bars shifted out of the axis page the view to keep focus. Clicking a row header or empty lane space dispatches `oas-day-click` (with the resource id; lane clicks resolve the date from the click column); timed events carry a `start–end` label on the bar; repeat events have no `endDate` semantics and render one single-day bar per occurrence.
 
 ## CRUD (method channel)
 
@@ -194,7 +200,7 @@ In the resource view the resource rows, and in the `day` view the hour axis, ren
 
 ## Server-side resource row window (windowed) and printing
 
-The resource views (`resource` / `resource-week`) support server-side slices: `windowed` + `total` + `window-start`, with `resources` carrying only `[window-start, window-start + resources.length)`. The component emits `oas-window-request` (absolute, half-open row range) when the visible window is not covered; the host responds with a new slice and updates `window-start`. `aria-rowcount` uses `total`, and `aria-rowindex` uses absolute row numbers.
+The resource views (`resource` / `resource-week` / `resource-timeline`) support server-side slices: `windowed` + `total` + `window-start`, with `resources` carrying only `[window-start, window-start + resources.length)`. The component emits `oas-window-request` (absolute, half-open row range) when the visible window is not covered; the host responds with a new slice and updates `window-start`. `aria-rowcount` uses `total`, and `aria-rowindex` uses absolute row numbers.
 
 - In windowed mode the component does not append an "Unassigned" row automatically; the host can provide the reserved id `__unassigned__`, and events with no/unknown `resource` are grouped there.
 - Repeat events inside the loaded slice are still expanded locally; when the host expands occurrences it **must strip `repeat` from the base event (or stop sending the base series)**, otherwise the same day renders twice. Give each occurrence a unique id.
@@ -213,7 +219,7 @@ The resource views (`resource` / `resource-week`) support server-side slices: `w
 
 ### Date-window hosting & fetching
 
-The component now supports native date-window hosting: provide `range-start` / `range-end` (ISO dates, inclusive end) and it emits `oas-range-request` (`{ startMs, endMs, reason }`) when the visible range is not covered; update events and `range-*` to close the loop. Requests are de-duplicated. Visible ranges: month = actual 6-week grid, week/resource-week = 7 days, day/resource = the day, agenda = 28 days.
+The component now supports native date-window hosting: provide `range-start` / `range-end` (ISO dates, inclusive end) and it emits `oas-range-request` (`{ startMs, endMs, reason }`) when the visible range is not covered; update events and `range-*` to close the loop. Requests are de-duplicated. Visible ranges: month = actual 6-week grid, week/resource-week = 7 days, day/resource = the day, agenda = 28 days, resource-timeline = its axis span (7 days unmanaged; when range hosting is on, the axis equals the managed span and is covered by definition).
 
 ```ts
 const el = document.querySelector('oas-scheduler')
@@ -305,7 +311,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `start-hour` | Time axis start hour (0-23, default 8) | `string` | `8` |
 | `timezone` | Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local | `string` | — |
 | `total` | Total resource row count in windowed mode (must be positive); used for aria-rowcount and absolute row indices. | `string` | — |
-| `view` | View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix | `SchedulerView` | `month` |
+| `view` | View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix; 'resource-timeline' resource timeline (rows = resources, horizontal continuous day axis spanning multiple days, events as continuous cross-column bars; axis = current week or the range-managed span) | `SchedulerView` | `month` |
 | `window-start` | Absolute row index of the first loaded row in windowed mode. | `string` | `0` |
 | `windowed` | Server-side resource row window mode (boolean, off by default): for resource / resource-week, resources carries only the [window-start, window-start + resources.length) slice; emits oas-window-request (absolute, half-open range) when the visible window is uncovered. The component does not auto-append an Unassigned row; the host may provide the reserved id `__unassigned__`. | `boolean` | — |
 

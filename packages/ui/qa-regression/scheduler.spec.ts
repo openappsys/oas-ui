@@ -1155,3 +1155,100 @@ test('scheduler 日视图：早到/晚走事件夹取在轨道内，不盖列头
   expect(r.short.height, '贴底事件高度让位于剩余轨道').toBeLessThanOrEqual(12.5)
   expect(errors).toEqual([])
 })
+
+// 资源时间轴视图（第 7 档）浏览器回归：跨日事件画连续横条（不断列）+ 键盘平移回写 +
+// windowed 绝对行号/spacer 守恒 + RTL + 暗色可见 + console 零告警。
+// 机制与量界在单测覆盖；条视觉/悬停/拖拽手柄等感知态需浏览器人工复核。
+test('scheduler 资源时间轴：跨日连续条不断列 + 键盘平移回写 + windowed 行号 + console 零告警', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-res-timeline', { timeout: 15000 })
+
+  const tl = page.locator('#scheduler-res-timeline')
+  // 7 天刻度；行 = 资源 + 未分配（ghost 事件归行）
+  await expect(tl.locator('.res-tl-tick')).toHaveCount(7)
+  await expect(tl.locator('.res-tl-row')).toHaveCount(3)
+  // 跨日事件 = 一条连续横条（08-11..08-14 = 4 天 ≈ 4/7 轴宽），不在列边界断开
+  const bar = tl.locator('.res-row[data-resource="a"] .res-tl-bar', { hasText: '驻场改造' })
+  await expect(bar).toBeVisible()
+  const ratio = await tl.evaluate((host) => {
+    const s = host.shadowRoot!
+    const b = s.querySelector<HTMLElement>('.res-row[data-resource="a"] .res-tl-bar')!
+    const axis = s.querySelector<HTMLElement>('.res-tl-axis')!
+    return b.getBoundingClientRect().width / axis.getBoundingClientRect().width
+  })
+  expect(ratio, '跨日条宽 ≈ 4/7 轴宽（4 天连续，无断口）').toBeGreaterThan(0.5)
+  await expect(tl.locator('.res-row[data-resource=""] .res-tl-bar')).toContainText('外勤支持')
+
+  // 键盘：聚焦横条 ArrowRight → date/endDate 整天平移并回写 events；焦点回同条
+  const barId = await bar.evaluate((el) => el.getAttribute('data-id'))
+  expect(barId, '前置：横条携带非空 data-id').toMatch(/^\S+$/)
+  await bar.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect
+    .poll(() =>
+      tl.evaluate((el) =>
+        (el as unknown as { events: Array<{ title: string; date: string; endDate?: string }> }).events.find(
+          (item) => item.title === '驻场改造',
+        ),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-12', endDate: '2026-08-15' })
+  const focusId = await tl.evaluate(
+    (el) => (el.shadowRoot?.activeElement as HTMLElement | null)?.getAttribute('data-id') ?? null,
+  )
+  expect(focusId, '平移后焦点回同条（data-id 与拖拽前一致）').toBe(barId)
+
+  // windowed 探针：绝对行号 + spacer 守恒（临时挂载即删，不留 DOM）
+  const win = await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.id = 'scheduler-tl-windowed'
+    el.setAttribute('view', 'resource-timeline')
+    el.setAttribute('page-show-date', '2026-08-10')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '80')
+    el.setAttribute('window-start', '30')
+    el.setAttribute(
+      'resources',
+      JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ id: `w${30 + i}`, title: `W${30 + i}` }))),
+    )
+    document.body.appendChild(el)
+    const s = el.shadowRoot!
+    const rowH = 61
+    const padTop = parseFloat(s.querySelector<HTMLElement>('.res-pad-top')!.style.height)
+    const padBottom = parseFloat(s.querySelector<HTMLElement>('.res-pad-bottom')!.style.height)
+    const out = {
+      rowCount: s.querySelector('[role="grid"]')?.getAttribute('aria-rowcount') ?? null,
+      firstIndex: s.querySelector('.res-row[data-resource="w30"]')?.getAttribute('aria-rowindex') ?? null,
+      conserved: padTop + s.querySelectorAll('.res-tl-row').length * rowH + padBottom === 80 * rowH,
+    }
+    el.remove()
+    return out
+  })
+  expect(win.rowCount).toBe('80')
+  expect(win.firstIndex).toBe('31')
+  expect(win.conserved, 'spacer + 渲染行守恒全量总高').toBe(true)
+
+  // RTL：容器带 data-rtl
+  const rtl = await page.evaluate(() => {
+    const el = document.createElement('oas-scheduler')
+    el.setAttribute('dir', 'rtl')
+    el.setAttribute('view', 'resource-timeline')
+    el.setAttribute('page-show-date', '2026-08-10')
+    document.body.appendChild(el)
+    const has = (el.shadowRoot!.querySelector('[part="resource"]') as HTMLElement).hasAttribute('data-rtl')
+    el.remove()
+    return has
+  })
+  expect(rtl, 'RTL 下容器带 data-rtl').toBe(true)
+
+  // 暗色：横条仍可见
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await expect(bar).toBeVisible()
+
+  expect(errors, 'console 零告警').toEqual([])
+})

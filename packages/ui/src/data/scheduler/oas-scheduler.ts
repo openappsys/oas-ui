@@ -636,6 +636,68 @@ const STYLE = `
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
 }
+/* ===== 资源时间轴视图（resource-timeline）：行 = 资源，横向连续日轴跨多天，事件 = 跨列横条 ===== */
+.res-tl-axis {
+  position: relative;
+  min-height: 28px;
+  border-inline-start: 1px solid var(--oas-color-border);
+}
+.res-tl-tick {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--oas-color-text-secondary-strong);
+  font-size: var(--oas-font-size-xs);
+  white-space: nowrap;
+}
+.res-tl-tick.today {
+  color: var(--oas-color-primary);
+  font-weight: 600;
+}
+.res-tl-row {
+  display: grid;
+  grid-template-columns: var(--res-label-w) 1fr;
+  border-block-end: 1px solid var(--oas-color-border);
+}
+.res-tl-row.res-group {
+  grid-template-columns: 1fr;
+  background: var(--oas-color-bg-hover);
+}
+.res-tl-lane {
+  position: relative;
+  height: 60px;
+  border-inline-start: 1px solid var(--oas-color-border);
+  overflow: hidden;
+}
+.res-tl-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--oas-color-primary) 6%, transparent);
+}
+.res-tl-bar {
+  position: absolute;
+  height: 16px;
+  border: 0;
+  border-radius: var(--oas-radius-sm);
+  background: color-mix(in srgb, var(--chip-color, var(--oas-color-primary)) 22%, var(--oas-color-bg));
+  color: var(--oas-color-text-primary);
+  font: inherit;
+  font-size: var(--oas-font-size-xs);
+  padding-inline: var(--oas-space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  pointer-events: auto;
+  cursor: grab;
+}
+.res-tl-bar.dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+  z-index: 3;
+}
 .create-preview {
   position: absolute;
   background: color-mix(in srgb, var(--oas-color-primary) 22%, transparent);
@@ -669,8 +731,10 @@ const STYLE = `
     overflow: visible !important;
   }
   .res-row,
+  .res-tl-row,
   .event,
-  .res-ev {
+  .res-ev,
+  .res-tl-bar {
     break-inside: avoid;
   }
   .nowline,
@@ -789,13 +853,21 @@ export interface SchedulerResource {
   group?: string
 }
 
-export type SchedulerView = 'month' | 'week' | 'day' | 'agenda' | 'resource' | 'resource-week'
+export type SchedulerView = 'month' | 'week' | 'day' | 'agenda' | 'resource' | 'resource-week' | 'resource-timeline'
 
 /** windowed 模式下宿主可显式提供的「未分配」资源行 id（无/未知 resource 的事件归入该行） */
 const UNASSIGNED_RESOURCE_ID = '__unassigned__'
 const GROUP_RESOURCE_PREFIX = '__group__:'
 
-const SCHEDULER_VIEWS: SchedulerView[] = ['month', 'week', 'day', 'agenda', 'resource', 'resource-week']
+const SCHEDULER_VIEWS: SchedulerView[] = [
+  'month',
+  'week',
+  'day',
+  'agenda',
+  'resource',
+  'resource-week',
+  'resource-timeline',
+]
 
 /** 时间轴小时行高（px）——纵向时间轴（scheduler 的「时间列」轴）的窗口单位 */
 const HOUR_H = 48
@@ -807,6 +879,13 @@ const RES_ROW_H = 37
 const RES_ROW_BUFFER = 4
 /** 资源周视图单元格最小高（px，镜像 CSS .res-cell min-height）——行高模型下界（防极端区间 spacer 少算） */
 const RES_CELL_MIN_H = 36
+/** 资源时间轴行高（px）：60px 车道（上下 4px 内边距 + 3 层 × 16px 条 + 2px 层间隙）+ 1px 底边框——
+ *  定高模型（窗口化/绝对行号/spacer 守恒的事实源，镜像 RES_ROW_H 口径） */
+const TL_ROW_H = 61
+/** 资源时间轴车道上限：同资源重叠横条最多并排层数，超出裁切（定高 + overflow hidden，同 resource-week windowed 口径） */
+const TL_MAX_LANES = 3
+/** 资源时间轴轴跨度天数上限（range 托管防御）：超出裁剪 + devWarn 一次（对齐 gantt SNAP_MAX_DAYS 量级） */
+const TL_MAX_DAYS = 400
 
 /**
  * 定时事件车道分配：同一天内时间重叠的事件并排显示，避免完全叠印。
@@ -1245,6 +1324,7 @@ export class OASScheduler extends OASElement {
     agenda: 'scheduler.viewAgenda',
     resource: 'scheduler.viewResource',
     'resource-week': 'scheduler.viewResourceWeek',
+    'resource-timeline': 'scheduler.viewResourceTimeline',
   }
 
   private _events: Array<SchedulerEvent & { id: string }> = []
@@ -1660,7 +1740,8 @@ export class OASScheduler extends OASElement {
     const resEl = this.shadow.querySelector<HTMLElement>('[part="resource"]')
     const isTime = this.viewMode === 'week' || this.viewMode === 'day'
     const isAgenda = this.viewMode === 'agenda'
-    const isResource = this.viewMode === 'resource' || this.viewMode === 'resource-week'
+    const isResource =
+      this.viewMode === 'resource' || this.viewMode === 'resource-week' || this.viewMode === 'resource-timeline'
     for (const p of monthParts) p.hidden = isTime || isAgenda || isResource
     if (timeview) timeview.hidden = !isTime
     if (agenda) agenda.hidden = !isAgenda
@@ -1672,7 +1753,7 @@ export class OASScheduler extends OASElement {
     } else if (isAgenda) this.renderAgenda()
     else if (isResource) {
       this.renderResource()
-      // 资源单日视图（今天）有 now 线，需每分钟刷新位置；resource-week 无 now 线不启动定时器
+      // 资源单日视图（今天）有 now 线，需每分钟刷新位置；resource-week / resource-timeline 无 now 线不启动定时器
       if (this.viewMode === 'resource') this.startNowTimer()
     } else {
       this.renderWeekdays()
@@ -1709,6 +1790,7 @@ export class OASScheduler extends OASElement {
             <button type="button" data-view="agenda"></button>
             <button type="button" data-view="resource"></button>
             <button type="button" data-view="resource-week"></button>
+            <button type="button" data-view="resource-timeline"></button>
           </span>
         </div>
         <div class="weekdays" part="weekdays"></div>
@@ -1866,6 +1948,8 @@ export class OASScheduler extends OASElement {
     else if (this.viewMode === 'week' || this.viewMode === 'resource-week')
       this.viewDate = addCalendarDays(this.viewDate, delta * 7)
     else if (this.viewMode === 'agenda') this.viewDate = addCalendarDays(this.viewDate, delta * 28)
+    else if (this.viewMode === 'resource-timeline')
+      this.viewDate = addCalendarDays(this.viewDate, delta * Math.max(this.timelineAxisDays().length, 1))
     else this.viewDate = addCalendarDays(this.viewDate, delta)
     this.renderCurrentView()
   }
@@ -2422,89 +2506,7 @@ export class OASScheduler extends OASElement {
       bar.style.insetInlineStart = `${(startIdx / days.length) * 100}%`
       bar.style.width = `${((endIdx - startIdx) / days.length) * 100}%`
       bar.style.top = `${lane * 22}px`
-      bar.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
-      })
-      bar.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Alt+ArrowLeft Alt+ArrowRight')
-      bar.addEventListener('keydown', (e) => {
-        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
-        e.preventDefault()
-        e.stopPropagation()
-        const dir = isRtl(this) ? -1 : 1
-        const step = e.key === 'ArrowRight' ? dir : -dir
-        if (e.altKey) this.resizeSpanEndByDays(ev, step)
-        else this.shiftSpanByDays(ev, step)
-      })
-      // 终点拖拽手柄：只改 endDate，不移动 date；Alt+方向键提供等价键盘路径
-      const endHandle = document.createElement('span')
-      endHandle.className = 'span-resize'
-      endHandle.setAttribute('aria-hidden', 'true')
-      endHandle.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0) return
-        e.stopPropagation()
-        e.preventDefault()
-        const startX = e.clientX
-        const colW = band.clientWidth / days.length
-        if (!(colW > 0)) return
-        const baseWidth = bar.getBoundingClientRect().width
-        let delta = 0
-        endHandle.setPointerCapture(e.pointerId)
-        bar.classList.add('dragging')
-        const move = (me: PointerEvent): void => {
-          if (me.pointerId !== e.pointerId) return
-          delta = Math.round((me.clientX - startX) / colW) * (isRtl(this) ? -1 : 1)
-          bar.style.width = `${Math.max(colW, baseWidth + delta * colW)}px`
-        }
-        const cleanup = (): void => {
-          endHandle.removeEventListener('pointermove', move)
-          endHandle.removeEventListener('pointerup', finish)
-          endHandle.removeEventListener('pointercancel', cancel)
-          bar.classList.remove('dragging')
-          bar.style.width = ''
-        }
-        const finish = (): void => {
-          cleanup()
-          if (delta !== 0) this.resizeSpanEndByDays(ev, delta)
-        }
-        const cancel = (): void => cleanup()
-        endHandle.addEventListener('pointermove', move)
-        endHandle.addEventListener('pointerup', finish)
-        endHandle.addEventListener('pointercancel', cancel)
-      })
-      bar.appendChild(endHandle)
-      // 跨日连续条拖拽整体平移（按列宽吸附到天）
-      let dragX: number | null = null
-      let lastDelta = 0
-      bar.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0) return
-        dragX = e.clientX
-        lastDelta = 0
-        bar.setPointerCapture(e.pointerId)
-        bar.classList.add('dragging')
-      })
-      bar.addEventListener('pointermove', (e) => {
-        if (dragX === null) return
-        const colW = band.clientWidth / days.length
-        if (!(colW > 0)) return
-        lastDelta = Math.round((e.clientX - dragX) / colW) * (isRtl(this) ? -1 : 1)
-        bar.style.transform = `translateX(${lastDelta * colW}px)`
-      })
-      const finish = (): void => {
-        if (dragX === null) return
-        dragX = null
-        bar.classList.remove('dragging')
-        bar.style.transform = ''
-        if (lastDelta !== 0) {
-          this.shiftSpanByDays(ev, lastDelta)
-        }
-      }
-      bar.addEventListener('pointerup', finish)
-      bar.addEventListener('pointercancel', () => {
-        dragX = null
-        bar.classList.remove('dragging')
-        bar.style.transform = ''
-      })
+      this.attachSpanBarInteractions(bar, ev, () => band.clientWidth / days.length)
       spanLayer.appendChild(bar)
     }
     if (spanLayer.childElementCount > 0) {
@@ -2534,7 +2536,7 @@ export class OASScheduler extends OASElement {
       return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta))
     }
     const nextDate = shift(current.date)
-    // 键盘可连续平移：移出当前周/日时视图跟随，避免条卸载后焦点丢失
+    // 键盘可连续平移：移出当前周/日/时间轴时视图跟随，避免条卸载后焦点丢失
     const next = parseISODate(nextDate)!
     if (this.viewMode === 'week') {
       const weekStart = this.weekStartOf(this.viewDate)
@@ -2542,6 +2544,11 @@ export class OASScheduler extends OASElement {
       if (next < weekStart || next > weekEnd) this.viewDate = startOfDay(next)
     } else if (this.viewMode === 'day') {
       if (nextDate !== toISODate(this.viewDate)) this.viewDate = startOfDay(next)
+    } else if (this.viewMode === 'resource-timeline') {
+      const days = this.timelineAxisDays()
+      const first = days[0]
+      const last = days[days.length - 1]
+      if (first && last && (next < first || next > last)) this.viewDate = startOfDay(next)
     }
     this.updateEvent(current.id, { date: nextDate, endDate: shift(current.endDate) })
   }
@@ -2573,7 +2580,102 @@ export class OASScheduler extends OASElement {
       if (d < weekStart) this.viewDate = startOfDay(d)
     } else if (this.viewMode === 'day' && iso < toISODate(this.viewDate)) {
       this.viewDate = startOfDay(d)
+    } else if (this.viewMode === 'resource-timeline') {
+      const days = this.timelineAxisDays()
+      if (days.length > 0 && d < days[0]!) this.viewDate = startOfDay(d)
     }
+  }
+
+  /**
+   * 跨日连续条共用交互（week 视图 band-span 与 resource-timeline 横条同一套）：
+   * 点击派发 event-click；键盘 ←/→ 整天平移、Alt+←/→ 缩放终点（RTL 按视觉方向镜像）；
+   * 末端手柄指针拖拽只改 endDate；条整体指针拖拽按列宽吸附平移。colW() 在事件期读取
+   * 当前视图列宽（px），两个视图各自的列宽来源不同。
+   */
+  private attachSpanBarInteractions(bar: HTMLElement, ev: SchedulerEvent & { id: string }, colW: () => number): void {
+    bar.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.emit('event-click', { id: ev.id, event: { ...ev } } satisfies SchedulerEventClickDetail)
+    })
+    bar.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Alt+ArrowLeft Alt+ArrowRight')
+    bar.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      e.preventDefault()
+      e.stopPropagation()
+      const dir = isRtl(this) ? -1 : 1
+      const step = e.key === 'ArrowRight' ? dir : -dir
+      if (e.altKey) this.resizeSpanEndByDays(ev, step)
+      else this.shiftSpanByDays(ev, step)
+    })
+    // 终点拖拽手柄：只改 endDate，不移动 date；Alt+方向键提供等价键盘路径
+    const endHandle = document.createElement('span')
+    endHandle.className = 'span-resize'
+    endHandle.setAttribute('aria-hidden', 'true')
+    endHandle.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return
+      e.stopPropagation()
+      e.preventDefault()
+      const startX = e.clientX
+      const w = colW()
+      if (!(w > 0)) return
+      const baseWidth = bar.getBoundingClientRect().width
+      let delta = 0
+      endHandle.setPointerCapture(e.pointerId)
+      bar.classList.add('dragging')
+      const move = (me: PointerEvent): void => {
+        if (me.pointerId !== e.pointerId) return
+        delta = Math.round((me.clientX - startX) / w) * (isRtl(this) ? -1 : 1)
+        bar.style.width = `${Math.max(w, baseWidth + delta * w)}px`
+      }
+      const cleanup = (): void => {
+        endHandle.removeEventListener('pointermove', move)
+        endHandle.removeEventListener('pointerup', finish)
+        endHandle.removeEventListener('pointercancel', cancel)
+        bar.classList.remove('dragging')
+        bar.style.width = ''
+      }
+      const finish = (): void => {
+        cleanup()
+        if (delta !== 0) this.resizeSpanEndByDays(ev, delta)
+      }
+      const cancel = (): void => cleanup()
+      endHandle.addEventListener('pointermove', move)
+      endHandle.addEventListener('pointerup', finish)
+      endHandle.addEventListener('pointercancel', cancel)
+    })
+    bar.appendChild(endHandle)
+    // 跨日连续条拖拽整体平移（按列宽吸附到天）
+    let dragX: number | null = null
+    let lastDelta = 0
+    bar.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return
+      dragX = e.clientX
+      lastDelta = 0
+      bar.setPointerCapture(e.pointerId)
+      bar.classList.add('dragging')
+    })
+    bar.addEventListener('pointermove', (e) => {
+      if (dragX === null) return
+      const w = colW()
+      if (!(w > 0)) return
+      lastDelta = Math.round((e.clientX - dragX) / w) * (isRtl(this) ? -1 : 1)
+      bar.style.transform = `translateX(${lastDelta * w}px)`
+    })
+    const finish = (): void => {
+      if (dragX === null) return
+      dragX = null
+      bar.classList.remove('dragging')
+      bar.style.transform = ''
+      if (lastDelta !== 0) {
+        this.shiftSpanByDays(ev, lastDelta)
+      }
+    }
+    bar.addEventListener('pointerup', finish)
+    bar.addEventListener('pointercancel', () => {
+      dragX = null
+      bar.classList.remove('dragging')
+      bar.style.transform = ''
+    })
   }
 
   private setDropCol(col: HTMLElement | null): void {
@@ -2861,10 +2963,11 @@ export class OASScheduler extends OASElement {
     }
   }
 
-  /** 资源视图：resource = 单日横向时间轴；resource-week = 周 × 资源 */
+  /** 资源视图：resource = 单日横向时间轴；resource-week = 周 × 资源；resource-timeline = 资源 × 连续日轴 */
   private renderResource(): void {
     if (this.viewMode === 'resource') this.renderResourceDay()
-    else this.renderResourceWeek()
+    else if (this.viewMode === 'resource-week') this.renderResourceWeek()
+    else this.renderResourceTimeline()
   }
 
   /** 资源行：显式 resources；无则单行「未分配」。事件带未知 resource 时补一行「未分配」（按索引计数 O(1) 判定）。
@@ -3194,6 +3297,239 @@ export class OASScheduler extends OASElement {
     this.restoreFocus(focusId)
   }
 
+  /** 资源时间轴轴跨度：range-start/range-end 托管 → 宿主跨度（半开 [startMs,endMs) 逐日展开）；
+   *  未托管 → 当前周（first-day-of-week 对齐的 7 天）。跨度超 TL_MAX_DAYS 裁剪 + devWarn 一次。 */
+  private tlDaysWarned = false
+  private timelineAxisDays(): Date[] {
+    const range = this.hostRangeMs()
+    if (range) {
+      const days: Date[] = []
+      for (let ms = range.startMs; ms < range.endMs; ) {
+        const d = new Date(ms)
+        days.push(d)
+        ms = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime()
+      }
+      if (days.length > TL_MAX_DAYS) {
+        if (!this.tlDaysWarned) {
+          this.tlDaysWarned = true
+          devWarn(`[oas-scheduler] 资源时间轴跨度 ${days.length} 天超上限 ${TL_MAX_DAYS}，已裁剪`)
+        }
+        days.length = TL_MAX_DAYS
+      }
+      if (days.length > 0) return days
+    }
+    const ws = this.weekStartOf(this.viewDate)
+    const days: Date[] = []
+    for (let i = 0; i < 7; i++) days.push(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i))
+    return days
+  }
+
+  /** 某资源行在轴内的横条段：非 repeat 事件按 date..endDate 与轴求交（含端 → 列区间 [s,e]，跨轴夹取）；
+   *  repeat 事件无 endDate 语义 → 轴内逐 occurrence 画单日条（与「repeat 不与 endDate 组合」口径一致）。
+   *  半开贪心分层（同 band-span spanRows），同资源重叠最多 TL_MAX_LANES 层，超出裁切（定高模型）。 */
+  private timelineBarsOfRow(
+    resourceId: string,
+    days: Date[],
+  ): Array<{ ev: SchedulerEvent & { id: string }; s: number; e: number; lane: number }> {
+    const bucket = this._eventsByResource.get(resourceId)
+    if (!bucket || days.length === 0) return []
+    this._diagEventScans += bucket.length // 仅内部诊断
+    const firstDay = days[0]!
+    const lastIso = toISODate(days[days.length - 1]!)
+    const firstIso = toISODate(firstDay)
+    type Seg = { ev: SchedulerEvent & { id: string }; s: number; e: number }
+    const segs: Seg[] = []
+    for (const ev of bucket) {
+      if (ev.repeat) {
+        for (let i = 0; i < days.length; i++) {
+          if (this.isOccurrence(ev, toISODate(days[i]!))) segs.push({ ev, s: i, e: i })
+        }
+        continue
+      }
+      const rawStart = ev.date < firstIso ? firstIso : ev.date
+      const rawEnd = (ev.endDate ?? ev.date) > lastIso ? lastIso : (ev.endDate ?? ev.date)
+      if (rawStart > lastIso || rawEnd < firstIso) continue
+      const s = Math.max(0, calDayDiff(parseISODate(rawStart)!, firstDay))
+      const e = Math.min(days.length - 1, calDayDiff(parseISODate(rawEnd)!, firstDay))
+      if (e < s) continue
+      segs.push({ ev, s, e })
+    }
+    segs.sort((a, b) => a.s - b.s || b.e - a.e || a.ev.id.localeCompare(b.ev.id))
+    const laneEnds: number[] = []
+    const out: Array<{ ev: SchedulerEvent & { id: string }; s: number; e: number; lane: number }> = []
+    for (const seg of segs) {
+      let lane = laneEnds.findIndex((end) => end <= seg.s)
+      if (lane < 0) {
+        if (laneEnds.length >= TL_MAX_LANES) continue
+        lane = laneEnds.length
+        laneEnds.push(seg.e + 1)
+      } else {
+        laneEnds[lane] = seg.e + 1
+      }
+      out.push({ ...seg, lane })
+    }
+    return out
+  }
+
+  /** 资源时间轴横条：按列区间百分比定位（RTL 走 inset-inline-start 逻辑属性自动镜像）；
+   *  文本对齐 band-span（定时条带 start–end 标签）；交互共用 attachSpanBarInteractions。 */
+  private renderTimelineBar(
+    ev: SchedulerEvent & { id: string },
+    s: number,
+    e: number,
+    lane: number,
+    dayTotal: number,
+    colW: () => number,
+  ): HTMLButtonElement {
+    const bar = document.createElement('button')
+    bar.type = 'button'
+    bar.className = 'res-tl-bar'
+    bar.dataset.id = ev.id
+    const timeText = ev.start ? `${ev.start}${ev.end ? `–${ev.end}` : ''}` : ''
+    bar.textContent = timeText ? `${timeText} ${ev.title}` : ev.title
+    if (ev.color) bar.style.setProperty('--chip-color', ev.color)
+    bar.style.insetInlineStart = `${(s / dayTotal) * 100}%`
+    bar.style.width = `${((e - s + 1) / dayTotal) * 100}%`
+    bar.style.top = `${4 + lane * 18}px`
+    this.attachSpanBarInteractions(bar, ev, colW)
+    return bar
+  }
+
+  /** 资源时间轴视图：行 = 资源，横向 = 连续日轴（range 托管跨度或当前周）；事件画跨列连续横条，
+   *  resource-week 里断成两截的跨日事件在此连续成一条（band-span 同款拖拽/缩放/键盘交互）。 */
+  private renderResourceTimeline(): void {
+    const el = this.shadow.querySelector<HTMLElement>('[part="resource"]')
+    if (!el) return
+    // 焦点保持：重建前记录焦点事件条 id，重建尾按 id 回焦（同行窗口平移重建口径）
+    const focusId = this.focusedId()
+    const days = this.timelineAxisDays()
+    const dayTotal = days.length
+    const firstIso = dayTotal > 0 ? toISODate(days[0]!) : ''
+    if (this.titleEl && dayTotal > 0) {
+      this.titleEl.textContent = `${this.fmtTz(days[0]!, 'yyyy-MM-dd')} ~ ${this.fmtTz(days[dayTotal - 1]!, 'MM-dd')}`
+    }
+    // 行窗口必须在清空内容前计算（同 renderResourceDay：清 DOM 后读 scrollTop 会被钳回 0）
+    const rows = this.resourceRows()
+    const rowH = TL_ROW_H
+    const totalRows = this.winMode.windowed ? this.winMode.total : rows.length
+    const rowBase = this.winMode.windowed ? Math.min(this.winMode.windowStart, totalRows) : 0
+    const win = this.rowWindow(rows.length, rowH)
+    this.lastRowWin = win
+    el.innerHTML = ''
+    el.className = 'resourceview res-tl'
+    el.toggleAttribute('data-rtl', isRtl(this))
+    const today = this.todayTz()
+    const todayIdx = dayTotal > 0 ? days.findIndex((d) => isSameDay(d, today)) : -1
+
+    const head = document.createElement('div')
+    head.className = 'res-head'
+    const corner = document.createElement('div')
+    corner.className = 'res-corner'
+    head.appendChild(corner)
+    const axis = document.createElement('div')
+    axis.className = 'res-tl-axis'
+    for (let i = 0; i < dayTotal; i++) {
+      const tick = document.createElement('span')
+      tick.className = 'res-tl-tick'
+      if (isSameDay(days[i]!, today)) tick.classList.add('today')
+      tick.textContent = this.fmtTz(days[i]!, 'MM-dd')
+      tick.style.insetInlineStart = `${((i + 0.5) / dayTotal) * 100}%`
+      axis.appendChild(tick)
+    }
+    head.appendChild(axis)
+    el.appendChild(head)
+
+    const body = document.createElement('div')
+    body.className = 'res-body'
+    body.setAttribute('role', 'grid')
+    body.setAttribute('aria-rowcount', String(totalRows))
+    // 行窗口 spacer：窗口外行以等高占位撑起总高（滚动范围守恒；aria-hidden 不进可访问树）
+    const padTop = document.createElement('div')
+    padTop.className = 'res-pad-top'
+    padTop.setAttribute('aria-hidden', 'true')
+    padTop.style.height = `${this.printAll && this.winMode.windowed ? 0 : (rowBase + win.start) * rowH}px`
+    body.appendChild(padTop)
+    for (let i = win.start; i < win.end; i++) {
+      if (rowBase + i >= totalRows) break
+      const r = rows[i]!
+      const row = document.createElement('div')
+      row.className = 'res-row res-tl-row'
+      row.dataset.resource = r.id
+      row.setAttribute('role', 'row')
+      row.setAttribute('aria-rowindex', String(rowBase + i + 1))
+      if (r.id.startsWith(GROUP_RESOURCE_PREFIX)) {
+        row.classList.add('res-group')
+        row.style.height = `${rowH}px`
+        const groupLabel = document.createElement('div')
+        groupLabel.className = 'res-group-label'
+        groupLabel.setAttribute('role', 'rowheader')
+        groupLabel.textContent = r.title
+        row.appendChild(groupLabel)
+        body.appendChild(row)
+        continue
+      }
+      if (this.winMode.windowed) {
+        // windowed 的绝对行号/像素映射依赖定高：固定行高并裁切溢出（同 renderResourceWeek 口径）
+        row.style.height = `${rowH}px`
+        row.style.overflow = 'hidden'
+      }
+      const label = document.createElement('button')
+      label.type = 'button'
+      label.className = 'res-label'
+      label.setAttribute('role', 'rowheader')
+      label.textContent = r.title
+      if (r.color) label.style.setProperty('--chip-color', r.color)
+      label.addEventListener('click', () => {
+        if (firstIso) this.emit('day-click', { date: firstIso, resource: r.id } satisfies SchedulerDayClickDetail)
+      })
+      row.appendChild(label)
+
+      const lane = document.createElement('div')
+      lane.className = 'res-tl-lane'
+      lane.dataset.resource = r.id
+      lane.setAttribute('role', 'gridcell')
+      if (todayIdx >= 0) {
+        const todayCol = document.createElement('span')
+        todayCol.className = 'res-tl-today'
+        todayCol.style.insetInlineStart = `${(todayIdx / dayTotal) * 100}%`
+        todayCol.style.width = `${(1 / dayTotal) * 100}%`
+        lane.appendChild(todayCol)
+      }
+      for (const seg of this.timelineBarsOfRow(r.id, days)) {
+        lane.appendChild(
+          this.renderTimelineBar(seg.ev, seg.s, seg.e, seg.lane, dayTotal, () => axis.clientWidth / dayTotal),
+        )
+      }
+      // 行内空白点击：按落点列定位日期（RTL 镜像；无布局环境回落轴首日）
+      lane.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.res-tl-bar')) return
+        const rect = lane.getBoundingClientRect()
+        const rel = isRtl(this) ? rect.right - e.clientX : e.clientX - rect.left
+        const idx = rect.width > 0 ? Math.min(dayTotal - 1, Math.max(0, Math.floor((rel / rect.width) * dayTotal))) : 0
+        if (firstIso)
+          this.emit('day-click', { date: toISODate(days[idx]!), resource: r.id } satisfies SchedulerDayClickDetail)
+      })
+      row.appendChild(lane)
+      body.appendChild(row)
+    }
+    const padBottom = document.createElement('div')
+    padBottom.className = 'res-pad-bottom'
+    padBottom.setAttribute('aria-hidden', 'true')
+    padBottom.style.height = `${this.printAll && this.winMode.windowed ? 0 : Math.max(0, totalRows - rowBase - win.end) * rowH}px`
+    body.appendChild(padBottom)
+    el.appendChild(body)
+    if (rows.length === 0 && this.winMode.windowed) {
+      const empty = document.createElement('div')
+      empty.className = 'res-empty'
+      empty.setAttribute('role', 'status')
+      empty.textContent = this.t('scheduler.loading')
+      el.appendChild(empty)
+    }
+    this.anchorWindowedScroll(rowBase, rowH)
+    this.requestResourceWindow()
+    this.restoreFocus(focusId)
+  }
+
   /** 资源行内的横向事件条（按 start/end 百分比定位） */
   private renderResourceBar(
     ev: SchedulerEvent & { id: string },
@@ -3266,7 +3602,8 @@ export class OASScheduler extends OASElement {
   private refreshScrollWindows(): void {
     if (this.dragCtx || this.createCtx) return
     const isTime = this.viewMode === 'week' || this.viewMode === 'day'
-    const isResource = this.viewMode === 'resource' || this.viewMode === 'resource-week'
+    const isResource =
+      this.viewMode === 'resource' || this.viewMode === 'resource-week' || this.viewMode === 'resource-timeline'
     if (isTime) {
       const win = this.hourWindow()
       if (this.sameWindow(win, this.lastHourWin)) return
@@ -3375,6 +3712,15 @@ export class OASScheduler extends OASElement {
         endMs: new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7).getTime(),
       }
     }
+    if (this.viewMode === 'resource-timeline') {
+      const days = this.timelineAxisDays()
+      if (days.length === 0) return null
+      const last = days[days.length - 1]!
+      return {
+        startMs: startOfDay(days[0]!).getTime(),
+        endMs: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1).getTime(),
+      }
+    }
     if (this.viewMode === 'agenda') {
       return {
         startMs: startOfDay(this.viewDate).getTime(),
@@ -3435,6 +3781,7 @@ export class OASScheduler extends OASElement {
   private resRowH(): number {
     if (this.viewMode === 'resource-week')
       return Math.max((this.endHourValue() - this.startHourValue()) * 24, RES_CELL_MIN_H) + 1
+    if (this.viewMode === 'resource-timeline') return TL_ROW_H
     return RES_ROW_H
   }
 }

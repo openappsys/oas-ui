@@ -78,6 +78,10 @@
   <oas-scheduler id="scheduler-res-week" view="resource-week" page-show-date="2026-08-10" resources='[{"id":"a","title":"会议室 A","color":"#2563eb"},{"id":"b","title":"会议室 B"}]' events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-11","title":"评审","start":"13:00","end":"14:00","resource":"b"},{"date":"2026-08-12","title":"全天巡检","resource":"a"}]'></oas-scheduler>
 </DemoBlock>
 
+<DemoBlock title="资源时间轴（view=resource-timeline：行 = 资源，横向连续日轴跨多天，事件 = 跨列横条）">
+  <oas-scheduler id="scheduler-res-timeline" view="resource-timeline" page-show-date="2026-08-10" first-day-of-week="1" resources='[{"id":"a","title":"会议室 A","color":"#2563eb"},{"id":"b","title":"会议室 B"}]' events='[{"date":"2026-08-11","endDate":"2026-08-14","title":"驻场改造","color":"#dc2626","resource":"a"},{"date":"2026-08-10","title":"例会","resource":"a"},{"date":"2026-08-13","title":"评审","start":"14:00","end":"15:30","resource":"b"},{"date":"2026-08-12","endDate":"2026-08-15","title":"外勤支持","resource":"ghost"}]'></oas-scheduler>
+</DemoBlock>
+
 <DemoBlock title="资源分组 + 第二时区（group + secondary-timezone）">
   <oas-scheduler id="scheduler-res-group" view="resource" page-show-date="2026-08-10" start-hour="8" end-hour="18" secondary-timezone="UTC" resources='[{"id":"a","title":"会议室 A","group":"华东","color":"#2563eb"},{"id":"b","title":"会议室 B","group":"华东"},{"id":"c","title":"设备间","group":"公共"}]' events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00","resource":"a"},{"date":"2026-08-10","title":"评审","start":"14:00","end":"15:30","resource":"b"}]'></oas-scheduler>
 </DemoBlock>
@@ -94,6 +98,8 @@
 </DemoBlock>
 
 `view="resource"` 以行为资源、横向为小时渲染单日排班；`view="resource-week"` 为周 × 资源矩阵（行 = 资源、列 = 本周 7 天）。事件用 `resource` 字段归属资源行，缺省或未知 id 归「未分配」行。在时间格空白处按住拖出区间（≥15 分钟）派发 `oas-create`（`detail: { date, start, end, resource? }`），组件不自动建事件——宿主接到后调 `addEvent`；位移不足视作点击派发 `oas-day-click`。`show-now`（默认开）在当前时间处渲染 now 线。`resources[].group` 非空时在资源行前自动插入分组标题行（同名只插一次，输入顺序保持）；windowed 切片不自动生成分组行，需宿主自行提供。`secondary-timezone` 为时间刻度追加第二时区标签（仅 `day` / `week` / 资源单日视图；非法 IANA 忽略并 devWarn）。
+
+`view="resource-timeline"` 为**资源时间轴**（第 7 档：行 = 资源，横向 = 连续日轴）：横向不再按小时或按格切断，跨多天事件渲染为**一条连续横条**（resource-week 里断成两截的跨日事件在此不断列）。轴跨度跟随既有 range/nav 机制——未提供 `range-start`/`range-end` 时轴为当前周（7 天，`first-day-of-week` 对齐，翻页按整轴推进），提供后轴 = 宿主托管跨度（超过 400 天裁剪并 devWarn 一次；此时轴固定，prev/next 不改变轴，扩轴由宿主更新 `range-*` 完成）。资源行、分组标题行、「未分配」行与 windowed 切片口径同 `resource` / `resource-week`；同资源重叠的横条自动上下分层（最多 3 层，超出裁切，配合 overflow hidden 的定高行模型）。横条交互与周视图跨日条一致：整体拖动按天吸附平移 `date`/`endDate`、末端手柄拉伸只改 `endDate`、键盘聚焦后 `←`/`→` 平移与 `Alt+←`/`Alt+→` 缩放终点（RTL 按视觉方向镜像），条移出轴时视图跟随翻页保持焦点。行头与行内空白点击派发 `oas-day-click`（带资源 id；行内按落点列定位日期）；定时事件的横条带 `开始–结束` 时间标签；repeat 事件无 `endDate` 语义，按 occurrence 逐日画单日条。
 
 ## CRUD（方法通道）
 
@@ -209,7 +215,7 @@ onMounted(async () => {
 
 ## 服务端资源行窗口（windowed）与打印
 
-资源视图（`resource` / `resource-week`）支持服务端分片：`windowed` + `total` + `window-start`，`resources` 只喂 `[window-start, window-start + resources.length)` 的资源切片。组件按可视窗口派发 `oas-window-request`（绝对行号、半开区间），宿主回填切片后更新 `window-start`；`aria-rowcount` 使用 `total`，`aria-rowindex` 使用绝对行号。
+资源视图（`resource` / `resource-week` / `resource-timeline`）支持服务端分片：`windowed` + `total` + `window-start`，`resources` 只喂 `[window-start, window-start + resources.length)` 的资源切片。组件按可视窗口派发 `oas-window-request`（绝对行号、半开区间），宿主回填切片后更新 `window-start`；`aria-rowcount` 使用 `total`，`aria-rowindex` 使用绝对行号。
 
 - windowed 下组件不自动追加「未分配」行；宿主需要该行时显式提供保留 id `__unassigned__`，无/未知 `resource` 的事件会归入该行。
 - 组件仍会对已装载切片内的 `repeat` 事件做本地展开；宿主展开 occurrence 时**必须从基础事件剥离 `repeat`（或不再下发基础序列）**，否则同一天会重复渲染；每个 occurrence 用唯一 id。
@@ -228,7 +234,7 @@ onMounted(async () => {
 
 ### 日期窗口托管与取数
 
-组件原生支持日期窗口托管：提供 `range-start` / `range-end`（ISO 日期，`end` 含端）后，当前视图可见范围未被覆盖时派发 `oas-range-request`（detail `{ startMs, endMs, reason }`）；宿主回填事件并更新 `range-*` 即完成闭环，同范围自动去重。月视图按实际 6 周网格、周/资源周按 7 天、日/资源日按当天、agenda 按 28 天计算。
+组件原生支持日期窗口托管：提供 `range-start` / `range-end`（ISO 日期，`end` 含端）后，当前视图可见范围未被覆盖时派发 `oas-range-request`（detail `{ startMs, endMs, reason }`）；宿主回填事件并更新 `range-*` 即完成闭环，同范围自动去重。月视图按实际 6 周网格、周/资源周按 7 天、日/资源日按当天、agenda 按 28 天、资源时间轴按轴跨度（未托管时 7 天；托管时 = 托管跨度自身，天然覆盖不派发）计算。
 
 ```ts
 const el = document.querySelector('oas-scheduler')
@@ -321,7 +327,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `start-hour` | 时间轴起始小时（0-23，默认 8） | `string` | `8` |
 | `timezone` | 时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地 | `string` | — |
 | `total` | windowed 模式下的资源行总数（正数才生效）；用于 aria-rowcount 与绝对行号 | `string` | — |
-| `view` | 视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵 | `SchedulerView` | `month` |
+| `view` | 视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵；`'resource-timeline'` 资源时间轴（行 = 资源、横向连续日轴跨多天、事件 = 跨列连续横条；轴 = 当前周或 range 托管跨度） | `SchedulerView` | `month` |
 | `window-start` | windowed 模式下切片首行的绝对行号（相对全量） | `string` | `0` |
 | `windowed` | 服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行；需要时宿主可提供保留 id `__unassigned__` | `boolean` | — |
 
