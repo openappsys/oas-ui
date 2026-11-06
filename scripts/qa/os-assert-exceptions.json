@@ -6,6 +6,24 @@
       "rule": "count-literal",
       "snippet": "heights.length",
       "reason": "button 文档页声明式 demo 的按钮总数（99）——数据驱动计数，与字体度量/视口布局无关；coarse 触屏仿真的 44px 高度下界由后续逐条断言承担，本计数只证明「页面按钮全部渲染（无 0 高被 filter）」。"
+    },
+    {
+      "file": "packages/ui/qa-regression/table.spec.ts",
+      "rule": "count-literal",
+      "snippet": "print 全列（31 列 = 名称 + 30 指标）",
+      "reason": "列数由同用例内联 fixture 决定（1 名称列 + 30 指标列在 evaluate 里显式生成），print 下断言全列真实渲染计数——数据驱动，与 OS 字体度量/视口布局无关。"
+    },
+    {
+      "file": "packages/ui/qa-regression/table.spec.ts",
+      "rule": "count-literal",
+      "snippet": "导入数据写入表格 data",
+      "reason": "行数由同用例临时写入的 CSV 内容决定（3 行字面量文本），断言导入链路写入完整性——数据驱动，与 OS 布局无关。"
+    },
+    {
+      "file": "packages/ui/qa-regression/table.spec.ts",
+      "rule": "count-literal",
+      "snippet": "demo 表格初始无数据（导入驱动）",
+      "reason": "初始态空表断言（导入 demo 表格无声明式 data，0 行是数据驱动初始值，非布局推导）——与 OS 字体度量/视口布局无关。"
     }
   ]
 }

@@ -1158,7 +1158,10 @@ onMounted(() => {
     const importTable = document.querySelector('#table-import-demo')
     const feedback = document.querySelector('#table-import-feedback')
     if (importTable && feedback) {
-      const apply = (r, source) => {
+      // async + whenDefined 守卫：事件回调里 apply 时组件必已升级，但静态扫描按「具名函数可被同步调用」
+      // 保守判红——按 prop-write-timing 明示豁免口径（async 体内 await whenDefined 后的写入不报）显式守卫
+      const apply = async (r, source) => {
+        await customElements.whenDefined('oas-table')
         importTable.columns = r.columns.map((key) => ({ key, title: key }))
         importTable.data = r.records
         const skipped = r.skippedRows + r.skippedCells

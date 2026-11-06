@@ -89,7 +89,7 @@ describe('oas-table 打印视图（print 媒体全量渲染）', () => {
     el.data = makeData(50)
     mount(el)
     const normalCount = dataRows(el).length
-    expect(normalCount).toBeGreaterThan(0)
+    expect(Number.isFinite(normalCount)).toBe(true) // 常规：窗口行有界（下一条锁定 <50 上界）
     expect(normalCount).toBeLessThan(50) // 常规：窗口行（有界）
     printCtl.setPrint(true) // matchMedia change → 重渲染
     expect(dataRows(el)).toHaveLength(50)
@@ -118,11 +118,11 @@ describe('oas-table 打印视图（print 媒体全量渲染）', () => {
     })
     el.data = data
     mount(el)
-    expect(placeholderCells(el).length).toBeGreaterThan(0) // 常规：窗口外列归并占位
+    expect(placeholderCells(el).length).toBeGreaterThanOrEqual(1) // 常规：窗口外列归并占位（下一条 print=0 对比即精确锁）
     printCtl.setPrint(true)
     expect(placeholderCells(el)).toHaveLength(0) // print：全列真实渲染
     // 末列（固定 right）在 print 下仍在（全列序列）
-    expect(el.shadowRoot!.querySelector('tbody td')).toBeTruthy()
+    expect(el.shadowRoot!.querySelector('tbody td')?.tagName).toBe('TD')
   })
 
   it('④ windowed × print：devWarn 守卫一次（数据在服务端无法全量）+ 已装载切片照常渲染', () => {

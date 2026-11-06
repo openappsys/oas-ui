@@ -1164,7 +1164,8 @@ onMounted(() => {
     const importTable = document.querySelector('#table-import-demo')
     const feedback = document.querySelector('#table-import-feedback')
     if (importTable && feedback) {
-      const apply = (r, source) => {
+      const apply = async (r, source) => {
+        await customElements.whenDefined('oas-table')
         importTable.columns = r.columns.map((key) => ({ key, title: key }))
         importTable.data = r.records
         const skipped = r.skippedRows + r.skippedCells

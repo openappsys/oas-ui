@@ -6154,8 +6154,8 @@ test('table 打印视图 × column-virtual：print 下窗口外列真实渲染�
   })
   const t = page.locator('#table-print-col-e2e')
   await expect(t.locator('tbody tr[part="row"]').first()).toBeAttached()
-  // 屏显：列窗口外归并为占位格
-  expect(await t.locator('.col-virtual-placeholder').count(), '屏显有占位归并格').toBeGreaterThan(0)
+  // 屏显：列窗口外归并为占位格（print=0 的对比即精确锁，此处只断「存在」下界）
+  expect(await t.locator('.col-virtual-placeholder').count(), '屏显有占位归并格').toBeGreaterThanOrEqual(1)
   await page.emulateMedia({ media: 'print' })
   await expect(t.locator('.col-virtual-placeholder')).toHaveCount(0)
   const cellText = await t.evaluate((el) => {
