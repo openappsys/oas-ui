@@ -123,8 +123,13 @@ jobs:
         run: |
           # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
           # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
-          # 先切回官方源再装；失败不致命（镜像正常时无操作也是安全的）。
+          # 切回官方源 + 清索引强制 apt-get update 重取（只改 sources 不重取，缓存索引仍指向旧源）；
+          # 失败不致命（镜像正常时等价一次 update）。
           sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo apt-get update || true
+          # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
+          sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium; then
@@ -182,8 +187,13 @@ jobs:
         run: |
           # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
           # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
-          # 先切回官方源再装；失败不致命（镜像正常时无操作也是安全的）。
+          # 切回官方源 + 清索引强制 apt-get update 重取（只改 sources 不重取，缓存索引仍指向旧源）；
+          # 失败不致命（镜像正常时等价一次 update）。
           sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo apt-get update || true
+          # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
+          sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium firefox; then
@@ -252,8 +262,13 @@ jobs:
         run: |
           # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
           # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
-          # 先切回官方源再装；失败不致命（镜像正常时无操作也是安全的）。
+          # 切回官方源 + 清索引强制 apt-get update 重取（只改 sources 不重取，缓存索引仍指向旧源）；
+          # 失败不致命（镜像正常时等价一次 update）。
           sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo apt-get update || true
+          # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
+          sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps webkit; then
