@@ -3274,6 +3274,10 @@ export class OASGantt extends OASElement {
     // 容错口径：仅 ResourcePool 实例生效（跨副本的类身份不同——结构守卫不可用，
     // instanceof 对同副本实例是准确的；跨副本注入走共享单例本身即天然互通）
     this.poolOverride = pool instanceof ResourcePool ? pool : null
+    // 换池 = 数据源身份变化：负荷面板的签名缓存只含 pool 开关与版本号（不含池实例身份），
+    // 两个独立池 version 相同时签名不变会命中旧池缓存 → 行数据滞留旧池，这里显式失效
+    //（tooltip / 冲突检测现算不受缓存影响，负荷面板是唯一缓存消费面）
+    this.loadCache = null
     this.requestUpdate()
   }
 

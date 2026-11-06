@@ -9535,6 +9535,25 @@ describe('OASGantt 资源池实例隔离（resourcePool property，默认共享�
     expect(tooltipText(el, 'a')).toContain('乙池')
     expect(el.resourcePool).toBe(poolB)
   })
+
+  it('换 version 相同的独立池：负荷面板不命中旧池缓存，行数据刷新到新池', () => {
+    const el = mount({ pool: '', 'show-resource-load': '', tasks: JSON.stringify(POOL_TASKS) })
+    const poolA = createResourcePool()
+    poolA.register([{ id: 'alice', name: '甲池' }])
+    el.resourcePool = poolA
+    const loadNames = () =>
+      [...shadowOf(el).querySelectorAll<HTMLElement>('.load-panel .load-name')].map((n) => n.textContent ?? '')
+    expect(loadNames().join('|')).toContain('甲池')
+    // 两个独立池各只登记一次 → version 相同（均为 1）：负荷面板的签名缓存若不含池身份，
+    // 换池后签名不变会命中旧池缓存 → 行名滞留旧池；换池必须使负荷缓存失效并按新池重算
+    const poolB = createResourcePool()
+    poolB.register([{ id: 'alice', name: '乙池' }])
+    expect(poolB.version).toBe(poolA.version)
+    el.resourcePool = poolB
+    const names = loadNames()
+    expect(names.join('|')).toContain('乙池')
+    expect(names.join('|')).not.toContain('甲池')
+  })
 })
 
 describe('OASGantt levelConflicts（超配避让）', () => {
