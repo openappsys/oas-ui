@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { locateAnchor, restoreAnchor } from './row-geometry.js'
+import { locateAnchor, restoreAnchor, planScrollCompensation, scrollWriteMoved } from './row-geometry.js'
 
 /** 等高校验：40px × 5 行的前缀——锚定数学在定高模型下必须与既有像素语义逐位等价 */
 const UNIFORM = [0, 40, 80, 120, 160, 200]
@@ -66,5 +66,46 @@ describe('restoreAnchor', () => {
       const anchor = locateAnchor(UNIFORM, top)
       expect(restoreAnchor(UNIFORM, anchor)).toBe(top)
     }
+  })
+})
+
+describe('planScrollCompensation（补偿写钳制判定）', () => {
+  it('目标与当前差在容差内：不写（零位写入不制造多余 scroll 回波）', () => {
+    expect(planScrollCompensation(100, 100, 800)).toEqual({ needed: false, preRender: false, top: 100 })
+    expect(planScrollCompensation(100, 100.4, 800)).toEqual({ needed: false, preRender: false, top: 100 })
+  })
+
+  it('目标在当前可达范围内：渲染前即可写（无钳制风险）', () => {
+    expect(planScrollCompensation(100, 500, 800)).toEqual({ needed: true, preRender: true, top: 500 })
+    // 恰好等于可达上界同样可预写
+    expect(planScrollCompensation(100, 800, 800)).toEqual({ needed: true, preRender: true, top: 800 })
+  })
+
+  it('目标超出可达上界：不预写（预写必被钳制，钳制位不是补偿位）——渲染后内容铺满再写', () => {
+    // 渲染前 DOM 仍是旧几何（可达 800），补偿目标 900 未可达
+    expect(planScrollCompensation(100, 900, 800)).toEqual({ needed: true, preRender: false, top: 900 })
+    // 行变矮导致目标下移超过当前可达位：同属「渲染后才可达」，不得预写钳制位
+    expect(planScrollCompensation(900, 850, 800)).toEqual({ needed: true, preRender: false, top: 850 })
+  })
+
+  it('边界：可达上界缺失/负数/NaN 按 0 处理（无布局环境一律延后）；入参 NaN 不抛', () => {
+    expect(planScrollCompensation(0, 100, NaN)).toEqual({ needed: true, preRender: false, top: 100 })
+    expect(planScrollCompensation(0, 100, -50)).toEqual({ needed: true, preRender: false, top: 100 })
+    expect(planScrollCompensation(NaN, 100, 800)).toEqual({ needed: true, preRender: true, top: 100 })
+    expect(planScrollCompensation(0, NaN, 800)).toEqual({ needed: false, preRender: false, top: 0 })
+  })
+})
+
+describe('scrollWriteMoved（写入落位判定）', () => {
+  it('实际位移 > 0.5px 才算落位（浏览器可因内容不足把写入钳回原值）', () => {
+    expect(scrollWriteMoved(3800, 3800)).toBe(false)
+    expect(scrollWriteMoved(3800, 3800.4)).toBe(false)
+    expect(scrollWriteMoved(3800, 3801)).toBe(true)
+    expect(scrollWriteMoved(3800, 4800)).toBe(true)
+  })
+
+  it('容差可覆盖（横向滚动同理）', () => {
+    expect(scrollWriteMoved(0, 1, 1)).toBe(false)
+    expect(scrollWriteMoved(0, 2, 1)).toBe(true)
   })
 })

@@ -59,3 +59,39 @@ export function restoreAnchor(prefix: number[], anchor: RowAnchor): number {
   const offset = Math.min(Math.max(0, raw), rowH)
   return rowTop + offset
 }
+
+/** 滚动补偿写计划 */
+export interface ScrollCompensationPlan {
+  /** 目标位与当前位差超过容差，需要写补偿 */
+  needed: boolean
+  /** 目标位在**当前**可达范围内（渲染前即可写，不会被钳制） */
+  preRender: boolean
+  /** 计划写入位（= 目标位；`preRender=false` 时须等渲染后内容铺满再写） */
+  top: number
+}
+
+/**
+ * 滚动补偿写计划（纯函数）：补偿位超出**当前**可达上界时不得预写。
+ *
+ * 陷阱（实测）：测量回填后前缀和已变、DOM 未重建，此刻 `scrollHeight` 还是旧几何——
+ * 直接写补偿位会被浏览器钳回旧可达位。钳制位一旦被 update 当权威位捕获，补偿就永久丢失
+ * （视口整段跳到别处）；且写入未真实位移却布防吞位，会吞掉下一条真实 scroll 事件。
+ * 故：目标不可达时推迟到渲染后（内容铺满）再写。
+ */
+export function planScrollCompensation(
+  current: number,
+  target: number,
+  maxTop: number,
+  tolerance = 0.5,
+): ScrollCompensationPlan {
+  const cur = Number.isFinite(current) ? current : 0
+  const top = Number.isFinite(target) ? Math.max(0, target) : 0
+  const max = Number.isFinite(maxTop) ? Math.max(0, maxTop) : 0
+  if (Math.abs(top - cur) <= tolerance) return { needed: false, preRender: false, top: cur }
+  return { needed: true, preRender: top <= max, top }
+}
+
+/** 滚动写入是否真正落位：写入前后实际位移超过容差才算（浏览器可因内容不足把写入钳回原值） */
+export function scrollWriteMoved(before: number, after: number, tolerance = 0.5): boolean {
+  return Math.abs(after - before) > tolerance
+}

@@ -5,7 +5,13 @@ import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-di
 import { normalizeSizeStrict, THREE_SIZES } from '../../shared/size.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
-import { locateAnchor, restoreAnchor, type RowAnchor } from './row-geometry.js'
+import {
+  locateAnchor,
+  restoreAnchor,
+  planScrollCompensation,
+  scrollWriteMoved,
+  type RowAnchor,
+} from './row-geometry.js'
 import { computePosition, getViewport } from '../../overlay/floating/index.js'
 import { registeredTableCapabilities, onTableCapabilityRegistered } from './oas-table-capability.js'
 // 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
@@ -1496,6 +1502,11 @@ export class OASTableBase extends OASElement {
   private autoHeightSig = ''
   /** 测量同步触发的 update 标记：此时焦点回锚禁用 scrollIntoView（防每帧测量把视口/页面拉回焦点格） */
   private autoSyncUpdate = false
+  /** 测量同步的补偿目标位：渲染前不可达时由 update 以它作为窗口锚（渲染后由帧尾恢复写入） */
+  private autoSyncTarget: number | null = null
+  /** 渲染期虚拟视口快照：清空 tbody 会让滚动容器瞬时塌缩（只剩表头高），渲染中读 clientHeight
+      会算出过小的行窗口（只渲染 buffer 行、下方整片留白）——每轮在清空**之前**捕获 */
+  private renderViewportSnap = 0
   /** structural-render 能力控制器（注册型 L3；未 import 时恒 null，渲染挂接点判空跳过零开销） */
   private structuralCap: TableStructuralRenderers | null = null
   /** 结构槽异常守卫的去重台账：同槽同错只 devWarn 一次（key = slot + 错误文本） */
@@ -2448,8 +2459,10 @@ export class OASTableBase extends OASElement {
       }
       // 按可视行窗口按需请求（首帧 init / 数据变更后 data；覆盖时静默重置，同 need 去重）。
       // 须在 loading/empty 早退分支之前派发，防止宿主等待初始窗口时组件静默不请求；
-      // display 直传与渲染路径共用同一份展示集（abs/flow 记账与窗口投影同源）
-      this.requestWindowIfNeeded(this.winInitDone ? 'data' : 'init', display)
+      // display 直传与渲染路径共用同一份展示集（abs/flow 记账与窗口投影同源）。
+      // 测量同步的延迟补偿位（autoSyncTarget）优先：此刻 live scrollTop 还是旧位，
+      // 按它算期望区间会让宿主装载错的片段（随后补偿落位又要重请求一帧）。
+      this.requestWindowIfNeeded(this.winInitDone ? 'data' : 'init', display, this.autoSyncTarget ?? undefined)
       this.winInitDone = true
       // merge 列 / span-method 在 windowed 下跳过（跨切片合并与占位行相互腐蚀）——配置在场告警一次
       if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
@@ -2519,8 +2532,12 @@ export class OASTableBase extends OASElement {
     // I3：windowed 重渲染前捕获焦点锚点（下方清空 tbody 会连带拆掉聚焦单元格）
     this.captureWindowedFocusAnchor()
     const seqAtSave = this.scrollWriteSeq
-    const st = this.wrap ? this.wrap.scrollTop : 0
+    // 测量同步的补偿位在渲染前不可达时（前缀和已变、DOM 仍是旧几何）由补偿计划传入：
+    // 以它作为本轮窗口锚（渲染出正确行），帧尾 restoreScrollPosition 再写到真实位置
+    const st = this.autoSyncTarget ?? (this.wrap ? this.wrap.scrollTop : 0)
     this.saveScrollPosition(st, this.wrap ? this.wrap.scrollLeft : 0)
+    // 动态行高视口在清空任何内容**之前**捕获（清空 tbody/thead 会让容器瞬时塌缩到表头高）
+    if (this.autoHeightOn()) this.renderViewportSnap = this.dynamicViewport()
     head.innerHTML = ''
     // 稳定清空：防清空瞬间 scrollTop 被钳回 0（弹跳 scroll 事件会把 windowed 回填 ping 回起点）
     this.stableClearBody(body)
@@ -3315,11 +3332,13 @@ export class OASTableBase extends OASElement {
     //（RO 回填到绝对下标）、切片外行与未装载区保持 row-height 预估（估计与真值拼接）。
     // visualTotal 变化触发 HeightCache 重置重测（一次全量回退估计 + 锚定兜底，可接受）
     if (dynamic && cap) {
-      // 展示结构签名：W = windowed（window-start/total/切片长——同区间回填保留实测高是特性：
-      // 回访已测窗口高度仍准；宿主同位换内容属契约外边缘：更高内容 RO 即时修正、更矮靠收缩
-      // 轮询逐帧放行收敛）。行数不变的结构变化 HeightCache 不会自清——签名变化显式失效
-      //（二轮交叉审 I-3/M-4）
-      const sig = `W:${this._winMode.windowStart}:${this._winMode.total}:${display.length}`
+      // 展示结构签名：切片位移（window-start / 切片长度）**不进签名**——实测高按绝对视觉下标
+      // 记账，跨切片累积有效（回访已测窗口仍准）；把切片位移当结构变化会清空全部实测高，
+      // 滚动条总高塌陷 + 锚定行错位（实测 window-start 0→100 后锚定行 49→75）。
+      // 保留数据集身份项：数据总行数（行身份整体变化）+ 视觉协议总行数 + 列几何（列宽/换行
+      // 决定行高）；行数变化由 configure 自清。宿主同位换内容属契约外边缘：更高内容 RO 即时
+      // 修正、更矮靠收缩轮询逐帧放行收敛。
+      const sig = `W:${this._winMode.total}:${proto ? proto.total : ''}:${this.autoHeightColsSig()}`
       if (sig !== this.autoHeightSig) {
         this.autoHeightSig = sig
         cap.invalidate?.()
@@ -3405,7 +3424,7 @@ export class OASTableBase extends OASElement {
     const win = printFull
       ? { start: 0, end: visualTotal }
       : dynamic && cap
-        ? cap.window(scrollTop, this.dynamicViewport())
+        ? cap.window(scrollTop, this.viewportForRender())
         : computeVirtualWindow(scrollTop, this.tableHeight(), ih, visualTotal)
     const winTop = printFull ? 0 : dynamic && cap ? cap.offsetOf(win.start) : win.start * ih
     const winBottom = printFull ? contentH : dynamic && cap ? cap.offsetOf(win.end) : win.end * ih
@@ -5028,9 +5047,17 @@ export class OASTableBase extends OASElement {
     return this.hasAttr('row-auto-height') && this.autoHeightCap !== null && this.isVirtual()
   }
 
-  /** 动态路径视口高：真实 clientHeight（tableHeight 不含横滚条、会被 sticky 表头覆盖——定高路径保持零变化） */
+  /** 动态路径视口高：真实 clientHeight（tableHeight 不含横滚条、会被 sticky 表头覆盖——定高路径保持零变化）。
+      隐藏态（display:none / 尚未布局）clientHeight=0：按 0 算窗口只剩 buffer 行，回落 height 属性给出
+      合理首帧；可见后由容器尺寸回调（onWrapResize）按真实高重算。 */
   private dynamicViewport(): number {
-    return this.wrap?.clientHeight ?? this.tableHeight()
+    const h = this.wrap?.clientHeight ?? 0
+    return h > 0 ? h : this.tableHeight()
+  }
+
+  /** 渲染用动态视口：优先本轮清空前的快照（清空 tbody 后 live clientHeight 只剩表头高，不可信） */
+  private viewportForRender(): number {
+    return this.renderViewportSnap > 0 ? this.renderViewportSnap : this.dynamicViewport()
   }
 
   /** 可视行窗口：定高走共享 computeVirtualWindow；动态走能力的前缀和二分。
@@ -5040,7 +5067,7 @@ export class OASTableBase extends OASElement {
   private rowWindow(scrollTop: number, viewport: number, count: number): { start: number; end: number } {
     if (this.printModeOn()) return { start: 0, end: count }
     const cap = this.autoHeightCap
-    if (this.autoHeightOn() && cap) return cap.window(scrollTop, this.dynamicViewport())
+    if (this.autoHeightOn() && cap) return cap.window(scrollTop, this.viewportForRender())
     return computeVirtualWindow(scrollTop, viewport, this.rowHeightPx(), count)
   }
 
@@ -5057,6 +5084,13 @@ export class OASTableBase extends OASElement {
     const cap = this.autoHeightCap
     if (this.autoHeightOn() && cap) return cap.heightAt(i)
     return this.rowHeightPx()
+  }
+
+  /** 动态行高的列几何签名：列宽 / 换行 / 列类型变化会改变行内容高度（实测高须失效重测） */
+  private autoHeightColsSig(): string {
+    return this.flattenLeaves(this._columns)
+      .map((c) => `${c.key}:${c.type ?? ''}:${c.width ?? ''}:${c.wrap === true ? 'w' : ''}`)
+      .join(',')
   }
 
   /**
@@ -5079,11 +5113,18 @@ export class OASTableBase extends OASElement {
         ? stored.anchor
         : locateAnchor(cap.offsets(), this.wrap.scrollTop)
     const top = restoreAnchor(cap.offsets(), anchor)
-    if (Math.abs(top - this.wrap.scrollTop) > 0.5) {
-      this.wrap.scrollTop = top
-      // 写后布防：锚定写位引发的回波按「本次写入代次」吞（直写不 bump 代次）；
-      // 若此后有更新的主动写入（bump 代次），布防自动失效、不吞新写入的事件
-      this.armScrollSwallow()
+    // 补偿写必须发生在渲染之后：此刻前缀和已变、DOM 仍是旧几何，直接写会被浏览器按旧内容高
+    // 钳制（钳制位被 update 当权威位 → 补偿永久丢失、视口整段跳；写未真实位移还布防吞位 →
+    // 吞掉下一条真实 scroll）。目标在当前可达范围内才预写（省一帧）；不可达时把目标位交给
+    // update 当窗口锚，帧尾 restoreScrollPosition 在内容铺满后写入。
+    const maxTop = Math.max(0, (this.wrap.scrollHeight || 0) - (this.wrap.clientHeight || 0))
+    const plan = planScrollCompensation(this.wrap.scrollTop, top, maxTop)
+    this.autoSyncTarget = plan.needed && !plan.preRender ? plan.top : null
+    if (plan.needed && plan.preRender) {
+      const before = this.wrap.scrollTop
+      this.wrap.scrollTop = plan.top
+      // 仅真实位移才布防：未落位（被钳制）时不得吞下一条真实 scroll 事件
+      if (scrollWriteMoved(before, this.wrap.scrollTop)) this.armScrollSwallow()
     }
     // 标记 update 由测量同步触发：焦点回锚禁用 scrollIntoView——否则每帧测量都可能把
     // 视口/页面滚回焦点格（sync-via-update 与 update 焦点恢复路径的相互作用，二轮审 I-4）
@@ -5093,6 +5134,7 @@ export class OASTableBase extends OASElement {
       this.runUpdateAndNotify()
     } finally {
       this.autoSyncUpdate = false
+      this.autoSyncTarget = null
     }
   }
 
@@ -5333,14 +5375,20 @@ export class OASTableBase extends OASElement {
     if (!wrap) return
     if (this.scrollWriteSeq !== seqAtSave) return
     if (wrap.scrollTop === top && wrap.scrollLeft === left) return
+    const beforeTop = wrap.scrollTop
+    const beforeLeft = wrap.scrollLeft
     // 统一入口写回（bump 代次 + 布意图位），写回**之后**布防——吞的是「本次写回代次」
     // 引发的 scroll 回波（清空 tbody 后钳制回 0 的自愈写回，弹回顶语义不变）。取舍：
     // 不用「不 bump 序的直写+布防」——直写绕过统一入口会丢意图位与代次记账，且让
     // 「主动写入清陈旧布防」出现绕行路径；代次布防让本吞位在回波未触发就来了更新的
     // 主动写入时自动失效（writeScrollPosition 显式清 + 代次比对），不会再吞掉
-    // Ctrl+Home 等单发主动滚动的唯一 scroll 事件（导航死锁根因）
+    // Ctrl+Home 等单发主动滚动的唯一 scroll 事件（导航死锁根因）。
     this.writeScrollPosition(top, left)
-    this.armScrollSwallow()
+    // 写入可能被内容高度钳制（实际未位移，如目标超出当前可达上界）：没有回波可吞，
+    // 不得布防——否则残留吞位会吞掉下一条真实 scroll 事件（键盘导航/窗口请求随之丢帧）
+    if (scrollWriteMoved(beforeTop, wrap.scrollTop) || scrollWriteMoved(beforeLeft, wrap.scrollLeft)) {
+      this.armScrollSwallow()
+    }
   }
 
   /** 布防意图：写入位在 SCROLL_INTENT_FRAMES 帧内是权威位（用户手势立即解除） */
@@ -5496,6 +5544,9 @@ export class OASTableBase extends OASElement {
       // 保存/恢复会 bump 代次）——用旧代次会让帧尾恢复被「新写入优先」跳过、scrollTop 滞留
       // 钳制位 0，随后的补偿帧在 0 位重算期望区间把切片 ping 回起点（回填雪崩）
       const seqAtSave = this.scrollWriteSeq
+      // 动态行高视口在清空任何内容**之前**捕获（清空 tbody 会让容器瞬时塌缩到表头高，
+      // 渲染期读 clientHeight 会算出过小窗口——只渲染 buffer 行）
+      if (this.autoHeightOn()) this.renderViewportSnap = this.dynamicViewport()
       // 稳定清空：防清空瞬间 scrollTop 被钳回 0（钳制曾把 windowed 回填 ping 回起点——雪崩）
       this.stableClearBody(body)
       if (this.windowedOn()) {
@@ -5662,7 +5713,9 @@ export class OASTableBase extends OASElement {
   /**
    * 滚动容器尺寸变化（ResizeObserver 路径，rAF 节流后到达）：
    * - column-virtual 在场：列窗口同步（原行为）；
-   * - windowed：视口尺寸变化 → 可见行数变化 → 按需请求（reason=resize）+ 重渲染。
+   * - windowed：视口尺寸变化 → 可见行数变化 → 按需请求（reason=resize）+ 重渲染；
+   * - 本地虚拟 × row-auto-height：可见行数由容器高决定（隐藏态 0 高 → 可见后必须重算窗口，
+   *   否则只渲染 buffer 行、下方整片留白）。定高路径窗口只依赖 scrollTop/height 档，无需重渲染。
    */
   private onWrapResize = (): void => {
     const segs = this._colSegments
@@ -5673,6 +5726,11 @@ export class OASTableBase extends OASElement {
     }
     if (this.windowedOn()) {
       this.requestWindowIfNeeded('resize')
+      this.markRenderDirty()
+      this.update()
+      return
+    }
+    if (this.autoHeightOn()) {
       this.markRenderDirty()
       this.update()
     }

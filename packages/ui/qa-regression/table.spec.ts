@@ -6046,6 +6046,134 @@ test('table auto-height windowed：混合模型测量回填 + 请求闭环 + con
   expect(errors, 'console 零 error').toEqual([])
 })
 
+// C1 回归：windowed 切片位移（window-start 变化）不得清空已测行高——实测高按绝对视觉下标
+// 跨切片累积；清空会令滚动条总高塌陷、锚定行整段错位
+test('table auto-height windowed：切片回填保留实测行高（总高不塌陷 + 回访行高即时正确）', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-autowin-slice-e2e'
+    el.style.width = '460px'
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-auto-height', '')
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '500')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', width: '100px' },
+        { key: 'note', title: '备注', width: '320px', wrap: true },
+      ]),
+    )
+    const full = Array.from({ length: 500 }, (_, i) => ({
+      name: `行${i}`,
+      note:
+        i === 2
+          ? '这是一段足够长的备注文本，用来把第三行撑到远高于 40px 的档位并验证切片位移之后已测行高仍然保留不再回退到预估档位'.repeat(
+              8,
+            )
+          : `短${i}`,
+    }))
+    ;(window as unknown as { __qaSliceRows: unknown }).__qaSliceRows = full
+    el.setAttribute('data', JSON.stringify(full.slice(0, 17)))
+    document.body.prepend(el)
+  })
+  const t = page.locator('#table-autowin-slice-e2e')
+  // RO 测量回填：行 2 撑高（切片内实测）
+  await expect
+    .poll(
+      async () => {
+        if ((await t.locator('tbody tr[data-row-index="2"]').count()) === 0) return 0
+        return t.locator('tbody tr[data-row-index="2"]').evaluate((tr) => Math.round(tr.getBoundingClientRect().height))
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(200)
+  const scrollBefore = await t.evaluate((el) => el.shadowRoot!.querySelector('.table-scroll')!.scrollHeight)
+  expect(scrollBefore, '总高含行 2 实测增量').toBeGreaterThan(500 * 40 + 150)
+  // 宿主回填下一段切片（window-start 位移；行 2 不在新切片内，RO 不会重测它）
+  await t.evaluate(() => {
+    const el = document.querySelector('#table-autowin-slice-e2e') as HTMLElement
+    const full = (window as unknown as { __qaSliceRows: unknown[] }).__qaSliceRows
+    el.setAttribute('window-start', '100')
+    el.setAttribute('data', JSON.stringify(full.slice(100, 117)))
+  })
+  // 回访原切片：行 2 同帧即取到实测高（清空后须等 RO 重测才会变高 = 旧的失效缺陷）。
+  // 注：切片 100 与可视区（scrollTop=0）不重叠，该渲染只剩占位——不在此断言总高（口径不同）；
+  // 总高断言放在回访原切片后（同一窗口口径下与基线可比）。
+  const back = await t.evaluate(() => {
+    const el = document.querySelector('#table-autowin-slice-e2e') as HTMLElement
+    const full = (window as unknown as { __qaSliceRows: unknown[] }).__qaSliceRows
+    el.setAttribute('window-start', '0')
+    el.setAttribute('data', JSON.stringify(full.slice(0, 17)))
+    const tr = el.shadowRoot!.querySelector('tbody tr[data-row-index="2"]')
+    return {
+      row2: tr ? Math.round(tr.getBoundingClientRect().height) : -1,
+      scrollH: el.shadowRoot!.querySelector('.table-scroll')!.scrollHeight,
+    }
+  })
+  expect(back.row2, '回访切片行高沿用实测值（不重新回退预估档）').toBeGreaterThan(200)
+  expect(back.scrollH, '切片回填后滚动总高不塌陷').toBeGreaterThan(scrollBefore - 40)
+  expect(errors, 'console 零 error').toEqual([])
+})
+
+// I1 回归：隐藏态（0 高）挂载 → 可见后视口回调必须重算窗口（否则只渲染 buffer 行 + 下方留白）
+test('table auto-height：隐藏容器 → 可见后行数随视口重算（不只剩 buffer 行）', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    const host = document.createElement('div')
+    host.id = 'table-hidden-host'
+    host.style.display = 'none'
+    const el = document.createElement('oas-table')
+    el.id = 'table-hidden-e2e'
+    el.style.width = '420px'
+    el.setAttribute('height', '240')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('row-auto-height', '')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ name: `行${i}` }))))
+    host.appendChild(el)
+    document.body.prepend(host)
+  })
+  // 隐藏态行数极少（无布局），可见后 RO 回调重算：6 可见行 + 上下 buffer
+  await page.evaluate(() => {
+    ;(document.querySelector('#table-hidden-host') as HTMLElement).style.display = ''
+  })
+  const t = page.locator('#table-hidden-e2e')
+  // 可见后行数必须覆盖视口（隐藏态 0 高 + 清空 tbody 的瞬时塌缩都曾把窗口算成只剩 buffer 行，
+  // 表现为「7 行 + 下方大块空白」）。断言：最后一条数据行底相对滚动容器顶 >= 容器高。
+  await expect
+    .poll(
+      async () =>
+        t.evaluate((el) => {
+          const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+          const rows = [...el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')] as HTMLElement[]
+          if (rows.length === 0) return false
+          const last = rows[rows.length - 1]!
+          const wrapRect = wrap.getBoundingClientRect()
+          return last.getBoundingClientRect().bottom - wrapRect.top >= wrap.clientHeight - 8
+        }),
+      { timeout: 5000 },
+    )
+    .toBe(true)
+  expect(errors, 'console 零 error').toEqual([])
+})
+
 // 稳定清空垫高回归：有数据渲染后清空/loading，tbody minHeight 必须移除（否则空态下方残留旧表高空白）
 test('table stable-clear：数据→空态/loading 无垫高残留', async ({ page }) => {
   const errors: string[] = []

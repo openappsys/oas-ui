@@ -339,4 +339,158 @@ describe('oas-table row-auto-height 接缝（几何消费 + 身份锚定）', ()
     expect(el.shadowRoot!.querySelectorAll('tbody tr')).toHaveLength(stamped.length + 3)
     expect(stamped.every((tr) => tr.getAttribute('part') === 'row')).toBe(true)
   })
+
+  it('C1：windowed 切片位移（window-start 变化）不清实测高——测量按绝对视觉下标跨切片累积', () => {
+    ensureRegistered()
+    const slice = (start: number, len = 17) =>
+      JSON.stringify(Array.from({ length: len }, (_, i) => ({ name: `行${start + i}` })))
+    const { el } = mountAuto({
+      'row-auto-height': '',
+      windowed: '',
+      total: '500',
+      'window-start': '0',
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: slice(0),
+    })
+    const stub = lastStub!
+    // 切片内绝对视觉下标 0/1 实测（未装载区仍预估 40）
+    expect(stub.measure(0, 100)).toBe(true)
+    expect(stub.measure(1, 120)).toBe(true)
+    ;(el as unknown as { requestAutoHeightSync(): void }).requestAutoHeightSync()
+    const heightBefore = stub.total()
+    expect(heightBefore).toBe(100 + 120 + 498 * 40)
+    // 宿主回填下一段切片：window-start 位移属于「同数据集换窗口」，不是展示结构变化——
+    // 实测高按绝对下标继续有效（清空会令滚动条总高塌陷、锚定行错位）
+    el.setAttribute('window-start', '100')
+    el.setAttribute('data', slice(100))
+    expect(stub.heightAt(0), '切片 0 实测高跨切片保留').toBe(100)
+    expect(stub.heightAt(1), '切片 1 实测高跨切片保留').toBe(120)
+    expect(stub.total(), '滚动条总高不因切片位移塌陷').toBe(heightBefore)
+  })
+
+  it('I1：动态视口 0 高（隐藏态）→ 可见后容器尺寸回调重算窗口（不再只剩 buffer 行）', () => {
+    ensureRegistered()
+    const { el, wrap } = mountAuto({
+      'row-auto-height': '',
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: rows100(),
+    })
+    const countRows = () => el.shadowRoot!.querySelectorAll('tbody tr[part="row"]').length
+    // happy-dom clientHeight 恒 0：动态视口回落 tableHeight(200) → 5 可见 + 4 buffer
+    const hiddenCount = countRows()
+    expect(hiddenCount).toBeGreaterThanOrEqual(9)
+    // 容器变得可见（clientHeight 400）→ ResizeObserver 回调路径重算可见行数
+    Object.defineProperty(wrap, 'clientHeight', { configurable: true, get: () => 400 })
+    ;(el as unknown as { onWrapResize(): void }).onWrapResize()
+    expect(countRows(), '行数随视口增高').toBeGreaterThan(hiddenCount)
+  })
+
+  it('I1：清空 tbody 期间容器瞬时塌缩——渲染窗口按清空前的视口快照计算', () => {
+    ensureRegistered()
+    const { el, wrap } = mountAuto({
+      'row-auto-height': '',
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: rows100(),
+    })
+    const countRows = () => el.shadowRoot!.querySelectorAll('tbody tr[part="row"]').length
+    // 真实浏览器语义模拟：tbody 清空瞬间滚动容器只剩表头高（46px），有内容时 400px。
+    // 渲染中直接读 clientHeight 会算出 46/40≈1 行 + buffer 的过小窗口（下方整片留白）。
+    Object.defineProperty(wrap, 'clientHeight', {
+      configurable: true,
+      get: () => (el.shadowRoot!.querySelector('tbody')!.children.length === 0 ? 46 : 400),
+    })
+    const host = el as unknown as { markRenderDirty(): void; update(): void }
+    host.markRenderDirty()
+    host.update()
+    // 400 / 40 = 10 可见 + 4 buffer
+    expect(countRows()).toBe(14)
+  })
+
+  it('I2：补偿位超出渲染前可达高度——延后到渲染后写回（不把钳制位当权威位）', async () => {
+    ensureRegistered()
+    const { el, wrap } = mountAuto({
+      'row-auto-height': '',
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: rows100(),
+    })
+    const stub = lastStub!
+    // 真实浏览器布局语义模拟：scrollHeight = 当前已渲染 DOM 内容高（重建前是旧几何），
+    // scrollTop 写入按可达上界钳制
+    defineScrollMetrics(wrap, 200, () => renderedContentHeight(el))
+    setStubScrollTop(wrap, 3800)
+    // 滚动帧渲染一次：让渲染态锚点缓存捕获「测量前几何」（scrollTop=3800、行 95 顶）
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 视口停底（3800）；视口上方的行 0 实测变高 1000px → 锚定行（行 95）下移 1000，补偿目标 4800
+    expect(stub.measure(0, 1040)).toBe(true)
+    ;(el as unknown as { requestAutoHeightSync(): void }).requestAutoHeightSync()
+    expect(wrap.scrollTop, '补偿位在渲染后落地（渲染前写必被旧内容高钳制）').toBe(4800)
+  })
+
+  it('I2：写入被内容高度钳制（实际未位移）时不布防吞位——不吞下一条真实 scroll', async () => {
+    ensureRegistered()
+    const { el, wrap } = mountAuto({
+      'row-auto-height': '',
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '名称' }]),
+      data: rows100(),
+    })
+    const stub = lastStub!
+    // 内容高度固定为旧几何（渲染后仍不可达）：模拟写入被浏览器钳回原值
+    defineScrollMetrics(wrap, 200, () => 4000)
+    setStubScrollTop(wrap, 3800)
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(stub.measure(0, 1040)).toBe(true)
+    ;(el as unknown as { requestAutoHeightSync(): void }).requestAutoHeightSync()
+    expect(wrap.scrollTop, '不可达目标被钳制在旧可达位').toBe(3800)
+    const swallow = (el as unknown as { swallowScrollSeq: number }).swallowScrollSeq
+    expect(swallow, '实际未位移 → 不得残留吞位（否则吞掉下一条真实 scroll 事件）').toBe(-1)
+  })
 })
+
+/** 当前 tbody 已渲染内容高（真实浏览器 scrollHeight 的等价模型：清空/重建前仍是旧几何） */
+function renderedContentHeight(el: OASTable): number {
+  const tbody = el.shadowRoot!.querySelector('tbody')
+  if (!tbody) return 0
+  let sum = 0
+  for (const tr of [...tbody.querySelectorAll('tr')]) {
+    const own = Number.parseFloat((tr as HTMLElement).style.height)
+    if (Number.isFinite(own) && own > 0) {
+      sum += own
+      continue
+    }
+    const td = tr.firstElementChild as HTMLElement | null
+    const spacer = Number.parseFloat(td?.style.height ?? '')
+    if (Number.isFinite(spacer) && spacer > 0) sum += spacer
+  }
+  return sum
+}
+
+/** 安装滚动容器量测桩：clientHeight 固定，scrollHeight 由 getter 提供 */
+function defineScrollMetrics(wrap: HTMLElement, clientHeight: number, scrollHeight: () => number): void {
+  Object.defineProperty(wrap, 'clientHeight', { configurable: true, get: () => clientHeight })
+  Object.defineProperty(wrap, 'scrollHeight', { configurable: true, get: () => scrollHeight() })
+}
+
+/** 安装按可达上界钳制的 scrollTop 写入口（happy-dom 无布局，须显式模拟浏览器钳制） */
+function setStubScrollTop(wrap: HTMLElement, initial: number): void {
+  let top = initial
+  Object.defineProperty(wrap, 'scrollTop', {
+    configurable: true,
+    get: () => top,
+    set: (v: number) => {
+      const max = Math.max(0, Number(wrap.scrollHeight ?? 0) - Number(wrap.clientHeight ?? 0))
+      top = Math.min(Math.max(0, Number(v) || 0), max)
+    },
+  })
+}
