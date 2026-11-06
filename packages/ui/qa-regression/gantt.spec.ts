@@ -2743,3 +2743,39 @@ test('gantt 违约行名在斑马纹底上对比度 ≥ 4.5（WCAG AA，暗色�
   const result = await measureConflictContrast(page, true)
   expect(result.ratio, `暗色违约行名 ${result.fg} 落在条纹底 ${result.bg} 上应 ≥ 4.5:1`).toBeGreaterThanOrEqual(4.5)
 })
+
+test('gantt 超配避让 levelConflicts：oas-level 事件派发 + 冲突标注消除 + 幂等（Z2 真实链路固化）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-level-demo')
+  const fired: string[] = []
+  await page.evaluate(() => {
+    ;(window as unknown as { __levelFired: unknown[] }).__levelFired = []
+    document.querySelector('#gantt-level-demo')!.addEventListener('oas-level', (e) => {
+      ;(window as unknown as { __levelFired: unknown[] }).__levelFired.push((e as CustomEvent).detail)
+    })
+  })
+  const conflictsBefore = await page.evaluate(
+    () =>
+      document.querySelector('#gantt-level-demo')!.shadowRoot!.querySelectorAll('.conflict, [class*="conflict"]')
+        .length,
+  )
+  expect(conflictsBefore, '避让前池内冲突标注应非空（demo 数据带交叠）').toBeGreaterThan(0)
+  await page.click('#gantt-level-run')
+  await page.waitForTimeout(600)
+  const detail = await page.evaluate(
+    () => (window as unknown as { __levelFired: Array<{ moved: unknown[] }> }).__levelFired[0],
+  )
+  expect(detail, 'oas-level 事件应派发且 detail 带 moved').toBeTruthy()
+  expect(detail!.moved.length, 'demo 场景应至少移动 1 条').toBeGreaterThan(0)
+  const conflictsAfter = await page.evaluate(
+    () =>
+      document.querySelector('#gantt-level-demo')!.shadowRoot!.querySelectorAll('.conflict, [class*="conflict"]')
+        .length,
+  )
+  expect(conflictsAfter, '避让后冲突标注应清零').toBe(0)
+  // 幂等：二次调用零移动（demo 输出区文案切换）
+  await page.click('#gantt-level-run')
+  await page.waitForTimeout(400)
+  const output = await page.evaluate(() => document.querySelector('#gantt-level-out')?.textContent ?? '')
+  expect(output, '二次调用应反馈幂等未移动').toContain('幂等')
+})
