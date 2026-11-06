@@ -811,6 +811,48 @@ test('resource month 档月末步进：01-31 后移 → 02-28（真浏览器 lev
   expect(errors).toEqual([])
 })
 
+test('resource 周末发散守卫：10 天任务遇 5 天工作制不漂移（真浏览器 levelResources）', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/components/resource.html', {
+    waitUntil: 'domcontentloaded',
+  })
+  await page.waitForFunction(
+    () => typeof (window as unknown as { levelResources?: unknown }).levelResources === 'function',
+    undefined,
+    {
+      timeout: 15000,
+    },
+  )
+  const moved = await page.evaluate(() => {
+    const levelResources = (
+      window as unknown as {
+        levelResources: (
+          r: unknown[],
+          t: unknown[],
+          o: { capacity: number },
+        ) => Array<{ id: string; start: string; end: string }>
+      }
+    ).levelResources
+    return levelResources(
+      [{ id: 'r1', name: 'A', capacity: 1, workdays: [1, 2, 3, 4, 5] }],
+      [
+        {
+          id: 'long',
+          name: '跨双周',
+          start: '2026-03-02',
+          end: '2026-03-11',
+          resources: ['r1'],
+        },
+      ],
+      { capacity: 1 },
+    )
+  })
+  expect(moved, '10 天跨度 > 最长连续工作日段 5 → 不参与移动（守卫前旧实现逐档后移 500 次漂移到 2027-07-15）').toEqual(
+    [],
+  )
+  expect(errors).toEqual([])
+})
+
 // ===== 第三轮复审收口回归（lane-gap 宿主可覆盖 / 轨道不裁剪 / en-US demo 可见行为） =====
 
 test('resource lane-gap 宿主可覆盖：内联 / 宿主元素级 class 规则设置 --oas-resource-lane-gap:4px 均生效（单段轨道高 28 ≠ 默认 36）', async ({

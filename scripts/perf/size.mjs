@@ -654,6 +654,7 @@ const COMPONENT_ENTRIES = [
   { id: 'resourceCost', entry: 'data/resource/cost', spec: '@oas-ui/ui/data/resource/cost' },
   { id: 'resourcePool', entry: 'data/resource/pool', spec: '@oas-ui/ui/data/resource/pool' },
   { id: 'resourceLoad', entry: 'data/resource/load', spec: '@oas-ui/ui/data/resource/load' },
+  { id: 'resourceLevel', entry: 'data/resource/level', spec: '@oas-ui/ui/data/resource/level' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
@@ -983,6 +984,15 @@ const BUDGETS = [
     limit: 2.5 * 1024, // 2.5 KB（2026-11-03 首档：实测 1822 B 上浮 ~37% 取整）
     basis:
       'helper 纯函数子路径，按需引入；首档 2026-11-03：实测 gzip 1822 B / 2 文件（shared/resource-load 实现本体 1740（day/week/month 三粒度 + 周锚定/部分桶/超配累计 + gantt 清洗最小子集；本体与 gantt show-resource-load 属性共用，随组件链进 L1/族包，helper 入口路径不进）+ 入口转发 82），上浮约 37% 取整定档 2.5 KB',
+  },
+  {
+    name: '@oas-ui/ui/data/resource/level 链 gzip',
+    kind: 'absolute',
+    componentId: 'resourceLevel',
+    get: () => componentMeasures.resourceLevel.gzipBytes,
+    limit: 16 * 1024, // 16 KB（2026-11-06 首档：实测 13478 B 上浮 ~19% 取整）
+    basis:
+      'levelResources 算法核抽核子路径（Z11 批），按需引入；首档 2026-11-06：实测 gzip 13478 B / 7 文件（level 引擎本体 2870 + model 清洗层 3065（算法入参必须清洗后的 RS/RT，清洗层随核同走）+ date-grid 2783 + dev-warn 236 + config-context 1990 + i18n registry/translator 2528——date-grid 为单文件模块，formatToken/isoWeek 的 locale 设施（config-context/i18n）被连带进链，preserveModules 粒度下无法跨文件摇除；后续可拆「纯日历/locale 文案」两层收窄）。抽核前该算法只能随组件模块消费（oas-resource 单文件 16.25 KB gz 起步、桶链 40.88 KB）；抽核后独立瘦链 13.16 KB，组件单文件降至 12.62 KB（-22%）',
   },
 ]
 

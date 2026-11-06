@@ -116,6 +116,14 @@ export const L3_REGISTRY = [
   // 判定「属性触发属运行时需求」）。入口路径自身无属性触发面，不进 L1/族包（路径标记
   // `/data/resource/load/` 只匹配入口，不匹配 `src/shared/` 实现——两层口径互不干扰）。
   { id: 'resourceLoad', entry: 'data/resource/load', family: 'data', kind: 'helper', measured: true },
+  // 资源均衡算法核（levelResources 抽核，2026-11-06 Z11 批）：helper 型——
+  // 入口路径 `data/resource/level` 本体只有 re-export（实现居 `src/shared/resource-level.ts`，
+  // 组件桶静态消费同一份实现，实现随组件链进 L1/data 族包——resourceLoad 同款判定）。
+  // 入口路径自身无属性触发面，不进 L1/族包（路径标记 `/data/resource/level/` 只匹配入口，
+  // 不匹配 `src/shared/` 实现——两层口径互不干扰；family IIFE 入口为纯副作用，纯函数模块
+  // 本就摇除——resource-utils 既有同款）。独立按需链计量保留：宿主显式 import 本入口
+  // 绕开组件本体（抽核前须经组件模块单文件 16.25 KB gz；抽核后瘦链 ~13.2 KB，见预算档）。
+  { id: 'resourceLevel', entry: 'data/resource/level', family: 'data', kind: 'helper', measured: true },
 ]
 
 const normalize = (file) => file.replaceAll('\\', '/')

@@ -6,10 +6,13 @@
 
 ### 新增
 
+- **`@oas-ui/ui/data/resource/level` 算法核子路径（`levelResources` 抽核，API 零漂移）**：数据契约/清洗层/纯日期函数抽至 `data/resource/model.ts`（`ResourceItem`/`ResourceTask`/`ResourceScale`/事件载荷 + `safeGet`/`isArraySafe`/`cloneCustom` 防抛清洗族 + `parseTaskDate`/`addDays`/`calendarDaysBetween`/`spansOf`/`periodCapacity`），均衡引擎抽至 `level/index.ts`（`levelResources` + shift/reassign 全套私有实现）；`oas-resource.ts` −820 行（3325→2505）改 re-export，`data/resource/index.ts` 导出表一字未动。唯一行为相关手术：`buildPeriods` 拆出无文案 `buildPeriodSpans`（引擎用，level 链不再依赖 formatToken/isoWeek 的 locale 设施），组件侧 `buildPeriods` 在其结果上补刻度文案（同一 cursor 推导，输出逐位一致）。迁移前后行为逐位不变（resource 全套 249 用例前后同绿）；独立子路径链实测 gzip 13.16 KB/7 文件（组件模块单文件 16.25 KB 起步，瘦身 −19%；组件本体 16.25→12.62 KB），L3 登记为 capability（桶 re-export 静态可达）+ 独立预算档 16 KB。冒烟单测 4（导出面/确定性/幂等/负例）。
 - **`oas-table` 多行单元格三件套（D1-4）**：① **非虚拟多行**——不设 `height` 时长文本按列宽自然换行撑高，从「未验证」升为文档口径 + e2e 固化（斑马/hover/选中/合计/编辑浮层定位全过）。② **虚拟截断 + `wrap` 三态列定义**——修虚拟模式真缺口：td 原本无防护，长文本换行撑破 `row-height` 定高几何、滚动错位；现虚拟数据行默认单行不换行（`overflow hidden` 保几何），列定义 `wrap: true/false` 显式开口（true=定高内换行裁剪、false=单行省略），非虚拟缺省行为逐字节不变（零变化红线）。③ **`row-auto-height` 逐行动态行高**（注册型 L3 `@oas-ui/ui/data/table/auto-height`，实测 2.0 KB gzip / 预算 2.8 KB）：RO 逐行测量、未测行按 row-height 预估（滚动条长度先估计后收敛）、（行身份+行内偏移）锚定补偿视口不跳、tr 内联高 min 语义只增不减 + 轮询放行重测收敛变矮、编辑中的行豁免测量重建；`scrollToRow`/PageUp-Down 步进接动态几何；**windowed 混合模型**（切片内实测 + 切片外预估的拼接前缀和、像素相交的请求映射 `mapVisualWindowToDataDynamic`、高度修正后按需补派 oas-window-request）。**零 devWarn 新增原则**：三处候选排除经论证全部不成立或属错误归因——column-virtual 直组合受支持、merge 与虚拟互斥是既有边界不挂新告警、windowed 组合直接做掉（不留演进位）。核心接缝为零行为变化判空钩子（row-geometry 锚定数学随默认链，亚 KB 常数），`computeVirtualWindow` 原函数不动。单测 23（锚定数学 8 + 接缝 10 + 动态映射 4 + 探针轮转 1）+ e2e 真实 RO 测量回填收敛 + windowed 混合模型 e2e 宿主回填闭环 + zh/en 文档。
 - **`oas-table` 虚拟模式 merge/span-method 跳过告警（修旧账）**：虚拟滚动下合并跳过曾完全静默（windowed 同款场景有告警）——对齐先例补一条 devWarn（渲染零变化，独立小提交）。
 
 ### 修复
+
+- **`levelResources` 周末发散缺陷修复（跨度守卫，TDD）**：资源声明 `workdays:[1..5]`（5 天工作制）且 `capacity:1` 时，一个 10 天跨度任务（2026-03-02..03-11，横跨两个完整工作周段）会在 shift 均载中逐 period 后移**永不收敛**——任何落点窗口都必含零容量周末，任务被一路推到 maxIter（500 次迭代，实测漂移至 2027-07-15）。根因：任务跨度 > 资源最长连续工作日段时「全段空档」不存在。修法（最小守卫）：shift 受害者选择前按任务分配的资源判定——任务日历天数 > 该资源 workdays 循环回绕计的最长连续可用日段（[1..5]→5、[5,6,0]→3 跨周界正确、[0..6]→7）时，该任务不参与移动并 `devWarn` 一次（模块级去重，同既有 pure* 口径；文案硬编码中文，对齐组件内 15 处先例）；跨度可容的任务照常参与。天数按本地日历日口径计（`calendarDaysBetween`，跨 DST 不漂移，America/New_York 用例固化）。行为面：未声明 `workdays` 的资源零守卫（行为与引入前逐位一致）；正例 4 天任务（五..一）照常 3 次收敛。TDD：RED 复现（守卫用例固定断言漂移返回非空→实现后全绿）+ 守卫回归 5 用例（复现/正例/无守卫边界/跨周回绕/DST 防呆），resource 全套 258 用例绿。
 
 - **`oas-table` 虚拟滚动下行高几何破坏**：长文本单元格换行撑高行（40px 行实测被撑 64px），滚动窗口与占位高度错位——现由虚拟默认截断规则根治（见上「多行单元格三件套」②）。
 

@@ -1,15 +1,5 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { parseJsonArray } from '../../shared/json-array.js'
-import {
-  addMonthsClamped,
-  formatToken,
-  getWeekStart,
-  isoWeek,
-  parseISODate,
-  resolveLocale,
-  startOfDay,
-  toISODate,
-} from '../../form/calendar/date-grid.js'
 import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
 // 服务端窗口协议（windowed 行窗口 + 宿主托管时间轴范围）：与宿主交换区间/范围的共享契约
@@ -25,6 +15,53 @@ import {
 } from '../../shared/window-data.js'
 import type { RangeRequestDetail, WindowRequestDetail, WindowRequestReason } from '../../shared/window-data.js'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
+import { formatToken, getWeekStart, isoWeek, resolveLocale, toISODate } from '../../form/calendar/date-grid.js'
+// 算法核（levelResources）已抽核至 level/ 子路径：本模块保持 re-export（桶导出与
+// 消费方 import 路径零漂移），组件本体只保留渲染/虚拟化/负载统计。
+import {
+  buildPeriodSpans,
+  UNSAFE_KEYS,
+  RESERVED_RESOURCE_KEYS,
+  RESERVED_TASK_KEYS,
+  SCALES,
+  DAY_MS,
+  MAX_PERIODS,
+  cloneCustom,
+  parseTaskDate,
+  addDays,
+  periodCapacity,
+  sanitizeResources,
+  sanitizeTasks,
+  toPublicTask,
+  toPublicResource,
+  spansOf,
+} from './model.js'
+import type {
+  PeriodSpan,
+  ResourceTaskClickDetail,
+  ResourceTasksChangeDetail,
+  ResourceOverloadEntry,
+  ResourceOverloadDetail,
+  ResourceItem,
+  ResourceScale,
+  ResourceTask,
+  RS,
+  RT,
+  Span,
+} from './model.js'
+
+// —— 对外公开 API（抽核后经本模块再导出：data/resource/index.ts 导出表一字不动）——
+export type {
+  ResourceTaskClickDetail,
+  ResourceTasksChangeDetail,
+  ResourceOverloadEntry,
+  ResourceOverloadDetail,
+  ResourceItem,
+  ResourceScale,
+  ResourceTask,
+} from './model.js'
+export { levelResources } from '../../shared/resource-level.js'
+export type { LevelResourcesMode, LevelResourcesOptions } from '../../shared/resource-level.js'
 
 const STYLE = `
 :host {
@@ -498,157 +535,9 @@ const STYLE = `
 }
 `
 
-/** 资源（负载视图行）：id 为任务分配的引用键；capacity 缺省回落组件 capacity 属性（最终 1） */
-export interface ResourceItem {
-  /** 资源 id（必填，重复/空 id 丢弃） */
-  id?: string
-  /** 资源名（必填，缺失丢弃） */
-  name: string
-  /** 并行容量（正数；未启用日历时是每 period 容量，启用后是每日容量；缺省回落 capacity 属性，最终 1） */
-  capacity?: number
-  /**
-   * 每周可用日（0=周日…6=周六）。省略且 holidays/capacityOverrides 为空时沿用旧的每 period 容量语义；
-   * [] 表示全不可用；非空但全部非法时按未声明处理并 devWarn。
-   */
-  workdays?: number[]
-  /** 假期日期（严格 YYYY-MM-DD；非空时启用逐日容量，当天容量 0；空数组视为未声明） */
-  holidays?: string[]
-  /**
-   * 日期级容量覆盖（严格 YYYY-MM-DD → 容量；非空时启用逐日容量，优先于 workdays/holidays）。
-   * 可写小数（如 0.5），但任务负载按整日计数，0.5 日无法容纳整日任务。
-   */
-  capacityOverrides?: Record<string, number>
-  /**
-   * 资源技能标签（清洗：非数组→未声明、非字符串/空串项丢弃、去重、trim）。
-   * reassign 时用于 requiredSkills 硬匹配（全量）；`show-skills` 开启时行头以 chip 展示
-   * （展示截断 8 个防炸行高，全量经悬浮提示可见——截断只影响展示，不影响匹配）。
-   */
-  skills?: string[]
-  /**
-   * 小时费率（纯展示数据，不参与排程/负载计算）：`show-cost` 开启时参与泳道行头成本合计
-   * Σ(可见/已装载周期内任务天数 × 8h × costRate)。缺失/非有限 → 该 lane 不显示成本。
-   */
-  costRate?: number
-  [key: string]: unknown
-}
-
-/** 资源任务：start/end 为 'YYYY-MM-DD'（日精度，end 含端）；resources 为分配的资源 id 数组 */
-export interface ResourceTask {
-  /** 任务 id（必填，缺失丢弃） */
-  id?: string
-  /** 任务名（必填，缺失丢弃） */
-  name: string
-  /** 开始 'YYYY-MM-DD' */
-  start: string
-  /** 结束 'YYYY-MM-DD'（含当日） */
-  end: string
-  /** 分配的资源 id 数组（指向不存在资源的分配被忽略） */
-  resources?: string[]
-  /** 任务优先级（数值越小越优先；缺省 0）；均载时低优先级任务先让位 */
-  priority?: number
-  /** 任务需要的技能（reassign 目标必须全部具备；缺省空 = 不限制） */
-  requiredSkills?: string[]
-  /** 所属项目键（配合 projectOrder 做跨项目优先级） */
-  project?: string
-  [key: string]: unknown
-}
-
-/** 刻度档：day/week/month（决定直方图 period 粒度与时间轴刻度文案） */
-export type ResourceScale = 'day' | 'week' | 'month'
-
-/** task-click 事件载荷 */
-export interface ResourceTaskClickDetail {
-  id: string
-  task: ResourceTask
-  resourceId: string
-}
-
-/** tasks-change 事件载荷 */
-export interface ResourceTasksChangeDetail {
-  tasks: ResourceTask[]
-}
-
-/** overload 单条超载档 */
-export interface ResourceOverloadEntry {
-  resourceId: string
-  /** period 起始日期 'YYYY-MM-DD' */
-  period: string
-  load: number
-  /** 该 period 的容量（启用日历时为逐日求和；否则为资源每档容量） */
-  capacity: number
-}
-
-/** overload 事件载荷（每次 update 至多一个事件，聚合全部超载档） */
-export interface ResourceOverloadDetail {
-  overloads: ResourceOverloadEntry[]
-}
-
-/** levelResources 平衡模式：shift=整体顺延（改日期、保工期）；reassign=改派资源（日期不变、尊重 capacity） */
-export type LevelResourcesMode = 'shift' | 'reassign'
-
-/** levelResources 选项 */
-export interface LevelResourcesOptions {
-  /** 步进粒度（缺省 day） */
-  scale?: ResourceScale
-  /** 资源未声明 capacity 时的缺省容量（缺省 1） */
-  capacity?: number
-  /** 迭代上限（缺省 500，达上限即停，返回已移动部分） */
-  maxIter?: number
-  /** week 档周起始（0=周日 … 6=周六；缺省 1=周一，纯函数无 locale 上下文） */
-  weekStart?: number
-  /**
-   * 平衡模式（缺省 shift）：
-   * - shift：把超载档内优先级最低的任务整体后移一个 period（改日期、保工期，对截止日不友好）；
-   *   workdays 显式为空且未来没有足够的正容量 override 时保持原日期并 devWarn，不推到 maxIter 之后。
-   * - reassign：把任务改派给整段都有余量的资源（日期不变、尊重 capacity；找不到目标即停，不退化顺延）
-   */
-  mode?: LevelResourcesMode
-  /** reassign 时是否要求目标资源具备 task.requiredSkills（缺省 true；无技能数据时无影响） */
-  respectSkills?: boolean
-  /** 跨项目优先级：数组靠前的项目优先；未列出的项目排在最后（仅 levelResources 使用） */
-  projectOrder?: string[]
-}
-
-/** 内部清洗后资源模型（capacity: null = 回落组件缺省容量；costRate: null = 未声明/非法）；白名单外键原样透传 */
-interface RS {
-  id: string
-  name: string
-  capacity: number | null
-  /** null = 未声明 workdays（旧语义：capacity 按 period 计，不按逐日求和） */
-  workdays: number[] | null
-  holidays: Set<string>
-  capacityOverrides: Map<string, number> | null
-  skills: string[] | null
-  /** null = 未声明/非法 costRate（show-cost 下该 lane 不显示成本） */
-  costRate: number | null
-  [key: string]: unknown
-}
-
-/** 内部清洗后任务模型（日期已归一为本地日精度、end ≥ start）；白名单外键原样透传 */
-interface RT {
-  id: string
-  name: string
-  start: string
-  end: string
-  resources: string[]
-  priority: number
-  requiredSkills: string[]
-  project: string
-  [key: string]: unknown
-}
-
-/** 直方图 period（列） */
-interface Period {
-  startMs: number
-  endMs: number
+/** 直方图 period（列）：引擎跨度（PeriodSpan）+ 刻度文案（组件渲染用） */
+interface Period extends PeriodSpan {
   label: string
-}
-
-/** 任务时间跨度（负载统计与 level 迭代共用） */
-interface Span {
-  startMs: number
-  endMs: number
-  index: number
 }
 
 /**
@@ -694,29 +583,28 @@ interface LaneLayout {
 /** 段树补齐叶哨兵：−Infinity 使补齐叶在任意 winLeft（含首窗负值）下都被剪枝 */
 const SEG_TREE_EMPTY = Number.NEGATIVE_INFINITY
 
-const SCALES: ResourceScale[] = ['day', 'week', 'month']
 /** 各档列宽（px）：泳道与直方图共用同一横向列宽 */
 const SCALE_COL: Record<ResourceScale, number> = { day: 36, week: 90, month: 110 }
+
 /** 泳道条最小宽度（px）：单日任务在 month 档按比例内插可小于此值，钳到该宽度保证可点可读。
  * renderLanes 把它并进 width 与 left（条恒在画布内），CSS min-width 仅作兜底（两处需一致） */
 const MIN_BAR_W = 8
+
 /** 横向虚拟窗口两侧预渲染列数（overscan）：滚动中提前铺好视口外一屏，避免边缘露白 */
 const COL_BUFFER = 4
+
 /** 纵向行虚拟窗口上下预渲染行数（overscan）：语义同 COL_BUFFER，泳道区/负载区共用 */
 const ROW_BUFFER = 4
-const DAY_MS = 86_400_000
+
 /** 成本合计的每日工时（show-cost：Σ(天数 × 8h × costRate)；固定 8h，单位由宿主文案承载） */
 const COST_HOURS_PER_DAY = 8
+
 /**
  * 行头技能 chip 渲染上限（show-skills）：超出部分不渲染（防超长技能列表挤占行头），
  * 全量列表经 chips 容器 title 悬浮可见。只截断**展示**——RS.skills 数据层保全量，
  * reassign 的 requiredSkills 硬匹配不受影响（第 9 个技能仍可参与匹配，只是不显示 chip）。
  */
 const MAX_SKILL_CHIPS = 8
-/** period 构建护栏（防脏数据撑爆循环） */
-const MAX_PERIODS = 5000
-/** levelResources 缺省迭代上限 */
-const DEFAULT_MAX_ITER = 500
 
 /**
  * 变高行虚拟窗口（泳道区用；负载区行定高，直接走 computeVirtualWindow）：
@@ -758,562 +646,6 @@ function computeRowWindowFromOffsets(
   return { start, end }
 }
 
-/** 资源已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
-const RESERVED_RESOURCE_KEYS = new Set([
-  'id',
-  'name',
-  'capacity',
-  'workdays',
-  'holidays',
-  'capacityOverrides',
-  'skills',
-  'costRate',
-])
-/** 任务已知字段（清洗时按各自口径处理）；此外的键视为宿主自定义字段，原样透传 */
-const RESERVED_TASK_KEYS = new Set(['id', 'name', 'start', 'end', 'resources', 'priority', 'requiredSkills', 'project'])
-
-/** 透传白名单外的自定义键时一律跳过的危险键：防 `__proto__` 等原型 setter / 内建键遮蔽 */
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-
-/** 属性读取哨兵：accessor getter 抛异常时返回（与合法的 undefined 值区分，供调用方按无效丢弃） */
-const READ_FAILED: unique symbol = Symbol('oas-resource-read-failed')
-
-/**
- * 安全读取对象属性：宿主传入的对象可能带**抛异常的 accessor getter**（`Object.entries`/直接取键
- * 都会同步调用 getter 并冒泡，令 setter 抛未捕获异常）。这里逐键 try/catch，异常返回 READ_FAILED
- * 由调用方按无效丢弃——只丢该键，不影响其余键清洗。异常键的 devWarn 去重由调用方决定。
- */
-function safeGet(obj: object, key: string): unknown {
-  try {
-    return (obj as Record<string, unknown>)[key]
-  } catch {
-    return READ_FAILED
-  }
-}
-
-/**
- * 顶层数组探测防抛：`Array.isArray` 走 IsArray 内部方法，**已吊销的 Proxy 会抛 TypeError**
- *（「是不是数组」这一步本身就可能炸，与条目级探测同源）。失败即视为无效输入：返回 false 并
- * 经 onInvalid 走既有无效告警通道（实例级 / 模块级去重），兑现「全链路防抛」；
- * 非数组的正常输入仍静默返回 false（不误报为结构性损坏）。
- */
-function isArraySafe(v: unknown, onInvalid?: () => void): v is unknown[] {
-  try {
-    return Array.isArray(v)
-  } catch {
-    onInvalid?.()
-    return false
-  }
-}
-
-/** MAX_PERIODS 截断告警去重（levelResources 纯函数路径：模块内仅提示一次，防 maxIter 循环刷屏） */
-let periodsTruncWarned = false
-
-/** 抛异常 accessor getter 丢弃告警去重（levelResources 纯函数路径：模块级仅提示一次，无实例可挂） */
-let pureAccessorKeyWarned = false
-
-/** 纯函数路径的「抛异常 getter 键丢弃」告警回调（模块级去重一次，无实例上下文） */
-function pureAccessorKeyError(): (key: string) => void {
-  return (key) => {
-    if (pureAccessorKeyWarned) return
-    pureAccessorKeyWarned = true
-    devWarn(`[oas-resource] 数据含抛异常的自定义键 getter（如「${key}」），已丢弃该键（其余键保留）`)
-  }
-}
-
-let pureInvalidEntryWarned = false
-
-/** 纯函数路径的「结构性无效条目丢弃」告警回调（模块级去重一次，无实例上下文） */
-function pureInvalidEntryError(): () => void {
-  return () => {
-    if (pureInvalidEntryWarned) return
-    pureInvalidEntryWarned = true
-    devWarn(`[oas-resource] 输入含结构性不可读条目（如已吊销的 Proxy），已丢弃该条目（其余条目保留）`)
-  }
-}
-
-/**
- * 自定义键值深拷贝（防抛外壳）：源值可能在写入与读取之间被结构性吊销（revoked Proxy——
- * `typeof` 探测不抛，但 `instanceof` / `Array.isArray` / `Object.keys` / `Object.getPrototypeOf`
- * 等结构性探测一律抛 TypeError），此处兜底返回 READ_FAILED，
- * 由调用方按「无效值」丢弃该键/该元素，兑现「读为拷贝绝不抛未捕获异常」。
- */
-function cloneCustom(v: unknown, memo?: WeakMap<object, unknown>, onKeyError?: (key: string) => void): unknown {
-  try {
-    return cloneCustomInner(v, memo, onKeyError)
-  } catch {
-    return READ_FAILED
-  }
-}
-
-/**
- * 自定义键值深拷贝（实现体）：嵌套 plain object / array 逐层递归复制、Date 复制时间戳，
- * 类实例 / Set 等奇异对象与函数原样引用（组件数据契约是 JSON 可序列化面，奇异对象不擅自变形）。
- *
- * 记忆化：WeakMap 记「源对象 → 已建拷贝」（进入时登记、复用不复建）——
- * - 循环安全：再次遇到在拷中的源 → 直接返回其拷贝，拷贝图与源图同构（环闭合在拷贝上），
- *   绝不 RangeError / 栈溢出，也不静默泄漏内部引用；
- * - 共享保持：同一源对象在多处出现（兄弟位置/跨条目）→ 结果中是同一个拷贝引用，不复制成多份。
- * 递归经 cloneCustom 外壳逐层防抛：嵌套深处某层结构吊销时只让该层值无效，不冒泡到顶层调用方。
- */
-function cloneCustomInner(v: unknown, memo?: WeakMap<object, unknown>, onKeyError?: (key: string) => void): unknown {
-  if (v === null || typeof v !== 'object') return v
-  if (v instanceof Date) return new Date(v.getTime())
-  const seen = memo ?? new WeakMap<object, unknown>()
-  const cached = seen.get(v)
-  if (cached !== undefined) return cached
-  if (Array.isArray(v)) {
-    const out: unknown[] = []
-    seen.set(v, out)
-    for (const x of v) {
-      const c = cloneCustom(x, seen, onKeyError)
-      // 数组元素结构性无效（如 revoked Proxy）→ 置 null 占位（保留位序；不把会炸的引用递给宿主）
-      out.push(c === READ_FAILED ? null : c)
-    }
-    return out
-  }
-  const proto = Object.getPrototypeOf(v)
-  if (proto === Object.prototype || proto === null) {
-    const out: Record<string, unknown> = {}
-    seen.set(v, out)
-    // Object.keys 不触发 getter；逐键 safeGet 读值，抛异常键丢弃（只丢该键）
-    for (const k of Object.keys(v)) {
-      if (UNSAFE_KEYS.has(k)) continue
-      const val = safeGet(v, k)
-      if (val === READ_FAILED) {
-        onKeyError?.(k)
-        continue
-      }
-      const c = cloneCustom(val, seen, onKeyError)
-      if (c === READ_FAILED) {
-        onKeyError?.(k)
-        continue
-      }
-      out[k] = c
-    }
-    return out
-  }
-  return v
-}
-
-/**
- * 解析 'YYYY-MM-DD'（非法返回 null；与 gantt 同口径走 parseISODate）。
- * 仅日精度：带时刻输入截断到本地当日 00:00（文档承诺「带时刻输入按日处理」）。
- */
-function parseTaskDate(s: unknown): Date | null {
-  if (typeof s !== 'string') return null
-  const d = parseISODate(s.trim())
-  return d ? startOfDay(d) : null
-}
-
-/** 本地日历日加减：结果恒为本地 00:00，跨 DST 边界不漂移（毫秒加减会偏移 1 小时） */
-function addDays(d: Date, n: number): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
-}
-
-/** 日历日差（b − a，忽略时刻/时区偏移；UTC 归一规避 DST 导致的 23/25 小时误差） */
-function calendarDaysBetween(a: Date, b: Date): number {
-  const ua = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
-  const ub = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
-  return Math.round((ub - ua) / DAY_MS)
-}
-
-/** 容量清洗：正有限数才有效，其余回落 null（= 用组件缺省容量） */
-function sanitizeCapacity(v: unknown): number | null {
-  if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return null
-  return v
-}
-
-/** 小时费率清洗（show-cost）：有限非负数才有效；缺失/负数/非有限回落 null（= 该 lane 不显示成本） */
-function sanitizeCostRate(v: unknown): number | null {
-  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return null
-  return v
-}
-
-function hasCalendar(r: RS): boolean {
-  // workdays 空数组是「显式全不可用」；空 holidays / 空 capacityOverrides 视为未声明，
-  // 避免宿主用默认空配置时把旧「每档 capacity」语义悄悄切换成逐日语义。
-  return r.workdays !== null || r.holidays.size > 0 || (r.capacityOverrides?.size ?? 0) > 0
-}
-
-/**
- * 是否存在足够的未来可排容量（结构判定，不受当前 period 窗口影响）：
- * 只有「workdays 显式为空」才需要看 override；从该资源自身最早任务起，
- * 未来正 override 的容量总和必须覆盖其任务占用的档数（多日任务按档数计）。
- * 容量按数值累加，因此 week/month 档内的小数 override 可合并（如 0.5+0.5）。
- * 其余情况（含当前连续假期/0 override）未来仍可能恢复基础容量，shift 允许继续移动。
- */
-function hasPotentialCapacity(r: RS, fromMs: number, demand: number): boolean {
-  if (r.workdays === null || r.workdays.length > 0) return true
-  if (!r.capacityOverrides) return false
-  let total = 0
-  for (const [key, n] of r.capacityOverrides) {
-    if (n <= 0) continue
-    const d = parseTaskDate(key)
-    if (!d || d.getTime() < fromMs) continue
-    total += n
-    if (total >= demand) return true
-  }
-  // 与 periodCapacity 同口径做 1e-6 归一：0.3+0.7 之类的浮点累加不应误判不可排。
-  return Math.round(total * 1e6) / 1e6 >= demand
-}
-
-let invalidWorkdaysWarned = false
-
-function sanitizeWorkdays(v: unknown): number[] | null {
-  if (!Array.isArray(v)) return null
-  if (v.length === 0) return []
-  const out = new Set<number>()
-  for (const n of v) if (typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 6) out.add(n)
-  if (out.size === 0) {
-    // 非空但全部非法（字符串化、1..7 约定、越界）→ 按未声明处理，避免静默变成「永不排班」。
-    if (!invalidWorkdaysWarned) {
-      invalidWorkdaysWarned = true
-      devWarn('[oas-resource] workdays 无合法值（应为 0=周日…6=周六 的整数），已按未声明处理')
-    }
-    return null
-  }
-  return [...out].sort((a, b) => a - b)
-}
-
-/** 严格日精度解析：只接受 YYYY-MM-DD 且日期真实存在（新日历字段不继承宽松 yyyy-MM 解析） */
-function parseStrictDay(s: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim())
-  if (!m) return null
-  const y = Number(m[1])
-  const mo = Number(m[2])
-  const day = Number(m[3])
-  const d = new Date(y, mo - 1, day)
-  if (d.getFullYear() !== y || d.getMonth() !== mo - 1 || d.getDate() !== day) return null
-  return startOfDay(d)
-}
-
-function sanitizeHolidays(v: unknown): Set<string> {
-  const out = new Set<string>()
-  if (!Array.isArray(v)) return out
-  for (const s of v) {
-    if (typeof s !== 'string') continue
-    const d = parseStrictDay(s)
-    if (d) out.add(toISODate(d))
-  }
-  return out
-}
-
-function sanitizeCapacityOverrides(v: unknown): Map<string, number> | null {
-  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null
-  const out = new Map<string, number>()
-  for (const key of Object.keys(v)) {
-    const d = parseStrictDay(key)
-    if (!d) continue
-    const n = safeGet(v as Record<string, unknown>, key)
-    if (n === READ_FAILED || typeof n !== 'number' || !Number.isFinite(n) || n < 0) continue
-    out.set(toISODate(d), n)
-  }
-  return out
-}
-
-function sanitizeSkills(v: unknown): string[] | null {
-  if (!Array.isArray(v)) return null
-  return [...new Set(v.filter((x): x is string => typeof x === 'string' && x.trim() !== '').map((x) => x.trim()))]
-}
-
-function sanitizePriority(v: unknown): number {
-  return typeof v === 'number' && Number.isFinite(v) ? v : 0
-}
-
-function sanitizeSkillsMatch(v: unknown): boolean {
-  return v !== false
-}
-
-function sanitizeProjectOrder(v: unknown): string[] {
-  if (!Array.isArray(v)) return []
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const x of v) {
-    if (typeof x !== 'string') continue
-    const s = x.trim()
-    if (s === '' || seen.has(s)) continue
-    seen.add(s)
-    out.push(s)
-  }
-  return out
-}
-
-/**
- * 资源在某个 period 的容量。
- * - 未声明任何日历字段：保持旧语义，capacity 按 period 计（不是逐日求和）。
- * - 声明 workdays/holidays/capacityOverrides 任一：按日求容量并求和；
- *   workdays 缺省视为每天可用（不隐式改周末语义），holidays=0，capacityOverrides 优先。
- */
-function periodCapacity(r: RS, period: Period, _scale: ResourceScale, _weekStart: number, capDefault: number): number {
-  const base = r.capacity ?? capDefault
-  if (!hasCalendar(r)) return base
-  const workdays = r.workdays === null ? null : new Set(r.workdays)
-  let total = 0
-  let cursor = startOfDay(new Date(period.startMs))
-  const end = new Date(period.endMs)
-  while (cursor.getTime() < end.getTime()) {
-    const key = toISODate(cursor)
-    const override = r.capacityOverrides?.get(key)
-    if (override != null) total += override
-    else if (r.holidays.has(key)) total += 0
-    else if (workdays === null || workdays.has(cursor.getDay())) total += base
-    cursor = addDays(cursor, 1)
-  }
-  // 浮点 override（如 0.1）逐日累加会出现 0.999…；按 1e-6 归一，避免整数负载误判超载。
-  return Math.round(total * 1e6) / 1e6
-}
-
-function hasRequiredSkills(r: RS, t: RT): boolean {
-  if (t.requiredSkills.length === 0) return true
-  if (!r.skills) return false
-  return t.requiredSkills.every((skill) => r.skills!.includes(skill))
-}
-
-function projectRank(project: string, order: string[]): number {
-  const i = order.indexOf(project)
-  return i < 0 ? order.length : i
-}
-
-/** 均载受害者/改派候选排序：低优先级先让位；并列保持 start 晚→早、输入序后→前 */
-function compareLowPriorityFirst(a: Span, b: Span, tasks: RT[], projectOrder: string[]): number {
-  const ta = tasks[a.index]!
-  const tb = tasks[b.index]!
-  const projectDiff = projectRank(tb.project, projectOrder) - projectRank(ta.project, projectOrder)
-  if (projectDiff !== 0) return projectDiff
-  const priorityDiff = tb.priority - ta.priority
-  if (priorityDiff !== 0) return priorityDiff
-  return b.startMs - a.startMs || b.index - a.index
-}
-
-/**
- * 清洗资源数组（纯函数）：非对象/缺 id/缺名/空串丢弃；重复 id 保留首个；
- * capacity 非正有限数 → null（回落组件缺省容量）；白名单外的自定义键原样透传。
- * 逐键读取走 safeGet：宿主对象带抛异常的 accessor getter 时只丢该键（onKeyError 回调，供调用方告警）。
- * 结构性容错（onInvalid 回调）：条目为 revoked Proxy 等 ownKeys / 原型探测都会抛的对象时，
- * 该条整体丢弃、其余保留，绝不抛未捕获异常；**顶层数组本身**为 revoked Proxy 时（Array.isArray 抛）
- * 整体视为无效输入（返回空数组 + 同一告警通道）。
- */
-function sanitizeResources(v: unknown, onKeyError?: (key: string) => void, onInvalid?: () => void): RS[] {
-  if (!isArraySafe(v, onInvalid)) return []
-  const out: RS[] = []
-  const seen = new Set<string>()
-  for (const item of v) {
-    if (typeof item !== 'object' || item === null) continue
-    // 结构性探测：revoked Proxy 连 ownKeys（Object.keys）都不可用（typeof 却恒不抛）——
-    // 预取自有键显式探测：失败即结构性无效（onInvalid 告警 + 整条丢弃），不滑进「缺 id 丢弃」静默路径；
-    // 成功则复用该键数组做自定义键透传（ownKeys 不双调）
-    let ownKeys: string[]
-    try {
-      ownKeys = Object.keys(item)
-    } catch {
-      onInvalid?.()
-      continue
-    }
-    // 结构性容错：兜住条目处理全程的残余抛点（嵌套值的 Array.isArray / 原型探测等）
-    try {
-      const raw = item as Record<string, unknown>
-      const id = safeGet(raw, 'id')
-      const name = safeGet(raw, 'name')
-      if (typeof id !== 'string' || id === '') continue
-      if (typeof name !== 'string' || name === '') continue
-      if (seen.has(id)) continue
-      seen.add(id)
-      const cap = safeGet(raw, 'capacity')
-      const workdaysRaw = safeGet(raw, 'workdays')
-      const holidaysRaw = safeGet(raw, 'holidays')
-      const overridesRaw = safeGet(raw, 'capacityOverrides')
-      const skillsRaw = safeGet(raw, 'skills')
-      const costRateRaw = safeGet(raw, 'costRate')
-      const r: RS = {
-        id,
-        name,
-        capacity: cap === READ_FAILED ? null : sanitizeCapacity(cap),
-        workdays: workdaysRaw === READ_FAILED ? null : sanitizeWorkdays(workdaysRaw),
-        holidays: holidaysRaw === READ_FAILED ? new Set() : sanitizeHolidays(holidaysRaw),
-        capacityOverrides: overridesRaw === READ_FAILED ? null : sanitizeCapacityOverrides(overridesRaw),
-        skills: skillsRaw === READ_FAILED ? null : sanitizeSkills(skillsRaw),
-        costRate: costRateRaw === READ_FAILED ? null : sanitizeCostRate(costRateRaw),
-      }
-      // 自定义字段透传（ResourceItem 的 `[key: string]: unknown` 契约）：白名单外的键原样保留
-      for (const k of ownKeys) {
-        if (RESERVED_RESOURCE_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
-        const val = safeGet(raw, k)
-        if (val === READ_FAILED) {
-          onKeyError?.(k)
-          continue
-        }
-        r[k] = val
-      }
-      out.push(r)
-    } catch {
-      onInvalid?.()
-    }
-  }
-  return out
-}
-
-/**
- * 清洗任务数组（纯函数）：非对象/缺 id/缺名/日期不可解析丢弃；重复 id 保留首个（丢弃后续，
- * 与资源同口径，避免点击/事件/moved 按 id 取用时歧义）并告警一次；
- * start/end 归一为本地日精度（带时刻输入截断到当日）；end 早于 start 自愈交换（日精度 end 含当日）；
- * resources 过滤为非空字符串数组并去重（未知资源 id 的分配在渲染/统计层忽略）；
- * 白名单外的自定义键原样透传。逐键读取走 safeGet（抛异常 getter 只丢该键，onKeyError 回调）。
- * 结构性容错（onInvalid 回调）：条目为 revoked Proxy 等 ownKeys 探测都会抛的对象，
- * 或条目内嵌套值结构性不可读（如 resources 数组值已吊销）时，该条整体丢弃、其余保留；
- * **顶层数组本身**为 revoked Proxy 时（Array.isArray 抛）整体视为无效输入（返回空数组 + 同一告警通道）。
- */
-function sanitizeTasks(v: unknown, onKeyError?: (key: string) => void, onInvalid?: () => void): RT[] {
-  if (!isArraySafe(v, onInvalid)) return []
-  const out: RT[] = []
-  const seen = new Set<string>()
-  let dupWarned = false
-  for (const item of v) {
-    if (typeof item !== 'object' || item === null) continue
-    // 结构性探测（同 sanitizeResources）：revoked Proxy 连 ownKeys（Object.keys）都不可用——
-    // 失败即结构性无效（onInvalid 告警 + 整条丢弃）；成功则复用该键数组做自定义键透传
-    let ownKeys: string[]
-    try {
-      ownKeys = Object.keys(item)
-    } catch {
-      onInvalid?.()
-      continue
-    }
-    // 结构性容错：兜住条目处理全程的残余抛点（嵌套 resources 值的 Array.isArray / 原型探测等）
-    try {
-      const raw = item as Record<string, unknown>
-      const id = safeGet(raw, 'id')
-      const name = safeGet(raw, 'name')
-      if (typeof id !== 'string' || id === '') continue
-      if (typeof name !== 'string' || name === '') continue
-      const sd = parseTaskDate(safeGet(raw, 'start'))
-      const ed = parseTaskDate(safeGet(raw, 'end'))
-      if (!sd || !ed) continue
-      if (seen.has(id)) {
-        if (!dupWarned) {
-          dupWarned = true
-          devWarn(`[oas-resource] 重复任务 id "${id}"，已保留首个、丢弃后续`)
-        }
-        continue
-      }
-      seen.add(id)
-      // 日期颠倒自愈：按渲染语义交换（日精度 end 含当日，故用日历日比较）
-      let startDate = sd
-      let endDate = ed
-      if (endDate.getTime() < startDate.getTime()) {
-        const tmp = startDate
-        startDate = endDate
-        endDate = tmp
-      }
-      const rawResources = safeGet(raw, 'resources')
-      const resources = Array.isArray(rawResources)
-        ? [...new Set(rawResources.filter((x): x is string => typeof x === 'string' && x !== ''))]
-        : []
-      const priorityRaw = safeGet(raw, 'priority')
-      const requiredRaw = safeGet(raw, 'requiredSkills')
-      const projectRaw = safeGet(raw, 'project')
-      const t: RT = {
-        id,
-        name,
-        start: toISODate(startDate),
-        end: toISODate(endDate),
-        resources,
-        priority: priorityRaw === READ_FAILED ? 0 : sanitizePriority(priorityRaw),
-        requiredSkills: requiredRaw === READ_FAILED ? [] : (sanitizeSkills(requiredRaw) ?? []),
-        project: typeof projectRaw === 'string' ? projectRaw.trim() : '',
-      }
-      // 自定义字段透传（ResourceTask 的 `[key: string]: unknown` 契约）：白名单外的键原样保留
-      for (const k of ownKeys) {
-        if (RESERVED_TASK_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
-        const val = safeGet(raw, k)
-        if (val === READ_FAILED) {
-          onKeyError?.(k)
-          continue
-        }
-        t[k] = val
-      }
-      out.push(t)
-    } catch {
-      onInvalid?.()
-    }
-  }
-  return out
-}
-
-/** 内部模型 → 对外任务拷贝（resources 缺省空数组不落字段；自定义键深拷贝并跳过危险键。
- * memo 由调用方传入时在同一次读内共享——同一源对象在结果中保持同一拷贝引用。
- * onKeyError：嵌套对象里抛异常的 getter 键丢弃时回调（只丢该键）；
- * 深拷贝遇结构性吊销值（revoked Proxy）同样只丢该键、绝不抛。 */
-function toPublicTask(t: RT, memo?: WeakMap<object, unknown>, onKeyError?: (key: string) => void): ResourceTask {
-  const copy: ResourceTask = { id: t.id, name: t.name, start: t.start, end: t.end }
-  if (t.resources.length > 0) copy.resources = [...t.resources]
-  if (t.priority !== 0) copy.priority = t.priority
-  if (t.requiredSkills.length > 0) copy.requiredSkills = [...t.requiredSkills]
-  if (t.project !== '') copy.project = t.project
-  for (const k of Object.keys(t)) {
-    if (RESERVED_TASK_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
-    const v = safeGet(t, k)
-    if (v === READ_FAILED) {
-      onKeyError?.(k)
-      continue
-    }
-    const c = cloneCustom(v, memo, onKeyError)
-    if (c === READ_FAILED) {
-      onKeyError?.(k)
-      continue
-    }
-    copy[k] = c
-  }
-  return copy
-}
-
-/** 内部模型 → 对外资源拷贝（capacity 缺省不落字段；自定义键深拷贝并跳过危险键；memo/onKeyError 语义同 toPublicTask） */
-function toPublicResource(r: RS, memo?: WeakMap<object, unknown>, onKeyError?: (key: string) => void): ResourceItem {
-  const copy: ResourceItem = { id: r.id, name: r.name }
-  if (r.capacity != null) copy.capacity = r.capacity
-  if (r.workdays !== null) copy.workdays = [...r.workdays]
-  if (r.holidays.size > 0) copy.holidays = [...r.holidays]
-  if (r.capacityOverrides) copy.capacityOverrides = Object.fromEntries(r.capacityOverrides)
-  if (r.skills && r.skills.length > 0) copy.skills = [...r.skills]
-  if (r.costRate !== null) copy.costRate = r.costRate
-  for (const k of Object.keys(r)) {
-    if (RESERVED_RESOURCE_KEYS.has(k) || UNSAFE_KEYS.has(k)) continue
-    const v = safeGet(r, k)
-    if (v === READ_FAILED) {
-      onKeyError?.(k)
-      continue
-    }
-    const c = cloneCustom(v, memo, onKeyError)
-    if (c === READ_FAILED) {
-      onKeyError?.(k)
-      continue
-    }
-    copy[k] = c
-  }
-  return copy
-}
-
-/** 任务跨度（end 含端 → 右缘次日 00:00，日历步进防 DST 漂移；清洗层保证日期合法，此处防御跳过） */
-function spansOf(tasks: RT[]): Span[] {
-  const spans: Span[] = []
-  for (let i = 0; i < tasks.length; i++) {
-    const t = tasks[i]!
-    const s = parseTaskDate(t.start)
-    const e = parseTaskDate(t.end)
-    if (!s || !e) continue
-    const startMs = s.getTime()
-    spans.push({ startMs, endMs: Math.max(addDays(e, 1).getTime(), addDays(s, 1).getTime()), index: i })
-  }
-  return spans
-}
-
-/** 按 scale 步进 n 个 period（全档走本地日历运算防月末溢出与 DST 漂移；period 边界恒为本地 00:00） */
-function addPeriods(d: Date, scale: ResourceScale, n: number): Date {
-  if (scale === 'day') return addDays(d, n)
-  if (scale === 'week') return addDays(d, n * 7)
-  return new Date(d.getFullYear(), d.getMonth() + n, 1)
-}
-
 /**
  * period 刻度文案：day → MM-dd；week → 周一起始时 W{isoWeek}，否则该档起始日 MM-dd
  * （非周一/周日起始时 ISO 周号会错一周，改用起始日更准确）；month → yyyy-MM
@@ -1324,20 +656,9 @@ function periodLabel(d: Date, scale: ResourceScale, locale: string, weekStart: n
   return formatToken(d, 'yyyy-MM', locale)
 }
 
-/** 首个 period 锚点：day → 当日起点；week → 对齐周起始；month → 当月 1 日 */
-function anchorOf(min: Date, scale: ResourceScale, weekStart: number): Date {
-  if (scale === 'day') return startOfDay(min)
-  if (scale === 'week') {
-    const diff = (min.getDay() + 7 - weekStart) % 7
-    return new Date(min.getFullYear(), min.getMonth(), min.getDate() - diff)
-  }
-  return new Date(min.getFullYear(), min.getMonth(), 1)
-}
-
 /**
- * 由任务区间推导 period 序列（覆盖 [minMs, maxMs) 的整 period）。
- * 纯函数：locale 仅影响文案（levelResources 复用时用固定值）。
- * 截断时回调 onTruncated 至多一次（去重粒度由调用方定：组件实例级 / 纯函数模块级）。
+ * 由任务区间推导 period 序列（覆盖 [minMs, maxMs) 的整 period），带刻度文案（组件渲染用）。
+ * 纯函数：locale 仅影响文案。截断时回调 onTruncated 至多一次（实例级去重由调用方定）。
  */
 function buildPeriods(
   minMs: number,
@@ -1347,291 +668,10 @@ function buildPeriods(
   locale: string,
   onTruncated?: () => void,
 ): Period[] {
-  if (!Number.isFinite(minMs) || !Number.isFinite(maxMs) || maxMs <= minMs) return []
-  const anchor = anchorOf(new Date(minMs), scale, weekStart)
-  const periods: Period[] = []
-  let cursor = anchor.getTime()
-  let guard = 0
-  while (cursor < maxMs && guard++ < MAX_PERIODS) {
-    const next = addPeriods(new Date(cursor), scale, 1)
-    periods.push({
-      startMs: cursor,
-      endMs: next.getTime(),
-      label: periodLabel(new Date(cursor), scale, locale, weekStart),
-    })
-    cursor = next.getTime()
-  }
-  if (cursor < maxMs) onTruncated?.()
-  return periods
-}
-
-/**
- * 负载均衡（纯函数）：保持每任务工期不变，若某资源某 period 超载，
- * 把与该 period 重叠的任务中优先级最低者整体后移一个 period，迭代至无超载或达 maxIter。
- * 返回「被后移的任务数组」（不改入参）；组件不自动调用。
- *
- * 确定性约定：超载档按资源输入序 → period 时序取第一个处理；受害者先比 projectOrder
- * （靠后项目先让位）、再比 priority（数值大者先让位），并列取 startMs 最大者、输入序靠后者。
- * workdays 显式为空且未来没有足够的正容量 override 时视为永久不可排（不移动、devWarn），避免把任务推到 maxIter 之后。
- * week 档周起始由 opts.weekStart 决定（缺省周一，纯函数无 locale 上下文；与组件 locale
- * 周起始不同时，周粒度判定可能存在边界差）。
- */
-export function levelResources(
-  resources: ResourceItem[],
-  tasks: ResourceTask[],
-  opts: LevelResourcesOptions = {},
-): ResourceTask[] {
-  const onKeyError = pureAccessorKeyError()
-  const rs = sanitizeResources(resources, onKeyError, pureInvalidEntryError())
-  const work = sanitizeTasks(tasks, onKeyError, pureInvalidEntryError())
-  if (rs.length === 0 || work.length === 0) return []
-  const scale: ResourceScale = opts.scale != null && (SCALES as string[]).includes(opts.scale) ? opts.scale : 'day'
-  const capDefault = sanitizeCapacity(opts.capacity) ?? 1
-  const maxIter =
-    typeof opts.maxIter === 'number' && Number.isFinite(opts.maxIter) && opts.maxIter >= 0
-      ? Math.floor(opts.maxIter)
-      : DEFAULT_MAX_ITER
-  const weekStart =
-    typeof opts.weekStart === 'number' && Number.isInteger(opts.weekStart) ? ((opts.weekStart % 7) + 7) % 7 : 1
-  const respectSkills = sanitizeSkillsMatch(opts.respectSkills)
-  const projectOrder = sanitizeProjectOrder(opts.projectOrder)
-
-  // 日历容量按 (resource, period) 缓存：shift 每次迭代、reassign 每轮候选会重复询问同一档；
-  // 无日历资源仍走 periodCapacity 的 O(1) 早退，缓存表不改变结果。
-  const capCache = new Map<string, number>()
-  const capAt = (r: RS, period: Period): number => {
-    const key = `${r.id}|${period.startMs}|${period.endMs}`
-    const hit = capCache.get(key)
-    if (hit !== undefined) return hit
-    const value = periodCapacity(r, period, scale, weekStart, capDefault)
-    capCache.set(key, value)
-    return value
-  }
-
-  if (opts.mode === 'reassign')
-    return reassignOverload(rs, work, capAt, scale, weekStart, maxIter, respectSkills, projectOrder, onKeyError)
-
-  const moved = new Set<string>()
-  let zeroCapacityWarned = false
-  let iter = 0
-  for (;;) {
-    if (iter >= maxIter) break
-    const spans = spansOf(work)
-    if (spans.length === 0) break
-    let minMs = Number.POSITIVE_INFINITY
-    let maxMs = Number.NEGATIVE_INFINITY
-    for (const s of spans) {
-      if (s.startMs < minMs) minMs = s.startMs
-      if (s.endMs > maxMs) maxMs = s.endMs
-    }
-    const periods = buildPeriods(minMs, maxMs, scale, weekStart, 'en', () => {
-      // 纯函数路径模块级去重：levelResources 迭代内反复构建 period，防刷屏
-      if (periodsTruncWarned) return
-      periodsTruncWarned = true
-      devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
-    })
-    if (periods.length === 0) break
-    // 找第一个超载档（资源输入序 → period 时序）
-    let victimIndex = -1
-    let victimPeriod: Period | null = null
-    outer: for (const r of rs) {
-      // workdays: [] 时容量只来自 override；必须从该资源自身最早任务起，
-      // 确认未来 override 总容量足以覆盖任务占用的档数，否则整体跳过、避免先移走再放弃。
-      // 非空 workdays / 未声明 workdays 即使当前连续假期，未来仍会恢复基础容量，不在此判死。
-      if (r.workdays !== null && r.workdays.length === 0) {
-        let resourceMin = Number.POSITIVE_INFINITY
-        let demand = 0
-        for (const s of spans) {
-          if (!work[s.index]!.resources.includes(r.id)) continue
-          if (s.startMs < resourceMin) resourceMin = s.startMs
-          for (const p of periods) {
-            if (s.startMs < p.endMs && s.endMs > p.startMs) demand++
-          }
-        }
-        if (resourceMin !== Number.POSITIVE_INFINITY && !hasPotentialCapacity(r, resourceMin, demand)) {
-          if (!zeroCapacityWarned) {
-            zeroCapacityWarned = true
-            devWarn('[oas-resource] 资源 workdays 为空且未来无足够正容量 override，shift 无法消除超载，已保持原日期')
-          }
-          continue
-        }
-      }
-      for (const period of periods) {
-        const cap = capAt(r, period)
-        let load = 0
-        let bestSpan: Span | null = null
-        for (const s of spans) {
-          const t = work[s.index]!
-          if (!t.resources.includes(r.id)) continue
-          if (s.startMs < period.endMs && s.endMs > period.startMs) {
-            load++
-            // 受害者：低优先级先让位；并列开始较晚者、输入序靠后
-            if (!bestSpan || compareLowPriorityFirst(s, bestSpan, work, projectOrder) < 0) bestSpan = s
-          }
-        }
-        if (load > cap && bestSpan) {
-          victimIndex = bestSpan.index
-          victimPeriod = period
-          break outer
-        }
-      }
-    }
-    if (victimIndex < 0 || !victimPeriod) break
-    shiftTaskByOne(work[victimIndex]!, scale)
-    moved.add(work[victimIndex]!.id)
-    iter++
-  }
-
-  // 返回被后移的任务（按输入序，稳定输出）
-  const out: ResourceTask[] = []
-  for (const t of work) {
-    if (moved.has(t.id)) out.push(toPublicTask(t, undefined, onKeyError))
-  }
-  return out
-}
-
-/**
- * 重分配模式（levelResources 内部实现）：日期不动，把超载资源上的任务改派给「整段都有余量」的资源。
- *
- * 约定：
- * - 超载档按资源输入序 → period 时序；候选任务先按 projectOrder（靠后先让位）、priority
- *   （数值大先让位），再按开始晚→早、输入序靠后→靠前（与 shift 受害者口径一致）；
- * - 目标资源须在任务覆盖的**每个** period 满足 load + 1 ≤ capacity，按 worst load ratio 取最空闲者
- *   （并列取资源输入序在前）；已分配给该任务的资源不重复选；
- * - 每次成功改派只降低超载资源负载、且不制造新超载（目标已校验），故有限步收敛；
- * - 找不到可行目标即停（**不退化顺延**）；达 maxIter 亦停。不改入参，返回被改派任务。
- */
-function reassignOverload(
-  rs: RS[],
-  work: RT[],
-  capAt: (r: RS, period: Period) => number,
-  scale: ResourceScale,
-  weekStart: number,
-  maxIter: number,
-  respectSkills: boolean,
-  projectOrder: string[],
-  onKeyError?: (key: string) => void,
-): ResourceTask[] {
-  const spans = spansOf(work)
-  if (spans.length === 0) return []
-  let minMs = Number.POSITIVE_INFINITY
-  let maxMs = Number.NEGATIVE_INFINITY
-  for (const s of spans) {
-    if (s.startMs < minMs) minMs = s.startMs
-    if (s.endMs > maxMs) maxMs = s.endMs
-  }
-  const periods = buildPeriods(minMs, maxMs, scale, weekStart, 'en', () => {
-    if (periodsTruncWarned) return
-    periodsTruncWarned = true
-    devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
-  })
-  if (periods.length === 0) return []
-
-  const overlaps = (s: Span, p: Period): boolean => s.startMs < p.endMs && s.endMs > p.startMs
-  const spanIdxs = (s: Span): number[] => {
-    const out: number[] = []
-    for (let i = 0; i < periods.length; i++) if (overlaps(s, periods[i]!)) out.push(i)
-    return out
-  }
-
-  // 资源 × period 负载矩阵（与直方图同口径：任务与 period 相交即计 1）
-  const load = new Map<string, number[]>()
-  for (const r of rs) load.set(r.id, new Array<number>(periods.length).fill(0))
-  for (const s of spans) {
-    for (const rid of work[s.index]!.resources) {
-      const arr = load.get(rid)
-      if (!arr) continue
-      for (const i of spanIdxs(s)) arr[i] = (arr[i] ?? 0) + 1
-    }
-  }
-
-  const changed = new Set<string>()
-  let iter = 0
-  while (iter < maxIter) {
-    let hit: { rid: string; idx: number } | null = null
-    for (const r of rs) {
-      const arr = load.get(r.id)!
-      for (let i = 0; i < arr.length; i++) {
-        if ((arr[i] ?? 0) > capAt(r, periods[i]!)) {
-          hit = { rid: r.id, idx: i }
-          break
-        }
-      }
-      if (hit) break
-    }
-    if (!hit) break
-    const rid = hit.rid
-    const period = periods[hit.idx]!
-    const candidates = spans
-      .filter((s) => work[s.index]!.resources.includes(rid) && overlaps(s, period))
-      .sort((a, b) => compareLowPriorityFirst(a, b, work, projectOrder))
-
-    let progressed = false
-    for (const s of candidates) {
-      const t = work[s.index]!
-      const idxs = spanIdxs(s)
-      let bestRid: string | null = null
-      let bestScore = Number.POSITIVE_INFINITY
-      for (const r of rs) {
-        if (r.id === rid || t.resources.includes(r.id)) continue
-        if (respectSkills && !hasRequiredSkills(r, t)) continue
-        const arr = load.get(r.id)!
-        let worst = 0
-        let feasible = true
-        for (const i of idxs) {
-          const cap = capAt(r, periods[i]!)
-          if (!(cap > 0)) {
-            feasible = false
-            break
-          }
-          const after = (arr[i] ?? 0) + 1
-          if (after > cap) {
-            feasible = false
-            break
-          }
-          worst = Math.max(worst, after / cap)
-        }
-        if (feasible && worst < bestScore) {
-          bestScore = worst
-          bestRid = r.id
-        }
-      }
-      if (!bestRid) continue
-      const at = t.resources.indexOf(rid)
-      if (at < 0) continue
-      t.resources = [...t.resources]
-      t.resources[at] = bestRid
-      const from = load.get(rid)!
-      const to = load.get(bestRid)!
-      for (const i of idxs) {
-        from[i] = (from[i] ?? 0) - 1
-        to[i] = (to[i] ?? 0) + 1
-      }
-      changed.add(t.id)
-      iter++
-      progressed = true
-      break
-    }
-    if (!progressed) break
-  }
-
-  const out: ResourceTask[] = []
-  for (const t of work) if (changed.has(t.id)) out.push(toPublicTask(t, undefined, onKeyError))
-  return out
-}
-
-/**
- * 任务整体后移一个 period（原地改副本的 start/end 字符串，工期按日历日保持不变）：
- * day/week 本地日历日平移（跨 DST 不漂移）；month 用 addMonthsClamped 平移开始日所在自然月
- * （月末日期钳到目标月月末，如 01-31 → 02-28/29，不发生 31 号溢出到下下月），工期不变量照保。
- */
-function shiftTaskByOne(t: RT, scale: ResourceScale): void {
-  const s = parseTaskDate(t.start)!
-  const e = parseTaskDate(t.end)!
-  const dayCount = calendarDaysBetween(s, e)
-  const nextStart = scale === 'month' ? addMonthsClamped(s, 1) : addDays(s, scale === 'week' ? 7 : 1)
-  t.start = toISODate(nextStart)
-  t.end = toISODate(addDays(nextStart, dayCount))
+  return buildPeriodSpans(minMs, maxMs, scale, weekStart, onTruncated).map((p) => ({
+    ...p,
+    label: periodLabel(new Date(p.startMs), scale, locale, weekStart),
+  }))
 }
 
 /** 事件委托用的条数据集键（task/resource 双定位：同任务多资源分配时区分点击来源） */
