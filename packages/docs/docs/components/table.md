@@ -1670,7 +1670,7 @@ const r2 = await importTableFile(fileInput.files[0])
 <DemoBlock title="数据导入：文件选择 + 粘贴板两个入口，导入后写入表格并反馈 N 行 M 列">
   <div style="width: 100%">
     <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
-      <input type="file" id="table-import-file" accept=".csv,.tsv,.txt" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)" />
+      <input type="file" id="table-import-file" accept=".csv,.tsv,.txt" aria-label="选择要导入的 CSV/TSV 文件" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)" />
       <oas-button id="table-import-paste" size="small">从粘贴板导入</oas-button>
     </div>
     <oas-table id="table-import-demo" row-height="32" bordered row-key="姓名"></oas-table>

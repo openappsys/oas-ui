@@ -1682,7 +1682,7 @@ const r2 = await importTableFile(fileInput.files[0])
 <DemoBlock title="Data import: file picker + clipboard entries, imported rows land in the table with an N rows × M columns report">
   <div style="width: 100%">
     <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
-      <input type="file" id="table-import-file" accept=".csv,.tsv,.txt" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)" />
+      <input type="file" id="table-import-file" accept=".csv,.tsv,.txt" aria-label="Choose a CSV/TSV file to import" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)" />
       <oas-button id="table-import-paste" size="small">Import from clipboard</oas-button>
     </div>
     <oas-table id="table-import-demo" row-height="32" bordered row-key="Name"></oas-table>
