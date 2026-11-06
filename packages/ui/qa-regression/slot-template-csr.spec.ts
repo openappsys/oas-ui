@@ -613,7 +613,10 @@ test('CSR 模板：image placeholder 模板渲染（无 src 恒占位）', async
 
 test('CSR 模板：gantt empty / row / task 模板渲染', async ({ page }) => {
   await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-gantt')
+  // audit-exception: gantt 文档页是站点最重页（39 个 gantt 实例连排升级，含 pool/history/level
+  // 重 demo），webkit 在 2 核 runner 上主线程被升级占满 >15s，attached 轮询得不到执行窗；
+  // 放宽到 45s 等首实例升级（2026-11-06 实发连续两轮超时，均为负载非渲染缺陷）。
+  await up(page, 'oas-gantt', 45000)
   const r = await page.evaluate(async () => {
     const w = window as any
     await customElements.whenDefined('oas-gantt')

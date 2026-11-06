@@ -6,10 +6,10 @@ import type { Locator, Page } from '@playwright/test'
 // 等待组件 upgrade 完成：要求「已挂载 + shadowRoot 就绪」，不要求可见。
 // 浮层类组件（drawer/modal/tooltip）关闭时宿主盒 0×0，等 visible 会超时——旧实现靠
 // 「upgrade 前 light-DOM 内容仍在流里渲染」的竞态窗口侥幸通过（慢 server 掩盖了这一点）。
-export async function up(p: import('@playwright/test').Page, sel: string) {
-  await p.waitForSelector(sel, { state: 'attached', timeout: 15000 })
+export async function up(p: import('@playwright/test').Page, sel: string, timeout = 15000) {
+  await p.waitForSelector(sel, { state: 'attached', timeout })
   await p.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, sel, {
-    timeout: 15000,
+    timeout,
   })
 }
 
