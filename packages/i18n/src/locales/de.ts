@@ -194,6 +194,7 @@ export const de: LocaleMessages = {
   'scheduler.viewAgenda': 'Agenda',
   'scheduler.viewResource': 'Ressourcen',
   'scheduler.viewResourceWeek': 'Ressourcenwoche',
+  'scheduler.viewResourceTimeline': 'Ressourcen-Timeline',
   'scheduler.unassigned': 'Nicht zugewiesen',
   'scheduler.allDay': 'Ganztägig',
   'scheduler.noEvents': 'Keine Termine in diesem Zeitraum',
@@ -226,6 +227,7 @@ export const de: LocaleMessages = {
   'gantt.resourceLoad': 'Ressourcenauslastung',
   'gantt.resourceLoadAria': 'Ressourcenauslastung: {count} Ressourcen, Spitzenwert {name} bei {percent} %',
   'gantt.resourceLoadEmpty': 'Keine Ressourcenauslastungsdaten',
+  'gantt.laneLoadTip': 'Spitzenlast {percent} %',
   // resource (Ressourcenauslastung / Schwimmbahn-Ansicht)
   'resource.label': 'Ressourcenauslastung',
   'resource.empty': 'Keine Ressourcenaufgaben',

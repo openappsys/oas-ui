@@ -194,6 +194,7 @@ export const fr: LocaleMessages = {
   'scheduler.viewAgenda': 'Agenda',
   'scheduler.viewResource': 'Ressources',
   'scheduler.viewResourceWeek': 'Semaine des ressources',
+  'scheduler.viewResourceTimeline': 'Chronologie des ressources',
   'scheduler.unassigned': 'Non attribué',
   'scheduler.allDay': 'Toute la journée',
   'scheduler.noEvents': 'Aucun événement sur cette période',
@@ -226,6 +227,7 @@ export const fr: LocaleMessages = {
   'gantt.resourceLoad': 'Charge des ressources',
   'gantt.resourceLoadAria': 'Charge des ressources : {count} ressources, pic {name} à {percent} %',
   'gantt.resourceLoadEmpty': 'Aucune donnée de charge des ressources',
+  'gantt.laneLoadTip': 'Pic de charge {percent} %',
   // resource (charge des ressources / vue couloirs)
   'resource.label': 'Charge des ressources',
   'resource.empty': 'Aucune tâche de ressource',

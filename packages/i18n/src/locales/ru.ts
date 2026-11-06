@@ -194,6 +194,7 @@ export const ru: LocaleMessages = {
   'scheduler.viewAgenda': 'Повестка',
   'scheduler.viewResource': 'Ресурсы',
   'scheduler.viewResourceWeek': 'Неделя ресурсов',
+  'scheduler.viewResourceTimeline': 'Таймлайн ресурсов',
   'scheduler.unassigned': 'Не назначено',
   'scheduler.allDay': 'Весь день',
   'scheduler.noEvents': 'Нет событий в этом диапазоне',
@@ -226,6 +227,7 @@ export const ru: LocaleMessages = {
   'gantt.resourceLoad': 'Загрузка ресурсов',
   'gantt.resourceLoadAria': 'Загрузка ресурсов: {count} ресурсов, пик {name} — {percent} %',
   'gantt.resourceLoadEmpty': 'Нет данных о загрузке ресурсов',
+  'gantt.laneLoadTip': 'Пиковая загрузка {percent} %',
   // resource (загрузка ресурсов / дорожки)
   'resource.label': 'Загрузка ресурсов',
   'resource.empty': 'Нет задач ресурсов',

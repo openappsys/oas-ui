@@ -194,6 +194,7 @@ export const ar: LocaleMessages = {
   'scheduler.viewAgenda': 'الأجندة',
   'scheduler.viewResource': 'الموارد',
   'scheduler.viewResourceWeek': 'أسبوع الموارد',
+  'scheduler.viewResourceTimeline': 'الجدول الزمني للموارد',
   'scheduler.unassigned': 'غير معيَّن',
   'scheduler.allDay': 'طوال اليوم',
   'scheduler.noEvents': 'لا توجد أحداث في هذا النطاق',
@@ -226,6 +227,7 @@ export const ar: LocaleMessages = {
   'gantt.resourceLoad': 'تحميل الموارد',
   'gantt.resourceLoadAria': 'تحميل الموارد: {count} موارد، الذروة {name} {percent}%',
   'gantt.resourceLoadEmpty': 'لا توجد بيانات تحميل موارد',
+  'gantt.laneLoadTip': 'ذروة التحميل {percent}%',
   // resource (حمل الموارد / عرض المسارات)
   'resource.label': 'حمل الموارد',
   'resource.empty': 'لا توجد مهام موارد',

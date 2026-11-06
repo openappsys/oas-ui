@@ -194,6 +194,7 @@ export const zhCN = {
   'scheduler.viewAgenda': '日程',
   'scheduler.viewResource': '资源',
   'scheduler.viewResourceWeek': '资源周',
+  'scheduler.viewResourceTimeline': '资源时间轴',
   'scheduler.unassigned': '未分配',
   'scheduler.allDay': '全天',
   'scheduler.noEvents': '此区间无日程',
@@ -226,6 +227,7 @@ export const zhCN = {
   'gantt.resourceLoad': '资源负荷',
   'gantt.resourceLoadAria': '资源负荷：{count} 个资源，峰值最高 {name} {percent}%',
   'gantt.resourceLoadEmpty': '暂无资源负荷数据',
+  'gantt.laneLoadTip': '负荷峰值 {percent}%',
   // resource（资源负载/泳道视图）
   'resource.label': '资源负载',
   'resource.empty': '暂无资源任务',

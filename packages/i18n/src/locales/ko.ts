@@ -194,6 +194,7 @@ export const ko: LocaleMessages = {
   'scheduler.viewAgenda': '일정',
   'scheduler.viewResource': '리소스',
   'scheduler.viewResourceWeek': '리소스 주',
+  'scheduler.viewResourceTimeline': '리소스 타임라인',
   'scheduler.unassigned': '미할당',
   'scheduler.allDay': '종일',
   'scheduler.noEvents': '이 기간에 일정이 없습니다',
@@ -226,6 +227,7 @@ export const ko: LocaleMessages = {
   'gantt.resourceLoad': '리소스 부하',
   'gantt.resourceLoadAria': '리소스 부하: {count}개 리소스, 최고 {name} {percent}%',
   'gantt.resourceLoadEmpty': '리소스 부하 데이터가 없습니다',
+  'gantt.laneLoadTip': '최대 부하 {percent}%',
   // resource（리소스 부하/스윔레인 뷰）
   'resource.label': '리소스 부하',
   'resource.empty': '리소스 작업이 없습니다',

@@ -157,6 +157,7 @@ export const en: LocaleMessages = {
   'scheduler.viewAgenda': 'Agenda',
   'scheduler.viewResource': 'Resources',
   'scheduler.viewResourceWeek': 'Resource week',
+  'scheduler.viewResourceTimeline': 'Resource timeline',
   'scheduler.unassigned': 'Unassigned',
   'scheduler.allDay': 'All day',
   'scheduler.noEvents': 'No events in this range',
@@ -189,6 +190,7 @@ export const en: LocaleMessages = {
   'gantt.resourceLoad': 'Resource load',
   'gantt.resourceLoadAria': 'Resource load: {count} resources, peak {name} at {percent}%',
   'gantt.resourceLoadEmpty': 'No resource load data',
+  'gantt.laneLoadTip': 'Peak load {percent}%',
   // resource（resource load / swimlane view）
   'resource.label': 'Resource load',
   'resource.empty': 'No resource tasks',

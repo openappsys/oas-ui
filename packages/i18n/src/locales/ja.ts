@@ -194,6 +194,7 @@ export const ja: LocaleMessages = {
   'scheduler.viewAgenda': '予定表',
   'scheduler.viewResource': 'リソース',
   'scheduler.viewResourceWeek': 'リソース週',
+  'scheduler.viewResourceTimeline': 'リソースタイムライン',
   'scheduler.unassigned': '未割り当て',
   'scheduler.allDay': '終日',
   'scheduler.noEvents': 'この期間に予定はありません',
@@ -226,6 +227,7 @@ export const ja: LocaleMessages = {
   'gantt.resourceLoad': 'リソース負荷',
   'gantt.resourceLoadAria': 'リソース負荷：{count} リソース、ピークは {name} {percent}%',
   'gantt.resourceLoadEmpty': 'リソース負荷データはありません',
+  'gantt.laneLoadTip': 'ピーク負荷 {percent}%',
   // resource（リソース負荷/スイムレーンビュー）
   'resource.label': 'リソース負荷',
   'resource.empty': 'リソースタスクがありません',
