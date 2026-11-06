@@ -221,7 +221,7 @@ const r = computeCost(tasks, ['zhang', 'li'], {
 // r: { perTask, perResource, total }
 ```
 
-**`ResourcePool` / `getSharedResourcePool()`**: an id-deduped resource registry for sharing one resource collection across views/components. `register` (same id overrides, invalid entries skipped) / `remove` / `get` / `list` / `clear`; `version` increments on every effective change (no-op calls do not bump it) for polling/diffing. `getSharedResourcePool()` returns the shared singleton mounted on `globalThis` (`Symbol.for`) — multiple copies (linking / multiple bundler instances) share the same data and version.
+**`ResourcePool` / `getSharedResourcePool()`**: an id-deduped resource registry for sharing one resource collection across views/components. `register` (same id overrides, invalid entries skipped) / `remove` / `get` / `list` / `clear`; `version` increments on every effective change (no-op calls do not bump it) for polling/diffing. `getSharedResourcePool()` returns the shared singleton mounted on `globalThis` (`Symbol.for`) — multiple copies (linking / multiple bundler instances) share the same data and version. **SSR caveat**: the shared singleton's state survives across requests; in Node SSR / multi-request server runtimes (Next/Nuxt-style), create a private instance per request with `createResourcePool()` (instance-isolation channel) so one request's registry never leaks into the next. `getSharedResourcePool()` returns a **new wrapper object each call** (semantically equivalent, never reference-equal) — detect pool changes by comparing `version` or `list()` contents, not `===`.
 
 ```ts
 const pool = getSharedResourcePool()

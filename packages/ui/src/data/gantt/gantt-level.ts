@@ -13,9 +13,10 @@
  *   每步纯 day 步进保单调。
  * - reassign：「改派受害者」——日期不动，把受害者 `resources` 里的冲突资源 id 替换给「整段
  *   无冲突」的池内资源（判据同源：目标上任一参与者与受害者区间交叠即不可选 → 改派后目标
- *   不得产生新冲突；多资源任务只替换冲突的那一个 id，数组序与池外 id 原样保留；目标按
- *   「现役参与者最少」取最空闲、并列取池首见序）。找不到可行目标该对放弃（**不退化顺延**），
- *   终检如实回报 unresolved；无吸附阶段（日期没动过）。
+ *   不得产生新冲突；**候选日历可排性（Z12）：改派后的探测任务日历 days 空集 = 永不可排即
+ *   跳过（taskCalendar 同源语义复用，回调抛异常按不限日历兜底）**；多资源任务只替换冲突的
+ *   那一个 id，数组序与池外 id 原样保留；目标按「现役参与者最少」取最空闲、并列取池首见序）。
+ *   找不到可行目标该对放弃（**不退化顺延**），终检如实回报 unresolved；无吸附阶段（日期没动过）。
  *
  * 裁定口径（Z2 B 路线，立项评审拍板 + reassign 批扩展）：
  * - 受害者排序（逐条出处见 victimCompare 注释，两模式共用）：disabled / 资源日历 days 空集 /
@@ -311,9 +312,14 @@ export function levelGanttConflicts(
   /**
    * reassign 目标择优（纯函数通道）：候选 = 池内已登记资源 − 冲突资源 − 受害者已分配资源；
    * 可行性判据与检测同源——目标上任一参与者与受害者区间交叠即不可选（改派后目标不得产生
-   * 新冲突，相切不算交叠）；可行者按「现役参与者最少」取最空闲（对齐 levelResources reassign
-   * 的「最空闲目标择一」），并列取池首见序（resourceSeq；未用过的池资源并列时按 registeredIds
-   * 迭代序稳定裁决）。找不到返回 null（该对放弃 → 终检如实回报 unresolved，不退化顺延）。
+   * 新冲突，相切不算交叠）；**候选日历可排性（Z12）**——用改派后的探测任务（resources 只把
+   * fromRid 替换成候选）回调 calendar，days 空集 = 永不可排即跳过（taskCalendar 同源语义：
+   * 候选 workdays 与任务其余资源/全局 workdays 交集空、shifts:[] 都落在这条判定上；holidays
+   * 不参与候选排除——引擎口径里假日只影响吸附落点，不构成永不可排，与受害者裁定一致）。
+   * 回调抛异常按不限日历处理（与初始化兜底同口径：宁可不排除候选，不可炸调用链）。
+   * 可行者按「现役参与者最少」取最空闲（对齐 levelResources reassign 的「最空闲目标择一」），
+   * 并列取池首见序（resourceSeq；未用过的池资源并列时按 registeredIds 迭代序稳定裁决）。
+   * 找不到返回 null（该对放弃 → 终检如实回报 unresolved，不退化顺延）。
    */
   const pickReassignTarget = (v: Participant, fromRid: string): string | null => {
     let best: string | null = null
@@ -321,6 +327,16 @@ export function levelGanttConflicts(
     let bestSeq = Number.MAX_SAFE_INTEGER
     for (const cand of registeredIds) {
       if (cand === fromRid || v.poolRes.includes(cand)) continue
+      // 日历可排性探测（Z12）：改派后的任务日历（其余资源原样保留、fromRid 换成候选）
+      let schedulable = true
+      try {
+        const raw = Array.isArray(v.copy.resources) ? v.copy.resources : []
+        const probe = calendar({ ...v.copy, resources: raw.map((r) => (r === fromRid ? cand : r)) })
+        if (probe && probe.days !== null && probe.days.size === 0) schedulable = false
+      } catch {
+        // 回调抛异常：按不限日历处理（与初始化兜底同口径，不炸调用链）
+      }
+      if (!schedulable) continue
       let busy = false
       for (const other of byResource.get(cand) ?? []) {
         if (other !== v && overlaps(v, other)) {

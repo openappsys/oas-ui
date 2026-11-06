@@ -425,6 +425,16 @@ pool.register([{ id: 'alice', name: '张三（画布 A）', costRate: 120 }])
 ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
 ```
 
+**SSR / 多租户边界**——共享单例的状态挂在 `globalThis` 上，**跨请求存活**：Node SSR / 同进程多请求复用运行时（Next/Nuxt 类框架的服务端）时，上一请求登记的资源会泄漏进下一请求（数据串号）。这类场景一律用 `createResourcePool()` 每请求新建实例（经 `resourcePool` property 注入），请求结束随组件一起丢弃；共享单例只适合浏览器单页会话内的跨视图共享。
+
+**生效池判断勿用引用相等**——`getSharedResourcePool()` 每次返回**新的 `ResourcePool` 包装对象**（多副本/多 bundler 实例下各自拿到自己的包装），语义等价但 `===` 恒为 false。判断「池是否变化」比较 `version`（每次生效变更 +1，no-op 不抬版本）或比对 `list()` 内容，勿做包装对象引用比较：
+
+```ts
+const seen = pool.version
+pool.register(batch)
+if (pool.version !== seen) ganttEl.tasks = ganttEl.tasks // 内容变了才触发重算
+```
+
 > 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；资源泳道已由 `group-by-resource` 承载（见上节，泳道行内嵌负荷缩略）；超配自动排程避让已由 `levelConflicts()` 方法承载（手动触发，见下方「超配避让」小节，支持 `mode: 'reassign'` 改派）；**任务-资源分配编辑**由「编辑弹窗」小节的配方承载（池内多选勾选 + 未登记只读 chip，`updateTask` 写回）。
 
 ## 超配避让（levelConflicts）
@@ -443,7 +453,7 @@ ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
 
 - **模式 `mode`（缺省 `'shift'`，行为与旧版完全一致）**：
   - `shift`：整体后移受害者（改日期、保工期）；
-  - `reassign`：改派受害者——**日期不动**，把冲突资源替换给「整段无冲突」的池内资源。目标判据与检测同源（目标上任一任务与受害者区间交叠即不可选——**改派后目标不得产生新冲突**，相切不算交叠）；多资源任务只替换冲突的那一个 id（数组序与池外 id 原样保留）；目标按「现役参与者最少」取最空闲、并列取池首见序；每次成功改派计一步（`maxIter` 预算共享）。**找不到可行目标该对放弃、终检如实回报 `unresolved`，不退化顺延**；`moved` 条目带改派后的完整 `resources` 数组，经 `updateTasks` 一次提交写回。非法 `mode` 值按 shift 处理并 devWarn 一次。
+  - `reassign`：改派受害者——**日期不动**，把冲突资源替换给「整段无冲突」的池内资源。目标判据与检测同源（目标上任一任务与受害者区间交叠即不可选——**改派后目标不得产生新冲突**，相切不算交叠）；**候选日历可排性同样参与判定**：用改派后的探测任务（其余资源原样保留、冲突 id 换成候选）取任务日历，days 空集 = 永不可排即跳过（`taskCalendar` 同源语义——`shifts: []`、workdays 与任务其余资源/全局交集空的资源不会被选中，哪怕它时间上完全空闲）；多资源任务只替换冲突的那一个 id（数组序与池外 id 原样保留）；目标按「现役参与者最少」取最空闲、并列取池首见序；每次成功改派计一步（`maxIter` 预算共享）。**找不到可行目标该对放弃、终检如实回报 `unresolved`，不退化顺延**；`moved` 条目带改派后的完整 `resources` 数组，经 `updateTasks` 一次提交写回。非法 `mode` 值按 shift 处理并 devWarn 一次。
 - **受害者排序**：`disabled`、资源日历 days 空集（该资源无可排日）、`constraint: "mso"` 的任务**永不让位**；有 `deadline` 者后让位（都有按最晚 deadline 后让位）；并列时 startMs 晚者先让位、输入序靠后者先让位。
 - **资源日历进避让（权威口径）**：吸附日历 = **任务日历 ∩ 资源日历**——数据契约用 `resources` 属性的 `GanttResource`（`workdays` 与全局取交集、`holidays` 与全局取并集、`shifts: []` 视为全周不可用；池登记侧的 `capacityOverrides` 不参与本口径）。任务合并后的日历 days 为**空集**时该任务锁定不让位（与 `disabled` / `mso` 同级裁定）。
 - **平移与吸附（shift）**：每次整体后移 1 天（保墙钟时刻，跨夏令时不漂移；工期不变）；收敛后把落点吸附到工作日（按上面资源日历口径逐日前进，上限同款 400 天），吸附后复检一次交叠，复检不过继续迭代。每步只向后移动（单调），终止有界。
@@ -465,6 +475,16 @@ ganttEl.addEventListener('oas-level', (e) => {
     <oas-button id="gantt-reassign-run" size="small">改派 levelConflicts({ mode: 'reassign' })</oas-button>
     <oas-button id="gantt-reassign-undo" size="small" variant="outline">撤销回位</oas-button>
     <span id="gantt-reassign-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">改派前 ra2 与 ra1 交叠（张三超配）——点「改派」看结果（日期不动，ra2 改派李四）</span>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="reassign 日历过滤：r3 班次为空（永不可排）→ 时间空闲也不会被选中，改派落可排的李四">
+  <oas-gantt id="gantt-reassign-cal-demo" pool history range-start="2026-03-01" range-end="2026-03-31" height="200"
+    resources='[{"id":"r3","name":"空档位","shifts":[]}]'
+    tasks='[{"id":"rc1","name":"设计（张三）","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"rc2","name":"评审（张三，交叠）","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]}]'></oas-gantt>
+  <div style="margin-top:var(--oas-space-2);display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
+    <oas-button id="gantt-reassign-cal-run" size="small">改派 levelConflicts({ mode: 'reassign' })</oas-button>
+    <span id="gantt-reassign-cal-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">改派前 rc2 与 rc1 交叠——r3 时间空闲但班次为空（不可排），不应被选中</span>
   </div>
 </DemoBlock>
 
@@ -936,6 +956,32 @@ onMounted(async () => {
       reOut.textContent = ok ? '已撤销回位（恢复改派前分配）' : '没有可撤销的提交'
     })
   }
+
+  // reassign 日历过滤 demo：r3（resources 属性 shifts: [] → 永不可排）时间空闲也不会被选中——
+  // 改派跳过不可排候选、落可排的 bob（Z12：候选日历可排性与时间交叠判据同源）
+  const reCalDemo = document.getElementById('gantt-reassign-cal-demo')
+  const reCalOut = document.getElementById('gantt-reassign-cal-out')
+  if (reCalDemo && reCalOut) {
+    // 登记序 alice → r3 → bob：r3 首见序更靠前，若只按「最空闲」择优会被选中（回归口径）
+    getSharedResourcePool().register([
+      { id: 'alice', name: '张三', costRate: 120 },
+      { id: 'r3', name: '空档位' },
+      { id: 'bob', name: '李四', costRate: 90 },
+    ])
+    reCalDemo.tasks = reCalDemo.tasks // 池登记晚于组件首帧：重写 tasks 触发一次超配重算
+    document.getElementById('gantt-reassign-cal-run')?.addEventListener('click', () => {
+      const r = reCalDemo.levelConflicts({ mode: 'reassign' })
+      if (r.moved.length === 0) {
+        reCalOut.textContent = r.unresolved.length > 0
+          ? `无可改派目标（不可排候选已跳过），${r.unresolved.length} 对冲突如实保留（unresolved）`
+          : '当前无冲突，未改派任何任务（幂等）'
+        return
+      }
+      reCalOut.textContent = r.moved
+        .map((m) => `改派目标：${(m.resources ?? []).join(',')}（${m.id} 日期 ${m.start} 不动）`)
+        .join('；')
+    })
+  }
 })
 </script>
 
@@ -1079,7 +1125,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | 删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。 |
 | `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。 |
 | `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | 批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗， |
-| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | 超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。 |
+| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | 超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；候选日历不可排也跳过——改派后的探测任务日历 days 空集 = 永不可排，shifts:[] / workdays 交集空的资源时间空闲也不会被选中；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。 |
 | `zoomIn` | `zoomIn(): void` | 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op |
 | `zoomOut` | `zoomOut(): void` | 向更粗一档步进；最粗档 no-op |
 | `fit` | `fit(): void` | 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档 |

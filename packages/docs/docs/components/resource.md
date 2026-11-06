@@ -221,7 +221,7 @@ const r = computeCost(tasks, ['zhang', 'li'], {
 // r: { perTask, perResource, total }
 ```
 
-**`ResourcePool` / `getSharedResourcePool()`**：id 去重的资源登记表，供多个视图/组件共享同一份资源集合。`register`（同 id 覆盖、非法条目跳过）/ `remove` / `get` / `list` / `clear`；`version` 每次生效变更 +1（no-op 调用不抬版本），供宿主轮询/比较。`getSharedResourcePool()` 返回挂载在 `globalThis`（`Symbol.for`）上的共享单例——多副本共存（link / 多 bundler 实例）时共享同一份数据与版本号。
+**`ResourcePool` / `getSharedResourcePool()`**：id 去重的资源登记表，供多个视图/组件共享同一份资源集合。`register`（同 id 覆盖、非法条目跳过）/ `remove` / `get` / `list` / `clear`；`version` 每次生效变更 +1（no-op 调用不抬版本），供宿主轮询/比较。`getSharedResourcePool()` 返回挂载在 `globalThis`（`Symbol.for`）上的共享单例——多副本共存（link / 多 bundler 实例）时共享同一份数据与版本号。**SSR 注意**：共享单例状态跨请求存活，Node SSR / 同进程多请求场景（Next/Nuxt 类服务端）用 `createResourcePool()`（实例隔离通道）每请求新建私有实例，避免上一请求的登记泄漏进下一请求；`getSharedResourcePool()` 每次返回**新的包装对象**（语义等价、身份不等），「池是否变化」比较 `version` 或 `list()` 内容，勿做 `===`。
 
 ```ts
 const pool = getSharedResourcePool()

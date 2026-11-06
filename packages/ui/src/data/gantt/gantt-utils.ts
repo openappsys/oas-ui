@@ -671,7 +671,10 @@ export function computeResourceConflicts(
     // 日精度 end 含端 → 次日本地零点（与 endMsOfTask 渲染口径一致）；时间精度按绝对 ms
     const endMs = t.end.length > 10 ? e.getTime() : addLocalDays(e.getTime(), 1)
     if (endMs <= startMs) continue
-    for (const rid of t.resources) {
+    // 单任务资源 id 去重（Z13）：helper 直喂未清洗数据（resources: ['R1','R1']）时，
+    // 同任务在组内登记两次会被扫描线配成 taskA===taskB 的自冲突对（真冲突也翻倍）。
+    // 组件通道清洗层已 Set 去重，行为不变；Set 保首见序，输出确定性不受影响。
+    for (const rid of new Set(t.resources)) {
       if (!registeredIds.has(rid)) continue
       let list = byResource.get(rid)
       if (!list) {

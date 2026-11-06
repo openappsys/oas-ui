@@ -581,6 +581,54 @@ describe('levelGanttConflicts：reassign 模式（改派，日期不动）', () 
     expect(r.truncated).toBe(false)
   })
 
+  // ---- Z12 回归：候选日历可排性过滤（组件 taskCalendar 同源语义复用）----
+
+  /** 资源感知日历：任务资源含 r3 → days 空集（永不可排，如 shifts:[] / workdays 交集空）；其余不限 */
+  const CAL_R3_EMPTY = (task: GanttTask): { days: Set<number> | null; holidays: Set<string> } => {
+    const rs = Array.isArray(task.resources) ? task.resources : []
+    if (rs.includes('r3')) return { days: new Set<number>(), holidays: new Set<string>() }
+    return { days: null, holidays: new Set<string>() }
+  }
+
+  it('候选日历不可排（days 空集）跳过：时间空闲也不选，改派给可排的可行者', () => {
+    // 池序 alice → r3 → bob：r3 时间空闲且首见序靠前（旧实现按「最空闲+池序」会选中它）；
+    // 但 r3 日历 days 空集 = 永不可排（探测任务日历同源判定）→ 必须跳过，改派 bob
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07')]
+    const r = levelGanttConflicts(tasks, new Set(['alice', 'r3', 'bob']), CAL_R3_EMPTY, { mode: 'reassign' })
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-04', end: '2026-03-07', resources: ['bob'] }])
+    expect(r.unresolved).toEqual([])
+    expect(r.truncated).toBe(false)
+    // 判据同源终检：写回后无冲突
+    expect(computeResourceConflicts(applyR(tasks, r.moved), new Set(['alice', 'r3', 'bob']))).toEqual([])
+  })
+
+  it('唯一候选日历不可排 → 该对放弃进 unresolved（moved 空，不退化顺延）', () => {
+    // r3 时间空闲但日历空集：唯一候选不可排 → 无可行目标，与「找不到目标」同口径
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07')]
+    const r = levelGanttConflicts(tasks, new Set(['alice', 'r3']), CAL_R3_EMPTY, { mode: 'reassign' })
+    expect(r.moved).toEqual([])
+    expect(r.unresolved).toEqual([{ taskA: 't1', taskB: 't2', resourceId: 'alice' }])
+    expect(r.truncated).toBe(false)
+  })
+
+  it('候选探测保留其余资源（交集语义）：候选与其余资源合成的日历空集 → 该候选跳过', () => {
+    // t2 = [alice, x9]（各自可排、合并仍可排）；r3 单独可排、但与 x9 合成后空集（workdays
+    // 交集空的同构场景）→ r3 不可选（探测任务 = 其余资源原样保留、fromRid 换成候选）；
+    // bob 与 x9 合成可排 → 改派 bob。旧实现只判时间交叠会选中首见序更靠前的 r3。
+    const CAL_MIX = (task: GanttTask): { days: Set<number> | null; holidays: Set<string> } => {
+      const rs = Array.isArray(task.resources) ? task.resources : []
+      if (rs.includes('r3') && rs.includes('x9')) return { days: new Set<number>(), holidays: new Set<string>() }
+      return { days: null, holidays: new Set<string>() }
+    }
+    const pool = new Set(['alice', 'r3', 'bob'])
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07', ['alice', 'x9'])]
+    const r = levelGanttConflicts(tasks, pool, CAL_MIX, { mode: 'reassign' })
+    // 受害者 = start 晚者 t2；alice 位替换为 bob，x9 原样保留
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-04', end: '2026-03-07', resources: ['bob', 'x9'] }])
+    expect(r.unresolved).toEqual([])
+    expect(computeResourceConflicts(applyR(tasks, r.moved), pool)).toEqual([])
+  })
+
   it('受害者永不让位（disabled）不改派：排序换非锁定一侧让位', () => {
     const tasks = [
       t('t1', '2026-03-02', '2026-03-05'),

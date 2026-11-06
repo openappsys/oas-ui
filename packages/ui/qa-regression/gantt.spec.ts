@@ -2836,6 +2836,38 @@ test('gantt reassign 改派模式：日期不动换资源 + 撤销回位（真�
   expect(undone, '撤销还原改派前分配').toEqual({ start: '2026-03-05', end: '2026-03-09', resources: ['alice'] })
 })
 
+test('gantt reassign 日历过滤：班次为空的空闲资源不可选，改派落可排者（Z12 固化）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-reassign-cal-demo')
+  type RcTask = { id: string; start: string; end?: string; resources?: string[] }
+  const rc2Of = (): { start: string; end: string; resources: string[] } => {
+    const g = document.querySelector('#gantt-reassign-cal-demo')
+    const t = (g as unknown as { tasks: RcTask[] }).tasks.find((x) => x.id === 'rc2')!
+    return { start: t.start, end: t.end ?? t.start, resources: t.resources ?? [] }
+  }
+  const before = await page.evaluate(rc2Of)
+  expect(before, 'demo 固定数据：rc2 在 alice').toEqual({
+    start: '2026-03-05',
+    end: '2026-03-09',
+    resources: ['alice'],
+  })
+  await page.click('#gantt-reassign-cal-run')
+  await page.waitForFunction(
+    () => (document.querySelector('#gantt-reassign-cal-out')?.textContent ?? '').includes('改派目标'),
+    undefined,
+    { timeout: 10000 },
+  )
+  const after = await page.evaluate(rc2Of)
+  // r3 班次为空（resources 属性 shifts: [] → taskCalendar days 空集 = 永不可排）：
+  // 虽时间完全空闲且池首见序在 bob 之前，改派仍须跳过它，落可排的 bob；日期不动
+  expect(after.start, '改派后起期不动').toBe('2026-03-05')
+  expect(after.end, '改派后止期不动').toBe('2026-03-09')
+  expect(after.resources, '改派落可排的 bob（不可排的 r3 被跳过）').toEqual(['bob'])
+  const out = await page.evaluate(() => document.querySelector('#gantt-reassign-cal-out')?.textContent ?? '')
+  expect(out, '反馈应含改派目标 bob').toContain('bob')
+  expect(out, '反馈不得把 r3 报告为改派目标').not.toContain('r3')
+})
+
 test('gantt 任务-资源分配编辑：编辑弹窗池内多选 + 未登记只读 chip + updateTask 写回 + 任务管理器入口切换', async ({
   page,
 }) => {

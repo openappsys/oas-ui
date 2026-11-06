@@ -7,6 +7,8 @@
  * - 双通道（2026-11 Z4 小批）：想跨模块/跨视图共享登记状态的用 `getSharedResourcePool()`
  *   （globalThis 单例，多副本互见，默认推荐）；想多租户/多画布互不干扰的用 `createResourcePool()`
  *   （独立实例，私有状态，不触碰 globalThis）。两态都支持，默认行为不变。
+ * - SSR 边界：共享单例状态挂 globalThis，跨请求存活——Node SSR / 同进程多请求场景（Next/Nuxt
+ *   类服务端）须用 `createResourcePool()` 每请求建实例隔离，共享单例只适合浏览器单页会话。
  */
 
 import type { ResourceItem } from '../oas-resource.js'

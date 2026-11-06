@@ -8741,6 +8741,29 @@ describe('OASGantt 资源池接入与跨任务超配检测（pool）', () => {
     ])
   })
 
+  // ---- Z13 回归：单任务资源 id 去重（helper 直喂未清洗数据的病态入口）----
+
+  it('纯函数：单任务资源 id 重复不产出自冲突（taskA===taskB 的病态对）', () => {
+    const conflicts = computeResourceConflicts(
+      [{ id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-05', resources: ['alice', 'alice'] } as TG],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([])
+  })
+
+  it('纯函数：资源 id 重复的任务与另一任务恰好产出一对冲突（去重不丢真冲突、不翻倍）', () => {
+    const conflicts = computeResourceConflicts(
+      [
+        { id: 'a', name: 'A', start: '2026-03-02', end: '2026-03-05', resources: ['alice', 'alice'] } as TG,
+        { id: 'b', name: 'B', start: '2026-03-03', end: '2026-03-06', resources: ['alice'] } as TG,
+      ],
+      new Set(['alice']),
+    )
+    expect(conflicts).toEqual([
+      { taskA: 'a', taskB: 'b', resourceId: 'alice', overlapStart: '2026-03-03', overlapEnd: '2026-03-05' },
+    ])
+  })
+
   it('组件：pool 开启 + 同资源交叠 → 条与行名都打 .conflict；未冲突任务不打', () => {
     registerPool()
     const el = mount({

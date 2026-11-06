@@ -424,6 +424,16 @@ pool.register([{ id: 'alice', name: 'Alice (Canvas A)', costRate: 120 }])
 ganttEl.resourcePool = pool // instance isolation; write null to restore the shared singleton
 ```
 
+**SSR / multi-tenant boundary** — the shared singleton's state is mounted on `globalThis` and **survives across requests**: in Node SSR / runtimes that reuse one process for multiple requests (Next/Nuxt-style server sides), resources registered by a previous request leak into the next one (data cross-talk). Always create a fresh instance per request with `createResourcePool()` (injected via the `resourcePool` property) and drop it with the component when the request ends; the shared singleton is only for cross-view sharing within a single browser page session.
+
+**Never compare the active pool by reference** — `getSharedResourcePool()` returns a **new `ResourcePool` wrapper each call** (each copy / bundler instance gets its own wrapper), semantically equivalent but `===` is always false. To detect pool changes compare `version` (incremented on every effective change, no-ops don't bump it) or diff `list()` contents — never compare wrapper references:
+
+```ts
+const seen = pool.version
+pool.register(batch)
+if (pool.version !== seen) ganttEl.tasks = ganttEl.tasks // recalc only when contents changed
+```
+
 > Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; the resource swimlane is delivered by `group-by-resource` (see the section above, with the embedded lane load thumbnail); automatic schedule avoidance is delivered by the `levelConflicts()` method (invoked manually, see the "Over-allocation Avoidance" section below, supporting `mode: 'reassign'`); **task-resource assignment editing** is covered by the recipe in the "Edit dialog" section (pool-checked multi-select + unregistered read-only chips, written back via `updateTask`).
 
 ## Over-allocation Avoidance (levelConflicts)
@@ -442,7 +452,7 @@ ganttEl.resourcePool = pool // instance isolation; write null to restore the sha
 
 - **Mode `mode` (default `'shift'`, behavior unchanged)**:
   - `shift`: shift the victim forward as a whole (moves dates, preserves duration);
-  - `reassign`: reassign the victim — **dates untouched**; the conflicting resource is swapped for a pool resource with **conflict-free headroom for the whole span**. The target criterion shares the detection's source (any task on the target overlapping the victim's range disqualifies it — **reassignment must not create new conflicts**; touching edges don't count); multi-resource tasks only replace the conflicting id (array order and off-pool ids preserved); targets ranked by fewest active participants (least busy first, pool first-seen order on ties); each successful reassign counts as one step (shared `maxIter` budget). **With no feasible target the pair is given up and reported honestly in `unresolved` — never degraded into shifting**; `moved` entries carry the full reassigned `resources` array, committed via one `updateTasks` call. Invalid `mode` values fall back to shift with a devWarn once.
+  - `reassign`: reassign the victim — **dates untouched**; the conflicting resource is swapped for a pool resource with **conflict-free headroom for the whole span**. The target criterion shares the detection's source (any task on the target overlapping the victim's range disqualifies it — **reassignment must not create new conflicts**; touching edges don't count); **candidate calendar schedulability participates too**: the task calendar is taken with a probe task (other resources kept, the conflicting id swapped for the candidate), and an empty `days` set = never schedulable disqualifies the candidate (`taskCalendar` semantics — resources with `shifts: []`, or workdays whose intersection with the task's other resources / the global set is empty, are never picked, even when fully idle in time); multi-resource tasks only replace the conflicting id (array order and off-pool ids preserved); targets ranked by fewest active participants (least busy first, pool first-seen order on ties); each successful reassign counts as one step (shared `maxIter` budget). **With no feasible target the pair is given up and reported honestly in `unresolved` — never degraded into shifting**; `moved` entries carry the full reassigned `resources` array, committed via one `updateTasks` call. Invalid `mode` values fall back to shift with a devWarn once.
 - **Victim order**: tasks that are `disabled`, have an empty resource-calendar `days` set (no bookable day), or carry `constraint: "mso"` **never yield**; tasks with a `deadline` yield after those without (among deadline holders the latest deadline yields last); ties break by later start first, then later input order first.
 - **Resource calendars in leveling (authoritative contract)**: the snap calendar = **task calendar ∩ resource calendar** — the data contract is the `resources` attribute's `GanttResource` (`workdays` intersect the global set, `holidays` union with the global set, `shifts: []` means unavailable all week; pool-side `capacityOverrides` are not part of this contract). A task whose merged calendar has an **empty `days` set is locked and never yields** (same rank as `disabled` / `mso`).
 - **Shift and snap (shift mode)**: each step moves a task forward by exactly 1 day (wall-clock preserved across DST; duration unchanged); after convergence the resting positions snap forward to working days (per the resource-calendar contract above, day-by-day with the same 400-day cap), then overlaps are rechecked once — if the snap created new conflicts the iteration continues. Every step moves strictly forward (monotone), so termination is bounded.
@@ -464,6 +474,16 @@ ganttEl.addEventListener('oas-level', (e) => {
     <oas-button id="gantt-reassign-run" size="small">Reassign levelConflicts({ mode: 'reassign' })</oas-button>
     <oas-button id="gantt-reassign-undo" size="small" variant="outline">Undo</oas-button>
     <span id="gantt-reassign-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">Before: ra2 overlaps ra1 (Alice over-allocated) — click "Reassign" (dates stay, ra2 moves to Bob)</span>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="reassign calendar filter: r3 has empty shifts (never schedulable) → never picked even when idle; the reassignment lands on schedulable Bob">
+  <oas-gantt id="gantt-reassign-cal-demo" pool history range-start="2026-03-01" range-end="2026-03-31" height="200"
+    resources='[{"id":"r3","name":"Idle slot","shifts":[]}]'
+    tasks='[{"id":"rc1","name":"Design (Alice)","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"rc2","name":"Review (Alice, overlapping)","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]}]'></oas-gantt>
+  <div style="margin-top:var(--oas-space-2);display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
+    <oas-button id="gantt-reassign-cal-run" size="small">Reassign levelConflicts({ mode: 'reassign' })</oas-button>
+    <span id="gantt-reassign-cal-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">Before: rc2 overlaps rc1 — r3 is idle in time but has empty shifts (unschedulable) and must not be picked</span>
   </div>
 </DemoBlock>
 
@@ -943,6 +963,33 @@ onMounted(async () => {
       reOut.textContent = ok ? 'Undone (pre-reassignment assignments restored)' : 'Nothing to undo'
     })
   }
+
+  // reassign calendar filter demo: r3 (resources attribute shifts: [] → never schedulable) is never
+  // picked even when idle in time — the reassignment skips unschedulable candidates and lands on Bob
+  const reCalDemo = document.getElementById('gantt-reassign-cal-demo')
+  const reCalOut = document.getElementById('gantt-reassign-cal-out')
+  if (reCalDemo && reCalOut) {
+    // registration order alice → r3 → bob: r3 has the earlier first-seen order, so a purely
+    // "least busy" pick would choose it (regression baseline)
+    getSharedResourcePool().register([
+      { id: 'alice', name: 'Alice', costRate: 120 },
+      { id: 'r3', name: 'Idle slot' },
+      { id: 'bob', name: 'Bob', costRate: 90 },
+    ])
+    reCalDemo.tasks = reCalDemo.tasks // pool registration happens after the first frame: re-assign tasks to trigger a conflict recalc
+    document.getElementById('gantt-reassign-cal-run')?.addEventListener('click', () => {
+      const r = reCalDemo.levelConflicts({ mode: 'reassign' })
+      if (r.moved.length === 0) {
+        reCalOut.textContent = r.unresolved.length > 0
+          ? `No feasible target (unschedulable candidates skipped); ${r.unresolved.length} conflict(s) reported honestly (unresolved)`
+          : 'No conflict right now, nothing reassigned (idempotent)'
+        return
+      }
+      reCalOut.textContent = r.moved
+        .map((m) => `Reassign target: ${(m.resources ?? []).join(',')} (${m.id} dates ${m.start} untouched)`)
+        .join('; ')
+    })
+  }
 })
 </script>
 
@@ -1086,7 +1133,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | Remove a dependency: when dep.type is given only that (id,type) is removed; otherwise all types for that id are removed. Returns false when not found |
 | `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | Rewrite a dependency: returns false when from is not found, to.id does not exist or points to itself, or nothing actually changes (including lag) |
 | `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | Shallow-merge in bulk (per item: skip when the id does not exist; skip the item when a non-empty end fails to parse; otherwise run sanitize per item) |
-| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | Automatic schedule avoidance (manual, requires pool): shifts the victim of each registered-resource conflict forward until conflict-free or maxIter (default 500; truncation reported honestly). Victim order: disabled / empty calendar days / constraint=mso never yield; deadline holders yield after non-holders (among holders the latest deadline yields last); later start first; later input order first. Day steps preserve wall clock and duration; working-day snap after convergence with a recheck loop. Returns { moved, unresolved, truncated, skipped }; moved is already applied (zero moves = zero writes, zero events, zero history, idempotent); guards (pool off / windowed / readonly / dates-readonly) devWarn + empty resultMode `options.mode` (default `'shift'`): `'reassign'` reassigns the victim — dates untouched, the conflicting resource replaced by a pool resource with conflict-free headroom for the whole span (target criterion shares the detection's source: no new conflicts on the target; multi-resource tasks only replace the conflicting id; with no feasible target the pair is reported honestly in unresolved, never degraded into shifting; each successful reassign counts as one step). Invalid values fall back to shift with a devWarn once. In reassign mode, moved entries carry the full reassigned resources array, committed via one updateTasks call (one undo restores both dates and assignments). |
+| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | Automatic schedule avoidance (manual, requires pool): shifts the victim of each registered-resource conflict forward until conflict-free or maxIter (default 500; truncation reported honestly). Victim order: disabled / empty calendar days / constraint=mso never yield; deadline holders yield after non-holders (among holders the latest deadline yields last); later start first; later input order first. Day steps preserve wall clock and duration; working-day snap after convergence with a recheck loop. Returns { moved, unresolved, truncated, skipped }; moved is already applied (zero moves = zero writes, zero events, zero history, idempotent); guards (pool off / windowed / readonly / dates-readonly) devWarn + empty resultMode `options.mode` (default `'shift'`): `'reassign'` reassigns the victim — dates untouched, the conflicting resource replaced by a pool resource with conflict-free headroom for the whole span (target criterion shares the detection's source: no new conflicts on the target; calendar-unschedulable candidates are skipped too — a probe task with the candidate swapped in must not have an empty days set, so resources with shifts: [] or an empty workdays intersection are never picked even when idle; multi-resource tasks only replace the conflicting id; with no feasible target the pair is reported honestly in unresolved, never degraded into shifting; each successful reassign counts as one step). Invalid values fall back to shift with a devWarn once. In reassign mode, moved entries carry the full reassigned resources array, committed via one updateTasks call (one undo restores both dates and assignments). |
 | `zoomIn` | `zoomIn(): void` | Step one level finer (writes the scale attribute; existing callbacks dispatch oas-scale-change); no-op at the finest level |
 | `zoomOut` | `zoomOut(): void` | Step one level coarser; no-op at the coarsest level |
 | `fit` | `fit(): void` | Zoom to fit all tasks: picks the **finest** level where "columns for the span in that unit × the minimum column width at that level ≤ available width" |

@@ -4532,7 +4532,7 @@
       "--oas-gantt-lane-load-width": "泳道内嵌负荷缩略条宽度（group-by-resource 泳道摘要行行尾概览条）｜缺省 72px"
     },
     "methods": {
-      "levelConflicts": "超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。"
+      "levelConflicts": "超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；候选日历不可排也跳过——改派后的探测任务日历 days 空集 = 永不可排，shifts:[] / workdays 交集空的资源时间空闲也不会被选中；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。"
     }
   },
   "oas-picker": {
