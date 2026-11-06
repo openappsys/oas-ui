@@ -4415,7 +4415,7 @@
       "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
       "resources": "资源列表（JSON）：[{ id, title, color?, group? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行；group 非空时自动插入分组标题行",
       "show-now": "当前时间线（默认开；false 关闭）：week/day 视图与资源单日视图在今天的时间区渲染 now 线",
-      "view": "视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵",
+      "view": "视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵；`'resource-timeline'` 资源时间轴（行 = 资源、横向连续日轴跨多天、事件 = 跨列连续横条；轴 = 当前周或 range 托管跨度）",
       "start-hour": "时间轴起始小时（0-23，默认 8）",
       "end-hour": "时间轴结束小时（>start-hour 且 <=24，默认 20）",
       "timezone": "时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地",
@@ -4505,7 +4505,7 @@
       "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发",
       "oas-history-change": "history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear）",
       "oas-resource-conflict": "pool 开启时资源超配检测结果派发（幂等：同一快照不重复派发，数据/池变化重算后签名变化才发，消解发空数组），detail: { conflicts }（[{ taskA, taskB, resourceId, overlapStart, overlapEnd }]，taskA 在 tasks 输入序在前，交叠区间为日精度含端日期）",
-      "oas-level": "超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change"
+      "oas-level": "超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change；reassign 模式下 moved 条目带 resources（改派后的完整资源数组）"
     },
     "slots": {
       "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
@@ -4528,10 +4528,11 @@
       "--oas-gantt-load-row-height": "负荷面板行高（show-resource-load，默认 24px）",
       "--oas-gantt-load-max-height": "负荷面板行区最大高度（show-resource-load，超出纵向滚动；默认 240px，数据不截断）",
       "--oas-gantt-load-bg": "负荷桶条底色（≤100%，缺省 primary 45% 混底色；暗色变体随 token）",
-      "--oas-gantt-load-over-bg": "负荷桶条超配色（>100%，缺省 danger；暗色变体随 token）"
+      "--oas-gantt-load-over-bg": "负荷桶条超配色（>100%，缺省 danger；暗色变体随 token）",
+      "--oas-gantt-lane-load-width": "泳道内嵌负荷缩略条宽度（group-by-resource 泳道摘要行行尾概览条）｜缺省 72px"
     },
     "methods": {
-      "levelConflicts": "超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果"
+      "levelConflicts": "超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。"
     }
   },
   "oas-picker": {

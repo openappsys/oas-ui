@@ -698,9 +698,9 @@ const BUDGETS = [
     name: '@oas-ui/ui 全量入口链 gzip',
     kind: 'ceiling',
     get: () => fullEntry.gzipBytes,
-    limit: 1140 * 1024, // 1140 KB（≈1.11 MB）天花板（2026-10-08 重定档：workbench 批并入后实测 984.6 KB 触前档 90%）
+    limit: 1180 * 1024, // 1180 KB（≈1.15 MB）天花板（2026-11-06 重定档：gantt 资源批 +1.2 / scheduler resource-timeline +2.7 后实测 1027.9 触前档 90% 线 1024）
     basis:
-      '天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）',
+      '天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',

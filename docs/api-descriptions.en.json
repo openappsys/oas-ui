@@ -4636,7 +4636,7 @@
       "locale": "Localization (overrides config-provider injection and global locale)",
       "resources": "Resources (JSON): [{ id, title, color?, group? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row; a non-empty group inserts a group header row",
       "show-now": "Current-time line (on by default; false disables): renders a now line for today in week/day and single-day resource views",
-      "view": "View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix",
+      "view": "View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix; 'resource-timeline' resource timeline (rows = resources, horizontal continuous day axis spanning multiple days, events as continuous cross-column bars; axis = current week or the range-managed span)",
       "start-hour": "Time axis start hour (0-23, default 8)",
       "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)",
       "timezone": "Timezone (IANA, e.g. Asia/Shanghai; empty = local): affects title/column date formatting and the today marker (via Intl timeZone); invalid values fall back to local",
@@ -4731,7 +4731,7 @@
       "oas-range-request": "Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice",
       "oas-history-change": "With history enabled, dispatched after each undoable commit/undo/redo/clear, detail: { canUndo, canRedo, action } (change/undo/redo/clear)",
       "oas-resource-conflict": "Emitted with pool enabled when the over-allocation result is computed (idempotent: not re-emitted for the same snapshot; re-emitted after data/pool changes, empty array on resolution), detail: { conflicts } ([{ taskA, taskB, resourceId, overlapStart, overlapEnd }], taskA precedes taskB in input order, overlap dates are inclusive day-precision)",
-      "oas-level": "Emitted before avoidance results are applied (levelConflicts with actual movement; zero moves emit nothing), detail: { moved, unresolved, truncated } (moved = final state of shifted tasks [{ id, start, end }], already applied by the call; unresolved = conflict pairs remaining in the final check; truncated = maxIter cap reached). Event order: oas-level → oas-tasks-change"
+      "oas-level": "Emitted before avoidance results are applied (levelConflicts with actual movement; zero moves emit nothing), detail: { moved, unresolved, truncated } (moved = final state of shifted tasks [{ id, start, end }], already applied by the call; unresolved = conflict pairs remaining in the final check; truncated = maxIter cap reached). Event order: oas-level → oas-tasks-change; in reassign mode, moved entries carry resources (the full reassigned array)"
     },
     "slots": {
       "template[slot=\"empty\"]": "Empty-state content (defaults to \"No tasks\")",
@@ -4754,7 +4754,8 @@
       "--oas-gantt-load-row-height": "Load panel row height (show-resource-load, default 24px)",
       "--oas-gantt-load-max-height": "Load panel body max height (show-resource-load, scrolls vertically beyond it; default 240px, data is not truncated)",
       "--oas-gantt-load-bg": "Load bucket bar color (≤100%, default primary 45% mixed over bg; dark variants via tokens)",
-      "--oas-gantt-load-over-bg": "Load bucket bar over-allocation color (>100%, default danger; dark variants via tokens)"
+      "--oas-gantt-load-over-bg": "Load bucket bar over-allocation color (>100%, default danger; dark variants via tokens)",
+      "--oas-gantt-lane-load-width": "Embedded lane load thumbnail width (end-of-row overview strip on group-by-resource lane summary rows) | default 72px"
     },
     "methods": {
       "updateTask": "Incrementally update a single task by id (shallow-merges the patch, then runs sanitize; returns false when the id is missing or the patch is invalid)",
@@ -4775,7 +4776,7 @@
       "zoomIn": "Step one level finer (writes the scale attribute; existing callbacks dispatch oas-scale-change); no-op at the finest level",
       "zoomOut": "Step one level coarser; no-op at the coarsest level",
       "fit": "Zoom to fit all tasks: picks the **finest** level where \"columns for the span in that unit × the minimum column width at that level ≤ available width\"",
-      "levelConflicts": "Automatic schedule avoidance (manual, requires pool): shifts the victim of each registered-resource conflict forward until conflict-free or maxIter (default 500; truncation reported honestly). Victim order: disabled / empty calendar days / constraint=mso never yield; deadline holders yield after non-holders (among holders the latest deadline yields last); later start first; later input order first. Day steps preserve wall clock and duration; working-day snap after convergence with a recheck loop. Returns { moved, unresolved, truncated, skipped }; moved is already applied (zero moves = zero writes, zero events, zero history, idempotent); guards (pool off / windowed / readonly / dates-readonly) devWarn + empty result"
+      "levelConflicts": "Automatic schedule avoidance (manual, requires pool): shifts the victim of each registered-resource conflict forward until conflict-free or maxIter (default 500; truncation reported honestly). Victim order: disabled / empty calendar days / constraint=mso never yield; deadline holders yield after non-holders (among holders the latest deadline yields last); later start first; later input order first. Day steps preserve wall clock and duration; working-day snap after convergence with a recheck loop. Returns { moved, unresolved, truncated, skipped }; moved is already applied (zero moves = zero writes, zero events, zero history, idempotent); guards (pool off / windowed / readonly / dates-readonly) devWarn + empty resultMode `options.mode` (default `'shift'`): `'reassign'` reassigns the victim — dates untouched, the conflicting resource replaced by a pool resource with conflict-free headroom for the whole span (target criterion shares the detection's source: no new conflicts on the target; multi-resource tasks only replace the conflicting id; with no feasible target the pair is reported honestly in unresolved, never degraded into shifting; each successful reassign counts as one step). Invalid values fall back to shift with a devWarn once. In reassign mode, moved entries carry the full reassigned resources array, committed via one updateTasks call (one undo restores both dates and assignments)."
     }
   },
   "oas-picker": {

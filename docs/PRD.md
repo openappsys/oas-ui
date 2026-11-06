@@ -5,6 +5,29 @@
 
 ---
 
+## 未发布：gantt 资源泳道增强批（分配编辑 + reassign 避让 + 泳道内嵌负荷 + 资源日历口径固化）
+
+### 功能定义
+
+pool 资源体系从「检测+负荷」补到「分配-避让-概览」闭环：① 任务-资源分配编辑（文档配方：编辑弹窗 checkbox-group 勾选池内资源 + 未登记 id 只读 chip，updateTask 一次写回）；② `levelConflicts(options.mode)` 新增 `'reassign'`——日期不动，冲突资源改派整段无冲突的池内资源（判据与检测同源：改派后目标不得产生新冲突；找不到目标如实 unresolved 不退化顺延）；③ group-by-resource 泳道行尾内嵌 24 格峰值负荷缩略条（DOM 有界、token 配色、forced-colors 兜底）；④ 资源日历进避让的权威口径回归固化（taskCalendar 交集语义 Z2 已交付，本批补测试与文档）。
+
+### 验收
+
+- 引擎 13 测（reassign 与 shift 对拍/目标择优/不新冲突/多资源替换/截断/确定性）+ 组件 8 测 + helper 3 测 + 回归 6 测；gantt 域 473+39+6 全绿。
+- e2e +3（reassign 真实链路/分配编辑双入口/泳道缩略），gantt.spec 157 全绿三引擎。
+- 体积：gantt 链 68.1→69.3 KB（预算 80/预警 72 内）。
+
+## 未发布：scheduler resource-timeline 视图（第 7 档）
+
+### 功能定义
+
+`view="resource-timeline"`：行 = 资源、横向连续日轴跨多天（range 托管取宿主跨度/未托管当前周）、事件 = 跨列连续横条（resource-week 里跨天断成两截的问题在此视图连续）。横条交互复用 week 视图 band-span 代码（提取 `attachSpanBarInteractions` 共享）：整体拖拽按天吸附、末端手柄缩放、键盘 ←/→/Alt、移出轴视图跟随保焦点。轴 >400 天裁剪 devWarn；重叠条半开贪心分层（≤3 层，静默裁切口径与 resource-week 对齐并文档注明）；windowed 行窗口/spacer 守恒/焦点回焦全套既有口径；print 纳入；i18n `scheduler.viewResourceTimeline` ×10 语言。
+
+### 验收
+
+- scheduler 139 全绿（新增 16）；i18n 28 全绿；e2e +1（连续条宽比/键盘回写/焦点/windowed 守恒/RTL/暗色/console）。
+- 体积：scheduler +2.7 KB 进全量入口链；全量入口天花板重定 1180 KB（实测 1027.9）。
+
 ## 未发布：table 补齐小批（TSV/CSV 导入 L3 helper + 打印视图）
 
 ### 功能定义

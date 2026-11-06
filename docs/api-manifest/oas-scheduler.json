@@ -158,7 +158,7 @@
     },
     {
       "name": "oas-day-click",
-      "detail": "{ date: iso } satisfies SchedulerDayClickDetail | { date: ctx.iso, resource: ctx.resource } satisfies SchedulerDayClickDetail | { date: iso, resource: r.id } satisfies SchedulerDayClickDetail | { date: dIso, resource: r.id } satisfies SchedulerDayClickDetail"
+      "detail": "{ date: iso } satisfies SchedulerDayClickDetail | { date: ctx.iso, resource: ctx.resource } satisfies SchedulerDayClickDetail | { date: iso, resource: r.id } satisfies SchedulerDayClickDetail | { date: dIso, resource: r.id } satisfies SchedulerDayClickDetail | { date: firstIso, resource: r.id } satisfies SchedulerDayClickDetail | { date: toISODate(days[idx]!), resource: r.id } satisfies SchedulerDayClickDetail"
     },
     {
       "name": "oas-event-click",

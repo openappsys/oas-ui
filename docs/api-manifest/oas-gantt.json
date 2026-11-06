@@ -408,7 +408,7 @@
     },
     {
       "name": "oas-level",
-      "detail": "{ moved: result.moved.map((m) => ({ ...m })), unresolved: result.unresolved.map((u) => ({ ...u })), truncated: result.truncated, } satisfies GanttLevelDetail"
+      "detail": "{ moved: result.moved.map((m) => ({ id: m.id, start: m.start, end: m.end, ...(m.resources !== undefined ? { resources: [...m.resources] } : {}), })), unresolved: result.unresolved.map((u) => ({ ...u })), truncated: result.truncated, } satisfies GanttLevelDetail"
     },
     {
       "name": "oas-selection-change",
@@ -553,6 +553,10 @@
     {
       "name": "--oas-gantt-load-over-bg",
       "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-gantt-lane-load-width",
+      "default": "72px"
     }
   ],
   "unresolved": []
