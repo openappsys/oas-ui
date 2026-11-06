@@ -33,6 +33,7 @@
 | **gantt 资源增强批** | 分配编辑（编辑弹窗配方+未登记只读 chip）+ `levelConflicts` reassign 改派模式（日期不动/目标不新冲突/unresolved 如实）+ group-by-resource 泳道行尾内嵌负荷缩略（24 格峰值/token/forced-colors）+ 资源日历进避让权威口径固化；gantt 链 69.3/80 | ✅ 已完成（未发布） |
 | **scheduler 视图批** | `view="resource-timeline"` 第 7 档：行=资源/连续日轴跨多天/事件跨列横条；band-span 交互提取共享（拖拽/手柄/键盘/移出轴跟随）；分层 ≤3 + 轴 ≤400 守卫；i18n ×10 | ✅ 已完成（未发布） |
 | **gantt 模块化批** | 7390→5161 行四模块拆分（style/types/utils/helpers；API 零漂移；+2.9 KB 边界成本归因存档） | ✅ 已完成（未发布） |
+| **审查修复批（v2.6.6 后 review 收口）** | 跨根可访问名实质修复（Z8 二次修正）+ row-auto-height 三缺陷（C1 回填跳/I1 隐藏可见/I2 补偿钳制）+ 负荷缓存跨池失效 | ✅ 已完成（未发布） |
 | **table 补齐小批** | TSV/CSV 导入 L3 helper（`data/table/import`：嗅探 + RFC 4180 状态机 + 重名后缀 + 不齐如实计数，16 单测 + 预算档 1.75 KB）；打印视图（print 媒体感知全量渲染：虚拟行/列窗口展开、windowed 守卫切片口径、打印几何 CSS，单测 5 + e2e 3）；主链 63.7→64.2 KB 预警线内 | ✅ 已完成（未发布） |
 
 ## 未发布（决策批：再捞待决项按原则清零）

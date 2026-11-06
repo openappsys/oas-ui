@@ -305,7 +305,7 @@ Move focus with the Tab key: the middle item is skipped; clicking it with a mous
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name mirror: when set on the host it is mirrored to the inner native checkbox (explicit aria wins over the label-wrapped text; essential for bare check cells with no slot text, removed state falls back cleanly) | — | — |
-| `aria-labelledby` | Accessible name second channel (cross-root): the host idref list is mirrored as-is to the inner native checkbox while the referenced elements are resolved — engines supporting the `ariaLabelledByElements` reflection (Chromium 128+) get live references, others fall back to a reference-text snapshot written to the inner aria-label (idref does not cross the shadow boundary, so a bare mirror is unreadable by screen readers); missing references or removal falls back to the host aria-label channel; reference text is a snapshot (not auto-tracked) | — | — |
+| `aria-labelledby` | Accessible name mirror (second channel): the host idref list is mirrored as-is to the inner native checkbox (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `check-all` | In-group select-all marker: clicking toggles all items, item changes write back its checked/indeterminate state; the item never joins the group value (cross-component attribute read by oas-checkbox-group) | — | — |
 | `checked` | Whether checked | `boolean` | — |
 | `description` | Secondary text rendered below the label; a `slot="description"` distribution takes priority | `string` | — |

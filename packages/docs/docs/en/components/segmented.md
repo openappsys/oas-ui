@@ -117,7 +117,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name of the radio group (forwarded to the inner `role="radiogroup"` container; unset by default) | — | — |
-| `aria-labelledby` | Accessible name second channel (cross-root): the host idref list is forwarded as-is to the inner `role="radiogroup"` container while the referenced elements are resolved — engines supporting the `ariaLabelledByElements` reflection (Chromium 128+) get live references, others fall back to a reference-text snapshot written to the group aria-label (idref does not cross the shadow boundary, so a bare mirror is unreadable by screen readers); missing references or removal falls back to the host aria-label channel; reference text is a snapshot (not auto-tracked) | — | — |
+| `aria-labelledby` | Accessible name second channel: the host idref list is forwarded as-is to the inner `role="radiogroup"` container (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `block` | Fill the parent width (options share equally) | — | — |
 | `direction` | Orientation: `horizontal` (default) / `vertical` (mirrors aria-orientation and axis keys) | `string` | `horizontal` |
 | `disabled` | Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection) | `boolean` | — |

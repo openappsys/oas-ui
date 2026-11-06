@@ -488,7 +488,7 @@ The menu item `shortcut` field (items JSON) or the `<oas-menu-item shortcut="…
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accordion` | Accordion mutual exclusion (inline mode: only one sibling submenu open at a time) | `boolean` | — |
-| `aria-labelledby` | Accessible name second channel (cross-root): the host idref list is mirrored as-is to the inner menu container (the ul) while the referenced elements are resolved — engines supporting the `ariaLabelledByElements` reflection (Chromium 128+) get live references, others fall back to a reference-text snapshot written to the inner aria-label (idref does not cross the shadow boundary, so a bare mirror is unreadable by screen readers); missing references or removal falls back to the host aria-label channel; reference text is a snapshot (not auto-tracked) | — | — |
+| `aria-labelledby` | Accessible name second channel: the host idref list is mirrored as-is to the inner menu container (the ul; removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `close-on-select` | Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle | `string` | — |
 | `collapsed` | Collapsed state (vertical / inline; not applicable to horizontal): icons only, submenus pop to the right | `boolean` | — |
 | `disabled` | Disables the whole menu: click/hover/keyboard intercepted, dimmed with aria-disabled | `boolean` | — |

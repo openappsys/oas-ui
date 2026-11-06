@@ -233,7 +233,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 可访问名（宿主覆盖通道，显式设置优先于 label 推导） | — | — |
-| `aria-labelledby` | 可访问名第二通道（跨根解析）：宿主 idref 列表原样镜像到内部 button，同时解析引用元素——支持 `ariaLabelledByElements` 引用反射的引擎（Chromium 128+）写活引用，其余以引用文本快照写内层 aria-label 兜底（idref 不跨 shadow 解析，纯镜像读屏读不到名）；引用缺失或宿主移除后回落宿主 aria-label 通道；引用文本为快照语义（后续变化不自动追踪） | — | — |
+| `aria-labelledby` | 可访问名第二通道：宿主 idref 列表原样镜像到内部 button（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
 | `checked` | 是否开启 | `boolean` | — |
 | `checked-icon` | 选中态滑块图标（oas-icon 图标名） | `string` | — |
 | `checked-text` | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | `string` | — |

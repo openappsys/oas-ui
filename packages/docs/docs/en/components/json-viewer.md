@@ -219,7 +219,7 @@ The pure model helpers are also exported from `@oas-ui/ui/data/json-viewer` (or 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name of the tree (defaults to “JSON tree”) | — | — |
-| `aria-labelledby` | Accessible name second channel (cross-root): the host idref list is mirrored as-is to the tree container while the referenced elements are resolved — engines supporting the `ariaLabelledByElements` reflection (Chromium 128+) get live references, others fall back to a reference-text snapshot written to the inner aria-label (idref does not cross the shadow boundary, so a bare mirror is unreadable by screen readers); missing references or removal falls back to the host aria-label channel; reference text is a snapshot (not auto-tracked) | — | — |
+| `aria-labelledby` | Accessible name mirror (second channel): the host idref list is mirrored as-is to the tree container (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `compact` | Compact mode (20px rows, 11px type and tighter toolbar padding by default) | — | — |
 | `copyable` | Copy button switch; `false` hides buttons while copy methods remain available | `string` | — |
 | `default-expand-depth` | Initial expand depth: 0 keeps only the root, 1 expands the root (default), and so on | `string` | `1` |

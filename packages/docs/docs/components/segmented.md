@@ -117,7 +117,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 单选组的可访问名（转发到内部 `role="radiogroup"` 容器；缺省不设置） | — | — |
-| `aria-labelledby` | 可访问名第二通道（跨根解析）：宿主 idref 列表原样转发到内部 `role="radiogroup"` 容器，同时解析引用元素——支持 `ariaLabelledByElements` 引用反射的引擎（Chromium 128+）写活引用，其余以引用文本快照写组 aria-label 兜底（idref 不跨 shadow 解析，纯镜像读屏读不到名）；引用缺失或宿主移除后回落宿主 aria-label 通道；引用文本为快照语义（后续变化不自动追踪） | — | — |
+| `aria-labelledby` | 可访问名第二通道：宿主 idref 列表原样转发到内部 `role="radiogroup"` 容器（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
 | `block` | 铺满父容器（各项等宽均分） | — | — |
 | `direction` | 排列方向：`horizontal`（默认）/ `vertical`（联动 aria-orientation 与轴向键） | `string` | `horizontal` |
 | `disabled` | 禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承） | `boolean` | — |

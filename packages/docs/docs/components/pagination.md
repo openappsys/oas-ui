@@ -376,7 +376,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `aria-label` | 宿主可访问名，优先命名内部 navigation landmark；空值回退默认「分页」 | — | — |
-| `aria-labelledby` | 可访问名第二通道（跨根解析）：宿主 idref 列表原样镜像到内部 navigation landmark，同时解析引用元素——支持 `ariaLabelledByElements` 引用反射的引擎（Chromium 128+）写活引用，其余以引用文本快照写内层 aria-label 兜底（idref 不跨 shadow 解析，纯镜像读屏读不到名）；引用缺失或宿主移除后回落宿主 aria-label 通道；引用文本为快照语义（后续变化不自动追踪） | — | — |
+| `aria-labelledby` | 可访问名第二通道：宿主 idref 列表原样镜像到内部 navigation landmark（移除后同步摘除；与 aria-label 同时设置时原生可访问名计算以 aria-labelledby 优先） | — | — |
 | `current` | 当前页（受控，翻页会更新该属性） | `string` | `1` |
 | `disabled` | 全局禁用：分页钮全部禁用并带 aria-disabled，每页条数下拉与跳转输入框禁用 | `boolean` | — |
 | `hide-on-single` | 单页（pageCount ≤ 1）时整个组件不渲染 | `boolean` | — |

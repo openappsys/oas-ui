@@ -235,7 +235,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Accessible name (host override channel; explicit value wins over label derivation) | — | — |
-| `aria-labelledby` | Accessible name second channel (cross-root): the host idref list is mirrored as-is to the inner button while the referenced elements are resolved — engines supporting the `ariaLabelledByElements` reflection (Chromium 128+) get live references, others fall back to a reference-text snapshot written to the inner aria-label (idref does not cross the shadow boundary, so a bare mirror is unreadable by screen readers); missing references or removal falls back to the host aria-label channel; reference text is a snapshot (not auto-tracked) | — | — |
+| `aria-labelledby` | Accessible name second channel: the host idref list is mirrored as-is to the inner button (removed state cleans up; when both aria-label and aria-labelledby are set, native accessible-name computation gives aria-labelledby precedence) | — | — |
 | `checked` | Whether on | `boolean` | — |
 | `checked-icon` | Checked-state thumb icon (oas-icon name) | `string` | — |
 | `checked-text` | Label shown when on; inside the track at medium/large/xl, outside at xs/small | `string` | — |
