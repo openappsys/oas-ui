@@ -122,10 +122,14 @@ jobs:
         timeout-minutes: 30
         run: |
           # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
-          # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
-          # 切回官方源 + 清索引强制 apt-get update 重取（只改 sources 不重取，缓存索引仍指向旧源）；
-          # 失败不致命（镜像正常时等价一次 update）。
-          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          # （2026-11-06 实发：libcodec2/fonts-wqy-zenhei 拉取 exit 100，重试耗尽拖垮 e2e 分片）。
+          # 第一版固定路径 sed 实测无效（runner 镜像源文件布局与预期不符，update 仍打 azure），
+          # 改为全 /etc/apt 扫描替换 + 结果自检输出；清索引强制重取（只改源不重取，缓存索引仍指旧源）。
+          grep -rl 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null | while read -r f; do
+            sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' "$f"
+            echo "mirror switched: $f"
+          done
+          grep -r 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null && echo 'WARN: azure refs remain' || echo 'mirror check: no azure refs'
           sudo rm -rf /var/lib/apt/lists/*
           sudo apt-get update || true
           # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
@@ -186,10 +190,14 @@ jobs:
         timeout-minutes: 30
         run: |
           # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
-          # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
-          # 切回官方源 + 清索引强制 apt-get update 重取（只改 sources 不重取，缓存索引仍指向旧源）；
-          # 失败不致命（镜像正常时等价一次 update）。
-          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          # （2026-11-06 实发：libcodec2/fonts-wqy-zenhei 拉取 exit 100，重试耗尽拖垮 e2e 分片）。
+          # 第一版固定路径 sed 实测无效（runner 镜像源文件布局与预期不符，update 仍打 azure），
+          # 改为全 /etc/apt 扫描替换 + 结果自检输出；清索引强制重取（只改源不重取，缓存索引仍指旧源）。
+          grep -rl 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null | while read -r f; do
+            sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' "$f"
+            echo "mirror switched: $f"
+          done
+          grep -r 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null && echo 'WARN: azure refs remain' || echo 'mirror check: no azure refs'
           sudo rm -rf /var/lib/apt/lists/*
           sudo apt-get update || true
           # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
@@ -261,10 +269,14 @@ jobs:
         timeout-minutes: 30
         run: |
           # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
-          # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
-          # 切回官方源 + 清索引强制 apt-get update 重取（只改 sources 不重取，缓存索引仍指向旧源）；
-          # 失败不致命（镜像正常时等价一次 update）。
-          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          # （2026-11-06 实发：libcodec2/fonts-wqy-zenhei 拉取 exit 100，重试耗尽拖垮 e2e 分片）。
+          # 第一版固定路径 sed 实测无效（runner 镜像源文件布局与预期不符，update 仍打 azure），
+          # 改为全 /etc/apt 扫描替换 + 结果自检输出；清索引强制重取（只改源不重取，缓存索引仍指旧源）。
+          grep -rl 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null | while read -r f; do
+            sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' "$f"
+            echo "mirror switched: $f"
+          done
+          grep -r 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null && echo 'WARN: azure refs remain' || echo 'mirror check: no azure refs'
           sudo rm -rf /var/lib/apt/lists/*
           sudo apt-get update || true
           # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
