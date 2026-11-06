@@ -131,11 +131,15 @@ jobs:
           done
           grep -r 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null && echo 'WARN: azure refs remain' || echo 'mirror check: no azure refs'
           sudo rm -rf /var/lib/apt/lists/*
-          sudo apt-get update || true
-          # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
-          sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
+          # 索引刷新必须成功：源故障不吞错，fail fast 让 job 立刻红（重试只兜网络抖动，
+          # 不兜源配置错误——吞掉 update 失败会让后续 install 在陈旧索引上重试三次再失败）
+          sudo apt-get update
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
+            # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程：重试前清锁并补修 dpkg
+            # 中间态（半安装的包会让后续 apt 全线失败），保证每轮重试从干净状态出发
+            sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
+            sudo dpkg --configure -a
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium; then
               exit 0
             fi
@@ -199,11 +203,15 @@ jobs:
           done
           grep -r 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null && echo 'WARN: azure refs remain' || echo 'mirror check: no azure refs'
           sudo rm -rf /var/lib/apt/lists/*
-          sudo apt-get update || true
-          # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
-          sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
+          # 索引刷新必须成功：源故障不吞错，fail fast 让 job 立刻红（重试只兜网络抖动，
+          # 不兜源配置错误——吞掉 update 失败会让后续 install 在陈旧索引上重试三次再失败）
+          sudo apt-get update
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
+            # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程：重试前清锁并补修 dpkg
+            # 中间态（半安装的包会让后续 apt 全线失败），保证每轮重试从干净状态出发
+            sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
+            sudo dpkg --configure -a
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium firefox; then
               exit 0
             fi
@@ -278,11 +286,15 @@ jobs:
           done
           grep -r 'azure\.archive\.ubuntu\.com' /etc/apt/ 2>/dev/null && echo 'WARN: azure refs remain' || echo 'mirror check: no azure refs'
           sudo rm -rf /var/lib/apt/lists/*
-          sudo apt-get update || true
-          # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程，重试前清锁等待
-          sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
+          # 索引刷新必须成功：源故障不吞错，fail fast 让 job 立刻红（重试只兜网络抖动，
+          # 不兜源配置错误——吞掉 update 失败会让后续 install 在陈旧索引上重试三次再失败）
+          sudo apt-get update
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
+            # 上次尝试被 timeout 杀死后可能残留持锁 apt/dpkg 进程：重试前清锁并补修 dpkg
+            # 中间态（半安装的包会让后续 apt 全线失败），保证每轮重试从干净状态出发
+            sudo fuser -k /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock 2>/dev/null || true
+            sudo dpkg --configure -a
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps webkit; then
               exit 0
             fi
