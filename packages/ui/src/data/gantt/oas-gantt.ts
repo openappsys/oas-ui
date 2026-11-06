@@ -129,6 +129,8 @@ import {
   isDescendantOf,
   isInteractiveTarget,
   isWholeDayTask,
+  laneLoadCells,
+  laneResourceId,
   linkType,
   loadBucketStartMs,
   loadUnit,
@@ -296,10 +298,11 @@ export class OASGantt extends OASElement {
   private lastConflictSig: string | null = null
   /** windowed 下超配检测跳过告警（实例级一次） */
   private warnedPoolWindowed = false
-  /** levelConflicts 守卫告警去重（pool 关 / windowed / 只读，各实例级一次） */
+  /** levelConflicts 守卫告警去重（pool 关 / windowed / 只读 / mode 非法，各实例级一次） */
   private warnedLevelNoPool = false
   private warnedLevelWindowed = false
   private warnedLevelReadonly = false
+  private warnedLevelMode = false
   /** 资源并发超限（>2 任务同资源同时段）devWarn（实例级一次，不逐资源/逐 update 刷屏） */
   private warnedPoolOverCapacity = false
   /** show-float 开启时的总浮时/自由浮时（ms，仅叶子/里程碑；摘要不参与 CPM） */
@@ -402,6 +405,8 @@ export class OASGantt extends OASElement {
   private poolOverride: ResourcePool | null = null
   /** windowed 下负荷渲染跳过告警（实例级一次；对齐 pool 超配检测的 windowed 口径） */
   private warnedLoadWindowed = false
+  /** windowed 下泳道负荷缩略跳过告警（实例级一次；同负荷面板窗口口径） */
+  private warnedLaneLoadWindowed = false
   private winStart = 0
   private winEnd = 0
   /** 横向列窗口 [winColStart, winColEnd)（时间轴列虚拟化，全局列索引；由 computeColWindow 维护） */
@@ -2693,6 +2698,16 @@ export class OASGantt extends OASElement {
         if (text !== '') effort.setAttribute('aria-label', this.t('gantt.effortValue', { value: text }))
         el.appendChild(effort)
       }
+      // 泳道内嵌负荷缩略（group-by-resource 泳道摘要行，opt-in 视图）：行尾画该资源全轴
+      // 负荷概览条（固定格数降采样，峰值保持；>100% 走 danger 通道）。纯可视化装饰层
+      // （aria-hidden + hover title），读屏语义由泳道行名与（开启时）负荷面板摘要承载；
+      // effort 列在场时插在其前（不挤工时列对齐）。windowed 切片上跳过（统计少算，devWarn 一次）。
+      const laneStrip = this.laneLoadStripFor(row)
+      if (laneStrip) {
+        const effortCell = el.querySelector<HTMLElement>(':scope > .effort')
+        if (effortCell) el.insertBefore(laneStrip, effortCell)
+        else el.appendChild(laneStrip)
+      }
       el.addEventListener('pointerdown', (e) => this.onRowPointerDown(e as PointerEvent, row))
       el.addEventListener('keydown', (e) => this.onRowKeyDown(e as KeyboardEvent, row))
       frag.appendChild(el)
@@ -2702,6 +2717,54 @@ export class OASGantt extends OASElement {
     if (hadRowFocus && prevActive && prevActive === activeId) {
       container.querySelector<HTMLElement>(`.row-name[data-key="${escId(activeId)}"]`)?.focus({ preventScroll: true })
     }
+  }
+
+  /**
+   * 泳道内嵌负荷缩略（group-by-resource 泳道摘要行专用，纯展示层）：
+   * - 只作用于合成资源泳道根（laneResourceId 命中），普通任务行 / 项目合成根返回 null；
+   * - 数据复用负荷面板同一份缓存（loadResult，签名缓存——滚动帧重建行零重算）；
+   * - 几何：固定格数（LANE_LOAD_CELLS）降采样概览条（峰值保持），**不与时间轴逐列对齐**
+   *   （行名列宽度有限，概览语义；逐列对齐形态由 show-resource-load 面板承载）；
+   * - 超配（格内峰值 >100%）走 `.over` danger 通道，配色与面板同 token 族（暗色/print 随 token）；
+   * - windowed 切片上跳过 + devWarn 一次（负荷统计在切片上会少算，对齐负荷面板窗口口径）。
+   */
+  private laneLoadStripFor(row: GanttRow): HTMLElement | null {
+    if (!this.groupByResourceOn()) return null
+    const rid = laneResourceId(row.task.id)
+    if (rid === null) return null
+    if (this._winMode.windowed) {
+      if (!this.warnedLaneLoadWindowed) {
+        this.warnedLaneLoadWindowed = true
+        devWarn(
+          '[oas-gantt] windowed 模式下泳道负荷缩略需要全量数据，已跳过渲染（切片上统计会少算）；全量形态请在本地模式或由宿主自行展示',
+        )
+      }
+      return null
+    }
+    const result = this.loadResult()
+    const resRow = result?.resources.find((r) => r.id === rid)
+    if (!result || !resRow || resRow.peak <= 0 || result.bucketDays.length === 0) return null
+    const cells = laneLoadCells(resRow.buckets, result.bucketDays)
+    const strip = document.createElement('span')
+    strip.className = 'lane-load'
+    strip.setAttribute('aria-hidden', 'true')
+    strip.dataset.resource = rid
+    // hover title：峰值负荷%（与面板桶 title 同口径——峰值桶覆盖日数 / 桶天数）
+    const peakIdx = resRow.buckets.indexOf(resRow.peak)
+    const peakDays = result.bucketDays[peakIdx] ?? 0
+    if (peakDays > 0) strip.title = this.t('gantt.laneLoadTip', { percent: Math.round((resRow.peak / peakDays) * 100) })
+    const w = 100 / Math.max(cells.length, 1)
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i]!
+      if (cell.pct <= 0) continue
+      const node = document.createElement('i')
+      if (cell.over) node.className = 'over'
+      node.style.setProperty('inset-inline-start', `${i * w}%`)
+      node.style.width = `${w}%`
+      node.style.height = `${Math.min(100, cell.pct)}%`
+      strip.appendChild(node)
+    }
+    return strip
   }
 
   /** 任务条层（窗口行）：task / milestone / summary 三形态 + 手柄 + 标签 + task-render 通道 */
@@ -3564,17 +3627,25 @@ export class OASGantt extends OASElement {
 
   /**
    * 超配自动排程避让（pool opt-in，手动触发；纯引擎见 gantt-level.ts）：对当前任务的池内
-   * 资源冲突做「整体后移受害者」迭代，直到无冲突或达 maxIter（缺省 500，达上限 truncated:true
+   * 资源冲突做迭代消解，直到无冲突或达 maxIter（缺省 500，达上限 truncated:true
    * 且 unresolved 如实返回，不静默）。判据与超配检测同源（computeResourceConflicts 扫描线 +
    * 同款半开区间谓词，相切不算、日精度 end 含端）；受害者排序：disabled / 资源日历 days 空集 /
    * constraint==='mso' 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs
-   * 晚者先让位，输入序靠后者先让位。平移 day 步进保墙钟时刻（DST 不漂移）、保工期；工作日
-   * 吸附放收敛后最终落点（workdays + holidays + 资源日历逐日前进，上限同款），吸附后复检
-   * 一次交叠，复检不过继续迭代。里程碑 / summary / 池外资源不参与（skipped 如实回报）。
+   * 晚者先让位，输入序靠后者先让位。
    *
-   * 应用与事件：有移动时先派发 `oas-level`（detail 带 moved/unresolved/truncated），随后经
+   * 模式（`options.mode`，缺省 `'shift'`）：
+   * - shift（缺省）：整体后移受害者——day 步进保墙钟时刻（DST 不漂移）、保工期；工作日
+   *   吸附放收敛后最终落点（workdays + holidays + 资源日历逐日前进，上限同款），吸附后复检
+   *   一次交叠，复检不过继续迭代。
+   * - reassign：改派受害者——**日期不动**，把冲突资源替换给「整段无冲突」的池内资源（目标
+   *   上任一任务与受害者区间交叠即不可选，改派后目标不得产生新冲突；多资源任务只替换冲突
+   *   的那一个 id；找不到可行目标该对放弃、终检如实回报 unresolved，不退化顺延；每次成功
+   *   改派计一步）。moved 条目带改派后的完整 `resources` 数组（含未登记 id 原样保留），
+   *   经 updateTasks 一次提交写回；非法 mode 值按 shift 处理并 devWarn 一次。
+   *
+   * 应用与事件：有移动/改派时先派发 `oas-level`（detail 带 moved/unresolved/truncated），随后经
    * updateTasks 一次提交（= 一条 undo + 一次 oas-tasks-change，数据写回 `.conflict` 视觉
-   * 通道随下一次 update 重算缩小）；零移动 = 零写入零事件零 history（幂等，可安全重复调用）。
+   * 通道随下一次 update 重算缩小）；零改动 = 零写入零事件零 history（幂等，可安全重复调用）。
    * 守卫（devWarn 一次 + 空结果）：pool 关（避让以池内资源冲突为对象）/ windowed（切片上
    * 避让会得到错误结果）/ readonly / dates-readonly（只读态禁止改排期）。
    *
@@ -3605,19 +3676,42 @@ export class OASGantt extends OASElement {
       }
       return empty
     }
+    if (options.mode !== undefined && options.mode !== 'shift' && options.mode !== 'reassign') {
+      // mode 白名单外的值按缺省 shift 处理：告警一次防宿主拼错模式后误以为改派生效
+      if (!this.warnedLevelMode) {
+        this.warnedLevelMode = true
+        devWarn(
+          `[oas-gantt] levelConflicts 的 mode="${String(options.mode)}" 非法（仅支持 'shift' / 'reassign'），已按缺省 shift 处理`,
+        )
+      }
+      options = { ...options, mode: undefined }
+    }
     const registeredIds = new Set<string>()
     for (const r of this.effectivePool().list()) {
       if (typeof r.id === 'string' && r.id !== '') registeredIds.add(r.id)
     }
     const result = levelGanttConflicts(this._tasks, registeredIds, (task) => this.taskCalendar(task), options)
     if (result.moved.length === 0) return result
-    // 事件序契约：oas-level（应用前）→ oas-tasks-change（updateTasks 一次提交）
+    // 事件序契约：oas-level（应用前）→ oas-tasks-change（updateTasks 一次提交）；
+    // moved 条目深拷贝（resources 数组克隆），应用 patch 带改派后的 resources（shift 不带）
     this.emit('level', {
-      moved: result.moved.map((m) => ({ ...m })),
+      moved: result.moved.map((m) => ({
+        id: m.id,
+        start: m.start,
+        end: m.end,
+        ...(m.resources !== undefined ? { resources: [...m.resources] } : {}),
+      })),
       unresolved: result.unresolved.map((u) => ({ ...u })),
       truncated: result.truncated,
     } satisfies GanttLevelDetail)
-    this.updateTasks(result.moved.map((m) => ({ id: m.id, start: m.start, end: m.end })))
+    this.updateTasks(
+      result.moved.map((m) => ({
+        id: m.id,
+        start: m.start,
+        end: m.end,
+        ...(m.resources !== undefined ? { resources: [...m.resources] } : {}),
+      })),
+    )
     return result
   }
 

@@ -86,6 +86,7 @@ Drive create/update/delete with **imperative methods** instead of rewriting `tas
     <oas-button id="gantt-tm-dep" size="small">Add dependency (selected → next)</oas-button>
     <oas-button id="gantt-tm-del" size="small" variant="outline">Delete selected</oas-button>
     <oas-button id="gantt-tm-progress" size="small" variant="outline">Progress +10</oas-button>
+    <oas-button id="gantt-tm-assign" size="small" variant="outline">Toggle assignee (Alice)</oas-button>
     <oas-button id="gantt-tm-zoomout" size="small" variant="outline">Zoom out</oas-button>
     <oas-button id="gantt-tm-zoomin" size="small" variant="outline">Zoom in</oas-button>
     <oas-button id="gantt-tm-fit" size="small" variant="outline">Fit</oas-button>
@@ -159,7 +160,7 @@ Assemble a task detail editor with `oas-modal` + `oas-form` (the component only 
 - **Task constraints**: `GanttTask.constraint` (`'asap'` default / `'snet'` start-no-earlier-than / `'mso'` must-start-on / `'fnlt'` finish-no-later-than) + `constraintDate`. Under `auto-schedule`: `snet` sets a start floor, `mso` pins the start (not pushed by dependencies), `fnlt` is a soft deadline (no auto-move). Violations (`snet` earlier than the floor / `mso` conflicting with dependencies or off the pin / `fnlt` over deadline) are marked `.conflict` when **`show-critical-path` or `auto-schedule` is on**. Constraints on summary rows are meaningless (dates are derived) → ignored with a one-time warning.
 - **Working-days calendar**: `workdays` (JSON weekday array `[0..6]`, opt-in; absent/empty = any weekday) + `holidays` (**holidays are always non-working**, regardless of `workdays`). `auto-schedule` snaps pushed landing points to the **next working day** (skipping holidays and days outside `workdays`). Changing `workdays`/`holidays` at runtime, or rewriting `tasks`, re-normalizes.
 - **Per-resource calendars**: `resources` (JSON `[{ id, name?, workdays?, holidays?, shifts? }]`) + `GanttTask.resources`. For a task assigned multiple resources, `workdays` is intersected and `holidays` are unioned; `shifts: []` means no available shift. In `hour` scale, `auto-schedule` snaps the start into shift windows (inside a shift stays; between/after shifts moves to the next shift start); when a task has multiple resources, the windows of every resource that declares `shifts` are intersected, resources without `shifts` do not constrain, and with no common window the start is not snapped into either side's one-sided shift. Day-level scheduling still consumes only workdays/holidays. When a task calendar is empty (`shifts: []` or an empty workdays intersection), dependency-driven pushes **never schedule the task onto an unavailable day** — the task keeps its original dates, a one-time devWarn is emitted, and the task is marked `.conflict` (visible even when devWarn is silent in production); downstream tasks use the frozen original dates as their dependency anchor (they may land before an ancestor's right edge, and the violated dependency is still marked on the predecessor); an explicit `mso` anchor is not blocked by this guard.
-- **Resource lanes**: `group-by-resource` creates summary lanes from each task's first `resources` entry (lane name uses the resource `name`, falling back to id); multi-resource tasks appear only under their first resource, and unassigned tasks stay top-level. When both `group-by-resource` and `group-by-project` are set, resource lanes win.
+- **Resource lanes**: `group-by-resource` creates summary lanes from each task's first `resources` entry (lane name uses the resource `name`, falling back to id); multi-resource tasks appear only under their first resource, and unassigned tasks stay top-level. When both `group-by-resource` and `group-by-project` are set, resource lanes win. **Embedded lane load**: each lane summary row renders a whole-axis load thumbnail for its resource at the row end (fixed-cell downsampled overview, peak-preserving; cell height ∝ load%, >100% takes the danger channel) — colors reuse the load-panel token family (`--oas-gantt-load-bg` / `--oas-gantt-load-over-bg`, row width token `--oas-gantt-lane-load-width` default 72px), dark/print via tokens; a decorative layer (`aria-hidden` + hover title with the peak %), not in tab order. Load statistics share the same cache and semantics as the `show-resource-load` panel (full-data signature cache; skipped in windowed mode with a devWarn once).
 - **Event order**: with `auto-schedule` on and dependent corrections applied, the order is uniformly `oas-reschedule` (dependent corrections) → `oas-tasks-change` (final corrected data), whether the change comes from an interaction commit (drag / keyboard / `updateTask` / `updateTasks`) or the host rewriting `tasks` directly (attribute channel); a drag/keyboard settle then dispatches `oas-task-change` (the dragged task, with `start/end` carrying the **corrected final values**). One operation dispatches `oas-tasks-change` exactly once. Hosts should read `el.tasks` / `detail.task`.
 
 <DemoBlock title="Working-days calendar: with workdays=[Mon–Fri], drag the predecessor and the successor snaps to the next working day; a +2 (lag) label is visible on the link">
@@ -239,19 +240,25 @@ gantt.redo()
 
 ### Edit dialog (double-click a task bar)
 
-The component only dispatches `oas-task-dblclick`; compose a detail editor with `oas-modal` + `oas-form`:
+The component only dispatches `oas-task-dblclick`; compose a detail editor with `oas-modal` + `oas-form`. **Resource assignment** rides the same edit channel: pool-registered resources render as a multi-select group (`oas-checkbox-group`, options from `getSharedResourcePool().list()`), while **unregistered ids referenced by the task render as read-only chips** (preserved verbatim on save, no data loss); saving goes through `updateTask(id, { resources })` (an empty array clears the assignment — the sanitize layer drops the field naturally):
 
-<DemoBlock title="Double-click a task bar to open the edit dialog (oas-modal + oas-form); Save writes back via updateTask">
-  <oas-gantt id="gantt-edit" creatable height="200"></oas-gantt>
+<DemoBlock title="Double-click a task bar to open the edit dialog (oas-modal + oas-form): name/dates/progress + resource assignment multi-select (pool-checked, unregistered read-only chips); Save writes back via updateTask">
+  <oas-gantt id="gantt-edit" pool creatable height="200"></oas-gantt>
   <oas-modal id="gantt-edit-modal" title="Edit task">
     <oas-form id="gantt-edit-form">
       <oas-form-item label="Name" name="name" required><oas-input name="name"></oas-input></oas-form-item>
       <oas-form-item label="Start" name="start" required><oas-date-picker name="start"></oas-date-picker></oas-form-item>
       <oas-form-item label="End" name="end"><oas-date-picker name="end"></oas-date-picker></oas-form-item>
       <oas-form-item label="Progress" name="progress"><oas-slider name="progress" show-value></oas-slider></oas-form-item>
+      <oas-form-item label="Resources">
+        <oas-checkbox-group id="gantt-edit-res" direction="horizontal"></oas-checkbox-group>
+        <div id="gantt-edit-res-chips" style="display:flex;gap:var(--oas-space-1);flex-wrap:wrap;margin-top:var(--oas-space-1)"></div>
+      </oas-form-item>
     </oas-form>
   </oas-modal>
 </DemoBlock>
+
+> The task manager (the "Task Management" demo above) is the second entry into the same edit channel: select a row and use the "Toggle assignee" button to reassign via `updateTask` — both entries share the pool registry and the write-back contract, aligned wherever they can be. Unregistered ids (e.g. `ghost`) are read-only chips in the dialog: excluded from the checked set, preserved verbatim on save, and they upgrade to checkable options automatically once registered.
 
 ### Export (JSON / print / image)
 
@@ -417,7 +424,7 @@ pool.register([{ id: 'alice', name: 'Alice (Canvas A)', costRate: 120 }])
 ganttEl.resourcePool = pool // instance isolation; write null to restore the shared singleton
 ```
 
-> Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; the resource swimlane is delivered by `group-by-resource` (see the section above); automatic schedule avoidance is delivered by the `levelConflicts()` method (invoked manually, see the "Over-allocation Avoidance" section below).
+> Load visualization (load buckets, >100% over-allocation channel) is delivered by `show-resource-load`, see the next section; the resource swimlane is delivered by `group-by-resource` (see the section above, with the embedded lane load thumbnail); automatic schedule avoidance is delivered by the `levelConflicts()` method (invoked manually, see the "Over-allocation Avoidance" section below, supporting `mode: 'reassign'`); **task-resource assignment editing** is covered by the recipe in the "Edit dialog" section (pool-checked multi-select + unregistered read-only chips, written back via `updateTask`).
 
 ## Over-allocation Avoidance (levelConflicts)
 
@@ -431,20 +438,34 @@ ganttEl.resourcePool = pool // instance isolation; write null to restore the sha
   </div>
 </DemoBlock>
 
-`levelConflicts(options?)` (manual, requires `pool` on) iteratively shifts the victim task of each **registered-resource conflict** forward until no conflict remains or the iteration cap is hit. Returns `{ moved, unresolved, truncated, skipped }`: `moved` is the final state of shifted tasks (`{ id, start, end }`, **already applied to the component**, no write-back needed); `unresolved` lists conflict pairs still present in the final check (non-empty when both sides cannot yield or the run was truncated); `truncated` means the `maxIter` cap (default 500, aligned with the resource `levelResources`) was reached — **never silent**; `skipped` reports non-participating tasks with reasons (`summary` / `milestone` / `off-pool` / `invalid-dates`, same scope as the detection).
+`levelConflicts(options?)` (manual, requires `pool` on) iteratively resolves each **registered-resource conflict** until no conflict remains or the iteration cap is hit. Returns `{ moved, unresolved, truncated, skipped }`: `moved` is the final state of shifted/reassigned tasks (`{ id, start, end }`, **already applied to the component**, no write-back needed); `unresolved` lists conflict pairs still present in the final check (non-empty when both sides cannot yield or the run was truncated); `truncated` means the `maxIter` cap (default 500, aligned with the resource `levelResources`) was reached — **never silent**; `skipped` reports non-participating tasks with reasons (`summary` / `milestone` / `off-pool` / `invalid-dates`, same scope as the detection).
 
+- **Mode `mode` (default `'shift'`, behavior unchanged)**:
+  - `shift`: shift the victim forward as a whole (moves dates, preserves duration);
+  - `reassign`: reassign the victim — **dates untouched**; the conflicting resource is swapped for a pool resource with **conflict-free headroom for the whole span**. The target criterion shares the detection's source (any task on the target overlapping the victim's range disqualifies it — **reassignment must not create new conflicts**; touching edges don't count); multi-resource tasks only replace the conflicting id (array order and off-pool ids preserved); targets ranked by fewest active participants (least busy first, pool first-seen order on ties); each successful reassign counts as one step (shared `maxIter` budget). **With no feasible target the pair is given up and reported honestly in `unresolved` — never degraded into shifting**; `moved` entries carry the full reassigned `resources` array, committed via one `updateTasks` call. Invalid `mode` values fall back to shift with a devWarn once.
 - **Victim order**: tasks that are `disabled`, have an empty resource-calendar `days` set (no bookable day), or carry `constraint: "mso"` **never yield**; tasks with a `deadline` yield after those without (among deadline holders the latest deadline yields last); ties break by later start first, then later input order first.
-- **Shift and snap**: each step moves a task forward by exactly 1 day (wall-clock preserved across DST; duration unchanged); after convergence the resting positions snap forward to working days (`workdays` + `holidays` + resource calendars, day-by-day with the same 400-day cap), then overlaps are rechecked once — if the snap created new conflicts the iteration continues. Every step moves strictly forward (monotone), so termination is bounded.
-- **Apply and events**: when tasks moved, `oas-level` is emitted first (`detail: { moved, unresolved, truncated }`), then one commit through `updateTasks` = one undo entry + one `oas-tasks-change`; **zero moves = zero writes, zero events, zero history** (idempotent, safe to call repeatedly).
+- **Resource calendars in leveling (authoritative contract)**: the snap calendar = **task calendar ∩ resource calendar** — the data contract is the `resources` attribute's `GanttResource` (`workdays` intersect the global set, `holidays` union with the global set, `shifts: []` means unavailable all week; pool-side `capacityOverrides` are not part of this contract). A task whose merged calendar has an **empty `days` set is locked and never yields** (same rank as `disabled` / `mso`).
+- **Shift and snap (shift mode)**: each step moves a task forward by exactly 1 day (wall-clock preserved across DST; duration unchanged); after convergence the resting positions snap forward to working days (per the resource-calendar contract above, day-by-day with the same 400-day cap), then overlaps are rechecked once — if the snap created new conflicts the iteration continues. Every step moves strictly forward (monotone), so termination is bounded.
+- **Apply and events**: when tasks moved or were reassigned, `oas-level` is emitted first (`detail: { moved, unresolved, truncated }`), then one commit through `updateTasks` = one undo entry + one `oas-tasks-change` (leveling/reassignment is a single transaction; undo restores both dates and assignments); **zero changes = zero writes, zero events, zero history** (idempotent, safe to call repeatedly).
 - **Guards** (one devWarn + empty result): `pool` off, `windowed` (leveling on a slice would produce wrong results), `readonly` / `dates-readonly`.
 
 ```ts
-const r = ganttEl.levelConflicts() // or levelConflicts({ maxIter: 200 })
+const r = ganttEl.levelConflicts() // or levelConflicts({ maxIter: 200 }), levelConflicts({ mode: 'reassign' })
 if (r.truncated) console.warn('iteration cap reached with residual conflicts', r.unresolved)
 ganttEl.addEventListener('oas-level', (e) => {
   console.log(`avoidance moved ${e.detail.moved.length} tasks, ${e.detail.unresolved.length} conflicts remain`)
 })
 ```
+
+<DemoBlock title="reassign mode: Alice's overlapping tasks → dates untouched, the victim is reassigned to the idle Bob (undo restores)">
+  <oas-gantt id="gantt-reassign-demo" pool history range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"ra1","name":"Design (Alice)","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"ra2","name":"Review (Alice, overlapping)","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]}]'></oas-gantt>
+  <div style="margin-top:var(--oas-space-2);display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
+    <oas-button id="gantt-reassign-run" size="small">Reassign levelConflicts({ mode: 'reassign' })</oas-button>
+    <oas-button id="gantt-reassign-undo" size="small" variant="outline">Undo</oas-button>
+    <span id="gantt-reassign-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">Before: ra2 overlaps ra1 (Alice over-allocated) — click "Reassign" (dates stay, ra2 moves to Bob)</span>
+  </div>
+</DemoBlock>
 
 ## Resource Load View (show-resource-load)
 
@@ -695,7 +716,7 @@ onMounted(async () => {
   if (tm && tmOut) {
     tm.tasks = [
       { id: 'd1', name: 'Discovery', start: '2026-03-02', end: '2026-03-06', progress: 100 },
-      { id: 'd2', name: 'Prototype', start: '2026-03-05', end: '2026-03-11', progress: 60, dependencies: [{ id: 'd1' }] },
+      { id: 'd2', name: 'Prototype (Alice)', start: '2026-03-05', end: '2026-03-11', progress: 60, dependencies: [{ id: 'd1' }], resources: ['alice'] },
       { id: 'd3', name: 'Implementation', start: '2026-03-10', end: '2026-03-20', progress: 20, dependencies: [{ id: 'd2' }] },
       { id: 'd4', name: 'Acceptance', start: '2026-03-20' },
     ]
@@ -721,6 +742,15 @@ onMounted(async () => {
       if (!sel.length) return say('Select a row first')
       tm.removeTasks(sel)
       say(`removeTasks → removed ${sel.length}`)
+    })
+    on('gantt-tm-assign', () => {
+      const id = tm.selection[0]
+      if (!id) return say('Select a row first')
+      const t = tm.tasks.find((x) => x.id === id)
+      const ids = Array.isArray(t?.resources) ? t.resources : []
+      const next = ids.includes('alice') ? ids.filter((r) => r !== 'alice') : [...ids, 'alice']
+      const ok = tm.updateTask(id, { resources: next })
+      say(ok ? `updateTask → ${id} resources=${JSON.stringify(next)} (${next.includes('alice') ? 'assigned to Alice' : 'Alice removed'})` : 'Update failed')
     })
     on('gantt-tm-zoomin', () => say(`zoomIn → scale=${(tm.zoomIn(), tm.getAttribute('scale'))}`))
     on('gantt-tm-zoomout', () => say(`zoomOut → scale=${(tm.zoomOut(), tm.getAttribute('scale'))}`))
@@ -756,17 +786,29 @@ onMounted(async () => {
     ]
   }
 
-  // Edit-dialog demo (double-click a bar)
+  // Edit-dialog demo (double-click a bar) + resource assignment: pool-registered → multi-select;
+  // unregistered ids → read-only chips preserved verbatim; saving goes through one
+  // updateTask({ resources }) write-back (same channel as the task manager's "Toggle assignee")
   const ged = document.getElementById('gantt-edit')
   const gedModal = document.getElementById('gantt-edit-modal')
   const gedForm = document.getElementById('gantt-edit-form')
-  if (ged && gedModal && gedForm) {
+  const gedRes = document.getElementById('gantt-edit-res')
+  const gedChips = document.getElementById('gantt-edit-res-chips')
+  if (ged && gedModal && gedForm && gedRes) {
+    getSharedResourcePool().register([
+      { id: 'alice', name: 'Alice' },
+      { id: 'bob', name: 'Bob' },
+    ])
     ged.tasks = [
-      { id: 'e1', name: 'Design', start: '2026-03-02', end: '2026-03-06', progress: 40 },
-      { id: 'e2', name: 'Build', start: '2026-03-09', end: '2026-03-13', progress: 10 },
+      { id: 'e1', name: 'Design (Alice)', start: '2026-03-02', end: '2026-03-06', progress: 40, resources: ['alice'] },
+      { id: 'e2', name: 'Build (Bob + unregistered ghost)', start: '2026-03-09', end: '2026-03-13', progress: 10, resources: ['bob', 'ghost'] },
     ]
+    ged.tasks = ged.tasks // pool registered after first frame: re-assign tasks to trigger one pool-consumer recalc
     const fld = (n) => gedForm.querySelector(`oas-input[name="${n}"], oas-date-picker[name="${n}"], oas-slider[name="${n}"]`)
+    const chipStyle =
+      'font-size:var(--oas-font-size-xs);padding:0 var(--oas-space-2);border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm);color:var(--oas-color-text-secondary)'
     let cur = ''
+    let unreg = []
     ged.addEventListener('oas-task-dblclick', (e) => {
       cur = e.detail.id
       const t = e.detail.task
@@ -774,12 +816,32 @@ onMounted(async () => {
       fld('start').value = t.start
       fld('end').value = t.end ?? ''
       fld('progress').value = t.progress ?? 0
+      // Resource assignment: pool-registered → checked multi-select (options in pool order);
+      // unregistered ids → read-only chips
+      const reg = getSharedResourcePool().list()
+      gedRes.setAttribute('options', JSON.stringify(reg.map((r) => ({ label: r.name ?? r.id, value: r.id }))))
+      const ids = Array.isArray(t.resources) ? t.resources : []
+      gedRes.value = ids.filter((id) => reg.some((r) => r.id === id))
+      unreg = ids.filter((id) => !reg.some((r) => r.id === id))
+      gedChips.innerHTML = ''
+      for (const id of unreg) {
+        const chip = document.createElement('span')
+        chip.textContent = id
+        chip.title = 'Unregistered resource (read-only; becomes checkable once registered)'
+        chip.setAttribute('style', chipStyle)
+        chip.setAttribute('data-unregistered', '')
+        gedChips.appendChild(chip)
+      }
       gedModal.setAttribute('visible', '')
     })
     gedModal.addEventListener('oas-ok', () => gedForm.submit())
     gedForm.addEventListener('oas-submit', (e) => {
       const v = e.detail.values
-      ged.updateTask(cur, { ...v, progress: Number(v.progress) })
+      // checked pool ids are normalized to pool registration order (stable regardless of
+      // check sequence); unregistered chip ids are preserved at the end
+      const checked = gedRes.value
+      const ordered = getSharedResourcePool().list().map((r) => r.id).filter((id) => checked.includes(id))
+      ged.updateTask(cur, { ...v, progress: Number(v.progress), resources: [...ordered, ...unreg] })
     })
   }
 
@@ -856,6 +918,29 @@ onMounted(async () => {
     document.getElementById('gantt-level-undo')?.addEventListener('click', () => {
       const ok = levelDemo.undo()
       levelOut.textContent = ok ? 'Undone (pre-avoidance dates restored)' : 'Nothing to undo'
+    })
+  }
+
+  // reassign demo: mode: 'reassign' → dates untouched, the victim is reassigned to an idle resource; undo restores
+  const reDemo = document.getElementById('gantt-reassign-demo')
+  const reOut = document.getElementById('gantt-reassign-out')
+  if (reDemo && reOut) {
+    reDemo.tasks = reDemo.tasks // pool registration happens after the first frame: re-assign tasks to trigger a conflict recalc
+    document.getElementById('gantt-reassign-run')?.addEventListener('click', () => {
+      const r = reDemo.levelConflicts({ mode: 'reassign' })
+      if (r.moved.length === 0) {
+        reOut.textContent = r.unresolved.length > 0
+          ? `No feasible target; ${r.unresolved.length} conflict(s) reported honestly (unresolved, never degraded into shifting)`
+          : 'No conflict right now, nothing reassigned (idempotent)'
+        return
+      }
+      const parts = r.moved.map((m) => `${m.id} reassigned → [${(m.resources ?? []).join(',')}] (dates ${m.start} untouched)`)
+      if (r.unresolved.length > 0) parts.push(`${r.unresolved.length} residual`)
+      reOut.textContent = parts.join('; ')
+    })
+    document.getElementById('gantt-reassign-undo')?.addEventListener('click', () => {
+      const ok = reDemo.undo()
+      reOut.textContent = ok ? 'Undone (pre-reassignment assignments restored)' : 'Nothing to undo'
     })
   }
 })
@@ -1001,7 +1086,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | Remove a dependency: when dep.type is given only that (id,type) is removed; otherwise all types for that id are removed. Returns false when not found |
 | `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | Rewrite a dependency: returns false when from is not found, to.id does not exist or points to itself, or nothing actually changes (including lag) |
 | `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | Shallow-merge in bulk (per item: skip when the id does not exist; skip the item when a non-empty end fails to parse; otherwise run sanitize per item) |
-| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | Automatic schedule avoidance (manual, requires pool): shifts the victim of each registered-resource conflict forward until conflict-free or maxIter (default 500; truncation reported honestly). Victim order: disabled / empty calendar days / constraint=mso never yield; deadline holders yield after non-holders (among holders the latest deadline yields last); later start first; later input order first. Day steps preserve wall clock and duration; working-day snap after convergence with a recheck loop. Returns { moved, unresolved, truncated, skipped }; moved is already applied (zero moves = zero writes, zero events, zero history, idempotent); guards (pool off / windowed / readonly / dates-readonly) devWarn + empty result |
+| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | Automatic schedule avoidance (manual, requires pool): shifts the victim of each registered-resource conflict forward until conflict-free or maxIter (default 500; truncation reported honestly). Victim order: disabled / empty calendar days / constraint=mso never yield; deadline holders yield after non-holders (among holders the latest deadline yields last); later start first; later input order first. Day steps preserve wall clock and duration; working-day snap after convergence with a recheck loop. Returns { moved, unresolved, truncated, skipped }; moved is already applied (zero moves = zero writes, zero events, zero history, idempotent); guards (pool off / windowed / readonly / dates-readonly) devWarn + empty resultMode `options.mode` (default `'shift'`): `'reassign'` reassigns the victim — dates untouched, the conflicting resource replaced by a pool resource with conflict-free headroom for the whole span (target criterion shares the detection's source: no new conflicts on the target; multi-resource tasks only replace the conflicting id; with no feasible target the pair is reported honestly in unresolved, never degraded into shifting; each successful reassign counts as one step). Invalid values fall back to shift with a devWarn once. In reassign mode, moved entries carry the full reassigned resources array, committed via one updateTasks call (one undo restores both dates and assignments). |
 | `zoomIn` | `zoomIn(): void` | Step one level finer (writes the scale attribute; existing callbacks dispatch oas-scale-change); no-op at the finest level |
 | `zoomOut` | `zoomOut(): void` | Step one level coarser; no-op at the coarsest level |
 | `fit` | `fit(): void` | Zoom to fit all tasks: picks the **finest** level where "columns for the span in that unit × the minimum column width at that level ≤ available width" |
@@ -1013,7 +1098,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `oas-dependencies-change` | Dispatched when a link drag creates a dependency or a selected link is deleted, detail: { taskId, dependencies } (taskId is the successor whose dependencies changed) |
 | `oas-expand-change` | Dispatched on row tree collapse/expand, detail: { id, expanded } |
 | `oas-history-change` | With history enabled, dispatched after each undoable commit/undo/redo/clear, detail: { canUndo, canRedo, action } (change/undo/redo/clear) |
-| `oas-level` | Emitted before avoidance results are applied (levelConflicts with actual movement; zero moves emit nothing), detail: { moved, unresolved, truncated } (moved = final state of shifted tasks [{ id, start, end }], already applied by the call; unresolved = conflict pairs remaining in the final check; truncated = maxIter cap reached). Event order: oas-level → oas-tasks-change |
+| `oas-level` | Emitted before avoidance results are applied (levelConflicts with actual movement; zero moves emit nothing), detail: { moved, unresolved, truncated } (moved = final state of shifted tasks [{ id, start, end }], already applied by the call; unresolved = conflict pairs remaining in the final check; truncated = maxIter cap reached). Event order: oas-level → oas-tasks-change; in reassign mode, moved entries carry resources (the full reassigned array) |
 | `oas-progress-change` | Dispatched when a progress handle drag settles, detail: { id, task, progress } |
 | `oas-range-request` | Emitted when the time axis is host-managed (range-start/range-end) and the visible time window approaches an axis edge; detail: { startMs, endMs, reason } (the neighbouring range requested). The same expected range is not emitted twice |
 | `oas-reparent` | Dispatched when a row drag reparent/reorder settles, detail: { id, parent, index } (parent null means root level; index is the sibling position) |
@@ -1056,6 +1141,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `--oas-gantt-header-height` | — | `44px` |
 | `--oas-gantt-height` | — | `320px` |
 | `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg))` |
+| `--oas-gantt-lane-load-width` | Embedded lane load thumbnail width (end-of-row overview strip on group-by-resource lane summary rows) \| default 72px | `72px` |
 | `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
 | `--oas-gantt-list-width` | — | `220px` |
 | `--oas-gantt-load-bg` | Load bucket bar color (≤100%, default primary 45% mixed over bg; dark variants via tokens) | `color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))` |

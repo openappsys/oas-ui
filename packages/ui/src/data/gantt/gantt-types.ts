@@ -243,17 +243,32 @@ export interface GanttLevelCalendar {
 
 /** levelConflicts 选项 */
 export interface GanttLevelOptions {
-  /** 迭代上限（每次 +1 天平移或吸附推进各计一步）；缺省 500（对齐 resource levelResources），达上限 truncated:true */
+  /** 迭代上限（shift 每次平移/吸附推进各计一步、reassign 每次成功改派计一步）；缺省 500（对齐 resource levelResources），达上限 truncated:true */
   maxIter?: number
+  /**
+   * 避让模式（缺省 'shift'，行为与旧版完全一致）：
+   * - shift（缺省）：整体后移受害者消除冲突（改日期、保工期）；
+   * - reassign：改派受害者给「整段无冲突」的池内资源（**日期不动**、只换 resources；
+   *   判据与检测同源——目标资源上任一任务与受害者区间交叠即不可选，改派后目标不得产生新冲突；
+   *   多资源任务只替换冲突的那一个 id，其余原样保留；找不到可行目标时该对放弃、终检如实回报
+   *   unresolved，**不退化顺延**）。
+   * 非法值（非 'shift'/'reassign'）按缺省 shift 处理（组件通道会 devWarn 一次，纯函数通道静默回落）。
+   */
+  mode?: 'shift' | 'reassign'
 }
 
-/** 避让移动的单任务终态（start/end 为写回就绪的数据串；hour 档任务保墙钟时刻） */
+/** 避让/改派的单任务终态（start/end 为写回就绪的数据串；hour 档任务保墙钟时刻） */
 export interface GanttLevelMoved {
   id: string
   /** 终态开始 'YYYY-MM-DD'（hour 档 'YYYY-MM-DD HH:mm'） */
   start: string
   /** 终态结束（整日任务按日历日保工期推导；时间精度同步平移） */
   end: string
+  /**
+   * reassign 模式下改派后的完整资源数组（写回就绪 patch：含未登记 id 原样保留、顺序保持）；
+   * shift 模式不出现该键（日期变了、资源没变）。组件通道经 updateTasks 一次提交。
+   */
+  resources?: string[]
 }
 
 /** 避让后仍残留的冲突对（computeResourceConflicts 终检产物如实透传） */
@@ -272,7 +287,7 @@ export interface GanttLevelSkipped {
 
 /** levelConflicts 返回值（纯函数通道与组件方法共用） */
 export interface GanttLevelResult {
-  /** 被移动任务的终态（按 tasks 输入序；写回后就绪，组件内已应用，宿主纯函数通道自行写回） */
+  /** 被移动/改派任务的终态（按 tasks 输入序；写回后就绪，组件内已应用，宿主纯函数通道自行写回；reassign 条目带 resources） */
   moved: GanttLevelMoved[]
   /** 终检仍残留的冲突对（双侧永不让位 / 达 maxIter 截断时非空） */
   unresolved: GanttLevelUnresolved[]

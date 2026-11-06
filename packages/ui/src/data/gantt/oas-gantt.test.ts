@@ -5,6 +5,7 @@ import { computeEvm } from './evm/index.js'
 import { getSharedResourcePool, createResourcePool, ResourcePool } from '../resource/pool/index.js'
 import { computeResourceConflicts } from './oas-gantt.js'
 import { stableStringify, parseTaskDate, addLocalDays } from './gantt-utils.js'
+import { laneLoadCells, laneResourceId, LANE_LOAD_CELLS } from './gantt-helpers.js'
 import { toISODate } from '../../form/calendar/date-grid.js'
 import type {
   GanttTask,
@@ -13,7 +14,13 @@ import type {
   GanttResourceConflict,
   GanttResourceConflictDetail,
 } from './index.js'
-import type { GanttLevelDetail, GanttLevelResult, GanttTasksChangeDetail, GanttTaskAddDetail } from './oas-gantt.js'
+import type {
+  GanttLevelDetail,
+  GanttLevelOptions,
+  GanttLevelResult,
+  GanttTasksChangeDetail,
+  GanttTaskAddDetail,
+} from './oas-gantt.js'
 
 /** 测试内任务类型别名（组件清洗后的任务：id 必有）——与组件源码 TG 同构 */
 type TG = GanttTask & { id: string }
@@ -9720,5 +9727,308 @@ describe('OASGantt levelConflicts（超配避让）', () => {
     const r2 = el.levelConflicts()
     expect(r2.moved).toEqual([])
     expect(levelCount).toBe(0)
+  })
+
+  it('reassign 模式：日期不动改派资源（moved 带 resources）→ updateTasks 一次提交写回', () => {
+    getSharedResourcePool().register([
+      { id: 'alice', name: '张三' },
+      { id: 'bob', name: '李四' },
+    ])
+    const { el, level, tasksChange } = mountRecording({
+      pool: '',
+      history: '',
+      tasks: JSON.stringify(LEVEL_TASKS),
+    })
+    const before = JSON.stringify(el.tasks)
+    const r = el.levelConflicts({ mode: 'reassign' })
+    // 日期保持原值，resources 改派给 bob（池内唯一空闲目标）
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-04', end: '2026-03-07', resources: ['bob'] }])
+    expect(r.unresolved).toEqual([])
+    // 一次提交一次事件（改派 = 一条 undo 事务）
+    expect(tasksChange.length).toBe(1)
+    const detail = level[0]!
+    expect(detail.moved).toEqual(r.moved)
+    // 数据已应用：t2 资源变为 bob、日期不变；t1 原样
+    const after = el.tasks
+    expect(after.find((t) => t.id === 't2')!.resources).toEqual(['bob'])
+    expect(after.find((t) => t.id === 't2')!.start).toBe('2026-03-04')
+    expect(after.find((t) => t.id === 't2')!.end).toBe('2026-03-07')
+    expect(after.find((t) => t.id === 't1')!.resources).toEqual(['alice'])
+    // 撤销：一条 undo 完整还原改派前数据（日期 + 资源一起回滚）
+    expect(el.canUndo).toBe(true)
+    expect(el.undo()).toBe(true)
+    expect(JSON.stringify(el.tasks)).toBe(before)
+  })
+
+  it('reassign 无目标：单资源池该对 unresolved 如实回报 + 零写入零事件零 history', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el, level, tasksChange } = mountRecording({
+      pool: '',
+      history: '',
+      tasks: JSON.stringify(LEVEL_TASKS),
+    })
+    const before = JSON.stringify(el.tasks)
+    const r = el.levelConflicts({ mode: 'reassign' })
+    expect(r.moved).toEqual([])
+    expect(r.unresolved).toEqual([{ taskA: 't1', taskB: 't2', resourceId: 'alice' }])
+    expect(r.truncated).toBe(false)
+    expect(level.length).toBe(0)
+    expect(tasksChange.length).toBe(0)
+    expect(JSON.stringify(el.tasks)).toBe(before)
+    expect(el.canUndo).toBe(false)
+  })
+
+  it('mode 非法值：devWarn 一次 + 按缺省 shift 处理（moved 不带 resources、日期平移）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el } = mountRecording({ pool: '', tasks: JSON.stringify(LEVEL_TASKS) })
+    const r = el.levelConflicts({ mode: 'bogus' as unknown as GanttLevelOptions['mode'] })
+    expect(r.moved, '回落 shift：日期平移、无 resources 键').toEqual([
+      { id: 't2', start: '2026-03-06', end: '2026-03-09' },
+    ])
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]?.[0])).toContain('mode')
+    // 去重：同实例二次非法 mode 不再告警
+    el.setAttribute('tasks', JSON.stringify(LEVEL_TASKS))
+    el.levelConflicts({ mode: 'bogus' as unknown as GanttLevelOptions['mode'] })
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('缺省与显式 shift 不变：moved 不携带 resources 键（回归既有契约）', () => {
+    getSharedResourcePool().register([{ id: 'alice', name: '张三' }])
+    const { el } = mountRecording({ pool: '', tasks: JSON.stringify(LEVEL_TASKS) })
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-06', end: '2026-03-09' }])
+    for (const m of r.moved) expect('resources' in m).toBe(false)
+    const r2 = el.levelConflicts({ mode: 'shift' })
+    expect(r2.moved).toEqual([])
+  })
+})
+
+describe('OASGantt levelConflicts × 资源日历（resources 属性进避让，权威口径回归）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+    vi.restoreAllMocks()
+  })
+
+  const LEVEL_TASKS = [
+    { id: 't1', name: 'T1', start: '2026-03-02', end: '2026-03-05', resources: ['ra'] },
+    { id: 't2', name: 'T2', start: '2026-03-04', end: '2026-03-07', resources: ['ra'] },
+  ]
+
+  /** 挂载前挂监听（与 levelConflicts describe 同款辅助） */
+  function mountRecording(attrs: Record<string, string>): { el: OASGantt } {
+    const el = new OASGantt()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    return { el }
+  }
+
+  it('权威口径：吸附日历 = 任务日历 ∩ 资源日历（workdays 交集）——资源假期改写吸附落点', () => {
+    // t2 平移收敛落点为 03-06；ra 假期 03-06 → 吸附逐日前进到 03-07
+    getSharedResourcePool().register([{ id: 'ra', name: 'A' }])
+    const { el } = mountRecording({
+      pool: '',
+      tasks: JSON.stringify(LEVEL_TASKS),
+      resources: JSON.stringify([{ id: 'ra', holidays: ['2026-03-06'] }]),
+    })
+    const r = el.levelConflicts()
+    expect(r.unresolved).toEqual([])
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-07', end: '2026-03-10' }])
+    expect(el.tasks.find((t) => t.id === 't2')!.start).toBe('2026-03-07')
+  })
+
+  it('资源 workdays 空数组 → 任务锁定永不让位（对齐「日历 days 空集」语义）', () => {
+    getSharedResourcePool().register([{ id: 'ra', name: 'A' }])
+    const { el } = mountRecording({
+      pool: '',
+      tasks: JSON.stringify(LEVEL_TASKS),
+      resources: JSON.stringify([{ id: 'ra', workdays: [] }]),
+    })
+    const before = JSON.stringify(el.tasks)
+    // 两条任务都引用 ra（workdays 空）→ 双侧 pinned → 该对放弃，unresolved 如实回报
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([])
+    expect(r.unresolved).toEqual([{ taskA: 't1', taskB: 't2', resourceId: 'ra' }])
+    expect(r.truncated).toBe(false)
+    expect(JSON.stringify(el.tasks)).toBe(before)
+  })
+
+  it('多资源任务：仅一条引用空集资源 → 该侧 pinned，另一侧让位', () => {
+    // t1 引用 [ra, rb]（rb workdays 空 → t1 日历空集 pinned）；t2 只引用 ra（可动）→ t2 让位
+    getSharedResourcePool().register([
+      { id: 'ra', name: 'A' },
+      { id: 'rb', name: 'B' },
+    ])
+    const { el } = mountRecording({
+      pool: '',
+      tasks: JSON.stringify([
+        { id: 't1', name: 'T1', start: '2026-03-02', end: '2026-03-05', resources: ['ra', 'rb'] },
+        { id: 't2', name: 'T2', start: '2026-03-04', end: '2026-03-07', resources: ['ra'] },
+      ]),
+      resources: JSON.stringify([{ id: 'rb', workdays: [] }]),
+    })
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-06', end: '2026-03-09' }])
+    expect(r.unresolved).toEqual([])
+    expect(el.tasks.find((t) => t.id === 't1')!.start).toBe('2026-03-02')
+  })
+
+  it('全局 workdays ∩ 资源 workdays 交集为空 → pinned（交集语义，非并集）', () => {
+    // 全局 [1..5]（一~五）∩ ra [6]（周六）= 空集 → 双侧 pinned → unresolved
+    getSharedResourcePool().register([{ id: 'ra', name: 'A' }])
+    const { el } = mountRecording({
+      pool: '',
+      workdays: JSON.stringify([1, 2, 3, 4, 5]),
+      tasks: JSON.stringify(LEVEL_TASKS),
+      resources: JSON.stringify([{ id: 'ra', workdays: [6] }]),
+    })
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([])
+    expect(r.unresolved).toEqual([{ taskA: 't1', taskB: 't2', resourceId: 'ra' }])
+  })
+
+  it('shifts: [] 资源 → 任务日历空集锁定（与「日历 days 空集」同语义）', () => {
+    getSharedResourcePool().register([{ id: 'ra', name: 'A' }])
+    const { el } = mountRecording({
+      pool: '',
+      tasks: JSON.stringify(LEVEL_TASKS),
+      resources: JSON.stringify([{ id: 'ra', shifts: [] }]),
+    })
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([])
+    expect(r.unresolved).toEqual([{ taskA: 't1', taskB: 't2', resourceId: 'ra' }])
+  })
+
+  it('资源假期 + workdays 组合：吸附同时跳过非工作日与假期', () => {
+    // ra workdays [6,0,1,2,3,4,5] 不设限；假期 03-06/03-07 → t2 落点 03-06 起连跳两天到 03-08
+    getSharedResourcePool().register([{ id: 'ra', name: 'A' }])
+    const { el } = mountRecording({
+      pool: '',
+      tasks: JSON.stringify(LEVEL_TASKS),
+      resources: JSON.stringify([{ id: 'ra', holidays: ['2026-03-06', '2026-03-07'] }]),
+    })
+    const r = el.levelConflicts()
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-08', end: '2026-03-11' }])
+  })
+})
+
+describe('泳道内嵌负荷缩略（group-by-resource 泳道行，lane-load）', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+    getSharedResourcePool().clear()
+    vi.restoreAllMocks()
+  })
+
+  // ===== 纯函数：laneResourceId / laneLoadCells =====
+
+  it('laneResourceId：泳道合成根 id 解析（含避让后缀），非泳道 id 返回 null', () => {
+    expect(laneResourceId('__oas_resource__:ra')).toBe('ra')
+    expect(laneResourceId('__oas_resource__:ra#2')).toBe('ra')
+    expect(laneResourceId('t1')).toBe(null)
+    expect(laneResourceId('__oas_project__:Alpha')).toBe(null)
+    expect(laneResourceId('__oas_resource__:')).toBe('')
+  })
+
+  it('laneLoadCells：峰值保持降采样——格取覆盖桶最大负荷%，>100% 标 over', () => {
+    // 8 桶压 4 格（桶天数百位）：第 2 格覆盖桶 2-3（100%、250%）→ 250% over；其余 ≤100
+    const days = new Array(8).fill(100)
+    const cells = laneLoadCells([50, 100, 100, 250, 25, 25, 25, 25], days, 4)
+    expect(cells.length).toBe(4)
+    expect(cells[0]).toEqual({ pct: 100, over: false }) // max(50,100)
+    expect(cells[1]).toEqual({ pct: 250, over: true }) // max(100,250)
+    expect(cells[2]).toEqual({ pct: 25, over: false })
+    expect(cells[3]).toEqual({ pct: 25, over: false })
+  })
+
+  it('laneLoadCells：边界——空桶 / cells 非法 / bucketDays 0 桶跳过 / 恒定格数', () => {
+    expect(laneLoadCells([], [], 8)).toEqual([])
+    expect(laneLoadCells([100], [1], 0)).toEqual([])
+    // bucketDays 0 的桶不参与（面板同口径）：2/4=50%、1/1=100%
+    const cells = laneLoadCells([999, 2, 1], [0, 4, 1], 3)
+    expect(cells[0]).toEqual({ pct: 0, over: false })
+    expect(cells[1]).toEqual({ pct: 50, over: false })
+    expect(cells[2]).toEqual({ pct: 100, over: false })
+    // 缺省格数 = LANE_LOAD_CELLS（DOM 有界契约）
+    const many = laneLoadCells(new Array(5000).fill(1), new Array(5000).fill(1))
+    expect(many.length).toBe(LANE_LOAD_CELLS)
+    // 取整前判定 over：199/200 = 99.5% 取整为 100 但不标 over
+    const near = laneLoadCells([199], [200], 1)
+    expect(near[0]).toEqual({ pct: 100, over: false })
+  })
+
+  // ===== 组件：泳道摘要行渲染缩略条 =====
+
+  const LANES_TASKS = [
+    { id: 'l1', name: '设计', start: '2026-03-02', end: '2026-03-04', resources: ['ra'] },
+    { id: 'l2', name: '实现', start: '2026-03-03', end: '2026-03-06', resources: ['rb'] },
+    { id: 'l3', name: '联调', start: '2026-03-05', end: '2026-03-07', resources: ['ra', 'rb'] },
+    { id: 'l4', name: '待分配', start: '2026-03-06', end: '2026-03-07' },
+  ]
+
+  it('泳道摘要行内嵌缩略条：lane 行有 .lane-load、成员行/未分配行没有，超配资源带 .over', () => {
+    const el = new OASGantt()
+    for (const [k, v] of Object.entries({
+      'group-by-resource': '',
+      'range-start': '2026-03-01',
+      'range-end': '2026-03-31',
+      tasks: JSON.stringify(LANES_TASKS),
+    }))
+      el.setAttribute(k, v)
+    document.body.appendChild(el)
+    const side = el.shadowRoot!
+    // rb：l2 (03-06 止) × l3 (03-05 起) 交叠 03-05..03-06 → 该格 200% → .over
+    const raStrip = side.querySelector<HTMLElement>('.row-name[data-key="__oas_resource__:ra"] .lane-load')
+    const rbStrip = side.querySelector<HTMLElement>('.row-name[data-key="__oas_resource__:rb"] .lane-load')
+    expect(raStrip?.dataset.resource, 'ra 泳道行应渲染缩略条且携带资源 id').toBe('ra')
+    expect(rbStrip?.dataset.resource, 'rb 泳道行应渲染缩略条且携带资源 id').toBe('rb')
+    expect(raStrip!.getAttribute('aria-hidden'), '装饰层 aria-hidden').toBe('true')
+    expect(raStrip!.title, 'hover title 带峰值百分数').toContain('%')
+    expect(raStrip!.querySelectorAll('i.over').length, 'ra 无交叠 → 无超配格').toBe(0)
+    expect(rbStrip!.querySelectorAll('i.over').length, 'rb 交叠 → 有超配格').toBeGreaterThanOrEqual(1)
+    // 成员行 / 未分配行不渲染
+    expect(side.querySelector('.row-name[data-key="l1"] .lane-load')).toBeNull()
+    expect(side.querySelector('.row-name[data-key="l2"] .lane-load')).toBeNull()
+    expect(side.querySelector('.row-name[data-key="l4"] .lane-load')).toBeNull()
+    // 格几何：inset-inline-start / width / height 内联样式就位（机制级断言）
+    const firstCell = raStrip!.querySelector<HTMLElement>('i')
+    expect(firstCell!.style.getPropertyValue('height')).not.toBe('')
+    expect(firstCell!.style.getPropertyValue('width')).not.toBe('')
+    el.remove()
+  })
+
+  it('关闭 group-by-resource → 零缩略条（opt-in 视图默认零变化）', () => {
+    const el = new OASGantt()
+    for (const [k, v] of Object.entries({ tasks: JSON.stringify(LANES_TASKS) })) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelectorAll('.lane-load').length).toBe(0)
+    el.remove()
+  })
+
+  it('windowed → 跳过缩略条 + devWarn 一次（切片统计少算口径）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASGantt()
+    for (const [k, v] of Object.entries({
+      'group-by-resource': '',
+      windowed: '',
+      total: '4',
+      tasks: JSON.stringify(LANES_TASKS),
+    }))
+      el.setAttribute(k, v)
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelectorAll('.lane-load').length, 'windowed 不渲染缩略条').toBe(0)
+    expect(
+      warn.mock.calls.some((c) => String(c[0]).includes('泳道负荷缩略')),
+      '含泳道缩略专属告警',
+    ).toBe(true)
+    // 去重：二次 update 不再告警
+    el.tasks = el.tasks
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('泳道负荷缩略')).length).toBe(1)
+    el.remove()
   })
 })

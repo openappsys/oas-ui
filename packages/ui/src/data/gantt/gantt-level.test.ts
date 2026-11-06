@@ -483,6 +483,165 @@ describe('levelGanttConflicts：边界', () => {
   })
 })
 
+describe('levelGanttConflicts：reassign 模式（改派，日期不动）', () => {
+  const POOL3 = new Set(['alice', 'bob', 'carol'])
+
+  /** 写回 moved 到任务数组（含 resources patch：reassign 产物带改派后的资源数组） */
+  function applyR(base: TG[], moved: GanttLevelResult['moved']): TG[] {
+    return base.map((task) => {
+      const m = moved.find((x) => x.id === task.id)
+      if (!m) return task
+      const next = { ...task, start: m.start, end: m.end } as TG
+      if (m.resources !== undefined) next.resources = [...m.resources]
+      return next
+    })
+  }
+
+  it('改派不改期：受害者改派给整段无冲突的池内资源，start/end 保持原值', () => {
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07')]
+    const before = snap(tasks)
+    const r = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    // 受害者 = startMs 晚者 t2 → 整段空闲的 bob/carol 择一（并列取池序靠前 bob）
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-04', end: '2026-03-07', resources: ['bob'] }])
+    expect(r.unresolved).toEqual([])
+    expect(r.truncated).toBe(false)
+    // 判据同源终检：写回后无冲突
+    expect(computeResourceConflicts(applyR(tasks, r.moved), POOL3)).toEqual([])
+    // 纯函数：入参零改动
+    expect(snap(tasks)).toBe(before)
+  })
+
+  it('与 shift 对拍：shift 改日期不改资源，reassign 改资源不改日期', () => {
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07')]
+    const shift = levelGanttConflicts(tasks, POOL3, CAL_ANY)
+    const reassign = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    expect(shift.moved).toEqual([{ id: 't2', start: '2026-03-06', end: '2026-03-09' }])
+    expect('resources' in shift.moved[0]!, 'shift 的 moved 不携带 resources 键').toBe(false)
+    expect(reassign.moved[0]!.start, 'reassign 起期不动').toBe('2026-03-04')
+    expect(reassign.moved[0]!.end, 'reassign 止期不动').toBe('2026-03-07')
+    expect(reassign.moved[0]!.resources, 'reassign 改派目标').toEqual(['bob'])
+  })
+
+  it('目标择优：冲突资源外的目标按「现役参与者最少」取最空闲，并列取池首见序', () => {
+    // bob 已有 t3 与 t2 全程交叠（不可选）；carol 空闲 → 唯一可行目标
+    const tasks = [
+      t('t1', '2026-03-02', '2026-03-06'),
+      t('t2', '2026-03-04', '2026-03-08'),
+      t('t3', '2026-03-02', '2026-03-06', ['bob']),
+    ]
+    const r = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-04', end: '2026-03-08', resources: ['carol'] }])
+    expect(computeResourceConflicts(applyR(tasks, r.moved), POOL3)).toEqual([])
+  })
+
+  it('改派不得产生新冲突：目标区间上有任一任务占用即不可选（判据与检测同源）', () => {
+    // bob 上 t3 与 t2 部分交叠（03-05..03-08 ∩ 03-04..03-08 非空）→ bob 忙；carol 全程空闲
+    const tasks = [
+      t('t1', '2026-03-02', '2026-03-05'),
+      t('t2', '2026-03-04', '2026-03-08'),
+      t('t3', '2026-03-05', '2026-03-09', ['bob']),
+    ]
+    const r = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-04', end: '2026-03-08', resources: ['carol'] }])
+    expect(computeResourceConflicts(applyR(tasks, r.moved), POOL3)).toEqual([])
+  })
+
+  it('相切不算交叠：目标上任务与受害者相切（end=受害者 start）不改判忙', () => {
+    // bob 的 t3 = 03-02..03-04（endEdge 03-05 00:00）与 t2（03-05..03-08）相切 → 不算交叠，bob 可选
+    const tasks = [
+      t('t1', '2026-03-01', '2026-03-06'),
+      t('t2', '2026-03-05', '2026-03-08'),
+      t('t3', '2026-03-02', '2026-03-04', ['bob']),
+    ]
+    const r = levelGanttConflicts(tasks, POOL, CAL_ANY, { mode: 'reassign' })
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-05', end: '2026-03-08', resources: ['bob'] }])
+    expect(computeResourceConflicts(applyR(tasks, r.moved), POOL)).toEqual([])
+  })
+
+  it('多资源任务只替换冲突资源：位置保持，其余资源与池外 id 原样保留', () => {
+    const tasks = [
+      t('t1', '2026-03-02', '2026-03-05'),
+      t('t2', '2026-03-04', '2026-03-07', ['alice', 'bob', 'ghost']),
+      t('t3', '2026-03-02', '2026-03-03', ['bob']),
+    ]
+    const r = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    // 冲突对在 alice；bob 已被 t2 自己占用（不可重复选）→ 改派目标 carol（空闲）；
+    // 数组内 alice 位替换为 carol，bob 与池外 ghost 原样保留
+    expect(r.moved).toEqual([
+      { id: 't2', start: '2026-03-04', end: '2026-03-07', resources: ['carol', 'bob', 'ghost'] },
+    ])
+    expect(computeResourceConflicts(applyR(tasks, r.moved), POOL3)).toEqual([])
+  })
+
+  it('找不到目标资源：该对如实回报 unresolved（不退化顺延），moved 空', () => {
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07')]
+    const r = levelGanttConflicts(tasks, new Set(['alice']), CAL_ANY, { mode: 'reassign' })
+    expect(r.moved).toEqual([])
+    expect(r.unresolved).toEqual([{ taskA: 't1', taskB: 't2', resourceId: 'alice' }])
+    expect(r.truncated).toBe(false)
+  })
+
+  it('受害者永不让位（disabled）不改派：排序换非锁定一侧让位', () => {
+    const tasks = [
+      t('t1', '2026-03-02', '2026-03-05'),
+      t('t2', '2026-03-04', '2026-03-07', ['alice'], { disabled: true }),
+    ]
+    const r = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    // t2 disabled 永不让位 → 受害者排序落到 t1（非锁定侧让位，与 shift 同口径）
+    expect(r.moved).toEqual([{ id: 't1', start: '2026-03-02', end: '2026-03-05', resources: ['bob'] }])
+    expect(r.unresolved).toEqual([])
+  })
+
+  it('maxIter 预算：每次成功改派计一步，达上限 truncated:true + 已改派部分保留', () => {
+    const tasks = [
+      t('t1', '2026-03-02', '2026-03-05'),
+      t('t2', '2026-03-04', '2026-03-07'),
+      t('t3', '2026-03-02', '2026-03-03', ['bob']),
+      t('t4', '2026-03-02', '2026-03-03', ['bob']),
+    ]
+    // 队列序：alice 对先（资源首见序）；t2→bob 成功（与 t3/t4 相切不算交叠）耗 1 步；
+    // maxIter=1 时 bob 对（t3,t4）在预算检查处截断 → truncated:true，
+    // 终检 bob 双任务仍冲突 → unresolved 如实回报
+    const r = levelGanttConflicts(tasks, POOL, CAL_ANY, { mode: 'reassign', maxIter: 1 })
+    expect(r.truncated).toBe(true)
+    expect(r.moved).toEqual([{ id: 't2', start: '2026-03-04', end: '2026-03-07', resources: ['bob'] }])
+    expect(r.unresolved).toEqual([{ taskA: 't3', taskB: 't4', resourceId: 'bob' }])
+  })
+
+  it('确定性：同输入重复调用结果一致（含目标择优并列裁决）', () => {
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07')]
+    const a = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    const b = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    expect(snap(a)).toBe(snap(b))
+  })
+
+  it('hour 档改派：日期时间串原样保留，只换资源', () => {
+    const tasks = [t('h1', '2026-03-05 09:00', '2026-03-05 12:00'), t('h2', '2026-03-05 11:00', '2026-03-05 14:00')]
+    const r = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    expect(r.moved).toEqual([{ id: 'h2', start: '2026-03-05 11:00', end: '2026-03-05 14:00', resources: ['bob'] }])
+    expect(computeResourceConflicts(applyR(tasks, r.moved), POOL3)).toEqual([])
+  })
+
+  it('缺省 mode 仍为 shift：行为与既有完全一致（moved 无 resources 键）', () => {
+    const tasks = [t('t1', '2026-03-02', '2026-03-05'), t('t2', '2026-03-04', '2026-03-07')]
+    const def = levelGanttConflicts(tasks, POOL3, CAL_ANY)
+    const explicit = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'shift' })
+    expect(snap(def)).toBe(snap(explicit))
+    expect(def.moved).toEqual([{ id: 't2', start: '2026-03-06', end: '2026-03-09' }])
+  })
+
+  it('reassign 不吸附不移动其他任务：非受害者任务零改动（moved 只含受害者）', () => {
+    const tasks = [
+      t('t1', '2026-03-02', '2026-03-05'),
+      t('t2', '2026-03-04', '2026-03-07'),
+      t('t3', '2026-03-10', '2026-03-12', ['bob']),
+    ]
+    const r = levelGanttConflicts(tasks, POOL3, CAL_ANY, { mode: 'reassign' })
+    expect(r.moved.length).toBe(1)
+    expect(r.moved[0]!.id).toBe('t2')
+  })
+})
+
 describe('levelGanttConflicts：朴素参考实现对拍（O(n²) 全量重检，固定 seed 500 组）', () => {
   it('引擎与参考在「收敛 + 工期不变量 + 步数 ≤ 参考」上等价', () => {
     const rand = mulberry32(20260306)

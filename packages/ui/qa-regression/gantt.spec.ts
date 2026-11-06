@@ -965,7 +965,7 @@ test('gantt 集成配方：编辑弹窗写回 + 导出 JSON', async ({ page }) =
   await host.locator('.bar[data-id="e2"]').dblclick()
   await expect(page.locator('#gantt-edit-modal')).toHaveAttribute('visible', '')
   const nameInput = page.locator('#gantt-edit-form oas-input[name="name"] input')
-  await expect(nameInput).toHaveValue('开发')
+  await expect(nameInput).toHaveValue('开发（李四 + 未登记 ghost）')
   // 改名 → 弹窗「确定」（oas-ok → form.submit）→ updateTask 写回
   await nameInput.fill('开发（改）')
   await page.evaluate(() => {
@@ -2795,4 +2795,165 @@ test('gantt 超配避让 levelConflicts：oas-level 事件派发 + 冲突标注�
   )
   const output = await page.evaluate(() => document.querySelector('#gantt-level-out')?.textContent ?? '')
   expect(output, '二次调用应反馈幂等未移动').toContain('幂等')
+})
+
+test('gantt reassign 改派模式：日期不动换资源 + 撤销回位（真实链路固化）', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-reassign-demo')
+  type RaTask = { id: string; start: string; end?: string; resources?: string[] }
+  const ra2Of = (): { start: string; end: string; resources: string[] } => {
+    const g = document.querySelector('#gantt-reassign-demo')
+    const t = (g as unknown as { tasks: RaTask[] }).tasks.find((x) => x.id === 'ra2')!
+    return { start: t.start, end: t.end ?? t.start, resources: t.resources ?? [] }
+  }
+  const before = await page.evaluate(ra2Of)
+  expect(before, 'demo 固定数据：ra2 在 alice').toEqual({
+    start: '2026-03-05',
+    end: '2026-03-09',
+    resources: ['alice'],
+  })
+  await page.click('#gantt-reassign-run')
+  await page.waitForFunction(
+    () => (document.querySelector('#gantt-reassign-out')?.textContent ?? '').includes('改派'),
+    undefined,
+    { timeout: 10000 },
+  )
+  const after = await page.evaluate(ra2Of)
+  // 日期不动、改派给空闲的 bob（确定性：受害者 = start 晚者 ra2，唯一空闲目标 bob）
+  expect(after.start, '改派后起期不动').toBe('2026-03-05')
+  expect(after.end, '改派后止期不动').toBe('2026-03-09')
+  expect(after.resources, '改派后资源为 bob').toEqual(['bob'])
+  const out = await page.evaluate(() => document.querySelector('#gantt-reassign-out')?.textContent ?? '')
+  expect(out, '反馈应含改派目标与日期不动说明').toContain('bob')
+  // 撤销回位：一条事务还原日期与分配
+  await page.click('#gantt-reassign-undo')
+  await page.waitForFunction(
+    () => (document.querySelector('#gantt-reassign-out')?.textContent ?? '').includes('撤销'),
+    undefined,
+    { timeout: 10000 },
+  )
+  const undone = await page.evaluate(ra2Of)
+  expect(undone, '撤销还原改派前分配').toEqual({ start: '2026-03-05', end: '2026-03-09', resources: ['alice'] })
+})
+
+test('gantt 任务-资源分配编辑：编辑弹窗池内多选 + 未登记只读 chip + updateTask 写回 + 任务管理器入口切换', async ({
+  page,
+}) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-edit')
+  const ged = page.locator('#gantt-edit')
+  const modal = page.locator('#gantt-edit-modal')
+
+  // 打开 e2（bob 勾选 + 未登记 ghost 只读 chip）
+  await ged.locator('.bars .bar[data-id="e2"]').dblclick()
+  await page.waitForFunction(
+    () => document.querySelector('#gantt-edit-modal')?.hasAttribute('visible') === true,
+    undefined,
+    { timeout: 10000 },
+  )
+  const state = await page.evaluate(() => {
+    const g = document.getElementById('gantt-edit-res') as unknown as { shadowRoot: ShadowRoot; value: string[] }
+    const boxes = [...g.shadowRoot.querySelectorAll('oas-checkbox')]
+    return {
+      labels: boxes.map((b) => b.textContent.trim()),
+      value: g.value,
+      chips: [...document.querySelectorAll('#gantt-edit-res-chips [data-unregistered]')].map((c) =>
+        c.textContent.trim(),
+      ),
+    }
+  })
+  expect(state.labels, '池内已登记资源渲染为多选勾选（池登记序）').toEqual(['张三', '李四'])
+  expect(state.value, '任务现有池内分配应预勾选').toEqual(['bob'])
+  expect(state.chips, '未登记 id 渲染为只读 chip').toEqual(['ghost'])
+
+  // 勾选张三 → 保存 → updateTask 写回（保留 ghost）
+  await page.locator('#gantt-edit-res oas-checkbox').first().click()
+  await modal.locator('[part="ok"]').click()
+  await page.waitForFunction(
+    () => document.querySelector('#gantt-edit-modal')?.hasAttribute('visible') === false,
+    undefined,
+    { timeout: 10000 },
+  )
+  const e2res = await page.evaluate(
+    () =>
+      (
+        document.querySelector('#gantt-edit') as unknown as { tasks: Array<{ id: string; resources?: string[] }> }
+      ).tasks.find((t) => t.id === 'e2')!.resources,
+  )
+  expect(e2res, '保存应写回勾选结果 + 只读 chip 保留').toEqual(['alice', 'bob', 'ghost'])
+
+  // 重开 e1（alice 预勾选、无 chip）→ 取消勾选保存 → resources 清空（字段删除）
+  await ged.locator('.bars .bar[data-id="e1"]').dblclick()
+  await page.waitForFunction(
+    () => document.querySelector('#gantt-edit-modal')?.hasAttribute('visible') === true,
+    undefined,
+    { timeout: 10000 },
+  )
+  const state1 = await page.evaluate(() => {
+    const g = document.getElementById('gantt-edit-res') as unknown as { value: string[] }
+    return { value: g.value, chips: document.querySelectorAll('#gantt-edit-res-chips [data-unregistered]').length }
+  })
+  expect(state1.value, 'e1 预勾选 alice').toEqual(['alice'])
+  expect(state1.chips, 'e1 无未登记 chip').toBe(0)
+  await page.locator('#gantt-edit-res oas-checkbox').first().click()
+  await modal.locator('[part="ok"]').click()
+  await page.waitForFunction(
+    () => document.querySelector('#gantt-edit-modal')?.hasAttribute('visible') === false,
+    undefined,
+    { timeout: 10000 },
+  )
+  const e1HasRes = await page.evaluate(() => {
+    const t = (
+      document.querySelector('#gantt-edit') as unknown as { tasks: Array<{ id: string; resources?: string[] }> }
+    ).tasks.find((x) => x.id === 'e1')!
+    return Array.isArray(t.resources) && t.resources.length > 0
+  })
+  expect(e1HasRes, '清空勾选保存后 resources 应删除').toBe(false)
+
+  // 任务管理器入口：选中行 → 切换资源分配按钮（同一 updateTask 通道）
+  await waitGantt(page, 'gantt-tm')
+  await page.locator('#gantt-tm .side-body .row-name[data-key="d2"]').click()
+  await page.click('#gantt-tm-assign')
+  await page.waitForFunction(
+    () => (document.querySelector('#gantt-tm-output')?.textContent ?? '').includes('取消张三'),
+    undefined,
+    { timeout: 10000 },
+  )
+  const d2a = await page.evaluate(
+    () =>
+      (
+        document.querySelector('#gantt-tm') as unknown as { tasks: Array<{ id: string; resources?: string[] }> }
+      ).tasks.find((t) => t.id === 'd2')!.resources ?? [],
+  )
+  expect(d2a, '切换后取消 alice').not.toContain('alice')
+  await page.click('#gantt-tm-assign')
+  await page.waitForFunction(
+    () => (document.querySelector('#gantt-tm-output')?.textContent ?? '').includes('已分配张三'),
+    undefined,
+    { timeout: 10000 },
+  )
+  const d2b = await page.evaluate(
+    () =>
+      (
+        document.querySelector('#gantt-tm') as unknown as { tasks: Array<{ id: string; resources?: string[] }> }
+      ).tasks.find((t) => t.id === 'd2')!.resources ?? [],
+  )
+  expect(d2b, '再次切换恢复 alice').toContain('alice')
+})
+
+test('gantt 泳道内嵌负荷：lane 摘要行缩略条 + 超配格 + 成员行/未分配行无', async ({ page }) => {
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-resource-lanes')
+  const el = page.locator('#gantt-resource-lanes')
+  const ra = el.locator('.side-body .row-name[data-key="__oas_resource__:ra"] .lane-load')
+  const rb = el.locator('.side-body .row-name[data-key="__oas_resource__:rb"] .lane-load')
+  await expect(ra, 'ra 泳道行渲染缩略条').toBeVisible()
+  await expect(rb, 'rb 泳道行渲染缩略条').toBeVisible()
+  // rl2(03-03..03-06) × rl3(03-05..03-07) 在 rb 上交叠 03-05..03-06 → 200% 超配格；ra 无交叠
+  expect(await ra.locator('i.over').count(), 'ra 无超配格').toBe(0)
+  expect(await rb.locator('i.over').count(), 'rb 有超配格').toBeGreaterThanOrEqual(1)
+  const rbTitle = await rb.getAttribute('title')
+  expect(rbTitle, 'hover title 带峰值百分数').toContain('200%')
+  await expect(el.locator('.side-body .row-name[data-key="rl1"] .lane-load'), '成员行不渲染缩略条').toHaveCount(0)
+  await expect(el.locator('.side-body .row-name[data-key="rl4"] .lane-load'), '未分配任务行不渲染缩略条').toHaveCount(0)
 })

@@ -829,6 +829,31 @@ svg.links .temp-link {
   font-size: var(--oas-font-size-xs);
   color: var(--oas-color-text-secondary-strong);
 }
+/* ===== 泳道内嵌负荷缩略（group-by-resource 泳道摘要行，opt-in 视图内嵌） =====
+   行尾固定宽概览条：固定格数降采样（峰值保持），格高 ∝ 负荷%，>100% 走 danger 通道。
+   配色复用负荷面板同 token 族（--oas-gantt-load-bg / --oas-gantt-load-over-bg，暗色/print
+   随 token）；行名列内概览语义，不与时间轴逐列对齐（逐列形态由 show-resource-load 承载）。
+   装饰层 aria-hidden + hover title（峰值 %），不进 Tab 序不产可读名碎片。 */
+.row-name .lane-load {
+  position: relative;
+  flex: none;
+  width: var(--oas-gantt-lane-load-width, 72px);
+  height: 16px;
+  align-self: center;
+  overflow: hidden;
+  border-radius: var(--oas-radius-xs);
+}
+.row-name .lane-load i {
+  position: absolute;
+  bottom: 0;
+  min-width: 1px;
+  background: var(--oas-gantt-load-bg, color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg)));
+  border-radius: 1px;
+}
+/* 超配格（峰值 >100%）：与负荷面板 .over 同 danger 通道 */
+.row-name .lane-load i.over {
+  background: var(--oas-gantt-load-over-bg, var(--oas-color-danger));
+}
 /* ===== 高对比模式（forced-colors: active）兜底 =====
    系统强制色会覆盖 background、禁用 box-shadow：凡「只凭底色/阴影」传达信息的元素
    （今日线/状态线/进度刻度、周末与假日列、基线条、行选中态、任务条本体、进度填充、
@@ -862,7 +887,8 @@ svg.links .temp-link {
     border: 1px solid;
   }
   /* 负荷桶条：只凭底色传达信息 → 1px 描边找回轮廓（常态样式不动，颜色由强制色接管） */
-  .load-cell {
+  .load-cell,
+  .row-name .lane-load i {
     outline: 1px solid;
   }
   /* 进度填充：进度只凭填充色 → 条内右缘 2px 描边标出进度前沿（RTL 走逻辑属性自动镜像） */

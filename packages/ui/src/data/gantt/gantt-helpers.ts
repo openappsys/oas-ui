@@ -161,6 +161,55 @@ export function groupTasksByResource(tasks: TG[], calendars: Map<string, GanttRe
   return out
 }
 
+// ===== 泳道内嵌负荷缩略（group-by-resource 泳道摘要行） =====
+
+/** 泳道合成根 id 前缀（groupTasksByResource 产物；与 __oas_project__ 同款命名约定） */
+const LANE_ID_PREFIX = '__oas_resource__:'
+
+/** 泳道负荷缩略缺省格数：概览条降采样目标（DOM 有界：泳道数 × 格数，滚动帧重建不放大） */
+export const LANE_LOAD_CELLS = 24
+
+/**
+ * 泳道合成根 id → 资源 id（纯函数）：`__oas_resource__:ra` → `ra`；同名冲突的避让后缀
+ * `__oas_resource__:ra#2` → `ra`；非泳道合成根返回 null（普通任务 / 项目合成根等）。
+ */
+export function laneResourceId(id: string): string | null {
+  if (typeof id !== 'string' || !id.startsWith(LANE_ID_PREFIX)) return null
+  const rest = id.slice(LANE_ID_PREFIX.length)
+  const hash = rest.lastIndexOf('#')
+  if (hash > 0) return rest.slice(0, hash)
+  return rest
+}
+
+/**
+ * 泳道负荷缩略降采样（纯函数）：把负荷桶序列压缩为固定格数的概览数据——每格取覆盖桶的
+ * **最大负荷%**（峰值保持：超配信息不因缩略丢失），bucketDays ≤ 0 的桶不参与（与负荷面板
+ * 口径一致）。输出与入参格数等长（几何稳定：空格 pct 0 不渲染但占位），pct 已取整、over
+ * = 原始 pct > 100（取整前判定，99.5% 不误标超配）。
+ */
+export function laneLoadCells(
+  buckets: number[],
+  bucketDays: number[],
+  cells: number = LANE_LOAD_CELLS,
+): Array<{ pct: number; over: boolean }> {
+  const n = buckets.length
+  if (n === 0 || cells <= 0) return []
+  const out: Array<{ pct: number; over: boolean }> = []
+  for (let c = 0; c < cells; c++) {
+    const lo = Math.floor((c * n) / cells)
+    const hi = Math.min(n, Math.max(lo + 1, Math.floor(((c + 1) * n) / cells)))
+    let best = 0
+    for (let i = lo; i < hi; i++) {
+      const days = bucketDays[i] ?? 0
+      if (days <= 0) continue
+      const pct = ((buckets[i] ?? 0) / days) * 100
+      if (pct > best) best = pct
+    }
+    out.push({ pct: Math.round(best), over: best > 100 })
+  }
+  return out
+}
+
 // ===== 选中态写入（行名 / 任务条） =====
 
 /**

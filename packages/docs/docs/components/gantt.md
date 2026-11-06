@@ -86,6 +86,7 @@
     <oas-button id="gantt-tm-dep" size="small">加依赖（所选→下一项）</oas-button>
     <oas-button id="gantt-tm-del" size="small" variant="outline">删除所选</oas-button>
     <oas-button id="gantt-tm-progress" size="small" variant="outline">改进度 +10</oas-button>
+    <oas-button id="gantt-tm-assign" size="small" variant="outline">切换资源分配（张三）</oas-button>
     <oas-button id="gantt-tm-zoomout" size="small" variant="outline">缩小</oas-button>
     <oas-button id="gantt-tm-zoomin" size="small" variant="outline">放大</oas-button>
     <oas-button id="gantt-tm-fit" size="small" variant="outline">适配</oas-button>
@@ -159,7 +160,7 @@
 - **任务约束**：`GanttTask.constraint`（`'asap'` 默认 / `'snet'` 不得早于 / `'mso'` 固定开始 / `'fnlt'` 不得晚于完成）+ `constraintDate`。`auto-schedule` 下：`snet` 取起始下限、`mso` 固定开始（不被依赖前推）、`fnlt` 为软截止（不自动移动）。违反（`snet` 早于下限 / `mso` 与依赖冲突或偏离 / `fnlt` 超期）在 **`show-critical-path` 或 `auto-schedule` 开启时**以 `.conflict` 标出。摘要行上的约束无意义（日期派生）→ 忽略并告警一次。
 - **工作日日历**：`workdays`（JSON 周几数组 `[0..6]`，opt-in；缺省/空 = 不限周几）+ `holidays`（**假日恒为非工作日**，与是否开 `workdays` 无关）。`auto-schedule` 的前推落点**吸附到下一个工作日**（跳过假日与 `workdays` 之外的日子）。运行期改 `workdays`/`holidays` 或整体重写 `tasks` 都会触发重新规整。
 - **逐资源日历**：`resources`（JSON `[{ id, name?, workdays?, holidays?, shifts? }]`）+ `GanttTask.resources`。任务分配多个资源时，`workdays` 取交集、`holidays` 取并集；`shifts: []` 表示该资源无可用班次（日级日历同步视为全周不可用）。`hour` 档 `auto-schedule` 会将起点吸附到班次窗口（班次内保留，班次间/班次后落到下一班次起点）；任务分配多个资源时，所有声明 `shifts` 的资源窗口取交集，未声明 `shifts` 的资源不约束；无共同班次时不吸附、不拖到任何一方单边班次。日级排程仍只消费 workdays/holidays。任务日历为空（`shifts: []` 或 workdays 交集为空）时，依赖推进**不会把任务排进不可用日**——保持原日期、devWarn 一次，并把该任务打 `.conflict` 标记（生产环境 devWarn 静默时仍可见）；下游任务按冻结后的原日期作为依赖锚点排程（可能早于祖先右缘，依赖违约会照常在前驱上标出）；`mso` 显式锚点不受此守卫影响。
-- **资源泳道**：`group-by-resource` 按任务首个 `resources` 生成资源摘要泳道（资源名取 `resources` 的 `name`，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层。与 `group-by-project` 同时开启时资源泳道优先。
+- **资源泳道**：`group-by-resource` 按任务首个 `resources` 生成资源摘要泳道（资源名取 `resources` 的 `name`，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层。与 `group-by-project` 同时开启时资源泳道优先。**泳道内嵌负荷**：每条泳道摘要行行尾渲染该资源全轴的负荷缩略条（固定格数降采样概览、峰值保持；格高 ∝ 负荷%，>100% 走 danger 通道）——配色复用负荷面板同 token 族（`--oas-gantt-load-bg` / `--oas-gantt-load-over-bg`，行宽 token `--oas-gantt-lane-load-width` 缺省 72px），暗色/print 随 token；装饰层（`aria-hidden` + hover title 显示峰值 %），不进 Tab 序。负荷统计与 `show-resource-load` 面板同一份缓存与口径（全量数据签名缓存；windowed 切片上跳过渲染并 devWarn 一次）。
 - **事件顺序**：`auto-schedule` 开启且联动改期时，无论交互提交（拖拽 / 键盘 / `updateTask` / `updateTasks`）还是宿主直接改写 `tasks`（属性通道），事件序统一为 `oas-reschedule`（联动订正）→ `oas-tasks-change`（订正后的最终数据）；拖拽 / 键盘改期收口随后再派发 `oas-task-change`（拖动的那个任务，`start/end` 取**订正后终值**）。一次操作只派发一次 `oas-tasks-change`。宿主以 `el.tasks` / `detail.task` 为准即可。
 
 <DemoBlock title="工作日日历：workdays=[工作日] 下拖前置，后置自动吸附到下一个工作日；连线 +2（lag）标签可见">
@@ -239,19 +240,25 @@ gantt.redo()
 
 ### 编辑弹窗（双击任务条）
 
-组件只派发 `oas-task-dblclick`；用 `oas-modal` + `oas-form` 组装详情编辑器：
+组件只派发 `oas-task-dblclick`；用 `oas-modal` + `oas-form` 组装详情编辑器。**资源分配**走同一编辑通道：池内已登记资源渲染为多选勾选（`oas-checkbox-group`，options 取 `getSharedResourcePool().list()`），任务引用的**未登记 id 渲染为只读 chip**（保存时原样保留，不丢数据）；保存统一经 `updateTask(id, { resources })` 写回（空数组 = 清空分配，清洗层自然删除字段）：
 
-<DemoBlock title="双击任务条打开编辑弹窗（oas-modal + oas-form），保存经 updateTask 写回">
-  <oas-gantt id="gantt-edit" creatable height="200"></oas-gantt>
+<DemoBlock title="双击任务条打开编辑弹窗（oas-modal + oas-form）：名称/日期/进度 + 资源分配多选（池内勾选、未登记只读 chip），保存经 updateTask 写回">
+  <oas-gantt id="gantt-edit" pool creatable height="200"></oas-gantt>
   <oas-modal id="gantt-edit-modal" title="编辑任务">
     <oas-form id="gantt-edit-form">
       <oas-form-item label="名称" name="name" required><oas-input name="name"></oas-input></oas-form-item>
       <oas-form-item label="开始" name="start" required><oas-date-picker name="start"></oas-date-picker></oas-form-item>
       <oas-form-item label="结束" name="end"><oas-date-picker name="end"></oas-date-picker></oas-form-item>
       <oas-form-item label="进度" name="progress"><oas-slider name="progress" show-value></oas-slider></oas-form-item>
+      <oas-form-item label="资源分配">
+        <oas-checkbox-group id="gantt-edit-res" direction="horizontal"></oas-checkbox-group>
+        <div id="gantt-edit-res-chips" style="display:flex;gap:var(--oas-space-1);flex-wrap:wrap;margin-top:var(--oas-space-1)"></div>
+      </oas-form-item>
     </oas-form>
   </oas-modal>
 </DemoBlock>
+
+> 任务管理器（上方「任务管理」demo）是同一编辑通道的另一处入口：选中行后用「切换资源分配」按钮经 `updateTask` 改派——两处入口共用池登记与写回口径，能对齐的都对齐。池未登记的 id（如 `ghost`）在弹窗里是只读 chip：不进勾选集、保存原样带回，宿主登记后自然升级为可勾选项。
 
 ### 导出（JSON / 打印 / 图片）
 
@@ -418,7 +425,7 @@ pool.register([{ id: 'alice', name: '张三（画布 A）', costRate: 120 }])
 ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
 ```
 
-> 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；资源泳道已由 `group-by-resource` 承载（见上节）；超配自动排程避让已由 `levelConflicts()` 方法承载（手动触发，见下方「超配避让」小节）。
+> 负荷可视化（负荷桶条、>100% 超配通道）已由 `show-resource-load` 承载，见下一节；资源泳道已由 `group-by-resource` 承载（见上节，泳道行内嵌负荷缩略）；超配自动排程避让已由 `levelConflicts()` 方法承载（手动触发，见下方「超配避让」小节，支持 `mode: 'reassign'` 改派）；**任务-资源分配编辑**由「编辑弹窗」小节的配方承载（池内多选勾选 + 未登记只读 chip，`updateTask` 写回）。
 
 ## 超配避让（levelConflicts）
 
@@ -432,20 +439,34 @@ ganttEl.resourcePool = pool // 实例隔离；写 null 恢复共享单例
   </div>
 </DemoBlock>
 
-`levelConflicts(options?)`（手动触发，pool 开启时可用）对当前任务的**池内资源冲突**做「整体后移受害者」迭代，直到无冲突或达上限。返回 `{ moved, unresolved, truncated, skipped }`：`moved` 为被移动任务的终态（`{ id, start, end }`，**已应用到组件数据**，宿主无需写回）；`unresolved` 为终检仍残留的冲突对（双侧不可让位或截断时非空）；`truncated` 表示达 `maxIter`（缺省 500，对齐 resource 的 `levelResources`）截断——**不静默**；`skipped` 为不参与的任务与原因（`summary` / `milestone` / `off-pool` / `invalid-dates`，与超配检测同口径）。
+`levelConflicts(options?)`（手动触发，pool 开启时可用）对当前任务的**池内资源冲突**做迭代消解，直到无冲突或达上限。返回 `{ moved, unresolved, truncated, skipped }`：`moved` 为被移动/改派任务的终态（`{ id, start, end }`，**已应用到组件数据**，宿主无需写回）；`unresolved` 为终检仍残留的冲突对（双侧不可让位或截断时非空）；`truncated` 表示达 `maxIter`（缺省 500，对齐 resource 的 `levelResources`）截断——**不静默**；`skipped` 为不参与的任务与原因（`summary` / `milestone` / `off-pool` / `invalid-dates`，与超配检测同口径）。
 
+- **模式 `mode`（缺省 `'shift'`，行为与旧版完全一致）**：
+  - `shift`：整体后移受害者（改日期、保工期）；
+  - `reassign`：改派受害者——**日期不动**，把冲突资源替换给「整段无冲突」的池内资源。目标判据与检测同源（目标上任一任务与受害者区间交叠即不可选——**改派后目标不得产生新冲突**，相切不算交叠）；多资源任务只替换冲突的那一个 id（数组序与池外 id 原样保留）；目标按「现役参与者最少」取最空闲、并列取池首见序；每次成功改派计一步（`maxIter` 预算共享）。**找不到可行目标该对放弃、终检如实回报 `unresolved`，不退化顺延**；`moved` 条目带改派后的完整 `resources` 数组，经 `updateTasks` 一次提交写回。非法 `mode` 值按 shift 处理并 devWarn 一次。
 - **受害者排序**：`disabled`、资源日历 days 空集（该资源无可排日）、`constraint: "mso"` 的任务**永不让位**；有 `deadline` 者后让位（都有按最晚 deadline 后让位）；并列时 startMs 晚者先让位、输入序靠后者先让位。
-- **平移与吸附**：每次整体后移 1 天（保墙钟时刻，跨夏令时不漂移；工期不变）；收敛后把落点吸附到工作日（`workdays` + `holidays` + 资源日历，逐日前进上限同款 400 天），吸附后复检一次交叠，复检不过继续迭代。每步只向后移动（单调），终止有界。
-- **应用与事件**：有移动时先派发 `oas-level`（`detail: { moved, unresolved, truncated }`），随后经 `updateTasks` 一次提交 = 一条 undo + 一次 `oas-tasks-change`；**零移动 = 零写入零事件零 history**（幂等，可安全重复调用）。
+- **资源日历进避让（权威口径）**：吸附日历 = **任务日历 ∩ 资源日历**——数据契约用 `resources` 属性的 `GanttResource`（`workdays` 与全局取交集、`holidays` 与全局取并集、`shifts: []` 视为全周不可用；池登记侧的 `capacityOverrides` 不参与本口径）。任务合并后的日历 days 为**空集**时该任务锁定不让位（与 `disabled` / `mso` 同级裁定）。
+- **平移与吸附（shift）**：每次整体后移 1 天（保墙钟时刻，跨夏令时不漂移；工期不变）；收敛后把落点吸附到工作日（按上面资源日历口径逐日前进，上限同款 400 天），吸附后复检一次交叠，复检不过继续迭代。每步只向后移动（单调），终止有界。
+- **应用与事件**：有移动/改派时先派发 `oas-level`（`detail: { moved, unresolved, truncated }`），随后经 `updateTasks` 一次提交 = 一条 undo + 一次 `oas-tasks-change`（避让/改派整体是一条事务，undo 同时还原日期与分配）；**零改动 = 零写入零事件零 history**（幂等，可安全重复调用）。
 - **守卫**（devWarn 一次 + 空结果）：`pool` 关、`windowed`（切片上避让会得到错误结果）、`readonly` / `dates-readonly`。
 
 ```ts
-const r = ganttEl.levelConflicts() // 或 levelConflicts({ maxIter: 200 })
+const r = ganttEl.levelConflicts() // 或 levelConflicts({ maxIter: 200 })、levelConflicts({ mode: 'reassign' })
 if (r.truncated) console.warn('迭代达上限，仍有残留冲突', r.unresolved)
 ganttEl.addEventListener('oas-level', (e) => {
   console.log(`避让移动 ${e.detail.moved.length} 条，残留 ${e.detail.unresolved.length} 对`)
 })
 ```
+
+<DemoBlock title="reassign 改派模式：张三双任务交叠 → 日期不动，受害者改派给空闲的李四（撤销可回位）">
+  <oas-gantt id="gantt-reassign-demo" pool history range-start="2026-03-01" range-end="2026-03-31" height="200"
+    tasks='[{"id":"ra1","name":"设计（张三）","start":"2026-03-02","end":"2026-03-06","progress":60,"resources":["alice"]},{"id":"ra2","name":"评审（张三，交叠）","start":"2026-03-05","end":"2026-03-09","progress":30,"resources":["alice"]}]'></oas-gantt>
+  <div style="margin-top:var(--oas-space-2);display:flex;gap:var(--oas-space-2);align-items:center;flex-wrap:wrap">
+    <oas-button id="gantt-reassign-run" size="small">改派 levelConflicts({ mode: 'reassign' })</oas-button>
+    <oas-button id="gantt-reassign-undo" size="small" variant="outline">撤销回位</oas-button>
+    <span id="gantt-reassign-out" style="font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)">改派前 ra2 与 ra1 交叠（张三超配）——点「改派」看结果（日期不动，ra2 改派李四）</span>
+  </div>
+</DemoBlock>
 
 ## 资源负荷视图（show-resource-load）
 
@@ -694,7 +715,7 @@ onMounted(async () => {
   if (tm && tmOut) {
     tm.tasks = [
       { id: 'd1', name: '需求梳理', start: '2026-03-02', end: '2026-03-06', progress: 100 },
-      { id: 'd2', name: '原型设计', start: '2026-03-05', end: '2026-03-11', progress: 60, dependencies: [{ id: 'd1' }] },
+      { id: 'd2', name: '原型设计（张三）', start: '2026-03-05', end: '2026-03-11', progress: 60, dependencies: [{ id: 'd1' }], resources: ['alice'] },
       { id: 'd3', name: '开发实现', start: '2026-03-10', end: '2026-03-20', progress: 20, dependencies: [{ id: 'd2' }] },
       { id: 'd4', name: '验收上线', start: '2026-03-20' },
     ]
@@ -732,6 +753,16 @@ onMounted(async () => {
       const n = tm.updateTasks([{ id, progress: Math.min(100, cur + 10) }])
       say(`updateTasks → 生效 ${n} 条`)
     })
+    // 资源分配（任务管理器入口）：与编辑弹窗同一 updateTask 写回通道——选中行切换张三分配
+    on('gantt-tm-assign', () => {
+      const id = tm.selection[0]
+      if (!id) return say('先在左侧点选一行')
+      const t = tm.tasks.find((x) => x.id === id)
+      const ids = Array.isArray(t?.resources) ? t.resources : []
+      const next = ids.includes('alice') ? ids.filter((r) => r !== 'alice') : [...ids, 'alice']
+      const ok = tm.updateTask(id, { resources: next })
+      say(ok ? `updateTask → ${id} resources=${JSON.stringify(next)}（${next.includes('alice') ? '已分配张三' : '已取消张三'}）` : '更新失败')
+    })
     say('点「＋」或双击空白可直接建任务；点按钮试命令式 API')
   }
 
@@ -755,17 +786,28 @@ onMounted(async () => {
     ]
   }
 
-  // 编辑弹窗 demo（双击条）
+  // 编辑弹窗 demo（双击条）+ 资源分配：池内登记 → 多选勾选；未登记 id → 只读 chip 原样保留；
+  // 保存统一经 updateTask({ resources }) 一次写回（与任务管理器「切换资源分配」按钮同通道）
   const ged = document.getElementById('gantt-edit')
   const gedModal = document.getElementById('gantt-edit-modal')
   const gedForm = document.getElementById('gantt-edit-form')
-  if (ged && gedModal && gedForm) {
+  const gedRes = document.getElementById('gantt-edit-res')
+  const gedChips = document.getElementById('gantt-edit-res-chips')
+  if (ged && gedModal && gedForm && gedRes) {
+    getSharedResourcePool().register([
+      { id: 'alice', name: '张三' },
+      { id: 'bob', name: '李四' },
+    ])
     ged.tasks = [
-      { id: 'e1', name: '设计', start: '2026-03-02', end: '2026-03-06', progress: 40 },
-      { id: 'e2', name: '开发', start: '2026-03-09', end: '2026-03-13', progress: 10 },
+      { id: 'e1', name: '设计（张三）', start: '2026-03-02', end: '2026-03-06', progress: 40, resources: ['alice'] },
+      { id: 'e2', name: '开发（李四 + 未登记 ghost）', start: '2026-03-09', end: '2026-03-13', progress: 10, resources: ['bob', 'ghost'] },
     ]
+    ged.tasks = ged.tasks // 池登记晚于组件首帧：重写 tasks 触发一次池消费重算
     const fld = (n) => gedForm.querySelector(`oas-input[name="${n}"], oas-date-picker[name="${n}"], oas-slider[name="${n}"]`)
+    const chipStyle =
+      'font-size:var(--oas-font-size-xs);padding:0 var(--oas-space-2);border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm);color:var(--oas-color-text-secondary)'
     let cur = ''
+    let unreg = []
     ged.addEventListener('oas-task-dblclick', (e) => {
       cur = e.detail.id
       const t = e.detail.task
@@ -773,12 +815,30 @@ onMounted(async () => {
       fld('start').value = t.start
       fld('end').value = t.end ?? ''
       fld('progress').value = t.progress ?? 0
+      // 资源分配：池内已登记 → 勾选多选（options 取池登记序）；未登记 id → 只读 chip
+      const reg = getSharedResourcePool().list()
+      gedRes.setAttribute('options', JSON.stringify(reg.map((r) => ({ label: r.name ?? r.id, value: r.id }))))
+      const ids = Array.isArray(t.resources) ? t.resources : []
+      gedRes.value = ids.filter((id) => reg.some((r) => r.id === id))
+      unreg = ids.filter((id) => !reg.some((r) => r.id === id))
+      gedChips.innerHTML = ''
+      for (const id of unreg) {
+        const chip = document.createElement('span')
+        chip.textContent = id
+        chip.title = '未登记资源（只读保留，登记后自动升级为可勾选）'
+        chip.setAttribute('style', chipStyle)
+        chip.setAttribute('data-unregistered', '')
+        gedChips.appendChild(chip)
+      }
       gedModal.setAttribute('visible', '')
     })
     gedModal.addEventListener('oas-ok', () => gedForm.submit())
     gedForm.addEventListener('oas-submit', (e) => {
       const v = e.detail.values
-      ged.updateTask(cur, { ...v, progress: Number(v.progress) })
+      // 池内勾选按池登记序归一（不随勾选先后漂移），未登记 chip id 原样殿后
+      const checked = gedRes.value
+      const ordered = getSharedResourcePool().list().map((r) => r.id).filter((id) => checked.includes(id))
+      ged.updateTask(cur, { ...v, progress: Number(v.progress), resources: [...ordered, ...unreg] })
     })
   }
 
@@ -851,6 +911,29 @@ onMounted(async () => {
     document.getElementById('gantt-level-undo')?.addEventListener('click', () => {
       const ok = levelDemo.undo()
       levelOut.textContent = ok ? '已撤销回位（恢复避让前日期）' : '没有可撤销的提交'
+    })
+  }
+
+  // reassign 改派 demo：mode: 'reassign' → 日期不动、受害者改派空闲资源；撤销回位
+  const reDemo = document.getElementById('gantt-reassign-demo')
+  const reOut = document.getElementById('gantt-reassign-out')
+  if (reDemo && reOut) {
+    reDemo.tasks = reDemo.tasks // 池登记晚于组件首帧：重写 tasks 触发一次超配重算
+    document.getElementById('gantt-reassign-run')?.addEventListener('click', () => {
+      const r = reDemo.levelConflicts({ mode: 'reassign' })
+      if (r.moved.length === 0) {
+        reOut.textContent = r.unresolved.length > 0
+          ? `无可改派目标，${r.unresolved.length} 对冲突如实保留（unresolved，不退化顺延）`
+          : '当前无冲突，未改派任何任务（幂等）'
+        return
+      }
+      const parts = r.moved.map((m) => `${m.id} 改派 → [${(m.resources ?? []).join(',')}]（日期 ${m.start} 不动）`)
+      if (r.unresolved.length > 0) parts.push(`残留 ${r.unresolved.length} 对`)
+      reOut.textContent = parts.join('；')
+    })
+    document.getElementById('gantt-reassign-undo')?.addEventListener('click', () => {
+      const ok = reDemo.undo()
+      reOut.textContent = ok ? '已撤销回位（恢复改派前分配）' : '没有可撤销的提交'
     })
   }
 })
@@ -996,7 +1079,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `removeDependency` | `removeDependency(taskId: string, dep: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf' }): boolean` | 删除依赖：dep.type 给出只删该 (id,type)；未给出删该 id 的全部类型。找不到返回 false。 |
 | `updateDependency` | `updateDependency(taskId: string, from: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }, to: { id: string; type?: 'fs' \| 'ss' \| 'ff' \| 'sf'; lag?: number }): boolean` | 改写依赖：from 找不到 / to.id 不存在或指向自身 / 无实际变化（含 lag）→ false。 |
 | `updateTasks` | `updateTasks(patches: Array<{ id: string } & Partial<GanttTask>>): number` | 批量浅合并（逐条：id 不存在跳过；end 给非空且解析失败跳过该条；其余走 sanitize 单条清洗， |
-| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | 超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果 |
+| `levelConflicts` | `levelConflicts(options: GanttLevelOptions): GanttLevelResult` | 超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。 |
 | `zoomIn` | `zoomIn(): void` | 向更细一档步进（写 scale 属性，既有回调派发 oas-scale-change）；最细档 no-op |
 | `zoomOut` | `zoomOut(): void` | 向更粗一档步进；最粗档 no-op |
 | `fit` | `fit(): void` | 缩放以容纳全部任务：取**最细且**能满足「跨度按该档单位折算的列数 × 该档最小列宽 ≤ 可用宽」的档 |
@@ -1008,7 +1091,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `oas-dependencies-change` | 连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务） |
 | `oas-expand-change` | 行树折叠/展开时派发，detail: { id, expanded } |
 | `oas-history-change` | history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear） |
-| `oas-level` | 超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change |
+| `oas-level` | 超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change；reassign 模式下 moved 条目带 resources（改派后的完整资源数组） |
 | `oas-progress-change` | 拖进度手柄收口时派发，detail: { id, task, progress } |
 | `oas-range-request` | 宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发 |
 | `oas-reparent` | 行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号） |
@@ -1051,6 +1134,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-header-height` | — | `44px` |
 | `--oas-gantt-height` | — | `320px` |
 | `--oas-gantt-holiday-bg` | — | `color-mix(in srgb, var(--oas-color-warning) 12%, var(--oas-color-bg))` |
+| `--oas-gantt-lane-load-width` | 泳道内嵌负荷缩略条宽度（group-by-resource 泳道摘要行行尾概览条）｜缺省 72px | `72px` |
 | `--oas-gantt-link-color` | — | `var(--oas-color-primary)` |
 | `--oas-gantt-list-width` | — | `220px` |
 | `--oas-gantt-load-bg` | 负荷桶条底色（≤100%，缺省 primary 45% 混底色；暗色变体随 token） | `color-mix(in srgb, var(--oas-color-primary) 45%, var(--oas-color-bg))` |
