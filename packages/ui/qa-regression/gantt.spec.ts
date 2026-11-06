@@ -2759,14 +2759,24 @@ test('gantt 超配避让 levelConflicts：oas-level 事件派发 + 冲突标注�
       document.querySelector('#gantt-level-demo')!.shadowRoot!.querySelectorAll('.conflict, [class*="conflict"]')
         .length,
   )
-  expect(conflictsBefore, '避让前池内冲突标注应非空（demo 数据带交叠）').toBeGreaterThan(0)
+  // demo 数据固定（张三双任务交叠）：精确断言 4 个冲突标注（2 条 × 行名/条各一处）
+  expect(conflictsBefore, '避让前池内冲突标注数（固定 demo 数据）').toBe(4)
   await page.click('#gantt-level-run')
-  await page.waitForTimeout(600)
+  // 事件驱动等待（不固定 sleep）：输出区切到「移动 N 条」即应用完成
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#gantt-level-out')?.textContent ?? ''
+      return t.includes('移动')
+    },
+    undefined,
+    { timeout: 10000 },
+  )
   const detail = await page.evaluate(
     () => (window as unknown as { __levelFired: Array<{ moved: unknown[] }> }).__levelFired[0],
   )
-  expect(detail, 'oas-level 事件应派发且 detail 带 moved').toBeTruthy()
-  expect(detail!.moved.length, 'demo 场景应至少移动 1 条').toBeGreaterThan(0)
+  // demo 场景确定性移动 1 条（lb）：事件派发 + detail 结构 + 精确移动数一并将死
+  expect(detail?.moved.length, 'oas-level detail.moved 应为 [lb]').toBe(1)
+  expect((detail?.moved[0] as { id?: string })?.id, '被移动任务应为 lb').toBe('lb')
   const conflictsAfter = await page.evaluate(
     () =>
       document.querySelector('#gantt-level-demo')!.shadowRoot!.querySelectorAll('.conflict, [class*="conflict"]')
@@ -2775,7 +2785,14 @@ test('gantt 超配避让 levelConflicts：oas-level 事件派发 + 冲突标注�
   expect(conflictsAfter, '避让后冲突标注应清零').toBe(0)
   // 幂等：二次调用零移动（demo 输出区文案切换）
   await page.click('#gantt-level-run')
-  await page.waitForTimeout(400)
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#gantt-level-out')?.textContent ?? ''
+      return t.includes('幂等') || t.includes('未移动')
+    },
+    undefined,
+    { timeout: 10000 },
+  )
   const output = await page.evaluate(() => document.querySelector('#gantt-level-out')?.textContent ?? '')
   expect(output, '二次调用应反馈幂等未移动').toContain('幂等')
 })
