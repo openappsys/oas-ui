@@ -60,7 +60,7 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 
 /* 错误：整条规则失效（含逗号分隔的兄弟选择器一起被丢） */
 #menu::part(item):hover,
-#menu::part(item)[aria-expanded='true'] {
+#menu::part(item)[aria-expanded="true"] {
   /* ... */
 }
 ```
@@ -105,9 +105,9 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 // Vite（含 Nuxt 的 vite 配置）
 export default defineConfig({
   resolve: {
-    dedupe: ['@oas-ui/i18n', '@oas-ui/core'],
+    dedupe: ["@oas-ui/i18n", "@oas-ui/core"],
   },
-})
+});
 ```
 
 - pnpm 可用 `overrides` 固定 `@oas-ui/i18n` 版本，或让 link 目标与宿主共用同一副本；
@@ -121,16 +121,16 @@ export default defineConfig({
 内置 10 种：`zh-CN`（默认）、`en`、`ja`、`ko`、`de`、`fr`、`es`、`pt`、`ru`、`ar`（RTL）。主入口只带 `zh-CN`，其余**按需加载**，不会进首屏：
 
 ```ts
-import { loadLocale, setLocale } from '@oas-ui/i18n'
-await loadLocale('ja') // 动态 import('@oas-ui/i18n/ja')，独立 chunk
-setLocale('ja')
+import { loadLocale, setLocale } from "@oas-ui/i18n";
+await loadLocale("ja"); // 动态 import('@oas-ui/i18n/ja')，独立 chunk
+setLocale("ja");
 ```
 
 也可静态按需引入（tree-shaking，只有用到的语言包进产物）：
 
 ```ts
-import ja from '@oas-ui/i18n/ja'
-setLocale(ja)
+import ja from "@oas-ui/i18n/ja";
+setLocale(ja);
 ```
 
 日期与数字格式化走原生 `Intl`（`Intl.DateTimeFormat` / `Intl.NumberFormat`），这些语言无需额外翻译即可正确显示；`first-day-of-week` 缺省值也按 locale 推导（欧陆/中文周一起始，日/韩/英/阿周日起始）。
@@ -151,3 +151,31 @@ body {
   color: var(--oas-color-text-primary);
 }
 ```
+
+## Web Components 取舍问答
+
+以下是选型评估时最常见的几个问题。每条都是本库在立项时就明确过的取舍，附对应文档。
+
+### RSC / Next.js 里怎么用？
+
+`useEffect` 动态注册是 Custom Elements 在 RSC 下的标准做法（React 侧无原生自定义元素水合）。但 SSR 链路不止这一条：本库支持 DSD 快照直出 + 真水合（shadow 复用零闪动），Nuxt/Next 均有集成与 e2e 覆盖，详见[服务端渲染](/guide/ssr)。
+
+### 没有框架 wrapper，React 里写事件会不会麻烦？
+
+不做框架 wrapper 是明确决策：React 19 起对 CE 原生支持已收窄互操作缺口，wrapper 只会增加一层运行时与维护面。本库提供参考级 `useOasEvent`（vendor 进项目即可），事件类型经 api-manifest 提供，详见[框架接入](/guide/frameworks)。
+
+### 复杂应用的共享状态怎么办？
+
+组件库不做应用级状态管理——这是刻意划的边界（同「不做路由/数据请求」）。宿主自有 store + `oas-*` 事件是标准答案；库内跨组件协调另有 config-provider 等 provider 模式，不裸奔 DOM 事件。
+
+### Shadow DOM 里样式调不动怎么办？
+
+样式隔离是设计决策，换来的是零样式污染与可预测的级联。定制三层开口：CSS 变量（token，覆盖绝大多数换肤/微调）→ `::part`（内部结构定制）→ slot 替换（内容结构接管）。详见[主题与自定义](/guide/theming)与[设计 Token](/guide/tokens)。
+
+### 表单怎么接原生协议 / 第三方校验库？
+
+本库走 form-associated 原生协议：label for 关联、FormData 收集、reset、required 校验链全部走原生，外部 `<form>` 直接可收数据。与 Formik 等库的适配成本属于「任何非原生控件」的通用边界，并非 Web Components 特有。
+
+### 按需引入多个组件，体积会不会叠加冗余？
+
+不会。去重靠 ES module 图 + bundler，与有无框架运行时无关；基类与公共 helper 均为单模块共享。且体积不是口头承诺：CI 有 perf:size 预算逐版本不退化，每个入口按需审计（全量天花板 + 按需绝对值两层）。

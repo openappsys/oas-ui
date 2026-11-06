@@ -8,7 +8,7 @@ Common questions and pitfalls from real-world integrations.
 
 The asChild / Slot / Portal concepts from the React ecosystem solve component-composition problems that grew out of the React model (eliminating library-imposed wrapper elements, mounting content elsewhere). Under Web Components those premises either do not exist or already have equivalents:
 
-- **Swapping the root element (the wrapper-elimination job of asChild / Slot)** — a Web Component itself (its host) *is* a real element in the DOM, so external layouts and selectors act on it directly; there is no library-imposed wrapper to strip. When a component must render as a different semantic element (e.g. a button that behaves as a link), use **attribute-driven root switching**: when `href` is present, buttons/tags render a native `<a>` internally and keep keyboard & disabled semantics (see the oas-button / oas-tag docs).
+- **Swapping the root element (the wrapper-elimination job of asChild / Slot)** — a Web Component itself (its host) _is_ a real element in the DOM, so external layouts and selectors act on it directly; there is no library-imposed wrapper to strip. When a component must render as a different semantic element (e.g. a button that behaves as a link), use **attribute-driven root switching**: when `href` is present, buttons/tags render a native `<a>` internally and keep keyboard & disabled semantics (see the oas-button / oas-tag docs).
 - **Using an arbitrary element as a trigger** (e.g. the common `Trigger asChild` composition) — the equivalent is the **default slot + a trigger attribute**: overlay components treat the default slot's first child as the trigger (any element / component), and a `trigger` attribute picks the mode (`click` / `hover` / `contextmenu`, …); panel content goes through the `content` attribute or named slots (`title` / `header` / `content` / `footer`, …). Events and ARIA are wired up internally by the component.
 - **Mounting content into `body` or another container (Portal / Teleport)** — the equivalent is the **`append-to` system**: overlay/pinned components such as tooltip / popover / modal / drawer accept `append-to="body"` to move the overlay into a target container while preserving style scoping and stacking contexts; removing it returns the node and leaves no orphaned elements.
 
@@ -21,7 +21,7 @@ When passing attributes to a custom element, if the name matches an **existing D
 How OAS-UI handles it:
 
 - **`prefix` / `suffix` / `blur`**: `prefix` collides with the read-only `Element.prefix`, and `blur` (oas-backdrop) with the `HTMLElement.blur()` method; `suffix` has no DOM counterpart and is handled symmetrically. The relevant components (input / input-number / statistic / countdown / tree-select / backdrop / mentions) **shadow** these names with property accessors mapped to the canonical attributes **`prefix-text` / `suffix-text` / `blur` / `trigger`** (mentions' `prefix` is a legacy alias of `trigger`) — so they work through **both channels**: React's `prefix="¥"` / `blur="blur(8px)"`, Vue's static/bound syntax, and plain HTML all behave. `prefix-text` / `suffix-text` are the canonical names and `prefix` / `suffix` are compatibility aliases; shadowing `blur` replaces that element's **native `blur()` method with the attribute accessor** (no practical impact on a backdrop). Under TypeScript, `blur` still shows the inherited method type (methods can't be declaration-merged), so to assign it as a property use the attribute or `setAttribute` instead.
-- **Other writable colliding attributes** (`title`, `dir`, `role`, `hidden`, `draggable`, `spellcheck`, `autofocus`, `id`, …) are **writable** DOM properties, so React / Vue writing them as properties reflects back to attributes normally. Two nuances for `title`: `oas-modal` / `oas-drawer` *consume* it — rendered into the title bar and then removed, so they do **not** trigger the browser's native tooltip and leave no attribute behind (expected behavior); on plain elements that don't consume it, the `title` attribute does fire the native tooltip. See the "Global attributes and the property channel" section in [Framework integration](/en/guide/frameworks) for the full React 19 mechanism (verified in Chromium, 2026-11-04).
+- **Other writable colliding attributes** (`title`, `dir`, `role`, `hidden`, `draggable`, `spellcheck`, `autofocus`, `id`, …) are **writable** DOM properties, so React / Vue writing them as properties reflects back to attributes normally. Two nuances for `title`: `oas-modal` / `oas-drawer` _consume_ it — rendered into the title bar and then removed, so they do **not** trigger the browser's native tooltip and leave no attribute behind (expected behavior); on plain elements that don't consume it, the `title` attribute does fire the native tooltip. See the "Global attributes and the property channel" section in [Framework integration](/en/guide/frameworks) for the full React 19 mechanism (verified in Chromium, 2026-11-04).
 - If you build your **own** custom element, avoid attribute names that match **read-only** `Element` / `HTMLElement` properties or methods (e.g. `prefix`, `blur`) — or shadow them with accessors the same way.
 
 ## Events
@@ -78,7 +78,7 @@ in the same rule — with no error whatsoever.
 
 /* wrong: the whole rule dies (comma-separated siblings die with it) */
 #menu::part(item):hover,
-#menu::part(item)[aria-expanded='true'] {
+#menu::part(item)[aria-expanded="true"] {
   /* ... */
 }
 ```
@@ -144,9 +144,9 @@ Deduplicating in the host build is still recommended to avoid duplicate code and
 // Vite (also the vite config of Nuxt)
 export default defineConfig({
   resolve: {
-    dedupe: ['@oas-ui/i18n', '@oas-ui/core'],
+    dedupe: ["@oas-ui/i18n", "@oas-ui/core"],
   },
-})
+});
 ```
 
 - With pnpm, pin `@oas-ui/i18n` via `overrides`, or make the link target and host share one copy;
@@ -162,16 +162,16 @@ Ten locales ship built in: `zh-CN` (default), `en`, `ja`, `ko`, `de`, `fr`, `es`
 **on demand** and never enter the initial bundle:
 
 ```ts
-import { loadLocale, setLocale } from '@oas-ui/i18n'
-await loadLocale('ja') // dynamic import('@oas-ui/i18n/ja'), a separate chunk
-setLocale('ja')
+import { loadLocale, setLocale } from "@oas-ui/i18n";
+await loadLocale("ja"); // dynamic import('@oas-ui/i18n/ja'), a separate chunk
+setLocale("ja");
 ```
 
 You can also import a pack statically (tree-shaking: only what you use ships):
 
 ```ts
-import ja from '@oas-ui/i18n/ja'
-setLocale(ja)
+import ja from "@oas-ui/i18n/ja";
+setLocale(ja);
 ```
 
 Date and number formatting go through native `Intl`
@@ -200,3 +200,54 @@ body {
   color: var(--oas-color-text-primary);
 }
 ```
+
+## Web Components trade-off FAQ
+
+The most common questions when evaluating the library. Each answer is a
+deliberate, documented trade-off — with links to the full details.
+
+### How do I use this with RSC / Next.js?
+
+Dynamic registration via `useEffect` is the standard pattern for custom
+elements under RSC (React has no native custom-element hydration). But SSR is
+not limited to that path: the library supports DSD snapshot rendering with
+true hydration (zero-flash shadow reuse), with Nuxt/Next integrations covered
+by e2e — see [SSR](/en/guide/ssr).
+
+### No framework wrappers — is event handling in React painful?
+
+Not shipping wrappers is a deliberate decision: React 19+ has largely closed
+the CE interop gap, and wrappers would only add runtime overhead and a
+maintenance surface. A reference `useOasEvent` helper (vendor it into your
+project) plus typed events from the api-manifest cover the gap — see
+[framework integration](/en/guide/frameworks).
+
+### What about shared state in complex apps?
+
+The component library intentionally does not do app-level state management
+(same boundary as "no routing / no data fetching"). Your own store plus
+`oas-*` events is the standard answer; in-library cross-component coordination
+uses provider patterns (e.g. config-provider), not bare DOM events.
+
+### Styles inside Shadow DOM are hard to tweak?
+
+Style isolation is by design — it buys zero style leakage and predictable
+cascade. Three customization channels cover overrides: CSS variables (tokens,
+covers most theming/fine-tuning) → `::part` (internal structure) → slot
+replacement (content structure). See [Theming](/en/guide/theming) and
+[Design Tokens](/en/guide/tokens).
+
+### How do forms integrate with native protocols / third-party validation?
+
+The library is form-associated: label `for` association, FormData collection,
+reset, and the required validation chain all use native protocols, so an outer
+`<form>` collects data directly. Adapter cost with libraries like Formik is a
+generic boundary for any non-native control, not specific to Web Components.
+
+### Does importing many components stack up bundle redundancy?
+
+No. Deduplication comes from the ES module graph + bundler, independent of any
+framework runtime; the base class and shared helpers are single shared modules.
+Bundle size is also not a verbal promise: CI enforces a perf:size budget that
+must not regress per version, with per-entry audits (both a whole-bundle
+ceiling and per-entry absolute limits).
