@@ -70,6 +70,13 @@ describe('table/range fill-series（填充序列推导纯函数）', () => {
     expect(inferFillValue([a, b], 2, 'down')).toBe(b)
   })
 
+  it('带时刻的 Date（整日差）→ 保留时刻按整日步进（对齐实现，非回退）', () => {
+    const a = new Date('2026-01-01T08:00:00Z')
+    const b = new Date('2026-01-02T08:00:00Z')
+    expect((inferFillValue([a, b], 1, 'down') as Date).toISOString()).toBe('2026-01-03T08:00:00.000Z')
+    expect((inferFillValue([a, b], 1, 'up') as Date).toISOString()).toBe('2025-12-31T08:00:00.000Z')
+  })
+
   it('日期与文本混列 → 循环复制', () => {
     expect(inferFillValue(['2026-01-01', '待定'], 1, 'down')).toBe('2026-01-01')
   })

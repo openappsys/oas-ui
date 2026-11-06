@@ -41,7 +41,7 @@ describe('table/range 填充柄（渲染条件与 a11y）', () => {
     setLocale('zh-CN')
   })
 
-  it('有激活选区默认渲染：role=button + 本地化 aria-label（zh）', () => {
+  it('有激活选区默认渲染：aria-hidden 指针专属入口 + 本地化 aria-label（zh）', () => {
     const el = mount([
       { id: 'a', name: 'A', age: 1 },
       { id: 'b', name: 'B', age: 2 },
@@ -49,10 +49,12 @@ describe('table/range 填充柄（渲染条件与 a11y）', () => {
     el.setAttribute('row-key', 'id')
     setRangeSelection(el, { row: 0, col: 'age' })
     const handle = handleOf(el, 0, 'age')!
-    expect(handle.getAttribute('role'), '选区激活后手柄渲染并带可发现角色').toBe('button')
-    expect(handle.getAttribute('aria-label')).toBe('填充柄')
     expect(handle.getAttribute('part')).toBe('fill-handle')
-    expect(handle.hasAttribute('aria-hidden'), '可发现入口不再 aria-hidden').toBe(false)
+    expect(handle.getAttribute('aria-label')).toBe('填充柄')
+    expect(handle.getAttribute('aria-hidden'), 'AT 视角诚实口径：v1 无键盘等价路径，隐藏不可键盘操作的入口').toBe(
+      'true',
+    )
+    expect(handle.hasAttribute('tabindex'), '不假装键盘可达').toBe(false)
   })
 
   it('aria-label 跟随 locale（en）', () => {
@@ -76,6 +78,22 @@ describe('table/range 填充柄（渲染条件与 a11y）', () => {
     expect(handleOf(el, 0, 'age')!.getAttribute('role'), '选区激活后手柄渲染').toBe('button')
     setRangeSelection(el, null)
     expect(el.shadowRoot!.querySelector('.range-fill-handle')).toBeNull()
+  })
+
+  it('反向拖选（右下 → 左上）：手柄落在选区几何右下角，而非焦点角', () => {
+    const el = mount([
+      { id: 'a', name: 'A', age: 1 },
+      { id: 'b', name: 'B', age: 2 },
+      { id: 'c', name: 'C', age: 3 },
+    ])
+    el.setAttribute('row-key', 'id')
+    // 锚点在右下 (row2, age)，焦点在左上 (row0, name)——旧实现按焦点角放手柄，位置反了
+    setRangeSelection(el, { row: 2, col: 'age' }, { row: 0, col: 'name' })
+    expect(handleOf(el, 2, 'age')?.getAttribute('part'), '活动选区右下角始终是手柄落点').toBe('fill-handle')
+    expect(handleOf(el, 0, 'name'), '焦点角不再决定手柄位置').toBeNull()
+    expect(cell(el, 2, 'age').classList.contains('range-fill-corner'), '右下角格带定位类（手柄绝对定位的包含块）').toBe(
+      true,
+    )
   })
 
   it('fill-handle="false" 移除手柄且拖拽失效；恢复缺省后回来', () => {

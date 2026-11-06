@@ -21,9 +21,10 @@ let outsideHandlers = new Map<HTMLElement, () => void>()
 
 /** 触屏同一手势的双通道去重窗口（pointerup 与紧随的合成 click 视为同一次 tap） */
 const OUTSIDE_DEDUPE_MS = 500
-/** 上一个被接受的外点通道与时刻：另一通道在窗口内到达即视为同一手势的第二次到达 */
-let lastOutsideChannel: 'click' | 'pointerup' | '' = ''
-let lastOutsideAt = 0
+/** 跨通道同手势的坐标容差：合成 click 与 pointerup 通常同点，允许极小抖动 */
+const OUTSIDE_DEDUPE_PX = 5
+/** 上一次被接受的外点手势（通道 + 时刻 + 坐标） */
+let lastOutside: { channel: 'click' | 'pointerup'; at: number; x: number; y: number } | null = null
 
 function ensureContainer(): HTMLElement {
   if (container && container.isConnected) return container
@@ -62,13 +63,22 @@ export function createOverlay(el: HTMLElement, options: OverlayOptions = {}): HT
 }
 
 function handleOutside(e: MouseEvent): void {
-  // 触屏同一次 tap 双通道到达（coarse pointerup + 合成 click），已去重：另一通道在窗口内
-  // 视为同一手势的第二次到达，忽略（不刷新时刻，避免连带吞掉随后的真实手势）。
+  // 触屏同一次 tap 双通道到达（coarse pointerup + 合成 click）：只对「另一通道 + 500ms 内 +
+  // 同一坐标点（≤5px）」去重。旧实现只按通道与时间判断，会把「触摸点浮层内部后、500ms 内
+  // 鼠标点外部」这类混合输入误当同一次手势吞掉。跨通道不比较 pointerId：合成 click 的
+  // pointerId 与触摸 pointerId 不一定一致（部分引擎缺失），坐标才是可靠的同手势信号。
   const channel: 'click' | 'pointerup' = e.type === 'pointerup' ? 'pointerup' : 'click'
   const now = performance.now()
-  if (lastOutsideChannel && lastOutsideChannel !== channel && now - lastOutsideAt < OUTSIDE_DEDUPE_MS) return
-  lastOutsideChannel = channel
-  lastOutsideAt = now
+  if (
+    lastOutside &&
+    lastOutside.channel !== channel &&
+    now - lastOutside.at < OUTSIDE_DEDUPE_MS &&
+    Math.abs(e.clientX - lastOutside.x) <= OUTSIDE_DEDUPE_PX &&
+    Math.abs(e.clientY - lastOutside.y) <= OUTSIDE_DEDUPE_PX
+  ) {
+    return
+  }
+  lastOutside = { channel, at: now, x: e.clientX, y: e.clientY }
   const path = e.composedPath()
   for (const [el, handler] of outsideHandlers) {
     if (!path.includes(el)) handler()
@@ -77,8 +87,7 @@ function handleOutside(e: MouseEvent): void {
 
 /** 重置去重状态（浮层全部移除后，下一位消费者不继承上一手势的通道） */
 function resetOutsideDedupe(): void {
-  lastOutsideChannel = ''
-  lastOutsideAt = 0
+  lastOutside = null
 }
 
 export function removeOverlay(el: HTMLElement): void {

@@ -50,4 +50,24 @@ describe('shared/outside-dismiss', () => {
     // 重复移除不抛错
     expect(() => removeOutsideDismiss(handler as unknown as (e: MouseEvent) => void)).not.toThrow()
   })
+
+  it('同一 handler 挂两个 root（iframe 双 document）都生效；remove 只摘指定 root', () => {
+    const fn = handler as unknown as (e: MouseEvent) => void
+    removeOutsideDismiss(fn) // 摘掉 beforeEach 挂在主 document 的那一份
+    const other = document.implementation.createHTMLDocument('iframe')
+    addOutsideDismiss(fn, document)
+    addOutsideDismiss(fn, other)
+    // 第二个 root 的 click 通道必须真的挂上（旧实现按 handler 单键幂等，第二次被吞）
+    other.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(handler).toHaveBeenCalledTimes(1)
+    // pointerup 桥同样按 root 各挂一份
+    other.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }))
+    expect(handler).toHaveBeenCalledTimes(2)
+    // 只摘 other：主 document 通道保留
+    removeOutsideDismiss(fn, other)
+    other.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(handler).toHaveBeenCalledTimes(2)
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(handler).toHaveBeenCalledTimes(3)
+  })
 })

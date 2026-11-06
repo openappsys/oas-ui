@@ -4,7 +4,8 @@
  * 拖拽填充柄时每个目标格的值由「源区沿填充方向的值序列」推导，语义对齐主流电子表格：
  * - 源区单值 → 复制（单值无数列可推差，数值/日期同样复制）；
  * - 数值列 → 按首差递增序列（`v[1] - v[0]` 为步长，非等差列取首差外推）；
- * - 日期 → 按日步进（首差取整数日；带时刻或非整日差时回退循环复制）；
+ * - 日期 → 按整日差步进（首差取整数日；Date 实例在原时刻上加减整日，即保留时刻；
+ *   首差含非整日成分时回退循环复制）；
  * - 其余（文本/布尔/混合列）→ 循环复制源区模式（多格源区按行列周期平铺）。
  *
  * 方向语义：`values` 恒为源区**自然显示序**（down/up 为行 top→bottom，left/right 为列
@@ -63,7 +64,9 @@ export function inferFillValue(values: readonly unknown[], step: number, directi
     return allNumericString ? String(next) : next
   }
 
-  // 日期列：全 `YYYY-MM-DD` 字符串或全 Date；首差取整数日（带时刻/非整日差回退循环）
+  // 日期列：全 `YYYY-MM-DD` 字符串或全 Date；首差按 Math.round 取整日，且差必须恰好等于
+  // 整数日——Date 实例保留原时刻加减整日步进（如 08:00 → 08:00 次日）；差里含非整日成分
+  // （小时/分钟偏移）时不做时刻步进，回退循环复制
   const allIsoString = values.every((v) => asIsoDate(v) !== null && typeof v === 'string')
   const allDate = values.every((v) => v instanceof Date)
   if (allIsoString || allDate) {

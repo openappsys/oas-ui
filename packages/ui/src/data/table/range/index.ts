@@ -167,6 +167,10 @@ td.range-focus {
 td.range-focus {
   position: relative;
 }
+/* 填充柄定位包含块：活动选区几何右下角（不一定是焦点格） */
+td.range-fill-corner {
+  position: relative;
+}
 /* 填充柄：本体透明只做命中区，菱形角标由 ::after 绘制（token 出口见 api cssVars：
    --oas-table-fill-handle-color / --oas-table-fill-handle-outline，暗色经语义 token 回退自动换档） */
 .range-fill-handle {
@@ -1202,6 +1206,9 @@ class RangeSelectionController {
       .map((range) => selectionRect(this.host, range))
       .filter((rect): rect is SelectionRect => rect !== null)
     const hasSelection = rects.length > 0
+    // 活动选区几何矩形：填充柄固定落在其右下角（min/max 归一化，与拖选方向无关）；
+    // 旧实现按焦点角放柄，反向拖选（右下 → 左上）会跑到左上角，与「选区右下角」不符
+    const activeRect = options.enabled ? selectionRect(this.host, keys) : null
     // grid-navigation 自带「容器单停靠 + 方向键漫游」；再改 td tabindex 会多出第二个停靠点
     const manageTabindex = options.enabled && !this.host.hasAttribute('grid-navigation')
     const grid = this.host.shadowRoot.querySelector<HTMLElement>('[role="grid"]')
@@ -1229,17 +1236,23 @@ class RangeSelectionController {
         td.classList.toggle('range-selected', selected)
         const isAnchor = Boolean(selected && keys && rowKey === keys.anchor.key && col === keys.anchor.col)
         const isFocus = Boolean(selected && keys && rowKey === keys.focus.key && col === keys.focus.col)
+        const isFillCorner = Boolean(
+          selected && activeRect && rowPos === activeRect.endRow && colIdx === activeRect.endCol,
+        )
         td.classList.toggle('range-anchor', isAnchor)
         td.classList.toggle('range-focus', isFocus)
-        if (options.enabled && isFocus && this.fillHandleEnabled() && !editing) {
+        td.classList.toggle('range-fill-corner', isFillCorner)
+        if (options.enabled && isFillCorner && this.fillHandleEnabled() && !editing) {
           let handle = td.querySelector<HTMLElement>('.range-fill-handle')
           if (!handle) {
             handle = document.createElement('span')
             handle.className = 'range-fill-handle'
             handle.setAttribute('part', 'fill-handle')
-            // 指针触达的拖拽入口（键盘等价路径 MVP 不做，注释留后续）：role + 本地化 aria-label
-            // 供读屏/辅助工具发现；i18n key `table.fillHandle`，translateText 不可用时回退中文
+            // 指针专属拖拽入口（v1 无键盘等价路径）：对辅助技术如实隐藏，避免暴露一个
+            // 键盘点不到的 button；role + 本地化 aria-label（i18n `table.fillHandle`，
+            // translateText 不可用时回退中文）保留为 DOM 标识，供指针工具/调试识别。
             handle.setAttribute('role', 'button')
+            handle.setAttribute('aria-hidden', 'true')
             td.appendChild(handle)
           }
           handle.setAttribute('aria-label', this.host.translateText?.('table.fillHandle') || '填充柄')

@@ -8,10 +8,11 @@ import { test, expect } from '@playwright/test'
 const TABLE_PAGE = '/components/table.html'
 const TABLE_ID = '#table-fill'
 
-/** 读填充柄元素（穿透 open shadow root）；down 为按下点：柄盒中心向焦点格中心内移 2px——
+/** 读填充柄元素（穿透 open shadow root）；down 为按下点：柄盒中心向所在格中心内移 2px——
  * 柄越出格角 3px 悬挂（inset-inline-end/bottom: -3px），中心点恰压格边界/滚动裁剪线，
  * 真浏览器 hit-test 在边界点不稳定（最后一列选区实测按空）；内移后必落在柄盒内未被
- * 裁剪的格内侧象限，LTR/RTL 通用（方向由「指向格心」的向量天然给出） */
+ * 裁剪的格内侧象限，LTR/RTL 通用（方向由「指向格心」的向量天然给出）。定位基准取柄的
+ * 父格（选区几何右下角），不依赖 td.range-focus——反向拖选时焦点角不是右下角 */
 async function handleBox(page: import('@playwright/test').Page) {
   return page.evaluate((sel) => {
     const el = document.querySelector(sel) as HTMLElement & { shadowRoot: ShadowRoot }
@@ -20,10 +21,10 @@ async function handleBox(page: import('@playwright/test').Page) {
     const r = handle.getBoundingClientRect()
     const cx = r.left + r.width / 2
     const cy = r.top + r.height / 2
-    const focus = el.shadowRoot.querySelector<HTMLElement>('td.range-focus')
+    const corner = handle.closest<HTMLElement>('td[data-col]')
     let down = { x: cx, y: cy }
-    if (focus) {
-      const f = focus.getBoundingClientRect()
+    if (corner) {
+      const f = corner.getBoundingClientRect()
       const fx = f.left + f.width / 2
       const fy = f.top + f.height / 2
       const dx = fx - cx
@@ -78,14 +79,21 @@ test.describe('table 拖拽填充柄', () => {
     )
   })
 
-  test('选区激活后手柄渲染：role=button + 本地化 aria-label（zh 页）', async ({ page }) => {
+  test('选区激活后手柄渲染：aria-hidden 指针专属入口 + 本地化 aria-label（zh 页）', async ({ page }) => {
     const box = await handleBox(page)
-    expect(box?.label, '选中数值区后手柄在焦格右下角渲染，aria-label 来自 i18n table.fillHandle').toBe('填充柄')
-    const role = await page.evaluate((sel) => {
+    expect(box?.label, '选中数值区后手柄在选区右下角渲染，aria-label 来自 i18n table.fillHandle').toBe('填充柄')
+    const a11y = await page.evaluate((sel) => {
       const el = document.querySelector(sel) as HTMLElement & { shadowRoot: ShadowRoot }
-      return el.shadowRoot.querySelector('.range-fill-handle')!.getAttribute('role')
+      const handle = el.shadowRoot.querySelector('.range-fill-handle')!
+      return {
+        role: handle.getAttribute('role'),
+        hidden: handle.getAttribute('aria-hidden'),
+        tabindex: handle.getAttribute('tabindex'),
+      }
     }, TABLE_ID)
-    expect(role).toBe('button')
+    expect(a11y.role).toBe('button')
+    expect(a11y.hidden, 'v1 无键盘等价路径：对辅助技术隐藏不可操作的入口').toBe('true')
+    expect(a11y.tabindex, '不假装键盘可达').toBeNull()
   })
 
   test('真指针拖拽：松开后填充提交且状态条可见反馈（一条写回事务）', async ({ page }) => {

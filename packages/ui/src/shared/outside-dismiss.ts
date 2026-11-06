@@ -16,26 +16,35 @@
  * （开态判定 / closeWith 去重），既有实现均满足。
  */
 
-/** handler → 该 handler 绑定的 pointerup 桥（remove 时取回同一引用） */
-const pointerUpBridges = new WeakMap<(e: MouseEvent) => void, (e: PointerEvent) => void>()
+/** handler → root → 该 root 上的 pointerup 桥（remove 时取回同一引用，按 handler+root 精确摘除） */
+const pointerUpBridges = new WeakMap<(e: MouseEvent) => void, Map<Document, (e: PointerEvent) => void>>()
 
 /** 挂接外点关闭（捕获阶段；面板 portal 到 body 也仍以 composedPath 判定内外） */
 export function addOutsideDismiss(handler: (e: MouseEvent) => void, root: Document = document): void {
-  if (pointerUpBridges.has(handler)) return
+  let bridges = pointerUpBridges.get(handler)
+  if (!bridges) {
+    bridges = new Map()
+    pointerUpBridges.set(handler, bridges)
+  }
+  // 幂等键是 handler + root：同一个 handler 可以同时挂主 document 与另一个 document
+  // （iframe / 多文档宿主），第二次挂不同 root 时不能被吞掉
+  if (bridges.has(root)) return
   const bridge = (e: PointerEvent): void => {
     if (e.pointerType === 'mouse' || e.pointerType === 'pen') return
     handler(e)
   }
-  pointerUpBridges.set(handler, bridge)
+  bridges.set(root, bridge)
   root.addEventListener('click', handler, true)
   root.addEventListener('pointerup', bridge, true)
 }
 
-/** 摘除外点关闭（与 addOutsideDismiss 成对；未挂接时幂等无副作用） */
+/** 摘除外点关闭（与 addOutsideDismiss 成对，按 handler + root 精确摘除；未挂接时幂等无副作用） */
 export function removeOutsideDismiss(handler: (e: MouseEvent) => void, root: Document = document): void {
-  const bridge = pointerUpBridges.get(handler)
-  if (bridge) {
-    pointerUpBridges.delete(handler)
+  const bridges = pointerUpBridges.get(handler)
+  const bridge = bridges?.get(root)
+  if (bridges && bridge) {
+    bridges.delete(root)
+    if (bridges.size === 0) pointerUpBridges.delete(handler)
     root.removeEventListener('pointerup', bridge, true)
   }
   root.removeEventListener('click', handler, true)

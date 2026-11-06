@@ -11,9 +11,11 @@ export type TableImportDelimiter = '\t' | ',' | ';'
 
 export interface ParseTableTextOptions {
   /**
-   * 分隔符：缺省 `'auto'` 嗅探——统计各候选（`\t` / `,` / `;`）在引号外的出现次数，
-   * 最多者胜（并列按 `\t` > `,` > `;` 顺序，Excel 粘贴板的标准 TSV 优先）；
-   * 全部为零时回落 `'\t'`（此时每行解析为单格）。显式指定时跳过嗅探。
+   * 分隔符：缺省 `'auto'` 嗅探——统计候选（`\t` / `,` / `;`）在引号外的出现次数。
+   * `\t` 出现即按 TSV（Excel 粘贴板的标准格式优先，不再与逗号比数量：两列 TSV 的第二列
+   * 常含逗号长文本，纯计数会把 TSV 误判成 CSV）；无 `\t` 时 `,` / `;` 取多者
+   * （并列按 `,` > `;`）。全部为零时回落 `'\t'`（此时每行解析为单格）。
+   * 显式指定时跳过嗅探。
    */
   delimiter?: TableImportDelimiter | 'auto'
 }
@@ -57,18 +59,32 @@ const CANDIDATES: readonly TableImportDelimiter[] = ['\t', ',', ';']
 
 /**
  * 引号外字符扫描（RFC 4180 口径）：返回 `fn` 对引号外每个字符的累计命中数。
- * `inQuotes` 为 true 时（引号内）跳过；`""` 为转义引号。
+ * 引号只在**字段起始**（行首或候选分隔符之后）开启引号态——字段中间的 `"`（如英寸符号
+ * `5" screen`）是普通字符，不能把后续分隔符/换行吞进引号；`""` 为引号内转义。
  */
 function scanOutsideQuotes(text: string, fn: (ch: string) => void): void {
   let inQuotes = false
+  let atCellStart = true
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]!
-    if (ch === '"') {
-      if (inQuotes && text[i + 1] === '"') i++
-      else inQuotes = !inQuotes
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') i++
+        else {
+          inQuotes = false
+          atCellStart = false
+        }
+      }
       continue
     }
-    if (!inQuotes) fn(ch)
+    if (ch === '"' && atCellStart) {
+      inQuotes = true
+      atCellStart = false
+      continue
+    }
+    fn(ch)
+    // 候选分隔符/行界重置字段起点；其余字符（含字段中间的 `"`）都是字段内容
+    atCellStart = ch === '\t' || ch === ',' || ch === ';' || ch === '\n' || ch === '\r'
   }
 }
 
@@ -96,7 +112,9 @@ function parseDelimited(text: string, delimiter: TableImportDelimiter): string[]
           i++
         } else inQuotes = false
       } else cell += ch
-    } else if (ch === '"') {
+    } else if (ch === '"' && cell === '') {
+      // 引号只在字段起始合法（RFC 4180）：字段中间的 `"`（英寸符号等）按普通字符保留，
+      // 否则会开启引号态把后续分隔符/换行吞进字段（`5" screen` 两行并一格）
       inQuotes = true
     } else if (ch === delimiter) {
       commitCell()
@@ -129,16 +147,24 @@ export function parseTableText(text: string, options: ParseTableTextOptions = {}
     scanOutsideQuotes(text, (ch) => {
       if (ch === '\t' || ch === ',' || ch === ';') counts.set(ch, (counts.get(ch) ?? 0) + 1)
     })
-    let best: TableImportDelimiter = '\t'
-    let bestCount = 0
-    for (const c of CANDIDATES) {
-      const n = counts.get(c) ?? 0
-      if (n > bestCount) {
-        best = c
-        bestCount = n
+    const tabCount = counts.get('\t') ?? 0
+    if (tabCount > 0) {
+      // TSV 优先语义：制表符在场即按 TSV 解析。制表符是列结构的强信号，而逗号常出现在
+      // 单列长文本里（两列 TSV 第二列 "Hello, world, again" 会让逗号计数反超）——
+      // 纯计数比多者会误判 CSV，故不和逗号比数量。
+      delimiter = '\t'
+    } else {
+      let best: TableImportDelimiter = '\t'
+      let bestCount = 0
+      for (const c of CANDIDATES) {
+        const n = counts.get(c) ?? 0
+        if (n > bestCount) {
+          best = c
+          bestCount = n
+        }
       }
+      delimiter = best // 全零时保持 '\t'（每行单格回落）
     }
-    delimiter = best // 全零时保持 '\t'（每行单格回落）
   } else {
     delimiter = raw
   }

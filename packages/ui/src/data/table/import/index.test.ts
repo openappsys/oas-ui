@@ -69,6 +69,36 @@ describe('table/import parseTableText（文本 → 二维矩阵）', () => {
     expect(parseTableText('')).toEqual({ matrix: [], delimiter: '\t', skippedRows: 0 })
     expect(parseTableText('\n\n')).toEqual({ matrix: [], delimiter: '\t', skippedRows: 0 })
   })
+
+  it('⑧ 字段中间的英寸符号不开启引号态：5" screen 不吞掉后续换行', () => {
+    const r = parseTableText('name,note\nA,5" screen\nB,ok')
+    expect(r.delimiter).toBe(',')
+    expect(r.matrix, '英寸符号是普通字符，不得把两行并成一格').toEqual([
+      ['name', 'note'],
+      ['A', '5" screen'],
+      ['B', 'ok'],
+    ])
+  })
+
+  it('⑨ 引号仅在字段起始生效：正常引号字段（含转义引号/换行）仍按 RFC 4180 解析', () => {
+    const r = parseTableText('a,b\n"x, ""quoted""" ,"多\n行"\nc,d')
+    expect(r.matrix).toEqual([
+      ['a', 'b'],
+      ['x, "quoted" ', '多\n行'],
+      ['c', 'd'],
+    ])
+  })
+
+  it('⑩ 两列 TSV 且第二列含逗号长文本：制表符在场即按 TSV 解析（不按逗号计数改判 CSV）', () => {
+    const text = 'name\tnote\nA\tHello, world, again\nB\tSecond, line, here'
+    const r = parseTableText(text)
+    expect(r.delimiter, '逗号数多于制表符数也不得把 TSV 改判为 CSV').toBe('\t')
+    expect(r.matrix).toEqual([
+      ['name', 'note'],
+      ['A', 'Hello, world, again'],
+      ['B', 'Second, line, here'],
+    ])
+  })
 })
 
 describe('table/import matrixToRecords（矩阵 → 对象数组）', () => {
