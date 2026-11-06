@@ -121,6 +121,10 @@ jobs:
       - name: Install Playwright browsers
         timeout-minutes: 30
         run: |
+          # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
+          # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
+          # 先切回官方源再装；失败不致命（镜像正常时无操作也是安全的）。
+          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium; then
@@ -176,6 +180,10 @@ jobs:
       - name: Install Playwright browsers
         timeout-minutes: 30
         run: |
+          # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
+          # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
+          # 先切回官方源再装；失败不致命（镜像正常时无操作也是安全的）。
+          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps chromium firefox; then
@@ -242,6 +250,10 @@ jobs:
       - name: Install Playwright browsers
         timeout-minutes: 30
         run: |
+          # apt 源故障自愈：GitHub runner 默认 azure 镜像索引陈旧/缺包时 apt 依赖装不上
+          # （2026-11-06 实发：libcodec2-1.2 拉取 exit 100，3 次重试耗尽拖垮全部 e2e 分片）。
+          # 先切回官方源再装；失败不致命（镜像正常时无操作也是安全的）。
+          sudo sed -i 's/azure\.archive\.ubuntu\.com/archive.ubuntu.com/g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
           for attempt in 1 2 3; do
             echo "== playwright install attempt $attempt/3 =="
             if timeout --kill-after=30s 480s pnpm exec playwright install --with-deps webkit; then
