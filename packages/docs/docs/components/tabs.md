@@ -264,6 +264,18 @@
   </div>
 </DemoBlock>
 
+`more` 与 `addable` 可叠加：溢出出现「…」的同时，`+` 固定在标签栏末尾（滚动区外）不被遮挡；点 `+` 新增的标签自动滚入可见区。`…` 与 `+` 的视觉顺序可用 `::part` 自定义（nav 是 flex 容器，给 `::part(more-button)` / `::part(add-button)` 设 `order` 即可）。
+
+<DemoBlock title="更多 + 新增共存">
+  <div style="max-width: 380px">
+    <oas-tabs id="tabs-more-add" more addable active="t1">
+      <oas-tab-panel v-for="i in 12" :key="i" :label="'标签' + i" :value="'t' + i"><p>内容 {{ i }}</p></oas-tab-panel>
+    </oas-tabs>
+  </div>
+</DemoBlock>
+
+> 点 + 试试：新标签追加到末尾、自动激活并滚入视口，「…」「+」始终可见。
+
 ## 面板显隐策略
 
 `panel-mode`：`keep`（默认，未激活面板 `hidden` 保留 DOM）/ `lazy`（未访问的面板内容不挂载，首次激活才渲染，之后常驻）/ `destroy`（切换即卸载非激活面板内容）。重内容面板（图表/编辑器）用 lazy/destroy 避免未激活面板持续占用资源。
@@ -536,6 +548,21 @@ onMounted(async () => {
       const first = editable.querySelector('oas-tab-panel')
       editable.setAttribute('active', first?.getAttribute('value') ?? '')
     }
+  })
+
+  // 更多 + 新增共存：点 + 追加面板并激活（oas-add 契约与动态增删一致）；more 模式下新标签自动滚入视口
+  const moreAdd = document.getElementById('tabs-more-add')
+  let moreSeq = 0
+  moreAdd?.addEventListener('oas-add', (e) => {
+    moreSeq += 1
+    const value = `new-${moreSeq}`
+    const panel = document.createElement('oas-tab-panel')
+    panel.setAttribute('label', `${e.detail.label} ${moreSeq}`)
+    panel.setAttribute('value', value)
+    panel.innerHTML = `<p>溢出共存示例：新标签 ${moreSeq} 已自动滚入可见区。</p>`
+    moreAdd.appendChild(panel)
+    moreAdd.setAttribute('active', value)
+    message?.info(`新增标签「${value}」`)
   })
 
   // 右键菜单：新建派发 oas-add（宿主追加面板并激活）；关闭按 oas-close 的 key 逐个移除面板（与 closable 同一契约）

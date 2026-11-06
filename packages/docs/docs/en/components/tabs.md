@@ -264,6 +264,18 @@ When there are more tabs than fit, the tab bar scrolls horizontally with left/ri
   </div>
 </DemoBlock>
 
+`more` and `addable` compose: when overflow shows "…", the `+` button stays pinned at the end of the tab bar (outside the scroll area, never occluded); tabs added via `+` auto-scroll into view. The visual order of "…" and `+` can be customized with `::part` (the nav is a flex container — set `order` on `::part(more-button)` / `::part(add-button)`).
+
+<DemoBlock title="More + add coexisting">
+  <div style="max-width: 380px">
+    <oas-tabs id="tabs-more-add" more addable active="t1">
+      <oas-tab-panel v-for="i in 12" :key="i" :label="'Tab ' + i" :value="'t' + i"><p>Content {{ i }}</p></oas-tab-panel>
+    </oas-tabs>
+  </div>
+</DemoBlock>
+
+> Click `+`: the new tab is appended, activated, and scrolled into view — "…" and `+` stay visible at all times.
+
 ## Panel visibility strategy
 
 `panel-mode`: `keep` (default, inactive panels stay in DOM via `hidden`) / `lazy` (unvisited panel content is not mounted until first activation, then stays) / `destroy` (inactive panel content is unmounted on switch). Use lazy/destroy for heavy panels (charts/editors) so inactive panels don't keep consuming resources.
@@ -537,6 +549,21 @@ onMounted(async () => {
       const first = editable.querySelector('oas-tab-panel')
       editable.setAttribute('active', first?.getAttribute('value') ?? '')
     }
+  })
+
+  // More + add coexisting: "+" appends and activates a panel (same oas-add contract as dynamic add/remove); in "more" mode the new tab auto-scrolls into view
+  const moreAdd = document.getElementById('tabs-more-add')
+  let moreSeq = 0
+  moreAdd?.addEventListener('oas-add', (e) => {
+    moreSeq += 1
+    const value = `new-${moreSeq}`
+    const panel = document.createElement('oas-tab-panel')
+    panel.setAttribute('label', `${e.detail.label} ${moreSeq}`)
+    panel.setAttribute('value', value)
+    panel.innerHTML = `<p>Coexistence demo: new tab ${moreSeq} has scrolled into view.</p>`
+    moreAdd.appendChild(panel)
+    moreAdd.setAttribute('active', value)
+    message?.info(`Added tab "${value}"`)
   })
 
   // Right-click menu: "New tab" fires oas-add (the host appends and activates a panel); each close removes the panel per oas-close key (same contract as closable)
