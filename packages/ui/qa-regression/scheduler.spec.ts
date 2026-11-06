@@ -1172,16 +1172,23 @@ test('scheduler 资源时间轴：跨日连续条不断列 + 键盘平移回写 
   // 7 天刻度；行 = 资源 + 未分配（ghost 事件归行）
   await expect(tl.locator('.res-tl-tick')).toHaveCount(7)
   await expect(tl.locator('.res-tl-row')).toHaveCount(3)
-  // 跨日事件 = 一条连续横条（08-11..08-14 = 4 天 ≈ 4/7 轴宽），不在列边界断开
+  // 跨日事件 = 一条连续横条（08-11..08-14 = 4 天），不在列边界断开。
+  // 宽比断言按「相邻刻度间距」归一（轴条含行名列头，直接比轴宽会随容器宽度漂移——CI 视口下
+  // 曾 0.464 < 0.5 误判红；dayW = 相邻 tick 的 x 差，与容器宽度/列头占比无关）
   const bar = tl.locator('.res-row[data-resource="a"] .res-tl-bar', { hasText: '驻场改造' })
   await expect(bar).toBeVisible()
-  const ratio = await tl.evaluate((host) => {
+  const dayCount = await tl.evaluate((host) => {
     const s = host.shadowRoot!
-    const b = s.querySelector<HTMLElement>('.res-row[data-resource="a"] .res-tl-bar')!
-    const axis = s.querySelector<HTMLElement>('.res-tl-axis')!
-    return b.getBoundingClientRect().width / axis.getBoundingClientRect().width
+    const b = [...s.querySelectorAll<HTMLElement>('.res-row[data-resource="a"] .res-tl-bar')].find((el) =>
+      el.textContent?.includes('驻场改造'),
+    )
+    const ticks = [...s.querySelectorAll<HTMLElement>('.res-tl-tick')]
+    if (!b || ticks.length < 2) return -1 // 前置断言（toBeVisible/hasText）会先将更精确的失败
+    const dayW = ticks[1]!.getBoundingClientRect().x - ticks[0]!.getBoundingClientRect().x
+    return b.getBoundingClientRect().width / dayW
   })
-  expect(ratio, '跨日条宽 ≈ 4/7 轴宽（4 天连续，无断口）').toBeGreaterThan(0.5)
+  expect(dayCount, '跨日条宽 ≈ 4 个日格（4 天连续，无断口）').toBeGreaterThan(3.5)
+  expect(dayCount, '跨日条宽 ≈ 4 个日格（4 天连续，无断口）').toBeLessThan(4.5)
   await expect(tl.locator('.res-row[data-resource=""] .res-tl-bar')).toContainText('外勤支持')
 
   // 键盘：聚焦横条 ArrowRight → date/endDate 整天平移并回写 events；焦点回同条
