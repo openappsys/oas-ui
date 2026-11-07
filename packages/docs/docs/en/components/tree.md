@@ -18,6 +18,29 @@ Click the expand arrow to show / hide child nodes; click a node label to select 
 
 Touch adaptation: the expand arrow stays visually 20px, while its hit area grows to the 44px touch target under coarse pointers (via an invisible ::before overlay), keeping both tap accuracy and visual density.
 
+<DemoBlock title="Persisting expansion (oas-expand → host storage → initial restore)">
+  <div style="width: 100%">
+    <oas-tree id="tree-persist" data='[{"key":"pa","label":"Node A","children":[{"key":"pa-1","label":"Child 1"},{"key":"pa-2","label":"Child 2"}]},{"key":"pb","label":"Node B","children":[{"key":"pb-1","label":"Child 1"}]},{"key":"pc","label":"Node C"}]'></oas-tree>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Persisted expanded keys: <span id="tree-persist-status" style="font-family: ui-monospace, monospace">—</span> (restored after a reload)
+    </p>
+  </div>
+</DemoBlock>
+
+To persist expansion, **listen to `oas-expand` — do not poll the `expanded` attribute**. Every interaction reports the change; store it and feed the key array back into `expanded` on the next render:
+
+```js
+const KEY = 'tree-expanded'
+tree.addEventListener('oas-expand', (e) => {
+  const keys = new Set(JSON.parse(localStorage.getItem(KEY) ?? '[]'))
+  e.detail.expanded ? keys.add(e.detail.key) : keys.delete(e.detail.key)
+  localStorage.setItem(KEY, JSON.stringify([...keys]))
+})
+tree.setAttribute('expanded', localStorage.getItem(KEY) ?? '[]') // initial restore
+```
+
+`oas-expand` covers every **user interaction** (expand arrow, `expand-trigger="node"`, keyboard →/←); the imperative methods (`expand` / `collapse` / `expandAll` / `collapseAll` / `scrollTo`) only write `expanded` and emit no event — if you use them, persist the attribute yourself after the call.
+
 ## Controlled Expansion and Selection
 
 <DemoBlock title="Initial expansion and selection">
@@ -161,6 +184,17 @@ Imperative methods (data stays host-controlled; the methods only recompute the e
 
 With `lazy`, nodes without `children` and not marked `isLeaf` / `loaded` are considered "not loaded": clicking the expand arrow emits `oas-load` (`detail: { key }`) and calls the `load` callback; the host refills the child nodes and resets the `data` attribute. During loading, a loading placeholder is shown in place of the expand arrow (replaceable via `template[slot="toggle-loading"]`); after the fill-in completes, the node auto-expands and the placeholder is removed. When the `load` callback returns a Promise that rejects, the component clears the loading state, rolls the expansion back, and emits `oas-load-error` (`detail: { key, error }`) — the node is clickable again to retry. Nodes marked `isLeaf: true` do not show an expand arrow.
 
+> **⚠️ Under lazy loading the expanded state belongs to the component: read `oas-expand` for persistence, never write `expanded` back.**
+> Expansion caused by interactions is already written into `expanded` by the component. If the host also writes its
+> own cached expansion set back, the loading state and the component state keep overwriting each other — typically
+> **an already-collapsed folder gets resurrected**, and refilled data plus the expansion set compound until the row
+> count grows without bound (observed in a host app). Persist by listening to `oas-expand`
+> (`detail: { key, expanded, node }`) only, restore once on the initial render, and never poll `expanded` to infer state.
+>
+> To **refresh a single folder** (re-fetch its children): collapse the node, then remove its `children` from `data`
+> (do not set `children: []` — an empty array means "loaded and empty"), reset `data`, then expand again to trigger
+> `oas-load` anew.
+
 ## Node Drag and Drop
 
 <DemoBlock title="Draggable (reorder / reparent)">
@@ -198,11 +232,31 @@ tree.allowDrag = (node) => node.key !== 'item-1' // this node cannot be dragged
 `virtual` turns on client-side virtual scrolling: the tree flattens the currently expanded, visible nodes into a linear list and renders only the slice that fits the viewport (reusing `oas-virtual-list`). With tens of thousands of nodes the DOM holds only "viewport rows + top/bottom buffer", and scrolling just recomputes the window.
 
 - `height`: viewport height (px, default `360`); `item-height`: row height (px, default `32`; the default can be overridden with the `--oas-tree-row-height` token, `row-height` is the legacy name and `item-height` wins when both are present).
+- `height="fill"`: follow the container height (see below) — the right choice when the tree should fill a panel.
 - Expanding / collapsing / data changes recompute the window immediately and keep the scroll position (no jump back to the top). The expanded state still lives in the `expanded` attribute and survives scrolling and re-renders.
 - Keyboard navigation (↑↓ / Home / End / →←) and `scrollTo()` work against the **full flattened list**: when the target row is outside the window it is scrolled into view and then focused, so moving across windows never stalls.
 - ARIA keeps full-data semantics: each row's `aria-posinset` / `aria-setsize` reflect its position in the whole hierarchy, not in the rendered slice.
 
 > Compatibility: the previous usage with only `height` (no `virtual`) still enables virtual scrolling, unchanged.
+
+### Container-driven height (height="fill")
+
+<DemoBlock title="height=&quot;fill&quot; fills the container (240px box, 8px padding)">
+  <div style="height: 240px; padding: 8px; box-sizing: border-box; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <oas-tree id="tree-fill" height="fill" item-height="32" expanded='["f0"]' data='[{"key":"f0","label":"Project A","children":[{"key":"f0-1","label":"Task 1"},{"key":"f0-2","label":"Task 2"},{"key":"f0-3","label":"Task 3"}]},{"key":"f1","label":"Project B"},{"key":"f2","label":"Project C"},{"key":"f3","label":"Project D"},{"key":"f4","label":"Project E"},{"key":"f5","label":"Project F"},{"key":"f6","label":"Project G"},{"key":"f7","label":"Project H"},{"key":"f8","label":"Project I"},{"key":"f9","label":"Project J"}]'></oas-tree>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+    The tree follows the container's content box (240 − 16 padding − 2 border) and re-fits when the container resizes.
+  </p>
+</DemoBlock>
+
+`height="fill"` makes the component measure the content box of its **direct parent** (`clientHeight` minus top/bottom `padding`):
+
+- **Do not sync the container's pixel height into the `height` attribute by hand** — that creates a "measure → write attribute → re-render → measure again" feedback loop (a host measured a steady +8px per second), and forgetting to subtract padding leaves a fixed offset. With `fill`, a built-in ResizeObserver follows the container: it only updates the internal viewport height and **never writes back to `height`**; callbacks with an unchanged value (including sub-pixel jitter) are skipped.
+- The parent must be a **definite-height** container (fixed height / flex / grid stretch). If the parent's height is driven by its content there is no spare space to fill, and `fill` degrades to the current viewport height. When several trees share one container, wrap each in its own element — `fill` measures the **direct parent**.
+- `height="fill"` enables virtual scrolling just like setting `height` alone.
+- The `check-all` row and the tree's own vertical padding are subtracted from the available height, so the tree is never pushed past the container bottom.
+- When no size can be measured (hidden / unlaid-out container) it falls back to the default `360`, and the ResizeObserver corrects it once the container becomes visible.
 
 ## Custom Node Rendering
 
@@ -329,6 +383,35 @@ Every expand/collapse interaction (toggle arrow, `expand-trigger="node"`, keyboa
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
+  // Expansion persistence demo: oas-expand → localStorage → initial restore into expanded.
+  // Demonstrates API discoverability: no need to poll the expanded attribute (imperative
+  // methods emit no event — see the prose note above).
+  const persistTree = document.querySelector('#tree-persist')
+  if (persistTree) {
+    const PERSIST_KEY = 'oas-tree-persist-demo'
+    const readKeys = () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PERSIST_KEY) ?? '[]')
+        return Array.isArray(raw) ? raw : []
+      } catch {
+        return []
+      }
+    }
+    const showKeys = () => {
+      const el = document.querySelector('#tree-persist-status')
+      if (el) el.textContent = readKeys().join(', ') || '—'
+    }
+    persistTree.setAttribute('expanded', JSON.stringify(readKeys())) // initial restore
+    showKeys()
+    persistTree.addEventListener('oas-expand', (e) => {
+      const keys = new Set(readKeys())
+      if (e.detail.expanded) keys.add(e.detail.key)
+      else keys.delete(e.detail.key)
+      localStorage.setItem(PERSIST_KEY, JSON.stringify([...keys]))
+      showKeys()
+    })
+  }
+
   // whenDefined guards against pre-upgrade expando shadowing the load property
   customElements.whenDefined('oas-tree').then(() => {
     const failTree = document.querySelector('#tree-lazy-fail')
@@ -759,7 +842,7 @@ The insertion line and inner-drop highlight can be themed with CSS variables (th
 | `field-names` | Field-alias JSON (e.g. `{"label":"name","value":"id","children":"subs"}`; data is not copy-mapped — node-render receives your original objects) | `string` | — |
 | `filter` | In-tree search filter (keyword input; pair with filter-highlight and el.filterNode) | `string` | — |
 | `filter-highlight` | Highlight matched fragments (mark tag) | `boolean` | — |
-| `height` | Virtual scroll viewport height (px), default 360; works with virtual (the legacy usage with only height still enables virtual scrolling) | `string` | `360` |
+| `height` | Virtual scroll viewport height in px (default 360), or `fill` to follow the parent container's content box (padding excluded) and track container size changes — with `fill` the host must not sync the container height into this attribute; works with virtual (the legacy usage with only height still enables virtual scrolling) | `string` | `360` |
 | `item-height` | Virtual row height (px), default 32; the default can be overridden with the `--oas-tree-row-height` token (`row-height` is the legacy name and `item-height` wins when both are present) | `string` | — |
 | `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
 | `motion` | Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion` | `boolean` | — |

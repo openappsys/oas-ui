@@ -19,6 +19,29 @@
 
 触屏适配：展开按钮图标保持 20px，触控（coarse pointer）下命中区自动扩到 44px 触控目标（透明热区外扩），点中率与视觉密度兼顾。
 
+<DemoBlock title="展开态持久化（oas-expand → 宿主存储 → 初始回灌）">
+  <div style="width: 100%">
+    <oas-tree id="tree-persist" data='[{"key":"pa","label":"节点 A","children":[{"key":"pa-1","label":"子节点 1"},{"key":"pa-2","label":"子节点 2"}]},{"key":"pb","label":"节点 B","children":[{"key":"pb-1","label":"子节点 1"}]},{"key":"pc","label":"节点 C"}]'></oas-tree>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      已持久化的展开 key：<span id="tree-persist-status" style="font-family: ui-monospace, monospace">—</span>（刷新页面后恢复）
+    </p>
+  </div>
+</DemoBlock>
+
+展开态持久化**监听 `oas-expand` 即可，不要轮询 `expanded` 属性**——每次交互都会带出变更明细，回写宿主存储后下次渲染把 key 数组灌回 `expanded`：
+
+```js
+const KEY = 'tree-expanded'
+tree.addEventListener('oas-expand', (e) => {
+  const keys = new Set(JSON.parse(localStorage.getItem(KEY) ?? '[]'))
+  e.detail.expanded ? keys.add(e.detail.key) : keys.delete(e.detail.key)
+  localStorage.setItem(KEY, JSON.stringify([...keys]))
+})
+tree.setAttribute('expanded', localStorage.getItem(KEY) ?? '[]') // 初始回灌
+```
+
+`oas-expand` 覆盖全部**用户交互**（展开箭头、`expand-trigger="node"`、键盘 →/←）；命令式方法（`expand` / `collapse` / `expandAll` / `collapseAll` / `scrollTo`）只写 `expanded` 不派发事件，若同时使用请在调用后自行持久化该属性。
+
 ## 受控展开与选中
 
 <DemoBlock title="初始展开与选中">
@@ -162,6 +185,15 @@
 
 设置 `lazy` 后，无 `children` 且未标记 `isLeaf` / `loaded` 的节点视为「未加载」：点击展开箭头派发 `oas-load`（`detail: { key }`）并调用 `load` 属性回调，由宿主回填子节点后重设 `data` 属性；加载期间展开箭头位置显示 loading 占位（可 `template[slot="toggle-loading"]` 替换），回填完成后自动展开并收起占位。`load` 回调返回 Promise 且 reject 时：自动清除加载态、回滚展开、派发 `oas-load-error`（`detail: { key, error }`），节点恢复为可再次点击重试。标记 `isLeaf: true` 的节点不显示展开箭头。
 
+> **⚠️ 懒加载下展开态归组件所有：宿主只读 `oas-expand` 做持久化，绝不回写 `expanded` 属性。**
+> 交互产生的展开/收起已经由组件写进 `expanded`；宿主再按自己缓存的展开集合回写，会在加载态与
+> 组件状态之间来回覆盖，典型后果是**已收起的目录被级联「复活」**、回填数据与展开集合互相叠加使行数
+> 无限增长（宿主实踩）。持久化请只监听 `oas-expand`（`detail: { key, expanded, node }`）落存储，
+> 初始渲染时回灌一次；不要轮询 `expanded` 属性反推状态。
+>
+> 需要**刷新单个目录**（重新拉取子节点）：先收起该节点，再从 `data` 里移除它的 `children`（注意不要
+> 写成 `children: []`——空数组表示「已加载且为空」），重设 `data` 后再展开即可重新走 `oas-load`。
+
 ## 节点拖拽
 
 <DemoBlock title="可拖拽（拖动换序 / 换父）">
@@ -199,11 +231,31 @@ tree.allowDrag = (node) => node.key !== 'item-1' // 该节点不可被拖动
 `virtual` 开启客户端虚拟滚动：树把「当前展开可见的节点」拍平成线性列表，再按视口切片渲染（复用 `oas-virtual-list`），万级节点下实际行数只有「视口行数 + 上下 buffer」，滚动时只重算窗口。
 
 - `height`：视口高度（px，缺省 `360`）；`item-height`：行高（px，缺省 `32`，行高缺省可用 `--oas-tree-row-height` token 覆盖，`row-height` 为旧名，两者同时在场时以 `item-height` 为准）。
+- `height="fill"`：跟随容器高度（见下节），适合「树填满某个面板」的布局。
 - 展开 / 收起 / 数据增删后窗口立即重算，滚动位置保持（不会跳回顶部）；展开状态仍保存在 `expanded` 属性中，滚动与重渲染均不丢失。
 - 键盘导航（↑↓ / Home / End / →←）与 `scrollTo()` 按**全量拍平列表**定位：目标行不在窗口内时先滚入视口再聚焦，跨窗口移动不中断。
 - ARIA 保持全量口径：行的 `aria-posinset` / `aria-setsize` 反映它在全量层级中的位置，不因窗口切片而变。
 
 > 兼容：既有用法只设 `height`（不写 `virtual`）同样开启虚拟滚动，行为不变。
+
+### 容器自适应高度（height="fill"）
+
+<DemoBlock title="height=&quot;fill&quot; 填满容器（容器 240px、padding 8px）">
+  <div style="height: 240px; padding: 8px; box-sizing: border-box; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <oas-tree id="tree-fill" height="fill" item-height="32" expanded='["f0"]' data='[{"key":"f0","label":"项目 A","children":[{"key":"f0-1","label":"任务 1"},{"key":"f0-2","label":"任务 2"},{"key":"f0-3","label":"任务 3"}]},{"key":"f1","label":"项目 B"},{"key":"f2","label":"项目 C"},{"key":"f3","label":"项目 D"},{"key":"f4","label":"项目 E"},{"key":"f5","label":"项目 F"},{"key":"f6","label":"项目 G"},{"key":"f7","label":"项目 H"},{"key":"f8","label":"项目 I"},{"key":"f9","label":"项目 J"}]'></oas-tree>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+    树按容器内容盒高度（240 − 16 padding − 2 边框）自适应，容器尺寸变化时自动跟随。
+  </p>
+</DemoBlock>
+
+`height="fill"` 让组件自己量**直接父元素**的内容盒高度（`clientHeight` − 上下 `padding`）：
+
+- **不要手工把容器 px 同步进 `height` 属性**——那会形成「测量 → 写属性 → 重渲染再测量」的反馈循环（宿主实踩：每秒 +8px 长高），而漏减 padding 还会有固定错位。`fill` 由组件内建 ResizeObserver 跟随，只写内部视口高、**从不写回 `height` 属性**；同值（含亚像素抖动）回调直接跳过，不做无谓重算。
+- 父元素必须是**尺寸确定**的容器（固定高 / flex / grid 拉伸）。父元素高度由内容撑开时没有「可填充」的富余空间，`fill` 会退化为当前视口高。同一容器里放多棵树时请各自包一层，`fill` 量的是**直接父级**。
+- `height="fill"` 与只设 `height` 一样开启虚拟滚动。
+- `check-all` 行与树自身上下 padding 会从可用高度里扣除，树不会被顶出容器底部。
+- 量不到尺寸（容器隐藏 / 未布局）时回落缺省 `360`，容器可见后由 ResizeObserver 补上真值。
 
 ## 自定义节点渲染
 
@@ -337,6 +389,34 @@ onMounted(() => {
     const span = document.querySelector('#tree-check')
     span.textContent = span.textContent === '—' ? e.detail.key : `${span.textContent}、${e.detail.key}`
   })
+
+  // 展开态持久化 demo：oas-expand → localStorage → 初始回灌 expanded（API 可发现性示范：
+  // 不需要轮询 expanded 属性；命令式方法不派发该事件，见正文说明）
+  const persistTree = document.querySelector('#tree-persist')
+  if (persistTree) {
+    const PERSIST_KEY = 'oas-tree-persist-demo'
+    const readKeys = () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PERSIST_KEY) ?? '[]')
+        return Array.isArray(raw) ? raw : []
+      } catch {
+        return []
+      }
+    }
+    const showKeys = () => {
+      const el = document.querySelector('#tree-persist-status')
+      if (el) el.textContent = readKeys().join('、') || '—'
+    }
+    persistTree.setAttribute('expanded', JSON.stringify(readKeys())) // 初始回灌
+    showKeys()
+    persistTree.addEventListener('oas-expand', (e) => {
+      const keys = new Set(readKeys())
+      if (e.detail.expanded) keys.add(e.detail.key)
+      else keys.delete(e.detail.key)
+      localStorage.setItem(PERSIST_KEY, JSON.stringify([...keys]))
+      showKeys()
+    })
+  }
 
   // 展开/收起事件 demo：oas-expand 可见反馈（label + 展开态）
   const expandTree = document.querySelector('#tree-expand-event')
@@ -757,7 +837,7 @@ windowed 的本地能力边界：**本地 `filter` 与顶部全选（`check-all`
 | `field-names` | 字段别名 JSON（如 `{"label":"name","value":"id","children":"subs"}`；原始数据不拷贝映射，node-render 拿到宿主原对象） | `string` | — |
 | `filter` | 树内搜索过滤（输入关键词；配 filter-highlight 高亮与 el.filterNode 自定义） | `string` | — |
 | `filter-highlight` | 搜索命中片段高亮（mark 标记） | `boolean` | — |
-| `height` | 虚拟滚动视口高度（px），默认 360；与 virtual 配合（历史用法只设 height 也仍开启虚拟滚动） | `string` | `360` |
+| `height` | 虚拟滚动视口高度：像素值（默认 360），或 `fill`（跟随父容器内容盒高度、扣 padding，容器尺寸变化自动跟随；用 `fill` 时宿主不要手工同步高度）；与 virtual 配合（历史用法只设 height 也仍开启虚拟滚动） | `string` | `360` |
 | `item-height` | 虚拟滚动行高（px），默认 32；缺省可用 `--oas-tree-row-height` token 覆盖（`row-height` 为旧名，两者同时在场时以 item-height 为准） | `string` | — |
 | `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
 | `motion` | 展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用 | `boolean` | — |

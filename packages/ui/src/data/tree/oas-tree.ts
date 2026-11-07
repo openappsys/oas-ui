@@ -478,6 +478,11 @@ function warnInvalidTreeSize(raw: string): void {
  * （缺省 32，`row-height` 为旧名，均可用 `--oas-tree-row-height` token 覆盖缺省）；开启后经内嵌
  * oas-virtual-list 仅渲染可见窗口行，展开/收起与数据变更时窗口重算且保持滚动位置。
  *
+ * `height="fill"`（容器自适应）：组件量**父容器内容盒**（clientHeight − 上下 padding，再扣树自身
+ * padding 与 check-all 行高）作为视口高，并用内建 ResizeObserver 跟随容器尺寸变化。只写内部视口高、
+ * 不写回 `height` 属性——宿主不要再手工把容器 px 同步进 height（那会形成测量→写属性→再测量的
+ * 生长循环，且漏减 padding 时会有固定错位）。父容器须是尺寸确定的容器（固定高 / flex / grid 拉伸）。
+ *
  * windowed（服务端根节点窗口协议，可选）：`windowed` + `total`（全量根节点数）+
  * `window-start`（`data[0]` 的绝对根下标）三属性齐全（total 为正数）时生效。
  * tree 是层级数据，窗口只对**根节点**切片：`data` 仅承载 `[window-start, window-start + data.length)`
@@ -508,7 +513,7 @@ export class OASTree extends OASElement {
       // 客户端虚拟滚动开关（布尔）：与 height / item-height 配合，缺省视口高 360、行高 32；
       // 历史用法「仅设 height」仍开启虚拟化（向后兼容）
       'virtual',
-      // 虚拟滚动视口高度（px）；与 virtual 同用，缺省 360
+      // 虚拟滚动视口高度：像素值，或 'fill'（量父容器内容盒、随容器尺寸自适应）
       'height',
       // 虚拟滚动行高（px，默认 32，可用 --oas-tree-row-height token 覆盖缺省）
       'item-height',
@@ -597,6 +602,17 @@ export class OASTree extends OASElement {
   private virtualRenderCtx: { checked: Set<string>; expanded: Set<string>; selected: string[] } | null = null
   /** token 缺省行高缓存（update 起始失效；滚动帧内不重复读 computed style，避免样式重算抖动） */
   private rowHeightToken = 0
+
+  // ---------- height="fill"：容器自适应视口高 ----------
+
+  /** 最近一次量到的可用视口高（px；0 = 尚未量到，回落 360） */
+  private fillHeight = 0
+  /** 上一轮是否为 fill 模式（退出 fill 时复位测量值与观察器） */
+  private fillMode = false
+  /** 父容器尺寸观察器（fill 模式唯一驱动源） */
+  private fillObserver: ResizeObserver | null = null
+  /** 当前观察的容器（re-parent 后重建观察器用） */
+  private fillObservedEl: Element | null = null
   /** 每节点 aria-setsize/posinset 元数据（根用全量口径、子用同级已装载数；update 时重建） */
   private ariaMeta = new Map<string, { setsize: number; posinset: number }>()
   /** Shift 范围选择的锚点 key（多选下最近一次普通/Ctrl 点选；外部清空 selected 后失效自动回退） */
@@ -820,10 +836,127 @@ export class OASTree extends OASElement {
     return this.hasAttr('virtual') || this.getAttr('height', '') !== ''
   }
 
-  /** 虚拟视口高度（px）：height 为合法正数时用之，否则缺省 360 */
+  /** `height="fill"`：视口高由父容器内容盒决定（容器自适应），不写回属性 */
+  private heightIsFill(): boolean {
+    return this.getAttr('height', '').trim().toLowerCase() === 'fill'
+  }
+
+  /**
+   * 虚拟视口高度（px）：
+   * - `height="fill"`：最近一次量到的父容器内容盒高度（量不到时缺省 360）；
+   * - 其余：height 为合法正数时用之，否则缺省 360。
+   */
   private viewportHeight(): number {
+    if (this.heightIsFill()) return this.fillHeight > 0 ? this.fillHeight : 360
     const n = Number.parseFloat(this.getAttr('height', '360'))
     return Number.isFinite(n) && n > 0 ? n : 360
+  }
+
+  // ---------- height="fill"：容器自适应视口高 ----------
+
+  /**
+   * 元素内容盒高度（px）：clientHeight − 上下 padding（clientHeight 已排除 border 与滚动条）。
+   * 量不到（未布局 / 隐藏 / 无 getComputedStyle 环境）返回 0。
+   */
+  private contentBoxHeight(el: Element): number {
+    const ch = (el as HTMLElement).clientHeight
+    if (!(ch > 0)) return 0
+    return Math.max(0, ch - this.verticalPadding(el))
+  }
+
+  /**
+   * 量填充高：**父容器**内容盒 − 树自身上下 padding − check-all 行高。
+   *
+   * 三处扣减各有来由：
+   * - 父容器 padding：容器 clientHeight 含 padding，不减就会把树撑出容器（宿主手工同步
+   *   height 属性时的 8px 错位即此因）；
+   * - 树自身 padding：内部视口落在树的内容盒里；
+   * - check-all 行：它和视口共用容器高度，不扣会把树顶出容器底部。
+   */
+  private measureFillHeight(): number {
+    const container = this.parentElement ?? this
+    const outer = this.contentBoxHeight(container)
+    if (!(outer > 0)) return 0
+    const ownPad = container === this ? 0 : this.verticalPadding(this)
+    const checkAll = this.shadow.querySelector<HTMLElement>('.check-all')
+    const checkAllH = checkAll && !checkAll.hidden ? checkAll.offsetHeight || 0 : 0
+    const h = outer - ownPad - checkAllH
+    return h > 0 ? Math.floor(h) : 0
+  }
+
+  /** 元素上下 padding 之和（px，量不到 0） */
+  private verticalPadding(el: Element): number {
+    try {
+      const cs = getComputedStyle(el)
+      const top = Number.parseFloat(cs.paddingTop)
+      const bottom = Number.parseFloat(cs.paddingBottom)
+      return (Number.isFinite(top) ? top : 0) + (Number.isFinite(bottom) ? bottom : 0)
+    } catch {
+      return 0
+    }
+  }
+
+  /**
+   * 每轮 update 同步填充高 + 观察器（幂等）：
+   * 只在 `height="fill"` 时测量；退出 fill 复位测量值与观察器（回到数字/缺省口径）。
+   */
+  private syncFillHeight(): void {
+    if (!this.heightIsFill()) {
+      if (this.fillMode) {
+        this.fillMode = false
+        this.fillHeight = 0
+        this.disconnectFillObserver()
+      }
+      return
+    }
+    this.fillMode = true
+    const measured = this.measureFillHeight()
+    if (measured > 0) this.fillHeight = measured
+    this.syncFillObserver()
+  }
+
+  /**
+   * 观察父容器尺寸变化（fill 模式唯一驱动源）：目标未变则复用现有观察器（幂等，断开重连安全），
+   * 目标变化（re-parent）则重建。ResizeObserver 缺失的环境静默跳过（保持 update 时的量值）。
+   */
+  private syncFillObserver(): void {
+    if (typeof ResizeObserver === 'undefined') return
+    const target = this.parentElement ?? this
+    if (this.fillObserver && this.fillObservedEl === target) return
+    this.disconnectFillObserver()
+    const ro = new ResizeObserver(this.onFillResize)
+    ro.observe(target)
+    this.fillObserver = ro
+    this.fillObservedEl = target
+    this.onCleanup(() => {
+      ro.disconnect()
+      if (this.fillObserver === ro) {
+        this.fillObserver = null
+        this.fillObservedEl = null
+      }
+    })
+  }
+
+  private disconnectFillObserver(): void {
+    this.fillObserver?.disconnect()
+    this.fillObserver = null
+    this.fillObservedEl = null
+  }
+
+  /**
+   * 容器尺寸变化 → 重算视口高。
+   *
+   * 防反馈循环（两重）：
+   * ① 只写内部视口高，不改 height 属性——宿主读属性再测量也拿不到 px；
+   * ② 与已应用值相同（亚像素抖动 < 0.5px）直接跳过——自身写入引发的回声不进入重算。
+   */
+  private onFillResize = (): void => {
+    if (!this.isConnected || !this.heightIsFill()) return
+    const next = this.measureFillHeight()
+    if (!(next > 0)) return
+    if (Math.abs(next - this.fillHeight) < 0.5) return
+    this.fillHeight = next
+    this.update()
   }
 
   /**
@@ -1045,6 +1178,9 @@ export class OASTree extends OASElement {
     // aria 元数据基于本轮可见集构建（过滤态按可见集计数，须在 visible 就绪后执行）
     this.buildAriaMeta()
     this.syncCheckAll()
+    // height="fill"：量父容器内容盒（须在 syncCheckAll 之后——check-all 行高要从可用高度里扣；
+    // 视口高在下方写 vlist height 时消费）
+    this.syncFillHeight()
     // 编辑行从可见集消失（数据/过滤变化）→ 静默退出编辑，防悬挂草稿态
     if (this.rename && !this.visible.some((r) => this.acc.idOf(r.node) === this.rename!.key)) {
       this.rename = null

@@ -993,3 +993,82 @@ test('tree multiple：Shift+↑/↓ 键盘扩选（真实键盘）', async ({ pa
   await page.keyboard.press('Control+Shift+ArrowDown')
   await expect.poll(selected).toBe('["a","b","c","d"]')
 })
+
+// —— 容器自适应高度（height="fill"）：宿主手工同步 px 属性的两坑（反馈循环 / padding 错位）——
+test('tree height="fill"：视口高 = 容器内容盒，容器 resize 跟随，且不写回 height 属性', async ({ page }) => {
+  // 曾现缺陷（宿主实踩）：宿主读容器高度写回 px height 属性 → 漏减 padding 固定错位，
+  // 且写属性触发重渲染再测量形成 +8px/s 生长循环。fill 由组件量内容盒并只写内部视口高。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-fill')
+  const read = () =>
+    page.evaluate(() => {
+      const tree = document.querySelector('#tree-fill')!
+      const host = tree.parentElement as HTMLElement
+      const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
+      const viewport = vlist.shadowRoot!.querySelector('[part="viewport"]') as HTMLElement
+      const cs = getComputedStyle(host)
+      const contentBox =
+        host.clientHeight - (Number.parseFloat(cs.paddingTop) || 0) - (Number.parseFloat(cs.paddingBottom) || 0)
+      return {
+        attr: tree.getAttribute('height'),
+        viewportHeight: viewport.getBoundingClientRect().height,
+        contentBox,
+        vlistHeightAttr: vlist.getAttribute('height'),
+        treeBottom: tree.getBoundingClientRect().bottom,
+        containerBottom: host.getBoundingClientRect().bottom,
+      }
+    })
+  // 首帧/RO 回填后视口高与容器内容盒一致（±1px 亚像素）
+  await expect
+    .poll(async () => {
+      const r = await read()
+      return Math.abs(r.viewportHeight - r.contentBox) <= 1
+    })
+    .toBe(true)
+  const first = await read()
+  expect(first.attr, 'fill 不被改写成 px（防反馈循环）').toBe('fill')
+  expect(Math.round(first.viewportHeight), '首帧视口高与容器内容盒取整一致').toBe(Math.round(first.contentBox))
+  expect(first.treeBottom, '树不溢出容器底部（padding 已扣）').toBeLessThanOrEqual(first.containerBottom + 1)
+  // 容器变高 → ResizeObserver 驱动视口跟随（不写属性、宿主无需干预）
+  await page.evaluate(() => {
+    ;(document.querySelector('#tree-fill')!.parentElement as HTMLElement).style.height = '320px'
+  })
+  await expect
+    .poll(async () => Math.round((await read()).viewportHeight))
+    .toBeGreaterThan(Math.round(first.viewportHeight) + 40)
+  const second = await read()
+  expect(
+    Math.abs(Number(second.vlistHeightAttr) - second.contentBox),
+    'resize 后视口高仍等于新内容盒（±1px）',
+  ).toBeLessThanOrEqual(1)
+  expect(second.attr).toBe('fill')
+})
+
+// —— oas-expand 持久化姿势（API 可发现性）：事件是唯一可靠入口，回灌 expanded 生效 ——
+test('tree 展开态持久化 demo：oas-expand 落存储、刷新后 expanded 回灌', async ({ page }) => {
+  // 曾现误判（宿主）：以为「没有 expand 事件只能轮询 expanded 属性」，用 500ms 轮询导致连环 bug。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-persist')
+  const status = page.locator('#tree-persist-status')
+  await expect(status).toHaveText('—')
+  // 展开节点 pa（首行箭头）
+  await page.evaluate(() => {
+    const tree = document.querySelector('#tree-persist')!
+    const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')].find((r) => r.getAttribute('data-key') === 'pa')!
+    ;(row.querySelector('[part="toggle"]') as HTMLElement).click()
+  })
+  await expect(status).toHaveText('pa')
+  expect(await page.evaluate(() => localStorage.getItem('oas-tree-persist-demo'))).toBe('["pa"]')
+  // 刷新：初始回灌 expanded（pa 子树可见）
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-persist')
+  await expect(status).toHaveText('pa')
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const tree = document.querySelector('#tree-persist')!
+        return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].some((r) => r.getAttribute('data-key') === 'pa-1')
+      }),
+    )
+    .toBe(true)
+})
