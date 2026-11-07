@@ -15,9 +15,10 @@
 
 `kind: "action"` 的叶子项按普通动作渲染（`menuitem`），无勾选态、点击**不写回** `value`、只派发 `oas-select`（`detail.kind === "action"`）——适合「打开 / 保存 / 关于」这类非设置项。**选中后默认收起整条级联**（桌面菜单惯例：动作执行完即收）；`keepOpen: true`（子元素通道为 `keep-open` 属性）让个别动作项保持展开——如「最近打开」这类需要连续点选的场景。
 
-<DemoBlock title="动作项（kind: action）">
+<DemoBlock title="动作项（kind: action）与 close-on-select 关闭策略">
   <oas-menubar id="menubar-action" onoas-select="menubarActionLog(event)" value="mode" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"打开","value":"open","kind":"action"},{"label":"保存","value":"save","kind":"action"},{"type":"divider"},{"label":"另存为副本","value":"save-as","kind":"action","keepOpen":true},{"label":"模式","value":"mode","kind":"radio"},{"label":"主题","value":"theme","kind":"radio"}]}]'></oas-menubar>
-  <oas-tag id="menubar-action-result" type="info">value: mode（动作项点击不改变；「另存为副本」keep-open 保持展开）</oas-tag>
+  <oas-menubar id="menubar-keep-open" close-on-select="false" items='[{"label":"连选","value":"bulk","accessKey":"b","children":[{"label":"A","value":"a","kind":"action"},{"label":"B","value":"b","kind":"action"}]}]'></oas-menubar>
+  <oas-tag id="menubar-action-result" type="info">value: mode（动作项点击不改变；「另存为副本」keep-open 保持展开；「连选」栏 close-on-select="false" 全不收起）</oas-tag>
 </DemoBlock>
 
 ## 快捷键（shortcut）

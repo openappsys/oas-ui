@@ -15,9 +15,10 @@ The `value` of a `type: "group"` item acts as a **group id**. Leaves inside the 
 
 Leaves with `kind: "action"` render as plain actions (`menuitem`): no checkmark, clicks do **not** write back `value`, and only `oas-select` is dispatched (`detail.kind === "action"`). Fits "Open / Save / About" style items. **Selecting an action closes the entire cascade by default** (desktop menu convention: the menu closes once the action fires); `keepOpen: true` (the `keep-open` attribute on the declarative child channel) keeps individual actions open — useful for "Recent files" style lists meant for consecutive picking.
 
-<DemoBlock title="Action items (kind: action)">
+<DemoBlock title="Action items (kind: action) and close-on-select strategy">
   <oas-menubar id="menubar-action" onoas-select="menubarActionLog(event)" value="mode" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"Open","value":"open","kind":"action"},{"label":"Save","value":"save","kind":"action"},{"type":"divider"},{"label":"Duplicate","value":"save-as","kind":"action","keepOpen":true},{"label":"Mode","value":"mode","kind":"radio"},{"label":"Theme","value":"theme","kind":"radio"}]}]'></oas-menubar>
-  <oas-tag id="menubar-action-result" type="info">value: mode (actions don't change it; "Duplicate" is keep-open)</oas-tag>
+  <oas-menubar id="menubar-keep-open" close-on-select="false" items='[{"label":"Bulk","value":"bulk","accessKey":"b","children":[{"label":"A","value":"a","kind":"action"},{"label":"B","value":"b","kind":"action"}]}]'></oas-menubar>
+  <oas-tag id="menubar-action-result" type="info">value: mode (actions don't change it; "Duplicate" is keep-open; the "Bulk" bar uses close-on-select="false" so nothing collapses)</oas-tag>
 </DemoBlock>
 
 ## Shortcuts (shortcut)
