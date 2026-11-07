@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/next",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "OAS-UI 的 Next.js（App Router）集成：RSC OasComponent 服务端产 DSD 快照 + 客户端注册引导（OasRegistry 浏览器守卫动态导入，SSR 预渲染安全）",
   "keywords": [
     "nextjs",

@@ -6,80 +6,80 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **开发/CI 运行时升级到 Node 26 LTS** | `.nvmrc` 24.22.2 → **26.13.0**（Active LTS，2026-10-28 起，EOL 2029-04）；`@types/node` ^24.19.2 → ^26.6.6 与运行时对齐；CI / Release 均读 `.nvmrc` 自动跟随；`release.yml` 的 npm@12 说明同步。**`engines.node` 保持 `^22.18.0 \|\| ^24.0.0 \|\| >=26.0.0` 不变**——组件库不在 minor 抬高消费方最低 Node，Node 22 / 24 仍在支持窗口内。**配套**：8 个发布子包补齐同一 `engines.node`（根 `engines` 不被 npm 消费方继承）；CI 新增 `node-compat` matrix（22.18.0 / 24.22.2，各跑 test + build）守住兼容窗口。验证：typecheck / 全量单测 12320 / build / perf:size / api / llms / ssr / stats / smoke+console e2e 311 | ✅ 已完成（未发布） |
-| **依赖升级到当前最新（无 major）** | `pnpm outdated -r` 清零：biome 2.6.4 / vitest 5.1.0 / vite 8.3.5 / happy-dom 21.0.4 / markdownlint-cli2 0.24.0 / shiki 4.6.0 / @nuxt 4.6.4 / react 19.3.1 / vue 3.5.44 / 插件同步；`biome migrate` + 性能档案刷新。验证：单测 12320 / build / perf:size / api / llms / ssr / stats / lint:md / e2e 608 | ✅ 已完成（未发布） |
+| **开发/CI 运行时升级到 Node 26 LTS** | `.nvmrc` 24.22.2 → **26.13.0**（Active LTS，2026-10-28 起，EOL 2029-04）；`@types/node` ^24.19.2 → ^26.6.6 与运行时对齐；CI / Release 均读 `.nvmrc` 自动跟随；`release.yml` 的 npm@12 说明同步。**`engines.node` 保持 `^22.18.0 \|\| ^24.0.0 \|\| >=26.0.0` 不变**——组件库不在 minor 抬高消费方最低 Node，Node 22 / 24 仍在支持窗口内。**配套**：8 个发布子包补齐同一 `engines.node`（根 `engines` 不被 npm 消费方继承）；CI 新增 `node-compat` matrix（22.18.0 / 24.22.2，各跑 test + build）守住兼容窗口。验证：typecheck / 全量单测 12320 / build / perf:size / api / llms / ssr / stats / smoke+console e2e 311 | ✅ 已完成（v2.6.7） |
+| **依赖升级到当前最新（无 major）** | `pnpm outdated -r` 清零：biome 2.6.4 / vitest 5.1.0 / vite 8.3.5 / happy-dom 21.0.4 / markdownlint-cli2 0.24.0 / shiki 4.6.0 / @nuxt 4.6.4 / react 19.3.1 / vue 3.5.44 / 插件同步；`biome migrate` + 性能档案刷新。验证：单测 12320 / build / perf:size / api / llms / ssr / stats / lint:md / e2e 608 | ✅ 已完成（v2.6.7） |
 
 ## v2.6.7（T 批：demands 编号立项）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **T5 tree 虚拟滚动** | `virtual`/`item-height` + 1 万节点验证；连带修 checked 闭包 O(n²) 与 vlist 尾随帧重建 bug | ✅ 已完成（未发布） |
-| **T6 upload 三件套** | `storage-key` 持久化 + form 一等公民 + 错误摘要条（4 key ×10 语言） | ✅ 已完成（未发布） |
-| **T8+T12 范围预设与技能** | date-picker `ranges` + 倒置交换 + confirm start/end；resource `skills` + `show-skills` chips | ✅ 已完成（未发布） |
-| **T10 gantt 资源池** | `pool` 超配检测 + `oas-resource-conflict` 幂等事件 + `computeResourceConflicts` 导出 | ✅ 已完成（未发布） |
-| **T11 table 三 L3** | pivot/value-format/query 按需子路径（61 单测 + 3 预算档）；resourcePool 转 capability 口径 | ✅ 已完成（未发布） |
-| **T15 组合配方** | recipes：Action Sheet / 终端 / JSON 对照（零组件改动） | ✅ 已完成（未发布） |
-| **T4 command 多级导航** | `children` + `levelLoader`、面包屑、Esc/→/← 逐级、`oas-navigate` | ✅ 已完成（未发布） |
-| **T10 负荷视图** | `show-resource-load` 面板 + `computeResourceLoad` L3（19 单测 + 预算档）；review 修 reflow/高度上限 | ✅ 已完成（未发布） |
-| **T11 values-change** | upload detail 加 value 键 + NO_WRITEBACK 防回环（9 单测含无回环证据） | ✅ 已完成（未发布） |
-| **T12 axe 扩 guide** | 26 页全扫 9 组修复（含 checkbox 组件级 aria-label 镜像）；baselineKey 消歧 | ✅ 已完成（未发布） |
-| **T13 form 链审计** | 无安全冗余；core 子路径导出=架构级候选；form 行文案待版本刷新 | ✅ 已完成（未发布） |
-| **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像，Node 随 .nvmrc 升级自动跟随）+ pnpm 12.5.1 就位 | ✅ 已完成（未发布） |
-| **fill-handle 批** | table 拖拽填充柄（auto 语义序列推导 + 真浏览器两层根因修复 + 三引擎 e2e 8 条；默认链零增量，range 档 13.4/15） | ✅ 已完成（未发布） |
-| **Z3/Z6 批（gantt 性能债）** | 超配检测扫描线化（等价性对拍实证）+ 负荷面板桶条列虚拟化（列窗口同源数学）；gantt 链持平 | ✅ 已完成（未发布） |
-| **Z2 gantt 超配自动排程避让（B 路线）** | `levelConflicts()` 方法 + 纯引擎 gantt-level.ts（判据同源 computeResourceConflicts；受害者排序 disabled/days 空集/mso 不让位 → deadline 后让位 → startMs 晚 → 输入序后；day 步进保墙钟 + 收敛后工作日吸附 + 复检续迭代 + maxIter 截断如实回报）；事件序 oas-level → updateTasks → tasks-change，零移动零事件零 history；引擎单测（机制/DST 对拍/朴素参考 500 组对拍/边界）+ 组件测试 + zh/en 文档 demo | ✅ 已完成（未发布） |
-| **Z5/Z8 批（a11y 与降耗重验）** | 六组件 aria-labelledby 镜像（axe 终审零违规）；Z5=content-visibility 降耗重验维持原判（首帧锚定失准纯 CSS 不可修，注释+文档对齐实证）；Z7=windowed 混合模型语义确认为设计（文档化+测试固化），销项 | ✅ 已完成（未发布） |
-| **pool 可选化批（Z4/Z9）** | ResourcePool 双通道（createResourcePool 实例隔离 + gantt resourcePool 属性）；Z9 调查=设计差异不修关闭 | ✅ 已完成（未发布） |
-| **gantt 资源增强批** | 分配编辑（编辑弹窗配方+未登记只读 chip）+ `levelConflicts` reassign 改派模式（日期不动/目标不新冲突/unresolved 如实）+ group-by-resource 泳道行尾内嵌负荷缩略（24 格峰值/token/forced-colors）+ 资源日历进避让权威口径固化；gantt 链 69.3/80 | ✅ 已完成（未发布） |
-| **scheduler 视图批** | `view="resource-timeline"` 第 7 档：行=资源/连续日轴跨多天/事件跨列横条；band-span 交互提取共享（拖拽/手柄/键盘/移出轴跟随）；分层 ≤3 + 轴 ≤400 守卫；i18n ×10 | ✅ 已完成（未发布） |
-| **gantt 模块化批** | 7390→5161 行四模块拆分（style/types/utils/helpers；API 零漂移；+2.9 KB 边界成本归因存档） | ✅ 已完成（未发布） |
-| **oas-mdca 消费反馈批（T8-T12）** | menubar action 收起 + keep-open 例外 + shortcuts-in-editable；tree height="fill" 三防自适应 + 懒加载所有权警告 + 展开持久化示例 | ✅ 已完成（未发布） |
-| **Z12-Z15 长尾收口批** | reassign 候选日历过滤 + 冲突检测入口去重 + SSR/引用相等文档；CSV 引号/TSV 嗅探健壮性 + 填充柄几何/a11y + overlay 混合输入 + outside-dismiss 桥接键 + apt 重试闭环 | ✅ 已完成（未发布） |
-| **审查修复批（v2.6.6 后 review 收口）** | 跨根可访问名实质修复（Z8 二次修正）+ row-auto-height 三缺陷（C1 回填跳/I1 隐藏可见/I2 补偿钳制）+ 负荷缓存跨池失效 | ✅ 已完成（未发布） |
-| **table 补齐小批** | TSV/CSV 导入 L3 helper（`data/table/import`：嗅探 + RFC 4180 状态机 + 重名后缀 + 不齐如实计数，16 单测 + 预算档 1.75 KB）；打印视图（print 媒体感知全量渲染：虚拟行/列窗口展开、windowed 守卫切片口径、打印几何 CSS，单测 5 + e2e 3）；主链 63.7→64.2 KB 预警线内 | ✅ 已完成（未发布） |
+| **T5 tree 虚拟滚动** | `virtual`/`item-height` + 1 万节点验证；连带修 checked 闭包 O(n²) 与 vlist 尾随帧重建 bug | ✅ 已完成（v2.6.7） |
+| **T6 upload 三件套** | `storage-key` 持久化 + form 一等公民 + 错误摘要条（4 key ×10 语言） | ✅ 已完成（v2.6.7） |
+| **T8+T12 范围预设与技能** | date-picker `ranges` + 倒置交换 + confirm start/end；resource `skills` + `show-skills` chips | ✅ 已完成（v2.6.7） |
+| **T10 gantt 资源池** | `pool` 超配检测 + `oas-resource-conflict` 幂等事件 + `computeResourceConflicts` 导出 | ✅ 已完成（v2.6.7） |
+| **T11 table 三 L3** | pivot/value-format/query 按需子路径（61 单测 + 3 预算档）；resourcePool 转 capability 口径 | ✅ 已完成（v2.6.7） |
+| **T15 组合配方** | recipes：Action Sheet / 终端 / JSON 对照（零组件改动） | ✅ 已完成（v2.6.7） |
+| **T4 command 多级导航** | `children` + `levelLoader`、面包屑、Esc/→/← 逐级、`oas-navigate` | ✅ 已完成（v2.6.7） |
+| **T10 负荷视图** | `show-resource-load` 面板 + `computeResourceLoad` L3（19 单测 + 预算档）；review 修 reflow/高度上限 | ✅ 已完成（v2.6.7） |
+| **T11 values-change** | upload detail 加 value 键 + NO_WRITEBACK 防回环（9 单测含无回环证据） | ✅ 已完成（v2.6.7） |
+| **T12 axe 扩 guide** | 26 页全扫 9 组修复（含 checkbox 组件级 aria-label 镜像）；baselineKey 消歧 | ✅ 已完成（v2.6.7） |
+| **T13 form 链审计** | 无安全冗余；core 子路径导出=架构级候选；form 行文案待版本刷新 | ✅ 已完成（v2.6.7） |
+| **T14 WSL 容器模式** | `--container` wslc 模式（.nvmrc 推导镜像，Node 随 .nvmrc 升级自动跟随）+ pnpm 12.5.1 就位 | ✅ 已完成（v2.6.7） |
+| **fill-handle 批** | table 拖拽填充柄（auto 语义序列推导 + 真浏览器两层根因修复 + 三引擎 e2e 8 条；默认链零增量，range 档 13.4/15） | ✅ 已完成（v2.6.7） |
+| **Z3/Z6 批（gantt 性能债）** | 超配检测扫描线化（等价性对拍实证）+ 负荷面板桶条列虚拟化（列窗口同源数学）；gantt 链持平 | ✅ 已完成（v2.6.7） |
+| **Z2 gantt 超配自动排程避让（B 路线）** | `levelConflicts()` 方法 + 纯引擎 gantt-level.ts（判据同源 computeResourceConflicts；受害者排序 disabled/days 空集/mso 不让位 → deadline 后让位 → startMs 晚 → 输入序后；day 步进保墙钟 + 收敛后工作日吸附 + 复检续迭代 + maxIter 截断如实回报）；事件序 oas-level → updateTasks → tasks-change，零移动零事件零 history；引擎单测（机制/DST 对拍/朴素参考 500 组对拍/边界）+ 组件测试 + zh/en 文档 demo | ✅ 已完成（v2.6.7） |
+| **Z5/Z8 批（a11y 与降耗重验）** | 六组件 aria-labelledby 镜像（axe 终审零违规）；Z5=content-visibility 降耗重验维持原判（首帧锚定失准纯 CSS 不可修，注释+文档对齐实证）；Z7=windowed 混合模型语义确认为设计（文档化+测试固化），销项 | ✅ 已完成（v2.6.7） |
+| **pool 可选化批（Z4/Z9）** | ResourcePool 双通道（createResourcePool 实例隔离 + gantt resourcePool 属性）；Z9 调查=设计差异不修关闭 | ✅ 已完成（v2.6.7） |
+| **gantt 资源增强批** | 分配编辑（编辑弹窗配方+未登记只读 chip）+ `levelConflicts` reassign 改派模式（日期不动/目标不新冲突/unresolved 如实）+ group-by-resource 泳道行尾内嵌负荷缩略（24 格峰值/token/forced-colors）+ 资源日历进避让权威口径固化；gantt 链 69.3/80 | ✅ 已完成（v2.6.7） |
+| **scheduler 视图批** | `view="resource-timeline"` 第 7 档：行=资源/连续日轴跨多天/事件跨列横条；band-span 交互提取共享（拖拽/手柄/键盘/移出轴跟随）；分层 ≤3 + 轴 ≤400 守卫；i18n ×10 | ✅ 已完成（v2.6.7） |
+| **gantt 模块化批** | 7390→5161 行四模块拆分（style/types/utils/helpers；API 零漂移；+2.9 KB 边界成本归因存档） | ✅ 已完成（v2.6.7） |
+| **oas-mdca 消费反馈批（T8-T12）** | menubar action 收起 + keep-open 例外 + shortcuts-in-editable；tree height="fill" 三防自适应 + 懒加载所有权警告 + 展开持久化示例 | ✅ 已完成（v2.6.7） |
+| **Z12-Z15 长尾收口批** | reassign 候选日历过滤 + 冲突检测入口去重 + SSR/引用相等文档；CSV 引号/TSV 嗅探健壮性 + 填充柄几何/a11y + overlay 混合输入 + outside-dismiss 桥接键 + apt 重试闭环 | ✅ 已完成（v2.6.7） |
+| **审查修复批（v2.6.6 后 review 收口）** | 跨根可访问名实质修复（Z8 二次修正）+ row-auto-height 三缺陷（C1 回填跳/I1 隐藏可见/I2 补偿钳制）+ 负荷缓存跨池失效 | ✅ 已完成（v2.6.7） |
+| **table 补齐小批** | TSV/CSV 导入 L3 helper（`data/table/import`：嗅探 + RFC 4180 状态机 + 重名后缀 + 不齐如实计数，16 单测 + 预算档 1.75 KB）；打印视图（print 媒体感知全量渲染：虚拟行/列窗口展开、windowed 守卫切片口径、打印几何 CSS，单测 5 + e2e 3）；主链 63.7→64.2 KB 预警线内 | ✅ 已完成（v2.6.7） |
 
 ## v2.6.7（决策批：再捞待决项按原则清零）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **外点关闭统一通道全库迁移** | shared/outside-dismiss 双通道（click + coarse pointerup）扩到 19 组件（表单浮层 9 + data/nav/workbench 余部 + overlay 管理器）；tabs-manager 打开手势免疫；overlay onOutside 手势去重；conventions 静态守卫防回流；hasTouch e2e 锁行为 | ✅ 已完成（未发布） |
-| **table 滚动竞态修复** | 真实根因=浏览器焦点 reveal 延迟覆盖同帧键盘写入；滚动写入版本戳 + 意图守卫（手势即解除）+ focus preventScroll；三引擎 e2e「滚动帧内 Ctrl+Home/End 不回滚」 | ✅ 已完成（未发布） |
-| **gantt 冲突行对比度 + 预算再定档** | conflict 默认色 danger→danger-text（light 4.54 / dark 8.59 AA 达标，亮暗 e2e 断言）；链预算 70→75 KB（P2 审计无冗余，预警机制再定档出口） | ✅ 已完成（未发布） |
-| **小额债清零** | core 表单 label 移除后回退名立即写回（空窗消除）；packages/i18n 包级 vitest.config（裸跑与根跑同绿） | ✅ 已完成（未发布） |
+| **外点关闭统一通道全库迁移** | shared/outside-dismiss 双通道（click + coarse pointerup）扩到 19 组件（表单浮层 9 + data/nav/workbench 余部 + overlay 管理器）；tabs-manager 打开手势免疫；overlay onOutside 手势去重；conventions 静态守卫防回流；hasTouch e2e 锁行为 | ✅ 已完成（v2.6.7） |
+| **table 滚动竞态修复** | 真实根因=浏览器焦点 reveal 延迟覆盖同帧键盘写入；滚动写入版本戳 + 意图守卫（手势即解除）+ focus preventScroll；三引擎 e2e「滚动帧内 Ctrl+Home/End 不回滚」 | ✅ 已完成（v2.6.7） |
+| **gantt 冲突行对比度 + 预算再定档** | conflict 默认色 danger→danger-text（light 4.54 / dark 8.59 AA 达标，亮暗 e2e 断言）；链预算 70→75 KB（P2 审计无冗余，预警机制再定档出口） | ✅ 已完成（v2.6.7） |
+| **小额债清零** | core 表单 label 移除后回退名立即写回（空窗消除）；packages/i18n 包级 vitest.config（裸跑与根跑同绿） | ✅ 已完成（v2.6.7） |
 
 ## v2.6.7（再捞清零批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **WebKit 全量 e2e + 6 处跨引擎缺陷修复** | webkit project 放开为全量 qa-regression（1276 用例）；修复：外点关闭触屏 pointerup 通道（popover/dropdown/hover-card/popconfirm）、表单回退名让位外部 label（core + 5 组件）、slider RTL/reverse 方向键接管、sidebar 抽屉回焦回落触发钮、marquee 切轴相位钉名；每处单测 + 三引擎 e2e 回归；CI e2e-webkit 3 分片 | 🚧 进行中（未发布） |
-| **forced-colors 焦点环库级批** | 88 组件 `@media (forced-colors: active)` 焦点兜底（CanvasText 1px outline，inset 用 -1px），常规渲染零变化；forced-colors.spec.ts 计算样式断言（chromium） | 🚧 进行中（未发布） |
-| **i18n 8 语言补译 + placeholder 守卫** | jsonViewer/diffViewer/gantt/resource 30 key 英文残留补译（ja/ko/de/fr/es/pt/ru/ar）+ 11 条错译校正；completeness 新增 placeholder token 序列守卫 | 🚧 进行中（未发布） |
-| **测试机制批（断言 lint / WSL 通道 / soak / gantt 审计）** | qa:audit 新增 os-absolute-assertions 维度（存量 79→40，CI 增量上限）；`release:rehearse:wsl`（WSL Linux 重放，SKIP 语义）；`test:soak`（N 轮重复 + flaky 矩阵）；gantt 链归因审计（无冗余，扩展前置解除） | 🚧 进行中（未发布） |
+| **WebKit 全量 e2e + 6 处跨引擎缺陷修复** | webkit project 放开为全量 qa-regression（1276 用例）；修复：外点关闭触屏 pointerup 通道（popover/dropdown/hover-card/popconfirm）、表单回退名让位外部 label（core + 5 组件）、slider RTL/reverse 方向键接管、sidebar 抽屉回焦回落触发钮、marquee 切轴相位钉名；每处单测 + 三引擎 e2e 回归；CI e2e-webkit 3 分片 | ✅ 已完成（v2.6.7） |
+| **forced-colors 焦点环库级批** | 88 组件 `@media (forced-colors: active)` 焦点兜底（CanvasText 1px outline，inset 用 -1px），常规渲染零变化；forced-colors.spec.ts 计算样式断言（chromium） | ✅ 已完成（v2.6.7） |
+| **i18n 8 语言补译 + placeholder 守卫** | jsonViewer/diffViewer/gantt/resource 30 key 英文残留补译（ja/ko/de/fr/es/pt/ru/ar）+ 11 条错译校正；completeness 新增 placeholder token 序列守卫 | ✅ 已完成（v2.6.7） |
+| **测试机制批（断言 lint / WSL 通道 / soak / gantt 审计）** | qa:audit 新增 os-absolute-assertions 维度（存量 79→40，CI 增量上限）；`release:rehearse:wsl`（WSL Linux 重放，SKIP 语义）；`test:soak`（N 轮重复 + flaky 矩阵）；gantt 链归因审计（无冗余，扩展前置解除） | ✅ 已完成（v2.6.7） |
 
 ## v2.6.7（交互补全与文档批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **D1-4：多行/动态行高（三件套）** | ① 非虚拟多行文档口径 + e2e 固化（探针实证现状已可用）② 虚拟截断 + wrap 三态列定义（修长文本撑破定高几何的真缺口，非虚拟零变化）③ `row-auto-height` 逐行动态行高（注册型 L3 2.0KB/预算 2.8KB：RO 测量 + (行身份,行内偏移) 锚定 + 收缩轮询 + 编辑豁免 + **windowed 混合模型**（切片内实测+切片外预估拼接前缀和、像素相交请求映射）；零新增 devWarn——column-virtual 直组合/merge 既有边界/windowed 直接做掉）+ 雪崩修复（请求先于清空派发 + st 直传 + stableClearBody 垫高——顺带修复定高 windowed 真实浏览器滚动回填缺陷） | ✅ 已完成（未发布） |
-| **D1-3：windowed × 树形懒装载（hasChildren 契约）** | 拍平模型坐标口径不变：切片行 hasChildren 元数据触发树形模式，toggle 只派发 oas-expand（宿主控制 expanded/total/平铺回填 + depth 缩进）；新增 scrollToRow 公共方法（收起锚定宿主底座，清吞滚动守卫）；嵌套 children 维持 legacy 忽略；零变化红线（T4 锁纯 windowed 请求语义）；单测 T1-T6b + demo e2e 懒展开闭环（含锚定复位）+ zh/en 契约文档 | ✅ 已完成（未发布） |
-| **D1-2：table/audit 审计记录器（helper 型 L3）** | 订阅 oas-edit 事件流按 行 key×列 环形记录 旧值→新值+原始形态+时间戳；与 history 撤销栈正交（不回放不撤销）；内存环形 500 可配、不持久化；预算档 0.75 KB 实测 0.5 KB；单测 6 + e2e 历史链 + zh/en 文档（含 structural-render 审计浮层食谱） | ✅ 已完成（未发布） |
-| **D1-1：编辑校验收口（validate 文档化 + oas-edit-invalid + 视觉修复）** | 列 validate 拦截能力此前已实现但零文档；补事件（detail.message）、zh/en 校验节 + demo、api 语料；修复失败态被行 hover/选中底压住的特异性缺陷 + 错误消息浮层化；单测 + e2e | ✅ 已完成（未发布） |
-| **D1：table 结构级渲染能力（structural-render，注册型 L3）** | 表头行/表头叶子格/正文行/正文单元格四槽结构接管（「内容级 render 管不了结构」的补位通道）：默认装配后调用 + 每轮现读 property（无闭包缓存）；tr/td 随窗口重建、监听随销毁；property 通道 + 非函数槽静默忽略；L3 登记 + 预算档 1.2 KB（实测 0.6 KB，默认 table 链零增量、零泄漏断言）；单测 6 + demo e2e + zh/en 文档 | ✅ 已完成（未发布） |
-| **D2：L1 主链归因审计批** | 全量入口 / table 默认 / form / 9 族包逐模块归因 + 四类冗余扫描（复制 gantt 链方法论）：零真死文件、族包重复源 0；双实现 `normalizeChoice` ×17 收敛为 `shared/choice.ts` 单一实现（15 直改 + 2 空 fallback 等价改写；input/input-number 4-arg warn 变体保留本地）；全量单测 12257 + Chromium e2e 2566 绿；收益为维护性（gzip 持平如实记录）。扩展前置解除，结论入 perf-baseline.md。**同日扫尾批**：cdn union + 七链 + 四包级死文件——清 core dist 陈旧残留 1 项，其余无冗余/误报类记录；D2 全部入口覆盖完毕 | ✅ 已完成（未发布） |
-| **resource 直方图行 hover 补齐** | `.row.load` 与泳道行同口径 hover（用户反馈驱动：直方图区与泳道区观感不一致）；行/行头同 `--oas-resource-row-hover-bg` token 链，`hover="false"` 逐元素还原，收进 `@media (hover: hover)`；单测 + e2e | ✅ 已完成（未发布） |
-| **框架集成指南补强（guide/frameworks，zh/en）** | 新增「全局属性劫持（`title`）」小节（React property 不落 attribute → ref + setAttribute 兜底）；`packages/react` 定位公开口径（参考出处可 vendor、不发布 npm、不做框架 wrapper）；补齐 Svelte（事件属性大小写敏感，Svelte 5 官方文档核实）/ Angular（CUSTOM_ELEMENTS_SCHEMA）/ Astro（零特殊处理）三小节，「先选路径」覆盖七框架 | ✅ 已完成（未发布） |
+| **D1-4：多行/动态行高（三件套）** | ① 非虚拟多行文档口径 + e2e 固化（探针实证现状已可用）② 虚拟截断 + wrap 三态列定义（修长文本撑破定高几何的真缺口，非虚拟零变化）③ `row-auto-height` 逐行动态行高（注册型 L3 2.0KB/预算 2.8KB：RO 测量 + (行身份,行内偏移) 锚定 + 收缩轮询 + 编辑豁免 + **windowed 混合模型**（切片内实测+切片外预估拼接前缀和、像素相交请求映射）；零新增 devWarn——column-virtual 直组合/merge 既有边界/windowed 直接做掉）+ 雪崩修复（请求先于清空派发 + st 直传 + stableClearBody 垫高——顺带修复定高 windowed 真实浏览器滚动回填缺陷） | ✅ 已完成（v2.6.7） |
+| **D1-3：windowed × 树形懒装载（hasChildren 契约）** | 拍平模型坐标口径不变：切片行 hasChildren 元数据触发树形模式，toggle 只派发 oas-expand（宿主控制 expanded/total/平铺回填 + depth 缩进）；新增 scrollToRow 公共方法（收起锚定宿主底座，清吞滚动守卫）；嵌套 children 维持 legacy 忽略；零变化红线（T4 锁纯 windowed 请求语义）；单测 T1-T6b + demo e2e 懒展开闭环（含锚定复位）+ zh/en 契约文档 | ✅ 已完成（v2.6.7） |
+| **D1-2：table/audit 审计记录器（helper 型 L3）** | 订阅 oas-edit 事件流按 行 key×列 环形记录 旧值→新值+原始形态+时间戳；与 history 撤销栈正交（不回放不撤销）；内存环形 500 可配、不持久化；预算档 0.75 KB 实测 0.5 KB；单测 6 + e2e 历史链 + zh/en 文档（含 structural-render 审计浮层食谱） | ✅ 已完成（v2.6.7） |
+| **D1-1：编辑校验收口（validate 文档化 + oas-edit-invalid + 视觉修复）** | 列 validate 拦截能力此前已实现但零文档；补事件（detail.message）、zh/en 校验节 + demo、api 语料；修复失败态被行 hover/选中底压住的特异性缺陷 + 错误消息浮层化；单测 + e2e | ✅ 已完成（v2.6.7） |
+| **D1：table 结构级渲染能力（structural-render，注册型 L3）** | 表头行/表头叶子格/正文行/正文单元格四槽结构接管（「内容级 render 管不了结构」的补位通道）：默认装配后调用 + 每轮现读 property（无闭包缓存）；tr/td 随窗口重建、监听随销毁；property 通道 + 非函数槽静默忽略；L3 登记 + 预算档 1.2 KB（实测 0.6 KB，默认 table 链零增量、零泄漏断言）；单测 6 + demo e2e + zh/en 文档 | ✅ 已完成（v2.6.7） |
+| **D2：L1 主链归因审计批** | 全量入口 / table 默认 / form / 9 族包逐模块归因 + 四类冗余扫描（复制 gantt 链方法论）：零真死文件、族包重复源 0；双实现 `normalizeChoice` ×17 收敛为 `shared/choice.ts` 单一实现（15 直改 + 2 空 fallback 等价改写；input/input-number 4-arg warn 变体保留本地）；全量单测 12257 + Chromium e2e 2566 绿；收益为维护性（gzip 持平如实记录）。扩展前置解除，结论入 perf-baseline.md。**同日扫尾批**：cdn union + 七链 + 四包级死文件——清 core dist 陈旧残留 1 项，其余无冗余/误报类记录；D2 全部入口覆盖完毕 | ✅ 已完成（v2.6.7） |
+| **resource 直方图行 hover 补齐** | `.row.load` 与泳道行同口径 hover（用户反馈驱动：直方图区与泳道区观感不一致）；行/行头同 `--oas-resource-row-hover-bg` token 链，`hover="false"` 逐元素还原，收进 `@media (hover: hover)`；单测 + e2e | ✅ 已完成（v2.6.7） |
+| **框架集成指南补强（guide/frameworks，zh/en）** | 新增「全局属性劫持（`title`）」小节（React property 不落 attribute → ref + setAttribute 兜底）；`packages/react` 定位公开口径（参考出处可 vendor、不发布 npm、不做框架 wrapper）；补齐 Svelte（事件属性大小写敏感，Svelte 5 官方文档核实）/ Angular（CUSTOM_ELEMENTS_SCHEMA）/ Astro（零特殊处理）三小节，「先选路径」覆盖七框架 | ✅ 已完成（v2.6.7） |
 
 ## v2.6.7（i18n 语言代码归一 + 多语言扩充）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **BCP 47 归一/别名 + 7 个语言包（`zh-Hant` / `pt-BR` / `hi` / `th` / `uk` / `he` / `fa`）** | 新增 core `normalizeLocaleTag` / `stripLocaleExtensions`（语言小写 / Script 首字母大写 / 地区大写 / 扩展小写 / 下划线转连字符 / 扩展可剥离、私有段不剥离）并在 core 按 locale 名翻译器查找处归一；i18n 新增 `canonicalizeLocale` 别名层：`zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant` → `zh-Hant`，`pt` → `pt-BR`，`en-US` / `en-GB` → `en`、`es-419` → `es`、`ar-EG` → `ar`、`hi-IN` → `hi`、`th-TH` → `th`、`uk-UA` → `uk`、`he-IL` / `iw` → `he`、`fa-IR` → `fa` 等；`pt-PT` 不与 `pt-BR` 混用；`setLocale` / `loadLocale` / `getDirection` / `registerLocale` / config-provider locale / SSR `RenderLocale` 全链路生效。新增 `@oas-ui/i18n/zh-Hant`（繁体 + 台湾术语）、`pt-BR`（`pt` 兼容别名）、`hi` / `th` / `uk` / `he` / `fa`（he/fa 为 RTL）；`RenderLocale` 增加对应语种。回归：core normalize/strip、i18n registry 别名/扩展、SSR 别名/RTL/冷加载竞态、config-provider 扩展标签、theme-editor 16 locale；文档 + CHANGELOG | ✅ 已完成（未发布） |
+| **BCP 47 归一/别名 + 7 个语言包（`zh-Hant` / `pt-BR` / `hi` / `th` / `uk` / `he` / `fa`）** | 新增 core `normalizeLocaleTag` / `stripLocaleExtensions`（语言小写 / Script 首字母大写 / 地区大写 / 扩展小写 / 下划线转连字符 / 扩展可剥离、私有段不剥离）并在 core 按 locale 名翻译器查找处归一；i18n 新增 `canonicalizeLocale` 别名层：`zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant` → `zh-Hant`，`pt` → `pt-BR`，`en-US` / `en-GB` → `en`、`es-419` → `es`、`ar-EG` → `ar`、`hi-IN` → `hi`、`th-TH` → `th`、`uk-UA` → `uk`、`he-IL` / `iw` → `he`、`fa-IR` → `fa` 等；`pt-PT` 不与 `pt-BR` 混用；`setLocale` / `loadLocale` / `getDirection` / `registerLocale` / config-provider locale / SSR `RenderLocale` 全链路生效。新增 `@oas-ui/i18n/zh-Hant`（繁体 + 台湾术语）、`pt-BR`（`pt` 兼容别名）、`hi` / `th` / `uk` / `he` / `fa`（he/fa 为 RTL）；`RenderLocale` 增加对应语种。回归：core normalize/strip、i18n registry 别名/扩展、SSR 别名/RTL/冷加载竞态、config-provider 扩展标签、theme-editor 16 locale；文档 + CHANGELOG | ✅ 已完成（v2.6.7） |
 
 ## v2.6.7（select chip 形态）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **`oas-select` chip 形态 + Option 首元素字段（属性面板编辑模式组件化）** | `variant` 第 4 值 `chip`：紧凑胶囊触发器（高 24px 走 `--oas-select-chip-height` token、弱底 hover 微强调、无边框框选感、宽度随内容收缩）；`Option.dot` 色点（8px，CSS 颜色值清洗后内联写 background）与 `Option.avatarText` 迷你头像（16px 取首字符，对齐库内头像 token 缺省），选项行首与 chip 触发器首按 `dot > avatarText > icon` 渲染首元素槽；子元素通道 `<oas-option dot avatar-text>` 同款映射与运行时刷新；单选点选即 oas-change、空值走 placeholder、键盘全等价、size/status/multiple 可组合；非法值静默清洗。单测（chip 全量组 + 既有零回归）+ Chromium qa-regression（Vue demo 属性存活 + 容器底部 fixed 翻转不被裁切 + 外点/Esc 关闭 + 选中即改首元素更新）+ 中英文档「属性面板模式」节与 workflow 状态色点 demo + API 生成物同步 | 🚧 进行中（未发布） |
+| **`oas-select` chip 形态 + Option 首元素字段（属性面板编辑模式组件化）** | `variant` 第 4 值 `chip`：紧凑胶囊触发器（高 24px 走 `--oas-select-chip-height` token、弱底 hover 微强调、无边框框选感、宽度随内容收缩）；`Option.dot` 色点（8px，CSS 颜色值清洗后内联写 background）与 `Option.avatarText` 迷你头像（16px 取首字符，对齐库内头像 token 缺省），选项行首与 chip 触发器首按 `dot > avatarText > icon` 渲染首元素槽；子元素通道 `<oas-option dot avatar-text>` 同款映射与运行时刷新；单选点选即 oas-change、空值走 placeholder、键盘全等价、size/status/multiple 可组合；非法值静默清洗。单测（chip 全量组 + 既有零回归）+ Chromium qa-regression（Vue demo 属性存活 + 容器底部 fixed 翻转不被裁切 + 外点/Esc 关闭 + 选中即改首元素更新）+ 中英文档「属性面板模式」节与 workflow 状态色点 demo + API 生成物同步 | ✅ 已完成（v2.6.7） |
 
 ## v2.6.6（menubar 可编辑焦点 shortcut 开关）
 
