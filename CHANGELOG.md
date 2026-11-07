@@ -82,7 +82,6 @@
 - **`packages/i18n` 包级 vitest 配置**：happy-dom + setupFiles + icons alias，包内裸跑与根跑同绿。
 - **L3 登记表口径修正**：`data/resource/pool` 自 gantt `pool` 起为运行时依赖（capability 口径，须在 L1/族包），helper 清单补三件 table L3；architecture.md / l3-registry 头 / perf-baseline 同步；pool 预算档 basis 改运行时依赖口径。
 
-
 ## [2.6.6] - 2026-11-01
 
 ### 新增
