@@ -47,6 +47,10 @@
       "observed": true
     },
     {
+      "name": "keep-open",
+      "observed": true
+    },
+    {
       "name": "indeterminate",
       "observed": true
     }

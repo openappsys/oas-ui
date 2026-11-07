@@ -16,6 +16,8 @@ export interface MenubarItem extends MenuItem {
   shortcut?: string
   /** checkbox 半选态（仅 kind="checkbox" 项生效）：渲染 aria-checked="mixed" + 减号视觉；由宿主计算父子联动后随 items JSON 传入 */
   indeterminate?: boolean
+  /** 选中后保持菜单展开（仅 action 项有意义）：action 缺省选中即收起整条级联，keepOpen 让个别动作项退出该默认（如「最近打开」需要连续点选的场景） */
+  keepOpen?: boolean
 }
 
 function firstAscii(label?: string): string | undefined {
@@ -575,6 +577,9 @@ export class OASMenubar extends OASElement {
       'breakpoint',
       // 可编辑焦点内 shortcut 行为三态开关：缺省/"all"（现行全放行）/"safe"（编辑键让路）/"none"（一律不放行）
       'editable-shortcuts',
+      // 可编辑焦点内 shortcut 放行总开关（布尔，缺省关）：开启后可编辑焦点内 shortcut 照常派发，
+      // 覆盖 editable-shortcuts 三态限制（编辑器场景宿主显式退出防误触基线）
+      'shortcuts-in-editable',
       // 书写方向：dir 变化触发重算 data-rtl（弹出侧/开口方向/翻转判定随方向重同步）
       'dir',
     ]
@@ -894,6 +899,7 @@ export class OASMenubar extends OASElement {
     if (shortcut) item.shortcut = shortcut
     const accessKey = el.getAttribute('access-key')
     if (accessKey) item.accessKey = accessKey
+    if (el.hasAttribute('keep-open')) item.keepOpen = true
     if (el.hasAttribute('indeterminate')) item.indeterminate = true
     const children = this.parseChildLevel(el.children)
     if (children.length > 0) item.children = children
@@ -951,6 +957,7 @@ export class OASMenubar extends OASElement {
         'rel',
         'shortcut',
         'access-key',
+        'keep-open',
         'indeterminate',
         'label',
         'slot',
@@ -1963,11 +1970,23 @@ export class OASMenubar extends OASElement {
       this.writeValue(map)
       this.emit('select', { value: item.value })
     }
-    // 收起策略：checkbox 勾选切换永不收起（连续勾选场景）；其余按 close-on-select（缺省收）
-    if (item.kind !== 'checkbox' && this.closeOnSelectEnabled()) {
+    // 收起策略（kind 语义优先，全局开关兜底）：
+    // - action：缺省收起整条级联（桌面菜单惯例）；item 级 keepOpen 例外（宿主显式退出默认行为）
+    // - checkbox/radio：组选择语义，缺省保持展开（连续勾选 / 换选场景）
+    // - 全局 close-on-select="false"：action 也不收（整体连选场景）
+    // 收起只走非受控路径：内部态清空 → syncOpen 写回 open 属性 → oas-open-change 派发；
+    // 受控宿主监听事件拉回 open 即保持展开（组件不绕过事件链擅自覆盖宿主受控值）
+    if (item.kind === 'action' && (item as MenubarItem).keepOpen !== true && this.closeOnSelectEnabled()) {
       // 可编辑焦点内触发的 shortcut 不把焦点抢到菜单栏（编辑器 Ctrl+S 后光标留在原地）
-      if (restoreFocusTop) this.collapseAndFocusTop()
-      else this.collapseToTop()
+      if (restoreFocusTop) {
+        this.collapseAndFocusTop()
+      } else {
+        // 不抢焦点路径也要同步 DOM（弹层 .open 清空 + open 属性写回），不能只清内部态
+        this.collapseToTop()
+        this.syncOpen()
+        this.syncActive()
+        this.syncRoving()
+      }
     } else {
       this.syncSelection()
     }
@@ -2255,6 +2274,20 @@ export class OASMenubar extends OASElement {
     return isFuncKey
   }
 
+  /**
+   * shortcuts-in-editable：可编辑焦点内 shortcut 放行总开关（布尔属性，缺省关）。
+   * 开启后 INPUT / TEXTAREA / SELECT / contenteditable（含编辑器 contentDOM——
+   * contenteditable 元素的 isContentEditable 天然覆盖）聚焦时 shortcut 照常派发，
+   * 覆盖 editable-shortcuts 三态限制——编辑器类应用主动作面就是编辑器，宿主以此显式
+   * 退出防误触基线；缺省关 = editable-shortcuts 机制原样（向后兼容，防误触不变）。
+   * 布尔属性语义：存在即 true（含空值），仅显式 "false" 关闭；运行时切换即时生效
+   * （keydown 时现读，无需重渲染）。
+   */
+  private shortcutsInEditableEnabled(): boolean {
+    if (!this.hasAttr('shortcuts-in-editable')) return false
+    return this.getAttr('shortcuts-in-editable', '') !== 'false'
+  }
+
   /** 文档级键盘：shortcut 快捷键 + Alt 访问键 + Alt 聚焦 + 子菜单 Tab 焦点陷阱 */
   private handleDocumentKey = (e: KeyboardEvent): void => {
     if (this.isBarDisabled()) return
@@ -2265,10 +2298,11 @@ export class OASMenubar extends OASElement {
     // 可编辑上下文守卫（2026-11-01 下游编辑器需求）：带 Ctrl/Meta 的组合键与 F1–F24 单键
     // 仍生效（编辑器内 Ctrl+S 保存必须可达）；普通可打印字符、方向/编辑键、Alt 访问键与
     // AltGr 组合继续让路，不劫持输入与光标。
-    // 放行粒度由 editable-shortcuts 属性控制（三态：all / safe / none，见 shortcutAllowedInEditable）。
+    // 放行粒度由 editable-shortcuts 属性控制（三态：all / safe / none，见 shortcutAllowedInEditable）；
+    // shortcuts-in-editable 总开关开启时不做粒度判定，可编辑焦点内 shortcut 一律照常派发。
     const shortcutItem = this.matchShortcut(e)
     if (shortcutItem) {
-      if (editable && !this.shortcutAllowedInEditable(e)) return
+      if (editable && !this.shortcutsInEditableEnabled() && !this.shortcutAllowedInEditable(e)) return
       e.preventDefault()
       if (shortcutItem.disabled) return
       this.keyboardMode = true

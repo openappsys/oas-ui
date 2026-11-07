@@ -13,18 +13,18 @@
 
 ## 动作项（kind: "action"）
 
-`kind: "action"` 的叶子项按普通动作渲染（`menuitem`），无勾选态、点击**不写回** `value`、只派发 `oas-select`（`detail.kind === "action"`）——适合「打开 / 保存 / 关于」这类非设置项。
+`kind: "action"` 的叶子项按普通动作渲染（`menuitem`），无勾选态、点击**不写回** `value`、只派发 `oas-select`（`detail.kind === "action"`）——适合「打开 / 保存 / 关于」这类非设置项。**选中后默认收起整条级联**（桌面菜单惯例：动作执行完即收）；`keepOpen: true`（子元素通道为 `keep-open` 属性）让个别动作项保持展开——如「最近打开」这类需要连续点选的场景。
 
 <DemoBlock title="动作项（kind: action）">
-  <oas-menubar id="menubar-action" onoas-select="menubarActionLog(event)" value="mode" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"打开","value":"open","kind":"action"},{"label":"保存","value":"save","kind":"action"},{"type":"divider"},{"label":"模式","value":"mode","kind":"radio"},{"label":"主题","value":"theme","kind":"radio"}]}]'></oas-menubar>
-  <oas-tag id="menubar-action-result" type="info">value: mode（动作项点击不改变）</oas-tag>
+  <oas-menubar id="menubar-action" onoas-select="menubarActionLog(event)" value="mode" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"打开","value":"open","kind":"action"},{"label":"保存","value":"save","kind":"action"},{"type":"divider"},{"label":"另存为副本","value":"save-as","kind":"action","keepOpen":true},{"label":"模式","value":"mode","kind":"radio"},{"label":"主题","value":"theme","kind":"radio"}]}]'></oas-menubar>
+  <oas-tag id="menubar-action-result" type="info">value: mode（动作项点击不改变；「另存为副本」keep-open 保持展开）</oas-tag>
 </DemoBlock>
 
 ## 快捷键（shortcut）
 
 `shortcut` 字段（如 `"Ctrl+N"`）：右侧渲染快捷键提示，并自动绑定 `document` 级 keydown——命中即触发对应项选择（`preventDefault` 拦截浏览器默认行为）。绑定规则：`修饰键+键` 直接绑定；单键仅限功能键（F1–F12）可绑定，其余单键（字母/数字/Delete 等）仅作展示不绑定。
 
-**全局快捷键语义**：`shortcut` 与 `accessKey`（Alt 访问键）都是**文档级**绑定，作用于整个页面而非仅菜单栏聚焦时。为避免劫持输入，焦点位于可编辑控件（`input` / `textarea` / `select` / `contenteditable`）时：**带 Ctrl / Cmd 的已定义 shortcut 与 F1–F24 单键 shortcut 仍然生效**（编辑器内保存/新建等核心动作必须可达），其余按键（普通可打印字符、方向键/编辑键、Alt 访问键、输入法组合中的任何按键）一律让路，由控件与浏览器自行处理；未命中任何 shortcut 的组合键不会 `preventDefault`，编辑器自身快捷键不受影响；命中的快捷键也不会把焦点抢到菜单栏，编辑器光标留在原处。菜单栏自身的键盘导航（方向键 / Tab 焦点陷阱）只在其内部焦点上生效，不受此守卫影响。同一快捷键应在页面内保持唯一，冲突时以先匹配到的菜单项为准。放行粒度由 `editable-shortcuts` 属性控制（见下）。
+**全局快捷键语义**：`shortcut` 与 `accessKey`（Alt 访问键）都是**文档级**绑定，作用于整个页面而非仅菜单栏聚焦时。为避免劫持输入，焦点位于可编辑控件（`input` / `textarea` / `select` / `contenteditable`）时：**带 Ctrl / Cmd 的已定义 shortcut 与 F1–F24 单键 shortcut 仍然生效**（编辑器内保存/新建等核心动作必须可达），其余按键（普通可打印字符、方向键/编辑键、Alt 访问键、输入法组合中的任何按键）一律让路，由控件与浏览器自行处理；未命中任何 shortcut 的组合键不会 `preventDefault`，编辑器自身快捷键不受影响；命中的快捷键也不会把焦点抢到菜单栏，编辑器光标留在原处。菜单栏自身的键盘导航（方向键 / Tab 焦点陷阱）只在其内部焦点上生效，不受此守卫影响。同一快捷键应在页面内保持唯一，冲突时以先匹配到的菜单项为准。放行粒度由 `editable-shortcuts` 属性控制；编辑器场景可用 `shortcuts-in-editable` 总开关整体放行（均见下）。
 
 ### 可编辑焦点内的放行粒度（editable-shortcuts）
 
@@ -46,6 +46,17 @@
 ::: warning 编辑键绑定的风险（`all` 默认档仍存在）
 默认 `all` 下**已定义**的 Ctrl / Cmd + 编辑键 shortcut（`Ctrl+C` / `Ctrl+V` / `Ctrl+X` / `Ctrl+A` / `Ctrl+Z` / `Ctrl+Y` 及对应 Cmd 形式）会在输入框里触发菜单动作并 `preventDefault`，劫持复制 / 粘贴 / 剪切 / 全选 / 撤销。下游编辑器应用请设 `editable-shortcuts="safe"`（编辑键让路、保存类组合保留）或 `"none"`（可编辑焦点内全让路）；不设置该属性时，请勿把编辑键绑定到菜单动作——需要在菜单里展示这些提示时，只在宿主层自行处理按键（组件不绑定），或改用 `kind: "action"` + 宿主自己的 document 监听。
 :::
+
+### 可编辑焦点内放行总开关（shortcuts-in-editable）
+
+`shortcuts-in-editable` 布尔属性（缺省关）：开启后焦点位于任何可编辑控件（`input` / `textarea` / `select` / `contenteditable`，含编辑器 contentDOM——contenteditable 元素天然覆盖）时，已定义 shortcut **一律照常派发**，覆盖 `editable-shortcuts` 三态限制——编辑器类应用主动作面就是编辑器，由宿主以此显式退出防误触基线。缺省（关）= `editable-shortcuts` 机制原样，行为不变。运行时切换即时生效。
+
+```html
+<!-- 编辑器场景（如 CodeMirror 6）：contentDOM 内 Ctrl+S / F9 照常触发菜单动作（总开关放行） -->
+<oas-menubar shortcuts-in-editable items='...'></oas-menubar>
+<!-- 与粒度开关组合：总开关优先——开启后 safe/none 档在可编辑焦点内不再让路 -->
+<oas-menubar shortcuts-in-editable editable-shortcuts="none" items='...'></oas-menubar>
+```
 
 <DemoBlock title="快捷键（shortcut）">
   <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new","shortcut":"Ctrl+N"},{"label":"打开","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"保存","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>
@@ -82,12 +93,12 @@
   <oas-menubar id="mb-value" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new"},{"label":"打开","value":"open"},{"type":"divider"},{"label":"退出","value":"quit"}]},{"label":"编辑","value":"edit","accessKey":"e","children":[{"label":"撤销","value":"undo"},{"label":"重做","value":"redo"}]}]'></oas-menubar>
 </DemoBlock>
 
-## 复选与不收起（checkbox + close-on-select）
+## 复选与单选（组选择保持展开 + close-on-select）
 
-`kind: "checkbox"` 叶子按多选勾选（`value` 为 JSON 数组），点击切换勾选**不收起**子菜单（连续勾选场景）；`close-on-select="false"` 让 radio/动作项选中后也保持展开。`close-on-select` 为布尔属性：存在即真（含空值），仅显式 `"false"` 关闭——未设置时缺省收起。
+`kind: "checkbox"` 与 radio 组叶子按**组选择语义**处理：点击选中**不收起**子菜单（连续勾选 / 换选场景，含移动端汉堡面板与「···」收纳弹层）；`kind: "action"` 动作项选中后**默认收起整条级联**（桌面菜单惯例）。全局开关 `close-on-select="false"` 让动作项也不收（整体连选场景）；item 级 `keepOpen` 让个别动作项保持展开。`close-on-select` 为布尔属性：存在即真（含空值），仅显式 `"false"` 关闭——未设置时按各 kind 的缺省语义处理。
 
-<DemoBlock title="复选与不收起（checkbox + close-on-select）">
-  <oas-menubar id="menubar-checkbox" onoas-select="menubarCheckboxLog(event)" close-on-select="false" value='["grid"]' items='[{"label":"视图","value":"view","accessKey":"v","children":[{"type":"group","label":"显示","children":[{"label":"网格线","value":"grid","kind":"checkbox"},{"label":"标尺","value":"ruler","kind":"checkbox"}]},{"type":"divider"},{"label":"全屏","value":"fullscreen"}]}]'></oas-menubar>
+<DemoBlock title="复选与单选（组选择保持展开）">
+  <oas-menubar id="menubar-checkbox" onoas-select="menubarCheckboxLog(event)" value='["grid"]' items='[{"label":"视图","value":"view","accessKey":"v","children":[{"type":"group","label":"显示","children":[{"label":"网格线","value":"grid","kind":"checkbox"},{"label":"标尺","value":"ruler","kind":"checkbox"}]},{"type":"divider"},{"label":"模式","value":"mode","kind":"radio"}]}]'></oas-menubar>
   <oas-tag id="menubar-checkbox-result" type="info">勾选集: ["grid"]</oas-tag>
 </DemoBlock>
 
@@ -181,7 +192,7 @@
 
 ## 子元素声明式通道
 
-除 `items` JSON 外，可用 `<oas-menubar-item>` / `<oas-menubar-group>` / `<oas-menubar-divider>` 子元素声明式书写（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `MenubarItem` 字段：`value` / `disabled` / `icon` / `kind` / `danger` / `href` / `target` / `rel` / `shortcut` / `access-key` / `indeterminate`；`<oas-menubar-item>` 内直接嵌套子元素即递归为子菜单，`<oas-menubar-group>` 的 `label` 属性为组标题（`value` 可作 radio 组 id），组内子元素平铺同层。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+除 `items` JSON 外，可用 `<oas-menubar-item>` / `<oas-menubar-group>` / `<oas-menubar-divider>` 子元素声明式书写（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `MenubarItem` 字段：`value` / `disabled` / `icon` / `kind` / `danger` / `href` / `target` / `rel` / `shortcut` / `access-key` / `keep-open` / `indeterminate`；`<oas-menubar-item>` 内直接嵌套子元素即递归为子菜单，`<oas-menubar-group>` 的 `label` 属性为组标题（`value` 可作 radio 组 id），组内子元素平铺同层。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
 
 <DemoBlock title="子元素声明式（分组 / 分隔线 / 嵌套 / checkbox / indeterminate / shortcut / danger / href）">
   <oas-space direction="vertical" size="small">
@@ -282,7 +293,7 @@ onMounted(() => {
     const mb = document.getElementById('menubar-checkbox')
     if (tag && mb) {
       const v = JSON.parse(mb.getAttribute('value') || '[]')
-      tag.textContent = `勾选集: ${JSON.stringify(v)}（checkbox 不收起）`
+      tag.textContent = `勾选集: ${JSON.stringify(v)}（checkbox/radio 组选择保持展开）`
     }
   }
 
@@ -371,7 +382,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `align` | 一级下拉对齐：`start`（缺省）/ `center` / `end`；`side` 为 top/bottom 时沿水平轴，为 left/right 时沿垂直轴 | `string` | — |
 | `breakpoint` | 移动端断点（px，如 `600`）：视口宽度 ≤ 断点时 bar 折叠为汉堡按钮 + 弹出菜单（窄宽收纳） | `string` | — |
-| `close-on-select` | 选中叶子项后是否收起展开的子菜单，缺省 `true`（桌面菜单栏共识）；`close-on-select="false"` 保持展开（连选场景）；`kind:"checkbox"` 项勾选切换永不收起 | `string` | — |
+| `close-on-select` | 全局收起开关：`kind:"action"` 动作项选中后缺省收起整条级联（桌面菜单栏共识），`close-on-select="false"` 让动作项也不收（整体连选场景）；checkbox/radio 组选择项无论此值始终保持展开（连续勾选/换选场景），个别动作项保持展开用 item 级 `keepOpen` | `string` | — |
 | `disabled` | 整栏禁用：顶级项/子项点击、键盘导航、shortcut 快捷键、Alt 访问键全部拦截，视觉降饱和 | `boolean` | — |
 | `editable-shortcuts` | 可编辑焦点内 shortcut 放行粒度：缺省 / `all`（默认——带 Ctrl/Cmd 的已定义 shortcut 与 F 功能键全部放行）/ `safe`（编辑键 Ctrl/Cmd + C/V/X/A/Z/Y 让路给浏览器原生编辑，其余照常放行）/ `none`（可编辑焦点内一律不放行）；非法值回落 all 并在开发环境告警一次，运行时切换即时生效 | `string` | — |
 | `items` | 顶级菜单项 JSON（含子菜单 children） | `string` | `[]` |
@@ -379,6 +390,7 @@ onMounted(() => {
 | `offset` | 一级下拉与触发器间距（px，缺省 4） | `string` | — |
 | `open` | 当前打开的顶级菜单 value（`open=""` 表示全部收起）。受控属性（observedAttributes）：外部 `setAttribute('open', ...)` 即时打开/切换/关闭；内部点击/hover/键盘变化会写回本属性并派发 `oas-open-change`，宿主可监听接管 | `string` | — |
 | `orientation` | 排列方向：`horizontal`（缺省）/ `vertical`（竖排：bar 纵向、一级下拉缺省向右弹、键盘上下移动顶级） | — | — |
+| `shortcuts-in-editable` | 可编辑焦点内 shortcut 放行总开关（布尔，缺省关）：开启后焦点位于 `input` / `textarea` / `select` / `contenteditable`（含编辑器 contentDOM）时已定义 shortcut 一律照常派发，覆盖 `editable-shortcuts` 三态限制（编辑器场景宿主显式退出防误触基线）；缺省（关）行为不变，运行时切换即时生效 | `string` | — |
 | `show-arrow` | 显示弹出层指向触发器的视觉箭头 | — | — |
 | `side` | 一级下拉弹出侧：`bottom`（水平缺省）/ `top` / `left` / `right`（竖排缺省）；级联子菜单不受影响 | `string` | — |
 | `trigger` | 顶级菜单触发方式：`click`（默认，首开需点击、打开后 hover 切换——桌面应用共识）/ `hover`（hover 直开） | — | — |
@@ -411,7 +423,8 @@ onMounted(() => {
 | `icon` | 前置图标（`@oas-ui/icons` 内置图标名） | — | — |
 | `icon-color` | 图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色 | — | — |
 | `indeterminate` | checkbox 半选态：渲染 `aria-checked="mixed"` + 方块内横线减号（仅 `kind="checkbox"` 项生效） | — | — |
-| `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
+| `keep-open` | 选中后保持菜单展开（仅 `kind="action"` 项有意义）：action 缺省选中即收起整条级联，此属性让个别动作项退出该默认 | — | — |
+| `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value，选中后收起整条级联——`keep-open` 退出）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
 | `rel` | 链接 rel（配合 href） | — | — |
 | `shortcut` | 快捷键提示（如 `"Ctrl+N"`）：右侧 kbd 提示 + document 级 keydown 命中触发 select | — | — |
 | `target` | 链接 target（配合 href） | — | — |
@@ -454,9 +467,10 @@ onMounted(() => {
 | ---------- | ----------------------------------------------------------- | -------- |
 | `label`    | 菜单文字                                                    | `string` |
 | `value`    | 选中值（items JSON 中声明；渲染后宿主标签上对应 `data-value` 小写属性，供内部定位，宿主不应依赖其作为公共 API） | `string` |
-| `kind`     | 叶子项语义：`radio`（默认，可勾选、参与 value）/ `action`（动作项，无勾选态、点击不写回 value） | `string` |
+| `kind`     | 叶子项语义：`radio`（默认，可勾选、参与 value）/ `action`（动作项，无勾选态、点击不写回 value，选中后收起整条级联——`keepOpen` 退出） | `string` |
 | `shortcut` | 快捷键提示（如 `"Ctrl+N"`）；渲染为右侧 kbd，并自动绑定 `document` 级 keydown（命中即选择该项、`preventDefault`） | `string` |
 | `accessKey`| `Alt` 访问键（单字符）；缺省取 label 首个 ASCII 字母        | `string` |
+| `keepOpen` | 选中后保持菜单展开（仅 `kind:"action"` 项有意义）；子元素通道属性名 `keep-open` | `boolean`|
 | `disabled` | 禁用                                                        | `boolean`|
 | `children` | 子菜单项（可继续嵌套，级联向右浮出）                        | `MenubarItem[]` |
 

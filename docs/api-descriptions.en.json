@@ -2177,10 +2177,11 @@
       "align": "First-level popup alignment: `start` (default) / `center` / `end`; with `side` top/bottom it aligns on the horizontal axis, with left/right on the vertical axis",
       "offset": "Gap between the first-level popup and its trigger (px, default 4)",
       "show-arrow": "Show a visual arrow on the popup pointing at the trigger",
-      "close-on-select": "Whether selecting a leaf closes the open submenu, default `true` (desktop menubar convention); `close-on-select=\"false\"` keeps it open (multi-select scenario); `kind:\"checkbox\"` items never close on toggle",
+      "close-on-select": "Global close switch: selecting a `kind:\"action\"` item closes the entire cascade by default (desktop menubar convention); `close-on-select=\"false\"` keeps actions open too (whole-menu continuous selection); checkbox/radio group selections always stay open regardless of this value (continuous toggling/switching) — use the item-level `keepOpen` to keep individual actions open",
       "orientation": "Arrangement direction: `horizontal` (default) / `vertical` (bar stacks vertically, first-level popups default to the right, arrow keys move top-level items up/down)",
       "breakpoint": "Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding)",
-      "editable-shortcuts": "Pass-through granularity of shortcuts while focus is in an editable control: default / `all` (defined Ctrl/Cmd shortcuts and F-keys all pass through — the default) / `safe` (editing keys Ctrl/Cmd + C/V/X/A/Z/Y yield to native browser editing, everything else still passes through) / `none` (nothing passes through inside editable focus); invalid values fall back to `all` with a one-time development-mode warning; runtime changes take effect immediately"
+      "editable-shortcuts": "Pass-through granularity of shortcuts while focus is in an editable control: default / `all` (defined Ctrl/Cmd shortcuts and F-keys all pass through — the default) / `safe` (editing keys Ctrl/Cmd + C/V/X/A/Z/Y yield to native browser editing, everything else still passes through) / `none` (nothing passes through inside editable focus); invalid values fall back to `all` with a one-time development-mode warning; runtime changes take effect immediately",
+      "shortcuts-in-editable": "Global pass-through toggle for shortcuts inside editable focus (boolean, off by default): when enabled, defined shortcuts fire as usual while focus is inside `input` / `textarea` / `select` / `contenteditable` (including editor contentDOMs), overriding the `editable-shortcuts` granularity modes (editor-style apps opt out of the mistouch-proof baseline explicitly); off (default) leaves behavior untouched, runtime changes take effect immediately"
     },
     "events": {
       "oas-select": "An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: \"action\"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind`",
@@ -2197,14 +2198,15 @@
       "disabled": "Disable this item",
       "icon": "Leading icon (`@oas-ui/icons` registry icon name)",
       "icon-color": "Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to `currentColor` following the text color",
-      "kind": "Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array)",
+      "kind": "Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`, closes the cascade on selection — `keep-open` opts out) / `checkbox` (multi-select, `value` is the checked-set array)",
       "danger": "Destructive item: danger color semantics (delete/logout operations)",
       "href": "Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`)",
       "target": "Link target (with `href`)",
       "rel": "Link rel (with `href`)",
       "shortcut": "Shortcut hint (e.g. `\"Ctrl+N\"`): rendered as a trailing kbd + a document-level keydown binding that triggers select on hit",
       "access-key": "Alt access key (single character); defaults to the first ASCII letter of the label",
-      "indeterminate": "Checkbox indeterminate state: renders `aria-checked=\"mixed\"` + a dash inside the box (only for `kind=\"checkbox\"` items)"
+      "indeterminate": "Checkbox indeterminate state: renders `aria-checked=\"mixed\"` + a dash inside the box (only for `kind=\"checkbox\"` items)",
+      "keep-open": "Keep the menu open after selection (only meaningful for `kind=\"action\"` items): actions close the entire cascade by default, this attribute lets individual actions opt out"
     },
     "events": {},
     "slots": {
@@ -4123,7 +4125,7 @@
       "directory": "Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse",
       "draggable": "Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop`",
       "expanded": "Set of expanded node keys (JSON string array, e.g. `'[\"a\"]'`; the pre-v2.5 comma string is deprecated and falls back to an empty set with a warning)",
-      "height": "Virtual scroll viewport height (px), default 360; works with virtual (the legacy usage with only height still enables virtual scrolling)",
+      "height": "Virtual scroll viewport height in px (default 360), or `fill` to follow the parent container's content box (padding excluded) and track container size changes — with `fill` the host must not sync the container height into this attribute; works with virtual (the legacy usage with only height still enables virtual scrolling)",
       "virtual": "Client-side virtual scrolling (boolean, off by default): flattens the currently expanded visible nodes and renders only the viewport slice (reuses oas-virtual-list); expansion/data changes recompute the window and keep the scroll position, and keyboard navigation / ARIA use the full flattened list",
       "item-height": "Virtual row height (px), default 32; the default can be overridden with the `--oas-tree-row-height` token (`row-height` is the legacy name and `item-height` wins when both are present)",
       "lazy": "Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand",

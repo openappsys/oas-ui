@@ -13,18 +13,18 @@ The `value` of a `type: "group"` item acts as a **group id**. Leaves inside the 
 
 ## Action items (kind: "action")
 
-Leaves with `kind: "action"` render as plain actions (`menuitem`): no checkmark, clicks do **not** write back `value`, and only `oas-select` is dispatched (`detail.kind === "action"`). Fits "Open / Save / About" style items.
+Leaves with `kind: "action"` render as plain actions (`menuitem`): no checkmark, clicks do **not** write back `value`, and only `oas-select` is dispatched (`detail.kind === "action"`). Fits "Open / Save / About" style items. **Selecting an action closes the entire cascade by default** (desktop menu convention: the menu closes once the action fires); `keepOpen: true` (the `keep-open` attribute on the declarative child channel) keeps individual actions open — useful for "Recent files" style lists meant for consecutive picking.
 
 <DemoBlock title="Action items (kind: action)">
-  <oas-menubar id="menubar-action" onoas-select="menubarActionLog(event)" value="mode" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"Open","value":"open","kind":"action"},{"label":"Save","value":"save","kind":"action"},{"type":"divider"},{"label":"Mode","value":"mode","kind":"radio"},{"label":"Theme","value":"theme","kind":"radio"}]}]'></oas-menubar>
-  <oas-tag id="menubar-action-result" type="info">value: mode (actions don't change it)</oas-tag>
+  <oas-menubar id="menubar-action" onoas-select="menubarActionLog(event)" value="mode" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"Open","value":"open","kind":"action"},{"label":"Save","value":"save","kind":"action"},{"type":"divider"},{"label":"Duplicate","value":"save-as","kind":"action","keepOpen":true},{"label":"Mode","value":"mode","kind":"radio"},{"label":"Theme","value":"theme","kind":"radio"}]}]'></oas-menubar>
+  <oas-tag id="menubar-action-result" type="info">value: mode (actions don't change it; "Duplicate" is keep-open)</oas-tag>
 </DemoBlock>
 
 ## Shortcuts (shortcut)
 
 The `shortcut` field (e.g. `"Ctrl+N"`): renders a key hint on the right, and auto-binds a `document`-level keydown — pressing the combo selects that item (`preventDefault` blocks the browser default). Binding rules: `modifier+key` combos bind directly; single keys bind only for function keys (F1–F12) — any other single key (letters/digits/Delete etc.) is display-only and not bound.
 
-**Global shortcut semantics**: both `shortcut` and `accessKey` (Alt access keys) are document-level bindings, acting on the whole page rather than only when the menubar is focused. To avoid hijacking input, when focus is inside an editable control (`input` / `textarea` / `select` / `contenteditable`): **defined shortcuts with Ctrl / Cmd, and single-key F1–F24 shortcuts, still fire** (so save/new-file actions remain reachable in editors); all other keys (plain printable characters, arrow/editing keys, Alt access keys, and any key during IME composition) yield to the control and the browser; a modifier combination that matches no shortcut is not `preventDefault`ed, so the editor's own shortcuts keep working; a matched shortcut does not move focus to the menubar, so the editor caret stays where it was. The menubar's own keyboard navigation (arrow keys / Tab focus trap) only acts on its internal focus and is unaffected by this guard. Keep each shortcut unique within the page; conflicts resolve to the first matched menu item. The pass-through granularity is controlled by the `editable-shortcuts` attribute (see below).
+**Global shortcut semantics**: both `shortcut` and `accessKey` (Alt access keys) are document-level bindings, acting on the whole page rather than only when the menubar is focused. To avoid hijacking input, when focus is inside an editable control (`input` / `textarea` / `select` / `contenteditable`): **defined shortcuts with Ctrl / Cmd, and single-key F1–F24 shortcuts, still fire** (so save/new-file actions remain reachable in editors); all other keys (plain printable characters, arrow/editing keys, Alt access keys, and any key during IME composition) yield to the control and the browser; a modifier combination that matches no shortcut is not `preventDefault`ed, so the editor's own shortcuts keep working; a matched shortcut does not move focus to the menubar, so the editor caret stays where it was. The menubar's own keyboard navigation (arrow keys / Tab focus trap) only acts on its internal focus and is unaffected by this guard. Keep each shortcut unique within the page; conflicts resolve to the first matched menu item. The pass-through granularity is controlled by the `editable-shortcuts` attribute; editor-style apps can use the `shortcuts-in-editable` global toggle to pass everything through (both see below).
 
 ### Pass-through granularity inside editable focus (editable-shortcuts)
 
@@ -46,6 +46,17 @@ Invalid values fall back to `all` with a one-time development-mode warning. Exam
 ::: warning Editing-key bindings are still risky under the default `all`
 Under the default `all`, **defined** Ctrl / Cmd + editing-key shortcuts (`Ctrl+C` / `Ctrl+V` / `Ctrl+X` / `Ctrl+A` / `Ctrl+Z` / `Ctrl+Y` and their Cmd forms) fire the menu action and call `preventDefault` inside inputs, hijacking copy / paste / cut / select-all / undo. Editor-style applications should set `editable-shortcuts="safe"` (editing keys yield, save-style combos stay) or `"none"` (everything yields inside editable focus); without the attribute, do **not** bind editing keys to menu actions — to display those hints, handle the key yourself at the host level (leave the component unbound), or use `kind: "action"` with your own document listener.
 :::
+
+### Global pass-through toggle inside editable focus (shortcuts-in-editable)
+
+The `shortcuts-in-editable` boolean attribute (off by default): when enabled, **all** defined shortcuts fire as usual while focus is inside any editable control (`input` / `textarea` / `select` / `contenteditable`, including editor contentDOMs — contenteditable elements are covered naturally), overriding the `editable-shortcuts` granularity modes — editor-style applications whose primary surface is the editor use this to explicitly opt out of the mistouch-proof baseline. Off (default) leaves the `editable-shortcuts` behavior untouched. Runtime changes take effect immediately.
+
+```html
+<!-- Editor scenario (e.g. CodeMirror 6): Ctrl+S / F9 fire menu actions inside the contentDOM -->
+<oas-menubar shortcuts-in-editable items='...'></oas-menubar>
+<!-- Combined with the granularity switch: the global toggle wins — safe/none no longer yield inside editable focus -->
+<oas-menubar shortcuts-in-editable editable-shortcuts="none" items='...'></oas-menubar>
+```
 
 <DemoBlock title="Shortcuts">
   <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new","shortcut":"Ctrl+N"},{"label":"Open","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"Save","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>
@@ -82,12 +93,12 @@ The `value` attribute is controlled (it is in `observedAttributes`): an external
   <oas-menubar id="mb-value" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"},{"type":"divider"},{"label":"Quit","value":"quit"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"},{"label":"Redo","value":"redo"}]}]'></oas-menubar>
 </DemoBlock>
 
-## Checkbox items and keep-open (checkbox + close-on-select)
+## Checkboxes and radio groups (group selections stay open + close-on-select)
 
-Leaves with `kind: "checkbox"` toggle a multi-select checked set (`value` is a JSON array); toggling a checkbox does **not** close the submenu (continuous toggling). `close-on-select="false"` keeps the submenu open even after radio/action selections. `close-on-select` is a boolean attribute: presence means `true` (including an empty value); only an explicit `"false"` disables it — when the attribute is absent the default is to close.
+Leaves with `kind: "checkbox"` and radio items follow the **group-selection semantics**: selecting them does **not** close the submenu (continuous toggling / switching, including the mobile hamburger panel and the "···" overflow popup). `kind: "action"` items **close the entire cascade by default** (desktop menu convention). The global switch `close-on-select="false"` keeps actions open too (whole-menu continuous selection); the item-level `keepOpen` field keeps individual actions open. `close-on-select` is a boolean attribute: presence means `true` (including an empty value); only an explicit `"false"` disables it — when absent, each kind falls back to its own default semantics.
 
-<DemoBlock title="Checkbox + close-on-select">
-  <oas-menubar id="menubar-checkbox" onoas-select="menubarCheckboxLog(event)" close-on-select="false" value='["grid"]' items='[{"label":"View","value":"view","accessKey":"v","children":[{"type":"group","label":"Show","children":[{"label":"Gridlines","value":"grid","kind":"checkbox"},{"label":"Ruler","value":"ruler","kind":"checkbox"}]},{"type":"divider"},{"label":"Fullscreen","value":"fullscreen"}]}]'></oas-menubar>
+<DemoBlock title="Checkboxes and radio (group selections stay open)">
+  <oas-menubar id="menubar-checkbox" onoas-select="menubarCheckboxLog(event)" value='["grid"]' items='[{"label":"View","value":"view","accessKey":"v","children":[{"type":"group","label":"Show","children":[{"label":"Gridlines","value":"grid","kind":"checkbox"},{"label":"Ruler","value":"ruler","kind":"checkbox"}]},{"type":"divider"},{"label":"Mode","value":"mode","kind":"radio"}]}]'></oas-menubar>
   <oas-tag id="menubar-checkbox-result" type="info">Checked: ["grid"]</oas-tag>
 </DemoBlock>
 
@@ -181,7 +192,7 @@ Leaves (both inside submenus and top-level leaves) with `href` render as real `<
 
 ## Declarative child channel
 
-Besides the `items` JSON, you can write items declaratively with `<oas-menubar-item>` / `<oas-menubar-group>` / `<oas-menubar-divider>` (the `items` attribute **wins when explicitly set**; otherwise child elements are parsed and converge to the same render path). The default slot text is the label; attributes map to the `MenubarItem` fields: `value` / `disabled` / `icon` / `kind` / `danger` / `href` / `target` / `rel` / `shortcut` / `access-key` / `indeterminate`. Nesting child elements directly inside `<oas-menubar-item>` recursively becomes a submenu; `<oas-menubar-group>` uses its `label` attribute as the group title (`value` can serve as a radio group id) and flattens its children to the same level. Child additions/removals, attribute and text changes re-render automatically (MutationObserver).
+Besides the `items` JSON, you can write items declaratively with `<oas-menubar-item>` / `<oas-menubar-group>` / `<oas-menubar-divider>` (the `items` attribute **wins when explicitly set**; otherwise child elements are parsed and converge to the same render path). The default slot text is the label; attributes map to the `MenubarItem` fields: `value` / `disabled` / `icon` / `kind` / `danger` / `href` / `target` / `rel` / `shortcut` / `access-key` / `keep-open` / `indeterminate`. Nesting child elements directly inside `<oas-menubar-item>` recursively becomes a submenu; `<oas-menubar-group>` uses its `label` attribute as the group title (`value` can serve as a radio group id) and flattens its children to the same level. Child additions/removals, attribute and text changes re-render automatically (MutationObserver).
 
 <DemoBlock title="Declarative child channel (group / divider / nesting / checkbox / indeterminate / shortcut / danger / href)">
   <oas-space direction="vertical" size="small">
@@ -282,7 +293,7 @@ onMounted(() => {
     const mb = document.getElementById('menubar-checkbox')
     if (tag && mb) {
       const v = JSON.parse(mb.getAttribute('value') || '[]')
-      tag.textContent = `Checked: ${JSON.stringify(v)} (checkbox keeps open)`
+      tag.textContent = `Checked: ${JSON.stringify(v)} (checkbox/radio selections stay open)`
     }
   }
 
@@ -368,7 +379,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `align` | First-level popup alignment: `start` (default) / `center` / `end`; with `side` top/bottom it aligns on the horizontal axis, with left/right on the vertical axis | `string` | — |
 | `breakpoint` | Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding) | `string` | — |
-| `close-on-select` | Whether selecting a leaf closes the open submenu, default `true` (desktop menubar convention); `close-on-select="false"` keeps it open (multi-select scenario); `kind:"checkbox"` items never close on toggle | `string` | — |
+| `close-on-select` | Global close switch: selecting a `kind:"action"` item closes the entire cascade by default (desktop menubar convention); `close-on-select="false"` keeps actions open too (whole-menu continuous selection); checkbox/radio group selections always stay open regardless of this value (continuous toggling/switching) — use the item-level `keepOpen` to keep individual actions open | `string` | — |
 | `disabled` | Disable the whole bar: top-level/sub-item clicks, keyboard navigation, shortcut hotkeys and Alt access keys are all blocked; visually desaturated | `boolean` | — |
 | `editable-shortcuts` | Pass-through granularity of shortcuts while focus is in an editable control: default / `all` (defined Ctrl/Cmd shortcuts and F-keys all pass through — the default) / `safe` (editing keys Ctrl/Cmd + C/V/X/A/Z/Y yield to native browser editing, everything else still passes through) / `none` (nothing passes through inside editable focus); invalid values fall back to `all` with a one-time development-mode warning; runtime changes take effect immediately | `string` | — |
 | `items` | Top-level menu items JSON (with submenu `children`) | `string` | `[]` |
@@ -376,6 +387,7 @@ onMounted(() => {
 | `offset` | Gap between the first-level popup and its trigger (px, default 4) | `string` | — |
 | `open` | Value of the currently open top-level menu (`open=""` closes all). Controlled attribute (in `observedAttributes`): an external `setAttribute('open', ...)` opens/switches/closes immediately; internal click/hover/keyboard changes write it back and dispatch `oas-open-change`, letting the host take over | `string` | — |
 | `orientation` | Arrangement direction: `horizontal` (default) / `vertical` (bar stacks vertically, first-level popups default to the right, arrow keys move top-level items up/down) | — | — |
+| `shortcuts-in-editable` | Global pass-through toggle for shortcuts inside editable focus (boolean, off by default): when enabled, defined shortcuts fire as usual while focus is inside `input` / `textarea` / `select` / `contenteditable` (including editor contentDOMs), overriding the `editable-shortcuts` granularity modes (editor-style apps opt out of the mistouch-proof baseline explicitly); off (default) leaves behavior untouched, runtime changes take effect immediately | `string` | — |
 | `show-arrow` | Show a visual arrow on the popup pointing at the trigger | — | — |
 | `side` | First-level popup side: `bottom` (default horizontal) / `top` / `left` / `right` (default vertical); cascading submenus are unaffected | `string` | — |
 | `trigger` | Top-level menu trigger: `click` (default, click to open first, then hover switches — desktop convention) / `hover` (hover opens directly) | — | — |
@@ -408,7 +420,8 @@ onMounted(() => {
 | `icon` | Leading icon (`@oas-ui/icons` registry icon name) | — | — |
 | `icon-color` | Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to `currentColor` following the text color | — | — |
 | `indeterminate` | Checkbox indeterminate state: renders `aria-checked="mixed"` + a dash inside the box (only for `kind="checkbox"` items) | — | — |
-| `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array) | — | — |
+| `keep-open` | Keep the menu open after selection (only meaningful for `kind="action"` items): actions close the entire cascade by default, this attribute lets individual actions opt out | — | — |
+| `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`, closes the cascade on selection — `keep-open` opts out) / `checkbox` (multi-select, `value` is the checked-set array) | — | — |
 | `rel` | Link rel (with `href`) | — | — |
 | `shortcut` | Shortcut hint (e.g. `"Ctrl+N"`): rendered as a trailing kbd + a document-level keydown binding that triggers select on hit | — | — |
 | `target` | Link target (with `href`) | — | — |
@@ -451,9 +464,10 @@ onMounted(() => {
 | ----------- | ----------------------------------------------------------------- | ------------- |
 | `label`     | Menu text                                                         | `string`      |
 | `value`     | Selection value (declared in the items JSON; after render the host tag carries a `data-value` lowercased attribute for internal lookup — hosts shouldn't rely on it as public API) | `string` |
-| `kind`      | Leaf semantics: `radio` (default, checkable, participates in `value`) / `action` (action item, no checkmark, doesn't write back `value` on click) | `string` |
+| `kind`      | Leaf semantics: `radio` (default, checkable, participates in `value`) / `action` (action item, no checkmark, doesn't write back `value` on click, closes the cascade on selection — `keepOpen` opts out) | `string` |
 | `shortcut`  | Shortcut hint (e.g. `"Ctrl+N"`); renders as a right-side kbd and auto-binds a `document`-level keydown (selects the item on match, `preventDefault`) | `string` |
 | `accessKey` | `Alt` access key (single character); defaults to the first ASCII letter of `label` | `string` |
+| `keepOpen`  | Keep the menu open after selection (only meaningful for `kind:"action"` items); the declarative child-channel attribute is `keep-open` | `boolean` |
 | `disabled`  | Disabled                                                          | `boolean`     |
 | `children`  | Submenu items (nested recursively, cascading to the right)        | `MenubarItem[]` |
 

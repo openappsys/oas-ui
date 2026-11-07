@@ -132,40 +132,42 @@ test('menubar show-arrow side-top align-end 箭头右对齐触发器（右缘 12
 // 布尔属性约定「存在即真（含空值），仅显式 "false" 关闭」；缺省收（桌面菜单栏共识）。
 // docs 无空值 demo（menubar-checkbox 是显式 "false"），空串存在即真由单测覆盖，此处不硬造。
 
-test('menubar 缺省（未设置 close-on-select）：基础 demo 点叶子后子菜单收起', async ({ page }) => {
+test('menubar 缺省（未设置 close-on-select）：动作项 demo 点 action 叶子后子菜单收起', async ({ page }) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
-  await up(page, '#menubar-basic')
-  // 限定 .bar 作用域：汉堡面板渲染同一份 items 镜像，不限定会 strict 重复命中
-  await page.locator('#menubar-basic .bar [part="top-item"][data-value="file"]').click()
-  const leaf = page.locator('#menubar-basic .bar [part="item"][data-value="new"]')
+  await up(page, '#menubar-action')
+  // 缺省收语义由 action 项承载（radio/checkbox 归组选择语义保持展开，见下条）
+  await page.locator('#menubar-action .bar [part="top-item"][data-value="file"]').click()
+  const leaf = page.locator('#menubar-action .bar [part="item"][data-value="open"]')
   await leaf.waitFor({ state: 'visible' })
-  await expect.poll(() => submenuOpen(page, '#menubar-basic', 'file')).toBe(true)
+  await expect.poll(() => submenuOpen(page, '#menubar-action', 'file')).toBe(true)
   // 浮层展开动画/定位期间元素持续微动，Playwright 稳定性检查会重试到超时（firefox 尤甚）；
   // 这里验证的是 close-on-select 行为，用 DOM click 触发组件处理器即可。
   await leaf.evaluate((el) => (el as HTMLElement).click())
   // 收起是异步的：轮询到最终态，别固定 sleep（高并发下 200ms 不够 → flaky）
   await expect
-    .poll(() => submenuOpen(page, '#menubar-basic', 'file'), {
-      message: '未设置 close-on-select（缺省收）点叶子后子菜单应收起',
+    .poll(() => submenuOpen(page, '#menubar-action', 'file'), {
+      message: '未设置 close-on-select（缺省收）点 action 叶子后子菜单应收起',
     })
     .toBe(false)
 })
 
-test('menubar close-on-select="false"（menubar-checkbox demo）：radio 叶子选中后子菜单保持展开', async ({ page }) => {
+test('menubar-checkbox demo：radio 叶子选中后子菜单保持展开（组选择缺省语义，无需 close-on-select）', async ({
+  page,
+}) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menubar-checkbox')
   await page.locator('#menubar-checkbox .bar [part="top-item"][data-value="view"]').click()
-  const leaf = page.locator('#menubar-checkbox .bar [part="item"][data-value="fullscreen"]')
+  const leaf = page.locator('#menubar-checkbox .bar [part="item"][data-value="mode"]')
   await leaf.waitFor({ state: 'visible' })
   await expect.poll(() => submenuOpen(page, '#menubar-checkbox', 'view')).toBe(true)
   // 浮层展开动画/定位期间元素持续微动，Playwright 稳定性检查会重试到超时（firefox 尤甚）；
-  // 这里验证的是 close-on-select 行为，用 DOM click 触发组件处理器即可。
+  // 这里验证的是组选择语义，用 DOM click 触发组件处理器即可。
   await leaf.evaluate((el) => (el as HTMLElement).click())
-  // close-on-select="false"：点叶子后应保持展开。收起（若缺陷复现）为点击同步链内的行为，
+  // radio 选中后应保持展开。收起（若缺陷复现）为点击同步链内的行为，
   // 立即读取即可判定；下方 poll 再兜一层重试
   await expect
     .poll(() => submenuOpen(page, '#menubar-checkbox', 'view'), {
-      message: 'close-on-select="false" radio 叶子选中后子菜单应保持展开',
+      message: 'radio 叶子选中后子菜单应保持展开（组选择缺省语义）',
     })
     .toBe(true)
 })

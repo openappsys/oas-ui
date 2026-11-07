@@ -2097,10 +2097,11 @@
       "align": "一级下拉对齐：`start`（缺省）/ `center` / `end`；`side` 为 top/bottom 时沿水平轴，为 left/right 时沿垂直轴",
       "offset": "一级下拉与触发器间距（px，缺省 4）",
       "show-arrow": "显示弹出层指向触发器的视觉箭头",
-      "close-on-select": "选中叶子项后是否收起展开的子菜单，缺省 `true`（桌面菜单栏共识）；`close-on-select=\"false\"` 保持展开（连选场景）；`kind:\"checkbox\"` 项勾选切换永不收起",
+      "close-on-select": "全局收起开关：`kind:\"action\"` 动作项选中后缺省收起整条级联（桌面菜单栏共识），`close-on-select=\"false\"` 让动作项也不收（整体连选场景）；checkbox/radio 组选择项无论此值始终保持展开（连续勾选/换选场景），个别动作项保持展开用 item 级 `keepOpen`",
       "orientation": "排列方向：`horizontal`（缺省）/ `vertical`（竖排：bar 纵向、一级下拉缺省向右弹、键盘上下移动顶级）",
       "breakpoint": "移动端断点（px，如 `600`）：视口宽度 ≤ 断点时 bar 折叠为汉堡按钮 + 弹出菜单（窄宽收纳）",
-      "editable-shortcuts": "可编辑焦点内 shortcut 放行粒度：缺省 / `all`（默认——带 Ctrl/Cmd 的已定义 shortcut 与 F 功能键全部放行）/ `safe`（编辑键 Ctrl/Cmd + C/V/X/A/Z/Y 让路给浏览器原生编辑，其余照常放行）/ `none`（可编辑焦点内一律不放行）；非法值回落 all 并在开发环境告警一次，运行时切换即时生效"
+      "editable-shortcuts": "可编辑焦点内 shortcut 放行粒度：缺省 / `all`（默认——带 Ctrl/Cmd 的已定义 shortcut 与 F 功能键全部放行）/ `safe`（编辑键 Ctrl/Cmd + C/V/X/A/Z/Y 让路给浏览器原生编辑，其余照常放行）/ `none`（可编辑焦点内一律不放行）；非法值回落 all 并在开发环境告警一次，运行时切换即时生效",
+      "shortcuts-in-editable": "可编辑焦点内 shortcut 放行总开关（布尔，缺省关）：开启后焦点位于 `input` / `textarea` / `select` / `contenteditable`（含编辑器 contentDOM）时已定义 shortcut 一律照常派发，覆盖 `editable-shortcuts` 三态限制（编辑器场景宿主显式退出防误触基线）；缺省（关）行为不变，运行时切换即时生效"
     },
     "events": {
       "oas-select": "选择某项，`detail: { value, kind?, checked? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 `\"action\"`；checkbox 项带 `checked`（切换后勾选态）；radio 项 `detail.kind` 不出现",
@@ -2117,14 +2118,15 @@
       "disabled": "禁用该项",
       "icon": "前置图标（`@oas-ui/icons` 内置图标名）",
       "icon-color": "图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色",
-      "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集）",
+      "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value，选中后收起整条级联——`keep-open` 退出）/ `checkbox`（多选勾选，value 数组勾选集）",
       "danger": "破坏性项：红色语义（删除/退出等危险操作）",
       "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
       "target": "链接 target（配合 href）",
       "rel": "链接 rel（配合 href）",
       "shortcut": "快捷键提示（如 `\"Ctrl+N\"`）：右侧 kbd 提示 + document 级 keydown 命中触发 select",
       "access-key": "Alt 访问键（单字符）；缺省取 label 首个 ASCII 字母",
-      "indeterminate": "checkbox 半选态：渲染 `aria-checked=\"mixed\"` + 方块内横线减号（仅 `kind=\"checkbox\"` 项生效）"
+      "indeterminate": "checkbox 半选态：渲染 `aria-checked=\"mixed\"` + 方块内横线减号（仅 `kind=\"checkbox\"` 项生效）",
+      "keep-open": "选中后保持菜单展开（仅 `kind=\"action\"` 项有意义）：action 缺省选中即收起整条级联，此属性让个别动作项退出该默认"
     },
     "events": {},
     "slots": {
@@ -3940,7 +3942,7 @@
       "directory": "目录模式：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标，文件夹按展开 / 收起切换图标",
       "draggable": "节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop`",
       "expanded": "展开节点 key 集合（JSON 字符串数组，如 `'[\"a\"]'`；v2.5 前的旧逗号串已废弃，解析失败按空集合回落并告警）",
-      "height": "虚拟滚动视口高度（px），默认 360；与 virtual 配合（历史用法只设 height 也仍开启虚拟滚动）",
+      "height": "虚拟滚动视口高度：像素值（默认 360），或 `fill`（跟随父容器内容盒高度、扣 padding，容器尺寸变化自动跟随；用 `fill` 时宿主不要手工同步高度）；与 virtual 配合（历史用法只设 height 也仍开启虚拟滚动）",
       "virtual": "客户端虚拟滚动（布尔，默认关）：把当前展开可见的节点拍平为线性列表，只渲染视口切片（复用 oas-virtual-list）；展开/数据变更时窗口重算且保持滚动位置，键盘导航与 ARIA 均按全量拍平列表",
       "item-height": "虚拟滚动行高（px），默认 32；缺省可用 `--oas-tree-row-height` token 覆盖（`row-height` 为旧名，两者同时在场时以 item-height 为准）",
       "lazy": "懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载",

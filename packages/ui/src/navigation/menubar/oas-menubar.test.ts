@@ -153,7 +153,7 @@ describe('OASMenubar', () => {
     expect(subItems(el)[0]!.classList.contains('active')).toBe(true)
   })
 
-  it('子菜单内 ArrowDown 移动、Enter 选中：派发 oas-select 并收起', () => {
+  it('子菜单内 ArrowDown 移动、Enter 选中：派发 oas-select，radio 保持展开（组选择语义）', () => {
     const el = mount()
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
@@ -161,8 +161,10 @@ describe('OASMenubar', () => {
     key(el, 'ArrowDown') // 新建 → 打开
     key(el, 'Enter')
     expect(detail).toEqual({ value: 'open' })
-    expect(openSubmenus(el).length).toBe(0)
-    expect(el.shadowRoot!.activeElement).toBe(topItems(el)[0])
+    expect(openSubmenus(el).length, 'radio 选中后菜单保持展开（连续换选）').toBe(1)
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    expect(open.getAttribute('aria-checked')).toBe('true')
+    expect(el.getAttribute('value')).toBe('open')
   })
 
   it('键盘导航跳过 disabled 子项', () => {
@@ -200,8 +202,8 @@ describe('OASMenubar', () => {
   it('子菜单内 ArrowRight 到叶子项时移到下一个顶级项并收起', () => {
     const el = mount()
     key(el, 'ArrowDown') // 打开 文件
-    key(el, 'Enter') // 选中 新建（叶子）→ 收起 + 聚焦回 文件
-    key(el, 'ArrowRight') // 移到 编辑
+    key(el, 'Enter') // 选中 新建（叶子，radio 保持展开）
+    key(el, 'ArrowRight') // 叶子项右移：关闭子菜单并移到 编辑
     expect(topItems(el)[1]!.classList.contains('active')).toBe(true)
   })
 
@@ -569,16 +571,14 @@ describe('checkbox 复选项', () => {
     expect(details).toEqual([{ value: 'grid', checked: false }])
   })
 
-  it('勾选切换不收起子菜单（连续勾选场景，对比 radio 收起）', () => {
+  it('勾选/单选切换不收起子菜单（组选择语义：连续勾选与换选场景）', () => {
     const el = mount({ items: CHECKBOX_ITEMS })
     topItems(el)[0]!.click()
     expect(openSubmenus(el).length).toBe(1)
     const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
     grid.click()
-    expect(openSubmenus(el).length).toBe(1)
-    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
-    open.click()
-    expect(openSubmenus(el).length).toBe(0)
+    expect(openSubmenus(el).length, 'checkbox 勾选切换不收起').toBe(1)
+    expect(grid.getAttribute('aria-checked')).toBe('true')
   })
 })
 
@@ -804,27 +804,39 @@ describe('弹出定位 side/align/offset', () => {
 // ===== close-on-select 勾选不收起策略 =====
 
 describe('close-on-select', () => {
-  it('缺省选中收起（桌面菜单栏共识）', () => {
-    const el = mount()
+  // 缺省收起语义由 action 项承载（radio/checkbox 归组选择语义保持展开，见「选择收起策略」describe）
+  it('缺省 action 选中收起（桌面菜单栏共识）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '文件', value: 'file', children: [{ label: '打开', value: 'open', kind: 'action' }] },
+      ]),
+    })
     topItems(el)[0]!.click()
     const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
     open.click()
     expect(openSubmenus(el).length).toBe(0)
   })
 
-  it('close-on-select="false"：选中叶子后子菜单保持展开（连选场景）', () => {
-    const el = mount({ 'close-on-select': 'false' })
+  it('close-on-select="false"：action 选中后子菜单保持展开（连选场景）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '文件', value: 'file', children: [{ label: '打开', value: 'open', kind: 'action' }] },
+      ]),
+      'close-on-select': 'false',
+    })
     topItems(el)[0]!.click()
     const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
     open.click()
     expect(openSubmenus(el).length).toBe(1)
-    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
-    newItem.click()
-    expect(openSubmenus(el).length).toBe(1)
   })
 
   it('close-on-select 空串（存在即真）：按开启收起处理，缺省收语义不因空值破坏', () => {
-    const el = mount({ 'close-on-select': '' })
+    const el = mount({
+      items: JSON.stringify([
+        { label: '文件', value: 'file', children: [{ label: '打开', value: 'open', kind: 'action' }] },
+      ]),
+      'close-on-select': '',
+    })
     topItems(el)[0]!.click()
     const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
     open.click()
@@ -881,12 +893,12 @@ describe('breakpoint 移动端汉堡', () => {
     expect(panel.classList.contains('open')).toBe(true)
     expect(burger.getAttribute('aria-expanded')).toBe('true')
     expect(panel.querySelectorAll<HTMLElement>('[part="item"]').length, '汉堡面板镜像全部菜单项').toBe(11)
-    // 点击叶子项 → oas-select + 面板收起
+    // 点击叶子项（radio）→ oas-select + 面板保持展开（组选择语义，连续换选；action 点选才收面板）
     let detail: unknown
     el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
     panel.querySelector<HTMLElement>('[part="item"][data-value="new"]')!.click()
     expect(detail).toEqual({ value: 'new' })
-    expect(panel.classList.contains('open')).toBe(false)
+    expect(panel.classList.contains('open'), 'radio 点选后面板保持展开').toBe(true)
   })
 
   it('宽屏（>breakpoint）：汉堡隐藏、正常 bar', () => {
@@ -1138,12 +1150,12 @@ describe('水平溢出收纳（ellipsis）', () => {
     expect(moreSub.classList.contains('open')).toBe(true)
     const mirrors = moreSub.querySelectorAll<HTMLElement>('[part="item"]')
     expect(mirrors.length).toBe(collapsed.length)
-    // 点击镜像项 → oas-select + 收起
+    // 点击镜像项（radio）→ oas-select + 弹层保持展开（组选择语义）
     const events: unknown[] = []
     el.addEventListener('oas-select', (e) => events.push((e as CustomEvent).detail))
     ;(mirrors[0] as HTMLElement).click()
     expect(events.length).toBe(1)
-    expect(more.getAttribute('aria-expanded')).toBe('false')
+    expect(more.getAttribute('aria-expanded'), 'radio 镜像点选后弹层保持展开').toBe('true')
   })
 
   it('选中项被收纳时「···」高亮（child-selected + aria-current）', async () => {
@@ -1553,7 +1565,7 @@ describe('OASMenubar 属性-方法撞名回归', () => {
     topItems(el)[0]!.click()
     const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
     expect(() => open.click()).not.toThrow()
-    expect(openSubmenus(el).length, '默认选中叶子后收起子菜单').toBe(0)
+    expect(openSubmenus(el).length, 'radio 点选保持展开（组选择语义），property 写入不抛错').toBe(1)
   })
 })
 
@@ -1819,5 +1831,235 @@ describe('OASMenubar 输入上下文守卫', () => {
     pressCopy()
     pressSave()
     expect(count, 'none 档运行时生效：可编辑焦点内不再触发').toEqual(['copy', 'save', 'save'])
+  })
+})
+
+// ===== T8：选择收起策略（action 缺省收起整条级联 / checkbox+radio 组选择保持展开 / keep-open item 级例外） =====
+
+describe('OASMenubar 选择收起策略（kind 语义 + keep-open）', () => {
+  const MIX_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      accessKey: 'f',
+      children: [
+        { label: '打开', value: 'open', kind: 'action' },
+        { label: '保存', value: 'save', kind: 'action', keepOpen: true },
+        { type: 'divider' },
+        { label: '模式', value: 'mode', kind: 'radio' },
+        { label: '网格线', value: 'grid', kind: 'checkbox' },
+      ],
+    },
+  ])
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('action 项点击后收起整条级联（弹层 .open 清空 + open 属性写回空 + oas-open-change）', () => {
+    const el = mount({ items: MIX_ITEMS })
+    topItems(el)[0]!.click()
+    expect(openSubmenus(el).length).toBe(1)
+    const details: Array<{ value: unknown; open: unknown }> = []
+    el.addEventListener('oas-open-change', (e) => details.push((e as CustomEvent).detail))
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(openSubmenus(el).length, 'action 点击后级联全部收起').toBe(0)
+    expect(el.getAttribute('open'), 'open 属性写回空（非受控通道）').toBe('')
+    expect(topItems(el)[0]!.getAttribute('aria-expanded')).toBe('false')
+    const last = details[details.length - 1]
+    expect(last?.open, '收起事件派发 oas-open-change（宿主可收口）').toBe(false)
+  })
+
+  it('radio 项点击后保持展开（组选择语义：连续换选）+ aria-checked 同步', () => {
+    const el = mount({ items: MIX_ITEMS, value: '{"":"other"}' })
+    topItems(el)[0]!.click()
+    expect(openSubmenus(el).length).toBe(1)
+    const mode = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="mode"]')!
+    mode.click()
+    expect(openSubmenus(el).length, 'radio 选择后菜单保持展开').toBe(1)
+    expect(mode.getAttribute('aria-checked'), '选中态照常同步').toBe('true')
+    expect(el.getAttribute('value'), 'value 照常写回（根作用域纯字符串）').toBe('mode')
+  })
+
+  it('checkbox 项点击后保持展开（既有行为回归）', () => {
+    const el = mount({ items: MIX_ITEMS })
+    topItems(el)[0]!.click()
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    grid.click()
+    expect(openSubmenus(el).length).toBe(1)
+    expect(grid.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('keepOpen: true 的 action 项点击后保持展开（item 级例外通道，oas-select 照常派发）', () => {
+    const el = mount({ items: MIX_ITEMS })
+    topItems(el)[0]!.click()
+    expect(openSubmenus(el).length).toBe(1)
+    const details: unknown[] = []
+    el.addEventListener('oas-select', (e) => details.push((e as CustomEvent).detail))
+    const save = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="save"]')!
+    save.click()
+    expect(openSubmenus(el).length, 'keep-open action 不收起').toBe(1)
+    expect(details, 'keep-open 不影响 oas-select 派发').toEqual([{ value: 'save', kind: 'action' }])
+  })
+
+  it('close-on-select="false" 全局关闭收起：action 也不收（既有行为回归）', () => {
+    const el = mount({ items: MIX_ITEMS, 'close-on-select': 'false' })
+    topItems(el)[0]!.click()
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(openSubmenus(el).length).toBe(1)
+  })
+
+  it('受控契约：收起经写回+事件链，宿主监听 oas-open-change 拉回 open 后保持展开（宿主赢）', () => {
+    const el = mount({ items: MIX_ITEMS })
+    // 受控宿主口径：任何收起都拉回打开态（组件不得绕过事件链擅自改 DOM）
+    el.addEventListener('oas-open-change', (e) => {
+      if (!(e as CustomEvent).detail.open) el.setAttribute('open', 'file')
+    })
+    topItems(el)[0]!.click()
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(openSubmenus(el).length, '宿主受控拉回后菜单保持展开').toBe(1)
+    expect(el.getAttribute('open')).toBe('file')
+  })
+
+  it('可编辑焦点内 shortcut 触发 action 收起：DOM 弹层同步关闭（restoreFocusTop=false 路径不漏 sync）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        {
+          label: '文件',
+          value: 'file',
+          children: [{ label: '保存', value: 'save', shortcut: 'Ctrl+S', kind: 'action' }],
+        },
+      ]),
+    })
+    el.setAttribute('open', 'file')
+    el.setAttribute('shortcuts-in-editable', '')
+    const editable = document.createElement('div')
+    editable.tabIndex = 0
+    editable.setAttribute('contenteditable', 'true')
+    document.body.appendChild(editable)
+    const count: string[] = []
+    el.addEventListener('oas-select', (e) => count.push(String((e as CustomEvent).detail?.value)))
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }))
+    expect(count).toEqual(['save'])
+    expect(openSubmenus(el).length, '收起时弹层 .open 同步清空').toBe(0)
+    expect(el.getAttribute('open'), 'open 属性同步写回').toBe('')
+  })
+
+  it('键盘 Enter 选中 action 项：收起整条级联并聚焦回顶级项', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '文件', value: 'file', children: [{ label: '打开', value: 'open', kind: 'action' }] },
+      ]),
+    })
+    key(el, 'ArrowDown') // 打开 文件
+    key(el, 'Enter') // 选中 打开（action）
+    expect(openSubmenus(el).length, '键盘路径 action 选中同样收起').toBe(0)
+    expect(el.getAttribute('open')).toBe('')
+    expect(el.shadowRoot!.activeElement).toBe(topItems(el)[0])
+  })
+})
+
+// ===== T9：shortcuts-in-editable（可编辑焦点内 shortcut 放行总开关） =====
+
+describe('OASMenubar shortcuts-in-editable', () => {
+  const EDIT_S_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      children: [
+        { label: '保存', value: 'save', shortcut: 'Ctrl+S', kind: 'action' },
+        { label: '复制', value: 'copy', shortcut: 'Ctrl+C', kind: 'action' },
+      ],
+    },
+  ])
+
+  /** contenteditable 载体（编辑器 contentDOM 同构：contenteditable div，isContentEditable 天然覆盖） */
+  function mountEditable(): HTMLElement {
+    const div = document.createElement('div')
+    div.tabIndex = 0
+    div.setAttribute('contenteditable', 'true')
+    div.textContent = 'x'
+    document.body.appendChild(div)
+    return div
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('observedAttributes 含 shortcuts-in-editable', () => {
+    expect(OASMenubar.observedAttributes).toContain('shortcuts-in-editable')
+  })
+
+  it('editable-shortcuts="none" 下 contenteditable 内 Ctrl+S 静默（现状基线，不设新属性）', () => {
+    const el = mount({ items: EDIT_S_ITEMS, 'editable-shortcuts': 'none' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e) => count.push(String((e as CustomEvent).detail?.value)))
+    const editable = mountEditable()
+    const ev = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true })
+    editable.dispatchEvent(ev)
+    expect(count, 'none 档可编辑焦点内不放行').toEqual([])
+    expect(ev.defaultPrevented, '不放行时也不拦截默认行为').toBe(false)
+  })
+
+  it('开启 shortcuts-in-editable 后同一按键派发 oas-select（覆盖 none 档，编辑器场景显式退出防误触）', () => {
+    const el = mount({ items: EDIT_S_ITEMS, 'editable-shortcuts': 'none', 'shortcuts-in-editable': '' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e) => count.push(String((e as CustomEvent).detail?.value)))
+    const editable = mountEditable()
+    const ev = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true })
+    editable.dispatchEvent(ev)
+    expect(count, 'shortcuts-in-editable 开启后 Ctrl+S 照常派发').toEqual(['save'])
+    expect(ev.defaultPrevented, '命中 shortcut 照常 preventDefault').toBe(true)
+  })
+
+  it('移除属性恢复抑制（运行时切换生效）', () => {
+    const el = mount({ items: EDIT_S_ITEMS, 'editable-shortcuts': 'none', 'shortcuts-in-editable': '' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e) => count.push(String((e as CustomEvent).detail?.value)))
+    const editable = mountEditable()
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }))
+    expect(count).toEqual(['save'])
+    el.removeAttribute('shortcuts-in-editable')
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }))
+    expect(count, '移除后恢复 none 档抑制').toEqual(['save'])
+  })
+
+  it('safe 档编辑键 Ctrl+C 在 shortcuts-in-editable 下也放行（完全放行语义）', () => {
+    const el = mount({ items: EDIT_S_ITEMS, 'editable-shortcuts': 'safe', 'shortcuts-in-editable': '' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e) => count.push(String((e as CustomEvent).detail?.value)))
+    const editable = mountEditable()
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true }))
+    expect(count, 'safe 档编辑键被总开关覆盖放行').toEqual(['copy'])
+  })
+
+  it('缺省（未设属性）all 档行为不变（Ctrl+S 触发——现状回归保护）', () => {
+    const el = mount({ items: EDIT_S_ITEMS })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e) => count.push(String((e as CustomEvent).detail?.value)))
+    const editable = mountEditable()
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }))
+    expect(count, '缺省 all 档现状行为不变').toEqual(['save'])
+  })
+
+  it('shortcuts-in-editable="false" 显式关闭等同缺省（框架绑定解绑形态）', () => {
+    const el = mount({ items: EDIT_S_ITEMS, 'editable-shortcuts': 'none', 'shortcuts-in-editable': 'false' })
+    const count: string[] = []
+    el.addEventListener('oas-select', (e) => count.push(String((e as CustomEvent).detail?.value)))
+    const editable = mountEditable()
+    editable.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true }))
+    expect(count, '显式 false 与缺省同义：none 档抑制生效').toEqual([])
   })
 })

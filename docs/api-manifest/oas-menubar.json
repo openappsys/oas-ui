@@ -78,6 +78,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "shortcuts-in-editable",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
