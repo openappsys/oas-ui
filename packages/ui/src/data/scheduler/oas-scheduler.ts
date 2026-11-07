@@ -707,6 +707,11 @@ const STYLE = `
   z-index: 4;
 }
 @media print {
+  /* resource-timeline 宿主在 flex 父容器里 shrink-to-fit 到 min-content（实测 182px，
+     刻度挤团/条截断）——print 下让宿主长开填满父宽（flex-grow 覆盖 shrink） */
+  :host {
+    flex: 1 1 auto;
+  }
   .calendar {
     border: 0;
     border-radius: 0;
