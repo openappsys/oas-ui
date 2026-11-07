@@ -10,9 +10,9 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 
 ## DSD 路线（渐进增强）
 
-组件库的 SSR 长期策略走 Declarative Shadow DOM（DSD）路线：服务端输出 `<template shadowrootmode="open">` 的静态结构 + 样式，浏览器 upgrade 自定义元素后由组件接管交互。
+组件库的 SSR 走 Declarative Shadow DOM（DSD）路线：服务端输出 `<template shadowrootmode="open">` 的静态结构 + 样式，浏览器 upgrade 自定义元素后由组件接管交互。DSD 已作为正式能力发布。
 
-当前进展：
+已落地能力：
 
 - 基类 `OASElement` 已支持复用 declarative shadow root：元素在 upgrade 前已由 `<template shadowrootmode="open">` 挂好 shadow root 时，构造器复用已有 root，不再调用 `attachShadow`（否则会抛 `NotSupportedError` 导致组件报废）。
 - `@oas-ui/ssr` 渲染器已落地：Node 环境用 happy-dom 起最小 DOM shim，注册组件类后按入参渲染并把 shadow 快照序列化为 DSD，输出完整宿主 HTML 字符串（见「服务端渲染」）。
@@ -28,7 +28,7 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 - 测量组件首帧闪动治理：affix / ellipsis / scroll-area 检测到 DSD 快照时把布局写入延迟到首帧后（rAF）——快照 = 未校正态，upgrade 首帧与快照一致无跳动，rAF 后按真实布局校正。
 - 框架集成插件：`@oas-ui/nuxt`（Nuxt 3/4 module）与 `@oas-ui/next`（Next.js App Router 集成）已落地——nuxt module 自动配置 Vue `compilerOptions.isCustomElement`（识别 `oas-*`）、注入 `@oas-ui/theme` 全局 CSS、注册 `renderOasToString` SSR helper 自动导入；next 提供 RSC `<OasComponent>` 服务端产 DSD 快照 + `<OasRegistry>` 客户端注册引导（见下「Nuxt（推荐）」/「Next.js（推荐）」）。
 
-白名单组件可直接服务端渲染；其余组件仍按"客户端专属"方式接入（见下）。
+白名单组件可直接服务端渲染；其余组件按「客户端专属」方式接入（见下「白名单与边界」）。未纳入白名单的均为有意排除（命令式 API、开发工具、宿主受控浮层等），不是未完成项。
 
 ### Vue（Nuxt / Vite SSR）
 

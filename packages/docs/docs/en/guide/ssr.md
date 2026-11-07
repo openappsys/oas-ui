@@ -13,11 +13,11 @@ which throw in Node (no DOM), e.g. `HTMLElement is not defined`.
 
 ## DSD route (progressive enhancement)
 
-The long-term SSR strategy is Declarative Shadow DOM (DSD): the server outputs
+The SSR strategy is Declarative Shadow DOM (DSD), shipped as a first-class capability: the server outputs
 the static structure plus styles inside `<template shadowrootmode="open">`, and
 the browser's custom element upgrade takes over interactivity afterwards.
 
-Current progress:
+Shipped capabilities:
 
 - The base class `OASElement` reuses an existing declarative shadow root: when
   the element already has a shadow root attached by
@@ -92,7 +92,9 @@ Current progress:
   "Next.js (recommended)" below).
 
 Whitelisted components can be rendered on the server directly; the rest keep the
-"client-only" approach below.
+"client-only" approach below. Components outside the whitelist are intentionally
+excluded (imperative APIs, dev tools, host-controlled overlays, etc.), not
+unfinished work.
 
 ### Vue (Nuxt / Vite SSR)
 
