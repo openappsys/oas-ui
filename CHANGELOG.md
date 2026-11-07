@@ -1446,8 +1446,11 @@
 - 基础运行时 `@oas-ui/core`、主题 token、图标库
 - 新增 Button、Icon、Tag、Badge、Space、Divider、Link、Typography
 
+[2.6.6]: https://github.com/openappsys/oas-ui/compare/v2.6.5...v2.6.6
+[2.6.5]: https://github.com/openappsys/oas-ui/compare/v2.6.4...v2.6.5
 [2.6.4]: https://github.com/openappsys/oas-ui/compare/v2.6.3...v2.6.4
 [2.6.3]: https://github.com/openappsys/oas-ui/compare/v2.6.2...v2.6.3
+[2.6.2]: https://github.com/openappsys/oas-ui/compare/v2.6.1...v2.6.2
 [2.6.1]: https://github.com/openappsys/oas-ui/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/openappsys/oas-ui/releases/tag/v2.6.0
 [2.5.9]: https://github.com/openappsys/oas-ui/releases/tag/v2.5.9
