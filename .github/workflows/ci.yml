@@ -302,7 +302,10 @@ jobs:
             sleep 15
           done
           exit 1
-      - run: pnpm test:e2e:webkit --shard=${{ matrix.shard }}/4
+      # webkit 在 2 核 runner 上的负载 flake 治理：worker 数 CI 默认 4 减半到 2
+      # （playwright.config.ts 的 E2E_WORKERS 环境变量通道；只降 webkit，chromium/firefox 不动）。
+      # 高并发抢 CPU 是 marquee/countdown/table 时序断言反复抖动的结构性根因，降载即降噪。
+      - run: E2E_WORKERS=2 pnpm test:e2e:webkit --shard=${{ matrix.shard }}/4
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
