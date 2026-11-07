@@ -66,6 +66,10 @@ export default defineConfig(() => {
           find: '@oas-ui/core/translator',
           replacement: resolve(import.meta.dirname, '../core/src/translator.ts'),
         },
+        {
+          find: '@oas-ui/core/locale-tag',
+          replacement: resolve(import.meta.dirname, '../core/src/locale-tag.ts'),
+        },
         { find: '@oas-ui/core', replacement: resolve(import.meta.dirname, '../core/src/index.ts') },
         {
           find: /^@oas-ui\/i18n\/registry$/,

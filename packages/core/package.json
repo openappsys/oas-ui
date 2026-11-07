@@ -53,6 +53,10 @@
     "./translator": {
       "types": "./dist/translator.d.ts",
       "default": "./dist/translator.js"
+    },
+    "./locale-tag": {
+      "types": "./dist/locale-tag.d.ts",
+      "default": "./dist/locale-tag.js"
     }
   },
   "sideEffects": false,

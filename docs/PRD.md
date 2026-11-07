@@ -539,7 +539,7 @@ helper 不进 L1、不进 CDN 族包（`perf:size` 新增 6 条 L3 登记 + 独�
 - **canonical 语言名**：`zh-CN`（默认）/ `zh-Hant` / `en` / `ja` / `ko` / `de` / `fr` / `es` / `pt-BR` / `ru` / `ar` / `hi` / `th` / `uk` / `he` / `fa`；`pt` 保留为 `pt-BR` 兼容别名（历史 `pt` 文案即巴西葡语）。
 - **归一化**：BCP 47 大小写 + 下划线转连字符（`zh_hant_tw` → `zh-Hant-TW`）；内置别名表覆盖 `zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant` → `zh-Hant`，`pt` / `pt-BR` → `pt-BR`，语言级语言包接受常见地区变体（`en-US` / `en-GB` → `en`、`es-419` → `es`、`ar-EG` → `ar`、`hi-IN` → `hi`、`th-TH` → `th`、`uk-UA` → `uk`、`he-IL` / `iw` → `he`、`fa-IR` → `fa` 等）；`pt-PT` 不映射到 `pt-BR`（不把巴西葡语当欧洲葡语），未识别标签保持归一后的原值；扩展段可剥离回退基础标签、私有段不剥离。
 - **作用面**：`setLocale(name)`、`loadLocale(name)`、`getDirection(name)`、`registerLocale({ name })`、core 的按 locale 名翻译器查找、SSR `RenderToStringOptions.locale` 统一走同一套归一；config-provider 的 `locale` 属性经 core 归一即可命中。
-- **语言内容**：`zh-Hant`（繁体 + 台湾术语）、`pt-BR`、`hi`、`th`、`uk`、`he`、`fa` 均以 zh-CN 的 438 keys 为基，completeness 测试兜底；`he` / `fa` 标注 `dir: 'rtl'`。
+- **语言内容**：`zh-Hant`（繁体 + 台湾术语）、`pt-BR`、`hi`、`th`、`uk`、`he`、`fa` 均以 zh-CN 的 450 keys 为基，completeness 测试兜底；`he` / `fa` 标注 `dir: 'rtl'`。
 - **入口**：新增 `@oas-ui/i18n/zh-Hant`、`pt-BR`、`hi`、`th`、`uk`、`he`、`fa` 子路径；`@oas-ui/i18n/pt` 保留并指向 `pt-BR`。
 
 ### 非目标

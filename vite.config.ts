@@ -32,6 +32,10 @@ export default defineConfig({
         find: '@oas-ui/core/translator',
         replacement: resolve(import.meta.dirname, 'packages/core/src/translator.ts'),
       },
+      {
+        find: '@oas-ui/core/locale-tag',
+        replacement: resolve(import.meta.dirname, 'packages/core/src/locale-tag.ts'),
+      },
       { find: '@oas-ui/ui', replacement: resolve(import.meta.dirname, 'packages/ui/src/index.ts') },
       { find: '@oas-ui/core', replacement: resolve(import.meta.dirname, 'packages/core/src/index.ts') },
       { find: '@oas-ui/theme', replacement: resolve(import.meta.dirname, 'packages/theme/index.css') },

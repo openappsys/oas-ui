@@ -87,7 +87,7 @@ effect(() => {
 - **事件命名**：一律 `oas-*` 前缀 CustomEvent，payload 挂 `detail`，bubbles + composed（穿透 Shadow DOM）。
 - **跨 Shadow DOM 的 ARIA 关联**：idref（`aria-describedby`/`aria-labelledby`）不能穿透 shadow 边界。方案：core 提供 id 生成器；表单错误提示优先用 `aria-live` region 播报 + `aria-invalid` 标记，跨组件 idref 场景由 form 容器在 light DOM 侧协调。
 - **overlay 管理器**：浮层栈、z-index 语义 token（`--oas-z-tooltip/popover/modal/message`）、点击外部关闭；Esc 层栈与 body 滚动锁由 `@oas-ui/ui` 的 `shared/overlay-stack` 提供（modal/drawer/tour/dropdown/context-menu/sidebar 共用），tooltip/message 等轻提示不走该栈。
-- **i18n**：locale 注册表（`setLocale / t()`），组件内置文案（空态、确认/取消）走查表；当前内置 zh-CN，默认文案按家族切片分发（见 §2.2）。
+- **i18n**：locale 注册表（`setLocale / t()`），组件内置文案（空态、确认/取消）走查表；内置 16 种语言包（默认 zh-CN，ar / he / fa 为 RTL），默认文案按家族切片分发（见 §2.2）。
 - **主题注入**：组件样式只写 token 引用；宿主只需一次 `import '@oas-ui/theme'` 定义 `:root` 变量即可换肤。
 - **SSR**：Web Components 原生不 SSR；提供"无 JS 占位 + 渐进增强"策略作为边界（见 ROADMAP SSR 项）。
 

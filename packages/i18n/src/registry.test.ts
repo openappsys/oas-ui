@@ -17,7 +17,7 @@ import arLocale from './ar.js'
 import zhHant from './zh-Hant.js'
 import ptBR from './pt-BR.js'
 import { canonicalizeLocale } from './locale-name.js'
-import { getLocaleTranslator } from '@oas-ui/core'
+import { getLocaleTranslator } from '@oas-ui/core/translator'
 import { basicMessages } from './slices/basic.js'
 import { workbenchMessages } from './slices/workbench.js'
 

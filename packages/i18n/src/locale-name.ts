@@ -1,6 +1,6 @@
-import { normalizeLocaleTag, stripLocaleExtensions } from '@oas-ui/core'
+import { normalizeLocaleTag, stripLocaleExtensions } from '@oas-ui/core/locale-tag'
 
-export { normalizeLocaleTag } from '@oas-ui/core'
+export { normalizeLocaleTag } from '@oas-ui/core/locale-tag'
 
 /**
  * 内置语言包的 canonical 名 + 常用别名表（键均为 `normalizeLocaleTag` 后的小写形式）。

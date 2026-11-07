@@ -73,7 +73,7 @@
  * `try/finally` 清理），不改全局 locale、渲染段不触发 locale/translator 广播
  * （i18n registry 一次性装载副作用除外）；未传 locale 保持
  * 旧行为（沿用调用时全局 locale）。多请求并发（含冷加载）逐请求语言正确，无需加锁。
- * RenderLocale 覆盖内置语言名子集（含 ar），按需装载语言包；未注册 locale
+ * RenderLocale 覆盖内置语言名子集（含 ar / he / fa 三种 RTL），按需装载语言包；未注册 locale
  * devWarn 一次并回退内置 en（不借用可能变化的全局 locale）。
  * 自定义语言包必须在**首次 renderToString（安装 DOM shim）之后**再 registerLocale：
  * i18n 主入口求值 `class extends HTMLElement`，裸 Node 下先注册会抛 `HTMLElement is not defined`；
