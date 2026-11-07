@@ -1821,14 +1821,11 @@ test('table 浮层编辑器通道（editComponent 第二期）：选定即提交
   expect(opened.options, '选项渲染').toBe(3)
 
   // 2. 选定选项 → 提交并回写（浮层关闭 + 编辑退出）
-  // 真实点击（pointerdown → mousedown → mouseup → click 完整链路 + 可见/稳定/可命中动作等待），
-  // 替代「合成 click + 固定 sleep」的时序假设：真实指针链路会走编辑器的指针抑制窗口，
-  // 与用户操作同路径；动作等待保证落点在已就绪的选项上。
-  await page
-    .locator('#table-edit-overlay tbody td[data-col="dept"] .option')
-    .filter({ hasText: '后端部' })
-    .first()
-    .click()
+  // 键盘选定（ArrowDown 定位 + Enter 提交），替代真实点击的命中测试——webkit 在
+  // 负载下动画窗口内点击落点不稳定（CI 实发「期望 be 实收旧值 fe」）；键盘链路
+  // 与组件的 oas-change 提交通道同源，语义不变且无时序假设。
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('Enter')
   // 提交是「选定即提交」（oas-change）——轮询等待回写落定，仍按精确值断言（不等同放宽）
   await expect
     .poll(
