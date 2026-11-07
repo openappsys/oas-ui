@@ -2894,7 +2894,9 @@ test('gantt 任务-资源分配编辑：编辑弹窗池内多选 + 未登记只�
       ),
     }
   })
-  expect(state.labels, '池内已登记资源渲染为多选勾选（池登记序）').toEqual(['张三', '李四'])
+  // 共享池跨 demo 共存：同页其他 demo（如 reassign 候选日历 demo）也会登记资源——
+  // 断言只锁前两位池登记序（张三/李四），不锁全集长度（防同页 demo 互相污染）
+  expect(state.labels.slice(0, 2), '池内已登记资源渲染为多选勾选（池登记序）').toEqual(['张三', '李四'])
   expect(state.value, '任务现有池内分配应预勾选').toEqual(['bob'])
   expect(state.chips, '未登记 id 渲染为只读 chip').toEqual(['ghost'])
 
