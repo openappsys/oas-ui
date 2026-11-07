@@ -2,14 +2,14 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
-## 未发布（工具链）
+## v2.6.7（工具链）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
 | **开发/CI 运行时升级到 Node 26 LTS** | `.nvmrc` 24.22.2 → **26.13.0**（Active LTS，2026-10-28 起，EOL 2029-04）；`@types/node` ^24.19.2 → ^26.6.6 与运行时对齐；CI / Release 均读 `.nvmrc` 自动跟随；`release.yml` 的 npm@12 说明同步。**`engines.node` 保持 `^22.18.0 \|\| ^24.0.0 \|\| >=26.0.0` 不变**——组件库不在 minor 抬高消费方最低 Node，Node 22 / 24 仍在支持窗口内。**配套**：8 个发布子包补齐同一 `engines.node`（根 `engines` 不被 npm 消费方继承）；CI 新增 `node-compat` matrix（22.18.0 / 24.22.2，各跑 test + build）守住兼容窗口。验证：typecheck / 全量单测 12320 / build / perf:size / api / llms / ssr / stats / smoke+console e2e 311 | ✅ 已完成（未发布） |
 | **依赖升级到当前最新（无 major）** | `pnpm outdated -r` 清零：biome 2.6.4 / vitest 5.1.0 / vite 8.3.5 / happy-dom 21.0.4 / markdownlint-cli2 0.24.0 / shiki 4.6.0 / @nuxt 4.6.4 / react 19.3.1 / vue 3.5.44 / 插件同步；`biome migrate` + 性能档案刷新。验证：单测 12320 / build / perf:size / api / llms / ssr / stats / lint:md / e2e 608 | ✅ 已完成（未发布） |
 
-## 未发布（T 批：demands 编号立项）
+## v2.6.7（T 批：demands 编号立项）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -38,7 +38,7 @@
 | **审查修复批（v2.6.6 后 review 收口）** | 跨根可访问名实质修复（Z8 二次修正）+ row-auto-height 三缺陷（C1 回填跳/I1 隐藏可见/I2 补偿钳制）+ 负荷缓存跨池失效 | ✅ 已完成（未发布） |
 | **table 补齐小批** | TSV/CSV 导入 L3 helper（`data/table/import`：嗅探 + RFC 4180 状态机 + 重名后缀 + 不齐如实计数，16 单测 + 预算档 1.75 KB）；打印视图（print 媒体感知全量渲染：虚拟行/列窗口展开、windowed 守卫切片口径、打印几何 CSS，单测 5 + e2e 3）；主链 63.7→64.2 KB 预警线内 | ✅ 已完成（未发布） |
 
-## 未发布（决策批：再捞待决项按原则清零）
+## v2.6.7（决策批：再捞待决项按原则清零）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -47,7 +47,7 @@
 | **gantt 冲突行对比度 + 预算再定档** | conflict 默认色 danger→danger-text（light 4.54 / dark 8.59 AA 达标，亮暗 e2e 断言）；链预算 70→75 KB（P2 审计无冗余，预警机制再定档出口） | ✅ 已完成（未发布） |
 | **小额债清零** | core 表单 label 移除后回退名立即写回（空窗消除）；packages/i18n 包级 vitest.config（裸跑与根跑同绿） | ✅ 已完成（未发布） |
 
-## 未发布（再捞清零批）
+## v2.6.7（再捞清零批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -56,7 +56,7 @@
 | **i18n 8 语言补译 + placeholder 守卫** | jsonViewer/diffViewer/gantt/resource 30 key 英文残留补译（ja/ko/de/fr/es/pt/ru/ar）+ 11 条错译校正；completeness 新增 placeholder token 序列守卫 | 🚧 进行中（未发布） |
 | **测试机制批（断言 lint / WSL 通道 / soak / gantt 审计）** | qa:audit 新增 os-absolute-assertions 维度（存量 79→40，CI 增量上限）；`release:rehearse:wsl`（WSL Linux 重放，SKIP 语义）；`test:soak`（N 轮重复 + flaky 矩阵）；gantt 链归因审计（无冗余，扩展前置解除） | 🚧 进行中（未发布） |
 
-## 未发布（交互补全与文档批）
+## v2.6.7（交互补全与文档批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -69,13 +69,13 @@
 | **resource 直方图行 hover 补齐** | `.row.load` 与泳道行同口径 hover（用户反馈驱动：直方图区与泳道区观感不一致）；行/行头同 `--oas-resource-row-hover-bg` token 链，`hover="false"` 逐元素还原，收进 `@media (hover: hover)`；单测 + e2e | ✅ 已完成（未发布） |
 | **框架集成指南补强（guide/frameworks，zh/en）** | 新增「全局属性劫持（`title`）」小节（React property 不落 attribute → ref + setAttribute 兜底）；`packages/react` 定位公开口径（参考出处可 vendor、不发布 npm、不做框架 wrapper）；补齐 Svelte（事件属性大小写敏感，Svelte 5 官方文档核实）/ Angular（CUSTOM_ELEMENTS_SCHEMA）/ Astro（零特殊处理）三小节，「先选路径」覆盖七框架 | ✅ 已完成（未发布） |
 
-## 未发布（i18n 语言代码归一 + 多语言扩充）
+## v2.6.7（i18n 语言代码归一 + 多语言扩充）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
 | **BCP 47 归一/别名 + 7 个语言包（`zh-Hant` / `pt-BR` / `hi` / `th` / `uk` / `he` / `fa`）** | 新增 core `normalizeLocaleTag` / `stripLocaleExtensions`（语言小写 / Script 首字母大写 / 地区大写 / 扩展小写 / 下划线转连字符 / 扩展可剥离、私有段不剥离）并在 core 按 locale 名翻译器查找处归一；i18n 新增 `canonicalizeLocale` 别名层：`zh` / `zh-Hans` / `zh-CN` / `zh-SG` → `zh-CN`，`zh-TW` / `zh-HK` / `zh-MO` / `zh-Hant` → `zh-Hant`，`pt` → `pt-BR`，`en-US` / `en-GB` → `en`、`es-419` → `es`、`ar-EG` → `ar`、`hi-IN` → `hi`、`th-TH` → `th`、`uk-UA` → `uk`、`he-IL` / `iw` → `he`、`fa-IR` → `fa` 等；`pt-PT` 不与 `pt-BR` 混用；`setLocale` / `loadLocale` / `getDirection` / `registerLocale` / config-provider locale / SSR `RenderLocale` 全链路生效。新增 `@oas-ui/i18n/zh-Hant`（繁体 + 台湾术语）、`pt-BR`（`pt` 兼容别名）、`hi` / `th` / `uk` / `he` / `fa`（he/fa 为 RTL）；`RenderLocale` 增加对应语种。回归：core normalize/strip、i18n registry 别名/扩展、SSR 别名/RTL/冷加载竞态、config-provider 扩展标签、theme-editor 16 locale；文档 + CHANGELOG | ✅ 已完成（未发布） |
 
-## 未发布（select chip 形态）
+## v2.6.7（select chip 形态）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
