@@ -43,6 +43,11 @@ for (const token of [
   '@oas-ui/icons/register',
   '@oas-ui/nuxt',
   '@oas-ui/next',
+  '@oas-ui/i18n',
+  'setLocale',
+  'loadLocale',
+  'pt-BR',
+  'oas-config-provider',
   'CustomEvent',
   'data-theme="dark"',
 ]) {

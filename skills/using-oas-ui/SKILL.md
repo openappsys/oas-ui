@@ -1,6 +1,6 @@
 ---
 name: using-oas-ui
-description: Use when building UI with OAS-UI web components in HTML, React, Vue, Nuxt, or Next.js, or when choosing OAS-UI packages, wiring oas-* events, theming/dark mode, SSR, icons, or debugging custom-element behavior.
+description: Use when building UI with OAS-UI web components in HTML, React, Vue, Nuxt, or Next.js, or when choosing OAS-UI packages, wiring oas-* events, theming/dark mode, i18n/locales, SSR, icons, or debugging custom-element behavior.
 license: MIT OR Apache-2.0
 ---
 
@@ -61,6 +61,14 @@ Icons referenced by name (for example `icon="check"`) need `import '@oas-ui/icon
 - Dark: add `class="dark"` to `<html>` or set `data-theme="dark"`. `data-theme="high-contrast"` is also supported.
 - Optional: `@oas-ui/theme/skins.css` (`data-skin`), `@oas-ui/theme/glass.css` + `glass-fluid.js` (`data-glass`).
 - Nuxt/Next: use `@oas-ui/nuxt` / `@oas-ui/next` for registration and SSR. Otherwise register components on the client; do not assume custom elements render meaningfully on the server without the SSR path.
+
+## i18n and locales
+
+- 16 built-in packs: `zh-CN` (default), `zh-Hant`, `en`, `ja`, `ko`, `de`, `fr`, `es`, `pt-BR`, `ru`, `ar`, `hi`, `th`, `uk`, `he`, `fa`; `ar` / `he` / `fa` are RTL, and `pt` is a compatibility alias of `pt-BR`.
+- Global switch: install `@oas-ui/i18n` alongside `@oas-ui/ui` (`pnpm add @oas-ui/i18n`), then `import { loadLocale, setLocale } from '@oas-ui/i18n'` — `await loadLocale('ja')` then `setLocale('ja')`; `setLocale(localeObject)` registers and switches in one step (packs are also available as `@oas-ui/i18n/<locale>`).
+- Locale tags are BCP 47-normalized: `zh-TW` → `zh-Hant`, `zh` / `zh-Hans` → `zh-CN`, `en-US` → `en`, `pt` → `pt-BR` (`pt-PT` is not treated as `pt-BR`).
+- Scope a subtree with `<oas-config-provider locale="ja">`; SSR with `renderToString(tag, attrs, html, { locale: 'ja' })`.
+- Built-in component text (empty states, validation, buttons) comes from these packs — do not hardcode translations. Register custom packs with `registerLocale({ name, messages, dir? })`.
 
 ## Do not
 

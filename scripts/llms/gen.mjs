@@ -37,6 +37,7 @@ const CONVENTIONS = `关键约定：
 
 - 组件标签统一前缀 \`oas-\`，属性用 kebab-case，事件统一 \`oas-*\`（bubbles + composed，可穿出 shadow DOM）。
 - 受控 / 非受控双模式；\`disabled\` 支持 config-provider 全局注入。
+- 内置 16 种语言包（默认 \`zh-CN\`，\`ar\` / \`he\` / \`fa\` 为 RTL，\`pt\` 是 \`pt-BR\` 别名）；\`loadLocale()\` 按需加载，语言标签按 BCP 47 归一。
 - 颜色一律走 CSS 变量 token（含暗色变体）；样式隔离在 shadow DOM，跨边界改样式用 CSS 自定义属性或 \`::part()\`。
 - 安装、按需引入、图标 opt-in 注册与 CDN 用法见「快速开始」。
 - 人类可读的完整文档在站点内；本文件与 \`/llms-full.txt\` 面向 LLM/agent。`
