@@ -21,6 +21,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang={lang} dir={dir} data-theme={theme}>
       <body>
+        {/* 注意：DSD polyfill 不在本树里——Next App Router 会把 layout 渲染的 head 内容排在
+            框架 chunk 脚本（Turbopack 一律 async）之后，无法保证「polyfill 先于组件注册」。
+            fixture 由 server.mjs 在文档响应的 <head> 里注入经典同步脚本（见该文件与 README）。 */}
         {/* 真实使用 OasRegistry（A1 修复后 SSR 预渲染安全）：客户端模块求值期
             守卫动态导入 @oas-ui/ui 完成全局注册，服务端守卫跳过 */}
         <OasRegistry>{children}</OasRegistry>

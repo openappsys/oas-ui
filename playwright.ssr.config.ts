@@ -6,18 +6,22 @@ import { defineConfig } from '@playwright/test'
  * 根配置 testDir=`./packages` + testMatch=`**` + spec 后缀，fixture 用 `*.e2e.ts` 命名，
  * 因此不会被全量 e2e 收集；本文件只跑 `packages/ssr/fixtures/{next,nuxt}` 的两个生产构建。
  *
- * 端口固定 4301（Next `next start`）/ 4302（Nuxt `.output/server/index.mjs`），
+ * 端口固定 4301（Next：`server.mjs` 自托管入口，在 head 注入 polyfill）/ 4302（Nuxt `.output/server/index.mjs`），
  * 与文档站 4173 preview、dev 5175 完全隔离。
  *
  * 浏览器矩阵：
  * - `next` / `nuxt`：Chromium（既有全量验收）；
+ * - `next-firefox`：Firefox 子集（`fixtures/next/firefox-dsd.e2e.ts`）——验收 head 经典脚本的
+ *   **严格顺序**（polyfill 先于任何 Next chunk）、原生 DSD 解析与真水合、运行期注入 DSD 的
+ *   polyfill 挂载与幂等；
  * - `nuxt-firefox`：Firefox 子集（`fixtures/nuxt/firefox-dsd.e2e.ts`）——验收 Firefox 下的
  *   原生 DSD 解析 + 入口 DSD polyfill（运行期注入路径）与「无 polyfill 的 CSR 降级」。
  *   Firefox 不重跑既有用例：禁用 JS 的 DSD 可见性、逐 locale 文案等属引擎无关逻辑，留在 Chromium。
  *
  * 用法：
- *   pnpm test:e2e:ssr                 # 全部（三个 project，两个 webServer 都起）
+ *   pnpm test:e2e:ssr                 # 全部（四个 project，两个 webServer 都起）
  *   SSR_FIXTURE=next pnpm test:e2e:ssr --project=next
+ *   SSR_FIXTURE=next pnpm test:e2e:ssr --project=next-firefox
  *   SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt
  *   SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt-firefox
  */
@@ -50,7 +54,17 @@ export default defineConfig({
           {
             name: 'next',
             testMatch: /fixtures[\\/]next[\\/].*\.e2e\.ts/,
+            // Firefox 子集有独立 project（next-firefox），Chromium 不重复跑
+            testIgnore: /firefox-dsd\.e2e\.ts/,
             use: { baseURL: `http://127.0.0.1:${NEXT_PORT}` },
+          },
+          {
+            name: 'next-firefox',
+            testMatch: /fixtures[\\/]next[\\/].*firefox-dsd\.e2e\.ts/,
+            use: {
+              browserName: 'firefox',
+              baseURL: `http://127.0.0.1:${NEXT_PORT}`,
+            },
           },
         ]
       : []),

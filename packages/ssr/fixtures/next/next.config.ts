@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@oas-ui/ssr', 'happy-dom'],
   poweredByHeader: false,
   reactStrictMode: true,
+  // 关掉响应压缩：fixture 用 server.mjs 在文档响应里注入 head 脚本（见该文件），
+  // 压缩后的字节流无法按 HTML 文本改写。生产接入应让边缘/网关在压缩前完成注入。
+  compress: false,
 }
 
 export default nextConfig

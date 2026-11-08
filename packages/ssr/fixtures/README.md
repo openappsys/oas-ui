@@ -46,7 +46,7 @@ SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt-firefox
 pnpm test:e2e:ssr                # 全部（两个 webServer 都起）
 ```
 
-> **浏览器矩阵**：`next` / `nuxt` 跑 Chromium；`nuxt-firefox` 只跑 `nuxt/firefox-dsd.e2e.ts`（Firefox 下的原生 DSD 解析 + 真水合、运行期注入 DSD 的 polyfill 挂载、以及无 polyfill 的 CSR 降级）。禁 JS 可见性、逐 locale 文案等引擎无关用例不重复跑 Firefox。
+> **浏览器矩阵**：`next` / `nuxt` 跑 Chromium；`next-firefox` 只跑 `next/firefox-dsd.e2e.ts`（head 经典脚本的严格顺序、原生 DSD 真水合、运行期注入 DSD 的 polyfill 挂载与幂等）；`nuxt-firefox` 只跑 `nuxt/firefox-dsd.e2e.ts`（Firefox 下的原生 DSD 解析 + 真水合、运行期注入 DSD 的 polyfill 挂载、以及无 polyfill 的 CSR 降级）。禁 JS 可见性、逐 locale 文案等引擎无关用例不重复跑 Firefox。
 
 > **`reuseExistingServer` 风险**：本地（`CI` 未设置）默认复用已存在的 4301/4302 服务。若端口上残留的是**陈旧进程/旧构建**，e2e 会对着旧产物跑（常见表现：旧 HTML 引用已删除的 chunk → 批量 404 或离奇失败）。遇到此类失败先杀掉端口进程再重跑；CI 下 `reuseExistingServer: false`，不复用。
 

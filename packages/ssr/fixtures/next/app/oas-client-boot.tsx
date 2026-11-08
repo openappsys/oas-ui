@@ -1,11 +1,9 @@
 'use client'
 
-// 声明式 shadow root 挂载（副作用导入，在本入口内先于组件 import）：
-// 快照 shadow root 先挂好，组件 upgrade 才能按 SSR 指纹真水合；原生支持 DSD 的引擎在文档
-// 解析期已消费模板 → 这里零命中 no-op。
-// 注意：Next 客户端 chunk 的求值顺序不作保证（OasRegistry 可能在另一 chunk 先执行），
-// 本 fixture 不据此断言顺序；需要严格顺序的宿主应在 HTML 里尽早引入该子路径（见包 README）。
-import '@oas-ui/ssr/polyfill'
+// DSD polyfill 由 server.mjs 在文档响应的 `<head>` 里注入为经典同步脚本（`/oas-dsd-polyfill`）：
+// 它先于 Next 任何 chunk 求值，组件注册时快照 shadow root 已就绪。
+// 这里不再 import `@oas-ui/ssr/polyfill`——Next 客户端 chunk 的求值顺序不作保证，
+// 用 chunk 承载 polyfill 无法证明「先于组件注册」（严格顺序见 app/layout.tsx 与 fixture e2e）。
 import { useEffect } from 'react'
 import { registerLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
