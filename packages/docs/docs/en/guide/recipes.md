@@ -357,7 +357,7 @@ onMounted(() => {
               clearInterval(timer)
               timer = null
               aiRun.removeAttribute('loading')
-              aiStatus.textContent = 'Done (scroll following is auto-scroll\'s job)'
+              aiStatus.textContent = 'Done (scroll following handled by auto-scroll)'
             }
           }, 40)
         }, 700)
@@ -466,7 +466,7 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 
 <DemoBlock title="AI reply trio: folded thinking + streaming body + action row">
   <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-3)">
-    <oas-message-scroller id="recipe-ai" style="max-height: 320px" default-position="end" auto-scroll>
+    <oas-message-scroller id="recipe-ai" style="height: 320px" default-position="end" auto-scroll>
       <oas-message-row align="end">
         <oas-avatar slot="avatar" size="32">Me</oas-avatar>
         <oas-bubble variant="secondary">Sort yesterday's orders by amount</oas-bubble>

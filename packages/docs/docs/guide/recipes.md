@@ -357,7 +357,7 @@ onMounted(() => {
               clearInterval(timer)
               timer = null
               aiRun.removeAttribute('loading')
-              aiStatus.textContent = '完成（oas-range 无关——滚动跟随由 auto-scroll 负责）'
+              aiStatus.textContent = '完成（滚动跟随由 auto-scroll 负责）'
             }
           }, 40)
         }, 700)
@@ -465,7 +465,7 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 
 <DemoBlock title="AI 回复三段式：折叠思考 + 流式正文 + 动作条">
   <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-3)">
-    <oas-message-scroller id="recipe-ai" style="max-height: 320px" default-position="end" auto-scroll>
+    <oas-message-scroller id="recipe-ai" style="height: 320px" default-position="end" auto-scroll>
       <oas-message-row align="end">
         <oas-avatar slot="avatar" size="32">我</oas-avatar>
         <oas-bubble variant="secondary">帮我把昨天的订单按金额排个序</oas-bubble>
