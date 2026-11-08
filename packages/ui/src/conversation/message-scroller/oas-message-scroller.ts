@@ -22,6 +22,24 @@ export interface MessageScrollerVisibility {
   currentAnchorId: string | null
 }
 
+/**
+ * 悬浮（overlay）滚动条探测：经典滚动条占位（clientWidth < offsetWidth），
+ * 悬浮零占位（相等）。缓存一次模块级结论；SSR/无 DOM 环境返回 false（不打标不加 padding）。
+ * 依据：Firefox 与 Windows-overlay 设置实测悬浮——其浮条飘在内容上会盖住
+ * align=end 行右缘内容；经典滚动条自带占位，padding 对其反而是白缝。
+ */
+let overlayScrollbarCache: boolean | null = null
+function detectOverlayScrollbar(): boolean {
+  if (overlayScrollbarCache !== null) return overlayScrollbarCache
+  if (typeof document === 'undefined') return false
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:absolute;top:-9999px;width:50px;height:50px;overflow:scroll;visibility:hidden'
+  document.body.appendChild(probe)
+  overlayScrollbarCache = probe.clientWidth === probe.offsetWidth
+  probe.remove()
+  return overlayScrollbarCache
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -41,11 +59,13 @@ const STYLE = `
   overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
-  /* 滚动条不占压内容：align=end 行的头像/气泡会被滚动条轨道遮盖。
-     padding 手动预留 15px 是最稳的跨引擎口径：经典滚动条（Chromium/Windows）
-     画在 padding 区上；悬浮滚动条（Firefox，其 stable gutter 按规范对
-     overlay 系预留为零、形同虚设）飘在这 15px 空白上——两种形态内容都
-     不被压。RTL 下 padding-inline-end 自动镜像左侧。 */
+  /* 滚动条不占压内容。悬浮（overlay）滚动条零占位、会飘在内容上层（Firefox/macOS/
+     Windows-overlay 设置实踩：align=end 行头像被压）——这类环境由 JS 探测后打
+     data-overlay-sb 属性，此处 padding 预留 15px：浮条飘在留白内、内容不被压。
+     经典滚动条（自带占位，Windows 常显设置）不打标、不加 padding——滚动条贴
+     内容盒右缘，无双重留白（padding 对其是画蛇添足的白缝）。RTL 逻辑属性镜像。 */
+}
+:host([data-overlay-sb]) .viewport {
   padding-inline-end: 15px;
 }
 /* 键盘可达：Tab 聚焦视口后方向键滚动；焦点环走 token */
@@ -283,6 +303,7 @@ export class OASMessageScroller extends OASElement {
 
   /** 缓存节点引用 + 绑定事件（render 与水合路径共用；幂等可重入） */
   private bind(): void {
+    if (detectOverlayScrollbar()) this.setAttribute('data-overlay-sb', '')
     const vp = this.viewport
     vp?.addEventListener('scroll', this.handleScroll, { passive: true })
     vp?.addEventListener('scrollend', this.handleScroll)
