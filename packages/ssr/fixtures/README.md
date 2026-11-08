@@ -42,8 +42,11 @@ e2e 由根 `playwright.ssr.config.ts` 收集（`*.e2e.ts`，`retries: 0`）：
 # 仓库根；webServer 自行启动/复用 4301、4302
 SSR_FIXTURE=next pnpm test:e2e:ssr --project=next
 SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt
-pnpm test:e2e:ssr                # 两个都跑（两个 webServer 都起）
+SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt-firefox
+pnpm test:e2e:ssr                # 全部（两个 webServer 都起）
 ```
+
+> **浏览器矩阵**：`next` / `nuxt` 跑 Chromium；`nuxt-firefox` 只跑 `nuxt/firefox-dsd.e2e.ts`（Firefox 下的原生 DSD 解析 + 真水合、运行期注入 DSD 的 polyfill 挂载、以及无 polyfill 的 CSR 降级）。禁 JS 可见性、逐 locale 文案等引擎无关用例不重复跑 Firefox。
 
 > **`reuseExistingServer` 风险**：本地（`CI` 未设置）默认复用已存在的 4301/4302 服务。若端口上残留的是**陈旧进程/旧构建**，e2e 会对着旧产物跑（常见表现：旧 HTML 引用已删除的 chunk → 批量 404 或离奇失败）。遇到此类失败先杀掉端口进程再重跑；CI 下 `reuseExistingServer: false`，不复用。
 
@@ -58,7 +61,11 @@ Next fixture **不通过 `@oas-ui/next` 包入口**运行，而是由 `lib/ssr-r
 - 延迟客户端脚本 → 给快照 shadow 内 `<style>` 打标 → 注册完成后标记仍在、指纹 meta 被消费（真水合、不重建）；
 - `oas-tool-call` 真实点击展开/收起，每次点击恰好一次 `oas-toggle`；
 - console error/warning 与 pageerror 零；
-- Nuxt 额外覆盖 Vue SFC 中直接写 `<oas-*>` 的 isCustomElement 路径。
+- Nuxt 额外覆盖 Vue SFC 中直接写 `<oas-*>` 的 isCustomElement 路径；
+- Nuxt 的 DSD 页客户端入口（`client/oas-client.ts`）在组件注册前副作用导入 `@oas-ui/ssr/polyfill`；
+  Firefox 项目（`nuxt-firefox`）覆盖三条：原生解析期 DSD + 入口 polyfill 零命中 + 真水合、
+  运行期注入（`innerHTML`）DSD 的 polyfill 挂载与幂等、以及**无 polyfill** 时的 CSR 降级
+  （页面可用、DSD 模板不被消费——如实断言降级，不假装水合）。
 
 ## 两个实现约束（真实环境）
 

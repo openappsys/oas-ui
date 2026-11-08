@@ -9,10 +9,17 @@ import { defineConfig } from '@playwright/test'
  * 端口固定 4301（Next `next start`）/ 4302（Nuxt `.output/server/index.mjs`），
  * 与文档站 4173 preview、dev 5175 完全隔离。
  *
+ * 浏览器矩阵：
+ * - `next` / `nuxt`：Chromium（既有全量验收）；
+ * - `nuxt-firefox`：Firefox 子集（`fixtures/nuxt/firefox-dsd.e2e.ts`）——验收 Firefox 下的
+ *   原生 DSD 解析 + 入口 DSD polyfill（运行期注入路径）与「无 polyfill 的 CSR 降级」。
+ *   Firefox 不重跑既有用例：禁用 JS 的 DSD 可见性、逐 locale 文案等属引擎无关逻辑，留在 Chromium。
+ *
  * 用法：
- *   pnpm test:e2e:ssr                 # 两个 fixture（两个 webServer 都起）
+ *   pnpm test:e2e:ssr                 # 全部（三个 project，两个 webServer 都起）
  *   SSR_FIXTURE=next pnpm test:e2e:ssr --project=next
  *   SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt
+ *   SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt-firefox
  */
 const NEXT_PORT = 4301
 const NUXT_PORT = 4302
@@ -52,7 +59,18 @@ export default defineConfig({
           {
             name: 'nuxt',
             testMatch: /fixtures[\\/]nuxt[\\/].*\.e2e\.ts/,
+            // Firefox 专测在独立 project（nuxt-firefox）跑：这里的用例含能力相关断言
+            // （禁 JS 下的 DSD 可见性、逐 locale 文案），跨引擎重跑没有新增信息
+            testIgnore: /firefox-dsd\.e2e\.ts/,
             use: { baseURL: `http://127.0.0.1:${NUXT_PORT}` },
+          },
+          {
+            name: 'nuxt-firefox',
+            testMatch: /fixtures[\\/]nuxt[\\/].*firefox-dsd\.e2e\.ts/,
+            use: {
+              browserName: 'firefox',
+              baseURL: `http://127.0.0.1:${NUXT_PORT}`,
+            },
           },
         ]
       : []),

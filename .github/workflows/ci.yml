@@ -152,6 +152,12 @@ jobs:
         run: SSR_FIXTURE=next pnpm test:e2e:ssr --project=next
       - name: Fixture e2e (Nuxt)
         run: SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt
+      # Firefox DSD 验证（nuxt-firefox project：原生 DSD 水合 / 运行期注入 + polyfill / 无 polyfill 降级）。
+      # Firefox 无 apt 系统依赖（不像 chromium 需要 --with-deps），直接装浏览器即可。
+      - name: Install Playwright Firefox (fixture DSD)
+        run: pnpm exec playwright install firefox
+      - name: Fixture e2e (Nuxt · Firefox DSD)
+        run: SSR_FIXTURE=nuxt pnpm test:e2e:ssr --project=nuxt-firefox
       - name: Upload fixture artifacts
         if: always()
         uses: actions/upload-artifact@v4

@@ -67,6 +67,27 @@ const Table = dynamic(() => import('./TablePage'), { ssr: false })
 
 服务端只输出静态占位，脚本资源由浏览器执行注册。
 
+### 浏览器支持与 DSD polyfill
+
+原生 DSD（文档解析期，即服务器响应 HTML）的支持矩阵：
+
+| 引擎 | 支持情况 |
+| --- | --- |
+| Chrome / Edge | 111+ 原生 |
+| Safari | 16.4+ 原生 |
+| Firefox | 已支持（本仓库 Playwright 构建实测 157 文档解析生效；更老版本未逐版本验证，旧引擎按下方 polyfill 兜底） |
+
+**关键边界**：原生 DSD 只在**文档解析期**生效——服务器响应的 HTML 由解析器自动把 `<template shadowrootmode>` 挂为 shadow root（上表）。而**片段解析**（`innerHTML` / `DOMParser` / 任何运行期把 SSR 字符串注入页面的方式）在**所有引擎**都不会自动挂载，模板原样残留为 inert 节点（运行期注入 SSR 快照时必须处理）。SSR 响应页本身在任何现代引擎都水合正常，无需 polyfill。
+
+运行期注入场景用 `@oas-ui/ssr/polyfill` 子路径（import 即自动执行，须在 `@oas-ui/ui` 之前求值；具名导出 `hydrateDeclarativeShadowRoots(root?)` 供手动调用——递归挂载含嵌套 DSD、幂等、原生支持环境零命中）：
+
+```ts
+import '@oas-ui/ssr/polyfill' // 先：把 template[shadowrootmode] 挂为 shadow root
+import '@oas-ui/ui' // 后：注册组件，upgrade 时复用 DSD 快照（真水合）
+```
+
+不装 polyfill 的降级行为（如实）：注入的 DSD 模板残留 inert、组件 upgrade 时自建 shadow（客户端渲染兜底，页面可用但失去 SSR 首屏优势）。
+
 ## 服务端渲染
 
 `@oas-ui/ssr` 包提供渲染器 `renderToString(tag, attrs, slotHTML, { locale })`：在 Node 服务端把白名单组件渲染为「宿主标签 + `<template shadowrootmode="open">` 快照」的完整 HTML 字符串。浏览器拿到该字符串后无需 JS 即可呈现结构与样式；随后加载组件库脚本完成 upgrade，由组件接管交互。

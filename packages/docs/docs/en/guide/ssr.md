@@ -134,6 +134,38 @@ const Table = dynamic(() => import('./TablePage'), { ssr: false })
 The server only outputs a static placeholder; the script resource is executed by
 the browser to register the components.
 
+### Browser support and the DSD polyfill
+
+Native DSD (at document-parse time, i.e. the server's response HTML) support:
+
+| Engine | Status |
+| --- | --- |
+| Chrome / Edge | 111+ native |
+| Safari | 16.4+ native |
+| Firefox | Supported (verified in this repo on the Playwright Firefox 157 build; older versions not verified per-release — use the polyfill below as a fallback for legacy engines) |
+
+**Key boundary**: native DSD only applies at **document-parse time** — the parser
+attaches `<template shadowrootmode>` as a shadow root from the server response
+(the table above). **Fragment parsing** (`innerHTML` / `DOMParser` / any runtime
+injection of SSR markup) does NOT auto-attach in **any engine**; the template
+stays behind as an inert node (runtime-injected SSR snapshots must handle it).
+Plain SSR response pages hydrate natively in every modern engine — no polyfill
+needed for that path.
+
+For runtime injection, use the `@oas-ui/ssr/polyfill` subpath (auto-applies on
+import; must evaluate BEFORE `@oas-ui/ui`; named export
+`hydrateDeclarativeShadowRoots(root?)` for manual calls — recurses into nested
+DSD, idempotent, zero-hit where native support exists):
+
+```ts
+import '@oas-ui/ssr/polyfill' // first: attach template[shadowrootmode] as shadow roots
+import '@oas-ui/ui' // then: register components; upgrade reuses the DSD snapshot (true hydration)
+```
+
+Degradation without the polyfill (honest): the injected DSD templates stay inert,
+and components build their own shadow roots on upgrade (client-render fallback —
+the page works but loses the SSR first-paint advantage).
+
 ## Server rendering
 
 The `@oas-ui/ssr` package provides the renderer
