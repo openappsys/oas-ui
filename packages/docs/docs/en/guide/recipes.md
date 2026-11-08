@@ -459,7 +459,6 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 3. Sparkline trio: a sizing wrapper div (150x32 level) + `showLegend:false` to hide the legend + `type="area"` solid translucent fill (enable `gradient` for more depth); the chart fills the wrapper at `width/height:100%`, colors default to the token family with dark-mode variants (customize via `options.colors`)
 4. Don't push big/high-frequency datasets through the full `data` attribute reflection (serialization costs) — feed the current page slice; use `windowed` mode for server-side slicing (see the component page "server row window")
 
-
 ## AI Conversation: Thinking Fold, Streaming Bubble, Message Actions
 
 **Scenario**: the standard three-part AI assistant reply — a collapsed thinking block (reader opens the reasoning chain on demand), streaming body text, and a trailing action row (copy / retry / regenerate). **No new component needed**: `oas-collapse` folds the thinking, `oas-bubble` holds the body, `oas-message-actions` hosts the actions — the same structure as mainstream AI products.

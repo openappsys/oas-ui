@@ -458,7 +458,6 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 3. sparkline 三件套：容器 div 定尺寸（150×32 级）+ `options.showLegend:false` 关图例 + `type="area"` 纯色半透明面（需要纵深感再开 `gradient`）；图表 `width/height:100%` 填满容器，颜色默认走 token 系暗色自动换档，要定制用 `options.colors`
 4. 大数据量/高频更新别走全量 `data` 属性反射（序列化双份开销）——看板场景喂当前页切片；需要服务端切片时走 `windowed` 模式
 
-
 ## AI 会话：thinking 折叠块 + 流式气泡 + 消息动作
 
 **场景**：AI 助手回复的标准三段式——思考过程默认折叠（点开看推理链）、正文流式逐字输出、行尾动作条（复制/重试/重新生成）。**不需要任何新组件**：`oas-collapse` 折思考、`oas-bubble` 装正文、`oas-message-actions` 挂动作，三个既有件的组合即主流 AI 产品形态。
