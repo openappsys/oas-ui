@@ -41,6 +41,10 @@ const STYLE = `
   overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
+  /* 滚动条不占压内容：align=end 行的头像/气泡会被经典滚动条轨道遮盖
+     （右侧 15px 带），scrollbar-gutter 在 inline-end 侧预留轨道槽——
+     有/无滚动条时内容宽度一致（不抖动），RTL 下自动镜像到左侧 */
+  scrollbar-gutter: stable;
 }
 /* 键盘可达：Tab 聚焦视口后方向键滚动；焦点环走 token */
 .viewport:focus-visible {
