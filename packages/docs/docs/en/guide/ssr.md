@@ -525,13 +525,16 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
 - **Runtime boundary**: the published artifact of `@oas-ui/ssr` (`dist/`)
-  does not depend on any `node:` built-in module (only a single
-  `process.env.NODE_ENV` read, which Edge runtimes polyfill), so there is no
-  hard bundler blocker for Vercel Edge / Cloudflare Workers; however, the
-  renderer boots its DOM shim from happy-dom, and **happy-dom compatibility on
-  Edge runtimes has not been tested** — smoke-test on your target platform
-  before deploying to Edge. Node.js is the only first-class supported server
-  runtime.
+  itself does not depend on any `node:` built-in module (only a single
+  `process.env.NODE_ENV` read, which Edge runtimes polyfill), but its
+  runtime dependency happy-dom has **no browser/edge conditional build** —
+  its implementation statically imports about 14 Node built-in modules
+  (`vm` / `crypto` / `stream` / `buffer`, etc.) plus the CJS `ws` package,
+  so Edge bundlers fail out of the box. Deploying on Edge is integration
+  work (bundler alias/stub or swapping the DOM shim) and needs a platform
+  CPU budget check (a thousand-row table renders in ~139 ms in one
+  measurement); test on the target platform before shipping. Node.js is
+  the only first-class supported server runtime.
 - The imperative components (message / notification / toast / snackbar /
   loading-bar / confirm) are created dynamically by imperative APIs
   (`document.createElement` appended to a floating layer), so no instance exists
