@@ -22,6 +22,21 @@ test('消息操作与工具调用：真实点击事件 + a11y', async ({ page })
   await expect(tool.locator('[part="args"]')).toContainText('scheduler')
   await expect(tool).toHaveAttribute('open', '')
 
+  // 状态矩阵 demo：同一工具三态（运行中 / 已完成 / 失败）+ 折叠反馈读数（防止 demo 反馈静默失效）
+  const matrix = page.locator('#tool-call-matrix')
+  const stages = matrix.locator('oas-tool-call')
+  await expect(stages).toHaveCount(3)
+  await expect(stages.nth(0).locator('[part="status-text"]')).toHaveText('运行中')
+  await expect(stages.nth(1).locator('[part="status-text"]')).toHaveText('已完成')
+  await expect(stages.nth(2).locator('[part="status-text"]')).toHaveText('失败')
+  // 运行中还没结果 → 结果段隐藏；成功/失败各有载荷
+  await expect(stages.nth(0).locator('[data-section="result"]')).toBeHidden()
+  await expect(stages.nth(1).locator('[part="result"]')).toContainText('shipped')
+  await expect(stages.nth(2).locator('[part="result"]')).toContainText('ETIMEDOUT')
+  await matrix.locator('oas-tool-call[data-stage="success"] [part="head"]').click()
+  await expect(page.locator('#tool-call-matrix-event')).toHaveText(/已完成.*已折叠/)
+  await expect(matrix.locator('oas-tool-call[data-stage="success"]')).not.toHaveAttribute('open', '')
+
   const a11y = await new AxeBuilder({ page }).analyze()
   expect(
     a11y.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical'),

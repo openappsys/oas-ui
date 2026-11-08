@@ -330,6 +330,47 @@ onMounted(() => {
       })
     }
     })
+
+onMounted(() => {
+    // 8) AI reply trio: folded thinking + streaming bubble + action row
+    const aiRun = document.querySelector('#recipe-ai-run')
+    const aiAnswer = document.querySelector('#recipe-ai-answer')
+    const aiStatus = document.querySelector('#recipe-ai-status')
+    const aiThinking = document.querySelector('#recipe-ai-thinking')
+    const AI_TEXT = "Sorted yesterday's 12 orders by amount, descending: top ¥8,420 (order A-1007), lowest ¥36 (A-1018). Total ¥23,904. Export a CSV?"
+    if (aiRun && aiAnswer && aiStatus) {
+      let timer = null
+      aiRun.addEventListener('click', () => {
+        if (timer) return // re-entry guard: clicks during streaming are no-ops
+        aiRun.setAttribute('loading', '')
+        aiAnswer.textContent = ''
+        aiStatus.textContent = 'Thinking…'
+        // Thinking phase: expand the fold so the reader sees the chain (a real product drives this from model-side events)
+        if (aiThinking) aiThinking.setAttribute('active', 't')
+        setTimeout(() => {
+          aiStatus.textContent = 'Streaming…'
+          let i = 0
+          timer = setInterval(() => {
+            i += 3
+            aiAnswer.textContent = AI_TEXT.slice(0, i)
+            if (i >= AI_TEXT.length) {
+              clearInterval(timer)
+              timer = null
+              aiRun.removeAttribute('loading')
+              aiStatus.textContent = 'Done (scroll following is auto-scroll\'s job)'
+            }
+          }, 40)
+        }, 700)
+      })
+      document
+        .querySelector('#recipe-ai oas-message-actions')
+        ?.addEventListener('oas-action', (e) => {
+          const d = e.detail
+          aiStatus.textContent = `Action "${d.key}" (message-id: ${d.messageId}) — host implements the business`
+        })
+    }
+})
+
 </script>
 
 ## Multi-project Gantt tree + resource project priority
@@ -418,6 +459,45 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 3. Sparkline trio: a sizing wrapper div (150x32 level) + `showLegend:false` to hide the legend + `type="area"` solid translucent fill (enable `gradient` for more depth); the chart fills the wrapper at `width/height:100%`, colors default to the token family with dark-mode variants (customize via `options.colors`)
 4. Don't push big/high-frequency datasets through the full `data` attribute reflection (serialization costs) — feed the current page slice; use `windowed` mode for server-side slicing (see the component page "server row window")
 
+
+## AI Conversation: Thinking Fold, Streaming Bubble, Message Actions
+
+**Scenario**: the standard three-part AI assistant reply — a collapsed thinking block (reader opens the reasoning chain on demand), streaming body text, and a trailing action row (copy / retry / regenerate). **No new component needed**: `oas-collapse` folds the thinking, `oas-bubble` holds the body, `oas-message-actions` hosts the actions — the same structure as mainstream AI products.
+
+<DemoBlock title="AI reply trio: folded thinking + streaming body + action row">
+  <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-3)">
+    <oas-message-scroller id="recipe-ai" style="max-height: 320px" default-position="end" auto-scroll>
+      <oas-message-row align="end">
+        <oas-avatar slot="avatar" size="32">Me</oas-avatar>
+        <oas-bubble variant="secondary">Sort yesterday's orders by amount</oas-bubble>
+      </oas-message-row>
+      <oas-message-row>
+        <oas-avatar slot="avatar" size="32">AI</oas-avatar>
+        <span slot="header">Assistant · 10:03</span>
+        <oas-collapse id="recipe-ai-thinking" style="font-size: var(--oas-font-size-sm)">
+          <oas-collapse-item name="t" header="Thinking (2 steps)">
+            <ol style="margin: 0; padding-inline-start: var(--oas-space-5); color: var(--oas-color-text-secondary)">
+              <li>Resolve "yesterday" → 2026-11-07 (host timezone)</li>
+              <li>Locate order data and confirm the amount field unit</li>
+            </ol>
+          </oas-collapse-item>
+        </oas-collapse>
+        <oas-bubble id="recipe-ai-answer">(Press "Run streaming answer")</oas-bubble>
+        <oas-message-actions slot="footer" message-id="m-1" actions='[{"key":"copy","label":"Copy"},{"key":"retry","label":"Retry"},{"key":"regenerate","label":"Regenerate"}]'></oas-message-actions>
+      </oas-message-row>
+    </oas-message-scroller>
+    <div style="display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button id="recipe-ai-run" size="small" type="primary">Run streaming answer</oas-button>
+      <span id="recipe-ai-status" role="status" style="font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Idle</span>
+    </div>
+  </div>
+</DemoBlock>
+
+**Pattern notes**:
+
+1. **Thinking block = folded into the message row's default slot**: `oas-message-row`'s default slot is a free content container (not just bubbles) — `oas-collapse` folds the reasoning chain; write the step count / duration in the header and let the reader expand on demand (start collapsed; the host owns final expand state)
+2. **Streaming = update text in place, never append nodes**: update the `oas-bubble` text (`textContent`) token by token; `message-scroller`'s `auto-scroll` only follows a reader who is near the bottom — it never yanks the viewport away from a reader who scrolled up (the existing IM/AI discipline); **do not appendChild per token** (DOM explosion + scroll jitter)
+3. **Action row = `oas-message-actions` in the footer slot**: declare `actions` as key/label pairs; clicks dispatch `oas-action` (detail carries message-id + key) — copy goes through `navigator.clipboard` (the host writes it in the event handler); retry/regenerate is host business, the component ships no semantics
 ## JSON Formatting Comparison: Tree vs Text
 
 **Scenario**: when debugging API data, the same dataset supports two readings — the **tree reading** shows structure (expand, search, copy subtrees), the **text reading** shows bytes (what the source looks like, what formatting changed). Left `oas-json-viewer` (tree), right `oas-diff-viewer` (minified source ↔ formatted text). Keep the data as one object; both forms are projections of `JSON.stringify` — never maintain two copies of the text.

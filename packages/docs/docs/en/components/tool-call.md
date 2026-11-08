@@ -34,14 +34,69 @@ Tool-call card: name, summary, status, arguments and result; collapsed by defaul
 <script setup>
 import { onMounted } from 'vue'
 
+const STAGE_LABELS = { running: 'running', success: 'completed', error: 'failed' }
+
 onMounted(async () => {
   await customElements.whenDefined('oas-tool-call')
   const el = document.getElementById('tool-call-running')
   el?.addEventListener('oas-toggle', (event) => {
     el.setAttribute('summary', `Search API docs (${event.detail.open ? 'expanded' : 'collapsed'})`)
   })
+
+  // State matrix: the three cards share one visible readout, proving oas-toggle reaches the host
+  const matrix = document.getElementById('tool-call-matrix')
+  const matrixEvent = document.getElementById('tool-call-matrix-event')
+  matrix?.addEventListener('oas-toggle', (event) => {
+    if (!matrixEvent) return
+    const stage = STAGE_LABELS[event.target?.dataset?.stage] ?? 'tool'
+    matrixEvent.textContent = `${stage} "${event.detail.name}" ${event.detail.open ? 'expanded' : 'collapsed'}`
+  })
 })
 </script>
+
+## State Matrix
+
+<DemoBlock title="Three calls of the same tool: running / completed / failed; all cards start expanded, click a header to collapse or expand (oas-toggle)">
+  <div id="tool-call-matrix" style="display:flex;flex-direction:column;gap:var(--oas-space-3);width:100%">
+    <p
+      id="tool-call-matrix-event"
+      role="status"
+      style="margin:0;font-size:var(--oas-font-size-sm);color:var(--oas-color-text-secondary)"
+    >
+      Waiting for interaction: click any card header to collapse or expand
+    </p>
+    <div
+      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:var(--oas-space-3);align-items:start"
+    >
+      <oas-tool-call
+        data-stage="running"
+        name="query_orders"
+        summary="Query order A-1024"
+        status="running"
+        open
+        args='{"orderId":"A-1024"}'
+      ></oas-tool-call>
+      <oas-tool-call
+        data-stage="success"
+        name="query_orders"
+        summary="Query order A-1024"
+        status="success"
+        open
+        args='{"orderId":"A-1024"}'
+        result='{"state":"shipped","carrier":"SF Express","eta":"2026-11-10"}'
+      ></oas-tool-call>
+      <oas-tool-call
+        data-stage="error"
+        name="query_orders"
+        summary="Query order A-1024"
+        status="error"
+        open
+        args='{"orderId":"A-1024"}'
+        result='{"code":"ETIMEDOUT","message":"Order service did not respond within 5s"}'
+      ></oas-tool-call>
+    </div>
+  </div>
+</DemoBlock>
 
 ## API
 

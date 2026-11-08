@@ -330,6 +330,46 @@ onMounted(() => {
       })
     }
     })
+
+onMounted(() => {
+    // ⑧ AI 会话三段式：折叠思考 + 流式气泡 + 动作条
+    const aiRun = document.querySelector('#recipe-ai-run')
+    const aiAnswer = document.querySelector('#recipe-ai-answer')
+    const aiStatus = document.querySelector('#recipe-ai-status')
+    const aiThinking = document.querySelector('#recipe-ai-thinking')
+    const AI_TEXT = '已按金额降序排列昨天的 12 笔订单：最高 ¥8,420（订单 A-1007），最低 ¥36（A-1018）。合计 ¥23,904。需要导出 CSV 吗？'
+    if (aiRun && aiAnswer && aiStatus) {
+      let timer = null
+      aiRun.addEventListener('click', () => {
+        if (timer) return // 防重入：流式中再点无效
+        aiRun.setAttribute('loading', '')
+        aiAnswer.textContent = ''
+        aiStatus.textContent = '思考中…'
+        // 思考阶段：展开折叠块让读者看到推理链（真实产品里由模型侧事件驱动）
+        if (aiThinking) aiThinking.setAttribute('active', 't')
+        setTimeout(() => {
+          aiStatus.textContent = '输出中…'
+          let i = 0
+          timer = setInterval(() => {
+            i += 3
+            aiAnswer.textContent = AI_TEXT.slice(0, i)
+            if (i >= AI_TEXT.length) {
+              clearInterval(timer)
+              timer = null
+              aiRun.removeAttribute('loading')
+              aiStatus.textContent = '完成（oas-range 无关——滚动跟随由 auto-scroll 负责）'
+            }
+          }, 40)
+        }, 700)
+      })
+      document
+        .querySelector('#recipe-ai oas-message-actions')
+        ?.addEventListener('oas-action', (e) => {
+          aiStatus.textContent = `动作「${e.detail.key}」（message-id: ${e.detail.messageId}）——宿主接事件后自写业务`
+        })
+    }
+})
+
 </script>
 
 ## 多项目甘特树 + 资源项目优先级
@@ -418,6 +458,45 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 3. sparkline 三件套：容器 div 定尺寸（150×32 级）+ `options.showLegend:false` 关图例 + `type="area"` 纯色半透明面（需要纵深感再开 `gradient`）；图表 `width/height:100%` 填满容器，颜色默认走 token 系暗色自动换档，要定制用 `options.colors`
 4. 大数据量/高频更新别走全量 `data` 属性反射（序列化双份开销）——看板场景喂当前页切片；需要服务端切片时走 `windowed` 模式
 
+
+## AI 会话：thinking 折叠块 + 流式气泡 + 消息动作
+
+**场景**：AI 助手回复的标准三段式——思考过程默认折叠（点开看推理链）、正文流式逐字输出、行尾动作条（复制/重试/重新生成）。**不需要任何新组件**：`oas-collapse` 折思考、`oas-bubble` 装正文、`oas-message-actions` 挂动作，三个既有件的组合即主流 AI 产品形态。
+
+<DemoBlock title="AI 回复三段式：折叠思考 + 流式正文 + 动作条">
+  <div style="width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: var(--oas-space-3)">
+    <oas-message-scroller id="recipe-ai" style="max-height: 320px" default-position="end" auto-scroll>
+      <oas-message-row align="end">
+        <oas-avatar slot="avatar" size="32">我</oas-avatar>
+        <oas-bubble variant="secondary">帮我把昨天的订单按金额排个序</oas-bubble>
+      </oas-message-row>
+      <oas-message-row>
+        <oas-avatar slot="avatar" size="32">AI</oas-avatar>
+        <span slot="header">助手 · 10:03</span>
+        <oas-collapse id="recipe-ai-thinking" style="font-size: var(--oas-font-size-sm)">
+          <oas-collapse-item name="t" header="思考过程（2 步）">
+            <ol style="margin: 0; padding-inline-start: var(--oas-space-5); color: var(--oas-color-text-secondary)">
+              <li>解析「昨天」→ 2026-11-07（宿主时区）</li>
+              <li>定位订单数据并确认金额字段单位</li>
+            </ol>
+          </oas-collapse-item>
+        </oas-collapse>
+        <oas-bubble id="recipe-ai-answer">（点下方「开始流式回答」）</oas-bubble>
+        <oas-message-actions slot="footer" message-id="m-1" actions='[{"key":"copy","label":"复制"},{"key":"retry","label":"重试"},{"key":"regenerate","label":"重新生成"}]'></oas-message-actions>
+      </oas-message-row>
+    </oas-message-scroller>
+    <div style="display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button id="recipe-ai-run" size="small" type="primary">开始流式回答</oas-button>
+      <span id="recipe-ai-status" role="status" style="font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">待开始</span>
+    </div>
+  </div>
+</DemoBlock>
+
+**模式要点**：
+
+1. **thinking 块 = 折进消息行的默认插槽**：`oas-message-row` 的默认插槽是自由 content 容器（不只放 bubble）——`oas-collapse` 折推理链，折叠头写步数/耗时，读者自选展开；建议默认收起，回答完再让宿主决定展开态
+2. **流式 = 原地更新文本，不新建节点**：逐 token 改 `oas-bubble` 的文本内容（`textContent`）；`message-scroller` 的 `auto-scroll` 只跟随贴底读者——读者上翻时不抢视口（既有纪律，正是 IM/AI 双模式的分界）；**别逐 token appendChild**（DOM 爆炸 + 滚动抖动）
+3. **动作条 = `oas-message-actions` 挂 footer 插槽**：`actions` 声明式 key/label；点击派 `oas-action`（detail 带 message-id + key）——复制走 `navigator.clipboard`（宿主接事件后自写），重试/重新生成是宿主业务，组件不内置语义
 ## JSON 格式化对照：树形 vs 文本两种读法
 
 **场景**：排查接口数据时，同一份数据有两种读法——**树形读法**看结构（展开、搜索、复制子树），**文本读法**看字节（原文长什么样、格式化动了什么）。左 `oas-json-viewer`（树形）、右 `oas-diff-viewer`（压缩原文 ↔ 格式化文本对照）。数据只存一份对象，两种形态都是 `JSON.stringify` 的投影——不要维护两份文本。
