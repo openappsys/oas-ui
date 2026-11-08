@@ -41,10 +41,12 @@ const STYLE = `
   overflow-y: auto;
   overscroll-behavior: contain;
   box-sizing: border-box;
-  /* 滚动条不占压内容：align=end 行的头像/气泡会被经典滚动条轨道遮盖
-     （右侧 15px 带），scrollbar-gutter 在 inline-end 侧预留轨道槽——
-     有/无滚动条时内容宽度一致（不抖动），RTL 下自动镜像到左侧 */
-  scrollbar-gutter: stable;
+  /* 滚动条不占压内容：align=end 行的头像/气泡会被滚动条轨道遮盖。
+     padding 手动预留 15px 是最稳的跨引擎口径：经典滚动条（Chromium/Windows）
+     画在 padding 区上；悬浮滚动条（Firefox，其 stable gutter 按规范对
+     overlay 系预留为零、形同虚设）飘在这 15px 空白上——两种形态内容都
+     不被压。RTL 下 padding-inline-end 自动镜像左侧。 */
+  padding-inline-end: 15px;
 }
 /* 键盘可达：Tab 聚焦视口后方向键滚动；焦点环走 token */
 .viewport:focus-visible {
