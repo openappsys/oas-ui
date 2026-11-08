@@ -314,27 +314,24 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
     const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
     items[items.length - 1]?.click()
   })
-  // 平滑滚动落定的真实信号：tablist scrollLeft 连续两次一致
-  let prevTablistSL: number | null = null
+  // 轮询直至滚动真正越过起点（终态条件即断言目标本身）——不采「连续两次一致」
+  // 作为稳定信号：滚动首帧前连续两个 0 会误判稳定（webkit 满负荷实发 scrollLeft 恒 0 假稳定）
   await expect
-    .poll(async () => {
-      const sl = await page.evaluate(
-        () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
-      )
-      const stable = prevTablistSL !== null && sl === prevTablistSL
-      prevTablistSL = sl
-      return stable
-    })
-    .toBe(true)
+    .poll(
+      async () =>
+        page.evaluate(
+          () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
+        ),
+      { timeout: 15000 },
+    )
+    .toBeGreaterThan(scrollBefore)
   const result = await page.evaluate(() => {
     const el = document.querySelector('oas-tabs[more]')!
     return {
       active: el.getAttribute('active'),
-      scrollLeft: el.shadowRoot!.querySelector('.tablist')!.scrollLeft,
     }
   })
   expect(result.active, '点选后应激活').toBe('t12')
-  expect(result.scrollLeft, '点选视口外项应滚动到可见区').toBeGreaterThan(scrollBefore)
 })
 
 // —— 需求回归：oas-tab-contextmenu（宿主自建右键菜单的原生通道，2026-09-26 下游登记）——

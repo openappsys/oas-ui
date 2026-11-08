@@ -4491,7 +4491,14 @@ test('table Pro 主从详情：selectByKey 显式等待回填落地、默认未�
   // （默认未命中 no-op 不产生任何可见反馈；等待可用 AbortSignal 取消，abort 后回填无反馈）。
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect')))
+    if (
+      m.type() === 'error' ||
+      (m.type() === 'warning' &&
+        !m.text().includes('scroll-linked positioning effect') &&
+        // UA 资源提示噪音：慢网络/引擎下 preload 的 chunk 未及时消费，webkit 刷
+        // 「preloaded using link preload but not used」——与产品行为无关，不计入告警断言
+        !m.text().includes('was preloaded using link preload'))
+    )
       issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (error) => issues.push(`pageerror: ${error.message}`))
@@ -4851,7 +4858,14 @@ test('table advanced：createWindowedSource 外部清空/换窗后重拉，同�
   // fetchRows 同步 throw 绕过 .catch 让 filling 永久残留。修复=按表格当前切片去重 + 统一失败路径。
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect')))
+    if (
+      m.type() === 'error' ||
+      (m.type() === 'warning' &&
+        !m.text().includes('scroll-linked positioning effect') &&
+        // UA 资源提示噪音：慢网络/引擎下 preload 的 chunk 未及时消费，webkit 刷
+        // 「preloaded using link preload but not used」——与产品行为无关，不计入告警断言
+        !m.text().includes('was preloaded using link preload'))
+    )
       issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (error) => issues.push(`pageerror: ${error.message}`))
@@ -5036,7 +5050,14 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
   // expanded/visual-start/data（source.refresh 重拉回填）焦点仍在同一 row-key、ARIA 数据口径不变。
   const issues: string[] = []
   page.on('console', (m) => {
-    if (m.type() === 'error' || (m.type() === 'warning' && !m.text().includes('scroll-linked positioning effect')))
+    if (
+      m.type() === 'error' ||
+      (m.type() === 'warning' &&
+        !m.text().includes('scroll-linked positioning effect') &&
+        // UA 资源提示噪音：慢网络/引擎下 preload 的 chunk 未及时消费，webkit 刷
+        // 「preloaded using link preload but not used」——与产品行为无关，不计入告警断言
+        !m.text().includes('was preloaded using link preload'))
+    )
       issues.push(`${m.type()}: ${m.text()}`)
   })
   page.on('pageerror', (error) => issues.push(`pageerror: ${error.message}`))
