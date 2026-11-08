@@ -8,6 +8,7 @@
 
 - **SSR Firefox DSD 批**：`@oas-ui/ssr/polyfill` 子路径（原创实现：setHTMLUnsafe 特性探测避开 Chromium 告警坑、递归嵌套 DSD、幂等、import 即自动执行）+ 双 fixture Firefox 严格验证（Nuxt chunk 序 + Next head 经典脚本注入——App Router 实测 layout 注入不可行、自托管 server 改写文档响应是唯一确定性路径；三用例：head 顺序严格断言/原生 DSD 透明水合/运行期注入+polyfill 幂等）+ ssr.md 浏览器支持矩阵（立项前提「Firefox 不支持 DSD」经三引擎矩阵实测证伪——原生 DSD 只在文档解析期生效、片段解析任何引擎都不挂载，polyfill 的真实定位是运行期注入伴侣）。
 - **SSR 运行时边界口径**：核实 `@oas-ui/ssr` 发布产物自身零 `node:` 内置模块依赖（唯一 `process.env.NODE_ENV` 读取，Edge Runtime 均有 polyfill），ssr.md 白名单与边界节补 Edge Runtime 边界条——运行时依赖 happy-dom 无 browser/edge 构建、静态引入约 14 个 Node 内置模块，Edge 部署属集成级工作（先 spike 打包验证路径），诚实标注 Node 为一等支持运行时。
+- **SSR 生产化口径（缓存与高并发宿主侧配方）**：交叉复审定案——库不内置缓存与进程架构（主流渲染库同款边界：渲染器保持无状态纯函数，片段缓存/CDN/worker 池归宿主）；ssr.md zh/en 补「缓存与高并发」节：确定性可缓存的事实与缓存键组成（含快照版本失效）、时间相关组件不缓存清单（relative-time/countdown/calendar/date-picker/gantt/scheduler）、高 QPS 用 worker 池/多副本扩展的配方与实测基准（消息行 ~1.4ms、千行 table ~139ms 单机单次）。T5（Edge）/T6（库级缓存）/T8（库内置 worker 池）三候立项项据此销项/变形。
 - **oas-mdca 消费反馈批（T8-T12）**：menubar 动作项选择后自动收起（桌面惯例；checkbox/radio 保持展开可连续勾选；item 级 keep-open 例外；受控 open 契约保住）+ `shortcuts-in-editable` 可编辑焦点 shortcut 放行总开关；tree `height="fill"` 容器自适应（内建 RO 三防：padding 扣减/防写回循环/防重入，根治 oas-mdca 实踩的 +8px/s 反馈循环）+ 懒加载展开态所有权警告 + 首屏 oas-expand 持久化示例（API 可发现性修复）。
 
 ## [2.6.7] - 2026-11-08

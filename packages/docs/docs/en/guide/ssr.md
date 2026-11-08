@@ -518,6 +518,37 @@ export default async function SsrDemoPage() {
 The RSC renders on the server; the literal from `dangerouslySetInnerHTML` goes
 into the SSR output stream and the browser parser attaches the DSD templates.
 
+### Caching and concurrency (host-side recipes)
+
+- **Output is safely cacheable**: `renderToString` output is a
+  deterministic function of its inputs (guarded byte-for-byte by the
+  full-whitelist snapshot determinism gate), so same-source fragment or
+  full-page caching never serves stale-wrong HTML. A cache key must
+  include at least: tag + a normalized attribute sequence (attribute
+  order affects output bytes — use the serialization order or a
+  normalized sort) + light DOM + the **effective locale** + the snapshot
+  version (the output embeds `data-oas-ssr-v`, so stale entries from an
+  upgraded library are detectable).
+- **Do not cache time-dependent components** (or bucket by time
+  granularity): `oas-relative-time` / `oas-countdown` / `oas-calendar` /
+  `oas-date-picker` / `oas-gantt` / `oas-scheduler` render output that
+  depends on the render moment (relative-time text, the today line,
+  default view dates) — caching freezes the clock. All other whitelisted
+  components render time-independently.
+- **No built-in caching or process architecture**: fragment caching
+  (including render-at-write), CDN orchestration, and worker pools are
+  the host's territory — the same boundary mainstream framework render
+  libraries keep (the renderer stays a stateless pure function). Hosts
+  scale with a `node:worker_threads` pool or multiple replicas: the
+  renderer has no cross-request mutable state (i18n registry loading is
+  an idempotent one-time side effect), and each worker's process memory
+  is naturally isolated.
+- **When concurrency is needed**: rendering is synchronous CPU work
+  with no I/O waits. Ordinary fragments (message-row scale, ~1.4 ms)
+  are fine on a single process; a thousand-row table measured ~139 ms
+  in a single sample and blocks the event loop — scale processes per
+  the recipe above at high QPS; low QPS needs nothing.
+
 ### Whitelist and boundaries
 
 - Whitelist (pure-presentation components, declarative-data components, the layout-measuring pilot, form components, feedback components, data-display components, navigation/layout components, pure-presentation and framework-container components, navigation additions (app-bar app bar + stepper step panel), the highlight text-highlight component, backfill batch (scheduler / gantt / barcode / resource data components), backfill batch 2 (form wrap-up knob / questionnaire, the five conversation components, and the workbench widget family), oas-kanban (data family), and the final nine-component batch (remaining conversation / form / feedback / data / navigation standalone components) — 175 tags in total):
