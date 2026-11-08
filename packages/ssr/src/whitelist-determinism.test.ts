@@ -31,6 +31,9 @@ const SAMPLE_ATTRS: Partial<Record<WhiteListTag, Record<string, string>>> = {
   'oas-tree-select': { items: '[{"label":"甲","value":"1"}]' },
   'oas-table': { columns: '[{"title":"列","key":"c"}]', data: '[{"c":"v"}]' },
   'oas-radio-group': { options: '[{"label":"甲","value":"1"}]' },
+  // segmented 必须带 options：无选项时 buildItem 不执行，uid/name 输出路径不触发（漏配曾致
+  // 确定性门禁对其实效盲区——segmented 的 uid 写快照缺陷因此逃过 M2 红 Gate）
+  'oas-segmented': { options: '[{"label":"甲","value":"1"}]' },
   'oas-checkbox-group': { options: '[{"label":"甲","value":"1"}]' },
   'oas-switch': { 'checked-text': '开' },
   'oas-checkbox': { value: 'v' },

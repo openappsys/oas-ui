@@ -5,6 +5,7 @@ import { isRtl } from '../../shared/direction.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import { normalizeChoice } from '../../shared/choice.js'
 import { syncCrossRootAccessibleName } from '../../shared/aria-named.js'
+import { isSsrRuntime } from '../../shared/ssr-runtime.js'
 
 export interface SegmentedOption {
   label: string
@@ -326,7 +327,10 @@ export class OASSegmented extends OASElement {
     const input = document.createElement('input')
     input.type = 'radio'
     input.className = 'input'
-    input.name = name
+    // 互斥 name 不进 SSR 快照（uid 为模块级自增唯一值，写进快照会让同属性两次渲染
+    // 不可复现，违反渲染器幂等承诺）：SSR 段跳过，水合后写真实 name 恢复互斥——
+    // 同 oas-radio-group 的 SSR 闸门先例；禁 JS 损失同其注释（无原生同名互斥/不随表单提交）
+    if (!isSsrRuntime()) input.name = name
     input.value = option.value
     input.tabIndex = -1
     // 仅图标形态：icon 名转可读文本兜底可访问名称（需要更精确名称时宿主给 label 字段）
@@ -415,7 +419,8 @@ export class OASSegmented extends OASElement {
       const input = item.querySelector<HTMLInputElement>('input.input')
       const checked = v === value
       if (input) {
-        input.name = name
+        // SSR 段不写运行时唯一 name（见 buildItem 闸门注释）；水合后同步路径补写
+        if (!isSsrRuntime()) input.name = name
         input.disabled = disabled
         input.checked = checked
         input.tabIndex = checked ? 0 : -1
