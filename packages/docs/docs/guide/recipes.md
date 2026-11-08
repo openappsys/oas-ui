@@ -496,6 +496,7 @@ const leveled = levelResources(resources, resourceTasks, { projectOrder: [`A`, `
 1. **thinking 块 = 折进消息行的默认插槽**：`oas-message-row` 的默认插槽是自由 content 容器（不只放 bubble）——`oas-collapse` 折推理链，折叠头写步数/耗时，读者自选展开；建议默认收起，回答完再让宿主决定展开态
 2. **流式 = 原地更新文本，不新建节点**：逐 token 改 `oas-bubble` 的文本内容（`textContent`）；`message-scroller` 的 `auto-scroll` 只跟随贴底读者——读者上翻时不抢视口（既有纪律，正是 IM/AI 双模式的分界）；**别逐 token appendChild**（DOM 爆炸 + 滚动抖动）
 3. **动作条 = `oas-message-actions` 挂 footer 插槽**：`actions` 声明式 key/label；点击派 `oas-action`（detail 带 message-id + key）——复制走 `navigator.clipboard`（宿主接事件后自写），重试/重新生成是宿主业务，组件不内置语义
+
 ## JSON 格式化对照：树形 vs 文本两种读法
 
 **场景**：排查接口数据时，同一份数据有两种读法——**树形读法**看结构（展开、搜索、复制子树），**文本读法**看字节（原文长什么样、格式化动了什么）。左 `oas-json-viewer`（树形）、右 `oas-diff-viewer`（压缩原文 ↔ 格式化文本对照）。数据只存一份对象，两种形态都是 `JSON.stringify` 的投影——不要维护两份文本。
