@@ -324,6 +324,7 @@ gtag('config', 'G-RXS142HBXF');`,
     sidebar: [
       {
         text: '指南',
+        collapsed: false,
         items: [
           { text: '快速开始', link: '/guide/getting-started' },
           { text: '项目愿景', link: '/guide/vision' },
@@ -335,6 +336,7 @@ gtag('config', 'G-RXS142HBXF');`,
           { text: '框架接入（React、Vue 等）', link: '/guide/frameworks' },
           { text: '集成 FAQ', link: '/guide/faq' },
       { text: '场景方案', link: '/guide/recipes' },
+          { text: '导航形态组合', link: '/guide/navigation-patterns' },
           { text: '服务端窗口取数', link: '/guide/windowed-data' },
           { text: 'AI 会话接入', link: '/guide/ai-chat' },
           { text: '资源管理示例', link: '/guide/resource-management' },
@@ -396,6 +398,7 @@ gtag('config', 'G-RXS142HBXF');`,
         sidebar: [
           {
             text: 'Guide',
+            collapsed: false,
             items: [
               { text: 'Getting Started', link: '/en/guide/getting-started' },
               { text: 'Vision', link: '/en/guide/vision' },
@@ -407,6 +410,7 @@ gtag('config', 'G-RXS142HBXF');`,
               { text: 'Framework Integration (React, Vue, etc.)', link: '/en/guide/frameworks' },
               { text: 'Integration FAQ', link: '/en/guide/faq' },
       { text: 'Scenarios', link: '/en/guide/recipes' },
+              { text: 'Navigation patterns', link: '/en/guide/navigation-patterns' },
               { text: 'Server-side windowed data', link: '/en/guide/windowed-data' },
               { text: 'AI chat integration', link: '/en/guide/ai-chat' },
               { text: 'Resource management example', link: '/en/guide/resource-management' },

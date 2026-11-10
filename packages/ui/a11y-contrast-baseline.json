@@ -1,15 +1,15 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 52736,
+    "sampled": 54884,
     "below30": 0,
     "below45": 0,
     "below60": 0,
     "ratio": 286,
     "exempt": 692,
     "skipped": {
-      "local": 3860,
-      "ci": 4170
+      "local": 3914,
+      "ci": 4220
     }
   },
   "topPairs": [],
@@ -1059,6 +1059,28 @@
         "ci": 42
       }
     },
+    "menubar.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
+    "menubar.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
     "message-scroller.html": {
       "below30": 0,
       "below45": 0,
@@ -1594,7 +1616,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 20,
+        "local": 19,
         "ci": 20
       }
     },
@@ -1605,7 +1627,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 20,
+        "local": 19,
         "ci": 20
       }
     },
@@ -1737,8 +1759,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 2,
-        "ci": 2
+        "local": 5,
+        "ci": 5
       }
     },
     "tool-call.html::dark": {
@@ -1748,8 +1770,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 2,
-        "ci": 2
+        "local": 5,
+        "ci": 5
       }
     },
     "tooltip.html": {
@@ -1814,8 +1836,8 @@
       "ratio": 0,
       "exempt": 3,
       "skipped": {
-        "local": 6,
-        "ci": 6
+        "local": 8,
+        "ci": 8
       }
     },
     "tree.html::dark": {
@@ -1825,8 +1847,8 @@
       "ratio": 0,
       "exempt": 3,
       "skipped": {
-        "local": 6,
-        "ci": 6
+        "local": 8,
+        "ci": 8
       }
     },
     "typography.html": {
@@ -1983,6 +2005,28 @@
         "ci": 12
       }
     },
+    "guide/navigation-patterns.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
+    },
+    "guide/navigation-patterns.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
+    },
     "guide/recipes.html": {
       "below30": 0,
       "below45": 0,
@@ -2012,7 +2056,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 43,
+        "local": 44,
         "ci": 64
       }
     },
@@ -2023,7 +2067,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 43,
+        "local": 44,
         "ci": 64
       }
     },
@@ -2104,6 +2148,28 @@
         "ci": 1
       }
     },
+    "en/faq.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
+    "en/faq.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
     "en/frameworks.html": {
       "below30": 0,
       "below45": 0,
@@ -2170,6 +2236,28 @@
         "ci": 12
       }
     },
+    "en/navigation-patterns.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 10,
+        "ci": 10
+      }
+    },
+    "en/navigation-patterns.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 10,
+        "ci": 10
+      }
+    },
     "en/recipes.html": {
       "below30": 0,
       "below45": 0,
@@ -2221,7 +2309,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 46,
+        "local": 48,
         "ci": 67
       }
     },
@@ -2232,7 +2320,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 46,
+        "local": 48,
         "ci": 67
       }
     },

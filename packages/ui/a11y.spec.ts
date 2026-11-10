@@ -795,7 +795,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
   // 生成后立刻校验求和不变量：totals 与逐页必须严格一致（结构性保证，防生成逻辑漂移）
   const mismatch = totalsMismatch(JSON.parse(readFileSync(BASELINE_FILE, 'utf8')))
   expect(mismatch, `新生成的基线 totals 与 pages 求和不一致：${mismatch.join('；')}`).toEqual([])
-  expect(Object.keys(pages).length).toBe(207)
+  expect(Object.keys(pages).length).toBe(215)
 })
 
 // ---------- totals 求和不变量门禁 ----------
@@ -803,7 +803,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
 // 基线残留已删页面的陈旧条目 / 生成逻辑漂移都会让两侧脱节，这里显式红灯而不是静默放行。
 test('a11y 基线 totals 求和不变量：各项计数等于逐页求和（skipped 双环境、sampled 不按同一规则）', () => {
   const baseline = loadBaseline()
-  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(207)
+  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(215)
   const mismatch = totalsMismatch(baseline)
   expect(
     mismatch,
