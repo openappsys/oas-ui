@@ -58,7 +58,7 @@ test('guide/navigation-patterns 双轨侧栏：两轨升级 + 68px 轨道 + 受�
   // 折叠态 footer 默认被组件隐藏，配方用 ::part(foot) 显式透出——账户头像必须真的可见
   const railAvatar = rail.locator('oas-avatar')
   await expect(railAvatar, '左轨底部账户头像应可见（::part(foot) 覆写生效）').toBeVisible()
-  expect((await railAvatar.boundingBox())?.height ?? 0, '头像有实际尺寸').toBeGreaterThan(0)
+  expect((await railAvatar.boundingBox())?.height ?? 0, '头像应有实际尺寸（≥24px）').toBeGreaterThanOrEqual(24)
 
   // 初始态：左轨 am 高亮、右面板 live 高亮、header 为 OAS 控制台
   expect(await activeItemValue(rail), '左轨初始高亮OAS 工作室').toBe('am')
@@ -133,7 +133,8 @@ test('guide/navigation-patterns 浮岛顶栏：floating 圆角投影留边 + 受
   await expect(bar, 'floating 形态标记').toHaveAttribute('data-position', 'floating')
   await expect(bar).toHaveAttribute('elevated', '')
   const radius = await bar.evaluate((el) => getComputedStyle(el).borderRadius)
-  expect(parseFloat(radius), '浮岛应有圆角（radius-lg）').toBeGreaterThan(0)
+  const radiusLg = await bar.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--oas-radius-lg')))
+  expect(parseFloat(radius), `浮岛圆角应等于 radius-lg（实际 ${radius}）`).toBeCloseTo(radiusLg, 0)
   const shadow = await bar.evaluate((el) => getComputedStyle(el).boxShadow)
   expect(shadow, 'elevated 常显投影应生效').not.toBe('none')
 
@@ -380,7 +381,8 @@ test('guide/navigation-patterns 暗色企业版：容器 data-theme=dark 真实�
   // 侧栏实际渲染底色为暗色（--oas-sidebar-bg 缺省 --oas-color-bg-hover 的暗色档）
   const sidebarBg = await sidebar.evaluate((el) => getComputedStyle(el).backgroundColor)
   const channels = (sidebarBg.match(/\d+/g) ?? []).map(Number).slice(0, 3)
-  expect(channels.length, 'backgroundColor 应可解析').toBe(3)
+  // 通道数从实际 rgb()/rgba() 串结构推导（逗号数 + 1），不硬编码常数
+  expect(channels.length, 'backgroundColor 应可解析').toBe((sidebarBg.match(/,/g) ?? []).length + 1)
   expect(
     channels.every((c) => c < 80),
     `侧栏底色应为暗色（实际 ${sidebarBg}）`,
@@ -427,7 +429,8 @@ test('guide/navigation-patterns (en) 英文页采样：floating 契约 + en 原�
   const bar = page.locator('#npf-bar')
   await expect(bar).toHaveAttribute('data-position', 'floating')
   const radius = await bar.evaluate((el) => getComputedStyle(el).borderRadius)
-  expect(parseFloat(radius), '浮岛应有圆角').toBeGreaterThan(0)
+  const radiusLg = await bar.evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--oas-radius-lg')))
+  expect(parseFloat(radius), `floating radius should equal radius-lg (got ${radius})`).toBeCloseTo(radiusLg, 0)
   const shadow = await bar.evaluate((el) => getComputedStyle(el).boxShadow)
   expect(shadow, 'elevated 投影应生效').not.toBe('none')
   const barWidth = await widthOf(page, '#npf-bar')

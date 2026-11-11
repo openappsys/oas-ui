@@ -397,8 +397,6 @@
 3. **暗色卡与账户行**：footer 试用卡用 `--oas-color-bg-elevated`（暗色下比暗底亮一档）+ 边框分层；账户行 `oas-avatar` 文字通道（首字符）+ 邮箱副文本，全部 token 色
 4. **对比度门禁**：暗色 demo 与明色 demo 同过 axe 与感知对比度基线——暗底上的次要文字用 `--oas-color-text-secondary`，主题已保证两档可读
 
-
-
 <script setup>
 import { onMounted } from 'vue'
 

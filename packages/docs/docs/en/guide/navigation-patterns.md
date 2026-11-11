@@ -398,8 +398,6 @@ Composition recipes for cross-component navigation shapes: **the library ships n
 3. **Dark card and account row**: the footer trial card uses `--oas-color-bg-elevated` (one step lighter than the dark surface) + a border for layering; the account row is an `oas-avatar` text channel (first character) + email secondary text, all token colors
 4. **Contrast gates**: the dark demo passes the same axe run and perceptual-contrast baseline as the light ones — secondary text on the dark surface uses `--oas-color-text-secondary`, readable at both tiers by theme guarantee
 
-
-
 <script setup>
 import { onMounted } from 'vue'
 
