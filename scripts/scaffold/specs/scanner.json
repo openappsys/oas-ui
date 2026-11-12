@@ -1,0 +1,46 @@
+{
+  "name": "scanner",
+  "group": "data",
+  "className": "OASScanner",
+  "tag": "oas-scanner",
+  "ssr": false,
+  "overlay": false,
+  "zh": { "title": "扫码器", "summary": "相机实时扫码识别，环境不支持或权限受限时自动降级为手动输入。" },
+  "en": { "title": "Scanner", "summary": "Camera-based code scanning with automatic manual-input fallback." },
+  "attrs": [
+    {
+      "name": "active",
+      "type": "boolean",
+      "default": false,
+      "desc": { "zh": "在场=请求相机并开始预览识别", "en": "Present: request the camera and start preview scanning" }
+    },
+    {
+      "name": "manual",
+      "type": "boolean",
+      "default": false,
+      "desc": {
+        "zh": "在场=显示手动输入行；无相机/无权限/出错时自动降级为该模式",
+        "en": "Present: show the manual input row; auto fallback when the camera is unavailable"
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "scan",
+      "detail": "{ value: string, format?: string }",
+      "desc": {
+        "zh": "识别成功时派发（含手动提交）；同一 value+format 指纹不重复派发",
+        "en": "Fired on a successful decode (incl. manual submit); the same value+format fingerprint is not re-fired"
+      }
+    },
+    {
+      "name": "error",
+      "detail": "{ code: 'not-supported' | 'permission' | 'camera' }",
+      "desc": {
+        "zh": "环境不支持/权限被拒/相机异常时派发，同一 code 每次激活会话只派发一次",
+        "en": "Fired when unsupported / permission denied / camera error; once per activation session per code"
+      }
+    }
+  ],
+  "slots": []
+}

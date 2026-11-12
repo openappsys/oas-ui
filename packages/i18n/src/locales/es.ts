@@ -426,7 +426,15 @@ export const es: LocaleMessages = {
   'signature.signed': 'Firmado',
   'signature.unsigned': 'Sin firmar',
   'signature.aria': 'Panel de firma, {status}',
-  // command (paleta de comandos)
+  // scanner
+  'scanner.idle': 'Escáner no iniciado',
+  'scanner.scanning': 'Escaneando…',
+  'scanner.unsupported': 'El escaneo con cámara no es compatible aquí. Introduzca el código manualmente',
+  'scanner.permission': 'Permiso de cámara denegado. Introduzca el código manualmente',
+  'scanner.camera': 'No se pudo iniciar la cámara. Introduzca el código manualmente',
+  'scanner.manualLabel': 'Introducir código manualmente',
+  'scanner.manualSubmit': 'Confirmar',
+  'scanner.videoLabel': 'Vista previa del escaneo con cámara', // command (paleta de comandos)
   'command.placeholder': 'Buscar comandos…',
   'command.empty': 'Sin comandos coincidentes',
   'command.search': 'Buscar comandos',

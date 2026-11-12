@@ -422,7 +422,15 @@ export const fa: LocaleMessages = {
   'signature.signed': 'امضا شد',
   'signature.unsigned': 'امضا نشده',
   'signature.aria': 'پد امضا، {status}',
-  // command (پالت فرمان)
+  // scanner
+  'scanner.idle': 'اسکنر شروع نشده است',
+  'scanner.scanning': 'در حال اسکن…',
+  'scanner.unsupported': 'اسکن با دوربین در این محیط پشتیبانی نمی‌شود. لطفاً کد را دستی وارد کنید',
+  'scanner.permission': 'اجازه دوربین رد شد. لطفاً کد را دستی وارد کنید',
+  'scanner.camera': 'راه‌اندازی دوربین ناموفق بود. لطفاً کد را دستی وارد کنید',
+  'scanner.manualLabel': 'ورود دستی کد',
+  'scanner.manualSubmit': 'تأیید',
+  'scanner.videoLabel': 'پیش‌نمایش اسکن دوربین', // command (پالت فرمان)
   'command.placeholder': 'جستجوی فرمان…',
   'command.empty': 'فرمان مطابقی وجود ندارد',
   'command.search': 'جستجوی فرمان‌ها',

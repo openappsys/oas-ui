@@ -424,7 +424,15 @@ export const zhHant: LocaleMessages = {
   'signature.signed': '已簽名',
   'signature.unsigned': '未簽名',
   'signature.aria': '簽名畫板，{status}',
-  // command（命令面板）
+  // scanner
+  'scanner.idle': '掃碼器未啟動',
+  'scanner.scanning': '正在掃描…',
+  'scanner.unsupported': '目前環境不支援相機掃碼，請手動輸入',
+  'scanner.permission': '相機權限被拒絕，請手動輸入',
+  'scanner.camera': '相機啟動失敗，請手動輸入',
+  'scanner.manualLabel': '手動輸入碼值',
+  'scanner.manualSubmit': '確認',
+  'scanner.videoLabel': '相機掃描畫面', // command（命令面板）
   'command.placeholder': '搜尋命令…',
   'command.empty': '無匹配命令',
   'command.search': '搜尋命令',

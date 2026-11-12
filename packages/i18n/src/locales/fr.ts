@@ -426,7 +426,15 @@ export const fr: LocaleMessages = {
   'signature.signed': 'Signé',
   'signature.unsigned': 'Non signé',
   'signature.aria': 'Panneau de signature, {status}',
-  // command (palette de commandes)
+  // scanner
+  'scanner.idle': 'Scanner non démarré',
+  'scanner.scanning': 'Analyse en cours…',
+  'scanner.unsupported': 'Le scan par caméra est indisponible ici. Saisissez le code manuellement',
+  'scanner.permission': 'Accès à la caméra refusé. Saisissez le code manuellement',
+  'scanner.camera': 'Échec du démarrage de la caméra. Saisissez le code manuellement',
+  'scanner.manualLabel': 'Saisir le code manuellement',
+  'scanner.manualSubmit': 'Confirmer',
+  'scanner.videoLabel': 'Aperçu du scan par caméra', // command (palette de commandes)
   'command.placeholder': 'Rechercher des commandes…',
   'command.empty': 'Aucune commande correspondante',
   'command.search': 'Rechercher des commandes',

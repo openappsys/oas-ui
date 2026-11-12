@@ -426,7 +426,15 @@ export const ja: LocaleMessages = {
   'signature.signed': '署名済み',
   'signature.unsigned': '未署名',
   'signature.aria': '署名パッド、{status}',
-  // command（コマンドパレット）
+  // scanner
+  'scanner.idle': 'スキャナーは未起動です',
+  'scanner.scanning': 'スキャン中…',
+  'scanner.unsupported': 'この環境ではカメラスキャンを利用できません。手動で入力してください',
+  'scanner.permission': 'カメラの権限が拒否されました。手動で入力してください',
+  'scanner.camera': 'カメラを起動できませんでした。手動で入力してください',
+  'scanner.manualLabel': 'コードを手動入力',
+  'scanner.manualSubmit': '確認',
+  'scanner.videoLabel': 'カメラスキャンプレビュー', // command（コマンドパレット）
   'command.placeholder': 'コマンドを検索…',
   'command.empty': '一致するコマンドなし',
   'command.search': 'コマンドを検索',

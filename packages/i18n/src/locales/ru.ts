@@ -426,7 +426,15 @@ export const ru: LocaleMessages = {
   'signature.signed': 'Подписано',
   'signature.unsigned': 'Не подписано',
   'signature.aria': 'Панель подписи, {status}',
-  // command (палитра команд)
+  // scanner
+  'scanner.idle': 'Сканер не запущен',
+  'scanner.scanning': 'Сканирование…',
+  'scanner.unsupported': 'Сканирование камерой не поддерживается здесь. Введите код вручную',
+  'scanner.permission': 'Доступ к камере запрещён. Введите код вручную',
+  'scanner.camera': 'Не удалось запустить камеру. Введите код вручную',
+  'scanner.manualLabel': 'Ввести код вручную',
+  'scanner.manualSubmit': 'Подтвердить',
+  'scanner.videoLabel': 'Предпросмотр сканирования камерой', // command (палитра команд)
   'command.placeholder': 'Поиск команд…',
   'command.empty': 'Нет подходящих команд',
   'command.search': 'Поиск команд',

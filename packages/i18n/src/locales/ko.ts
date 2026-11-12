@@ -426,7 +426,15 @@ export const ko: LocaleMessages = {
   'signature.signed': '서명됨',
   'signature.unsigned': '서명되지 않음',
   'signature.aria': '서명 패드, {status}',
-  // command（명령 팔레트）
+  // scanner
+  'scanner.idle': '스캐너가 시작되지 않았습니다',
+  'scanner.scanning': '스캔 중…',
+  'scanner.unsupported': '이 환경에서는 카메라 스캔을 사용할 수 없습니다. 직접 입력해 주세요',
+  'scanner.permission': '카메라 권한이 거부되었습니다. 직접 입력해 주세요',
+  'scanner.camera': '카메라를 시작하지 못했습니다. 직접 입력해 주세요',
+  'scanner.manualLabel': '코드 직접 입력',
+  'scanner.manualSubmit': '확인',
+  'scanner.videoLabel': '카메라 스캔 미리보기', // command（명령 팔레트）
   'command.placeholder': '명령어 검색…',
   'command.empty': '일치하는 명령어 없음',
   'command.search': '명령어 검색',

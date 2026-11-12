@@ -426,7 +426,15 @@ export const ar: LocaleMessages = {
   'signature.signed': 'موقّع',
   'signature.unsigned': 'غير موقّع',
   'signature.aria': 'لوحة التوقيع، {status}',
-  // command (لوحة الأوامر)
+  // scanner
+  'scanner.idle': 'الماسح الضوئي غير مُشغَّل',
+  'scanner.scanning': 'جارٍ المسح…',
+  'scanner.unsupported': 'المسح بالكاميرا غير مدعوم هنا. أدخل الرمز يدويًا',
+  'scanner.permission': 'تم رفض إذن الكاميرا. أدخل الرمز يدويًا',
+  'scanner.camera': 'فشل تشغيل الكاميرا. أدخل الرمز يدويًا',
+  'scanner.manualLabel': 'إدخال الرمز يدويًا',
+  'scanner.manualSubmit': 'تأكيد',
+  'scanner.videoLabel': 'معاينة المسح بالكاميرا', // command (لوحة الأوامر)
   'command.placeholder': 'ابحث عن الأوامر…',
   'command.empty': 'لا توجد أوامر مطابقة',
   'command.search': 'البحث عن الأوامر',

@@ -426,7 +426,15 @@ export const ptBR: LocaleMessages = {
   'signature.signed': 'Assinado',
   'signature.unsigned': 'Não assinado',
   'signature.aria': 'Painel de assinatura, {status}',
-  // command (paleta de comandos)
+  // scanner
+  'scanner.idle': 'Scanner não iniciado',
+  'scanner.scanning': 'Digitalizando…',
+  'scanner.unsupported': 'A digitalização por câmera não é compatível aqui. Digite o código manualmente',
+  'scanner.permission': 'Permissão da câmera negada. Digite o código manualmente',
+  'scanner.camera': 'Falha ao iniciar a câmera. Digite o código manualmente',
+  'scanner.manualLabel': 'Digitar código manualmente',
+  'scanner.manualSubmit': 'Confirmar',
+  'scanner.videoLabel': 'Pré-visualização da digitalização por câmera', // command (paleta de comandos)
   'command.placeholder': 'Pesquisar comandos…',
   'command.empty': 'Sem comandos correspondentes',
   'command.search': 'Pesquisar comandos',

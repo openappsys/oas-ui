@@ -422,7 +422,15 @@ export const uk: LocaleMessages = {
   'signature.signed': 'Підписано',
   'signature.unsigned': 'Не підписано',
   'signature.aria': 'Панель підпису, {status}',
-  // command (палітра команд)
+  // scanner
+  'scanner.idle': 'Сканер не запущено',
+  'scanner.scanning': 'Сканування…',
+  'scanner.unsupported': 'Сканування камерою не підтримується тут. Уведіть код вручну',
+  'scanner.permission': 'Доступ до камери заборонено. Уведіть код вручну',
+  'scanner.camera': 'Не вдалося запустити камеру. Уведіть код вручну',
+  'scanner.manualLabel': 'Увести код вручну',
+  'scanner.manualSubmit': 'Підтвердити',
+  'scanner.videoLabel': 'Попередній перегляд сканування камерою', // command (палітра команд)
   'command.placeholder': 'Пошук команд…',
   'command.empty': 'Немає відповідних команд',
   'command.search': 'Пошук команд',

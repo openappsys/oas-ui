@@ -422,7 +422,15 @@ export const he: LocaleMessages = {
   'signature.signed': 'נחתם',
   'signature.unsigned': 'לא נחתם',
   'signature.aria': 'לוח חתימה, {status}',
-  // command (לוח פקודות)
+  // scanner
+  'scanner.idle': 'הסורק לא הופעל',
+  'scanner.scanning': 'סורק כעת…',
+  'scanner.unsupported': 'סריקת מצלמה אינה נתמכת כאן. יש להזין את הקוד באופן ידני',
+  'scanner.permission': 'הרשאת המצלמה נדחתה. יש להזין את הקוד באופן ידני',
+  'scanner.camera': 'הפעלת המצלמה נכשלה. יש להזין את הקוד באופן ידני',
+  'scanner.manualLabel': 'הזנת קוד באופן ידני',
+  'scanner.manualSubmit': 'אישור',
+  'scanner.videoLabel': 'תצוגה מקדימה של סריקת מצלמה', // command (לוח פקודות)
   'command.placeholder': 'חיפוש פקודות…',
   'command.empty': 'אין פקודות תואמות',
   'command.search': 'חיפוש פקודות',

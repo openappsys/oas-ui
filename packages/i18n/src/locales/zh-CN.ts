@@ -426,6 +426,15 @@ export const zhCN = {
   'signature.signed': '已签名',
   'signature.unsigned': '未签名',
   'signature.aria': '签名画板，{status}',
+  // scanner（扫码器）
+  'scanner.idle': '扫码器未启动',
+  'scanner.scanning': '正在扫描…',
+  'scanner.unsupported': '当前环境不支持相机扫码，请手动输入',
+  'scanner.permission': '相机权限被拒绝，请手动输入',
+  'scanner.camera': '相机启动失败，请手动输入',
+  'scanner.manualLabel': '手动输入码值',
+  'scanner.manualSubmit': '确认',
+  'scanner.videoLabel': '相机扫描画面',
   // command（命令面板）
   'command.placeholder': '搜索命令…',
   'command.empty': '无匹配命令',

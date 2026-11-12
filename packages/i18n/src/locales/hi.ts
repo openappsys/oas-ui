@@ -422,7 +422,15 @@ export const hi: LocaleMessages = {
   'signature.signed': 'हस्ताक्षरित',
   'signature.unsigned': 'अहस्ताक्षरित',
   'signature.aria': 'हस्ताक्षर पैड, {status}',
-  // command (कमांड पैलेट)
+  // scanner
+  'scanner.idle': 'स्कैनर प्रारंभ नहीं हुआ',
+  'scanner.scanning': 'स्कैन हो रहा है…',
+  'scanner.unsupported': 'इस वातावरण में कैमरा स्कैन समर्थित नहीं है। कृपया कोड मैन्युअल रूप से दर्ज करें',
+  'scanner.permission': 'कैमरा अनुमति अस्वीकार की गई। कृपया कोड मैन्युअल रूप से दर्ज करें',
+  'scanner.camera': 'कैमरा प्रारंभ नहीं हो सका। कृपया कोड मैन्युअल रूप से दर्ज करें',
+  'scanner.manualLabel': 'कोड मैन्युअल रूप से दर्ज करें',
+  'scanner.manualSubmit': 'पुष्टि करें',
+  'scanner.videoLabel': 'कैमरा स्कैन प्रीव्यू', // command (कमांड पैलेट)
   'command.placeholder': 'कमांड खोजें…',
   'command.empty': 'कोई मिलता-जुलता कमांड नहीं',
   'command.search': 'कमांड खोजें',

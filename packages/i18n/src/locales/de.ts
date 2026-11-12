@@ -426,7 +426,15 @@ export const de: LocaleMessages = {
   'signature.signed': 'Signiert',
   'signature.unsigned': 'Nicht signiert',
   'signature.aria': 'Signaturfeld, {status}',
-  // command (Befehlspalette)
+  // scanner
+  'scanner.idle': 'Scanner nicht gestartet',
+  'scanner.scanning': 'Scanne…',
+  'scanner.unsupported': 'Kamerascannen wird hier nicht unterstützt. Bitte manuell eingeben',
+  'scanner.permission': 'Kamerazugriff wurde verweigert. Bitte manuell eingeben',
+  'scanner.camera': 'Kamera konnte nicht gestartet werden. Bitte manuell eingeben',
+  'scanner.manualLabel': 'Code manuell eingeben',
+  'scanner.manualSubmit': 'Bestätigen',
+  'scanner.videoLabel': 'Kamera-Scan-Vorschau', // command (Befehlspalette)
   'command.placeholder': 'Befehle suchen…',
   'command.empty': 'Keine passenden Befehle',
   'command.search': 'Befehle suchen',
