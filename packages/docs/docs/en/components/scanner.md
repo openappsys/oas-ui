@@ -100,7 +100,7 @@ Three failure classes fall back to manual mode automatically and fire `oas-error
 
 `root` / `viewport` / `video` / `status` / `manual` / `input` / `submit` are customizable via `::part()`.
 
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue'
 onMounted(() => {
   customElements.whenDefined('oas-scanner').then(() => {

@@ -100,7 +100,7 @@ el.stop()    // = removeAttribute('active')：停止并关流
 
 `root` / `viewport` / `video` / `status` / `manual` / `input` / `submit` 可经 `::part()` 定制。
 
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue'
 onMounted(() => {
   customElements.whenDefined('oas-scanner').then(() => {
