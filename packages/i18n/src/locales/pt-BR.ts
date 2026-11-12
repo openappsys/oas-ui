@@ -572,4 +572,11 @@ export const ptBR: LocaleMessages = {
   'diffViewer.removedLine': 'Linha removida {n}',
   'diffViewer.before': 'Antes',
   'diffViewer.after': 'Depois',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'Digite um e-mail e pressione Enter',
+  'chipsInput.inputLabel': 'Adicionar destinatário',
+  'chipsInput.remove': 'Remover {label}',
+  'chipsInput.editLabel': 'Editar destinatário',
+  'chipsInput.invalidEmail': 'E-mail inválido',
+  'chipsInput.exceedLimit': 'No máximo {max} destinatários',
 }

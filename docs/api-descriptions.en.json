@@ -5350,14 +5350,17 @@
       "size": "Size: small / medium / large"
     },
     "events": {
-      "oas-change": "Dispatched after chips are added, removed, or edited",
-      "oas-add": "Dispatched when a chip is added",
-      "oas-remove": "Dispatched when a chip is removed",
-      "oas-invalid": "Dispatched when a chip fails email validation (idempotent; does not block submission)",
-      "oas-exceed-limit": "Dispatched when exceeding the max limit; addition is blocked",
+      "oas-change": "Dispatched after chips are added/removed/edited, `detail: { value, trigger }`, trigger ∈ add | remove | edit | paste",
+      "oas-add": "Dispatched when a chip is added, `detail: { value, index }`",
+      "oas-remove": "Dispatched when a chip is removed, `detail: { value, index }`",
+      "oas-invalid": "Dispatched when a chip fails email validation (idempotent: user-interaction paths only; submission not blocked), `detail: { value, index }`",
+      "oas-exceed-limit": "Dispatched when exceeding the max limit; addition is blocked, `detail: { value, max }`",
       "oas-focus": "Dispatched when the input is focused",
       "oas-blur": "Dispatched when the input is blurred"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "Current value: email string array (writing back to the value attribute emits no events)"
+    }
   }
 }

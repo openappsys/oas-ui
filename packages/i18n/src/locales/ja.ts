@@ -572,4 +572,11 @@ export const ja: LocaleMessages = {
   'diffViewer.removedLine': '削除行 {n}',
   'diffViewer.before': '変更前',
   'diffViewer.after': '変更後',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'メールアドレスを入力して Enter',
+  'chipsInput.inputLabel': '宛先を追加',
+  'chipsInput.remove': '{label} を削除',
+  'chipsInput.editLabel': '宛先を編集',
+  'chipsInput.invalidEmail': 'メールアドレスの形式が正しくありません',
+  'chipsInput.exceedLimit': '追加は最大 {max} 件までです',
 }

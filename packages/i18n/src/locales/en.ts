@@ -500,4 +500,11 @@ export const en: LocaleMessages = {
   'diffViewer.removedLine': 'Removed line {n}',
   'diffViewer.before': 'Before',
   'diffViewer.after': 'After',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'Type an email, press Enter',
+  'chipsInput.inputLabel': 'Add recipient',
+  'chipsInput.remove': 'Remove {label}',
+  'chipsInput.editLabel': 'Edit recipient',
+  'chipsInput.invalidEmail': 'Invalid email address',
+  'chipsInput.exceedLimit': 'Up to {max} recipients',
 }

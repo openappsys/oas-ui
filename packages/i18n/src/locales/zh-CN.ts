@@ -575,4 +575,11 @@ export const zhCN = {
   'diffViewer.removedLine': '删除行 {n}',
   'diffViewer.before': '修改前',
   'diffViewer.after': '修改后',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': '输入邮箱，回车添加',
+  'chipsInput.inputLabel': '添加收件人',
+  'chipsInput.remove': '移除 {label}',
+  'chipsInput.editLabel': '编辑收件人',
+  'chipsInput.invalidEmail': '邮箱格式不正确',
+  'chipsInput.exceedLimit': '最多添加 {max} 个',
 } as const

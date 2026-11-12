@@ -575,4 +575,11 @@ export const he: LocaleMessages = {
   'diffViewer.removedLine': 'שורה {n} נמחקה',
   'diffViewer.before': 'לפני',
   'diffViewer.after': 'אחרי',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'הזן אימייל ולחץ Enter',
+  'chipsInput.inputLabel': 'הוסף נמען',
+  'chipsInput.remove': 'הסר את {label}',
+  'chipsInput.editLabel': 'ערוך נמען',
+  'chipsInput.invalidEmail': 'כתובת אימייל לא תקינה',
+  'chipsInput.exceedLimit': 'עד {max} נמענים',
 }

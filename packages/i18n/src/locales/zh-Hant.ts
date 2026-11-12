@@ -577,4 +577,11 @@ export const zhHant: LocaleMessages = {
   'diffViewer.removedLine': '刪除行 {n}',
   'diffViewer.before': '修改前',
   'diffViewer.after': '修改後',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': '輸入信箱，按 Enter 新增',
+  'chipsInput.inputLabel': '新增收件人',
+  'chipsInput.remove': '移除 {label}',
+  'chipsInput.editLabel': '編輯收件人',
+  'chipsInput.invalidEmail': '信箱格式不正確',
+  'chipsInput.exceedLimit': '最多新增 {max} 個',
 }

@@ -480,4 +480,11 @@ export const th: LocaleMessages = {
   'diffViewer.removedLine': 'ลบบรรทัด {n}',
   'diffViewer.before': 'ก่อนแก้ไข',
   'diffViewer.after': 'หลังแก้ไข',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'พิมพ์อีเมลแล้วกด Enter',
+  'chipsInput.inputLabel': 'เพิ่มผู้รับ',
+  'chipsInput.remove': 'นำ {label} ออก',
+  'chipsInput.editLabel': 'แก้ไขผู้รับ',
+  'chipsInput.invalidEmail': 'อีเมลไม่ถูกต้อง',
+  'chipsInput.exceedLimit': 'เพิ่มได้สูงสุด {max} รายการ',
 }

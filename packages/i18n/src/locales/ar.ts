@@ -572,4 +572,11 @@ export const ar: LocaleMessages = {
   'diffViewer.removedLine': 'سطر محذوف {n}',
   'diffViewer.before': 'قبل',
   'diffViewer.after': 'بعد',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'أدخل بريدًا إلكترونيًا واضغط Enter',
+  'chipsInput.inputLabel': 'إضافة مستلم',
+  'chipsInput.remove': 'إزالة {label}',
+  'chipsInput.editLabel': 'تعديل المستلم',
+  'chipsInput.invalidEmail': 'بريد إلكتروني غير صالح',
+  'chipsInput.exceedLimit': 'حد أقصى {max} مستلمًا',
 }

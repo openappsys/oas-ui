@@ -576,4 +576,11 @@ export const uk: LocaleMessages = {
   'diffViewer.removedLine': 'Видалений рядок {n}',
   'diffViewer.before': 'До',
   'diffViewer.after': 'Після',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'Введіть email і натисніть Enter',
+  'chipsInput.inputLabel': 'Додати отримувача',
+  'chipsInput.remove': 'Видалити {label}',
+  'chipsInput.editLabel': 'Редагувати отримувача',
+  'chipsInput.invalidEmail': 'Неправильна email-адреса',
+  'chipsInput.exceedLimit': 'Щонайбільше {max} отримувачів',
 }

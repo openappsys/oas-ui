@@ -573,4 +573,11 @@ export const ru: LocaleMessages = {
   'diffViewer.removedLine': 'Удалённая строка {n}',
   'diffViewer.before': 'До',
   'diffViewer.after': 'После',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'Введите email и нажмите Enter',
+  'chipsInput.inputLabel': 'Добавить получателя',
+  'chipsInput.remove': 'Удалить {label}',
+  'chipsInput.editLabel': 'Изменить получателя',
+  'chipsInput.invalidEmail': 'Неверный адрес электронной почты',
+  'chipsInput.exceedLimit': 'Не более {max} получателей',
 }

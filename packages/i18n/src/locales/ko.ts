@@ -572,4 +572,11 @@ export const ko: LocaleMessages = {
   'diffViewer.removedLine': '삭제된 줄 {n}',
   'diffViewer.before': '변경 전',
   'diffViewer.after': '변경 후',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': '이메일 입력 후 Enter',
+  'chipsInput.inputLabel': '받는 사람 추가',
+  'chipsInput.remove': '{label} 제거',
+  'chipsInput.editLabel': '받는 사람 편집',
+  'chipsInput.invalidEmail': '이메일 형식이 올바르지 않습니다',
+  'chipsInput.exceedLimit': '최대 {max}개까지 추가할 수 있습니다',
 }

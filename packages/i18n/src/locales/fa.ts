@@ -576,4 +576,11 @@ export const fa: LocaleMessages = {
   'diffViewer.removedLine': 'سطر حذف‌شده {n}',
   'diffViewer.before': 'قبل از تغییر',
   'diffViewer.after': 'بعد از تغییر',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'ایمیل را وارد کنید و Enter بزنید',
+  'chipsInput.inputLabel': 'افزودن گیرنده',
+  'chipsInput.remove': 'حذف {label}',
+  'chipsInput.editLabel': 'ویرایش گیرنده',
+  'chipsInput.invalidEmail': 'ایمیل نامعتبر است',
+  'chipsInput.exceedLimit': 'حداکثر {max} گیرنده',
 }

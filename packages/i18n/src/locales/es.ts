@@ -572,4 +572,11 @@ export const es: LocaleMessages = {
   'diffViewer.removedLine': 'Línea eliminada {n}',
   'diffViewer.before': 'Antes',
   'diffViewer.after': 'Después',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'Escribe un correo y pulsa Enter',
+  'chipsInput.inputLabel': 'Añadir destinatario',
+  'chipsInput.remove': 'Quitar {label}',
+  'chipsInput.editLabel': 'Editar destinatario',
+  'chipsInput.invalidEmail': 'Correo electrónico no válido',
+  'chipsInput.exceedLimit': 'Máximo {max} destinatarios',
 }

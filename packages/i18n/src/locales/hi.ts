@@ -575,4 +575,11 @@ export const hi: LocaleMessages = {
   'diffViewer.removedLine': 'हटाई गई पंक्ति {n}',
   'diffViewer.before': 'बदलाव से पहले',
   'diffViewer.after': 'बदलाव के बाद',
+  // chips-input（收件人 chips 输入）
+  'chipsInput.placeholder': 'ईमेल लिखें, Enter दबाएँ',
+  'chipsInput.inputLabel': 'प्राप्तकर्ता जोड़ें',
+  'chipsInput.remove': '{label} हटाएँ',
+  'chipsInput.editLabel': 'प्राप्तकर्ता संपादित करें',
+  'chipsInput.invalidEmail': 'ईमेल पता मान्य नहीं है',
+  'chipsInput.exceedLimit': 'अधिकतम {max} प्राप्तकर्ता',
 }
