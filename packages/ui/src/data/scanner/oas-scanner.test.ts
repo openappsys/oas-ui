@@ -3,7 +3,8 @@ import { setLocale, registerLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { SSR_SNAPSHOT_VERSION } from '@oas-ui/core/oas-element'
-import { OASScanner, DETECT_INTERVAL_MS, HIT_RESUME_DELAY_MS } from './index.js'
+import { OASScanner } from './index.js'
+import { DETECT_INTERVAL_MS, HIT_RESUME_DELAY_MS } from './oas-scanner.js'
 
 /* ---------------- 测试用 fake ---------------- */
 

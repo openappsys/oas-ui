@@ -8,5 +8,4 @@ if (!customElements.get('oas-scanner')) {
 }
 
 export { OASScanner }
-export { DETECT_INTERVAL_MS, HIT_RESUME_DELAY_MS } from './oas-scanner.js'
 export type { ScanErrorCode } from './oas-scanner.js'
