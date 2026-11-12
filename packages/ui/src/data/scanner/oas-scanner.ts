@@ -227,7 +227,9 @@ export class OASScanner extends OASElement {
       }
       return
     }
-    if (this.sessionStarted && this.detectTimer == null) this.scheduleDetect(DETECT_INTERVAL_MS)
+    // streaming 守卫：manual 降级模式 detector 非空但流已停（video 无帧），
+    // 不续排——否则 detectFrame 走 0×0 自续排分支空转出 no-op timer 链
+    if (this.sessionStarted && this.streaming && this.detectTimer == null) this.scheduleDetect(DETECT_INTERVAL_MS)
   }
 
   /** 挂 visibilitychange 监听并登记断开清理（构造函数与 onReconnect 共用） */
@@ -495,6 +497,12 @@ export class OASScanner extends OASElement {
     if (!this.sessionStarted) return
     // hidden tab 停循环：在途 detect resolve/reject 后的续排一律拒绝，等 visibilitychange 到 visible 再续
     if (typeof document !== 'undefined' && document.hidden) return
+    // 重排前先清旧定时器：visible 续排与 play resolve / 在途 detect 的续排可能交错叠加，
+    // 不清旧 timer 会留下孤儿链——孤儿触发时把 detectTimer 抹成 null，永久 2× 抽帧
+    if (this.detectTimer != null) {
+      clearTimeout(this.detectTimer)
+      this.detectTimer = null
+    }
     this.detectTimer = setTimeout(() => {
       this.detectTimer = null
       void this.detectFrame()

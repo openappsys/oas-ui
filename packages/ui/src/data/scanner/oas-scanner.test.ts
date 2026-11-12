@@ -590,6 +590,128 @@ describe('OASScanner', () => {
         vi.useRealTimers()
       }
     })
+
+    it('窗口A：play() pending 期间 hidden→visible 续排叠加 play resolve 续排 → 仍单一检测链（孤儿 timer 回归）', async () => {
+      vi.useFakeTimers()
+      const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+      try {
+        installDetector()
+        FakeDetector.queue = []
+        const detectSpy = vi.spyOn(FakeDetector.prototype, 'detect')
+        installMediaDevices(async () => fakeStream([{ stop: vi.fn() }]))
+        const el = new OASScanner()
+        document.body.appendChild(el)
+        const video = videoOf(el)
+        ;(video as unknown as Record<string, unknown>).videoWidth = 640
+        ;(video as unknown as Record<string, unknown>).videoHeight = 480
+        // play 挂起：resolve 前 visible 处理器先排 timer A
+        let resolvePlay!: () => void
+        ;(video as unknown as Record<string, unknown>).play = () =>
+          new Promise<void>((res) => {
+            resolvePlay = res
+          })
+
+        el.setAttribute('active', '')
+        await flush() // getUserMedia resolve → srcObject 赋值 → play() pending
+
+        const defineHidden = (v: boolean) =>
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => v })
+        defineHidden(true)
+        document.dispatchEvent(new Event('visibilitychange'))
+        defineHidden(false)
+        document.dispatchEvent(new Event('visibilitychange')) // visible 排 timer A
+
+        resolvePlay() // play resolve → scheduleDetect 重排（应清掉 A，只留单链）
+        await flush()
+        await vi.advanceTimersByTimeAsync(DETECT_INTERVAL_MS * 3)
+        // 单链节拍 = 每 interval 恰好 1 次抽帧；双链（A 孤儿 + B）同刻齐发 ≥5 次
+        expect(detectSpy, '单检测链：3 个 interval 恰好 3 次抽帧').toHaveBeenCalledTimes(3)
+      } finally {
+        if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden)
+        else delete (document as unknown as Record<string, unknown>).hidden
+        vi.useRealTimers()
+      }
+    })
+
+    it('窗口B：detect 在途期间 hidden→visible 续排 → 在途 resolve 后续排不叠加，仍单一检测链', async () => {
+      vi.useFakeTimers()
+      const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+      try {
+        installDetector()
+        const detectSpy = vi.spyOn(FakeDetector.prototype, 'detect')
+        // 首帧 detect 挂起（可控 promise）：制造「detect 在途」窗口
+        let releaseDetect!: (v: Array<{ rawValue: string; format: string }>) => void
+        detectSpy.mockImplementationOnce(
+          () =>
+            new Promise<Array<{ rawValue: string; format: string }>>((res) => {
+              releaseDetect = res
+            }),
+        )
+        installMediaDevices(async () => fakeStream([{ stop: vi.fn() }]))
+        const el = new OASScanner()
+        document.body.appendChild(el)
+        const video = videoOf(el)
+        ;(video as unknown as Record<string, unknown>).videoWidth = 640
+        ;(video as unknown as Record<string, unknown>).videoHeight = 480
+        el.setAttribute('active', '')
+        await flush()
+
+        await vi.advanceTimersByTimeAsync(DETECT_INTERVAL_MS)
+        expect(detectSpy, '首帧 detect 已发出且在途').toHaveBeenCalledTimes(1)
+
+        const defineHidden = (v: boolean) =>
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => v })
+        defineHidden(true)
+        document.dispatchEvent(new Event('visibilitychange'))
+        defineHidden(false)
+        document.dispatchEvent(new Event('visibilitychange')) // visible 排 timer A（此时无 armed timer）
+
+        releaseDetect([]) // 在途 detect resolve → 续排应清掉 A，只留单链
+        await flush()
+        await vi.advanceTimersByTimeAsync(DETECT_INTERVAL_MS * 2)
+        // 单链：1（在途帧）+ 2（两个 interval 各一次）；双链会在首个 interval 同刻齐发 ≥4
+        expect(detectSpy, '单检测链：在途帧 + 2 个 interval 恰好 3 次抽帧').toHaveBeenCalledTimes(3)
+      } finally {
+        if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden)
+        else delete (document as unknown as Record<string, unknown>).hidden
+        vi.useRealTimers()
+      }
+    })
+
+    it('manual 降级模式 hidden→visible 不空转：streaming=false 不续排，detect 零调用（修复前每 interval 走 0×0 自续排链）', async () => {
+      vi.useFakeTimers()
+      const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+      try {
+        installDetector()
+        const detectSpy = vi.spyOn(FakeDetector.prototype, 'detect')
+        installMediaDevices(async () => fakeStream([{ stop: vi.fn() }]))
+        const el = new OASScanner()
+        const errors = track(el, 'oas-error')
+        document.body.appendChild(el)
+        const video = videoOf(el)
+        ;(video as unknown as Record<string, unknown>).videoWidth = 640
+        ;(video as unknown as Record<string, unknown>).videoHeight = 480
+        // play 拒绝 → fallManual：detector 非空 + sessionStarted 保持 true + streaming=false
+        ;(video as unknown as Record<string, unknown>).play = () => Promise.reject(new Error('play blocked'))
+        el.setAttribute('active', '')
+        await flush()
+        expect(errors.length).toBe(1)
+
+        const defineHidden = (v: boolean) =>
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => v })
+        defineHidden(true)
+        document.dispatchEvent(new Event('visibilitychange'))
+        defineHidden(false)
+        document.dispatchEvent(new Event('visibilitychange'))
+        await vi.advanceTimersByTimeAsync(DETECT_INTERVAL_MS * 3)
+        // 修复前：visible 续排 → detectFrame 每 interval 空转（video 有尺寸 stub 时甚至真抽帧）
+        expect(detectSpy, 'manual 降级后无检测空转').toHaveBeenCalledTimes(0)
+      } finally {
+        if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden)
+        else delete (document as unknown as Record<string, unknown>).hidden
+        vi.useRealTimers()
+      }
+    })
   })
 
   describe('hydrate（SSR 骨架接管）', () => {
