@@ -5,6 +5,42 @@
 
 ---
 
+## 未发布：P1/P2 组件能力批（kanban 列折叠合计 / list·sidebar 键盘重排 / comment 输入与 resolve / 收件人 chips / upload capture / code 语言扩充 / countdown 语义 / equation 实时预览）
+
+### 功能定义
+
+P1 中优先增强四项 + P2 顺手小项四件一批，来源为 everything 差距调研 §三 能力缺口清单（「做组件能力不做产品」原则下的高复用件）。全部落在既有组件能力增强，无新重型组件。
+
+### 详细需求
+
+**① oas-kanban：列折叠与列合计**
+- 列头折叠按钮（在场折叠、click 展开；折叠列窄条显示列名 + 卡片数）；合计行（列底 `summary` 数值合计，`summary` 缺席不渲染）；i18n key ×16；属性 `collapsible`（在场开启，默认关，视觉零变化）；折叠态持久化不做（宿主受控：`collapsed-columns` 属性/事件）。
+
+**② oas-list / oas-sidebar：键盘重排**
+- 焦点条目 `Alt+ArrowUp/ArrowDown` 逐条移动（重排当前条目并派发 `oas-reorder`/`oas-change` 带新序）；`aria-keyshortcuts` 声明；RTL 镜像语义（Up/Down 不受 RTL 影响，仅文档注明）；disabled 条目跳过。
+
+**③ oas-comment：输入框与 resolve 态**
+- 组件内置输入行（textarea + 提交，Enter 提交/Shift+Enter 换行），提交派发 `oas-submit`（detail 含文本，宿主写回数据驱动列表）；resolve 能力：`resolved` 属性/每条目 `resolved` 字段 → 已解决条目折叠样式（划线/弱色），提供 `resolve` 触发钮（可 `resolvable="false"` 关闭）；i18n ×16。
+
+**④ 收件人 chips 输入（input 族新能力）**
+- 行为：粘贴多地址自动拆分（分号/逗号/换行/空白）、Enter/逗号成 chip、Backspace 空输入回编辑上一 chip、chip 内联校验（非法邮箱红描边 + `oas-invalid` 事件 detail `{ value, index }`，不拦截提交语义——受控数据宿主裁决）；`value` 双通道（字符串数组序列化）；`max` 上限超出派发 `oas-exceed-limit`（ui-spec 语义家族）；占位符/重复值去重（重复静默丢弃一次 devWarn）；命名与形态实现者按 ui-spec §2 自定（新组件或 input 扩展，报告给一句理由）。
+
+**⑤ oas-upload：`capture` 属性**
+- 透传 file input 的 `capture`（`user`/`environment` 或布尔在场 = `user`），移动端直调相机；桌面浏览器忽略（其行为定义如此）；属性通道即可，单测 + e2e 属性存活断言。
+
+**⑥ oas-code：高亮语言扩充**
+- 语言集扩至含 `sh`/`bash`/`python`/`sql`/`diff`/`markdown`/`yaml`（在既有正则高亮架构内扩展语言定义，不引第三方高亮库）；`lang` 非法值仍静默回落纯文本；单测各语言关键 token 断言。
+
+**⑦ oas-countdown：后台标签时间戳记账语义**
+- 先验证现状：`document.hidden` 期间计时是否漂移。若漂移——改为时间戳记账（目标时刻 - now()），`visibilitychange` 校正，恢复时无跳变；`tick`/`value` 语义不变；单测 fake timers + hidden 语义验证。
+
+**⑧ oas-equation：编辑实时预览**
+- 焦点编辑态（contenteditable 输入区或内部 textarea，实现者选定）输入 LaTeX 子集 → 失焦/实时渲染预览；`value` 双通道；渲染失败回退显示源码 + 一次性 devWarn；键盘可达、Esc 取消编辑恢复原值。
+
+### 验收
+
+- 每组件 TDD 单测 + qa-regression e2e 固化（真点/真输入、dark、console 零告警）；i18n ×16 completeness 零漏；api:scan/gen 零漂移；perf:size 不破预算；收口 ≥2 轮 × ≥2 模型交叉审 + 修复批再审；用户视角验证门禁。
+
 ## 未发布：P0 组件能力批（scheduler 冲突校验 / chart 横向条与 tooltip / oas-scanner / oas-signature）
 
 ### 功能定义
