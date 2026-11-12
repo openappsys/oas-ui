@@ -33,6 +33,10 @@
       "type": "string",
       "default": "medium",
       "observed": true
+    },
+    {
+      "name": "name",
+      "observed": true
     }
   ],
   "props": [

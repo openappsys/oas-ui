@@ -5103,7 +5103,8 @@
       "placeholder": "输入框占位符（缺省走 i18n 文案）",
       "disabled": "禁用",
       "readonly": "只读（chip 仅展示，不可增删改）",
-      "size": "尺寸档位 small / medium / large"
+      "size": "尺寸档位 small / medium / large",
+      "name": "表单字段名（oas-form 收集的字段键；组件非 form-associated，不进原生 FormData 提交）"
     },
     "events": {
       "oas-change": "chip 增删改后派发，`detail: { value, trigger }`，trigger ∈ add | remove | edit | paste",

@@ -5360,7 +5360,8 @@
       "placeholder": "Input placeholder (i18n default)",
       "disabled": "Disabled",
       "readonly": "Readonly (chips are display-only)",
-      "size": "Size: small / medium / large"
+      "size": "Size: small / medium / large",
+      "name": "Form field name (key collected by oas-form; the component is not form-associated and is not submitted via native FormData)"
     },
     "events": {
       "oas-change": "Dispatched after chips are added/removed/edited, `detail: { value, trigger }`, trigger ∈ add | remove | edit | paste",

@@ -111,6 +111,7 @@ Both are "free input becomes chips" components with different interaction models
 | --- | --- | --- | --- |
 | `disabled` | Disabled | `boolean` | — |
 | `max` | Chip count limit; exceeding emits oas-exceed-limit and blocks additions | `string` | — |
+| `name` | Form field name (key collected by oas-form; the component is not form-associated and is not submitted via native FormData) | — | — |
 | `placeholder` | Input placeholder (i18n default) | `string` | — |
 | `readonly` | Readonly (chips are display-only) | `boolean` | — |
 | `size` | Size: small / medium / large | `string` | `medium` |

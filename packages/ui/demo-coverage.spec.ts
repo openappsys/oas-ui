@@ -457,12 +457,31 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-dynamic-tags .tag-edit', 'fill:tag-renamed', '编辑输入新值（首实例 tag，非重复值）'],
     ['oas-dynamic-tags .tag-edit', 'press:Enter', '提交编辑 → oas-edit'],
   ],
+  // chips-input：oas-focus/blur 由 fill 聚焦与后续点击失焦带出；oas-add/change 由 Enter 成 chip 带出
+  'chips-input': [
+    ['#chips-basic [part="input"]', 'fill:probe@example.com', '聚焦输入 → oas-focus'],
+    ['#chips-basic [part="input"]', 'press:Enter', '成 chip → oas-add + oas-change'],
+    ['#chips-basic [part="chip-remove"]', 'click', '点 chip 删除钮（输入框失焦 → oas-blur）→ oas-remove'],
+    ['#chips-invalid [part="input"]', 'fill:not-an-email', '输入非法邮箱'],
+    ['#chips-invalid [part="input"]', 'press:Enter', '非法邮箱成 chip → oas-invalid'],
+    ['#chips-max [part="input"]', 'fill:one@b.co', 'max=3 已有 2 枚：再填 1 枚'],
+    ['#chips-max [part="input"]', 'press:Enter', '第 3 枚入列（恰达上限）'],
+    ['#chips-max [part="input"]', 'fill:two@b.co', '继续填第 4 枚'],
+    ['#chips-max [part="input"]', 'press:Enter', '超限 → oas-exceed-limit'],
+  ],
   editable: [
     ['oas-editable:not([disabled]) [part="display"]', 'click', '进入编辑'],
     ['oas-editable [part="field"]', 'fill:new-val'],
     ['oas-editable [part="ok"]', 'click', '提交 → oas-change'],
     ['oas-editable:not([disabled]) [part="display"]', 'click', '再次进入编辑'],
     ['oas-editable [part="cancel"]', 'click', '取消 → oas-cancel'],
+  ],
+  equation: [
+    ['#eq-editable [part="equation"]', 'click', '点公式进编辑态 → oas-editing'],
+    ['#eq-editable [part="field"]', 'fill:x^3', '改源码（节流实时预览）'],
+    ['#eq-editable [part="field"]', 'press:Enter', 'Enter 提交 → oas-change + oas-editing(false)'],
+    ['#eq-editable [part="equation"]', 'click', '再次进编辑态'],
+    ['#eq-editable [part="field"]', 'press:Escape', 'Esc 取消恢复原值 → oas-cancel'],
   ],
   snackbar: [
     ['oas-snackbar', 'open', '静态实例置 open → oas-open'],
@@ -694,6 +713,15 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'oas-bubble[reactions] [part="reactions"] button.reaction',
       'click',
       '点表情回应按钮 → oas-reaction（真按钮，选中态 aria-pressed）',
+    ],
+  ],
+  comment: [
+    ['#comment-composer [part="composer-input"]', 'fill:探针评论', '聚焦内置输入行'],
+    ['#comment-composer [part="composer-input"]', 'press:Enter', 'Enter 提交 → oas-submit'],
+    [
+      '#comment-resolve-open [part="resolve"]',
+      'domclick',
+      'DOM click：oas-submit 后 message 浮层可能拦截真实点击 → oas-resolve',
     ],
   ],
   'message-scroller': [

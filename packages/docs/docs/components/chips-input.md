@@ -111,6 +111,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `disabled` | 禁用 | `boolean` | — |
 | `max` | chip 数量上限，超出派发 oas-exceed-limit 且不再新增 | `string` | — |
+| `name` | 表单字段名（oas-form 收集的字段键；组件非 form-associated，不进原生 FormData 提交） | — | — |
 | `placeholder` | 输入框占位符（缺省走 i18n 文案） | `string` | — |
 | `readonly` | 只读（chip 仅展示，不可增删改） | `boolean` | — |
 | `size` | 尺寸档位 small / medium / large | `string` | `medium` |

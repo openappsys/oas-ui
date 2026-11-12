@@ -11,6 +11,7 @@ import '../cascader/index.js'
 import '../radio/index.js'
 import '../picker/index.js'
 import '../dynamic-tags/index.js'
+import '../chips-input/index.js'
 import '../select/index.js'
 import '../combobox/index.js'
 import '../auto-complete/index.js'
@@ -1992,6 +1993,71 @@ describe('OASForm 复合控件真实值通道（C1 transfer / C2 dynamic-tags）
     expect(tags.getAttribute('model-value'), '交互回写 model-value 通道').toBe('["svelte"]')
     expect(changes).toEqual([{ name: 'tags', value: '["svelte"]', values: { tags: '["svelte"]' } }])
     expect(submittedValues(el)).toEqual({ tags: '["svelte"]' })
+  })
+})
+
+describe('OASForm chips-input 值通道（value JSON 数组串）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('声明式初值（value JSON attribute）进提交', () => {
+    const el = mountChannelForm(`<oas-chips-input name="to" value='["a@b.co","c@d.co"]'></oas-chips-input>`)
+    expect(el.getValues()).toEqual({ to: '["a@b.co","c@d.co"]' })
+    expect(submittedValues(el)).toEqual({ to: '["a@b.co","c@d.co"]' })
+  })
+
+  it('initial-values 写入 value 属性（JSON 数组串）', () => {
+    const el = mountChannelForm('<oas-chips-input name="to"></oas-chips-input>', {
+      'initial-values': JSON.stringify({ to: ['x@y.co'] }),
+    })
+    const chips = el.querySelector('oas-chips-input')!
+    expect(chips.getAttribute('value')).toBe('["x@y.co"]')
+    expect(el.getValues()).toEqual({ to: '["x@y.co"]' })
+  })
+
+  it('reset 把 chips-input 恢复到 value 通道初始值', () => {
+    const el = mountChannelForm(`<oas-chips-input name="to" value='["a@b.co"]'></oas-chips-input>`)
+    const chips = el.querySelector('oas-chips-input')!
+    chips.setAttribute('value', '["c@d.co"]')
+    el.reset()
+    expect(chips.getAttribute('value')).toBe('["a@b.co"]')
+    expect(el.getValues()).toEqual({ to: '["a@b.co"]' })
+  })
+
+  it('真实输入 Enter 成 chip → oas-values-change + 提交读到新值', () => {
+    const el = mountChannelForm('<oas-chips-input name="to"></oas-chips-input>')
+    const chips = el.querySelector('oas-chips-input')!
+    const changes: Array<{ name: string; value: string; values: Record<string, string> }> = []
+    el.addEventListener('oas-values-change', (e) => changes.push((e as CustomEvent).detail))
+    const input = chips.shadowRoot!.querySelector<HTMLInputElement>('.chip-input')!
+    input.value = 'new@b.co'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(chips.getAttribute('value'), '交互回写 value 通道').toBe('["new@b.co"]')
+    expect(changes).toEqual([{ name: 'to', value: '["new@b.co"]', values: { to: '["new@b.co"]' } }])
+    expect(submittedValues(el)).toEqual({ to: '["new@b.co"]' })
+  })
+
+  it('required：零 chip（无 value 属性 / value=[]）触发必填错误', () => {
+    const el = mountChannelForm('<oas-chips-input name="to"></oas-chips-input>', {
+      rules: JSON.stringify({ to: [{ required: true, message: '请填写收件人' }] }),
+    })
+    let submitFired = 0
+    let failDetail: unknown
+    el.addEventListener('oas-submit', () => submitFired++)
+    el.addEventListener('oas-validate-fail', (e: Event) => (failDetail = (e as CustomEvent).detail))
+    el.submit()
+    expect(submitFired, '零 chip 不得放行提交').toBe(0)
+    expect((failDetail as { errors: Record<string, string> }).errors.to).toBe('请填写收件人')
+    // 用户删光 chip 后组件回写 value='[]'——空数组同样是空值语义，required 仍拦截
+    const chips = el.querySelector('oas-chips-input')!
+    chips.setAttribute('value', '[]')
+    el.submit()
+    expect(submitFired, 'value=[] 同样按空值拦截').toBe(0)
+    expect((failDetail as { errors: Record<string, string> }).errors.to).toBe('请填写收件人')
   })
 })
 

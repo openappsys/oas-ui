@@ -177,6 +177,25 @@ register(
   (el, v) => el.setAttribute('model-value', v),
   'model-value',
 )
+// chips-input：value 通道（JSON 数组串，与 dynamic-tags 的 model-value 先例同型不同通道）。
+// 空数组归一为 ''——否则用户删光 chip 后组件回写 value='[]'，required 永远放行
+// （零 chip 也是空值语义，与 upload 读取器空列表归 '' 的口径一致）
+register(
+  ['oas-chips-input'],
+  (el) => {
+    const raw = el.getAttribute('value') ?? ''
+    if (raw === '') return ''
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length === 0) return ''
+    } catch {
+      /* 非法 JSON 走 normalizeValue 原样返回 */
+    }
+    return normalizeValue(raw)
+  },
+  (el, v) => el.setAttribute('value', v),
+  'value',
+)
 register(['oas-checkbox'], undefined, (el, v) => {
   // 走 property setter：true-value/false-value 映射与布尔分发在 setter 内（setAttribute 会绕过，
   // initial-values/reset 无法驱动 checked 态——实抓）

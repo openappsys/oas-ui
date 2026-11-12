@@ -77,6 +77,10 @@ describe('OASChipsInput 渲染与值通道', () => {
     expect(Object.hasOwn(el, 'value')).toBe(false)
   })
 
+  it("observedAttributes 含 'name'（oas-form 收集链的字段键）", () => {
+    expect(OASChipsInput.observedAttributes).toContain('name')
+  })
+
   it('非法 JSON attribute 忽略（空数组渲染）', () => {
     const el = mount({ value: 'not-json' })
     expect(chipEls(el).length).toBe(0)

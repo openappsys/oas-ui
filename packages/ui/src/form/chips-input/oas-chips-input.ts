@@ -222,7 +222,8 @@ const CLOSE_ICON = `
  */
 export class OASChipsInput extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'max', 'placeholder', 'disabled', 'readonly', 'size']
+    // name：oas-form 收集链的字段键（表单按 name 收集注册控件，值通道为 value JSON 数组串）
+    return ['value', 'max', 'placeholder', 'disabled', 'readonly', 'size', 'name']
   }
 
   private controlEl: HTMLElement | null = null

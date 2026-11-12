@@ -99,7 +99,9 @@ test('comment resolve：真实点击触发钮 → detail { id, resolved } → �
     el.setAttribute('comment-id', 'issue-e2e-1')
     el.setAttribute('resolvable', '')
     el.innerHTML = '<span slot="author">张三</span><span slot="time">刚刚</span><p slot="content">待解决条目</p>'
-    document.body.appendChild(el)
+    // 注入主内容流（.vp-doc）而非 body 末尾：body 直系子元素不受内容区左边距约束，
+    // 渲染在视口左缘被固定定位的侧边栏盖住 → realClick 的物理坐标打在侧边栏上（kanban 同款先例）
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
     el.addEventListener('oas-resolve', (e) => {
       const { resolved } = (e as CustomEvent).detail as { resolved: boolean }
       const item = (e.target as HTMLElement).closest('oas-comment')!
