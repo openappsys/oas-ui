@@ -134,8 +134,6 @@ Both are "free input becomes chips" components with different interaction models
 | `oas-invalid` | Dispatched when a chip fails email validation (idempotent: user-interaction paths only; submission not blocked), `detail: { value, index }` |
 | `oas-remove` | Dispatched when a chip is removed, `detail: { value, index }` |
 
-#### Properties (JS properties; attribute write-back as noted)
-
 Keyboard: `Enter` / `,` / `;` commits a chip; `Backspace` on empty input edits the previous chip; in edit mode `Enter` commits / `Esc` cancels.
 
 ARIA: chips container `role="list"`, chip `role="listitem"`, input and remove buttons carry i18n `aria-label`s, hint area `role="alert"`; the host carries `aria-readonly` when readonly.

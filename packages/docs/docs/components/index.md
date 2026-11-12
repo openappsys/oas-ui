@@ -35,8 +35,8 @@ OAS-UI 提供 150 个框架无关的 Web Components 组件，按用途划分为 
 - [Calendar 日历](/components/calendar) —— 日历组件，月/年两种模式，支持选中、禁用日期、周号与键盘网格导航；日期描述走 `Intl.DateTimeFormat`（locale 感知）。
 - [Cascader 级联选择](/components/cascader) —— 多级联动选择，支持任意层级提交与路径回显。
 - [Checkbox 复选框](/components/checkbox) —— 原生 `<input type="checkbox">` 增强，支持半选与多选组。
-- [ColorPicker 颜色选择器](/components/color-picker) —— 触发色块弹出调色面板，支持预设色、HSV 与 RGB 输入。
 - [ChipsInput 标签输入](/components/chips-input) —— 收件人/标签式输入：粘贴自动拆分、Enter 成 chip、Backspace 回编辑、邮箱内联校验（非法红描边 + oas-invalid）、max 上限、重复去重。
+- [ColorPicker 颜色选择器](/components/color-picker) —— 触发色块弹出调色面板，支持预设色、HSV 与 RGB 输入。
 - [Combobox 组合框](/components/combobox) —— 输入框即控件的可过滤单选组合框：**常显可编辑的输入框**显示选中项 label，输入实时过滤选项，选中后 `value` 取 `option.value`。
 - [DatePicker 日期选择](/components/date-picker) —— 日期选择器，支持单日期、日期范围、月份与日期时间四种类型，键盘可操作，`Intl.DateTimeFormat` 格式化。
 - [DynamicInput 动态列表](/components/dynamic-input) —— 数组字段的增删编辑，每行复用 `oas-input` 组件，支持受控/非受控双模式。
