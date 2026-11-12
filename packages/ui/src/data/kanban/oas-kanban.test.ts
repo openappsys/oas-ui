@@ -334,7 +334,7 @@ describe('OASKanban', () => {
       const el = mount()
       const events = trackChange(el)
       dragDrop(el, 'c2', cardOf(el, 'c3'), -10) // todo 的 c2 → doing 的 c3 上方（index 0）
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ id: 'c2', from: 'todo', to: 'doing', index: 0 })
       expect(events[0]!.bubbles).toBe(true)
       expect(events[0]!.composed).toBe(true)
@@ -350,7 +350,7 @@ describe('OASKanban', () => {
       const el = mount()
       const events = trackChange(el)
       dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0 })
     })
 
@@ -373,7 +373,7 @@ describe('OASKanban', () => {
       const events = trackChange(el)
       // c2（todo[1]）拖到 c1（todo[0]）上半 → 移除自身后插入位 0
       dragDrop(el, 'c2', cardOf(el, 'c1'), -10)
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ id: 'c2', from: 'todo', to: 'todo', index: 0 })
       expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c2', 'c1'])
       const cards = JSON.parse(el.getAttribute('cards')!) as Array<Record<string, unknown>>
@@ -388,7 +388,7 @@ describe('OASKanban', () => {
       dragDrop(el, 'c1', cardOf(el, 'c2'), -10)
       // c2（todo[1]）拖到 c1（todo[0]）下半：视觉位 1 == 原位 → 原位
       dragDrop(el, 'c2', cardOf(el, 'c1'), 10)
-      expect(events.length).toBe(0)
+      expect(events).toHaveLength(0)
       expect(el.getAttribute('cards')).toBe(before)
     })
 
@@ -398,7 +398,7 @@ describe('OASKanban', () => {
       const events = trackChange(el)
       cardOf(el, 'c1').dispatchEvent(dragEvent('dragstart'))
       columnOf(el, 'done').dispatchEvent(dragEvent('drop', { clientY: 0 }))
-      expect(events.length).toBe(0)
+      expect(events).toHaveLength(0)
       expect(el.getAttribute('cards')).toBe(before)
     })
 
@@ -460,7 +460,7 @@ describe('OASKanban', () => {
       openMenu(el, 'c2')
       const up = shadow(el).querySelector<HTMLElement>('.move-menu [role="menuitem"]')!
       up.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ id: 'c2', from: 'todo', to: 'todo', index: 0 })
       expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c2', 'c1'])
       expect(shadow(el).querySelector('.move-menu')).toBeNull()
@@ -475,7 +475,7 @@ describe('OASKanban', () => {
         (i) => i.textContent === '下移',
       )!
       down.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length, '下移必须派发事件（旧版恒零操作）').toBe(1)
+      expect(events, '下移必须派发事件（旧版恒零操作）').toHaveLength(1)
       expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'todo', index: 1 })
       expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c2', 'c1'])
       // 换一张卡（c2，此时在首位）下移：回到原序，事件 index=1
@@ -484,7 +484,7 @@ describe('OASKanban', () => {
         (i) => i.textContent === '下移',
       )!
       down2.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(2)
+      expect(events).toHaveLength(2)
       expect(events[1]!.detail).toEqual({ id: 'c2', from: 'todo', to: 'todo', index: 1 })
       expect(cardsOf(el, 'todo').map((c) => c.getAttribute('data-id'))).toEqual(['c1', 'c2'])
     })
@@ -545,7 +545,7 @@ describe('OASKanban', () => {
       openMenu(el, 'c1')
       const up = shadow(el).querySelector<HTMLElement>('.move-menu [role="menuitem"]')!
       up.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(0)
+      expect(events).toHaveLength(0)
       expect(el.getAttribute('cards')).toBe(before)
       expect(shadow(el).querySelectorAll('.move-menu').length).toBe(1)
     })
@@ -579,7 +579,8 @@ describe('OASKanban', () => {
       el.renderCard = (card) => String(card.title)
       const events = trackChange(el)
       dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
+      expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0 })
       expect(el.getAttribute('cards')).toBe(before) // attribute 保持原值
       expect(el.cards.find((c) => c.id === 'c1')!.column).toBe('done')
       // 渲染跟随内存数据
@@ -638,7 +639,7 @@ describe('OASKanban', () => {
       const cardsBefore = el.getAttribute('cards')
       const events = trackColumnReorder(el)
       columnDragDrop(el, 'todo', 'done', -10) // done 头左半 = 插在 done 之前 → 新位次 1
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ from: 0, to: 1, keys: ['doing', 'todo', 'done'] })
       expect(events[0]!.bubbles).toBe(true)
       expect(events[0]!.composed).toBe(true)
@@ -657,7 +658,7 @@ describe('OASKanban', () => {
       const events = trackColumnReorder(el)
       // doing(1) 拖到 done 头左半 → 视觉位 2 → 移除后插入位 1 === 原位 → 零操作
       columnDragDrop(el, 'doing', 'done', -10)
-      expect(events.length).toBe(0)
+      expect(events).toHaveLength(0)
       expect(el.getAttribute('columns')).toBe(before)
       expect(shadow(el).querySelector('.drop-before, .drop-after')).toBeNull()
     })
@@ -706,11 +707,11 @@ describe('OASKanban', () => {
       ).toBe('true') // 末列右移禁用
       const events = trackColumnReorder(el)
       next.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ from: 0, to: 1, keys: ['doing', 'todo', 'done'] })
       // aria-disabled 项点击零操作
       prev.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
     })
 
     it('手柄键盘 ←/→ 换序（键盘可达；边界零操作）', () => {
@@ -719,16 +720,16 @@ describe('OASKanban', () => {
       handleOf(el, 'done').dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, composed: true }),
       )
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ from: 2, to: 1, keys: ['todo', 'done', 'doing'] })
       handleOf(el, 'todo').dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, composed: true }),
       )
-      expect(events.length).toBe(1) // 首列左移零操作
+      expect(events).toHaveLength(1) // 首列左移零操作
       handleOf(el, 'todo').dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, composed: true }),
       )
-      expect(events.length).toBe(2)
+      expect(events).toHaveLength(2)
       expect(events[1]!.detail).toEqual({ from: 0, to: 1, keys: ['done', 'todo', 'doing'] })
     })
 
@@ -806,7 +807,7 @@ describe('OASKanban', () => {
       })
       const events = trackChange(el)
       dragDrop(el, 'c3', columnOf(el, 'todo').querySelector<HTMLElement>('.column-body')!, 0)
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ id: 'c3', from: 'doing', to: 'todo', index: 2 })
       expect(JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 'c3').column).toBe('todo')
       expect(columnOf(el, 'todo').hasAttribute('data-over-limit')).toBe(true)
@@ -907,7 +908,7 @@ describe('OASKanban', () => {
       clickCard(el, 'c2', { ctrlKey: true })
       const events = trackChange(el)
       dragDrop(el, 'c1', cardOf(el, 'c3'), 10) // 拖 c1 到 doing 的 c3 下半
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'doing', index: 1, ids: ['c1', 'c2'] })
       expect(cardsOf(el, 'doing').map((c) => c.getAttribute('data-id'))).toEqual(['c3', 'c1', 'c2'])
       expect(cardsOf(el, 'todo')).toEqual([])
@@ -942,7 +943,7 @@ describe('OASKanban', () => {
       clickCard(el, 'c1') // 普通点击 = 单选
       const events = trackChange(el)
       dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(Object.keys(events[0]!.detail).sort()).toEqual(['from', 'id', 'index', 'to'])
       expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0 })
     })
@@ -970,7 +971,7 @@ describe('OASKanban', () => {
         (i) => i.textContent === '已完成',
       )!
       done.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(Object.keys(events[0]!.detail).sort()).toEqual(['from', 'id', 'index', 'to'])
       expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0 })
       // c2 留在 todo（未被带动）
@@ -990,7 +991,7 @@ describe('OASKanban', () => {
       clickCard(el, 's5', { ctrlKey: true }) // （空）-todo
       const events = trackChange(el)
       dragDrop(el, 's1', cardOf(el, 's2'), 10) // 拖到 low-doing 的 s2 下半
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({
         id: 's1',
         from: 'todo',
@@ -1082,7 +1083,7 @@ describe('OASKanban', () => {
       const el = mountSwim()
       const events = trackChange(el)
       dragDrop(el, 's1', cardOf(el, 's2'), 10) // high-todo → low-doing 的 s2 下半
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({
         id: 's1',
         from: 'todo',
@@ -1101,7 +1102,7 @@ describe('OASKanban', () => {
       const el = mountSwim()
       const events = trackChange(el)
       dragDrop(el, 's1', cardOf(el, 's4'), 10) // high-todo → high-doing
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(Object.keys(events[0]!.detail).sort()).toEqual(['from', 'id', 'index', 'to'])
       expect(events[0]!.detail).toEqual({ id: 's1', from: 'todo', to: 'doing', index: 1 })
       expect(JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 's1').prio).toBe('high')
@@ -1145,7 +1146,7 @@ describe('OASKanban', () => {
         (i) => i.textContent === '进行中',
       )!
       doing.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       // 目标列同带（high）内已有 s4 → index 1；泳道字段不变、无 swimlane 字段
       expect(events[0]!.detail).toEqual({ id: 's1', from: 'todo', to: 'doing', index: 1 })
       expect(JSON.parse(el.getAttribute('cards')!).find((c: { id: string }) => c.id === 's1').prio).toBe('high')
@@ -1202,7 +1203,7 @@ describe('OASKanban', () => {
       const el = mount({ collapsible: '' })
       for (const col of columnEls(el)) {
         const btn = col.querySelector<HTMLButtonElement>('.column-collapse')!
-        expect(btn, `列 ${col.getAttribute('data-key')} 有折叠按钮`).toBeTruthy()
+        expect(btn, `列 ${col.getAttribute('data-key')} 有折叠按钮`).toBeInstanceOf(HTMLButtonElement)
         expect(btn.getAttribute('aria-expanded')).toBe('true')
         expect(btn.getAttribute('aria-label')).toBe('收起列')
         expect(btn.getAttribute('type')).toBe('button')
@@ -1217,21 +1218,21 @@ describe('OASKanban', () => {
       headOf(el, 'todo')
         .querySelector<HTMLButtonElement>('.column-collapse')!
         .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(1)
+      expect(events).toHaveLength(1)
       expect(events[0]!.detail).toEqual({ columnId: 'todo', collapsed: true })
       expect(events[0]!.bubbles).toBe(true)
       expect(events[0]!.composed).toBe(true)
       // todo 列变窄条：列容器消失、窄条在场（纵向列名 + 卡片数）
       expect(columnOf(el, 'todo'), '折叠列不再渲染普通列容器').toBeNull()
       const rail = shadow(el).querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
-      expect(rail).toBeTruthy()
+      expect(rail).toBeInstanceOf(HTMLElement)
       expect(rail.getAttribute('aria-expanded')).toBe('false')
       expect(rail.getAttribute('aria-label')).toBe('展开列：待办')
       expect(rail.querySelector<HTMLElement>('.rail-title')!.textContent).toBe('待办')
       expect(rail.querySelector<HTMLElement>('.rail-count')!.textContent).toBe('2')
       // 其余列保持普通结构
-      expect(columnOf(el, 'doing')).toBeTruthy()
-      expect(columnOf(el, 'done')).toBeTruthy()
+      expect(columnOf(el, 'doing').getAttribute('data-key'), 'doing 列容器保持').toBe('doing')
+      expect(columnOf(el, 'done').getAttribute('data-key'), 'done 列容器保持').toBe('done')
       expect(cardsOf(el, 'doing').length).toBe(1)
     })
 
@@ -1245,14 +1246,14 @@ describe('OASKanban', () => {
       shadow(el)
         .querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
         .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(events.length).toBe(2)
+      expect(events).toHaveLength(2)
       expect(events[1]!.detail).toEqual({ columnId: 'todo', collapsed: false })
-      expect(columnOf(el, 'todo'), '展开后恢复列容器').toBeTruthy()
+      expect(columnOf(el, 'todo'), '展开后恢复列容器').toBeInstanceOf(HTMLElement)
       expect(shadow(el).querySelector('.column-rail')).toBeNull()
       expect(cardsOf(el, 'todo').length, '展开后卡片照常渲染').toBe(2)
       // 展开后焦点回该列折叠按钮（键盘可达不跌落 body）
       const focusBtn = shadow(el).querySelector<HTMLElement>('.column-head[data-key="todo"] .column-collapse')
-      expect(focusBtn).toBeTruthy()
+      expect(focusBtn).toBeInstanceOf(HTMLElement)
       expect((shadow(el).activeElement as HTMLElement | null)?.classList.contains('column-collapse')).toBe(true)
       // 展开后按钮态复位
       expect(focusBtn!.getAttribute('aria-expanded')).toBe('true')
@@ -1263,10 +1264,10 @@ describe('OASKanban', () => {
       headOf(el, 'todo')
         .querySelector<HTMLButtonElement>('.column-collapse')!
         .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeTruthy()
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeInstanceOf(HTMLElement)
       // 拖拽落定回写 cards 触发整板重建（用未折叠列的卡片：折叠列不渲染卡片不可拖）
       dragDrop(el, 'c3', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
-      expect(shadow(el).querySelector('.column-rail[data-key="todo"]'), '重建后窄条保留').toBeTruthy()
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]'), '重建后窄条保留').toBeInstanceOf(HTMLElement)
     })
 
     it('移除 collapsible：窄条与折叠按钮消失（关闭后零折叠标记），卡片数据不受影响', () => {
@@ -1274,7 +1275,7 @@ describe('OASKanban', () => {
       headOf(el, 'todo')
         .querySelector<HTMLButtonElement>('.column-collapse')!
         .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-      expect(shadow(el).querySelector('.column-rail')).toBeTruthy()
+      expect(shadow(el).querySelector('.column-rail')).toBeInstanceOf(HTMLElement)
       el.removeAttribute('collapsible')
       expect(shadow(el).querySelector('.column-collapse')).toBeNull()
       expect(shadow(el).querySelector('.column-rail')).toBeNull()
@@ -1309,7 +1310,7 @@ describe('OASKanban', () => {
         .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
       const rail = shadow(el).querySelector<HTMLButtonElement>('.column-rail[data-key="todo"]')!
       rail.click()
-      expect(columnOf(el, 'todo'), 'button.click() 展开列').toBeTruthy()
+      expect(columnOf(el, 'todo'), 'button.click() 展开列').toBeInstanceOf(HTMLElement)
     })
   })
 
@@ -1325,18 +1326,18 @@ describe('OASKanban', () => {
     it('列定义带 summary：列底渲染合计行（label i18n 合计 + 数值）；缺席列不渲染', () => {
       const el = mount({ columns: SUMMARY_COLUMNS })
       const summary = columnOf(el, 'todo').querySelector<HTMLElement>('.column-summary')!
-      expect(summary, 'todo 列底合计行').toBeTruthy()
+      expect(summary, 'todo 列底合计行').toBeInstanceOf(HTMLElement)
       expect(summary.querySelector<HTMLElement>('.summary-label')!.textContent).toBe('合计')
       expect(summary.querySelector<HTMLElement>('.summary-value')!.textContent).toBe('120')
       const doing = columnOf(el, 'doing').querySelector<HTMLElement>('.column-summary')!
-      expect(doing, 'doing 列各自独立渲染').toBeTruthy()
+      expect(doing, 'doing 列各自独立渲染').toBeInstanceOf(HTMLElement)
       expect(doing.querySelector<HTMLElement>('.summary-value')!.textContent).toBe('45')
       expect(columnOf(el, 'done').querySelector('.column-summary'), 'summary 缺席列不渲染').toBeNull()
     })
 
     it('summary 随数据更新重算（重渲染显示新值），合计与 collapsible 无关（默认关也渲染）', () => {
       const el = mount({ columns: SUMMARY_COLUMNS })
-      expect(columnOf(el, 'todo').querySelector('.column-summary')).toBeTruthy()
+      expect(columnOf(el, 'todo').querySelector('.column-summary')).toBeInstanceOf(HTMLElement)
       el.setAttribute(
         'columns',
         JSON.stringify([
@@ -1397,8 +1398,8 @@ describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {
     // 拖拽换列：dragId 设置（shadow 根 dragstart 委托恢复）+ 落定只移动一次
     const events = trackChange(el)
     dragDrop(el, 'c1', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
-    expect(events.length, '重连后拖拽派发一次 oas-change（委托不双挂）').toBe(1)
-    expect((events[0]!.detail as { to: string }).to).toBe('done')
+    expect(events, '重连后拖拽派发一次 oas-change（委托不双挂）').toHaveLength(1)
+    expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'done', index: 0 })
     expect(cardsOf(el, 'done').map((c) => c.getAttribute('data-id'))).toEqual(['c1'])
   })
 
@@ -1439,13 +1440,14 @@ describe('键盘多选与移动（Space 切换 + Alt+方向键，5b 键盘可达
     const events = trackChange(el)
     const c1 = cardOf(el, 'c1')!
     c1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }))
-    expect(events.length, 'Alt+→ 换列派发 oas-change').toBe(1)
-    expect((events[0]!.detail as { to: string }).to).toBe('doing')
+    expect(events, 'Alt+→ 换列派发 oas-change').toHaveLength(1)
+    expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'doing', index: 1 })
     expect(cardsOf(el, 'doing').map((c) => c.getAttribute('data-id'))).toContain('c1')
     // Alt+↑ 列内上移（doing 列 c3 在首位，c1 移到其后——c1 当前在 doing 尾部）
     const c1Now = cardsOf(el, 'doing').find((c) => c.getAttribute('data-id') === 'c1')!
     c1Now.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true, composed: true }))
-    expect(events.length, 'Alt+↑ 列内移动派发').toBe(2)
+    expect(events, 'Alt+↑ 列内移动派发').toHaveLength(2)
+    expect(events[1]!.detail).toEqual({ id: 'c1', from: 'doing', to: 'doing', index: 0 })
   })
 
   it('选中集 Alt+→：批量移动一条 oas-change 带 ids（多选键盘移动契约）', () => {
@@ -1457,10 +1459,8 @@ describe('键盘多选与移动（Space 切换 + Alt+方向键，5b 键盘可达
     cardOf(el, 'c1')!.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }),
     )
-    expect(events.length, '批量移动一条事件').toBe(1)
-    const d = events[0]!.detail as { ids?: string[]; to: string }
-    expect(d.ids?.length, 'detail.ids 含全部选中').toBe(2)
-    expect(d.to).toBe('doing')
+    expect(events, '批量移动一条事件').toHaveLength(1)
+    expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'doing', index: 1, ids: ['c1', 'c2'] })
   })
 })
 
@@ -1479,11 +1479,11 @@ describe('RTL 逻辑方向化（列重排/键盘/触屏按钮镜像）', () => {
     const c1 = cardOf(el, 'c1')!
     c1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, composed: true }))
     // RTL 下 Alt+→ = 视觉 end 方向 = DOM 前移：todo（首位列）的前一列不存在 → 零操作不派发
-    expect(events.length, 'RTL Alt+→ 在首列前界零操作').toBe(0)
+    expect(events, 'RTL Alt+→ 在首列前界零操作').toHaveLength(0)
     // 反向验证：Alt+←（RTL 视觉 start）= DOM 后移到 doing
     c1.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true, composed: true }))
-    expect(events.length, 'RTL Alt+← = DOM 后移派发').toBe(1)
-    expect((events[0]!.detail as { to: string }).to).toBe('doing')
+    expect(events, 'RTL Alt+← = DOM 后移派发').toHaveLength(1)
+    expect(events[0]!.detail).toEqual({ id: 'c1', from: 'todo', to: 'doing', index: 1 })
   })
 })
 
@@ -1520,7 +1520,7 @@ describe('RTL 触屏列移动按钮（图标/执行/读屏三者一致 + 边界�
     expect(doingPrev.getAttribute('aria-disabled'), 'DOM 第二列 prev 可用').toBe('false')
     expect(doingPrev.getAttribute('aria-label'), 'RTL 下 prev 读「列右移」（执行方向=读屏一致）').toBe('列右移')
     doingPrev.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    expect(events.length, 'prev 点击执行 DOM 前移（视觉右移）').toBe(1)
+    expect(events, 'prev 点击执行 DOM 前移（视觉右移）').toHaveLength(1)
     const keys = (JSON.parse(el.getAttribute('columns') ?? '[]') as Array<{ key: string }>).map((c) => c.key)
     expect(keys[0], 'doing 移到 todo 前（DOM 前移）').toBe('doing')
     // next 的 DOM 末位（done，RTL 视觉最左）：next 禁用（idx>=len-1 边界）
@@ -1746,7 +1746,7 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     const target = [...bigBody(el).querySelectorAll<HTMLElement>('.card[data-index]')][3]!
     expect(target.getAttribute('data-index')).toBe('3')
     dragDrop(el, 'k0', target, -10)
-    expect(events.length).toBe(1)
+    expect(events).toHaveLength(1)
     expect(events[0]!.detail).toEqual({ id: 'k0', from: 'todo', to: 'todo', index: 2 })
     const ids = (JSON.parse(el.getAttribute('cards')!) as Array<{ id: string }>).map((c) => c.id)
     expect(ids.slice(0, 4)).toEqual(['k1', 'k2', 'k0', 'k3'])
@@ -1764,8 +1764,13 @@ describe('列体虚拟化（大列只渲染可视窗口）', () => {
     body.dispatchEvent(dragEvent('drop', { clientY: 1e6 }))
     // 落定后整板重建（旧 body 已脱离文档）→ 在新列体上收尾 dragend
     bigBody(el).dispatchEvent(dragEvent('dragend'))
-    expect(events.length).toBe(1)
-    expect((events[0]!.detail as { index: number }).index, 'index = 总数-1（移除自身后的插入位）').toBe(199)
+    expect(events).toHaveLength(1)
+    expect(events[0]!.detail, 'index = 总数-1（移除自身后的插入位）').toEqual({
+      id: 'k0',
+      from: 'todo',
+      to: 'todo',
+      index: 199,
+    })
     const ids = (JSON.parse(el.getAttribute('cards')!) as Array<{ id: string }>).map((c) => c.id)
     expect(ids[ids.length - 1], '卡片落在列尾').toBe('k0')
   })

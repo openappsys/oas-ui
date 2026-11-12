@@ -13,6 +13,7 @@ test('kanban 触屏「下移」：菜单下移换序并派发 oas-change（回�
     const events: unknown[] = []
     el.addEventListener('oas-change', (e) => events.push((e as CustomEvent).detail))
     const firstCol = el.shadowRoot!.querySelector('.column')!
+    const colKey = firstCol.getAttribute('data-key')
     const firstCard = firstCol.querySelector('.card') as HTMLElement
     const firstId = firstCard.getAttribute('data-id')
     // 打开移动菜单 → 点「下移」
@@ -27,10 +28,15 @@ test('kanban 触屏「下移」：菜单下移换序并派发 oas-change（回�
     const idsNow = [...el.shadowRoot!.querySelectorAll('.column')[0]!.querySelectorAll('.card')].map((c) =>
       c.getAttribute('data-id'),
     )
-    return { firstId, idsNow, events }
+    return { firstId, colKey, idsNow, events }
   })
-  expect(r.events.length, '下移必须派发 oas-change（旧版恒零操作）').toBe(1)
-  expect((r.events[0] as { index: number }).index, '落点 index=1').toBe(1)
+  expect(r.events, '下移必须派发 oas-change（旧版恒零操作）').toHaveLength(1)
+  expect(r.events[0], '下移 detail = 同列首位卡移到 index 1（列 key 现算）').toEqual({
+    id: r.firstId,
+    from: r.colKey,
+    to: r.colKey,
+    index: 1,
+  })
   expect(r.idsNow[1], '源卡移到第二位').toBe(r.firstId)
 })
 
@@ -44,6 +50,9 @@ test('kanban DnD 跨列拖拽：换列并派发 oas-change（from/to/index 口�
     const cols = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')]
     const src = cols[0]!.querySelector('.card') as HTMLElement
     const tgt = cols[1]!.querySelector('.card') as HTMLElement
+    const srcId = src.getAttribute('data-id')
+    const srcKey = cols[0]!.getAttribute('data-key')
+    const tgtKey = cols[1]!.getAttribute('data-key')
     const dt = new DataTransfer()
     src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
     tgt.dispatchEvent(
@@ -52,14 +61,21 @@ test('kanban DnD 跨列拖拽：换列并派发 oas-change（from/to/index 口�
     tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
     src.dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
     return {
+      srcId,
+      srcKey,
+      tgtKey,
       events,
       secondColIds: [...cols[1]!.querySelectorAll('.card')].map((c) => c.getAttribute('data-id')),
       orphanMark: el.shadowRoot!.querySelector('.drop-before, .drop-after, .drop-tail') !== null,
     }
   })
-  expect(r.events.length).toBe(1)
-  const d = r.events[0] as { from: string; to: string; index: number }
-  expect(d.from).not.toBe(d.to)
+  expect(r.events, '跨列拖拽派发一条 oas-change').toHaveLength(1)
+  expect(r.events[0], 'detail = 首卡从第一列移到第二列首位（列 key 现算）').toEqual({
+    id: r.srcId,
+    from: r.srcKey,
+    to: r.tgtKey,
+    index: 0,
+  })
   expect(r.secondColIds.length, '第二列卡片数 +1').toBe(2)
   expect(r.orphanMark, 'dragend 后无孤儿指示线').toBe(false)
 })
@@ -143,7 +159,8 @@ test('kanban 列拖拽重排：列头手柄拖到邻列 → oas-column-reorder�
     const events: unknown[] = []
     el.addEventListener('oas-column-reorder', (e) => events.push((e as CustomEvent).detail))
     const handles = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column-drag')]
-    if (handles.length < 2) return { handles: handles.length, events, keys: [] }
+    const keysBefore = (JSON.parse(el.getAttribute('columns') ?? '[]') as Array<{ key: string }>).map((c) => c.key)
+    if (handles.length < 2) return { handles: handles.length, events, keys: [], keysBefore }
     const dt = new DataTransfer()
     handles[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
     const secondHead = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')][1]!.querySelector(
@@ -159,12 +176,16 @@ test('kanban 列拖拽重排：列头手柄拖到邻列 → oas-column-reorder�
       handles: handles.length,
       events,
       keys: (JSON.parse(el.getAttribute('columns') ?? '[]') as Array<{ key: string }>).map((c) => c.key),
+      keysBefore,
     }
   })
   expect(r.handles, 'demo 必须提供至少两个列重排手柄').toBeGreaterThanOrEqual(2)
-  expect(r.events.length, '列重排派发 oas-column-reorder').toBe(1)
-  expect(r.events[0], '列重排 detail 必须带 from/to/keys').toMatchObject({ from: 0, to: 1 })
-  expect(Array.isArray((r.events[0] as { keys?: unknown }).keys)).toBe(true)
+  expect(r.events, '列重排派发一条 oas-column-reorder').toHaveLength(1)
+  // 手柄 0 拖到第 2 列头右半（clientX 大值）→ 插其后：完整列序 = 原序换 0/1 位（keysBefore 现算）
+  const swapped = [...r.keysBefore]
+  ;[swapped[0], swapped[1]] = [swapped[1]!, swapped[0]!]
+  expect(r.events[0], 'detail = 手柄 0 与 1 互换后的完整列序').toEqual({ from: 0, to: 1, keys: swapped })
+  expect(r.keys, 'columns attribute 回写同序').toEqual(swapped)
 })
 
 test('kanban 多选拖拽：Ctrl 选两枚 → 拖一枚 → 全部选中卡移动 + 一条 oas-change 带 ids', async ({ page }) => {
@@ -177,10 +198,14 @@ test('kanban 多选拖拽：Ctrl 选两枚 → 拖一枚 → 全部选中卡移�
     const events: unknown[] = []
     el.addEventListener('oas-change', (e) => events.push((e as CustomEvent).detail))
     const cards = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.card')]
+    const id0 = cards[0]!.getAttribute('data-id')
+    const id1 = cards[1]!.getAttribute('data-id')
+    const col0Key = cards[0]!.closest('.column')!.getAttribute('data-key')
     cards[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, ctrlKey: true }))
     cards[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, ctrlKey: true }))
     const selected = el.shadowRoot!.querySelectorAll('[data-selected]').length
     const targetCol = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.column')][1]!
+    const col1Key = targetCol.getAttribute('data-key')
     const dt = new DataTransfer()
     cards[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
     targetCol
@@ -192,12 +217,18 @@ test('kanban 多选拖拽：Ctrl 选两枚 → 拖一枚 → 全部选中卡移�
       .querySelector('.column-body')!
       .dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
     cards[0]!.dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
-    return { selected, events }
+    return { selected, id0, id1, col0Key, col1Key, events }
   })
   expect(r.selected, 'Ctrl 点击两枚多选').toBe(2)
-  expect(r.events.length, '批量移动只派发一条 oas-change').toBe(1)
-  const d = r.events[0] as { ids?: string[] }
-  expect(d.ids?.length, 'detail.ids 含全部选中卡').toBe(2)
+  expect(r.events, '批量移动只派发一条 oas-change').toHaveLength(1)
+  // clientY=10 在页面顶部：目标列所有卡片都在其下方 → 最近下方卡 = 目标列第一张 → 插其前 index 0
+  expect(r.events[0], 'detail = 首枚 id + 全部选中 ids + 目标列首卡前落点').toEqual({
+    id: r.id0,
+    from: r.col0Key,
+    to: r.col1Key,
+    index: 0,
+    ids: [r.id0, r.id1],
+  })
 })
 
 test('kanban 泳道跨带拖拽：拖到另一泳带 → 泳道字段回写 + detail.swimlane', async ({ page }) => {
@@ -214,6 +245,11 @@ test('kanban 泳道跨带拖拽：拖到另一泳带 → 泳道字段回写 + de
     )!
     const card = fromLane.querySelector('.card') as HTMLElement
     const targetCell = toLane.querySelector('.lane-cell, .column-body') as HTMLElement
+    const cardId = card.getAttribute('data-id')
+    const fromColKey = card.closest('.lane-cell, .column-body')!.getAttribute('data-column')
+    const toColKey = targetCell.getAttribute('data-column')
+    const laneFrom = fromLane.getAttribute('data-lane') ?? ''
+    const laneTo = toLane.getAttribute('data-lane') ?? ''
     const dt = new DataTransfer()
     card.dispatchEvent(new DragEvent('dragstart', { bubbles: true, composed: true, dataTransfer: dt }))
     targetCell.dispatchEvent(
@@ -221,15 +257,20 @@ test('kanban 泳道跨带拖拽：拖到另一泳带 → 泳道字段回写 + de
     )
     targetCell.dispatchEvent(new DragEvent('drop', { bubbles: true, composed: true, dataTransfer: dt }))
     card.dispatchEvent(new DragEvent('dragend', { bubbles: true, composed: true, dataTransfer: dt }))
-    return { events }
+    return { cardId, fromColKey, toColKey, laneFrom, laneTo, events }
   })
-  expect(r.events.length, '跨带拖拽派发 oas-change').toBe(1)
-  const d = r.events[0] as { swimlane?: { from: string; to: string } }
-  expect(d.swimlane, 'detail 含 swimlane from/to').toMatchObject({
-    from: expect.stringMatching(/\S/),
-    to: expect.stringMatching(/\S/),
+  expect(r.events, '跨带拖拽派发一条 oas-change').toHaveLength(1)
+  // clientY=10 在页面顶部：目标单元格所有卡片都在其下方 → 最近下方卡 = 单元格第一张 → 插其前 index 0
+  expect(r.events[0], 'detail = 卡片跨带移动（列 + 泳道字段双写，泳道值现算）').toEqual({
+    id: r.cardId,
+    from: r.fromColKey,
+    to: r.toColKey,
+    index: 0,
+    swimlane: { from: r.laneFrom, to: r.laneTo },
   })
-  expect(d.swimlane!.from, '泳道 from 非空').not.toBe(d.swimlane!.to)
+  expect(r.laneFrom, '泳道 from 非空（demo 数据为具名泳道）').toMatch(/\S/)
+  expect(r.laneTo, '泳道 to 非空且异于 from').toMatch(/\S/)
+  expect(r.laneFrom).not.toBe(r.laneTo)
 })
 
 test('kanban WIP 限制：超限列计数 warning 色 + data-over-limit 标记', async ({ page }) => {
@@ -400,7 +441,7 @@ test('kanban 虚拟化下列内拖拽落点用绝对位次：拖首张到第 4 �
   expect(r.srcId, '拖拽源是首张卡').toBe('virt0')
   expect(r.srcIndex).toBe('0')
   expect(r.tgtIndex, '目标卡是第 4 张（data-index=3）').toBe('3')
-  expect(r.events.length, '虚拟化下拖拽照常派发 oas-change').toBe(1)
+  expect(r.events, '虚拟化下拖拽照常派发 oas-change').toHaveLength(1)
   expect(r.events[0], '落点 index = 移除自身后的插入位 2').toEqual({
     id: 'virt0',
     from: 'backlog',
@@ -870,7 +911,9 @@ test('kanban 列折叠与合计：真实点击折叠 → 窄条可见 → 再点
         { id: 'cl3', column: 'doing', title: '普通卡' },
       ]),
     )
-    document.body.appendChild(el)
+    // 注入主内容流（.vp-doc）而非 body 末尾：body 直系子元素不受内容区左边距约束，
+    // 渲染在视口左缘被固定定位的侧边栏盖住 → realClick 的物理坐标打在侧边栏上（点击永不到组件）
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
   })
   await up(page, '#kanban-collapse-e2e')
 
