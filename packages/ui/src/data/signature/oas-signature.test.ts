@@ -342,6 +342,19 @@ describe('OASSignature', () => {
       expect(events).toEqual([])
       expect(placeholderOf(el).hasAttribute('hidden')).toBe(true)
       // 宿主写入外部图像值 → 笔迹清空（转外部图像加载，异步绘制）
+      // happy-dom 的 Image 对 data: URL 会同步触发 onload，此处 stub 住以断言「加载中」中间态
+      class FakeImage {
+        static instances: FakeImage[] = []
+        width = 100
+        height = 50
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        src = ''
+        constructor() {
+          FakeImage.instances.push(this)
+        }
+      }
+      vi.stubGlobal('Image', FakeImage)
       el.setAttribute('value', 'data:image/png;base64,EXTERNAL')
       expect(placeholderOf(el).hasAttribute('hidden')).toBe(false)
       expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
@@ -599,6 +612,98 @@ describe('OASSignature', () => {
       imgB.onload?.()
       expect(lastCtx!.drawImages).toBe(1)
       expect(el.toDataURL()).toBe('data:image/png;base64,MOCKPNG')
+    } finally {
+      restore()
+    }
+  })
+
+  it('外部图像 onload 成功路径同步派生状态：占位隐藏、aria-label/aria-live 播报已签名', () => {
+    const restore = installCanvasMock()
+    try {
+      class FakeImage {
+        static instances: FakeImage[] = []
+        width = 100
+        height = 50
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        src = ''
+        constructor() {
+          FakeImage.instances.push(this)
+        }
+      }
+      vi.stubGlobal('Image', FakeImage)
+      const el = mount()
+      mockCanvasRect(el)
+      el.setAttribute('value', 'data:image/png;base64,EXTERNAL')
+      // 写入时刻（图像未加载完成）：状态保持未签名、占位可见（loadExternalImage 首段 syncDerived）
+      expect(placeholderOf(el).hasAttribute('hidden')).toBe(false)
+      expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
+      expect(liveOf(el).textContent).toContain('未签名')
+      // 图像加载完成 → 成功路径必须再 syncDerived：占位隐藏、aria/live 翻转为已签名
+      FakeImage.instances[0]!.onload?.()
+      expect(placeholderOf(el).hasAttribute('hidden')).toBe(true)
+      expect(canvasOf(el).getAttribute('aria-label')).toContain('已签名')
+      expect(liveOf(el).textContent).toContain('已签名')
+      expect(el.toDataURL()).toBe('data:image/png;base64,MOCKPNG')
+    } finally {
+      restore()
+    }
+  })
+
+  it('外部图像展示期间 repaint 不抹图像：drawImage 重放、toDataURL 非空、笔迹叠加在上', () => {
+    const restore = installCanvasMock()
+    try {
+      class FakeImage {
+        static instances: FakeImage[] = []
+        width = 100
+        height = 50
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        src = ''
+        constructor() {
+          FakeImage.instances.push(this)
+        }
+      }
+      vi.stubGlobal('Image', FakeImage)
+      // 捕获 ResizeObserver 回调手动触发 resize（happy-dom 无排版不会自发回调）
+      const roCallbacks: Array<() => void> = []
+      const RO = globalThis.ResizeObserver
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(cb: () => void) {
+            roCallbacks.push(cb)
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      )
+      try {
+        const el = mount()
+        mockCanvasRect(el)
+        el.setAttribute('value', 'data:image/png;base64,EXTERNAL')
+        FakeImage.instances[0]!.onload?.()
+        expect(lastCtx!.drawImages, 'onload 经 repaint 绘制外部图像一次').toBe(1)
+        expect(el.toDataURL()).toBe('data:image/png;base64,MOCKPNG')
+        // 容器 resize → repaint 重置画布像素 → 外部图像必须随 paintAll 垫底重放（旧实现被抹）
+        mockCanvasRect(el, { ...RECT, width: 600, right: 600 })
+        roCallbacks.forEach((cb) => cb())
+        expect(lastCtx!.drawImages, 'resize 后外部图像重放，不被抹').toBe(1)
+        expect(el.toDataURL(), 'value 契约保持非空').toBe('data:image/png;base64,MOCKPNG')
+        expect(canvasOf(el).getAttribute('aria-label')).toContain('已签名')
+        expect(placeholderOf(el).hasAttribute('hidden')).toBe(true)
+        // 笔迹叠加仍画在外部图像之上（增量画段走 paintSegment，坐标映射到新尺寸）
+        drawStroke(el, [
+          [10, 10],
+          [90, 90],
+        ])
+        const lineTos = lastCtx!.calls.filter((c) => c[0] === 'lineTo')
+        expect(lineTos.length).toBe(1)
+        expect(lineTos[0]![1]).toBeCloseTo(90, 5)
+      } finally {
+        vi.stubGlobal('ResizeObserver', RO)
+      }
     } finally {
       restore()
     }

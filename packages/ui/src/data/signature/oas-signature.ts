@@ -182,6 +182,8 @@ export class OASSignature extends OASElement {
   private imageSeq = 0
   /** 画布上当前展示的是外部图像（toDataURL/clear 的判空依据之一） */
   private hasExternalImage = false
+  /** 外部图像引用：repaint（resize/主题切换）在笔迹之下重放该图像，防图像被抹、value 失同步 */
+  private lastExternalImage: HTMLImageElement | null = null
   /** 容器 resize 观察：尺寸变化按归一化坐标重采样重绘 */
   private resizeObserver: ResizeObserver | null = null
   /** 主题观察：html class/data-theme 变化时重解析 token 笔色并重绘 */
@@ -341,6 +343,7 @@ export class OASSignature extends OASElement {
     if (stroke.points.length < 2) return
     this.strokes.push(stroke)
     this.hasExternalImage = false
+    this.lastExternalImage = null
     this.syncDerived()
     this.produceValue()
   }
@@ -387,16 +390,25 @@ export class OASSignature extends OASElement {
   }
 
   /**
-   * 全量重绘：签名一致（笔迹/进行中笔画/颜色/尺寸/DPR）跳过重绘；canvas 不可用静默跳过。
+   * 全量重绘：签名一致（笔迹/进行中笔画/颜色/尺寸/DPR/外部图像）跳过重绘；canvas 不可用静默跳过。
    * 进行中笔画必须纳入重绘键与绘制：repaint 会重置 canvas.width 清空像素，若漏掉 drawing，
    * resize/主题切换发生在笔画进行中时，已画段被抹且后续 move 只增量画新段 → 尾笔残缺、value 缺段。
+   * 外部图像存续也纳入重绘键（paintAll 在笔迹之下重放），resize/主题切换不把外部签名图像抹掉。
    */
   private repaint(): void {
     const size = this.canvasSize()
     if (!size) return
     const color = this.resolvedPenColor()
     const dpr = devicePixelRatioOf()
-    const key = JSON.stringify([this.strokes, this.drawing?.points ?? null, color, this.penSize(), size, dpr])
+    const key = JSON.stringify([
+      this.strokes,
+      this.drawing?.points ?? null,
+      color,
+      this.penSize(),
+      size,
+      dpr,
+      this.lastExternalImage ? 1 : 0,
+    ])
     if (key === this.paintKey) return
     const ctx = this.paintContext(size, dpr)
     if (!ctx) return
@@ -416,8 +428,16 @@ export class OASSignature extends OASElement {
     return ctx
   }
 
-  /** 全笔画绘制（归一化坐标 → CSS px 映射）；进行中的笔画一并重放，repaint 不丢已画段 */
+  /** 全笔画绘制（归一化坐标 → CSS px 映射）；进行中的笔画一并重放，repaint 不丢已画段。
+   *  外部图像垫底重放（contain 居中），笔迹叠加在上——resize/主题切换重绘后视觉与 value 一致。 */
   private paintAll(ctx: CanvasRenderingContext2D, size: { width: number; height: number }): void {
+    const img = this.lastExternalImage
+    if (img) {
+      const scale = Math.min(size.width / img.width, size.height / img.height)
+      const w = img.width * scale
+      const h = img.height * scale
+      ctx.drawImage(img, (size.width - w) / 2, (size.height - h) / 2, w, h)
+    }
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.strokeStyle = this.resolvedPenColor()
@@ -492,6 +512,7 @@ export class OASSignature extends OASElement {
     this.strokes = []
     this.drawing = null
     this.hasExternalImage = false
+    this.lastExternalImage = null
     this.paintKey = ''
     this.repaint()
     this.syncDerived()
@@ -499,22 +520,18 @@ export class OASSignature extends OASElement {
     const seq = ++this.imageSeq
     const img = new Image()
     img.onload = () => {
+      // 乱序防护：过期回调直接丢弃；未挂树时画布无尺寸，等重连后 ResizeObserver 再重绘
       if (seq !== this.imageSeq || !this.isConnected) return
-      const size = this.canvasSize()
-      const canvas = this.canvasEl()
-      if (!size || !canvas || !canvasAvailable()) return
-      const dpr = devicePixelRatioOf()
-      const ctx = this.paintContext(size, dpr)
-      if (!ctx) return
-      const scale = Math.min(size.width / img.width, size.height / img.height)
-      const w = img.width * scale
-      const h = img.height * scale
-      ctx.drawImage(img, (size.width - w) / 2, (size.height - h) / 2, w, h)
+      this.lastExternalImage = img
       this.hasExternalImage = true
-      this.paintKey = JSON.stringify([this.strokes, 'external', size, dpr])
+      // 成功路径必须同步派生状态：占位隐藏、aria-label/aria-live 翻转为已签名
+      this.syncDerived()
+      // 经 repaint 统一绘制（与笔迹同键同管）：repaint 期间外部图像随 paintAll 垫底重放，不被抹
+      this.repaint()
     }
     img.onerror = () => {
       if (seq !== this.imageSeq) return
+      this.lastExternalImage = null
       devWarn('[oas-signature] 外部签名图像加载失败，画布已清空')
     }
     img.src = url
@@ -559,6 +576,7 @@ export class OASSignature extends OASElement {
     this.imageSeq += 1 // 使在途外部图像加载失效
     this.strokes = []
     this.hasExternalImage = false
+    this.lastExternalImage = null
     this.paintKey = ''
     this.repaint()
     this.syncDerived()

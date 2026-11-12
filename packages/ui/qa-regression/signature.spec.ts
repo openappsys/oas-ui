@@ -274,3 +274,45 @@ test('signature：暗色下默认笔色翻转为浅色、画板边界可见', as
 
   expect(badWarns, 'console 零告警').toEqual([])
 })
+
+test('signature：外部图像受控回显后 resize 不抹图——画布非空、状态保持已签名', async ({ page }) => {
+  const badWarns = watchConsole(page)
+  await page.goto('/components/signature.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sig-src')
+
+  // 左板签名 → 受控写入回显板 → 外部图像异步加载完成后改容器尺寸（ResizeObserver → repaint）
+  await stroke(page, 'oas-signature#sig-src [part="canvas"]', [
+    [20, 20],
+    [100, 80],
+    [180, 40],
+  ])
+  const r = await page.evaluate(async () => {
+    const src = document.querySelector('#sig-src') as HTMLElement
+    const echo = document.querySelector('#sig-echo') as HTMLElement & { toDataURL(): string }
+    echo.setAttribute('value', src.getAttribute('value') ?? '')
+    // 等外部图像 onload + repaint 落定
+    await new Promise((res) => setTimeout(res, 100))
+    // 容器尺寸变化：repaint 重置画布像素，外部图像必须垫底重放（否则回显被抹成空白画布）
+    echo.style.width = '360px'
+    await new Promise((res) => setTimeout(res, 100))
+    const canvas = echo.shadowRoot!.querySelector('[part="canvas"]') as HTMLCanvasElement
+    const ctx = canvas.getContext('2d')!
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+    let inked = 0
+    for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) inked++
+    return {
+      inked,
+      url: echo.toDataURL(),
+      aria: canvas.getAttribute('aria-label'),
+      placeholderHidden: echo.shadowRoot!.querySelector('[part="placeholder"]')!.hasAttribute('hidden'),
+      live: echo.shadowRoot!.querySelector('.sr-status')!.textContent,
+    }
+  })
+  expect(r.inked, 'resize 后画布仍有非透明像素（外部签名图像未被抹）').toBeGreaterThan(0)
+  expect(r.url, 'value 契约保持非空 PNG').toMatch(/^data:image\/png;base64,/)
+  expect(r.aria).toContain('已签名')
+  expect(r.placeholderHidden).toBe(true)
+  expect(r.live).toContain('已签名')
+
+  expect(badWarns, 'console 零告警').toEqual([])
+})
