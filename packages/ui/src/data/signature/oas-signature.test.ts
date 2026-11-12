@@ -716,6 +716,107 @@ describe('OASSignature', () => {
     expect(canvasOf(bad).style.height).toBe('160px')
   })
 
+  it('外部图像未挂树期间加载完成：状态保留，重连后重放绘制（不断开永久失同步 I1 回归）', () => {
+    const restore = installCanvasMock()
+    try {
+      class FakeImage {
+        static instances: FakeImage[] = []
+        width = 100
+        height = 50
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        src = ''
+        constructor() {
+          FakeImage.instances.push(this)
+        }
+      }
+      vi.stubGlobal('Image', FakeImage)
+      // 捕获 ResizeObserver 回调手动触发（重连后 watchResize 重建 observer）
+      const roCallbacks: Array<() => void> = []
+      const RO = globalThis.ResizeObserver
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(cb: () => void) {
+            roCallbacks.push(cb)
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        },
+      )
+      try {
+        const el = mount()
+        const canvas = canvasOf(el)
+        // 连接感知矩形 mock：挂树返回有效尺寸，断开返回全 0（与真实浏览器一致——
+        // 未挂树画布无布局，repaint 自然跳过；断言重连后 RO 重放真正完成绘制）
+        const ZERO_RECT = { ...RECT, width: 0, height: 0, right: 0, bottom: 0 } as DOMRect
+        vi.spyOn(canvas, 'getBoundingClientRect').mockImplementation(function (this: HTMLCanvasElement) {
+          return this.isConnected ? RECT : ZERO_RECT
+        })
+        el.setAttribute('value', 'data:image/png;base64,EXTERNAL')
+        // 断开期间图像加载完成：不得因 !isConnected 丢弃（旧实现丢弃后重连画布恒空白、toDataURL 空串且不自愈）
+        el.remove()
+        FakeImage.instances[0]!.onload?.()
+        // 加载成功路径照常置位派生状态：占位隐藏、aria 已签名（即使未挂树也同步，重连即正确）
+        expect(placeholderOf(el).hasAttribute('hidden')).toBe(true)
+        expect(canvasOf(el).getAttribute('aria-label')).toContain('已签名')
+        // 重连：RO 初始回调重放 → 外部图像绘制、value 契约非空
+        document.body.appendChild(el)
+        roCallbacks.forEach((cb) => cb())
+        expect(lastCtx!.drawImages).toBeGreaterThanOrEqual(1)
+        expect(el.toDataURL()).toBe('data:image/png;base64,MOCKPNG')
+      } finally {
+        vi.stubGlobal('ResizeObserver', RO)
+      }
+    } finally {
+      restore()
+    }
+  })
+
+  it('笔画热路径：一次笔画 getComputedStyle/getBoundingClientRect 调用有界（不随 move 数增长，M1 回归）', () => {
+    const restore = installCanvasMock()
+    try {
+      const el = mount()
+      const canvas = canvasOf(el)
+      const rectSpy = vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(RECT)
+      const gcsSpy = vi.spyOn(window, 'getComputedStyle')
+      const gcsOnCanvas = () => gcsSpy.mock.calls.filter((args) => args[0] === canvas).length
+      // 10 点笔画（8 个 move）：move 热路径必须零样式/布局强制重算
+      drawStroke(el, [
+        [10, 10],
+        [20, 20],
+        [30, 30],
+        [40, 40],
+        [50, 50],
+        [60, 60],
+        [70, 70],
+        [80, 80],
+        [90, 60],
+        [100, 40],
+      ])
+      // 有界口径：整笔各 ≤4 次（down 缓存解析 / value 回写触发的 update 重绘键计算 / 收尾收敛等
+      // 固定站点），旧实现每 move 各 1 次（本例 8 个 move → 16+ 次）——增长只随笔画数、不随 move 数
+      expect(rectSpy.mock.calls.length).toBeLessThanOrEqual(4)
+      expect(gcsOnCanvas()).toBeLessThanOrEqual(4)
+      // 第二笔累计同界（≤8）：若 move 热路径回退为实时查询，累计将随 move 总数超界
+      drawStroke(el, [
+        [15, 15],
+        [25, 25],
+        [35, 35],
+        [45, 45],
+        [55, 55],
+        [65, 65],
+        [75, 75],
+        [85, 85],
+      ])
+      expect(rectSpy.mock.calls.length).toBeLessThanOrEqual(8)
+      expect(gcsOnCanvas()).toBeLessThanOrEqual(8)
+    } finally {
+      restore()
+    }
+  })
+
   it('toDataURL()：空画布返回空串，有笔迹返回 PNG dataURL', () => {
     const restore = installCanvasMock()
     try {

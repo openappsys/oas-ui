@@ -546,6 +546,50 @@ describe('OASScanner', () => {
         vi.useRealTimers()
       }
     })
+
+    it('hidden tab 停检测循环（零抽帧零派发、相机不空转），visible 后续排恢复（M2 回归）', async () => {
+      vi.useFakeTimers()
+      const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+      try {
+        installDetector()
+        FakeDetector.queue = [] // 前序用例可能残留未消费帧，先清零再计数
+        const detectSpy = vi.spyOn(FakeDetector.prototype, 'detect')
+        installMediaDevices(async () => fakeStream([{ stop: vi.fn() }]))
+        const el = new OASScanner()
+        const scans = track(el, 'oas-scan')
+        document.body.appendChild(el)
+        const video = videoOf(el)
+        ;(video as unknown as Record<string, unknown>).videoWidth = 640
+        ;(video as unknown as Record<string, unknown>).videoHeight = 480
+        el.setAttribute('active', '')
+        await flush()
+        await vi.advanceTimersByTimeAsync(DETECT_INTERVAL_MS)
+        expect(detectSpy, 'hidden 前检测循环正常运行').toHaveBeenCalledTimes(1)
+
+        // hidden：visibilitychange 停循环——在途帧 resolve 后也不得续排
+        //（happy-dom 的 hidden 是 document 实例自有属性，须 stub 实例而非 Document.prototype）
+        const defineHidden = (v: boolean) =>
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => v })
+        defineHidden(true)
+        document.dispatchEvent(new Event('visibilitychange'))
+        FakeDetector.queue = [[{ rawValue: 'HIDDEN-HIT', format: 'qr_code' }]]
+        await vi.advanceTimersByTimeAsync(DETECT_INTERVAL_MS * 5)
+        expect(detectSpy, 'hidden 期间零抽帧（不空转 drawImage+detect，相机可熄）').toHaveBeenCalledTimes(1)
+        expect(scans.length, 'hidden 期间零派发').toBe(0)
+
+        // visible：会话仍进行中 → 续排恢复检测
+        defineHidden(false)
+        document.dispatchEvent(new Event('visibilitychange'))
+        await vi.advanceTimersByTimeAsync(DETECT_INTERVAL_MS)
+        expect(detectSpy.mock.calls.length, 'visible 后续排恢复抽帧').toBeGreaterThanOrEqual(2)
+        expect(scans.length, '恢复后命中正常派发').toBe(1)
+        expect(scans[0]!.detail).toEqual({ value: 'HIDDEN-HIT', format: 'qr_code' })
+      } finally {
+        if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden)
+        else delete (document as unknown as Record<string, unknown>).hidden
+        vi.useRealTimers()
+      }
+    })
   })
 
   describe('hydrate（SSR 骨架接管）', () => {

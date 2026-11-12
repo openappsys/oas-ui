@@ -233,6 +233,13 @@ export class OASSignature extends OASElement {
   private listenersBound = false
   /** 进行中笔画的 pointerId：第二指/手掌的 move/up 一律过滤，防坐标污染首笔（多指独占） */
   private activePointerId: number | null = null
+  /**
+   * 笔画期缓存（pointerdown 解析一次，move 热路径复用，up/cancel 清零）：
+   * 笔色解析要挂 style + getComputedStyle、尺寸取 getBoundingClientRect，均为强制样式/布局重算——
+   * 旧实现每个 pointermove 各跑一次，长笔画持续抖动。笔画内颜色/尺寸恒定，缓存安全。
+   */
+  private strokeRect: DOMRect | null = null
+  private strokePenColor: string | null = null
 
   /**
    * 绑定事件与观察者（render/水合/重连共用）。
@@ -285,11 +292,12 @@ export class OASSignature extends OASElement {
     return this.hasAttr('readonly')
   }
 
-  /** 事件坐标 → 归一化笔迹点（相对画布 CSS 尺寸；尺寸未知时返回 null） */
+  /** 事件坐标 → 归一化笔迹点（相对画布 CSS 尺寸；尺寸未知时返回 null）。
+   *  笔画进行中用 down 时缓存的矩形（move 热路径零布局查询），否则实时读取。 */
   private pointOf(e: PointerEvent): StrokePoint | null {
     const canvas = this.canvasEl()
     if (!canvas) return null
-    const rect = canvas.getBoundingClientRect()
+    const rect = this.strokeRect ?? canvas.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0) return null
     return {
       x: Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)),
@@ -302,16 +310,30 @@ export class OASSignature extends OASElement {
     if (e.pointerType === 'mouse' && e.button !== 0) return
     if (this.isDisabled() || this.isReadonly()) return
     if (this.drawing) return // 单笔画独占：第二指忽略（首指 capture 已兜底）
-    const p = this.pointOf(e)
-    if (!p) return
+    const canvas = this.canvasEl()
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return
     e.preventDefault()
     try {
       ;(e.target as Element).setPointerCapture?.(e.pointerId)
     } catch {
       // 环境不支持 pointer capture（测试/旧 UA）：move/up 仍挂在画布上，笔画可用
     }
-    this.drawing = { points: [p] }
+    // 缓存笔画期笔色与矩形：move 热路径零 getComputedStyle/getBoundingClientRect 强制重算
+    this.strokeRect = rect
+    this.strokePenColor = this.resolvedPenColor()
+    this.drawing = {
+      points: [
+        {
+          x: Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)),
+          y: Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)),
+        },
+      ],
+    }
     this.activePointerId = e.pointerId
+    // 建立绘制基线（paintKey 非空后 move 走增量画段，不再每 move 全量回退）
+    this.repaint()
   }
 
   private onPointerMove(e: PointerEvent): void {
@@ -340,12 +362,22 @@ export class OASSignature extends OASElement {
       if (p.x !== last.x || p.y !== last.y) stroke.points.push(p)
     }
     // 单击（无位移单点）未成笔：不入列、不派发——否则空 PNG 配上「已签名」是隐形状态
-    if (stroke.points.length < 2) return
+    if (stroke.points.length < 2) {
+      this.strokeRect = null
+      this.strokePenColor = null
+      return
+    }
     this.strokes.push(stroke)
     this.hasExternalImage = false
     this.lastExternalImage = null
     this.syncDerived()
     this.produceValue()
+    // 笔画收尾收敛：清笔画期缓存后按现尺寸/现笔色幂等重绘——mid-stroke 发生的 resize/主题变化
+    // 在此收敛（键不变则零操作跳过）。放在 produceValue 之后：value 回写触发的 update 已先行
+    // 收敛一次，本调用兜底「同值笔画不重写 value」的漏网场景
+    this.strokeRect = null
+    this.strokePenColor = null
+    this.repaint()
   }
 
   /* ---------------- 绘制层 ---------------- */
@@ -376,6 +408,23 @@ export class OASSignature extends OASElement {
     return 'black'
   }
 
+  /**
+   * 当前生效笔色：笔画进行中用 down 时缓存（move 热路径零样式查询）；否则实时解析。
+   * 笔画内颜色恒定，缓存不会偏离；主题切换在笔画收尾的收敛重绘生效。
+   */
+  private currentPenColor(): string {
+    if (this.drawing && this.strokePenColor) return this.strokePenColor
+    return this.resolvedPenColor()
+  }
+
+  /** 当前生效画布尺寸：笔画进行中用 down 时缓存的矩形，否则实时测量 */
+  private currentCanvasSize(): { width: number; height: number } | null {
+    if (this.drawing && this.strokeRect) {
+      return { width: this.strokeRect.width, height: this.strokeRect.height }
+    }
+    return this.canvasSize()
+  }
+
   private penSize(): number {
     return normalizeNumber(this.getAttr('pen-size', '2'), 2, 1)
   }
@@ -396,9 +445,9 @@ export class OASSignature extends OASElement {
    * 外部图像存续也纳入重绘键（paintAll 在笔迹之下重放），resize/主题切换不把外部签名图像抹掉。
    */
   private repaint(): void {
-    const size = this.canvasSize()
+    const size = this.currentCanvasSize()
     if (!size) return
-    const color = this.resolvedPenColor()
+    const color = this.currentPenColor()
     const dpr = devicePixelRatioOf()
     const key = JSON.stringify([
       this.strokes,
@@ -440,7 +489,7 @@ export class OASSignature extends OASElement {
     }
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = this.resolvedPenColor()
+    ctx.strokeStyle = this.currentPenColor()
     ctx.lineWidth = this.penSize()
     for (const stroke of this.strokes) {
       this.strokePath(ctx, stroke, size)
@@ -458,12 +507,12 @@ export class OASSignature extends OASElement {
     ctx.stroke()
   }
 
-  /** 增量画段（pointermove 热路径）：DPR 变换已在绘制起点建立则直接用，否则先全量 */
+  /** 增量画段（pointermove 热路径）：DPR 变换已在绘制起点建立则直接用，否则先全量。
+   *  笔色/尺寸走笔画期缓存——本函数零 getComputedStyle/getBoundingClientRect 强制重算。 */
   private paintSegment(from: StrokePoint, to: StrokePoint): void {
     if (!canvasAvailable()) return
-    const size = this.canvasSize()
     const canvas = this.canvasEl()
-    if (!size || !canvas) return
+    if (!canvas) return
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | null
     if (!ctx) return
     if (this.paintKey === '') {
@@ -471,9 +520,11 @@ export class OASSignature extends OASElement {
       this.repaint()
       return
     }
+    const size = this.currentCanvasSize()
+    if (!size) return
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = this.resolvedPenColor()
+    ctx.strokeStyle = this.currentPenColor()
     ctx.lineWidth = this.penSize()
     ctx.beginPath()
     ctx.moveTo(from.x * size.width, from.y * size.height)
@@ -520,8 +571,10 @@ export class OASSignature extends OASElement {
     const seq = ++this.imageSeq
     const img = new Image()
     img.onload = () => {
-      // 乱序防护：过期回调直接丢弃；未挂树时画布无尺寸，等重连后 ResizeObserver 再重绘
-      if (seq !== this.imageSeq || !this.isConnected) return
+      // 乱序防护：过期回调直接丢弃。不判 isConnected：断开期间完成加载也必须置位——
+      // 否则重连后 attr===lastWrittenValue 不再触发重载、lastExternalImage 为 null，
+      // value 非空但画布恒空白且不自愈。未挂树时 repaint 因画布无尺寸自然跳过，重连后 RO 初始回调重放
+      if (seq !== this.imageSeq) return
       this.lastExternalImage = img
       this.hasExternalImage = true
       // 成功路径必须同步派生状态：占位隐藏、aria-label/aria-live 翻转为已签名
@@ -569,6 +622,8 @@ export class OASSignature extends OASElement {
     if (this.drawing) {
       this.drawing = null
       this.activePointerId = null
+      this.strokeRect = null
+      this.strokePenColor = null
     }
     if (this.strokes.length === 0 && this.getAttr('value', '') === '' && !this.hasExternalImage) {
       return

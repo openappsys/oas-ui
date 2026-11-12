@@ -153,6 +153,8 @@ const STYLE = `
  * 行为：
  * - 解码用浏览器原生 `BarcodeDetector`（特性检测，零第三方解码库）；检测循环为定时抽帧
  *   （video 帧 → 离屏 canvas → detect），无命中继续、命中节流恢复
+ * - document hidden（切后台/缩 tab）即停检测循环——浏览器对后台 setTimeout 节流到 ~1Hz 仍空转
+ *   drawImage+detect（相机常亮）；visibilitychange 回到 visible 且会话仍进行中自动续排
  * - 任何失败路径自动落手动输入模式（显式 `manual` 属性亦可独立开启）；停止/断连一律
  *   `track.stop()` 关流，零泄漏
  * - 手动行：`<form>` + label 关联 input，Enter/按钮均可提交；提交派发 `oas-scan`（无 format）
@@ -208,6 +210,31 @@ export class OASScanner extends OASElement {
     super()
     // 断连统一清理（关流/停循环/复位会话，幂等）；断开重连由 onReconnect 重新注册
     this.onCleanup(() => this.shutdown())
+    this.bindVisibility()
+  }
+
+  /**
+   * document visibilitychange：hidden tab 下浏览器把 setTimeout 节流到 ~1Hz，但循环仍空转
+   * drawImage+detect（相机常亮）——hidden 即清定时器停循环，visible 且会话仍进行中续排。
+   * 成员箭头引用 + onCleanup：断开移除监听、重连重新注册（bindVisibility）。
+   */
+  private onVisibilityChange = (): void => {
+    if (typeof document === 'undefined') return
+    if (document.hidden) {
+      if (this.detectTimer != null) {
+        clearTimeout(this.detectTimer)
+        this.detectTimer = null
+      }
+      return
+    }
+    if (this.sessionStarted && this.detectTimer == null) this.scheduleDetect(DETECT_INTERVAL_MS)
+  }
+
+  /** 挂 visibilitychange 监听并登记断开清理（构造函数与 onReconnect 共用） */
+  private bindVisibility(): void {
+    if (typeof document === 'undefined') return
+    document.addEventListener('visibilitychange', this.onVisibilityChange)
+    this.onCleanup(() => document.removeEventListener('visibilitychange', this.onVisibilityChange))
   }
 
   /** 手动提交：类字段箭头函数保证引用稳定（addEventListener 重复绑定按引用去重） */
@@ -262,6 +289,7 @@ export class OASScanner extends OASElement {
   /** 断开重连：cleanupFns 已被基类清空，重新注册清理函数（幂等语义） */
   protected override onReconnect(): void {
     this.onCleanup(() => this.shutdown())
+    this.bindVisibility()
   }
 
   /** 缓存节点引用 + 绑定手动提交（render/hydrate 共用；失败返回 false 供回退重建） */
@@ -465,6 +493,8 @@ export class OASScanner extends OASElement {
 
   private scheduleDetect(delay: number): void {
     if (!this.sessionStarted) return
+    // hidden tab 停循环：在途 detect resolve/reject 后的续排一律拒绝，等 visibilitychange 到 visible 再续
+    if (typeof document !== 'undefined' && document.hidden) return
     this.detectTimer = setTimeout(() => {
       this.detectTimer = null
       void this.detectFrame()

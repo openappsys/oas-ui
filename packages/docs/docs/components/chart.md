@@ -268,7 +268,7 @@ onMounted(() => {
 - 数据更新重绘 SVG（同 qrcode 模式），节点不重建
 - 空/非法数据 → 空态占位
 - 每个数据点带原生 `<title>` 悬停提示；`options.tooltip` 缺省 `false` 时 shadow 内零浮层节点（孤儿浮层为 0）。开启后为单例浮层（`part="tooltip"`），数据重绘/页面滚动隐藏、断开连接销毁——仍无孤儿节点
-- 横向条（`type="horizontal-bar"`）数据口径与 `bar` 相同，数值轴在底部、分类标签贴左缘；RTL 下不镜像（几何与书写方向正交）；不参与组合图与双轴，系列级 `type` / `yAxisIndex` 忽略
+- 横向条（`type="horizontal-bar"`）数据口径与 `bar` 相同，数值轴在底部、分类标签贴左缘；RTL 下不镜像（几何与书写方向正交）；不参与组合图与双轴，系列级 `type` / `yAxisIndex` 忽略；分类数过多（>~50）时条互叠成实色带（与竖 bar 同口径），数据侧应聚合/抽稀
 - `tooltipFormatter` 只有 property 通道（函数无法用 attribute 表达），返回串按纯文本写入浮层、不解析 HTML；宿主 formatter 抛错或返回非字符串时回退默认文案，不中断 hover
 - x 轴分类标签密集（间距不足以容下最宽标签）时按可用宽度自动抽稀（折线/面积端点优先保留；柱状按宽度抽稀，端点越界时才保留）；抽稀只作用于标签（数据点不抽稀），不旋转/不加省略号——需要斜排/竖排时用 `options.xLabelRotate`（0–90），旋转后仍按投影宽度抽稀兜底；水平标签仅在越过 viewBox 左右界时向内对齐（首 `start` / 末 `end`），并按各标签自身宽度剔除会与端点相撞的相邻标签（柱状/组合/堆叠同样适用，未越界时仍与柱组中心对齐），不被裁切
 - 动画为纯 CSS（`@media (prefers-reduced-motion: no-preference)` 包裹），reduced-motion 下自动关闭，无 JS 计时器
