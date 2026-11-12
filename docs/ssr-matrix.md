@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：213
+- 组件：215
 - SSR 白名单：175
-- 有意不 SSR：38
+- 有意不 SSR：40
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -174,6 +174,8 @@
 | `oas-image-group` | data | `data/image-group` | ✅ 白名单 | — | — | `@oas-ui/ui/data/image-group` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-qrcode` | data | `data/qrcode` | ✅ 白名单 | — | — | `@oas-ui/ui/data/qrcode` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-barcode` | data | `data/barcode` | ✅ 白名单 | — | — | `@oas-ui/ui/data/barcode` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-scanner` | data | `data/scanner` | ⛔ 不 SSR | client-only | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
+| `oas-signature` | data | `data/signature` | ⛔ 不 SSR | client-only | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
 | `oas-watermark` | data | `data/watermark` | ✅ 白名单 | — | — | `@oas-ui/ui/data/watermark` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-collapse` | data | `data/collapse` | ✅ 白名单 | — | — | `@oas-ui/ui/data/collapse` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-collapse-item` | data | `data/collapse` | ✅ 白名单 | — | — | `@oas-ui/ui/data/collapse` | ✅ | ✅ | — | ✅ | —/— |

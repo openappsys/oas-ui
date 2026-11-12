@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 213,
+    "components": 215,
     "whitelist": 175,
-    "noSsr": 38
+    "noSsr": 40
   },
   "components": [
     {
@@ -2825,6 +2825,40 @@
       "hasHydrate": true,
       "unitTest": true,
       "dsdFixture": true,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-scanner",
+      "family": "data",
+      "dir": "data/scanner",
+      "className": "OASScanner",
+      "ssr": "no-ssr",
+      "reason": "client-only",
+      "parent": null,
+      "note": "getUserMedia 相机能力仅客户端可用",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-signature",
+      "family": "data",
+      "dir": "data/signature",
+      "className": "OASSignature",
+      "ssr": "no-ssr",
+      "reason": "client-only",
+      "parent": null,
+      "note": "canvas 笔迹绘制仅客户端可用",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": false,
       "docsZh": true,
       "docsEn": true
     },
