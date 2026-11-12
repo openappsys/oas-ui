@@ -859,6 +859,9 @@
       "oas-submit": "内置输入行提交（Enter 或提交按钮）后派发。detail { text }——trim 后文本；空文本不派发；组件不内部追加列表，宿主写回数据驱动渲染（数据驱动写回范式）",
       "oas-resolve": "点击 resolve/unresolve 触发钮后派发。detail { id, resolved }——id 为 `comment-id` 属性值（缺省空串），resolved 为目标解决态（true=标记解决 / false=取消解决）；组件不内部翻转 `resolved`，宿主写回数据后同步条目属性"
     },
+    "methods": {
+      "submit": "提交输入行当前文本；空文本 / 输入行隐藏返回 false 且不派发"
+    },
     "slots": {
       "": "嵌套的 `oas-comment` 子评论，自动缩进",
       "actions": "操作区（回复/点赞等，由宿主提供）",

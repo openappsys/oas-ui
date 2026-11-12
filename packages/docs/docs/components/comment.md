@@ -271,7 +271,7 @@ onMounted(async () => {
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `submit` | `submit(): boolean` | 提交输入行当前文本；空文本 / 输入行隐藏返回 false 且不派发。 |
+| `submit` | `submit(): boolean` | 提交输入行当前文本；空文本 / 输入行隐藏返回 false 且不派发 |
 
 #### 事件
 

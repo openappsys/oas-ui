@@ -272,7 +272,7 @@ The component ships with an input row (`textarea` + submit button): **Enter subm
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `submit` | `submit(): boolean` | 提交输入行当前文本；空文本 / 输入行隐藏返回 false 且不派发。 |
+| `submit` | `submit(): boolean` | Submits the current composer text; returns false and dispatches nothing when the text is empty or the composer is hidden |
 
 #### Events
 
