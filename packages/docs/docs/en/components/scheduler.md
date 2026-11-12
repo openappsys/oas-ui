@@ -31,7 +31,7 @@ Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): eve
   <div id="scheduler-conflict-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-`conflict-check` (presence boolean, off by default) enables overlap detection for **single-day timed events** on the same day: overlapping blocks get a dashed danger outline (`.event.conflict`) plus the `scheduler.conflict` readable hint, and each affected event dispatches `oas-event-conflict` (`detail: { id, conflicts }`, where `conflicts` lists the ids of overlapping events). Dispatch is **idempotent**: the same data snapshot never re-dispatches; after a data change it re-dispatches per id only when the signature changes; when a conflict resolves, the related ids receive one empty-array payload for the host to clear its markers. Detection uses half-open intervals (back-to-back does not count, same as the lane criterion) over the whole calendar (not just the visible view); repeats are not expanded into occurrences and multi-day timed/all-day events are not included. The conflict outline is purely visual — overlapping events still coexist in lanes and drag/resize writes are unaffected.
+`conflict-check` (presence boolean, off by default) enables overlap detection for **single-day timed events** on the same day: overlapping blocks get a dashed danger outline (`.event.conflict`) plus the `scheduler.conflict` readable hint, and each affected event dispatches `oas-event-conflict` (`detail: { id, conflicts }`, where `conflicts` lists the ids of overlapping events). Dispatch is **idempotent**: the same data snapshot never re-dispatches; after a data change it re-dispatches per id only when the signature changes; when a conflict resolves, the related ids receive one empty-array payload for the host to clear its markers. Dispatch happens **synchronously** inside the component's `update()` (the first frame is emitted on mount): the host must attach its listener before writing/changing data; a listener attached later misses the first frame — remove and re-add `conflict-check` to reset the signature channel and re-emit the current snapshot. Detection uses half-open intervals (back-to-back does not count, same as the lane criterion) over the whole calendar (not just the visible view); repeats are not expanded into occurrences and multi-day timed/all-day events are not included. The conflict outline is purely visual — overlapping events still coexist in lanes and drag/resize writes are unaffected.
 
 Focused event blocks are keyboard-operable: `←` / `→` shift `date` by a whole day (mirrored visually under RTL), `Alt+←` / `Alt+→` resize `end` (±15-minute steps, never past `start`, clamped at 24:00); writes go through `updateEvent()` (single-step undo snapshot + `oas-events-change`), the view follows when a block moves out of the current week/day so focus is preserved, and `aria-keyshortcuts` declares the shortcuts.
 
@@ -179,6 +179,12 @@ onMounted(async () => {
       const { id, conflicts } = e.detail
       cfout.textContent = `oas-event-conflict: ${id} ↔ ${conflicts.length ? conflicts.join(', ') : '(conflict resolved)'}`
     })
+    // Dispatch happens synchronously inside the component's update() (the first frame precedes this
+    // listener) and the idempotent signature never re-dispatches: remove and re-add conflict-check
+    // to reset the signature channel and re-emit the current snapshot (standard pattern for a host
+    // that attaches its listener late).
+    conflict.removeAttribute('conflict-check')
+    conflict.setAttribute('conflict-check', '')
   }
 
   const remind = document.getElementById('scheduler-remind')

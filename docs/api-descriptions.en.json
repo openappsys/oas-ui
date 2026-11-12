@@ -4643,6 +4643,7 @@
       "locale": "Localization (overrides config-provider injection and global locale)",
       "resources": "Resources (JSON): [{ id, title, color?, group? }] — resource views group by resource; events whose resource is absent or unknown go to the 'Unassigned' row; a non-empty group inserts a group header row",
       "show-now": "Current-time line (on by default; false disables): renders a now line for today in week/day and single-day resource views",
+      "conflict-check": "Same-day timed event conflict check (boolean, off by default): detects same-day time overlaps among single-day timed events — overlapping blocks get a .conflict dashed danger outline plus the scheduler.conflict readable hint, and oas-event-conflict is dispatched; detection uses half-open intervals (back-to-back does not count, same as the lane criterion) over the whole calendar (not just the visible view); repeats are not expanded into occurrences and multi-day timed/all-day events are not included; the outline is purely visual and never blocks drag/resize writes",
       "view": "View: month (default) / week / day / agenda / resource / resource-week; week/day views show a time axis with positioned event blocks (untimed events go to the all-day row); agenda shows a 28-day chronological list; resource is a single-day horizontal resource timeline, resource-week a week x resource matrix; 'resource-timeline' resource timeline (rows = resources, horizontal continuous day axis spanning multiple days, events as continuous cross-column bars; axis = current week or the range-managed span)",
       "start-hour": "Time axis start hour (0-23, default 8)",
       "end-hour": "Time axis end hour (> start-hour and <= 24, default 20)",
@@ -4658,6 +4659,7 @@
       "oas-create": "Dispatched when an empty time cell is dragged out to a range of >=15 minutes, detail: { date, start, end, resource? } — the component does not create the event; the host calls addEvent. A shorter drag is treated as oas-day-click",
       "oas-day-click": "Dispatched when an empty day cell is clicked, detail: { date, resource? } (resource row id in resource views) — host attaches an add form",
       "oas-event-click": "Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click)",
+      "oas-event-conflict": "Conflict snapshot dispatch while conflict-check is on (dispatched synchronously inside update(), first frame on mount; the host must attach its listener before writing data — a late listener can remove and re-add conflict-check to reset the signature channel and re-emit. Idempotent: the same data snapshot never re-dispatches, re-dispatched per id only when the signature changes, empty arrays sent to related ids on resolution), detail: { id, conflicts } (ids of events overlapping this one on the same day and time range)",
       "oas-events-change": "Dispatched on any events change (set/addEvent/updateEvent/removeEvent/undo), detail: { events }",
       "oas-view-change": "Dispatched on view switch (month/week/day/agenda), detail: { view }; not dispatched on initial attribute absorption",
       "oas-remind": "Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers)",
@@ -4675,7 +4677,7 @@
       "addEvent": "Add an event: returns the assigned id",
       "updateEvent": "Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found or when a same-day range has start >= end)",
       "removeEvent": "Remove an event by id; returns false when not found",
-      "undo": "Undo the most recent updateEvent (including drag-move, two-edge time resize, and multi-day end resize); returns false when there is no snapshot, otherwise writes back and dispatches oas-events-change"
+      "undo": "Undo the most recent updateEvent (including drag-move, two-edge time resize, multi-day end resize, and keyboard date-shift/resize on timed blocks); returns false when there is no snapshot, otherwise writes back and dispatches oas-events-change"
     }
   },
   "oas-gantt": {

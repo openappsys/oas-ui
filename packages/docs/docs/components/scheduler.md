@@ -31,7 +31,7 @@
   <div id="scheduler-conflict-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
 </DemoBlock>
 
-`conflict-check`（在场布尔，默认关）开启后对**单日定时事件**做同日同时段重叠检测：重叠块加虚线 danger 描边（`.event.conflict`）并挂 `scheduler.conflict` 可读提示，逐事件派发 `oas-event-conflict`（`detail: { id, conflicts }`，`conflicts` 为与之重叠的事件 id 列表）。派发**幂等**：同一数据快照不重复派发，数据重算后签名变化才逐 id 重发；冲突消解时向相关 id 发一次空数组，宿主据此清标记。判定口径为半开区间（首尾相接不算，与车道并排判据同构）、全日历（不限当前视图）；repeat 不展开 occurrence、跨日定时/全天事件不参与判定。冲突标记只是视觉提示，重叠事件仍按车道并存，拖拽/缩放写入不受影响。
+`conflict-check`（在场布尔，默认关）开启后对**单日定时事件**做同日同时段重叠检测：重叠块加虚线 danger 描边（`.event.conflict`）并挂 `scheduler.conflict` 可读提示，逐事件派发 `oas-event-conflict`（`detail: { id, conflicts }`，`conflicts` 为与之重叠的事件 id 列表）。派发**幂等**：同一数据快照不重复派发，数据重算后签名变化才逐 id 重发；冲突消解时向相关 id 发一次空数组，宿主据此清标记。派发随组件 `update()` **同步**发生（首帧即发）：宿主须先挂监听再写入/变更数据；监听后挂拿不到首帧时，移除再补回 `conflict-check` 即重置签名通道、按当前快照重发。判定口径为半开区间（首尾相接不算，与车道并排判据同构）、全日历（不限当前视图）；repeat 不展开 occurrence、跨日定时/全天事件不参与判定。冲突标记只是视觉提示，重叠事件仍按车道并存，拖拽/缩放写入不受影响。
 
 时刻块聚焦后支持键盘操作：`←` / `→` 整天改 `date`（RTL 下按视觉方向镜像），`Alt+←` / `Alt+→` 缩放 `end`（±15 分钟步进，不越过 `start`、24:00 钳制）；回写走 `updateEvent()`（自动单步撤销快照并派发 `oas-events-change`），块移出当前周/日时视图跟随翻页保持焦点，`aria-keyshortcuts` 同步声明快捷键。
 
@@ -179,6 +179,10 @@ onMounted(async () => {
       const { id, conflicts } = e.detail
       cfout.textContent = `oas-event-conflict：${id} ↔ ${conflicts.length ? conflicts.join('、') : '（冲突已消解）'}`
     })
+    // 派发随组件 update() 同步发生（首帧早于本监听挂载），且幂等签名不补发：
+    // 关闭再补回 conflict-check 重置签名通道，按当前快照重发（宿主后挂监听的标准取数姿势）
+    conflict.removeAttribute('conflict-check')
+    conflict.setAttribute('conflict-check', '')
   }
 
   const remind = document.getElementById('scheduler-remind')

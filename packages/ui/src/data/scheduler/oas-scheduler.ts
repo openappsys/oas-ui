@@ -1940,6 +1940,10 @@ export class OASScheduler extends OASElement {
    * - 同一快照不重复派发（签名比较）；数据变化重算后签名变化才发
    * - 派发口径逐 id：本帧有冲突的 id 带 conflicts 列表；上一帧有冲突、本帧已消解的 id 发空数组
    *   （宿主据此逐事件增/清标记）；全部消解时即全部收到空数组
+   * - **先提交状态（lastConflictMap/conflictIds）再派发**（同 gantt oas-resource-conflict 先例）：
+   *   宿主在事件回调里同步写数据（updateEvent 自动消解用法）触发内层 update 时，内层以本帧
+   *   状态为上一帧基线重算，外层剩余派发检测到快照已被内层取代即作废，避免陈旧列表迟到、
+   *   旧快照覆盖新状态导致渲染残留与重复派发
    * - 关闭不派发任何事件且重置签名——重新开启时按新快照重发首帧（同 gantt oas-resource-conflict 口径）
    */
   private emitConflicts(): void {
@@ -1953,11 +1957,13 @@ export class OASScheduler extends OASElement {
     const prevSig = this.lastConflictMap === null ? null : conflictSignature(this.lastConflictMap)
     if (nextSig === prevSig) return
     const ids = new Set<string>([...(this.lastConflictMap?.keys() ?? []), ...next.keys()])
-    for (const id of ids) {
-      this.emit('event-conflict', { id, conflicts: [...(next.get(id) ?? [])] } satisfies SchedulerEventConflictDetail)
-    }
     this.lastConflictMap = next
     this.conflictIds = new Set(next.keys())
+    for (const id of ids) {
+      // 派发中途快照被内层重算取代（宿主回调内写数据）→ 本帧余下派发作废
+      if (this.lastConflictMap !== next) return
+      this.emit('event-conflict', { id, conflicts: [...(next.get(id) ?? [])] } satisfies SchedulerEventConflictDetail)
+    }
   }
 
   protected override update(): void {

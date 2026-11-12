@@ -2757,6 +2757,31 @@ describe('OASScheduler conflict-check 冲突校验 + 时刻块键盘可达', () 
     expect(seen.find((d) => d.id === 'c')!.conflicts.sort()).toEqual(['a', 'b'])
   })
 
+  it('宿主回调内同步 updateEvent 消解：状态先提交再派发，渲染无陈旧标记、末帧为消解、不重复派发', () => {
+    const { el, seen } = mountListen({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'conflict-check': '',
+      events: JSON.stringify(CONFLICT_EVENTS),
+    })
+    // 宿主「自动消解」用法：收到冲突立即改写冲突方数据（回调内同步 updateEvent）
+    el.addEventListener('oas-event-conflict', () => {
+      const b = el.events.find((x) => x.id === 'b')
+      if (b && b.date === '2026-08-10') el.updateEvent('b', { start: '11:30', end: '12:30' })
+    })
+    // 关闭再开启重置签名通道 → 按当前快照重发首帧 → 回调内触发消解重算
+    el.removeAttribute('conflict-check')
+    el.setAttribute('conflict-check', '')
+    expect(
+      el.shadowRoot!.querySelectorAll('.timeview .event.conflict').length,
+      '回调内消解后渲染不得残留陈旧 .conflict 标记',
+    ).toBe(0)
+    expect(seen.at(-1)!.conflicts.length, '宿主收到的末帧应为消解空数组（陈旧列表的迟到帧作废）').toBe(0)
+    const n = seen.length
+    el.setAttribute('view', 'week')
+    expect(seen.length, '消解已落状态（签名一致），后续 update 不得重复派发').toBe(n)
+  })
+
   it('时刻块键盘：←/→ 整天改 date（updateEvent 通道 + 撤销快照），重建后焦点回同块', () => {
     const el = conflictEl({ view: 'week' })
     const block = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event[data-id="a"]')!
