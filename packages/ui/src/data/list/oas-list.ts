@@ -22,6 +22,9 @@ import {
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
 void _ROW_WINDOW_EVENT_CHECK
 
+/** 键盘重排快捷键声明（行级 aria-keyshortcuts） */
+const KEYBOARD_MOVE_SHORTCUTS = 'Alt+ArrowUp Alt+ArrowDown'
+
 /** aria-selected 合法的宿主角色（ARIA 1.2：option / row / gridcell / tab / treeitem / 表头角色） */
 const ARIA_SELECTABLE_ROLES = new Set(['option', 'row', 'gridcell', 'tab', 'treeitem', 'columnheader', 'rowheader'])
 
@@ -79,10 +82,10 @@ const STYLE = `
 /* hoverable：不可点行也有 hover 底色反馈（clickable 行自带 hover 同色；选中行排除在外，
    保持 primary 选中底不被浅灰压盖；颜色走 token，暗色自动适配）。虚拟模式行是内嵌
    oas-virtual-list 的 [part="item"] div，经 ::part():hover 命中 */
-.list[data-hoverable='true'] ::slotted(oas-list-item:not([selected]):hover) {
+.list[data-hoverable='true'] ::slotted(oas-list-item:not([selected]):not([disabled]):hover) {
   background: var(--oas-color-bg-hover);
 }
-.list[data-hoverable='true'] .data-items oas-list-item:not([selected]):hover {
+.list[data-hoverable='true'] .data-items oas-list-item:not([selected]):not([disabled]):hover {
   background: var(--oas-color-bg-hover);
 }
 .list[data-hoverable='true'] oas-virtual-list::part(item):hover {
@@ -237,7 +240,17 @@ oas-virtual-list::part(item) {
  *   半开、绝对行下标；reason = init / scroll / resize / data；同一期望区间不重复派发）
  * - `oas-item-render`：数据通道每行渲染后派发（windowed 下 index 为绝对行号）
  * - `oas-click`：条目点击（声明式/数据行由 oas-list-item 派发；虚拟行由列表代理）
- * - `oas-reorder`：拖拽排序落定（detail { from, to, item }）
+ * - `oas-reorder`：拖拽排序落定（detail { from, to, item }）；键盘重排（Alt+↑/↓ 逐条
+ *   交换）时 detail { index, from, to, key? }（index 为移动后新位次，与 to 同值；
+ *   key 为数据项的 key/value/id 字符串字段或声明式行的 key 属性，可缺省）
+ * - `oas-change`：键盘重排落定后派发（detail { value }——value 为新序：数据通道为
+ *   行数据数组副本，声明式通道为行元素数组）
+ *
+ * 键盘重排（Alt+ArrowUp/ArrowDown，行需可聚焦——clickable/href 行或宿主自管 tabindex）：
+ * 焦点行与相邻行交换位置，焦点跟随被移行（防失焦），行上声明
+ * `aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`。disabled 条目为墙（自身不可移动、
+ * 不作为交换目标）；数据通道相邻行 group 不同（组界）不可交换；windowed / 虚拟滚动
+ * 下本地重排禁用（同 sortable 口径）。Up/Down 为纵向语义，RTL 不影响。
  *
  * a11y：list 语义由组件落在 shadow 内**紧贴行的 items 容器**上（`role=list`；宿主声明
  * `role=listbox` 时迁为 listbox），行派生子角色 listitem / option——宿主无需也**不应**在
@@ -401,6 +414,8 @@ export class OASList extends OASElement {
     this.addEventListener('dragover', this.handleDragOver)
     this.addEventListener('drop', this.handleDrop)
     this.addEventListener('dragend', this.handleDragEnd)
+    // 键盘重排：Alt+↑/↓ 事件委托（同行级代理，行重建无需重绑）
+    this.addEventListener('keydown', this.handleRowKeydown)
     this.onCleanup(() => {
       this.body?.removeEventListener('scroll', this.handleScroll)
       this.vlist?.removeEventListener('click', this.handleVirtualClick)
@@ -413,6 +428,7 @@ export class OASList extends OASElement {
       this.removeEventListener('dragover', this.handleDragOver)
       this.removeEventListener('drop', this.handleDrop)
       this.removeEventListener('dragend', this.handleDragEnd)
+      this.removeEventListener('keydown', this.handleRowKeydown)
       if (this.raf) cancelAnimationFrame(this.raf)
       this.raf = 0
     })
@@ -564,6 +580,9 @@ export class OASList extends OASElement {
         item.toggleAttribute('data-hoverable', hoverable)
         if (this.hasAttr('sortable')) item.setAttribute('draggable', 'true')
         else item.removeAttribute('draggable')
+        // 键盘重排快捷键声明（disabled 行不参与重排，不声明）
+        if (item.hasAttribute('disabled')) item.removeAttribute('aria-keyshortcuts')
+        else item.setAttribute('aria-keyshortcuts', KEYBOARD_MOVE_SHORTCUTS)
       })
     }
 
@@ -665,13 +684,14 @@ export class OASList extends OASElement {
       }
       prevGroup = groupName
       // 行数 a11y 由 syncListSemantics 统一写入（在宿主 item-render 补角色之后）
-      ;(group ?? box).appendChild(this.makeDataRow(i, item, size, stripe, tpl, null, this.hasAttr('sortable')))
+      ;(group ?? box).appendChild(this.makeDataRow(i, item, size, stripe, tpl, null, this.hasAttr('sortable'), true))
     })
   }
 
   /**
    * 生成数据行（数据通道 / windowed 共用）：`index` 为行号（windowed 传绝对行号），
-   * `rowHeight` 非 null 时锁定行高（windowed 铺位行）。
+   * `rowHeight` 非 null 时锁定行高（windowed 铺位行）。`keyboard` 为 false（windowed：
+   * 本地重排禁用）时行不声明键盘重排快捷键。
    */
   private makeDataRow(
     index: number,
@@ -681,12 +701,19 @@ export class OASList extends OASElement {
     tpl: HTMLTemplateElement | null,
     rowHeight: number | null,
     sortable: boolean,
+    keyboard: boolean,
   ): HTMLElement {
     const row = document.createElement('oas-list-item')
     row.setAttribute('data-index', String(index))
     row.setAttribute('data-size', size)
     // 定高行（与内嵌虚拟列表同款）：内容溢出由 CSS overflow: hidden 裁剪
     if (rowHeight != null) row.style.height = `${rowHeight}px`
+    // 数据项 disabled 字段 → 行禁用（键盘重排的墙：不可移动、不作为交换目标）
+    const meta =
+      item != null && typeof item === 'object' && !Array.isArray(item) ? (item as Record<string, unknown>) : null
+    if (meta?.disabled === true) row.setAttribute('disabled', '')
+    // 键盘重排快捷键声明（disabled 行与 windowed 行不声明——不参与重排）
+    if (keyboard && !row.hasAttribute('disabled')) row.setAttribute('aria-keyshortcuts', KEYBOARD_MOVE_SHORTCUTS)
     // 斑马纹按传入口径（windowed 用绝对行号，滚动窗口变化时条纹不闪变）
     if (stripe && index % 2 === 1) row.setAttribute('data-stripe', '')
     if (this.hasAttr('hoverable')) row.setAttribute('data-hoverable', '')
@@ -723,7 +750,7 @@ export class OASList extends OASElement {
     if (vh <= 0) {
       for (let i = 0; i < len; i++) {
         const abs = mode.windowStart + i
-        box.appendChild(this.makeDataRow(abs, this.rows[i], size, stripe, tpl, rowH, false))
+        box.appendChild(this.makeDataRow(abs, this.rows[i], size, stripe, tpl, rowH, false, false))
       }
       return
     }
@@ -742,7 +769,7 @@ export class OASList extends OASElement {
       const abs = mode.windowStart + i
       // windowed 不做本地行重排：渲染窗口的局部 index 对全量无意义（与 table/gantt 同口径），
       // 重排由宿主在全量数据上处理
-      box.appendChild(this.makeDataRow(abs, this.rows[i], size, stripe, tpl, rowH, false))
+      box.appendChild(this.makeDataRow(abs, this.rows[i], size, stripe, tpl, rowH, false, false))
     }
     box.appendChild(this.createSpacer('bottom', bottomH))
 
@@ -1182,6 +1209,87 @@ export class OASList extends OASElement {
   private handleDragEnd = (): void => {
     this.clearDropMarkers()
     this.resetDrag()
+  }
+
+  // ---------- 键盘重排（Alt+↑/↓ 逐条移动） ----------
+
+  /** 数据项的组名（组界判定：相邻行 group 不同不可交换） */
+  private rowGroup(item: unknown): string {
+    if (item != null && typeof item === 'object' && !Array.isArray(item)) {
+      const g = (item as { group?: unknown }).group
+      if (typeof g === 'string') return g.trim()
+    }
+    return ''
+  }
+
+  /** 行 key（oas-reorder detail.key）：数据通道取 key/value/id 字符串字段，声明式取行 key 属性 */
+  private rowKey(row: HTMLElement, index: number): string | undefined {
+    if (this.dataChannelActive()) {
+      const item = this.rows[index]
+      if (item != null && typeof item === 'object' && !Array.isArray(item)) {
+        const o = item as Record<string, unknown>
+        for (const k of ['key', 'value', 'id']) {
+          if (typeof o[k] === 'string') return o[k] as string
+        }
+      }
+      return undefined
+    }
+    return row.getAttribute('key') ?? undefined
+  }
+
+  /**
+   * 键盘重排：焦点行 Alt+ArrowUp/ArrowDown 与相邻行交换位置（逐条移动），
+   * 焦点跟随被移行（防失焦），派发 oas-reorder { index, from, to, key? } 与 oas-change { value }。
+   *
+   * 墙（零位移零事件）：首/末边界、disabled 行（自身与相邻目标同禁）、数据通道组界
+   * （相邻行 group 不同）、windowed（本地重排禁用，同 sortable 口径；虚拟行不是
+   * oas-list-item，天然不命中）。RTL 不影响 Up/Down 纵向语义。
+   */
+  private handleRowKeydown = (e: Event): void => {
+    const ke = e as KeyboardEvent
+    if (!ke.altKey || ke.ctrlKey || ke.metaKey || ke.shiftKey) return
+    if (ke.key !== 'ArrowUp' && ke.key !== 'ArrowDown') return
+    if (this.winMode.windowed) return
+    const row = this.dragRowFromEvent(e)
+    if (!row) return
+    const rows = this.rowElements()
+    const from = rows.indexOf(row)
+    if (from < 0) return
+    const to = from + (ke.key === 'ArrowDown' ? 1 : -1)
+    if (to < 0 || to >= rows.length) return
+    const target = rows[to]!
+    if (row.hasAttribute('disabled') || target.hasAttribute('disabled')) return
+    if (this.dataChannelActive() && this.rowGroup(this.rows[from]) !== this.rowGroup(this.rows[to])) return
+    const parent = row.parentElement
+    if (!parent) return
+    ke.preventDefault()
+    const key = this.rowKey(row, from)
+    if (this.dataChannelActive()) {
+      // 数据通道：内部交换行序并重渲染（属性通道回写 data 属性持久化新序，受控口径
+      // 同 table 列序回写）；焦点跟随到新位次的行
+      const tmp = this.rows[from]!
+      this.rows[from] = this.rows[to]!
+      this.rows[to] = tmp
+      if (!this.dataFromProperty && this.hasAttribute('data')) {
+        this.setAttribute('data', JSON.stringify(this.rows))
+      } else {
+        this.update()
+      }
+      const moved = [...this.shadow.querySelectorAll<HTMLElement>('[part="data-items"] oas-list-item')].find(
+        (r) => r.getAttribute('data-index') === String(to),
+      )
+      moved?.focus()
+      this.emit('reorder', { index: to, from, to, ...(key !== undefined ? { key } : {}) })
+      this.emit('change', { value: this.rows.slice() })
+      return
+    }
+    // 声明式通道：物理交换 light DOM 子项（行即内容），随后同步行标记并焦点跟随
+    if (to > from) parent.insertBefore(row, target.nextSibling)
+    else parent.insertBefore(row, target)
+    this.update()
+    row.focus()
+    this.emit('reorder', { index: to, from, to, ...(key !== undefined ? { key } : {}) })
+    this.emit('change', { value: this.rowElements() })
   }
 
   /** 虚拟行点击代理：从内嵌虚拟列表行 div 的 data-index 还原 index/item */

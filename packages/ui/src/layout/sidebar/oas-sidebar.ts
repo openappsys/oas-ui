@@ -33,6 +33,8 @@ export interface SidebarItem {
   avatarColor?: string
   /** 嵌套子菜单（可选）：有 children 的项渲染为可展开/收起的父项 */
   children?: SidebarItem[]
+  /** 禁用（可选）：不可聚焦/不可点；键盘重排的墙——自身不可移动、不作为交换目标 */
+  disabled?: boolean
   /** 项操作按钮（可选）：悬停项时出现在右侧 */
   actions?: SidebarItemAction[]
 }
@@ -52,6 +54,9 @@ export type SidebarEntry = SidebarItem | SidebarDivider
 
 /** 默认移动端断点（px，窄于此视口宽度时抽屉化） */
 const DEFAULT_BREAKPOINT = 768
+
+/** 键盘重排快捷键声明（项按钮 aria-keyshortcuts） */
+const KEYBOARD_MOVE_SHORTCUTS = 'Alt+ArrowUp Alt+ArrowDown'
 
 const STYLE = `
 :host {
@@ -257,6 +262,17 @@ aside {
     --oas-sidebar-item-hover-bg,
     color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent)
   );
+}
+/* 禁用项：弱化文字/图标色 + 禁止光标；原生 disabled 不可聚焦、不触发点击 */
+.item:disabled {
+  color: var(--oas-color-text-disabled);
+  cursor: not-allowed;
+}
+.item:disabled:hover {
+  background: none;
+}
+.item:disabled .icon {
+  color: var(--oas-color-text-disabled);
 }
 .item.active {
   background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
@@ -713,6 +729,14 @@ aside {
  * - `oas-select`：detail `{ value, label, group? }`，选中菜单项时派发（受控迁移同时派发；group 供宿主按组写回 active-by-group）
  * - `oas-action`：detail `{ value, action, label }`，菜单项操作按钮点击时派发
  * - `oas-resize`：detail `{ width }`，拖拽松手 / 复位微调结束时派发
+ * - `oas-reorder`：键盘重排（Alt+↑/↓ 逐条交换）派发，detail `{ index, from, to, key? }`
+ *   （from/to 为同级数组内位次，index 为移动后新位次与 to 同值，key 为项 value）
+ * - `oas-change`：键盘重排落定后派发，detail `{ value }`——value 为新序（SidebarEntry[] 副本）
+ *
+ * 键盘重排：焦点项 Alt+ArrowUp/ArrowDown 与同级相邻项交换位置，焦点跟随被移项（防失焦），
+ * 项按钮声明 `aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`。disabled 项为墙；分隔线与
+ * 组界（相邻项 group 不同）同为墙；flyout 内子项不重排（面板重建即关，焦点无处跟随）。
+ * Up/Down 为纵向语义，RTL 不影响。
  *
  * 移动端抽屉：遮罩 + 点击外部/关闭按钮/Esc 收起；断点回桌面自动关抽屉，无孤儿浮层。
  */
@@ -1131,11 +1155,20 @@ export class OASSidebar extends OASElement {
     this.mq?.addEventListener('change', this.mqListener)
   }
 
-  /** 菜单键盘导航：ArrowDown/Up 移动焦点、Home/End 跳首末 */
+  /** 菜单键盘导航：ArrowDown/Up 移动焦点、Home/End 跳首末；Alt+↑/↓ 键盘重排（逐条交换） */
   private onNavKey(e: Event): void {
     const ke = e as KeyboardEvent
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(ke.key)) return
-    const items = [...this.shadow.querySelectorAll<HTMLElement>('.nav [part="item"]')].filter((b) => !b.hidden)
+    // 键盘重排：Alt+↑/↓ 逐条交换（焦点跟随被移项）；不命中重排时落回原焦点导航
+    if (ke.altKey && !ke.ctrlKey && !ke.metaKey && !ke.shiftKey) {
+      const btn = e
+        .composedPath()
+        .find((n): n is HTMLElement => n instanceof HTMLElement && n.getAttribute('part') === 'item')
+      if (btn?.dataset.value != null && this.moveItemByKeyboard(btn, ke.key === 'ArrowDown' ? 1 : -1)) return
+    }
+    const items = [...this.shadow.querySelectorAll<HTMLElement>('.nav [part="item"]')].filter(
+      (b) => !b.hidden && !b.hasAttribute('disabled'),
+    )
     if (!items.length) return
     e.preventDefault()
     const activeEl = this.shadow.activeElement as HTMLElement | null
@@ -1146,6 +1179,83 @@ export class OASSidebar extends OASElement {
     else if (ke.key === 'Home') next = 0
     else next = items.length - 1
     items[next]?.focus()
+  }
+
+  /** 在 items 模型中定位 value 所在同级数组与位次（嵌套 children 递归） */
+  private findSiblingEntries(value: string): { list: SidebarEntry[]; index: number } | null {
+    const walk = (entries: SidebarEntry[]): { list: SidebarEntry[]; index: number } | null => {
+      const i = entries.findIndex((en) => !('type' in en) && (en as SidebarItem).value === value)
+      if (i >= 0) return { list: entries, index: i }
+      for (const en of entries) {
+        if ('type' in en) continue
+        const kids = (en as SidebarItem).children
+        if (kids) {
+          const found = walk(kids)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    return walk(this._items)
+  }
+
+  /** 子元素通道：按同级位次物理交换 light DOM 数据载体元素（update 重解析后渲染新序） */
+  private swapChildEntries(value: string, from: number, to: number): void {
+    const itemEl = [...this.querySelectorAll('oas-sidebar-item')].find((el) => el.getAttribute('value') === value)
+    const container = itemEl?.parentElement
+    if (!container) return
+    const els = [...container.children].filter(
+      (c) => c.tagName === 'OAS-SIDEBAR-ITEM' || c.tagName === 'OAS-SIDEBAR-DIVIDER',
+    )
+    const a = els[from]
+    const b = els[to]
+    if (!a || !b) return
+    if (from < to) container.insertBefore(a, b.nextSibling)
+    else container.insertBefore(a, b)
+  }
+
+  /**
+   * 键盘重排执行：焦点项与同级相邻项交换位置，焦点跟随被移项（防失焦），
+   * 派发 oas-reorder { index, from, to, key } 与 oas-change { value }（新序）。
+   *
+   * 墙（零位移零事件，返回 false）：首/末边界、disabled 项（自身与相邻目标同禁）、
+   * 分隔线相邻、组界（相邻项 group 不同）、flyout 内子项（面板重建即关，焦点无处跟随）。
+   * items 属性通道交换后回写 items 属性（受控持久化，新序可追溯）；子元素通道物理交换
+   * light DOM 子项。
+   */
+  private moveItemByKeyboard(btn: HTMLElement, dir: 1 | -1): boolean {
+    // flyout 内子项不重排：重绘后 flyout 关闭，焦点目标隐藏
+    if (btn.closest('[part="flyout"]')) return false
+    const value = btn.dataset.value ?? ''
+    const found = this.findSiblingEntries(value)
+    if (!found) return false
+    const { list, index: from } = found
+    const to = from + dir
+    if (to < 0 || to >= list.length) return false
+    const a = list[from] as SidebarItem
+    const b = list[to]!
+    // 墙：分隔线相邻、disabled 项（自身与目标同禁）、组界（相邻项 group 不同）
+    if ('type' in b) return false
+    const bb = b as SidebarItem
+    if (a.disabled || bb.disabled) return false
+    if ((a.group ?? '') !== (bb.group ?? '')) return false
+    // 执行交换：items 属性通道回写 items 属性（受控持久化）；子元素通道物理交换 light DOM 子项
+    list[from] = bb
+    list[to] = a
+    if (this.hasAttribute('items')) {
+      this.setAttribute('items', JSON.stringify(this._items))
+    } else {
+      this.swapChildEntries(value, from, to)
+      this.update()
+    }
+    // 焦点跟随被移项（重绘后按 value 找回按钮）
+    const moved = [...this.shadow.querySelectorAll<HTMLElement>('[part="item"]')].find(
+      (b2) => b2.dataset.value === value,
+    )
+    moved?.focus()
+    this.emit('reorder', { index: to, from, to, key: a.value })
+    this.emit('change', { value: list.slice() })
+    return true
   }
 
   /** 具名插槽是否有可感知内容（元素或非空文本；注释/纯空白的 footer 视为空） */
@@ -1358,6 +1468,10 @@ export class OASSidebar extends OASElement {
     btn.type = 'button'
     btn.setAttribute('aria-label', item.label)
     btn.dataset.value = item.value
+    // 禁用项：原生 disabled（不可聚焦、不触发点击）；键盘重排的墙（自身不可移动、不作为交换目标）
+    if (item.disabled) btn.disabled = true
+    // 键盘重排快捷键声明（禁用项不参与重排，不声明）
+    else btn.setAttribute('aria-keyshortcuts', KEYBOARD_MOVE_SHORTCUTS)
     if (depth > 0) btn.classList.add('sub')
     // 导航当前页（aria-current）与分组筛选高亮（aria-pressed）是两套独立语义，可同项共存：
     // - active：单值「当前页」，全侧栏至多一个，not toggle
@@ -1768,6 +1882,7 @@ export class OASSidebar extends OASElement {
       avatar: typeof entry.avatar === 'string' ? entry.avatar : undefined,
       avatarText: typeof entry.avatarText === 'string' ? entry.avatarText : undefined,
       avatarColor: typeof entry.avatarColor === 'string' ? entry.avatarColor : undefined,
+      disabled: entry.disabled === true ? true : undefined,
       actions: Array.isArray(entry.actions)
         ? (entry.actions as unknown[])
             .filter(
@@ -1835,6 +1950,7 @@ export class OASSidebar extends OASElement {
     if (avatarText) item.avatarText = avatarText
     const avatarColor = el.getAttribute('avatar-color')
     if (avatarColor) item.avatarColor = avatarColor
+    if (el.hasAttribute('disabled')) item.disabled = true
     const children = this.parseChildLevel(el.children)
     if (children.length > 0) item.children = children as SidebarItem[]
     return item
@@ -1867,7 +1983,7 @@ export class OASSidebar extends OASElement {
       subtree: true,
       attributes: true,
       characterData: true,
-      attributeFilter: ['value', 'icon', 'icon-color', 'group', 'badge'],
+      attributeFilter: ['value', 'icon', 'icon-color', 'group', 'badge', 'disabled'],
     })
     this.childObserver = observer
     this.onCleanup(() => {

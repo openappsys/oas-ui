@@ -1971,7 +1971,8 @@
       "oas-click": "Item click (data/virtual rows); detail carries { index, item }",
       "oas-item-render": "Dispatched after each data-channel row renders; detail carries { index, item, element }",
       "oas-reach-bottom": "Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop }",
-      "oas-reorder": "Fired on drop with the reordered row indexes and payload, `detail: { from, to, item }`",
+      "oas-reorder": "Fired on row reorder: sortable drop with `detail: { from, to, item }`; keyboard Alt+↑/↓ step-swap with `detail: { index, from, to, key? }` (index is the post-move position, same as to; key comes from the item's key/value/id string field, or the row's key attribute in the declarative channel, and may be absent). Keyboard constraints: rows must be focusable; disabled rows and group boundaries (adjacent rows with different group) are walls; disabled under windowed / virtual scrolling",
+      "oas-change": "Fired after a keyboard reorder (Alt+↑/↓) settles, `detail: { value }` — value is the new order (a copy of the row data array for the data channel, or the row element array for the declarative channel)",
       "oas-window-request": "Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice"
     },
     "slots": {
@@ -1992,6 +1993,7 @@
       "clickable": "Whole row clickable: hover feedback, focusable (Enter/Space triggers), click dispatches oas-click",
       "description": "Description text quick channel (slot=\"description\" wins, rich content allowed)",
       "selected": "Selected row highlight (visual state; selection is host-controlled)",
+      "disabled": "Disabled row: not focusable, ignores click/keyboard activation (aria-disabled synced); a wall for keyboard reordering — it never moves and is never a swap target",
       "size": "Row density: sm / md (default) / lg",
       "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content",
       "href": "Whole-row link: an `<a>` stretched over the row is rendered inside (accessible name taken from the row title); clicking anywhere on the row navigates; link rows no longer emit oas-click (separated from the clickable semantics)",
@@ -3030,7 +3032,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "Controlled collapse to an icon strip (present means collapsed)",
-      "items": "Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]` (divider entries `{type:\"divider\"}` supported; children nests submenus; avatar is an image URL taking precedence over an avatarText + avatarColor initials circle)",
+      "items": "Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, disabled?, actions?}]` (divider entries `{type:\"divider\"}` supported; children nests submenus; avatar is an image URL taking precedence over an avatarText + avatarColor initials circle; disabled items are neither focusable nor clickable and act as walls for keyboard reordering)",
       "mobile-breakpoint": "Mobile breakpoint (px); narrower than this becomes an overlay drawer",
       "width": "Expanded width; defaults to the `--oas-sidebar-width` token",
       "active": "Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight)",
@@ -3051,7 +3053,9 @@
       "oas-collapse": "`detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled",
       "oas-select": "`detail: { value: string, label: string, group?: string }`; fired when a menu item is selected (the mobile drawer also closes; `group` lets the host write back `active-by-group`)",
       "oas-action": "`detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select)",
-      "oas-resize": "`detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width"
+      "oas-resize": "`detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width",
+      "oas-reorder": "Fired on keyboard reorder (Alt+↑/↓ step-swap), `detail: { index, from, to, key? }` (from/to are positions within the sibling array; index is the post-move position, same as to; key is the item value). Constraints: disabled items, dividers and group boundaries (adjacent items with different group) are walls; flyout children are not reorderable",
+      "oas-change": "Fired after a keyboard reorder settles, `detail: { value }` — value is the new order (a copy of the SidebarEntry[]); in the items-attribute channel the component has already written the new order back to the items attribute"
     },
     "props": {
       "renderLabel": "Custom row-content renderer `(item) => Node | string | null` (property channel; functions cannot be serialized and stay out of attributes/SSR). A returned Node mounts into the label area (for two-line or other rich content); a string renders as plain text; null/undefined falls back to `item.label`. The accessible name remains `item.label`, and the content hides with the label in collapsed mode; set null to restore default rendering"
@@ -3091,7 +3095,8 @@
       "icon-color": "Icon color: when set, fixes the icon color (replaces the built-in mono path's currentColor, taking precedence over disabled/active state colors); defaults to currentColor so the color follows states",
       "avatar": "Leading avatar image URL (decorative; the name comes from label); takes precedence over avatar-text / avatar-color",
       "avatar-text": "Leading avatar text: renders an initials circle when there is no image (tinted by avatar-color, primary by default)",
-      "avatar-color": "Leading avatar tint (any CSS color) used as a soft background + colored ring; the text always uses the theme text color, keeping contrast stable in both themes"
+      "avatar-color": "Leading avatar tint (any CSS color) used as a soft background + colored ring; the text always uses the theme text color, keeping contrast stable in both themes",
+      "disabled": "Disabled item (present means disabled): renders as a disabled button (neither focusable nor clickable); a wall for keyboard reordering — it never moves and is never a swap target"
     },
     "events": {},
     "slots": {

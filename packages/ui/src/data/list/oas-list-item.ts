@@ -50,6 +50,11 @@ const STYLE = `
 :host([selected]:hover) {
   background: var(--oas-color-primary-hover, var(--oas-color-primary));
 }
+/* 禁用条目：弱化文字色 + 禁止光标；不可聚焦、不响应点击/键盘激活（见 update/事件守卫） */
+:host([disabled]) {
+  color: var(--oas-color-text-disabled);
+  cursor: not-allowed;
+}
 :host([selected]) .desc {
   /* 选中主色底上的描述文字：跟随宿主对底文字色（72% 透明化的浅蓝字压主色底 感知分不达标） */
   color: var(--oas-color-text-on-primary);
@@ -179,7 +184,7 @@ const INTERACTIVE_SEL =
 
 export class OASListItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['title', 'description', 'avatar', 'clickable', 'selected', 'size', 'href', 'target', 'rel']
+    return ['title', 'description', 'avatar', 'clickable', 'selected', 'size', 'href', 'target', 'rel', 'disabled']
   }
 
   /** 数据通道上下文：所属 oas-list 注入的原始数据项（oas-click detail 回传） */
@@ -228,6 +233,8 @@ export class OASListItem extends OASElement {
     }
     this.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent))
     this.addEventListener('click', (e) => {
+      // 禁用条目不响应任何行交互（点击/键盘激活同禁）
+      if (this.hasAttribute('disabled')) return
       // 链接行：点击 = 原生导航（覆盖 <a> 承担），不派 oas-click（语义分离避免双触发）
       if (this.linkHref() !== '') return
       if (!this.hasAttribute('clickable')) return
@@ -322,13 +329,17 @@ export class OASListItem extends OASElement {
     //（点击=导航，语义分离）——钩子仅驱动高亮态 CSS。
     // role / aria-pressed 组件一律不自设也不删——宿主显式挂的（如想恢复行级按钮语义的
     // role="button" + aria-pressed）原样保留不覆盖（与 card「宿主显式角色不覆盖」口径一致）
-    const linked = this.linkHref() !== ''
-    const clickable = this.hasAttribute('clickable') || linked
+    // disabled：整行禁用——不可聚焦、无 hover/点击反馈、摘除链接覆盖层（不导航）
+    const disabled = this.hasAttribute('disabled')
+    const linked = this.linkHref() !== '' && !disabled
+    const clickable = (this.hasAttribute('clickable') || linked) && !disabled
     this.toggleAttribute('data-clickable', clickable)
+    if (disabled) this.setAttribute('aria-disabled', 'true')
+    else this.removeAttribute('aria-disabled')
     // 焦点：链接行的键盘焦点由内部覆盖 <a> 承担（host 不设 tabindex，避免双 Tab 停靠点）
     if (clickable && !linked) this.setAttribute('tabindex', '0')
     else this.removeAttribute('tabindex')
-    // 整行链接覆盖层同步（href 缺席即摘除，不残留死链接）
+    // 整行链接覆盖层同步（href 缺席或禁用即摘除，不残留死链接）
     this.syncRowLink()
   }
 
@@ -385,6 +396,7 @@ export class OASListItem extends OASElement {
   /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动）；焦点在行内控件时不接管；
    *  链接行 Enter 导航由内部原生 <a> 承担（preventDefault 会吞掉原生跳转，直接跳过） */
   private handleKeydown(e: KeyboardEvent): void {
+    if (this.hasAttribute('disabled')) return
     if (this.linkHref() !== '') return
     if (!this.hasAttribute('clickable')) return
     if (e.key !== 'Enter' && e.key !== ' ') return

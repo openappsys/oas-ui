@@ -241,6 +241,21 @@ The `shortcut` attribute enables `Ctrl/Cmd+B` collapse toggling (off by default 
   </div>
 </DemoBlock>
 
+## Keyboard reordering (Alt+↑/↓)
+
+With focus on a menu item, `Alt+ArrowUp` / `Alt+ArrowDown` swaps it with its adjacent sibling one step at a time (no attribute to enable). Focus follows the moved item (no focus loss). Item buttons declare `aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`. The component swaps the menu order itself (writing back the `items` attribute for the items channel, or physically swapping declarative children) and emits `oas-reorder` (`detail: { index, from, to, key? }` — `from`/`to` are positions within the sibling array) plus `oas-change` (`detail: { value }`, the new order).
+
+Constraints: `disabled` items are walls (they never move and are never a swap target; they are neither focusable nor clickable); dividers and group boundaries (adjacent items with different `group`) are walls too; nested children swap within their own sibling array; flyout children in the collapsed icon strip are not reorderable. Moving the first item up or the last item down does nothing and emits nothing. Up/Down are vertical semantics, unaffected by RTL.
+
+<DemoBlock title="Keyboard reordering (Alt+↑/↓)">
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-kbd-reorder" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Data","value":"data","icon":"📊"},{"label":"Settings","value":"settings","icon":"⚙️","disabled":true},{"label":"Archive","value":"archive","icon":"📁"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      <p id="sidebar-kbd-reorder-status" style="margin: 0">Focus a menu item (Tab), then press Alt+↑/↓ to move it; "Settings" is disabled and acts as a wall.</p>
+    </div>
+  </div>
+</DemoBlock>
+
 ## Hover expansion (expand-on-hover)
 
 The `expand-on-hover` attribute temporarily expands the collapsed icon strip on hover (pure visual state — does not change the controlled `collapsed` attribute).
@@ -599,6 +614,15 @@ onMounted(async () => {
   window.sidebarResizeLog = (e) => {
     const tag = document.getElementById('sidebar-resize-log')
     if (tag) tag.textContent = `Current width ${e.detail.width}px`
+  }
+  // Keyboard reorder: the component swaps the menu order itself (items attribute write-back);
+  // the host only reflects the event feedback
+  const kbdReorder = document.getElementById('sidebar-kbd-reorder')
+  if (kbdReorder) {
+    kbdReorder.addEventListener('oas-reorder', (e) => {
+      const status = document.getElementById('sidebar-kbd-reorder-status')
+      if (status) status.textContent = `Moved "${e.detail.key}" from position ${e.detail.from + 1} to ${e.detail.to + 1}.`
+    })
   }
   window.sidebarDeclAdd = () => {
     const sidebar = document.getElementById('sidebar-decl-dyn')

@@ -1076,6 +1076,45 @@ test('sidebar footer：桌面滚动全程钉底，空 footer 不占位', async (
   expect(r.empty.display, '空 footer 不占 display').toBe('none')
 })
 
+// —— 键盘重排（Alt+↑/↓）：真实按键逐条移动 + 焦点跟随 + items 回写 + disabled 墙 ——
+test('sidebar 键盘重排：真实 Alt+↓ 交换相邻项 + 焦点跟随 + disabled 墙', async ({ page }) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => document.querySelector('#sidebar-kbd-reorder')?.shadowRoot != null, undefined, {
+    timeout: 15000,
+  })
+  // 聚焦第一项（shadow 内按钮）
+  await page.evaluate(() => {
+    const el = document.querySelector('#sidebar-kbd-reorder')!
+    ;(el.shadowRoot!.querySelector('[part="item"]') as HTMLElement).focus()
+  })
+  await page.keyboard.press('Alt+ArrowDown')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#sidebar-kbd-reorder')!
+    const values = [...el.shadowRoot!.querySelectorAll('[part="item"]')].map((b) => (b as HTMLElement).dataset.value)
+    const activeValue = (el.shadowRoot!.activeElement as HTMLElement | null)?.dataset?.value ?? null
+    const itemsAttr = JSON.parse(el.getAttribute('items') || '[]').map((i: { value?: string }) => i.value)
+    const status = document.querySelector('#sidebar-kbd-reorder-status')?.textContent ?? ''
+    return { values, activeValue, itemsAttr, status }
+  })
+  expect(r.values).toEqual(['data', 'home', 'settings', 'archive'])
+  expect(r.activeValue, '焦点跟随被移项（防失焦）').toBe('home')
+  expect(r.itemsAttr, 'items 属性回写新序（受控持久化）').toEqual(['data', 'home', 'settings', 'archive'])
+  expect(r.status).toContain('home')
+  // disabled 墙：「archive」上移（邻居「settings」disabled）零位移
+  await page.evaluate(() => {
+    const el = document.querySelector('#sidebar-kbd-reorder')!
+    const btns = [...el.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
+    btns.find((b) => b.dataset.value === 'archive')!.focus()
+  })
+  await page.keyboard.press('Alt+ArrowUp')
+  const values2 = await page.evaluate(() =>
+    [...document.querySelector('#sidebar-kbd-reorder')!.shadowRoot!.querySelectorAll('[part="item"]')].map(
+      (b) => (b as HTMLElement).dataset.value,
+    ),
+  )
+  expect(values2).toEqual(['data', 'home', 'settings', 'archive'])
+})
+
 test('sidebar footer：移动抽屉滚动时仍钉底且在抽屉内', async ({ page }) => {
   await page.setViewportSize({ width: 500, height: 700 })
   await page.goto('/components/sidebar.html', {

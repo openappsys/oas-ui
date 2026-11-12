@@ -1900,7 +1900,8 @@
       "oas-click": "条目点击（数据/虚拟行），detail 带 { index, item }",
       "oas-item-render": "数据通道每行渲染后派发，detail 带 { index, item, element }",
       "oas-reach-bottom": "滚动触底（进入触底区派发一次，滚离后重新武装），detail 带 { scrollTop }",
-      "oas-reorder": "行拖放重排时派发，`detail: { from, to, item }`",
+      "oas-reorder": "行重排派发：sortable 拖放落定时 `detail: { from, to, item }`；键盘 Alt+↑/↓ 逐条交换时 `detail: { index, from, to, key? }`（index 为移动后新位次、与 to 同值；key 取数据项 key/value/id 字符串字段，声明式行取 key 属性，可缺省）。键盘重排约束：行需可聚焦；disabled 行与组界（相邻行 group 不同）为墙；windowed/虚拟滚动下禁用",
+      "oas-change": "键盘重排（Alt+↑/↓）落定后派发，`detail: { value }`——value 为新序（数据通道为行数据数组副本，声明式通道为行元素数组）",
       "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发"
     },
     "slots": {
@@ -1918,6 +1919,7 @@
       "clickable": "整行可点：hover 反馈、可聚焦（Enter/Space 触发）、点击派发 oas-click",
       "description": "描述文本快捷通道（slot=\"description\" 优先，可放富内容）",
       "selected": "选中行高亮（视觉态，选中态由宿主维护）",
+      "disabled": "禁用条目：不可聚焦、不响应点击/键盘激活（aria-disabled 同步）；键盘重排的墙——自身不可移动、不作为交换目标",
       "size": "行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认）",
       "title": "条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
       "href": "整行链接：行内渲染覆盖整行的 `<a>`（可访问名称取行标题），点击任意空白处即导航；链接行不再派发 oas-click（与 clickable 语义分离）",
@@ -2893,7 +2895,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "受控折叠，收窄为图标条（存在即折叠）",
-      "items": "菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]`（支持分隔线条目 `{type:\"divider\"}`；children 嵌套子菜单；avatar 为图片 URL，优先于 avatarText + avatarColor 首字母圆）",
+      "items": "菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, disabled?, actions?}]`（支持分隔线条目 `{type:\"divider\"}`；children 嵌套子菜单；avatar 为图片 URL，优先于 avatarText + avatarColor 首字母圆；disabled 项不可聚焦/不可点，键盘重排时为墙）",
       "mobile-breakpoint": "移动端断点（px），窄于该值变覆盖式抽屉",
       "width": "展开宽度，默认走 `--oas-sidebar-width` token",
       "active": "当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘）",
@@ -2914,7 +2916,9 @@
       "oas-collapse": "`detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时",
       "oas-select": "`detail: { value: string, label: string, group?: string }`；触发时机：选中菜单项时（移动端同时收起抽屉；`group` 供宿主按组写回 `active-by-group`）",
       "oas-action": "`detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select）",
-      "oas-resize": "`detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时"
+      "oas-resize": "`detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时",
+      "oas-reorder": "键盘重排（Alt+↑/↓ 逐条交换）派发，`detail: { index, from, to, key? }`（from/to 为同级数组内位次；index 为移动后新位次、与 to 同值；key 为项 value）。约束：disabled 项、分隔线、组界（相邻项 group 不同）为墙；flyout 内子项不重排",
+      "oas-change": "键盘重排落定后派发，`detail: { value }`——value 为新序（SidebarEntry[] 副本）；items 属性通道已由组件回写 items 属性持久化新序"
     },
     "props": {
       "renderLabel": "自定义行内容渲染函数 `(item) => Node | string | null`（property 通道，函数不可序列化，不进 attribute/SSR）。返回 Node 直接挂载到 label 区（可放双行文本等富内容）；返回字符串按纯文本渲染；返回 null/undefined 回退 `item.label`。可访问名称仍取 `item.label`，折叠态随 label 隐藏；置 null 恢复默认渲染"
@@ -2950,7 +2954,8 @@
       "icon-color": "前置图标颜色：显式时固定该色（替换内置单色 path 的 currentColor，优先于禁用/激活态默认色）；缺省 currentColor 随态着色",
       "avatar": "行首头像图片 URL（装饰性，名称由 label 提供）；优先于 avatar-text / avatar-color",
       "avatar-text": "行首头像文字：无图时渲染首字母/缩写圆（着色源为 avatar-color，缺省主色）",
-      "avatar-color": "行首头像着色源（任意 CSS 色值）：作为淡底 + 色环；文字恒用主题字色，明暗主题下对比度稳定"
+      "avatar-color": "行首头像着色源（任意 CSS 色值）：作为淡底 + 色环；文字恒用主题字色，明暗主题下对比度稳定",
+      "disabled": "禁用项（在场即禁用）：渲染为禁用按钮（不可聚焦/不可点）；键盘重排的墙——自身不可移动、不作为交换目标"
     },
     "events": {},
     "slots": {

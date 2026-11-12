@@ -647,6 +647,16 @@ onMounted(() => {
     renderSortable()
   }
 
+  // Keyboard reorder: the component swaps rows itself (declarative channel swaps children);
+  // the host only reflects the event feedback
+  const kbdReorder = document.querySelector('#list-kbd-reorder')
+  if (kbdReorder) {
+    kbdReorder.addEventListener('oas-reorder', (e) => {
+      const status = document.querySelector('#list-kbd-reorder-status')
+      if (status) status.textContent = `Moved the item from position ${e.detail.from + 1} to ${e.detail.to + 1} (new order applied).`
+    })
+  }
+
   // Card wall: oas-grid + oas-card composition
   const wall = document.querySelector('#list-card-wall')
   if (wall) {
@@ -692,6 +702,24 @@ onMounted(() => {
   <div style="width: 100%">
     <oas-list id="list-sortable" sortable bordered></oas-list>
     <p id="list-sortable-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Drag any row onto another and drop.</p>
+  </div>
+</DemoBlock>
+
+## Keyboard reordering (Alt+↑/↓)
+
+With focus on a row, `Alt+ArrowUp` / `Alt+ArrowDown` swaps it with the adjacent row one step at a time (no attribute to enable). Focus follows the moved row (no focus loss). Rows declare `aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`. The component swaps the row order itself (writing back the `data` attribute for the data channel, or physically swapping declarative children) and emits `oas-reorder` (`detail: { index, from, to, key? }`) plus `oas-change` (`detail: { value }`, the new order).
+
+Constraints: rows must be focusable (`clickable` / `href` rows, or a host-managed `tabindex`); `disabled` rows are walls (they never move and are never a swap target — `disabled: true` on a data item, or a `disabled` attribute on a declarative row); in the data channel, adjacent rows with different `group` values (a group boundary) cannot be swapped; local reordering is disabled under windowed / virtual scrolling. Moving the first row up or the last row down does nothing and emits nothing. Up/Down are vertical semantics, unaffected by RTL.
+
+<DemoBlock title="Keyboard reordering (Alt+↑/↓)">
+  <div style="width: 100%">
+    <oas-list id="list-kbd-reorder" bordered>
+      <oas-list-item title="Requirements review" clickable><span slot="description">Mon 10:00</span></oas-list-item>
+      <oas-list-item title="API integration" clickable><span slot="description">Tue 14:00</span></oas-list-item>
+      <oas-list-item title="Regression testing" clickable disabled><span slot="description">Wed 16:00 (disabled — a wall)</span></oas-list-item>
+      <oas-list-item title="Release" clickable><span slot="description">Fri 18:00</span></oas-list-item>
+    </oas-list>
+    <p id="list-kbd-reorder-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Focus any row (Tab or click), then press Alt+↑/↓ to move it; "Regression testing" is disabled and acts as a wall.</p>
   </div>
 </DemoBlock>
 

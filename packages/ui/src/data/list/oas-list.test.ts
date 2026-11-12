@@ -1774,3 +1774,248 @@ describe('M-1 宿主可访问名称动态同步（迁移后随宿主属性变更
     expect(box.getAttribute('aria-label'), '宿主清空绑定不抽走行容器名称').toBe('新成员')
   })
 })
+
+// ===== 键盘重排（Alt+↑/↓ 逐条移动）=====
+// 焦点条目 Alt+ArrowUp/ArrowDown 与相邻行交换位置；焦点跟随条目（防失焦）；
+// 派发 oas-reorder（detail { index, from, to, key? }）与 oas-change（新序）。
+// disabled 条目为墙：自身不可移动、不作为交换目标；数据通道组界（相邻行 group 不同）同为墙。
+describe('OASList 键盘重排（Alt+↑/↓）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const dataRows = (el: OASList): HTMLElement[] => [
+    ...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="data-items"] oas-list-item'),
+  ]
+  const rowTitles = (el: OASList): string[] =>
+    dataRows(el).map((r) => {
+      const d = (r as unknown as { itemData?: { title?: string } }).itemData
+      return d?.title ?? ''
+    })
+  const altKey = (key: string): KeyboardEvent =>
+    new KeyboardEvent('keydown', { key, altKey: true, bubbles: true, composed: true, cancelable: true })
+
+  /** 数据通道挂载：item-render 里补 clickable（行可聚焦，与真实宿主用法一致） */
+  const mountData = (items: unknown[]): OASList => {
+    const el = new OASList()
+    el.addEventListener('oas-item-render', (e) => {
+      ;(e as CustomEvent<{ element: HTMLElement }>).detail.element.setAttribute('clickable', '')
+    })
+    el.data = items
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('Alt+↓：相邻交换 + oas-reorder { index, from, to, key } + oas-change 新序 + 焦点跟随', () => {
+    const el = mountData([
+      { key: 'a', title: '甲' },
+      { key: 'b', title: '乙' },
+      { key: 'c', title: '丙' },
+    ])
+    let reorder: Record<string, unknown> | undefined
+    let change: { value?: Array<{ title?: string }> } | undefined
+    let bubbles = false
+    el.addEventListener('oas-reorder', (e) => {
+      reorder = (e as CustomEvent).detail
+      bubbles = e.bubbles && e.composed
+    })
+    el.addEventListener('oas-change', (e) => (change = (e as CustomEvent).detail))
+    const rows = dataRows(el)
+    rows[0]!.focus()
+    rows[0]!.dispatchEvent(altKey('ArrowDown'))
+    expect(rowTitles(el)).toEqual(['乙', '甲', '丙'])
+    expect(reorder).toEqual({ index: 1, from: 0, to: 1, key: 'a' })
+    expect(bubbles, 'oas-reorder bubbles+composed').toBe(true)
+    expect(change?.value?.map((i) => i.title)).toEqual(['乙', '甲', '丙'])
+    // 焦点跟随条目：新位次（data-index=1）的行持有焦点，防失焦
+    expect(el.shadowRoot!.activeElement).toBe(dataRows(el)[1])
+    expect(el.shadowRoot!.activeElement?.getAttribute('data-index')).toBe('1')
+  })
+
+  it('Alt+↑：末条上移相邻交换', () => {
+    const el = mountData([
+      { key: 'a', title: '甲' },
+      { key: 'b', title: '乙' },
+      { key: 'c', title: '丙' },
+    ])
+    let reorder: Record<string, unknown> | undefined
+    el.addEventListener('oas-reorder', (e) => (reorder = (e as CustomEvent).detail))
+    const rows = dataRows(el)
+    rows[2]!.focus()
+    rows[2]!.dispatchEvent(altKey('ArrowUp'))
+    expect(rowTitles(el)).toEqual(['甲', '丙', '乙'])
+    expect(reorder).toEqual({ index: 1, from: 2, to: 1, key: 'c' })
+    expect(el.shadowRoot!.activeElement).toBe(dataRows(el)[1])
+  })
+
+  it('边界：首条 Alt+↑ / 末条 Alt+↓ 零位移零事件', () => {
+    const el = mountData([
+      { key: 'a', title: '甲' },
+      { key: 'b', title: '乙' },
+    ])
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    const rows = dataRows(el)
+    rows[0]!.focus()
+    rows[0]!.dispatchEvent(altKey('ArrowUp'))
+    rows[1]!.focus()
+    rows[1]!.dispatchEvent(altKey('ArrowDown'))
+    expect(rowTitles(el)).toEqual(['甲', '乙'])
+    expect(fired).toBe(0)
+  })
+
+  it('无 Alt 的普通方向键不触发重排', () => {
+    const el = mountData([
+      { key: 'a', title: '甲' },
+      { key: 'b', title: '乙' },
+    ])
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    const rows = dataRows(el)
+    rows[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true }))
+    expect(rowTitles(el)).toEqual(['甲', '乙'])
+    expect(fired).toBe(0)
+  })
+
+  it('data 属性通道：交换后新序回写 data 属性（受控持久化）', () => {
+    const el = new OASList()
+    el.addEventListener('oas-item-render', (e) => {
+      ;(e as CustomEvent<{ element: HTMLElement }>).detail.element.setAttribute('clickable', '')
+    })
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { key: 'a', title: '甲' },
+        { key: 'b', title: '乙' },
+      ]),
+    )
+    document.body.appendChild(el)
+    const rows = dataRows(el)
+    rows[0]!.focus()
+    rows[0]!.dispatchEvent(altKey('ArrowDown'))
+    expect(rowTitles(el)).toEqual(['乙', '甲'])
+    expect(JSON.parse(el.getAttribute('data')!).map((i: { title: string }) => i.title)).toEqual(['乙', '甲'])
+  })
+
+  it('disabled 条目为墙：相邻 disabled 时两侧都不可移入/移出', () => {
+    const el = mountData([
+      { key: 'a', title: '甲' },
+      { key: 'b', title: '乙', disabled: true },
+      { key: 'c', title: '丙' },
+    ])
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    const rows = dataRows(el)
+    // disabled 数据行渲染为 disabled 行：不可聚焦、无 tabindex
+    expect(rows[1]!.hasAttribute('disabled')).toBe(true)
+    expect(rows[1]!.hasAttribute('tabindex')).toBe(false)
+    rows[0]!.focus()
+    rows[0]!.dispatchEvent(altKey('ArrowDown'))
+    rows[2]!.focus()
+    rows[2]!.dispatchEvent(altKey('ArrowUp'))
+    expect(rowTitles(el)).toEqual(['甲', '乙', '丙'])
+    expect(fired).toBe(0)
+  })
+
+  it('组界为墙：数据通道相邻行 group 不同不可交换', () => {
+    const el = mountData([
+      { title: '甲', group: 'g1' },
+      { title: '乙', group: 'g2' },
+    ])
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    const rows = dataRows(el)
+    rows[0]!.focus()
+    rows[0]!.dispatchEvent(altKey('ArrowDown'))
+    expect(rowTitles(el)).toEqual(['甲', '乙'])
+    expect(fired).toBe(0)
+  })
+
+  it('声明式通道：交换 light DOM 子项，焦点跟随被移条目，oas-change value 为行元素新序', () => {
+    const el = new OASList()
+    el.innerHTML = `
+      <oas-list-item key="a" title="甲" clickable></oas-list-item>
+      <oas-list-item key="b" title="乙" clickable></oas-list-item>
+      <oas-list-item key="c" title="丙" clickable></oas-list-item>
+    `
+    document.body.appendChild(el)
+    let reorder: Record<string, unknown> | undefined
+    let change: { value?: HTMLElement[] } | undefined
+    el.addEventListener('oas-reorder', (e) => (reorder = (e as CustomEvent).detail))
+    el.addEventListener('oas-change', (e) => (change = (e as CustomEvent).detail))
+    const items = [...el.querySelectorAll<HTMLElement>('oas-list-item')]
+    items[1]!.focus()
+    items[1]!.dispatchEvent(altKey('ArrowDown'))
+    const after = [...el.querySelectorAll<HTMLElement>('oas-list-item')]
+    expect(after.map((i) => i.getAttribute('key'))).toEqual(['a', 'c', 'b'])
+    expect(reorder).toEqual({ index: 2, from: 1, to: 2, key: 'b' })
+    expect(change?.value?.map((i) => i.getAttribute('key'))).toEqual(['a', 'c', 'b'])
+    // 焦点跟随：被移动的条目（乙）仍持有焦点
+    expect(document.activeElement).toBe(after[2])
+  })
+
+  it('aria-keyshortcuts 声明在行上；disabled 行与 windowed 行不声明', () => {
+    const el = mountData([
+      { key: 'a', title: '甲' },
+      { key: 'b', title: '乙', disabled: true },
+    ])
+    const rows = dataRows(el)
+    expect(rows[0]!.getAttribute('aria-keyshortcuts')).toBe('Alt+ArrowUp Alt+ArrowDown')
+    expect(rows[1]!.hasAttribute('aria-keyshortcuts')).toBe(false)
+    // 声明式行同样声明
+    const decl = new OASList()
+    decl.innerHTML = '<oas-list-item title="一"></oas-list-item>'
+    document.body.appendChild(decl)
+    expect(decl.querySelector('oas-list-item')!.getAttribute('aria-keyshortcuts')).toBe('Alt+ArrowUp Alt+ArrowDown')
+    // windowed 行不声明（本地重排禁用）
+    const win = new OASList()
+    win.setAttribute('windowed', '')
+    win.setAttribute('total', '2')
+    win.setAttribute('height', '128')
+    win.setAttribute('data', JSON.stringify([{ title: '甲' }, { title: '乙' }]))
+    document.body.appendChild(win)
+    for (const r of dataRows(win)) expect(r.hasAttribute('aria-keyshortcuts')).toBe(false)
+  })
+
+  it('windowed 模式：Alt+↓ 不重排（与 sortable 拖拽同口径禁用本地重排）', () => {
+    const el = new OASList()
+    el.setAttribute('windowed', '')
+    el.setAttribute('total', '2')
+    el.setAttribute('height', '128')
+    el.setAttribute('data', JSON.stringify([{ title: '甲' }, { title: '乙' }]))
+    document.body.appendChild(el)
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    const rows = dataRows(el)
+    rows[0]!.dispatchEvent(altKey('ArrowDown'))
+    expect(fired).toBe(0)
+  })
+
+  it('OASListItem disabled：不可聚焦、不响应点击与 Enter、aria-disabled 同步', () => {
+    const item = new OASListItem()
+    item.setAttribute('clickable', '')
+    item.setAttribute('disabled', '')
+    document.body.appendChild(item)
+    expect(item.hasAttribute('tabindex')).toBe(false)
+    expect(item.hasAttribute('data-clickable')).toBe(false)
+    expect(item.getAttribute('aria-disabled')).toBe('true')
+    let fired = 0
+    item.addEventListener('oas-click', () => fired++)
+    item.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }))
+    expect(fired).toBe(0)
+    // 移除 disabled 恢复可点可聚焦
+    item.removeAttribute('disabled')
+    expect(item.getAttribute('tabindex')).toBe('0')
+    item.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(fired).toBe(1)
+  })
+})

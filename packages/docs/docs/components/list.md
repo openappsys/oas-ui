@@ -645,6 +645,15 @@ onMounted(() => {
     renderSortable()
   }
 
+  // 键盘重排：组件自行交换行序（声明式通道交换子项位置），宿主只接收事件反馈
+  const kbdReorder = document.querySelector('#list-kbd-reorder')
+  if (kbdReorder) {
+    kbdReorder.addEventListener('oas-reorder', (e) => {
+      const status = document.querySelector('#list-kbd-reorder-status')
+      if (status) status.textContent = `已把第 ${e.detail.from + 1} 位的条目移到第 ${e.detail.to + 1} 位（新序已生效）。`
+    })
+  }
+
   // 卡片墙：oas-grid + oas-card 组合
   const wall = document.querySelector('#list-card-wall')
   if (wall) {
@@ -690,6 +699,24 @@ onMounted(() => {
   <div style="width: 100%">
     <oas-list id="list-sortable" sortable bordered></oas-list>
     <p id="list-sortable-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">拖动任意行到另一行上松手试试。</p>
+  </div>
+</DemoBlock>
+
+## 键盘重排（Alt+↑/↓）
+
+焦点条目按 `Alt+ArrowUp` / `Alt+ArrowDown` 与相邻行逐条交换位置（无需开启任何属性），移动后焦点跟随条目（防失焦）。行上声明 `aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`。组件自行交换行序（数据通道回写 `data` 属性 / 声明式通道交换子项位置）并派发 `oas-reorder`（`detail: { index, from, to, key? }`）与 `oas-change`（`detail: { value }`，新序）。
+
+约束：行需可聚焦（`clickable` / `href` 行，或宿主自管 `tabindex`）；`disabled` 条目为墙（自身不可移动、不作为交换目标，数据项带 `disabled: true` 或声明式行加 `disabled` 属性）；数据通道相邻行 `group` 不同（组界）不可交换；windowed / 虚拟滚动下本地重排禁用。首条上移 / 末条下移零位移零事件。RTL 不影响 Up/Down 纵向语义。
+
+<DemoBlock title="键盘重排（Alt+↑/↓）">
+  <div style="width: 100%">
+    <oas-list id="list-kbd-reorder" bordered>
+      <oas-list-item title="需求评审" clickable><span slot="description">周一 10:00</span></oas-list-item>
+      <oas-list-item title="接口联调" clickable><span slot="description">周二 14:00</span></oas-list-item>
+      <oas-list-item title="回归测试" clickable disabled><span slot="description">周三 16:00（已禁用，是墙）</span></oas-list-item>
+      <oas-list-item title="版本发布" clickable><span slot="description">周五 18:00</span></oas-list-item>
+    </oas-list>
+    <p id="list-kbd-reorder-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">Tab 聚焦任意行后按 Alt+↑/↓ 逐条移动；「回归测试」已禁用，不可移动也不可作为落点。</p>
   </div>
 </DemoBlock>
 

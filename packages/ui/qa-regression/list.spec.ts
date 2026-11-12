@@ -589,3 +589,35 @@ test('list windowed window-start 越过 total：夹取到全量末尾 + 顶部�
   // 「夹取 + devWarn 一次」由 oas-list.test.ts「M-2 window-start 越过 total」单测覆盖
   await page.evaluate(() => document.getElementById('qa-ws-overflow')?.remove())
 })
+
+// —— 键盘重排（Alt+↑/↓）：真实按键逐条移动 + 焦点跟随 + disabled 墙 ——
+test('list 键盘重排：真实 Alt+↓ 交换相邻行 + 焦点跟随 + disabled 墙', async ({ page }) => {
+  await page.goto('/components/list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#list-kbd-reorder')
+  // 聚焦第一行（clickable 行可聚焦）
+  await page.locator('#list-kbd-reorder oas-list-item').first().focus()
+  await page.keyboard.press('Alt+ArrowDown')
+  const r = await page.evaluate(() => {
+    const list = document.querySelector('#list-kbd-reorder')!
+    const descs = [...list.querySelectorAll('oas-list-item')].map(
+      (i) => i.querySelector('[slot="description"]')?.textContent ?? '',
+    )
+    const activeDesc =
+      (document.activeElement as HTMLElement | null)?.querySelector('[slot="description"]')?.textContent ?? null
+    const status = document.querySelector('#list-kbd-reorder-status')?.textContent ?? ''
+    return { descs, activeDesc, status }
+  })
+  // 声明式通道：相邻交换，焦点跟随被移行，状态文案有真实反馈
+  expect(r.descs).toEqual(['周二 14:00', '周一 10:00', '周三 16:00（已禁用，是墙）', '周五 18:00'])
+  expect(r.activeDesc, '焦点跟随被移行（防失焦）').toBe('周一 10:00')
+  expect(r.status).toContain('第 2 位')
+  // disabled 墙：「版本发布」上移（邻居「回归测试」disabled）零位移
+  await page.locator('#list-kbd-reorder oas-list-item').last().focus()
+  await page.keyboard.press('Alt+ArrowUp')
+  const descs2 = await page.evaluate(() =>
+    [...document.querySelectorAll('#list-kbd-reorder oas-list-item')].map(
+      (i) => i.querySelector('[slot="description"]')?.textContent ?? '',
+    ),
+  )
+  expect(descs2).toEqual(['周二 14:00', '周一 10:00', '周三 16:00（已禁用，是墙）', '周五 18:00'])
+})

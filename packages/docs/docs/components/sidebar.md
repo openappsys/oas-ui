@@ -241,6 +241,21 @@
   </div>
 </DemoBlock>
 
+## 键盘重排（Alt+↑/↓）
+
+焦点菜单项按 `Alt+ArrowUp` / `Alt+ArrowDown` 与同级相邻项逐条交换位置（无需开启任何属性），移动后焦点跟随条目（防失焦）。项按钮声明 `aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`。组件自行交换菜单序（items 属性通道回写 `items` 属性 / 子元素通道交换子项位置）并派发 `oas-reorder`（`detail: { index, from, to, key? }`，from/to 为同级数组内位次）与 `oas-change`（`detail: { value }`，新序）。
+
+约束：`disabled` 项为墙（自身不可移动、不作为交换目标，不可聚焦不可点）；分隔线与组界（相邻项 `group` 不同）同为墙；嵌套子项在同级 children 内交换；折叠图标条 flyout 内的子项不重排。首项上移 / 末项下移零位移零事件。RTL 不影响 Up/Down 纵向语义。
+
+<DemoBlock title="键盘重排（Alt+↑/↓）">
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-kbd-reorder" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据","value":"data","icon":"📊"},{"label":"设置","value":"settings","icon":"⚙️","disabled":true},{"label":"归档","value":"archive","icon":"📁"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      <p id="sidebar-kbd-reorder-status" style="margin: 0">Tab 聚焦菜单项后按 Alt+↑/↓ 逐条移动；「设置」已禁用，是墙。</p>
+    </div>
+  </div>
+</DemoBlock>
+
 ## 悬停展开（expand-on-hover）
 
 `expand-on-hover` 属性：折叠图标条悬停时临时展开（纯视觉态，不改 `collapsed` 受控属性）。
@@ -599,6 +614,14 @@ onMounted(async () => {
   window.sidebarResizeLog = (e) => {
     const tag = document.getElementById('sidebar-resize-log')
     if (tag) tag.textContent = `当前宽度 ${e.detail.width}px`
+  }
+  // 键盘重排：组件自行交换菜单序（items 属性回写），宿主只接收事件反馈
+  const kbdReorder = document.getElementById('sidebar-kbd-reorder')
+  if (kbdReorder) {
+    kbdReorder.addEventListener('oas-reorder', (e) => {
+      const status = document.getElementById('sidebar-kbd-reorder-status')
+      if (status) status.textContent = `已把「${e.detail.key}」从第 ${e.detail.from + 1} 位移到第 ${e.detail.to + 1} 位。`
+    })
   }
   window.sidebarDeclAdd = () => {
     const sidebar = document.getElementById('sidebar-decl-dyn')

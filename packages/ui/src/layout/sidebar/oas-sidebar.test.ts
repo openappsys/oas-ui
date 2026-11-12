@@ -2012,3 +2012,232 @@ describe('OASSidebar 二次断连全局监听清理', () => {
     expect(el.hasAttribute('collapsed'), '残留监听会切换折叠').toBe(false)
   })
 })
+
+// ===== 键盘重排（Alt+↑/↓ 逐条移动）=====
+// 焦点条目 Alt+ArrowUp/ArrowDown 与同级相邻项交换位置；焦点跟随条目（防失焦）；
+// 派发 oas-reorder（detail { index, from, to, key? }，from/to 为同级数组内位次）与 oas-change（新序）。
+// disabled 条目为墙；分隔线与组界（相邻项 group 不同）同为墙；flyout 内子项不重排。
+describe('OASSidebar 键盘重排（Alt+↑/↓）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    stubMatchMedia(false)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  const itemBtns = (el: OASSidebar): HTMLElement[] => [
+    ...el.shadowRoot!.querySelectorAll<HTMLElement>('.nav [part="item"]'),
+  ]
+  const values = (el: OASSidebar): string[] => itemBtns(el).map((b) => b.dataset.value ?? '')
+  const altKey = (key: string): KeyboardEvent =>
+    new KeyboardEvent('keydown', { key, altKey: true, bubbles: true, composed: true, cancelable: true })
+
+  it('Alt+↓：相邻交换 + oas-reorder { index, from, to, key } + oas-change 新序 + 焦点跟随 + items 属性回写', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a' },
+        { label: '二', value: 'b' },
+        { label: '三', value: 'c' },
+      ]),
+    })
+    let reorder: Record<string, unknown> | undefined
+    let change: { value?: Array<{ value?: string }> } | undefined
+    let bubbles = false
+    el.addEventListener('oas-reorder', (e) => {
+      reorder = (e as CustomEvent).detail
+      bubbles = e.bubbles && e.composed
+    })
+    el.addEventListener('oas-change', (e) => (change = (e as CustomEvent).detail))
+    const btns = itemBtns(el)
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(altKey('ArrowDown'))
+    expect(values(el)).toEqual(['b', 'a', 'c'])
+    expect(reorder).toEqual({ index: 1, from: 0, to: 1, key: 'a' })
+    expect(bubbles, 'oas-reorder bubbles+composed').toBe(true)
+    expect(change?.value?.map((i) => i.value)).toEqual(['b', 'a', 'c'])
+    // items 属性通道：新序回写 items 属性（受控持久化）
+    expect(JSON.parse(el.getAttribute('items')!).map((i: { value: string }) => i.value)).toEqual(['b', 'a', 'c'])
+    // 焦点跟随条目：value=a 的按钮仍持有焦点
+    expect((el.shadowRoot!.activeElement as HTMLElement | null)?.dataset?.value).toBe('a')
+  })
+
+  it('Alt+↑：末项上移相邻交换', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a' },
+        { label: '二', value: 'b' },
+        { label: '三', value: 'c' },
+      ]),
+    })
+    let reorder: Record<string, unknown> | undefined
+    el.addEventListener('oas-reorder', (e) => (reorder = (e as CustomEvent).detail))
+    const btns = itemBtns(el)
+    btns[2]!.focus()
+    btns[2]!.dispatchEvent(altKey('ArrowUp'))
+    expect(values(el)).toEqual(['a', 'c', 'b'])
+    expect(reorder).toEqual({ index: 1, from: 2, to: 1, key: 'c' })
+    expect((el.shadowRoot!.activeElement as HTMLElement | null)?.dataset?.value).toBe('c')
+  })
+
+  it('边界：首项 Alt+↑ / 末项 Alt+↓ 零位移零事件', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a' },
+        { label: '二', value: 'b' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    const btns = itemBtns(el)
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(altKey('ArrowUp'))
+    btns[1]!.focus()
+    btns[1]!.dispatchEvent(altKey('ArrowDown'))
+    expect(values(el)).toEqual(['a', 'b'])
+    expect(fired).toBe(0)
+  })
+
+  it('无 Alt 的方向键仍是焦点导航（不重排）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a' },
+        { label: '二', value: 'b' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    const btns = itemBtns(el)
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true }))
+    expect(values(el)).toEqual(['a', 'b'])
+    expect(fired).toBe(0)
+    expect(el.shadowRoot!.activeElement).toBe(btns[1])
+  })
+
+  it('disabled 项为墙：相邻 disabled 时两侧都不可移入/移出；方向键导航跳过 disabled', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a' },
+        { label: '二', value: 'b', disabled: true },
+        { label: '三', value: 'c' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    el.addEventListener('oas-change', () => fired++)
+    const btns = itemBtns(el)
+    // disabled 项渲染为禁用按钮，不声明快捷键
+    expect(btns[1]!.hasAttribute('disabled')).toBe(true)
+    expect(btns[1]!.hasAttribute('aria-keyshortcuts')).toBe(false)
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(altKey('ArrowDown'))
+    btns[2]!.focus()
+    btns[2]!.dispatchEvent(altKey('ArrowUp'))
+    expect(values(el)).toEqual(['a', 'b', 'c'])
+    expect(fired).toBe(0)
+    // 方向键导航跳过 disabled 项
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, composed: true }))
+    expect(el.shadowRoot!.activeElement).toBe(btns[2])
+  })
+
+  it('分隔线为墙：与 divider 相邻不可交换', () => {
+    const el = mount({
+      items: JSON.stringify([{ label: '一', value: 'a' }, { type: 'divider' }, { label: '二', value: 'b' }]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    const btns = itemBtns(el)
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(altKey('ArrowDown'))
+    btns[1]!.focus()
+    btns[1]!.dispatchEvent(altKey('ArrowUp'))
+    expect(values(el)).toEqual(['a', 'b'])
+    expect(fired).toBe(0)
+  })
+
+  it('组界为墙：相邻项 group 不同不可交换；同组可交换', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a', group: 'g1' },
+        { label: '二', value: 'b', group: 'g2' },
+        { label: '三', value: 'c', group: 'g2' },
+      ]),
+    })
+    let fired = 0
+    el.addEventListener('oas-reorder', () => fired++)
+    const btns = itemBtns(el)
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(altKey('ArrowDown'))
+    expect(values(el)).toEqual(['a', 'b', 'c'])
+    expect(fired).toBe(0)
+    // 同组（g2）内可交换
+    btns[2]!.focus()
+    btns[2]!.dispatchEvent(altKey('ArrowUp'))
+    expect(values(el)).toEqual(['a', 'c', 'b'])
+    expect(fired).toBe(1)
+  })
+
+  it('嵌套 children：同级数组内交换（from/to 为同级位次）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        {
+          label: '父',
+          value: 'p',
+          children: [
+            { label: '子一', value: 'x' },
+            { label: '子二', value: 'y' },
+          ],
+        },
+      ]),
+    })
+    // 展开父项（子按钮在 submenu 内渲染）
+    itemBtns(el)[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    let reorder: Record<string, unknown> | undefined
+    el.addEventListener('oas-reorder', (e) => (reorder = (e as CustomEvent).detail))
+    const btns = itemBtns(el)
+    // 展开后按钮序：p, x, y
+    expect(values(el)).toEqual(['p', 'x', 'y'])
+    btns[1]!.focus()
+    btns[1]!.dispatchEvent(altKey('ArrowDown'))
+    expect(values(el)).toEqual(['p', 'y', 'x'])
+    expect(reorder).toEqual({ index: 1, from: 0, to: 1, key: 'x' })
+    expect((el.shadowRoot!.activeElement as HTMLElement | null)?.dataset?.value).toBe('x')
+  })
+
+  it('子元素声明式通道：交换 light DOM 子项并焦点跟随', () => {
+    const el = mountSidebarChildren(`
+      <oas-sidebar-item value="a">一</oas-sidebar-item>
+      <oas-sidebar-item value="b">二</oas-sidebar-item>
+      <oas-sidebar-item value="c">三</oas-sidebar-item>
+    `)
+    let reorder: Record<string, unknown> | undefined
+    el.addEventListener('oas-reorder', (e) => (reorder = (e as CustomEvent).detail))
+    const btns = itemBtns(el)
+    btns[0]!.focus()
+    btns[0]!.dispatchEvent(altKey('ArrowDown'))
+    expect([...el.querySelectorAll('oas-sidebar-item')].map((i) => i.getAttribute('value'))).toEqual(['b', 'a', 'c'])
+    expect(values(el)).toEqual(['b', 'a', 'c'])
+    expect(reorder).toEqual({ index: 1, from: 0, to: 1, key: 'a' })
+    expect((el.shadowRoot!.activeElement as HTMLElement | null)?.dataset?.value).toBe('a')
+  })
+
+  it('aria-keyshortcuts 声明在菜单项按钮上', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a' },
+        { label: '二', value: 'b' },
+      ]),
+    })
+    for (const b of itemBtns(el)) {
+      expect(b.getAttribute('aria-keyshortcuts')).toBe('Alt+ArrowUp Alt+ArrowDown')
+    }
+  })
+})
