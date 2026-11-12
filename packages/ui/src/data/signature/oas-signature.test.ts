@@ -70,7 +70,8 @@ function installCanvasMock(url: string | (() => string) = 'data:image/png;base64
   const fakeGetContext = function (this: HTMLCanvasElement, type: string): unknown {
     if (type !== '2d') return null
     const ctx = mockCtx()
-    lastCtx = ctx
+    // 只记组件画布（已挂树）的 ctx——canvasAvailable() 的探测 canvas（游离元素）不算
+    if (this.isConnected) lastCtx = ctx
     return ctx
   }
   HTMLCanvasElement.prototype.getContext = fakeGetContext as unknown as typeof HTMLCanvasElement.prototype.getContext

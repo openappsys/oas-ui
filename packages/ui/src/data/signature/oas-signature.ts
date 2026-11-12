@@ -374,14 +374,14 @@ export class OASSignature extends OASElement {
     this.strokes.push(stroke)
     this.hasExternalImage = false
     this.lastExternalImage = null
-    this.syncDerived()
-    this.produceValue()
-    // 笔画收尾收敛：清笔画期缓存后按现尺寸/现笔色幂等重绘——mid-stroke 发生的 resize/主题变化
-    // 在此收敛（键不变则零操作跳过）。放在 produceValue 之后：value 回写触发的 update 已先行
-    // 收敛一次，本调用兜底「同值笔画不重写 value」的漏网场景
+    // 笔画收尾收敛顺序：先清笔画期缓存 → 全量重绘（规范渲染：每笔单 path 一次 stroke）→
+    // 再产出 value（读规范画布）。反序会让 value 带走增量渲染（逐段 stroke、缺尾点段），
+    // 与 toDataURL() 的规范画布字节不一致（2026-11 e2e 实抓：像素级 754 像素差异）。
     this.strokeRect = null
     this.strokePenColor = null
+    this.syncDerived()
     this.repaint()
+    this.produceValue()
   }
 
   /* ---------------- 绘制层 ---------------- */
@@ -429,7 +429,7 @@ export class OASSignature extends OASElement {
     return this.canvasSize()
   }
 
-  private penSize(): number {
+  private resolvePenSize(): number {
     return normalizeNumber(this.getAttr('pen-size', '2'), 2, 1)
   }
 
@@ -457,7 +457,7 @@ export class OASSignature extends OASElement {
       this.strokes,
       this.drawing?.points ?? null,
       color,
-      this.penSize(),
+      this.resolvePenSize(),
       size,
       dpr,
       this.lastExternalImage ? 1 : 0,
@@ -494,7 +494,7 @@ export class OASSignature extends OASElement {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.strokeStyle = this.currentPenColor()
-    ctx.lineWidth = this.penSize()
+    ctx.lineWidth = this.resolvePenSize()
     for (const stroke of this.strokes) {
       this.strokePath(ctx, stroke, size)
     }
@@ -529,7 +529,7 @@ export class OASSignature extends OASElement {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.strokeStyle = this.currentPenColor()
-    ctx.lineWidth = this.penSize()
+    ctx.lineWidth = this.resolvePenSize()
     ctx.beginPath()
     ctx.moveTo(from.x * size.width, from.y * size.height)
     ctx.lineTo(to.x * size.width, to.y * size.height)
