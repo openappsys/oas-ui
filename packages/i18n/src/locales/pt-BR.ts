@@ -252,6 +252,9 @@ export const ptBR: LocaleMessages = {
   'kanban.dragColumn': 'Arraste para reordenar colunas',
   'kanban.moveLeft': 'Mover coluna para a esquerda',
   'kanban.moveRight': 'Mover coluna para a direita',
+  'kanban.collapse': 'Recolher coluna',
+  'kanban.expand': 'Expandir coluna',
+  'kanban.total': 'Total',
   // tree (árvore)
   'tree.expand': 'Expandir/Recolher',
   'tree.select': 'Selecionar {label}',

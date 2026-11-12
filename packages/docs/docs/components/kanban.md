@@ -158,6 +158,26 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 
 未实测卡片的预估步进默认为 68px，可用属性 `card-estimate`（px）或 CSS 变量 `--oas-kanban-card-step` 配置（属性优先；实测后由 ResizeObserver 自动修正）——卡片明显高于默认值时建议调大，减少首帧占位偏差。属性变更即时生效；CSS 变量无内建变更通知，需经任一 update 通道（属性/数据/尺寸等）后生效。
 
+## 列折叠与列合计
+
+`collapsible`（布尔属性，默认关——默认外观零变化）开启后普通模式每列列头出现折叠按钮：点击把列折叠为窄条（纵向列名 + 卡片数），点击窄条展开；折叠状态在数据变化时保留；折叠/展开派发 `oas-collapse-change`（`detail` 为 `{ columnId, collapsed }`，`columnId` 为列 key）。折叠列不接受拖入（无列体）；泳道模式下不提供列折叠（带矩阵无窄条形态）。
+
+列定义加可选 `summary`（数值）后该列列底渲染合计行（label 随 locale 翻译）：数值由宿主业务定义（如工时/金额），`summary` 缺席或非有限数值的列不渲染合计行、多列各自独立；数值随宿主数据更新重新渲染（走既有数据通道，无新事件）。泳道模式下不渲染合计行（列已拆入带，无列底形态）：
+
+<DemoBlock title="列折叠与合计">
+  <div style="width: 100%">
+    <oas-kanban
+      id="kanban-collapse"
+      collapsible
+      columns='[{"key":"todo","title":"待办","summary":12},{"key":"doing","title":"进行中","summary":3},{"key":"done","title":"已完成"}]'
+      cards='[{"id":"k1","column":"todo","title":"梳理订阅结算流程"},{"id":"k2","column":"todo","title":"补齐看板暗色走查"},{"id":"k3","column":"todo","title":"回收站交互评审"},{"id":"k4","column":"doing","title":"拖拽落点指示线打磨"},{"id":"k5","column":"done","title":"数据通道契约定稿"}]'
+    ></oas-kanban>
+    <p id="kanban-collapse-log" style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      点击列头折叠按钮把列折叠为窄条，再点窄条展开；这里会显示 oas-collapse-change 反馈。
+    </p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-kanban
@@ -268,6 +288,18 @@ onMounted(() => {
         const { id, swimlane } = e.detail
         if (!swimlane) return
         if (log) log.textContent = `「${titles[id] ?? id}」的泳道从「${swimlane.from || '（空）'}」改到「${swimlane.to || '（空）'}」。`
+      })
+    }
+
+    // 列折叠：oas-collapse-change 反馈
+    const collapse = document.querySelector('#kanban-collapse')
+    if (collapse) {
+      const titles = {}
+      for (const c of collapse.columns) titles[c.key] = c.title
+      const log = document.querySelector('#kanban-collapse-log')
+      collapse.addEventListener('oas-collapse-change', (e) => {
+        const { columnId, collapsed } = e.detail
+        if (log) log.textContent = `已派发 oas-collapse-change：列「${titles[columnId] ?? columnId}」${collapsed ? '已折叠为窄条' : '已展开'}。`
       })
     }
   })

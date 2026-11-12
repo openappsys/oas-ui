@@ -252,6 +252,9 @@ export const es: LocaleMessages = {
   'kanban.dragColumn': 'Arrastra para reordenar columnas',
   'kanban.moveLeft': 'Mover columna a la izquierda',
   'kanban.moveRight': 'Mover columna a la derecha',
+  'kanban.collapse': 'Contraer columna',
+  'kanban.expand': 'Expandir columna',
+  'kanban.total': 'Total',
   // tree (árbol)
   'tree.expand': 'Expandir/Contraer',
   'tree.select': 'Seleccionar {label}',

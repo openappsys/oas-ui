@@ -1187,6 +1187,202 @@ describe('OASKanban', () => {
       expect(el.shadowRoot!.querySelectorAll('.card').length, '水合后 update 正常填充卡片').toBe(3)
     })
   })
+
+  // ===== 列折叠（collapsible 在场布尔，默认关） =====
+
+  describe('列折叠（collapsible）', () => {
+    it('默认关：无折叠按钮、无窄条（默认视觉零变化）', () => {
+      const el = mount()
+      expect(shadow(el).querySelector('.column-collapse'), '默认无折叠按钮').toBeNull()
+      expect(shadow(el).querySelector('.column-rail'), '默认无窄条').toBeNull()
+      expect(columnEls(el).length, '普通列结构不变').toBe(3)
+    })
+
+    it('collapsible 开启：列头出现折叠按钮（aria-expanded=true + aria-label i18n），无窄条', () => {
+      const el = mount({ collapsible: '' })
+      for (const col of columnEls(el)) {
+        const btn = col.querySelector<HTMLButtonElement>('.column-collapse')!
+        expect(btn, `列 ${col.getAttribute('data-key')} 有折叠按钮`).toBeTruthy()
+        expect(btn.getAttribute('aria-expanded')).toBe('true')
+        expect(btn.getAttribute('aria-label')).toBe('收起列')
+        expect(btn.getAttribute('type')).toBe('button')
+      }
+      expect(shadow(el).querySelector('.column-rail'), '初始全展开无窄条').toBeNull()
+    })
+
+    it('点击折叠：该列渲染为窄条（纵向列名 + 卡片数）+ 派发 oas-collapse-change { columnId, collapsed: true }', () => {
+      const el = mount({ collapsible: '' })
+      const events: CustomEvent[] = []
+      el.addEventListener('oas-collapse-change', (e) => events.push(e as CustomEvent))
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length).toBe(1)
+      expect(events[0]!.detail).toEqual({ columnId: 'todo', collapsed: true })
+      expect(events[0]!.bubbles).toBe(true)
+      expect(events[0]!.composed).toBe(true)
+      // todo 列变窄条：列容器消失、窄条在场（纵向列名 + 卡片数）
+      expect(columnOf(el, 'todo'), '折叠列不再渲染普通列容器').toBeNull()
+      const rail = shadow(el).querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
+      expect(rail).toBeTruthy()
+      expect(rail.getAttribute('aria-expanded')).toBe('false')
+      expect(rail.getAttribute('aria-label')).toBe('展开列：待办')
+      expect(rail.querySelector<HTMLElement>('.rail-title')!.textContent).toBe('待办')
+      expect(rail.querySelector<HTMLElement>('.rail-count')!.textContent).toBe('2')
+      // 其余列保持普通结构
+      expect(columnOf(el, 'doing')).toBeTruthy()
+      expect(columnOf(el, 'done')).toBeTruthy()
+      expect(cardsOf(el, 'doing').length).toBe(1)
+    })
+
+    it('点击窄条展开：恢复列容器 + detail { collapsed: false }（焦点回折叠按钮）', () => {
+      const el = mount({ collapsible: '' })
+      const events: CustomEvent[] = []
+      el.addEventListener('oas-collapse-change', (e) => events.push(e as CustomEvent))
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      shadow(el)
+        .querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events.length).toBe(2)
+      expect(events[1]!.detail).toEqual({ columnId: 'todo', collapsed: false })
+      expect(columnOf(el, 'todo'), '展开后恢复列容器').toBeTruthy()
+      expect(shadow(el).querySelector('.column-rail')).toBeNull()
+      expect(cardsOf(el, 'todo').length, '展开后卡片照常渲染').toBe(2)
+      // 展开后焦点回该列折叠按钮（键盘可达不跌落 body）
+      const focusBtn = shadow(el).querySelector<HTMLElement>('.column-head[data-key="todo"] .column-collapse')
+      expect(focusBtn).toBeTruthy()
+      expect((shadow(el).activeElement as HTMLElement | null)?.classList.contains('column-collapse')).toBe(true)
+      // 展开后按钮态复位
+      expect(focusBtn!.getAttribute('aria-expanded')).toBe('true')
+    })
+
+    it('折叠状态在数据变化（重渲染）时保留', () => {
+      const el = mount({ collapsible: '' })
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeTruthy()
+      // 拖拽落定回写 cards 触发整板重建（用未折叠列的卡片：折叠列不渲染卡片不可拖）
+      dragDrop(el, 'c3', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]'), '重建后窄条保留').toBeTruthy()
+    })
+
+    it('移除 collapsible：窄条与折叠按钮消失（关闭后零折叠标记），卡片数据不受影响', () => {
+      const el = mount({ collapsible: '' })
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelector('.column-rail')).toBeTruthy()
+      el.removeAttribute('collapsible')
+      expect(shadow(el).querySelector('.column-collapse')).toBeNull()
+      expect(shadow(el).querySelector('.column-rail')).toBeNull()
+      expect(columnEls(el).length).toBe(3)
+      expect(cardsOf(el, 'todo').length).toBe(2)
+    })
+
+    it('多列各自独立折叠：折 todo 不影响 doing', () => {
+      const el = mount({ collapsible: '' })
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelector('.column-rail[data-key="doing"]')).toBeNull()
+      headOf(el, 'doing')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(shadow(el).querySelectorAll('.column-rail').length).toBe(2)
+      expect(columnEls(el).length).toBe(1)
+    })
+
+    it('泳道模式：collapsible 不渲染列折叠按钮与窄条（列折叠仅普通模式，带矩阵无窄条形态）', () => {
+      const el = mountSwim({ collapsible: '' })
+      expect(shadow(el).querySelector('.column-collapse')).toBeNull()
+      expect(shadow(el).querySelector('.column-rail')).toBeNull()
+      expect(shadow(el).querySelectorAll('.lane-toggle').length, '泳道折叠不受影响').toBe(3)
+    })
+
+    it('窄条为原生 button：click()（键盘 Enter/Space 激活路径）展开', () => {
+      const el = mount({ collapsible: '' })
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      const rail = shadow(el).querySelector<HTMLButtonElement>('.column-rail[data-key="todo"]')!
+      rail.click()
+      expect(columnOf(el, 'todo'), 'button.click() 展开列').toBeTruthy()
+    })
+  })
+
+  // ===== 列合计（列定义 summary 数值 → 列底合计行） =====
+
+  describe('列合计（summary）', () => {
+    const SUMMARY_COLUMNS = JSON.stringify([
+      { key: 'todo', title: '待办', summary: 120 },
+      { key: 'doing', title: '进行中', summary: 45 },
+      { key: 'done', title: '已完成' },
+    ])
+
+    it('列定义带 summary：列底渲染合计行（label i18n 合计 + 数值）；缺席列不渲染', () => {
+      const el = mount({ columns: SUMMARY_COLUMNS })
+      const summary = columnOf(el, 'todo').querySelector<HTMLElement>('.column-summary')!
+      expect(summary, 'todo 列底合计行').toBeTruthy()
+      expect(summary.querySelector<HTMLElement>('.summary-label')!.textContent).toBe('合计')
+      expect(summary.querySelector<HTMLElement>('.summary-value')!.textContent).toBe('120')
+      const doing = columnOf(el, 'doing').querySelector<HTMLElement>('.column-summary')!
+      expect(doing, 'doing 列各自独立渲染').toBeTruthy()
+      expect(doing.querySelector<HTMLElement>('.summary-value')!.textContent).toBe('45')
+      expect(columnOf(el, 'done').querySelector('.column-summary'), 'summary 缺席列不渲染').toBeNull()
+    })
+
+    it('summary 随数据更新重算（重渲染显示新值），合计与 collapsible 无关（默认关也渲染）', () => {
+      const el = mount({ columns: SUMMARY_COLUMNS })
+      expect(columnOf(el, 'todo').querySelector('.column-summary')).toBeTruthy()
+      el.setAttribute(
+        'columns',
+        JSON.stringify([
+          { key: 'todo', title: '待办', summary: 300 },
+          { key: 'doing', title: '进行中', summary: 45 },
+          { key: 'done', title: '已完成' },
+        ]),
+      )
+      expect(columnOf(el, 'todo').querySelector<HTMLElement>('.summary-value')!.textContent).toBe('300')
+    })
+
+    it('summary 非法值（null/对象/非有限数值字符串）不渲染；数字字符串与 0 渲染', () => {
+      const el = mount({
+        columns: JSON.stringify([
+          { key: 'a', title: '甲', summary: null },
+          { key: 'b', title: '乙', summary: 'abc' },
+          { key: 'c', title: '丙', summary: { bad: true } },
+          { key: 'd', title: '丁', summary: '42' },
+          { key: 'e', title: '戊', summary: 0 },
+        ]),
+        cards: '[]',
+      })
+      for (const bad of ['a', 'b', 'c']) {
+        expect(columnOf(el, bad).querySelector('.column-summary'), `${bad} 列非法 summary 不渲染`).toBeNull()
+      }
+      expect(columnOf(el, 'd').querySelector<HTMLElement>('.summary-value')!.textContent).toBe('42')
+      expect(columnOf(el, 'e').querySelector<HTMLElement>('.summary-value')!.textContent).toBe('0')
+    })
+
+    it('合计 label 随 locale 翻译', () => {
+      const el = mount({ columns: SUMMARY_COLUMNS })
+      expect(columnOf(el, 'todo').querySelector<HTMLElement>('.summary-label')!.textContent).toBe('合计')
+      setLocale(en)
+      expect(columnOf(el, 'todo').querySelector<HTMLElement>('.summary-label')!.textContent).toBe('Total')
+    })
+
+    it('泳道模式：不渲染合计行（列已拆入带，无列底形态）', () => {
+      const el = mountSwim({
+        columns: JSON.stringify([
+          { key: 'todo', title: '待办', summary: 9 },
+          { key: 'doing', title: '进行中' },
+        ]),
+      })
+      expect(shadow(el).querySelector('.column-summary')).toBeNull()
+    })
+  })
 })
 
 describe('断开重连 onReconnect 重绑（core 重连架构接线）', () => {

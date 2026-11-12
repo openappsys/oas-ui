@@ -252,6 +252,9 @@ export const ar: LocaleMessages = {
   'kanban.dragColumn': 'اسحب لإعادة ترتيب الأعمدة',
   'kanban.moveLeft': 'نقل العمود لليسار',
   'kanban.moveRight': 'نقل العمود لليمين',
+  'kanban.collapse': 'طي العمود',
+  'kanban.expand': 'توسيع العمود',
+  'kanban.total': 'الإجمالي',
   // tree (شجرة)
   'tree.expand': 'توسيع/طي',
   'tree.select': 'تحديد {label}',

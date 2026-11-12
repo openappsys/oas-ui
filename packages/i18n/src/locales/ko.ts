@@ -252,6 +252,9 @@ export const ko: LocaleMessages = {
   'kanban.dragColumn': '드래그로 열 순서 변경',
   'kanban.moveLeft': '열 왼쪽으로 이동',
   'kanban.moveRight': '열 오른쪽으로 이동',
+  'kanban.collapse': '열 접기',
+  'kanban.expand': '열 펼치기',
+  'kanban.total': '합계',
   // tree（트리 컨트롤）
   'tree.expand': '펼치기/접기',
   'tree.select': '{label} 선택',

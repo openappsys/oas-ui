@@ -252,6 +252,9 @@ export const hi: LocaleMessages = {
   'kanban.dragColumn': 'खींचकर कॉलम का क्रम बदलें',
   'kanban.moveLeft': 'कॉलम बाएँ खिसकाएँ',
   'kanban.moveRight': 'कॉलम दाएँ खिसकाएँ',
+  'kanban.collapse': 'कॉलम संकुचित करें',
+  'kanban.expand': 'कॉलम विस्तारित करें',
+  'kanban.total': 'कुल',
   // tree (ट्री)
   'tree.expand': 'फैलाएँ/सिमोलें',
   'tree.select': '{label} चुनें',

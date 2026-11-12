@@ -1860,15 +1860,17 @@
   },
   "oas-kanban": {
     "attrs": {
-      "columns": "列定义（JSON 数组 [{ key, title, limit? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制；列可带可选 `color`：仅作列头顶部 3px 强调条（不改变列宽/布局）",
+      "columns": "列定义（JSON 数组 [{ key, title, limit?, summary? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制；列可带可选 `color`：仅作列头顶部 3px 强调条（不改变列宽/布局）；列可带可选 `summary`（数值）：列底渲染合计行（label 走 i18n kanban.total），缺席/非有限数值不渲染，数值随宿主数据更新重新渲染",
       "cards": "卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）；卡片可带可选 `color`（CSS 颜色或 token）：仅作卡片左侧 3px 强调条（绝对定位、不改变布局），用于优先级/分类；缺省无强调",
       "empty-column-text": "空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译）",
       "swimlane-by": "泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构",
+      "collapsible": "列折叠（布尔属性，默认关——默认外观零变化）：开启后普通模式列头出现折叠按钮，点击把列折叠为窄条（纵向列名 + 卡片数），点击窄条展开；折叠状态在数据变化时保留；折叠列不接受拖入；泳道模式下不提供列折叠（带矩阵无窄条形态）",
       "card-estimate": "列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先）"
     },
     "events": {
       "oas-change": "拖拽换列/列内排序/触屏菜单移动落定后派发（拖回原位不派发）。detail { id, from, to, index }——from/to 为列 key，index 为落点在目标列的插入位（移除移动卡后的口径，宿主对目标列数组 splice(index, 0, card) 即可复现）；多选拖拽移动全部选中卡时派发一条，detail 加 ids（全部选中卡 id，按数据序，id 为首枚）；跨泳道落定加 swimlane { from, to }（泳道字段值变化）",
-      "oas-column-reorder": "列重排落定后派发（列头手柄拖拽 / 键盘 ←/→ / 触屏左移右移按钮；原位零操作不派发）。detail { from, to, keys }——from 为移动列原位次，to 为重排后新位次，keys 为重排后的列 key 全序；组件同时把新列序回写 columns attribute（卡片数据不动）"
+      "oas-column-reorder": "列重排落定后派发（列头手柄拖拽 / 键盘 ←/→ / 触屏左移右移按钮；原位零操作不派发）。detail { from, to, keys }——from 为移动列原位次，to 为重排后新位次，keys 为重排后的列 key 全序；组件同时把新列序回写 columns attribute（卡片数据不动）",
+      "oas-collapse-change": "列折叠/展开后派发（点击列头折叠按钮或折叠窄条）。detail { columnId, collapsed }——columnId 为列 key，collapsed 为切换后的折叠状态（true=已折叠、false=已展开）；合计值变化不派发事件（走既有数据通道随数据更新重渲染）"
     },
     "props": {
       "renderCard": "自定义卡片渲染函数 (card) => Node | string（property 通道，函数不可序列化不进 attribute/SSR）。返回 Node 直接挂载；返回字符串按纯文本渲染（防注入）。在场时卡片数据不反射回 cards 属性（宿主持有数据），拖拽与移动菜单照常派发 oas-change。置 null 恢复默认 title 渲染"

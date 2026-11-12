@@ -252,6 +252,9 @@ export const he: LocaleMessages = {
   'kanban.dragColumn': 'גרור לשינוי סדר העמודות',
   'kanban.moveLeft': 'העבר עמודה שמאלה',
   'kanban.moveRight': 'העבר עמודה ימינה',
+  'kanban.collapse': 'כיווץ עמודה',
+  'kanban.expand': 'הרחבת עמודה',
+  'kanban.total': 'סה"כ',
   // tree (עץ)
   'tree.expand': 'הרחב/כווץ',
   'tree.select': 'בחר {label}',

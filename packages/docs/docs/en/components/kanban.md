@@ -158,6 +158,26 @@ With `height` set on a column body (host-constrained), each column body scrolls 
 
 The estimated step for unmeasured cards defaults to 68px and can be configured via the `card-estimate` attribute (px) or the `--oas-kanban-card-step` CSS variable (attribute wins; ResizeObserver corrects measurements afterwards) — raise it when cards are clearly taller than the default to reduce first-frame offset error. Attribute changes apply immediately; the CSS variable has no built-in change notification and takes effect after any update path (attribute/data/size change).
 
+## Column collapsing and totals
+
+With `collapsible` (a boolean attribute, off by default — zero visual change by default), each column header in the plain layout gains a collapse button: clicking it folds the column into a narrow rail (vertical column title + card count), clicking the rail expands it back; the fold state survives data changes; folding/expanding emits `oas-collapse-change` (with `detail` `{ columnId, collapsed }`, where `columnId` is the column key). Folded columns do not accept drops (no column body); swimlanes do not offer column collapsing (the band matrix has no rail form).
+
+Adding an optional `summary` (a number) to a column definition renders a totals row at the bottom of that column (the label is translated with the locale): the value is business-defined by the host (effort hours, amounts, etc.); columns without `summary` (or with a non-finite value) render no totals row — each column is independent; the value re-renders when the host data updates (via the existing data channel, no new event). Swimlanes render no totals row (columns are split into bands — no column-bottom form):
+
+<DemoBlock title="Column collapsing and totals">
+  <div style="width: 100%">
+    <oas-kanban
+      id="kanban-collapse"
+      collapsible
+      columns='[{"key":"todo","title":"To do","summary":12},{"key":"doing","title":"In progress","summary":3},{"key":"done","title":"Done"}]'
+      cards='[{"id":"k1","column":"todo","title":"Map the billing flow"},{"id":"k2","column":"todo","title":"Dark-theme review for the board"},{"id":"k3","column":"todo","title":"Trash-can interaction review"},{"id":"k4","column":"doing","title":"Polish the drop indicator"},{"id":"k5","column":"done","title":"Freeze the data channel contract"}]'
+    ></oas-kanban>
+    <p id="kanban-collapse-log" style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      Click the collapse button on a column header to fold it into a rail, click the rail to expand — the oas-collapse-change feedback shows up here.
+    </p>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### oas-kanban
@@ -268,6 +288,18 @@ onMounted(() => {
         const { id, swimlane } = e.detail
         if (!swimlane) return
         if (log) log.textContent = `"${titles[id] ?? id}" moved from the "${swimlane.from || '(empty)'}" band to "${swimlane.to || '(empty)'}".`
+      })
+    }
+
+    // Column collapsing: oas-collapse-change feedback
+    const collapse = document.querySelector('#kanban-collapse')
+    if (collapse) {
+      const titles = {}
+      for (const c of collapse.columns) titles[c.key] = c.title
+      const log = document.querySelector('#kanban-collapse-log')
+      collapse.addEventListener('oas-collapse-change', (e) => {
+        const { columnId, collapsed } = e.detail
+        if (log) log.textContent = `oas-collapse-change emitted: column "${titles[columnId] ?? columnId}" ${collapsed ? 'folded into a rail' : 'expanded'}.`
       })
     }
   })

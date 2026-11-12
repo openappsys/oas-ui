@@ -1,7 +1,7 @@
 // 复核回归：kanban——历史缺陷固化断言。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { realClick, up } from './helpers'
 
 test('kanban 触屏「下移」：菜单下移换序并派发 oas-change（回归：idx+1 曾被原位判定静默吞掉恒为死按钮）', async ({
   page,
@@ -828,6 +828,125 @@ test('kanban 优先级强调色：卡片/列 color 经伪元素生效、RTL 镜�
   expect(dark.cardBarBg, '暗色 token 与明色不同').not.toBe(light.cardBarBg)
   expect(dark.cleanCardBarBg, '暗色下无 color 仍透明').toBe('rgba(0, 0, 0, 0)')
   await page.evaluate(() => document.documentElement.classList.remove('dark'))
+
+  expect(errors, `console 应零告警，实际：${errors.join(' | ')}`).toEqual([])
+})
+
+// ===== 列折叠（collapsible）与列合计（列 summary）=====
+// PRD「未发布：P1/P2 组件能力批」①。真实点击路径：列头折叠按钮 → 窄条可见（几何宽度收窄）
+// → 点窄条展开 → 合计行数值与数据一致、随数据更新重算。反证点：若折叠按钮未渲染/点击无反馈，
+// realClick 后窄条不出现；若合计行缺席或数值错，summary 断言红。
+
+test('kanban 列折叠与合计：真实点击折叠 → 窄条可见 → 再点展开；合计行数值与数据更新重算（console 零告警）', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    // 只收组件自身告警（浏览器级 warning 非组件缺陷）
+    if (msg.type() === 'error' || (msg.type() === 'warning' && /^\[oas-/.test(msg.text()))) errors.push(msg.text())
+  })
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  // 注入 collapsible + summary 实例：todo 带 summary=120、doing 无（缺席不渲染）
+  await page.evaluate(() => {
+    const el = document.createElement('oas-kanban')
+    el.id = 'kanban-collapse'
+    el.setAttribute('collapsible', '')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'todo', title: '待办', summary: 120 },
+        { key: 'doing', title: '进行中' },
+      ]),
+    )
+    el.setAttribute(
+      'cards',
+      JSON.stringify([
+        { id: 'cl1', column: 'todo', title: '折叠卡一' },
+        { id: 'cl2', column: 'todo', title: '折叠卡二' },
+        { id: 'cl3', column: 'doing', title: '普通卡' },
+      ]),
+    )
+    document.body.appendChild(el)
+  })
+  await up(page, '#kanban-collapse')
+
+  // 真实点击 todo 列头折叠按钮 → 该列渲染为窄条
+  await realClick(page, '#kanban-collapse', '.column-head[data-key="todo"] .column-collapse')
+  await page.waitForFunction(
+    () => !!document.querySelector('#kanban-collapse')!.shadowRoot!.querySelector('.column-rail[data-key="todo"]'),
+    undefined,
+    { timeout: 5000 },
+  )
+  const collapsed = await page.evaluate(() => {
+    const sr = document.querySelector('#kanban-collapse')!.shadowRoot!
+    const rail = sr.querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
+    const rect = rail.getBoundingClientRect()
+    const colRect = sr.querySelector<HTMLElement>('.column[data-key="doing"]')!.getBoundingClientRect()
+    return {
+      railVisible: rect.width > 0 && rect.height > 0,
+      railNarrow: rect.width < 100 && colRect.width > rect.width * 2,
+      railCount: rail.querySelector('.rail-count')!.textContent,
+      railExpanded: rail.getAttribute('aria-expanded'),
+      doingStillColumn: !!sr.querySelector('.column[data-key="doing"]'),
+    }
+  })
+  expect(collapsed.railVisible, '窄条可见（有几何尺寸）').toBe(true)
+  expect(collapsed.railNarrow, '窄条宽度收窄且远窄于普通列').toBe(true)
+  expect(collapsed.railCount, '窄条携带卡片数').toBe('2')
+  expect(collapsed.railExpanded, '窄条 aria-expanded=false').toBe('false')
+  expect(collapsed.doingStillColumn, '未折叠列保持普通结构').toBe(true)
+
+  // 真实点击窄条 → 展开
+  await realClick(page, '#kanban-collapse', '.column-rail[data-key="todo"]')
+  await page.waitForFunction(
+    () => !!document.querySelector('#kanban-collapse')!.shadowRoot!.querySelector('.column[data-key="todo"]'),
+    undefined,
+    { timeout: 5000 },
+  )
+  const expanded = await page.evaluate(() => {
+    const sr = document.querySelector('#kanban-collapse')!.shadowRoot!
+    return {
+      columnBack: !!sr.querySelector('.column[data-key="todo"]'),
+      railGone: !sr.querySelector('.column-rail'),
+      collapseBtnExpanded: sr
+        .querySelector<HTMLElement>('.column-head[data-key="todo"] .column-collapse')!
+        .getAttribute('aria-expanded'),
+      cards: sr.querySelectorAll('.column[data-key="todo"] .card').length,
+    }
+  })
+  expect(expanded.columnBack, '展开后恢复列容器').toBe(true)
+  expect(expanded.railGone, '展开后窄条消失').toBe(true)
+  expect(expanded.collapseBtnExpanded, '折叠按钮 aria-expanded 复位 true').toBe('true')
+  expect(expanded.cards, '展开后卡片照常渲染').toBe(2)
+
+  // 合计行：todo 列底渲染（label + 120）、doing 无 summary 不渲染；数据更新后重算
+  const summary = await page.evaluate(() => {
+    const sr = document.querySelector('#kanban-collapse')!.shadowRoot!
+    const foot = sr.querySelector<HTMLElement>('.column[data-key="todo"] .column-summary')!
+    const label = foot.querySelector('.summary-label')!.textContent
+    const value = foot.querySelector('.summary-value')!.textContent
+    const el = document.querySelector('#kanban-collapse')!
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'todo', title: '待办', summary: 300 },
+        { key: 'doing', title: '进行中' },
+      ]),
+    )
+    const valueAfter = sr.querySelector<HTMLElement>('.column[data-key="todo"] .summary-value')!.textContent
+    return {
+      label,
+      value,
+      valueAfter,
+      doingHasSummary: !!sr.querySelector('.column[data-key="doing"] .column-summary'),
+    }
+  })
+  expect(summary.label, '合计 label 走 i18n（合计/Total）').toMatch(/合计|Total/)
+  expect(summary.value, 'todo 合计值 = summary 120').toBe('120')
+  expect(summary.doingHasSummary, '无 summary 列不渲染合计行').toBe(false)
+  expect(summary.valueAfter, '数据更新后合计重算为 300').toBe('300')
 
   expect(errors, `console 应零告警，实际：${errors.join(' | ')}`).toEqual([])
 })

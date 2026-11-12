@@ -254,6 +254,9 @@ export const zhHant: LocaleMessages = {
   'kanban.dragColumn': '拖曳調整列順序',
   'kanban.moveLeft': '列左移',
   'kanban.moveRight': '列右移',
+  'kanban.collapse': '收合欄',
+  'kanban.expand': '展開欄',
+  'kanban.total': '合計',
   // tree（樹形控制元件）
   'tree.expand': '展開/收起',
   'tree.select': '選擇 {label}',

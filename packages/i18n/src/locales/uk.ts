@@ -252,6 +252,9 @@ export const uk: LocaleMessages = {
   'kanban.dragColumn': 'Перетягніть, щоб змінити порядок стовпців',
   'kanban.moveLeft': 'Перемістити стовпець ліворуч',
   'kanban.moveRight': 'Перемістити стовпець праворуч',
+  'kanban.collapse': 'Згорнути колонку',
+  'kanban.expand': 'Розгорнути колонку',
+  'kanban.total': 'Разом',
   // tree (дерево)
   'tree.expand': 'Розгорнути/Згорнути',
   'tree.select': 'Вибрати {label}',

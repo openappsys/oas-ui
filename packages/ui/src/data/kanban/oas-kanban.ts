@@ -12,6 +12,9 @@ export interface KanbanColumn {
   /** 可选强调色：CSS 颜色或 token（如 `var(--oas-color-danger)`）——列头顶部 3px 横条；
    *  缺省无强调（零视觉变化）。颜色是装饰，不承载唯一信息 */
   color?: string
+  /** 可选列合计值（数值）：存在时列底渲染合计行（label 走 i18n kanban.total）；缺席/非有限数值不渲染。
+   *  数值由宿主业务定义（工时/金额等），随宿主数据更新重新渲染（走既有数据通道，无新事件） */
+  summary?: number
 }
 
 /** 卡片：`cards` 属性（JSON）元素结构——`id` 唯一标识、`column` 为所属列 key，其余字段任意 */
@@ -45,6 +48,12 @@ export interface KanbanColumnReorderDetail {
   from: number
   to: number
   keys: string[]
+}
+
+/** oas-collapse-change 事件 detail 契约：columnId 为列 key，collapsed 为切换后的折叠状态 */
+export interface KanbanCollapseChangeDetail {
+  columnId: string
+  collapsed: boolean
 }
 
 // 列体虚拟化的阈值/取值。
@@ -251,6 +260,109 @@ const STYLE = `
   .column-nav {
     display: inline-flex;
   }
+}
+/* 列折叠按钮（collapsible 开启时出现于列头；泳道模式不渲染——带矩阵无窄条形态）：
+   chevron 指 inline-start（收起方向），RTL 按 data-rtl 镜像 */
+.column-collapse {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: var(--oas-radius-xs, 4px);
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+}
+.column-collapse:hover,
+.column-collapse:focus-visible {
+  color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.column-collapse:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.column-collapse svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+:host([data-rtl]) .column-collapse svg {
+  transform: scaleX(-1);
+}
+/* 折叠窄条：纵向列名 + 卡片数（点击整条展开）；宽度收窄后其余列 flex:1 自动占满剩余空间。
+   窄条不接受拖入（无列体容器，落点查询 .column-body/.lane-cell 不命中） */
+.column-rail {
+  flex: 0 0 auto;
+  width: var(--oas-kanban-rail-width, 44px);
+  min-height: var(--oas-kanban-column-min-height, 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-1);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-primary);
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+.column-rail:hover,
+.column-rail:focus-visible {
+  border-color: var(--oas-color-border-strong);
+  color: var(--oas-color-primary);
+}
+.column-rail:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+/* 纵向列名：中文直立、拉丁随书写模式旋转（text-orientation: mixed），超高省略 */
+.rail-title {
+  max-height: var(--oas-kanban-rail-title-max-height, 180px);
+  overflow: hidden;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: var(--oas-font-weight-medium, 500);
+  font-size: var(--oas-font-size-sm);
+}
+.rail-count {
+  flex: none;
+  margin-top: auto;
+  min-width: 20px;
+  padding: 0 var(--oas-space-1);
+  text-align: center;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  background: var(--oas-color-bg);
+  border-radius: var(--oas-radius-full, 999px);
+}
+/* 列合计行（列定义 summary 存在时列底渲染；summary 缺席零渲染零视觉变化） */
+.column-summary {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-top: 1px solid var(--oas-color-border);
+  background: var(--oas-color-bg-hover);
+  font-size: var(--oas-font-size-sm);
+}
+.summary-label {
+  color: var(--oas-color-text-secondary);
+}
+.summary-value {
+  font-weight: var(--oas-font-weight-medium, 500);
+  font-variant-numeric: tabular-nums;
+  color: var(--oas-color-text-primary);
 }
 /* 列体独立纵向滚动：高度约束来自宿主（:host 设 height / 容器拉伸） */
 .column-body {
@@ -501,6 +613,8 @@ const STYLE = `
   /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
   .column-drag:focus-visible,
   .column-nav:focus-visible,
+  .column-collapse:focus-visible,
+  .column-rail:focus-visible,
   .card:focus-visible,
   .lane-toggle:focus-visible,
   .card-move:focus-visible,
@@ -525,6 +639,9 @@ const NAV_LEFT_ICON =
   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 3L5 8l5 5"/></svg>'
 const NAV_RIGHT_ICON =
   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3l5 5-5 5"/></svg>'
+
+/** 列折叠按钮图标（与移动按钮同语言的单 chevron，指 inline-start 收起方向；RTL 由 CSS 镜像） */
+const COLLAPSE_ICON = NAV_LEFT_ICON
 
 /** 卡片拖拽落点（目标列 key + 目标泳道值（无泳道为 null）+ 视觉插入位） */
 interface KanbanDropTarget {
@@ -582,6 +699,12 @@ interface KanbanColumnCards {
  *   默认全展开，折叠状态在数据变化时保留）；跨带拖拽 = 改泳道字段值；
  *   拖拽悬停折叠带头自动展开（只切类不重建 DOM，拖拽不中断）；
  * - WIP 限制：列 `limit` 超限 → 列头计数 warning 色 + data-over-limit 标记（提示非阻断）；
+ * - 列折叠：`collapsible`（在场布尔，默认关——默认视觉零变化）开启后普通模式列头出现折叠按钮，
+ *   点击把列折叠为窄条（纵向列名 + 卡片数，点击窄条展开）；折叠状态在数据变化时保留；
+ *   泳道模式下不提供列折叠（带矩阵无窄条形态）；
+ * - 列合计：列定义 `summary`（数值）存在时列底渲染合计行（label 走 i18n `kanban.total`）；
+ *   `summary` 缺席/非有限数值的列不渲染（多列各自独立）；数值随宿主数据更新重新渲染；
+ *   泳道模式下不渲染合计行（列已拆入带，无列底）；
  * - 键盘可达：卡片 tabindex=0（listitem）；非空列体/单元格 role=list + aria-label（空不带 list 语义）；
  *   卡片 aria-posinset/aria-setsize 携带「容器内绝对位次 + 全量数」（虚拟化下读屏不把渲染窗口当整列）；
  * - 空列/空单元格占位走 i18n（`kanban.emptyColumn`），`empty-column-text` 属性可覆盖；
@@ -592,10 +715,11 @@ interface KanbanColumnCards {
  *   from/to 为列 key，index 为落点在目标列的插入位（移除移动卡后的口径）；
  *   多选拖拽加 ids（全部选中 id，首枚与 id 一致）；跨泳道落定加 swimlane { from, to }。
  * - `oas-column-reorder`：列重排落定后派发，detail `{ from, to, keys }`。
+ * - `oas-collapse-change`：列折叠/展开后派发，detail `{ columnId, collapsed }`（columnId 为列 key）。
  */
 export class OASKanban extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['columns', 'cards', 'empty-column-text', 'swimlane-by', 'dir', 'card-estimate']
+    return ['columns', 'cards', 'empty-column-text', 'swimlane-by', 'dir', 'card-estimate', 'collapsible']
   }
 
   private _columns: KanbanColumn[] = []
@@ -613,6 +737,9 @@ export class OASKanban extends OASElement {
   private anchorId = ''
   /** 泳道折叠状态（原始字段值集合，''=空值带；数据变化保留，swimlane-by 变化清空） */
   private collapsedLanes = new Set<string>()
+
+  /** 列折叠状态（列 key 集合；collapsible 关闭时不渲染窄条；数据变化保留，列删除后残留无害） */
+  private collapsedColumns = new Set<string>()
 
   /** 拖拽源卡片 id 集（多选拖拽为全部选中 id；空 = 无进行中卡片拖拽；不依赖 dataTransfer——部分环境 DragEvent 不带） */
   private dragIds: string[] = []
@@ -808,6 +935,11 @@ export class OASKanban extends OASElement {
     board.classList.remove('swimlane')
     const built: Array<{ col: KanbanColumn; cards: KanbanColumnCards; body: HTMLElement }> = []
     for (const col of this._columns) {
+      // 列折叠（collapsible 开启时）：折叠列渲染为窄条（纵向列名 + 卡片数），无列体不进虚拟化
+      if (this.collapsible && this.collapsedColumns.has(col.key)) {
+        board.appendChild(this.buildColumnRail(col))
+        continue
+      }
       const cards = this.columnCards(col.key)
       const { column, body } = this.buildColumn(col, cards.length)
       board.appendChild(column)
@@ -1107,11 +1239,25 @@ export class OASKanban extends OASElement {
     countEl.textContent = String(count)
     if (overLimit) countEl.classList.add('over-limit')
 
-    head.append(handle, title, prev, next, countEl)
+    // 列折叠按钮（collapsible 开启 + 普通模式；泳道带矩阵无窄条形态不提供）。
+    // 用 this.hasLanes 现场判定（两种模式共用本方法）：泳道下不渲染，保持零标记
+    const parts: HTMLElement[] = [handle, title, prev, next]
+    if (!this.hasLanes && this.collapsible) {
+      const collapse = document.createElement('button')
+      collapse.type = 'button'
+      collapse.className = 'column-collapse'
+      collapse.setAttribute('part', 'column-collapse')
+      collapse.setAttribute('aria-expanded', 'true')
+      collapse.setAttribute('aria-label', this.t('kanban.collapse'))
+      collapse.innerHTML = COLLAPSE_ICON
+      parts.push(collapse)
+    }
+    parts.push(countEl)
+    head.append(...parts)
     return head
   }
 
-  /** 构建单列骨架（列头 + 空列体）：列体卡片填充延后到挂载后（虚拟化窗口需可测的列体高度） */
+  /** 构建单列骨架（列头 + 空列体 + 可选合计行）：列体卡片填充延后到挂载后（虚拟化窗口需可测的列体高度） */
   private buildColumn(col: KanbanColumn, count: number): { column: HTMLElement; body: HTMLElement } {
     const overLimit = this.isOverLimit(col, count)
     const column = document.createElement('div')
@@ -1129,7 +1275,82 @@ export class OASKanban extends OASElement {
     // 容器卡片总数（虚拟化下列内只渲染窗口，拖拽落点/范围选需要绝对口径的总数）
     body.setAttribute('data-count', String(count))
     column.append(head, body)
+    // 列合计（summary 存在才渲染；缺席零渲染零视觉变化）
+    const summary = this.columnSummary(col)
+    if (summary != null) column.appendChild(this.buildColumnSummary(summary))
     return { column, body }
+  }
+
+  /** collapsible 在场布尔（列折叠开关；默认关——默认视觉零变化） */
+  private get collapsible(): boolean {
+    return this.hasAttr('collapsible')
+  }
+
+  /** 列合计值解析：数值/数字字符串且有限 → 数值；null/空串/对象/非有限数值 → null（不渲染合计行） */
+  private columnSummary(col: KanbanColumn): number | null {
+    const v = (col as { summary?: unknown }).summary
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null
+    if (typeof v === 'string' && v.trim() !== '') {
+      const n = Number(v)
+      return Number.isFinite(n) ? n : null
+    }
+    return null
+  }
+
+  /** 列底合计行：label 走 i18n kanban.total；数值原样渲染（不做本地化格式，避免环境差异） */
+  private buildColumnSummary(value: number): HTMLElement {
+    const footer = document.createElement('div')
+    footer.className = 'column-summary'
+    footer.setAttribute('part', 'column-summary')
+    const label = document.createElement('span')
+    label.className = 'summary-label'
+    label.setAttribute('part', 'summary-label')
+    label.textContent = this.t('kanban.total')
+    const valueEl = document.createElement('span')
+    valueEl.className = 'summary-value'
+    valueEl.setAttribute('part', 'summary-value')
+    valueEl.textContent = String(value)
+    footer.append(label, valueEl)
+    return footer
+  }
+
+  /** 折叠窄条（列容器替代形态）：纵向列名 + 卡片数；原生 button（Enter/Space 激活展开） */
+  private buildColumnRail(col: KanbanColumn): HTMLElement {
+    const rail = document.createElement('button')
+    rail.type = 'button'
+    rail.className = 'column-rail'
+    rail.setAttribute('part', 'column-rail')
+    rail.setAttribute('data-key', col.key)
+    rail.setAttribute('aria-expanded', 'false')
+    rail.setAttribute('aria-label', `${this.t('kanban.expand')}：${col.title}`)
+    rail.title = col.title
+    const title = document.createElement('span')
+    title.className = 'rail-title'
+    title.setAttribute('part', 'rail-title')
+    title.textContent = col.title
+    const count = document.createElement('span')
+    count.className = 'rail-count'
+    count.setAttribute('part', 'rail-count')
+    count.textContent = String(this.columnCards(col.key).length)
+    rail.append(title, count)
+    return rail
+  }
+
+  /**
+   * 切换列折叠：更新折叠集合 → 整板重建（窄条与列是两种结构形态，不做增量切类）→
+   * 焦点回对应控件（折叠 ↔ 窄条，键盘路径不跌落 body）→ 派发 oas-collapse-change。
+   * 折叠状态不进 attribute（内部状态，数据变化保留；collapsible 关闭时一律渲染普通列）。
+   */
+  private toggleColumnCollapse(key: string): void {
+    if (!this._columns.some((c) => c.key === key)) return
+    const collapsed = !this.collapsedColumns.delete(key)
+    if (collapsed) this.collapsedColumns.add(key)
+    this.runUpdateAndNotify()
+    const active = collapsed
+      ? this.shadow.querySelector<HTMLElement>(`.column-rail[data-key="${key}"]`)
+      : this.shadow.querySelector<HTMLElement>(`.column-head[data-key="${key}"] .column-collapse`)
+    active?.focus({ preventScroll: true })
+    this.emit('collapse-change', { columnId: key, collapsed } satisfies KanbanCollapseChangeDetail)
   }
 
   /** 填充列体（挂载后调用）：空列占位 / 全量渲染 / 虚拟化窗口渲染 */
@@ -1969,6 +2190,17 @@ export class OASKanban extends OASElement {
     const navBtn = target?.closest?.('.column-nav') as HTMLElement | null
     if (navBtn) {
       this.handleColumnNav(navBtn)
+      return
+    }
+    // 列折叠窄条（点击展开）/ 列头折叠按钮（点击折叠）
+    const rail = target?.closest?.('.column-rail') as HTMLElement | null
+    if (rail) {
+      this.toggleColumnCollapse(rail.getAttribute('data-key') ?? '')
+      return
+    }
+    const collapseBtn = target?.closest?.('.column-collapse') as HTMLElement | null
+    if (collapseBtn) {
+      this.toggleColumnCollapse(collapseBtn.closest('.column-head')?.getAttribute('data-key') ?? '')
       return
     }
     const laneToggle = target?.closest?.('.lane-toggle') as HTMLElement | null

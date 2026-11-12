@@ -252,6 +252,9 @@ export const fa: LocaleMessages = {
   'kanban.dragColumn': 'کشیدن برای تغییر ترتیب ستون‌ها',
   'kanban.moveLeft': 'جابه‌جایی ستون به چپ',
   'kanban.moveRight': 'جابه‌جایی ستون به راست',
+  'kanban.collapse': 'جمع‌کردن ستون',
+  'kanban.expand': 'بازکردن ستون',
+  'kanban.total': 'جمع',
   // tree (درخت)
   'tree.expand': 'باز/جمع کردن',
   'tree.select': 'انتخاب {label}',

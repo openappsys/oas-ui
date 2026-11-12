@@ -252,6 +252,9 @@ export const ru: LocaleMessages = {
   'kanban.dragColumn': 'Перетащите, чтобы изменить порядок столбцов',
   'kanban.moveLeft': 'Переместить столбец влево',
   'kanban.moveRight': 'Переместить столбец вправо',
+  'kanban.collapse': 'Свернуть колонку',
+  'kanban.expand': 'Развернуть колонку',
+  'kanban.total': 'Итого',
   // tree (дерево)
   'tree.expand': 'Развернуть/Свернуть',
   'tree.select': 'Выбрать {label}',

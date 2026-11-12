@@ -252,6 +252,9 @@ export const de: LocaleMessages = {
   'kanban.dragColumn': 'Spalten per Drag umsortieren',
   'kanban.moveLeft': 'Spalte nach links verschieben',
   'kanban.moveRight': 'Spalte nach rechts verschieben',
+  'kanban.collapse': 'Spalte einklappen',
+  'kanban.expand': 'Spalte ausklappen',
+  'kanban.total': 'Summe',
   // tree (Baumstruktur)
   'tree.expand': 'Ausklappen/Einklappen',
   'tree.select': '{label} auswählen',

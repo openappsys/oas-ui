@@ -252,6 +252,9 @@ export const ja: LocaleMessages = {
   'kanban.dragColumn': 'ドラッグで列の順序を変更',
   'kanban.moveLeft': '列を左へ移動',
   'kanban.moveRight': '列を右へ移動',
+  'kanban.collapse': '列を折りたたむ',
+  'kanban.expand': '列を展開',
+  'kanban.total': '合計',
   // tree（ツリーコントロール）
   'tree.expand': '展開/折りたたみ',
   'tree.select': '{label} を選択',

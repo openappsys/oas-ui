@@ -12,6 +12,7 @@ export type {
   KanbanCard,
   KanbanCardRenderer,
   KanbanChangeDetail,
+  KanbanCollapseChangeDetail,
   KanbanColumn,
   KanbanColumnReorderDetail,
 } from './oas-kanban.js'

@@ -252,6 +252,9 @@ export const zhCN = {
   'kanban.dragColumn': '拖拽调整列顺序',
   'kanban.moveLeft': '列左移',
   'kanban.moveRight': '列右移',
+  'kanban.collapse': '收起列',
+  'kanban.expand': '展开列',
+  'kanban.total': '合计',
   // tree（树形控件）
   'tree.expand': '展开/收起',
   'tree.select': '选择 {label}',
