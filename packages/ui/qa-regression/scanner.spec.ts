@@ -128,7 +128,10 @@ test('scanner：无 BarcodeDetector 环境下 active 置位自动落手动模式
     expect(r.errors, 'not-supported 派发一次且 detail 正确').toEqual([{ code: 'not-supported' }])
     expect(r.manualShown, '自动降级：手动行显示').toBe(true)
     expect(r.errorsAfterNoise, '无关属性变化不重复派发').toBe(1)
-    expect(r.statusText.length, '状态区有非空文案（非 raw key）').toBeGreaterThan(0)
+    // 状态区渲染 i18n 降级文案（zh-CN：「当前环境不支持相机扫码，请手动输入」）——
+    // 双关键片段同时命中：raw key（scanner.unsupported）或空文案都拦下
+    expect(r.statusText, '状态区渲染降级文案（非 raw key）').toContain('不支持')
+    expect(r.statusText, '降级文案含手动输入指引').toContain('手动输入')
   } else {
     // 带 BarcodeDetector 的环境走 getUserMedia 分支（结果取决于设备/权限），机制由单测覆盖
     expect(r.errors.length, '有 detector 时不派发 not-supported').toBe(0)

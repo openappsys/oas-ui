@@ -115,15 +115,16 @@ describe('OASScanner', () => {
   })
 
   describe('渲染骨架与确定性', () => {
-    it('结构完整：video(part=video) / status(part=status) / 手动行 form(part=manual)（label+input+submit）', () => {
+    it('结构完整：video(part=video) / status(part=status) / 手动行 form(part=manual)（label+input+submit）各恰好一个', () => {
       const el = mount()
       const root = el.shadowRoot!
-      expect(root.querySelector('video[part="video"]')).not.toBeNull()
-      expect(root.querySelector('[part="status"]')).not.toBeNull()
-      expect(root.querySelector('form[part="manual"]')).not.toBeNull()
-      expect(root.querySelector('.manual-label')).not.toBeNull()
-      expect(root.querySelector('.manual-input')).not.toBeNull()
-      expect(root.querySelector('.manual-submit')).not.toBeNull()
+      // 恰好一个 = 存在且唯一（querySelectorAll 现算计数，比仅断「非 null」更严：重复渲染也拦下）
+      expect(root.querySelectorAll('video[part="video"]')).toHaveLength(1)
+      expect(root.querySelectorAll('[part="status"]')).toHaveLength(1)
+      expect(root.querySelectorAll('form[part="manual"]')).toHaveLength(1)
+      expect(root.querySelectorAll('.manual-label')).toHaveLength(1)
+      expect(root.querySelectorAll('.manual-input')).toHaveLength(1)
+      expect(root.querySelectorAll('.manual-submit')).toHaveLength(1)
     })
 
     it('template 纯字符串确定性：两实例渲染结果逐字节一致（SSR 快照前提）', () => {
@@ -269,7 +270,8 @@ describe('OASScanner', () => {
       try {
         installDetector()
         const trackStop = vi.fn()
-        installMediaDevices(async () => fakeStream([{ stop: trackStop }]))
+        const stream = fakeStream([{ stop: trackStop }])
+        installMediaDevices(async () => stream)
         const el = new OASScanner()
         const scans = track(el, 'oas-scan')
         const errors = track(el, 'oas-error')
@@ -292,7 +294,8 @@ describe('OASScanner', () => {
         await flush()
 
         expect(video.hasAttribute('hidden')).toBe(false)
-        expect(holder.srcObject).not.toBeNull()
+        // 身份契约：赋给 video.srcObject 的就是 getUserMedia 返回的那个流（非 null 更非别的对象）
+        expect(holder.srcObject).toBe(stream)
         expect(statusOf(el).textContent).toContain('扫描')
         expect(statusOf(el).className).not.toContain('error')
         expect(errors.length).toBe(0)
@@ -581,7 +584,8 @@ describe('OASScanner', () => {
       const st = el.shadowRoot!.querySelector('[part="status"]') as HTMLElement
       expect(st.hasAttribute('data-probe')).toBe(false)
       expect(el.shadowRoot!.querySelector('meta')).toBeNull()
-      expect(el.shadowRoot!.querySelector('video[part="video"]')).not.toBeNull()
+      // 回退重建后骨架完整：video 恰好一个
+      expect(el.shadowRoot!.querySelectorAll('video[part="video"]')).toHaveLength(1)
     })
   })
 

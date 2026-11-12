@@ -299,7 +299,8 @@ describe('OASScheduler 月视图 + events CRUD', () => {
       'page-show-date': '2026-08-01',
     })
     expect(dayOf(el, '2026-08-09').querySelectorAll('.chip').length).toBe(1)
-    expect(el.events.length).toBe(1)
+    // 载荷精确断言：4 条入参只清洗剩「合法」1 条（坏日期/空标题/非对象全被丢弃）
+    expect(el.events.map((e) => [e.date, e.title])).toEqual([['2026-08-09', '合法']])
   })
 })
 
@@ -696,7 +697,8 @@ describe('OASScheduler P2：重复规则（RRULE 子集）+ 提醒', () => {
     })
     expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-10"] .event').length).toBe(1)
     expect(el.shadowRoot!.querySelectorAll('.col[data-date="2026-08-11"] .event').length).toBe(1)
-    expect(el.events.length).toBe(1)
+    // events 属性只读原始条目：恰好 1 条（未按 repeat 展开成多条），载荷为原始字段
+    expect(el.events.map((e) => [e.date, e.title])).toEqual([['2026-08-10', '晨会']])
     expect(el.events[0]!.repeat?.freq).toBe('daily')
   })
 
@@ -1760,7 +1762,8 @@ describe('property 通道接受 JSON 字符串（框架把静态 attribute 写�
     // @ts-expect-error 以字符串写入：模拟框架把静态 attribute 当 property 传入
     el.events = JSON.stringify([{ date: '2026-08-10', title: '会议', resource: 'r1' }])
     expect(el.resources.length).toBe(1)
-    expect(el.events.length).toBe(1)
+    // 载荷精确断言：字符串解析出的字段完整（含 resource 归属）
+    expect(el.events.map((e) => [e.title, e.resource])).toEqual([['会议', 'r1']])
     expect(el.events[0]!.title).toBe('会议')
   })
 })
@@ -2848,7 +2851,11 @@ describe('OASScheduler conflict-check 冲突校验 + 时刻块键盘可达', () 
     block.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
     expect(el.events[0]!.date).toBe('2026-08-17')
     expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026-08-17 ~ 08-23')
-    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-17"] .event')).toBeTruthy()
+    // 块仍渲染且是同一事件：新列命中 data-id=tail，旧列不再残留
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-17"] .event')?.getAttribute('data-id'),
+    ).toBe('tail')
+    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-16"] .event')).toBeNull()
     expect(el.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('tail')
   })
 })
