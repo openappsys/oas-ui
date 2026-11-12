@@ -450,6 +450,7 @@ export class OASScanner extends OASElement {
     this.setAttribute('active', '')
   }
 
+  /** 停止相机并释放媒体流（`active` 属性的命令式便捷，状态仍以属性为准） */
   stop(): void {
     this.removeAttribute('active')
   }

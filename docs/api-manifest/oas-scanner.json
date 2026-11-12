@@ -23,6 +23,11 @@
       "name": "start",
       "signature": "start(): void",
       "description": "start()/stop()：active 属性的命令式便捷（状态仍以属性为准）"
+    },
+    {
+      "name": "stop",
+      "signature": "stop(): void",
+      "description": "停止相机并释放媒体流（`active` 属性的命令式便捷，状态仍以属性为准）"
     }
   ],
   "events": [
