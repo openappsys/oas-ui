@@ -386,13 +386,17 @@ export class OASSignature extends OASElement {
     return { width: rect.width, height: rect.height }
   }
 
-  /** 全量重绘：签名一致（笔迹/颜色/尺寸/DPR）跳过重绘；canvas 不可用静默跳过 */
+  /**
+   * 全量重绘：签名一致（笔迹/进行中笔画/颜色/尺寸/DPR）跳过重绘；canvas 不可用静默跳过。
+   * 进行中笔画必须纳入重绘键与绘制：repaint 会重置 canvas.width 清空像素，若漏掉 drawing，
+   * resize/主题切换发生在笔画进行中时，已画段被抹且后续 move 只增量画新段 → 尾笔残缺、value 缺段。
+   */
   private repaint(): void {
     const size = this.canvasSize()
     if (!size) return
     const color = this.resolvedPenColor()
     const dpr = devicePixelRatioOf()
-    const key = JSON.stringify([this.strokes, color, this.penSize(), size, dpr])
+    const key = JSON.stringify([this.strokes, this.drawing?.points ?? null, color, this.penSize(), size, dpr])
     if (key === this.paintKey) return
     const ctx = this.paintContext(size, dpr)
     if (!ctx) return
@@ -412,7 +416,7 @@ export class OASSignature extends OASElement {
     return ctx
   }
 
-  /** 全笔画绘制（归一化坐标 → CSS px 映射） */
+  /** 全笔画绘制（归一化坐标 → CSS px 映射）；进行中的笔画一并重放，repaint 不丢已画段 */
   private paintAll(ctx: CanvasRenderingContext2D, size: { width: number; height: number }): void {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
@@ -421,6 +425,7 @@ export class OASSignature extends OASElement {
     for (const stroke of this.strokes) {
       this.strokePath(ctx, stroke, size)
     }
+    if (this.drawing) this.strokePath(ctx, this.drawing, size)
   }
 
   /** 单笔绘制（增量路径：moveTo 首点，lineTo 其余点，stroke 收笔） */
@@ -565,8 +570,7 @@ export class OASSignature extends OASElement {
   }
 
   /**
-   * 当前画布 PNG dataURL。空画布（无笔迹且无外部图像）返回空串；
-   * 无 canvas 环境同样返回空串。
+   * 当前画布 PNG dataURL。空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串。
    */
   toDataURL(): string {
     if (this.strokes.length === 0 && !this.hasExternalImage) return ''

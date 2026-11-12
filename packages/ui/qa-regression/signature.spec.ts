@@ -191,6 +191,54 @@ test('signature：受控回显与 disabled 拦截', async ({ page }) => {
   expect(badWarns, 'console 零告警').toEqual([])
 })
 
+test('signature：笔画进行中容器 resize 不丢段——value 非空且两笔只派发两次', async ({ page }) => {
+  const badWarns = watchConsole(page)
+  await page.goto('/components/signature.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sig-basic')
+
+  const canvasSel = 'oas-signature#sig-basic [part="canvas"]'
+  await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement
+    ;(window as any).__sigResizeEvents = []
+    host.addEventListener('oas-change', (e) => {
+      const d = (e as CustomEvent).detail as { value: string }
+      ;(window as any).__sigResizeEvents.push(d.value)
+    })
+  })
+
+  // 第一笔：正常落定
+  await stroke(page, canvasSel, [
+    [20, 20],
+    [80, 60],
+    [140, 30],
+  ])
+  // 第二笔：画到一半时宿主改容器尺寸（触发 ResizeObserver → repaint 重置画布），
+  // 已画段必须随重绘保留，尾笔完整入值
+  const box = await page.locator(canvasSel).boundingBox()
+  if (!box) throw new Error('canvas not visible')
+  await page.mouse.move(box.x + 30, box.y + 120)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 100, box.y + 90, { steps: 4 })
+  await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement
+    host.style.width = '360px'
+  })
+  await page.mouse.move(box.x + 170, box.y + 130, { steps: 4 })
+  await page.mouse.move(box.x + 240, box.y + 60, { steps: 4 })
+  await page.mouse.up()
+
+  const r = await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement
+    const events = (window as any).__sigResizeEvents as string[]
+    return { events, attr: host.getAttribute('value') ?? '' }
+  })
+  expect(r.events, '第二笔后只有两次派发').toHaveLength(2)
+  for (const v of r.events) expect(v, '笔画中 resize 后 value 仍为非空 PNG').toMatch(/^data:image\/png;base64,/)
+  expect(r.attr).toBe(r.events[1])
+
+  expect(badWarns, 'console 零告警').toEqual([])
+})
+
 test('signature：暗色下默认笔色翻转为浅色、画板边界可见', async ({ page }) => {
   const badWarns = watchConsole(page)
   await page.goto('/components/signature.html', { waitUntil: 'domcontentloaded' })

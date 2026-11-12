@@ -63,8 +63,8 @@ function mockCtx(): MockCtx {
 
 let lastCtx: MockCtx | null = null
 
-/** 注入 mock canvas（返回记录命令的 2d 上下文；toDataURL 返回恒定 PNG） */
-function installCanvasMock(url = 'data:image/png;base64,MOCKPNG') {
+/** 注入 mock canvas（返回记录命令的 2d 上下文；toDataURL 返回恒定 PNG 或按调用序变化的 URL） */
+function installCanvasMock(url: string | (() => string) = 'data:image/png;base64,MOCKPNG') {
   const originalGetContext = HTMLCanvasElement.prototype.getContext
   const originalToDataURL = HTMLCanvasElement.prototype.toDataURL
   const fakeGetContext = function (this: HTMLCanvasElement, type: string): unknown {
@@ -74,7 +74,7 @@ function installCanvasMock(url = 'data:image/png;base64,MOCKPNG') {
     return ctx
   }
   HTMLCanvasElement.prototype.getContext = fakeGetContext as unknown as typeof HTMLCanvasElement.prototype.getContext
-  HTMLCanvasElement.prototype.toDataURL = () => url
+  HTMLCanvasElement.prototype.toDataURL = typeof url === 'function' ? url : () => url
   return () => {
     HTMLCanvasElement.prototype.getContext = originalGetContext
     HTMLCanvasElement.prototype.toDataURL = originalToDataURL
@@ -466,6 +466,140 @@ describe('OASSignature', () => {
     } finally {
       vi.stubGlobal('getComputedStyle', originalGC)
       document.documentElement.classList.remove('theme-dark')
+      restore()
+    }
+  })
+
+  it('笔画进行中触发 repaint：已画段不丢，尾笔完整（两段笔迹齐全）', () => {
+    // toDataURL 按调用序变化：恒定指纹会让第二笔被幂等抑制，无法断言「第二笔派发」
+    let seq = 0
+    const restore = installCanvasMock(() => `data:image/png;base64,MOCK${seq++}`)
+    try {
+      const el = mount()
+      mockCanvasRect(el)
+      const canvas = canvasOf(el)
+      // 第一笔落定（3 点 2 段）
+      drawStroke(el, [
+        [10, 10],
+        [50, 50],
+        [90, 90],
+      ])
+      const events: CustomEvent[] = []
+      el.addEventListener('oas-change', (e) => events.push(e as CustomEvent))
+      const fire = (type: string, [x, y]: [number, number]) => {
+        canvas.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            composed: true,
+            pointerId: 1,
+            button: 0,
+            clientX: x,
+            clientY: y,
+          }),
+        )
+      }
+      const lineTos = (ctx: MockCtx) => ctx.calls.filter((c) => c[0] === 'lineTo').map((c) => c.slice(1) as number[])
+      // 第二笔进行中：down + 2 moves（已画 2 段）
+      fire('pointerdown', [20, 20])
+      fire('pointermove', [40, 60])
+      fire('pointermove', [60, 40])
+      // 中途触发 repaint（宿主改 height → update → repaint；repaint 会重置画布像素）
+      el.setAttribute('height', '200')
+      // 全量重绘必须重放：第一笔 2 段 + 进行中第二笔已画 2 段（旧实现漏 drawing → 这里只有 2 段）
+      const replayed = lineTos(lastCtx!)
+      expect(replayed.length, '重绘包含落定笔迹与进行中笔画已画段').toBe(4)
+      // 收尾最后一段（增量画在重放后的画布上）
+      fire('pointermove', [80, 80])
+      fire('pointerup', [80, 80])
+      expect(events.length, '第二笔落定派发一次').toBe(1)
+      expect(events[0]!.detail.value).toMatch(/^data:image\/png;base64,MOCK/)
+      expect(el.getAttribute('value')).toBe(events[0]!.detail.value)
+      // 再触发一次 repaint：两笔共 2+3=5 段，尾笔三点齐备（归一化坐标按 mock 尺寸 300×160 映射）
+      el.setAttribute('height', '240')
+      const settled = lineTos(lastCtx!)
+      expect(settled.length, '两笔完整重放').toBe(5)
+      expect(settled[1]![0]).toBeCloseTo(90, 5)
+      expect(settled[1]![1]).toBeCloseTo(90, 5)
+      expect(settled[4]![0]).toBeCloseTo(80, 5)
+      expect(settled[4]![1]).toBeCloseTo(80, 5)
+    } finally {
+      restore()
+    }
+  })
+
+  it('clear() 中断进行中笔画：clear 后 move/up 不复活笔画，value 保持空', () => {
+    const restore = installCanvasMock()
+    try {
+      const el = mount()
+      mockCanvasRect(el)
+      const canvas = canvasOf(el)
+      const events: CustomEvent[] = []
+      el.addEventListener('oas-change', (e) => events.push(e as CustomEvent))
+      const fire = (type: string, [x, y]: [number, number]) => {
+        canvas.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            composed: true,
+            pointerId: 1,
+            button: 0,
+            clientX: x,
+            clientY: y,
+          }),
+        )
+      }
+      fire('pointerdown', [10, 10])
+      fire('pointermove', [50, 50])
+      el.clear()
+      // clear 后的 move/up 不得复活被中断的笔画
+      fire('pointermove', [90, 90])
+      fire('pointerup', [90, 90])
+      expect(events).toEqual([])
+      expect(el.getAttribute('value') ?? '').toBe('')
+      expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
+      expect(placeholderOf(el).hasAttribute('hidden')).toBe(false)
+      // 后续正常笔画不受影响
+      const later = drawStroke(el, [
+        [20, 20],
+        [80, 80],
+      ])
+      expect(later.length).toBe(1)
+      expect(el.getAttribute('value')).toBe('data:image/png;base64,MOCKPNG')
+    } finally {
+      restore()
+    }
+  })
+
+  it('受控外部值乱序：旧图像加载完成不得覆盖新值（imageSeq 作废路径）', () => {
+    const restore = installCanvasMock()
+    try {
+      class FakeImage {
+        static instances: FakeImage[] = []
+        width = 100
+        height = 50
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        src = ''
+        constructor() {
+          FakeImage.instances.push(this)
+        }
+      }
+      vi.stubGlobal('Image', FakeImage)
+      const el = mount()
+      mockCanvasRect(el)
+      // 连续两个外部值写入（第二个在第一个图像加载完成之前）
+      el.setAttribute('value', 'data:image/png;base64,AAA')
+      el.setAttribute('value', 'data:image/png;base64,BBB')
+      expect(FakeImage.instances.length).toBe(2)
+      const [imgA, imgB] = FakeImage.instances as [FakeImage, FakeImage]
+      // 旧图像（A）后到 → 序号作废，不得绘制、不得覆盖新值
+      imgA.onload?.()
+      expect(lastCtx!.drawImages).toBe(0)
+      expect(el.toDataURL()).toBe('')
+      // 新图像（B）加载完成 → 正常绘制，进入已签名状态
+      imgB.onload?.()
+      expect(lastCtx!.drawImages).toBe(1)
+      expect(el.toDataURL()).toBe('data:image/png;base64,MOCKPNG')
+    } finally {
       restore()
     }
   })

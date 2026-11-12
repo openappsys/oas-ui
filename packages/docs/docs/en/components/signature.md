@@ -109,6 +109,11 @@ onMounted(() => {
 })
 </script>
 
+## Edge Cases
+
+- Theme observation only listens at the `documentElement` level (`class` / `data-theme` on `<html>`); a runtime container-level `data-theme` switch does not re-resolve the pen color immediately — it takes effect on the next repaint (e.g. a container resize). If a resize or theme switch happens mid-stroke, the already-drawn segments are fully preserved by the repaint; no stroke is lost.
+- Setting `disabled` / `readonly` mid-stroke lets the current stroke finish normally (its captured trail is fully committed to `value`); new strokes are intercepted starting from the next one.
+
 ## API
 
 ### oas-signature

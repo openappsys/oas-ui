@@ -109,6 +109,11 @@ onMounted(() => {
 })
 </script>
 
+## 边界
+
+- 主题观察只监听 `documentElement` 级（html 的 `class` / `data-theme`）切换；容器级 `data-theme` 运行时切换不会立刻重解析笔色，在下一次 repaint（如容器 resize）时生效。笔画进行中触发 resize / 主题切换，已画段会随重绘完整保留，不丢笔。
+- `disabled` / `readonly` 在笔画进行中置位时，当前笔画会正常画完（已捕获轨迹完整入值）；从下一笔起新笔画才被拦截。
+
 ## API
 
 ### oas-signature
