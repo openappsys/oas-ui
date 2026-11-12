@@ -11,7 +11,7 @@ canvas 笔迹捕获的签名板组件：pointer 事件覆盖 mouse/pen/touch，D
   </p>
 </DemoBlock>
 
-`value` 为签名图像的 PNG dataURL：笔画结束自动写入属性并派发 `oas-change`（detail `{ value }`，同值指纹不重复派发）。`clearable` 在场显示「清空」按钮；也可用 `clear()` 方法程序化清空（幂等，已空时零操作）。
+`value` 为签名图像的 PNG dataURL：笔画结束自动写入属性并派发 `oas-change`（detail `{ value }`，同值指纹不重复派发）。`clearable` 在场显示「清空」按钮；也可用 `clear()` 方法程序化清空（幂等，已空时零操作）。**单击（按下即抬起、无位移）不成笔**——不产生 value、状态不翻转；进行中的笔画只认首指，第二指/手掌不会污染笔迹。
 
 ## 受控 value
 

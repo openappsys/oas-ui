@@ -508,6 +508,106 @@ describe('OASSignature', () => {
     expect(events.length).toBe(0)
   })
 
+  it('多指触控：第二指 down/move/up 不污染首笔（按 pointerId 过滤）', () => {
+    const restore = installCanvasMock()
+    try {
+      const el = mount()
+      mockCanvasRect(el)
+      const canvas = canvasOf(el)
+      const events: CustomEvent[] = []
+      el.addEventListener('oas-change', (e) => events.push(e as CustomEvent))
+      const fire = (type: string, pointerId: number, [x, y]: [number, number]) => {
+        canvas.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            composed: true,
+            pointerId,
+            button: 0,
+            clientX: x,
+            clientY: y,
+          }),
+        )
+      }
+      // 首指起笔 → 第二指按下被忽略 → 第二指 move 必须被过滤（否则跳变线段进首笔）
+      fire('pointerdown', 1, [10, 10])
+      fire('pointermove', 1, [50, 50])
+      fire('pointerdown', 2, [200, 20])
+      fire('pointermove', 2, [280, 140])
+      // 第二指的 up 不收尾首笔：仍处进行中，未派发
+      fire('pointerup', 2, [290, 150])
+      expect(events.length).toBe(0)
+      expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
+      // 首指正常收尾：只派发一次
+      fire('pointermove', 1, [90, 90])
+      fire('pointerup', 1, [90, 90])
+      expect(events.length).toBe(1)
+      expect(el.getAttribute('value')).toBe('data:image/png;base64,MOCKPNG')
+      // 画布绘制命令中没有第二指坐标（x≈280/290 的 lineTo 不存在）
+      const lineTos = lastCtx!.calls.filter((c) => c[0] === 'lineTo')
+      expect(lineTos.length).toBeGreaterThan(0)
+      for (const c of lineTos) {
+        expect(c[1], '第二指坐标不得进首笔').toBeLessThan(150)
+      }
+    } finally {
+      restore()
+    }
+  })
+
+  it('单击（无位移单点）不成笔：不入列、不派发、状态保持未签名', () => {
+    const restore = installCanvasMock()
+    try {
+      const el = mount()
+      mockCanvasRect(el)
+      // down+up 同点
+      let events = drawStroke(el, [
+        [50, 50],
+        [50, 50],
+      ])
+      expect(events.length).toBe(0)
+      expect(el.getAttribute('value') ?? '').toBe('')
+      expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
+      expect(placeholderOf(el).hasAttribute('hidden')).toBe(false)
+      // down+move 同点（重复点被去重）+up → 仍为单点，不成笔
+      events = drawStroke(el, [
+        [50, 50],
+        [50, 50],
+        [50, 50],
+      ])
+      expect(events.length).toBe(0)
+      expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
+    } finally {
+      restore()
+    }
+  })
+
+  it('断开重连不重复注册监听：重连后 pointerdown 只触发一次 handler', () => {
+    const restore = installCanvasMock()
+    try {
+      const spy = vi.spyOn(
+        OASSignature.prototype as unknown as { onPointerDown(e: PointerEvent): void },
+        'onPointerDown',
+      )
+      const el = mount()
+      mockCanvasRect(el)
+      // 断开重连（路由缓存摘挂场景）：onReconnect → bind 重入
+      el.remove()
+      document.body.appendChild(el)
+      canvasOf(el).dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          composed: true,
+          pointerId: 1,
+          button: 0,
+          clientX: 10,
+          clientY: 10,
+        }),
+      )
+      expect(spy, '监听只注册一次，重连不累积').toHaveBeenCalledTimes(1)
+    } finally {
+      restore()
+    }
+  })
+
   it('DSD 真水合：快照结构命中直接接管，跳过 shadow 重建', () => {
     const el = new OASSignature()
     // 模拟服务端 DSD 快照：指纹 meta + 骨架

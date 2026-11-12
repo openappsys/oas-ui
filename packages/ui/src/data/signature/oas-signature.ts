@@ -227,24 +227,41 @@ export class OASSignature extends OASElement {
     super.disconnectedCallback()
   }
 
-  /** 绑定事件与观察者（render/水合/重连共用；addEventListener 同 handler 规范去重） */
+  /** 画布/按钮监听只绑一次（断开重连不累积）；观察者每次 bind 重挂（断开时被清理） */
+  private listenersBound = false
+  /** 进行中笔画的 pointerId：第二指/手掌的 move/up 一律过滤，防坐标污染首笔（多指独占） */
+  private activePointerId: number | null = null
+
+  /**
+   * 绑定事件与观察者（render/水合/重连共用）。
+   * 监听以成员 handler 引用只绑一次——addEventListener 对同一引用去重，重连重复 bind 不累积；
+   * 观察者（ResizeObserver/MutationObserver）在断开连接时被清理，每次 bind 先断后挂（幂等重入）。
+   */
   private bind(): void {
-    const canvas = this.canvasEl()
-    if (canvas) {
-      canvas.addEventListener('pointerdown', (e) => this.onPointerDown(e as PointerEvent))
-      canvas.addEventListener('pointermove', (e) => this.onPointerMove(e as PointerEvent))
-      canvas.addEventListener('pointerup', (e) => this.onPointerUp(e as PointerEvent))
-      canvas.addEventListener('pointercancel', (e) => this.onPointerUp(e as PointerEvent))
-    }
-    const btn = this.clearBtnEl()
-    if (btn) {
-      btn.addEventListener('click', () => {
-        if (btn.disabled) return
-        this.clear()
-      })
+    if (!this.listenersBound) {
+      this.listenersBound = true
+      const canvas = this.canvasEl()
+      if (canvas) {
+        canvas.addEventListener('pointerdown', this.handlePointerDown)
+        canvas.addEventListener('pointermove', this.handlePointerMove)
+        canvas.addEventListener('pointerup', this.handlePointerUp)
+        canvas.addEventListener('pointercancel', this.handlePointerUp)
+      }
+      const btn = this.clearBtnEl()
+      if (btn) btn.addEventListener('click', this.handleClearClick)
     }
     this.watchResize()
     this.watchTheme()
+  }
+
+  /** 成员 handler 引用（addEventListener 去重的基石；每次新建箭头引用则重连必然累积） */
+  private handlePointerDown = (e: Event): void => this.onPointerDown(e as PointerEvent)
+  private handlePointerMove = (e: Event): void => this.onPointerMove(e as PointerEvent)
+  private handlePointerUp = (e: Event): void => this.onPointerUp(e as PointerEvent)
+  private handleClearClick = (): void => {
+    const btn = this.clearBtnEl()
+    if (btn?.disabled) return
+    this.clear()
   }
 
   /* ---------------- 笔迹数据层 ---------------- */
@@ -292,10 +309,12 @@ export class OASSignature extends OASElement {
       // 环境不支持 pointer capture（测试/旧 UA）：move/up 仍挂在画布上，笔画可用
     }
     this.drawing = { points: [p] }
+    this.activePointerId = e.pointerId
   }
 
   private onPointerMove(e: PointerEvent): void {
-    if (!this.drawing) return
+    // 只认首指：第二指/手掌的 move 不污染进行中笔画
+    if (!this.drawing || e.pointerId !== this.activePointerId) return
     const p = this.pointOf(e)
     if (!p) return
     const pts = this.drawing.points
@@ -308,7 +327,9 @@ export class OASSignature extends OASElement {
 
   /** 笔画收尾（pointerup / pointercancel 共用）：落定笔迹 → 产出 value → 幂等派发 */
   private onPointerUp(e: PointerEvent): void {
-    if (!this.drawing) return
+    // 只认首指：第二指的 up 不收尾首笔
+    if (!this.drawing || e.pointerId !== this.activePointerId) return
+    this.activePointerId = null
     const p = this.pointOf(e)
     const stroke = this.drawing
     this.drawing = null
@@ -316,7 +337,8 @@ export class OASSignature extends OASElement {
       const last = stroke.points[stroke.points.length - 1]!
       if (p.x !== last.x || p.y !== last.y) stroke.points.push(p)
     }
-    if (stroke.points.length === 0) return
+    // 单击（无位移单点）未成笔：不入列、不派发——否则空 PNG 配上「已签名」是隐形状态
+    if (stroke.points.length < 2) return
     this.strokes.push(stroke)
     this.hasExternalImage = false
     this.syncDerived()
@@ -522,7 +544,10 @@ export class OASSignature extends OASElement {
    * 幂等：已空（无笔迹且 value 为空）时零操作不派发。
    */
   clear(): void {
-    if (this.drawing) this.drawing = null
+    if (this.drawing) {
+      this.drawing = null
+      this.activePointerId = null
+    }
     if (this.strokes.length === 0 && this.getAttr('value', '') === '' && !this.hasExternalImage) {
       return
     }

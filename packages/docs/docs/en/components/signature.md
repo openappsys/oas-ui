@@ -11,7 +11,7 @@ A canvas-based signature pad: pointer events cover mouse/pen/touch, DPR-aware cr
   </p>
 </DemoBlock>
 
-`value` is a PNG dataURL of the signature: it is written to the attribute automatically when a stroke ends, and `oas-change` (detail `{ value }`) fires with idempotent deduplication per value. `clearable` shows a "Clear" button; `clear()` programmatically clears the pad (idempotent — no-op when already empty).
+`value` is a PNG dataURL of the signature: it is written to the attribute automatically when a stroke ends, and `oas-change` (detail `{ value }`) fires with idempotent deduplication per value. `clearable` shows a "Clear" button; `clear()` programmatically clears the pad (idempotent — no-op when already empty). **A single tap (press-and-release without movement) does not count as a stroke** — no value is produced and the state does not flip; an in-progress stroke only follows the first pointer, so a second finger or palm never pollutes it.
 
 ## Controlled Value
 

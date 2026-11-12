@@ -60,8 +60,15 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
     [200, 80],
   ]
   await stroke(page, canvasSel, PATH)
-  // 第二笔（同一路径 → 同值指纹）：不重复派发
-  await stroke(page, canvasSel, PATH)
+  // 第二笔（不同路径 → 不同 value）：必再派发——同值幂等语义由单测覆盖；
+  // 真实 canvas 反走样使同路径二次合成的 PNG 字节不同，「同路径必幂等」前提在此不成立
+  const PATH2: Array<[number, number]> = [
+    [30, 120],
+    [100, 90],
+    [170, 130],
+    [240, 60],
+  ]
+  await stroke(page, canvasSel, PATH2)
 
   const r = await page.evaluate(() => {
     const host = document.querySelector('#sig-basic') as HTMLElement & {
@@ -83,11 +90,12 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
     }
   })
 
-  expect(r.events.length, '两笔相同路径只派发一次（幂等）').toBe(1)
+  expect(r.events.length, '两笔各派发一次').toBe(2)
   expect(r.events[0]!.bubbles).toBe(true)
   expect(r.events[0]!.composed).toBe(true)
   expect(r.events[0]!.value, '事件 value 为 PNG dataURL').toMatch(/^data:image\/png;base64,/)
-  expect(r.attr).toBe(r.events[0]!.value)
+  expect(r.events[1]!.value, '不同路径的第二笔 value 不同').not.toBe(r.events[0]!.value)
+  expect(r.attr).toBe(r.events[1]!.value)
   expect(r.method, 'toDataURL() 与属性通道一致').toBe(r.attr)
   expect(r.canvasW, 'canvas backing store 按 DPR 放大（高清）').toBeGreaterThan(200)
   expect(r.dpr).toBeGreaterThan(0)
@@ -110,7 +118,7 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
       aria: canvas.getAttribute('aria-label'),
     }
   })
-  expect(after.count).toBe(2)
+  expect(after.count).toBe(3)
   expect(after.last.value).toBe('')
   expect(after.attr).toBe('')
   expect(after.aria).toContain('未签名')
