@@ -181,6 +181,14 @@ el.customRequest = ({ file, name, action, onProgress, onSuccess, onError }) => {
   <oas-upload id="upload-paste" paste multiple tip="点击选择文件，或聚焦本区域后 Ctrl+V 粘贴截图"></oas-upload>
 </DemoBlock>
 
+## 移动端相机捕获（capture）
+
+`capture` 透传 file input 的 `capture`（`user` 前置摄像头 / `environment` 后置摄像头；布尔在场无值 = `user`；显式 `"false"` 不输出）。移动端浏览器打开文件选择时直调相机拍摄；桌面浏览器按 HTML 规范忽略该提示，行为与不加一致。
+
+<DemoBlock title="移动端相机捕获（capture）">
+  <oas-upload id="upload-capture" capture accept="image/*"></oas-upload>
+</DemoBlock>
+
 ## 触发器、提示与列表项自定义
 
 - `slot="trigger"`：替换拖拽区内容（点击/拖拽语义保留在拖拽区容器上——zone 本身就是 `role="button"` 的可聚焦控件，**内嵌内容不要再放按钮/链接等可交互元素**（嵌套交互 axe 违规）；展示性内容即可）
@@ -559,6 +567,7 @@ form.rules = {
 | `accept` | 接受的文件类型 | `string` | — |
 | `action` | 上传接口 URL（真实 XHR 通道；不配且无 customRequest 时为模拟进度） | `string` | — |
 | `auto-upload` | 添加后自动模拟上传 | `boolean` | — |
+| `capture` | 移动端直调相机（`user` 前置 / `environment` 后置；布尔在场 = `user`；`"false"` 不输出）；桌面浏览器按规范忽略 | `string` | — |
 | `crop` | 图片上传前裁剪（picture/picture-card + accept 含图片时生效）：选择后弹内建裁剪对话框，确认以 canvas 裁剪结果入列 | `boolean` | — |
 | `crop-aspect` | 裁剪固定宽高比（如 `1:1`、`16:9`）；非法/缺省为自由比例 | `string` | — |
 | `data` | 附加表单字段（JSON 字符串，随文件一起提交） | — | — |

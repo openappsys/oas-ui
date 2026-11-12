@@ -4093,6 +4093,7 @@
     "attrs": {
       "accept": "接受的文件类型",
       "auto-upload": "添加后自动模拟上传",
+      "capture": "移动端直调相机（`user` 前置 / `environment` 后置；布尔在场 = `user`；`\"false\"` 不输出）；桌面浏览器按规范忽略",
       "disabled": "禁用",
       "list-type": "列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙）",
       "max": "最大文件数",

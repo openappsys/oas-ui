@@ -840,6 +840,8 @@ export class OASUpload extends OASFormElement {
   static override get observedAttributes(): string[] {
     return [
       'accept',
+      // 移动端直调相机（透传 file input 的 capture；桌面浏览器按规范忽略）
+      'capture',
       'multiple',
       'max',
       'disabled',
@@ -1329,6 +1331,15 @@ export class OASUpload extends OASFormElement {
     this.syncStorageKey()
     const disabled = this.injectDisabled()
     input.accept = this.getAttr('accept', '')
+    // capture：移动端直调相机（user 前置 / environment 后置），透传 file input；
+    // 布尔在场无值 = user；显式 "false" 不输出；桌面浏览器按规范忽略
+    if (this.hasAttr('capture')) {
+      const raw = this.getAttr('capture', '')
+      if (raw === 'false') input.removeAttribute('capture')
+      else input.setAttribute('capture', raw === '' ? 'user' : raw)
+    } else {
+      input.removeAttribute('capture')
+    }
     input.multiple = this.hasAttr('multiple')
     input.disabled = disabled
     // 目录上传：webkitdirectory 落到隐藏 input（File.webkitRelativePath 保留相对路径进列表）

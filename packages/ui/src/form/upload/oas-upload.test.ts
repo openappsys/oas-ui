@@ -809,6 +809,40 @@ describe('OASUpload directory / paste / show-file-list', () => {
   })
 })
 
+// ---- capture（移动端直调相机：透传 file input 的 capture；桌面浏览器按规范忽略）----
+describe('OASUpload capture', () => {
+  it('缺省：input 不带 capture 属性', () => {
+    const el = mount()
+    expect(inputOf(el).hasAttribute('capture')).toBe(false)
+  })
+
+  it('布尔在场（无值）：input.capture = user', () => {
+    const el = mount({ capture: '' })
+    expect(inputOf(el).getAttribute('capture')).toBe('user')
+  })
+
+  it('capture="user" / "environment" 原样透传到 input', () => {
+    const front = mount({ capture: 'user' })
+    expect(inputOf(front).getAttribute('capture')).toBe('user')
+    const back = mount({ capture: 'environment' })
+    expect(inputOf(back).getAttribute('capture')).toBe('environment')
+  })
+
+  it('capture="false"：显式关闭不输出（input 无 capture）', () => {
+    const el = mount({ capture: 'false' })
+    expect(inputOf(el).hasAttribute('capture')).toBe(false)
+  })
+
+  it('运行时增删即时同步', () => {
+    const el = mount()
+    expect(inputOf(el).hasAttribute('capture')).toBe(false)
+    el.setAttribute('capture', 'environment')
+    expect(inputOf(el).getAttribute('capture')).toBe('environment')
+    el.removeAttribute('capture')
+    expect(inputOf(el).hasAttribute('capture')).toBe(false)
+  })
+})
+
 // ---- tip / trigger / item 插槽 ----
 describe('OASUpload 插槽（tip / trigger / item）', () => {
   it('tip 属性渲染提示文案', () => {

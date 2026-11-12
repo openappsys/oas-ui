@@ -668,3 +668,38 @@ test('upload storage-key：刷新后 done 条目回显（title 提示 + 无重�
     window.localStorage.removeItem('oas-upload-demo')
   })
 })
+
+test('upload capture：属性在 Vue demo 存活，input.capture 三态映射正确', async ({ page }) => {
+  // P1/P2 批：capture 透传 file input（移动端直调相机）。重点两件事：
+  // ① Vue demo 下 capture 属性存活（不被宿主框架剥离）；② 布尔在场无值映射为 user。
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-capture')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#upload-capture')!
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.file-input')!
+    return {
+      captureAttr: el.getAttribute('capture'),
+      inputCapture: input.hasAttribute('capture') ? input.getAttribute('capture') : null,
+    }
+  })
+  expect(r.captureAttr, 'capture 属性被 Vue 剥离').toBe('')
+  expect(r.inputCapture, '布尔在场（无值）未映射为 user').toBe('user')
+
+  // 编程通道补三态显式值：user / environment 透传，"false" 不输出
+  const probe = await page.evaluate(async () => {
+    if (!customElements.get('oas-upload')) await customElements.whenDefined('oas-upload')
+    const read = (value: string): string | null => {
+      const host = document.createElement('oas-upload')
+      host.setAttribute('capture', value)
+      document.body.appendChild(host)
+      const input = host.shadowRoot!.querySelector<HTMLInputElement>('.file-input')!
+      const mapped = input.hasAttribute('capture') ? input.getAttribute('capture') : null
+      host.remove()
+      return mapped
+    }
+    return { user: read('user'), environment: read('environment'), off: read('false') }
+  })
+  expect(probe.user).toBe('user')
+  expect(probe.environment, 'environment 未透传到 input').toBe('environment')
+  expect(probe.off, 'capture="false" 不应输出到 input').toBeNull()
+})

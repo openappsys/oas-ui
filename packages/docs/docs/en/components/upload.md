@@ -181,6 +181,14 @@ With `replace`, exceeding the count limit no longer rejects: the oldest file is 
   <oas-upload id="upload-paste" paste multiple tip="Click to select files, or focus this area and Ctrl+V to paste a screenshot"></oas-upload>
 </DemoBlock>
 
+## Mobile Camera Capture (capture)
+
+`capture` passes through to the file input's `capture` (`user` front camera / `environment` rear camera; bare presence with no value = `user`; explicit `"false"` disables it). Mobile browsers open the camera directly when picking a file; desktop browsers ignore this hint per the HTML spec and behave as if it were absent.
+
+<DemoBlock title="Mobile camera capture (capture)">
+  <oas-upload id="upload-capture" capture accept="image/*"></oas-upload>
+</DemoBlock>
+
 ## Trigger, Tip & Item Customization
 
 - `slot="trigger"`: replaces the drop zone content (click/drag semantics stay on the zone container — the zone itself is the focusable `role="button"` control, so **do not nest interactive elements (buttons/links) inside the trigger content** (nested-interactive is an axe violation); presentational content only)
@@ -560,6 +568,7 @@ These four behaviors are current by design (not pending fixes) — align expecta
 | `accept` | Accepted file types | `string` | — |
 | `action` | Upload endpoint URL (real XHR channel; without it and customRequest, progress is simulated) | `string` | — |
 | `auto-upload` | Auto-simulate upload after adding | `boolean` | — |
+| `capture` | Mobile camera capture (`user` front / `environment` back; bare presence = `user`; `"false"` disables); ignored by desktop browsers per spec | `string` | — |
 | `crop` | Pre-upload image cropping (picture/picture-card + image accept): picked images open the built-in crop dialog first; the canvas crop result is queued on confirm | `boolean` | — |
 | `crop-aspect` | Fixed crop aspect ratio (e.g. `1:1`, `16:9`); invalid/missing = free ratio | `string` | — |
 | `data` | Extra form fields (JSON string, submitted with the file) | — | — |

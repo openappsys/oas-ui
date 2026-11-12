@@ -4286,6 +4286,7 @@
     "attrs": {
       "accept": "Accepted file types",
       "auto-upload": "Auto-simulate upload after adding",
+      "capture": "Mobile camera capture (`user` front / `environment` back; bare presence = `user`; `\"false\"` disables); ignored by desktop browsers per spec",
       "disabled": "Disabled",
       "list-type": "List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall)",
       "max": "Maximum number of files",
