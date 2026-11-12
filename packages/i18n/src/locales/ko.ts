@@ -434,7 +434,8 @@ export const ko: LocaleMessages = {
   'scanner.camera': '카메라를 시작하지 못했습니다. 직접 입력해 주세요',
   'scanner.manualLabel': '코드 직접 입력',
   'scanner.manualSubmit': '확인',
-  'scanner.videoLabel': '카메라 스캔 미리보기', // command（명령 팔레트）
+  'scanner.videoLabel': '카메라 스캔 미리보기',
+  // command（명령 팔레트）
   'command.placeholder': '명령어 검색…',
   'command.empty': '일치하는 명령어 없음',
   'command.search': '명령어 검색',

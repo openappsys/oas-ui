@@ -434,7 +434,8 @@ export const ru: LocaleMessages = {
   'scanner.camera': 'Не удалось запустить камеру. Введите код вручную',
   'scanner.manualLabel': 'Ввести код вручную',
   'scanner.manualSubmit': 'Подтвердить',
-  'scanner.videoLabel': 'Предпросмотр сканирования камерой', // command (палитра команд)
+  'scanner.videoLabel': 'Предпросмотр сканирования камерой',
+  // command (палитра команд)
   'command.placeholder': 'Поиск команд…',
   'command.empty': 'Нет подходящих команд',
   'command.search': 'Поиск команд',

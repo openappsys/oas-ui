@@ -73,29 +73,28 @@ el.stop()    // = removeAttribute('active')：停止并关流
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `active` | 在场=请求相机并开始预览识别；移除=停止并关流（零泄漏）。`start()`/`stop()` 为其命令式便捷 | — | — |
-| `aria-label` | 视频区域（`role="img"`）可访问名，缺省走 i18n | — | — |
-| `manual` | 在场=显示手动输入行；无相机/无权限/出错时自动降级为该模式 | — | — |
+| `active` | 开启相机扫码（在场即请求 getUserMedia 并开始预览）；无 BarcodeDetector / 权限被拒 / 相机错误时自动降级手动输入模式 | `boolean` | — |
+| `aria-label` | 组件可访问名称，缺省走 i18n | — | — |
+| `manual` | 强制显示手动输入行（无相机、无权限或出错时也会自动进入该模式） | `boolean` | — |
 
 #### 方法
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `start` | `start(): void` | 开启新会话并重置识别指纹（等价 `setAttribute('active', '')`） |
-| `stop` | `stop(): void` | 结束会话、停止抽帧并关流（等价 `removeAttribute('active')`） |
+| `start` | `start(): void` | start()/stop()：active 属性的命令式便捷（状态仍以属性为准） |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-error` | 失败降级时派发一次，detail `{ code: 'not-supported' \| 'permission' \| 'camera' }`；同一 code 每次激活会话只派发一次 |
-| `oas-scan` | 识别成功或手动提交时派发，detail `{ value: string, format?: string }`；同一 format+value 指纹会话内不重复派发（手动提交省略 format） |
+| `oas-error` | 相机或识别能力不可用时派发，detail { code }：`not-supported`（无 BarcodeDetector）/ `permission`（权限被拒）/ `camera`（相机错误）；派发后自动降级手动输入模式 |
+| `oas-scan` | 识别到码值时派发，detail { value, format? }；连续相同指纹不重复派发，命中后节流自动继续 |
 
 #### CSS 变量
 
-| CSS 变量 | 默认值 | 说明 |
-| --- | --- | --- |
-| `--oas-scanner-height` | `220px` | 取景框高度 |
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-scanner-height` | `220px` |
 
 #### part
 

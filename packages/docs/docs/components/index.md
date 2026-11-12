@@ -131,7 +131,7 @@ OAS-UI 提供 147 个框架无关的 Web Components 组件，按用途划分为 
 - [Card 卡片](/components/card) —— 用于承载一组相关内容的信息容器。
 - [Carousel 轮播](/components/carousel) —— 用于在同一可视区域循环展示多屏内容，支持手动切换与自动播放。
 
-- [Chart 图表](/components/chart) —— 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积 + 组合图与双轴，数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
+- [Chart 图表](/components/chart) —— 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积 / 横向条形 + 组合图与双轴，数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
 - [Code 代码块](/components/code) —— 代码块组件（自研正则 token 高亮，零第三方高亮引擎），支持常见语言基础着色、行号与复制按钮。
 - [Collapse 折叠面板](/components/collapse) —— 用于将内容收纳在可折叠的面板中，聚焦关键信息。
 - [Collapsible 折叠容器](/components/collapsible) —— 单区开折叠原语：一个可自由管控的单区折叠容器；collapse 是「多区 + 手风琴」的编排集合，collapsible 是独立单件，适合文件树节点、详情折叠区等场景。
@@ -154,7 +154,9 @@ OAS-UI 提供 147 个框架无关的 Web Components 组件，按用途划分为 
 - [QRCode 二维码](/components/qrcode) —— 基于**纯 TypeScript 零依赖编码器**（自研）的二维码组件，输出内联 SVG，可扫码、可下载。
 - [RelativeTime 相对时间](/components/relative-time) —— 本地化相对时间展示（`Intl.RelativeTimeFormat`），内层 `<time datetime>` 语义；可选 `auto-refresh` 按页面可见性自动刷新，非法/缺失值渲染安全空态。
 - [Resource 资源负载](/components/resource) —— 资源泳道 + 负载直方图：按资源展示任务分配、容量与超载高亮，纯视图层，不自动回写排程。
+- [Scanner 扫码器](/components/scanner) —— 相机扫码：active 驱动 getUserMedia + 原生 BarcodeDetector 识别，命中派 oas-scan；无相机/无权限自动降级手动输入。
 - [Scheduler 日程](/components/scheduler) —— 月视图日程组件：日格事件芯片（标题 + 色条）+ events 读写通道 + CRUD 方法与事件，纯 UI 态。
+- [Signature 签名板](/components/signature) —— canvas 签名板：pointer 笔迹捕获 + value 双通道受控 + oas-change，多指过滤/单点不成笔，resize 保留笔迹。
 - [Statistic 统计数值](/components/statistic) —— 统计数值展示，`Intl.NumberFormat` 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。
 - [SwipeCell 滑动操作](/components/swipe-cell) —— 列表项横向滑动露出操作按钮组：默认插槽为内容层、`slot="actions"` 为操作区，向 inline-start 滑开、按 `threshold` 吸附开合；单开互斥、外点/滚动关闭、Esc 关闭、操作按钮键盘可达；`oas-open` / `oas-close` 落定派发。
 - [Table 表格](/components/table) —— 用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。

@@ -434,7 +434,8 @@ export const fr: LocaleMessages = {
   'scanner.camera': 'Échec du démarrage de la caméra. Saisissez le code manuellement',
   'scanner.manualLabel': 'Saisir le code manuellement',
   'scanner.manualSubmit': 'Confirmer',
-  'scanner.videoLabel': 'Aperçu du scan par caméra', // command (palette de commandes)
+  'scanner.videoLabel': 'Aperçu du scan par caméra',
+  // command (palette de commandes)
   'command.placeholder': 'Rechercher des commandes…',
   'command.empty': 'Aucune commande correspondante',
   'command.search': 'Rechercher des commandes',

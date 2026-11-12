@@ -434,7 +434,8 @@ export const ar: LocaleMessages = {
   'scanner.camera': 'فشل تشغيل الكاميرا. أدخل الرمز يدويًا',
   'scanner.manualLabel': 'إدخال الرمز يدويًا',
   'scanner.manualSubmit': 'تأكيد',
-  'scanner.videoLabel': 'معاينة المسح بالكاميرا', // command (لوحة الأوامر)
+  'scanner.videoLabel': 'معاينة المسح بالكاميرا',
+  // command (لوحة الأوامر)
   'command.placeholder': 'ابحث عن الأوامر…',
   'command.empty': 'لا توجد أوامر مطابقة',
   'command.search': 'البحث عن الأوامر',

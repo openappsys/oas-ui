@@ -434,7 +434,8 @@ export const ptBR: LocaleMessages = {
   'scanner.camera': 'Falha ao iniciar a câmera. Digite o código manualmente',
   'scanner.manualLabel': 'Digitar código manualmente',
   'scanner.manualSubmit': 'Confirmar',
-  'scanner.videoLabel': 'Pré-visualização da digitalização por câmera', // command (paleta de comandos)
+  'scanner.videoLabel': 'Pré-visualização da digitalização por câmera',
+  // command (paleta de comandos)
   'command.placeholder': 'Pesquisar comandos…',
   'command.empty': 'Sem comandos correspondentes',
   'command.search': 'Pesquisar comandos',

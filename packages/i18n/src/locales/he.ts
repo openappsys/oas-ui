@@ -430,7 +430,8 @@ export const he: LocaleMessages = {
   'scanner.camera': 'הפעלת המצלמה נכשלה. יש להזין את הקוד באופן ידני',
   'scanner.manualLabel': 'הזנת קוד באופן ידני',
   'scanner.manualSubmit': 'אישור',
-  'scanner.videoLabel': 'תצוגה מקדימה של סריקת מצלמה', // command (לוח פקודות)
+  'scanner.videoLabel': 'תצוגה מקדימה של סריקת מצלמה',
+  // command (לוח פקודות)
   'command.placeholder': 'חיפוש פקודות…',
   'command.empty': 'אין פקודות תואמות',
   'command.search': 'חיפוש פקודות',

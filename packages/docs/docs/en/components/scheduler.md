@@ -324,6 +324,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `conflict-check` | Same-day timed event conflict check (boolean, off by default): detects same-day time overlaps among single-day timed events — overlapping blocks get a .conflict dashed danger outline plus the scheduler.conflict readable hint, and oas-event-conflict is dispatched; detection uses half-open intervals (back-to-back does not count, same as the lane criterion) over the whole calendar (not just the visible view); repeats are not expanded into occurrences and multi-day timed/all-day events are not included; the outline is purely visual and never blocks drag/resize writes | `string` | — |
 | `end-hour` | Time axis end hour (> start-hour and <= 24, default 20) | `string` | `20` |
 | `events` | Schedule events (JSON): [{ id?, date: YYYY-MM-DD, endDate?, title, color?, start?, end?, repeat? { freq, interval?, until?, count?, byDay? }, resource? }] — chips rendered in day cells (title + color bar), collapsed to +N beyond 2 | `SchedulerEvent[]` | `[]` |
 | `first-day-of-week` | First day of week (0-6); defaults to locale-derived | `string` | — |
@@ -357,7 +358,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | Download the current events as an ICS file (browser environment; returns the generated ICS string for tests / host reuse) |
 | `addEvent` | `addEvent(ev: SchedulerEvent): string` | Add an event: returns the assigned id |
 | `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | Update an event by id (shallow-merges the patch, then runs sanitize; returns false when not found or when a same-day range has start >= end) |
-| `undo` | `undo(): boolean` | Undo the most recent updateEvent (including drag-move, two-edge time resize, and multi-day end resize); returns false when there is no snapshot, otherwise writes back and dispatches oas-events-change |
+| `undo` | `undo(): boolean` | Undo the most recent updateEvent (including drag-move, two-edge time resize, multi-day end resize, and keyboard date-shift/resize on timed blocks); returns false when there is no snapshot, otherwise writes back and dispatches oas-events-change |
 | `removeEvent` | `removeEvent(id: string): boolean` | Remove an event by id; returns false when not found |
 
 #### Events
@@ -367,6 +368,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `oas-create` | Dispatched when an empty time cell is dragged out to a range of >=15 minutes, detail: { date, start, end, resource? } — the component does not create the event; the host calls addEvent. A shorter drag is treated as oas-day-click |
 | `oas-day-click` | Dispatched when an empty day cell is clicked, detail: { date, resource? } (resource row id in resource views) — host attaches an add form |
 | `oas-event-click` | Dispatched when an event chip is clicked, detail: { id, event } (does not trigger the day click) |
+| `oas-event-conflict` | Conflict snapshot dispatch while conflict-check is on (dispatched synchronously inside update(), first frame on mount; the host must attach its listener before writing data — a late listener can remove and re-add conflict-check to reset the signature channel and re-emit. Idempotent: the same data snapshot never re-dispatches, re-dispatched per id only when the signature changes, empty arrays sent to related ids on resolution), detail: { id, conflicts } (ids of events overlapping this one on the same day and time range) |
 | `oas-events-change` | Dispatched on any events change (set/addEvent/updateEvent/removeEvent/undo), detail: { events } |
 | `oas-range-request` | Host-managed date window: emitted when the visible range is not covered by range-start/range-end; detail: { startMs, endMs, reason }; no-op without range-* |
 | `oas-remind` | Dispatched when an event reminder is due, detail: { id, event } (fires at start - remind minutes via built-in timers) |

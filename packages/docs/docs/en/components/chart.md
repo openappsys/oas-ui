@@ -239,8 +239,27 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `aria-label` | Chart description (falls back to locale by type) | — | — |
 | `data` | Data. Array single-series `[{label, value}]` or object multi-series `{labels, series:[{name, data, type?, yAxisIndex?}]}` (series-level `type` / `yAxisIndex` for combo and dual-axis) | `unknown` | — |
-| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `xLabelRotate` (x-axis category label rotation 0–90, default 0 = horizontal + width-based auto-thinning; >0 slants/verticals the labels, still thinned by rotated footprint as a backstop), `yAxis` (dual-axis array; dual axis requires the second entry AND series bound on both sides via yAxisIndex, otherwise single axis) | `unknown` | — |
-| `type` | Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area` (combo has no type value — override per series via `series.type`) | `ChartType` | `line` |
+| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false), `max` (radar global scale), `radarShape` (radar grid `polygon`/`circle`, default polygon), `xLabelRotate` (x-axis category label rotation 0–90, default 0 = horizontal + width-based auto-thinning; >0 slants/verticals the labels, still thinned by rotated footprint as a backstop), `yAxis` (dual-axis array; dual axis requires the second entry AND series bound on both sides via yAxisIndex, otherwise single axis), `tooltip` (opt-in built-in hover overlay, default false = native `<title>` only, no overlay node in the shadow root) | `unknown` | — |
+| `type` | Chart type: `line` / `bar` / `horizontal-bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area` (combo has no type value — override per series via `series.type`; horizontal bars put the value axis at the bottom with category labels on the left edge and do not take part in combo or dual axis) | `ChartType` | `line` |
+
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `tooltipFormatter` | Custom hover text: `(ctx: { label, value, seriesName?, seriesIndex, percent? }) => string`; the string is written as plain text. Set null to restore the default text. A function cannot be expressed in an attribute, so this is property-only | `((ctx: ChartTooltipContext) => string) \| null` | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-chart-tooltip` | Dispatched before the built-in overlay is shown (only when `options.tooltip` is on), `detail: { label, value, seriesName?, seriesIndex, percent? }`; `preventDefault()` takes over and suppresses the default overlay |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
 
 `data` / `options` also support the property channel (JS objects, taking precedence over attributes).
 

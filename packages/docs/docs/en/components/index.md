@@ -131,7 +131,7 @@ OAS-UI provides 147 framework-agnostic Web Components, organized into 9 groups b
 - [Card](/en/components/card) —— An information container that groups a set of related content.
 - [Carousel](/en/components/carousel) —— Cycles through multiple screens of content in the same viewport, with manual switching and autoplay support.
 
-- [Chart](/en/components/chart) —— A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area plus combo and dual-axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
+- [Chart](/en/components/chart) —— A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area / horizontal-bar plus combo and dual-axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
 - [Code](/en/components/code) —— A code block component (self-developed regex token highlighting, no third-party highlighting engine) supporting basic coloring for common languages, line numbers, and a copy button.
 - [Collapse](/en/components/collapse) —— Stows content in collapsible panels to keep the focus on key information.
 - [Collapsible](/en/components/collapsible) —— A single-region collapse primitive: one freely controllable collapsible region. Collapse is the "multi-region + accordion" orchestration set; collapsible is the standalone single piece, suited for file-tree nodes, detail fold-away areas, and similar scenarios.
@@ -154,7 +154,9 @@ OAS-UI provides 147 framework-agnostic Web Components, organized into 9 groups b
 - [QRCode](/en/components/qrcode) —— A QR code component based on a **pure TypeScript, zero-dependency encoder** (built in-house) that outputs inline SVG and is scannable and downloadable.
 - [RelativeTime](/en/components/relative-time) —— Localized relative time (`Intl.RelativeTimeFormat`) backed by a semantic `<time datetime>`; optional `auto-refresh` follows page visibility, and invalid or missing values render a safe empty state.
 - [Resource](/en/components/resource) — Resource lanes + workload histogram: task allocation, capacity and overload highlighting per resource; a pure view layer that does not write schedules back.
+- [Scanner](/en/components/scanner) — Camera scanning: `active` drives getUserMedia + native BarcodeDetector recognition, dispatches `oas-scan` on hit; falls back to manual input when camera or permission is unavailable.
 - [Scheduler](/en/components/scheduler) — Month-view scheduler: event chips in day cells (title + color bar) + events read/write channel + CRUD methods and events, pure UI state.
+- [Signature](/en/components/signature) — Canvas signature pad: pointer stroke capture + two-way `value` + `oas-change`, multi-pointer filtering / single-point rejection, strokes preserved on resize.
 - [Statistic](/en/components/statistic) —— Displays statistical values with `Intl.NumberFormat` thousands separators and precision (locale-aware), supporting prefix/suffix and a skeleton loading placeholder.
 - [SwipeCell](/en/components/swipe-cell) —— Reveal an action button group by swiping a list item horizontally: the default slot is the content layer and `slot="actions"` the action area, swiped toward inline-start and snapped open/closed by `threshold`; single-open exclusion, outside-click/scroll close, Esc close, and keyboard-reachable action buttons; `oas-open` / `oas-close` dispatched when the state settles.
 - [Table](/en/components/table) —— Displays structured data in a row-and-column grid with sorting, row selection, multi-select, and a loading state. It can be wired together with a pagination component.

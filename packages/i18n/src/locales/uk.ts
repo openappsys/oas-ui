@@ -430,7 +430,8 @@ export const uk: LocaleMessages = {
   'scanner.camera': 'Не вдалося запустити камеру. Уведіть код вручну',
   'scanner.manualLabel': 'Увести код вручну',
   'scanner.manualSubmit': 'Підтвердити',
-  'scanner.videoLabel': 'Попередній перегляд сканування камерою', // command (палітра команд)
+  'scanner.videoLabel': 'Попередній перегляд сканування камерою',
+  // command (палітра команд)
   'command.placeholder': 'Пошук команд…',
   'command.empty': 'Немає відповідних команд',
   'command.search': 'Пошук команд',

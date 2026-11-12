@@ -73,29 +73,28 @@ Three failure classes fall back to manual mode automatically and fire `oas-error
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `active` | Present: request the camera and start preview scanning; removed: stop and release the stream (zero leaks). `start()`/`stop()` are imperative conveniences | — | — |
-| `aria-label` | Accessible name for the video area (`role="img"`), defaults to i18n | — | — |
-| `manual` | Present: show the manual input row; auto fallback mode when camera/permission/errors occur | — | — |
+| `active` | Starts camera scanning (presence requests getUserMedia and begins preview); falls back to manual input when BarcodeDetector is unavailable, permission is denied, or the camera errors | `boolean` | — |
+| `aria-label` | Accessible name of the component, defaults to i18n | — | — |
+| `manual` | Always show the manual input row (also entered automatically when the camera or permission is unavailable) | `boolean` | — |
 
 #### Methods
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `start` | `start(): void` | Opens a new session and resets the scan fingerprint (equivalent to `setAttribute('active', '')`) |
-| `stop` | `stop(): void` | Ends the session, stops frame sampling, and releases the stream (equivalent to `removeAttribute('active')`) |
+| `start` | `start(): void` | start()/stop()：active 属性的命令式便捷（状态仍以属性为准） |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-error` | Fired once on failure fallback, detail `{ code: 'not-supported' \| 'permission' \| 'camera' }`; once per activation session per code |
-| `oas-scan` | Fired on successful decode or manual submit, detail `{ value: string, format?: string }`; the same format+value fingerprint does not re-fire within a session (manual submits omit format) |
+| `oas-error` | Fired when camera or recognition capability is unavailable, detail { code }: `not-supported` (no BarcodeDetector) / `permission` (permission denied) / `camera` (camera error); the component falls back to manual input mode after firing |
+| `oas-scan` | Fired when a code is recognized, detail { value, format? }; consecutive identical fingerprints are not re-fired, and detection auto-resumes after a throttling delay |
 
-#### CSS variables
+#### CSS Variables
 
-| CSS variable | Default | Description |
-| --- | --- | --- |
-| `--oas-scanner-height` | `220px` | Viewport height |
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-scanner-height` | `220px` |
 
 #### Parts
 

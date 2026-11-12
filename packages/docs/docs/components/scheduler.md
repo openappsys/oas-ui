@@ -338,6 +338,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `conflict-check` | 同日定时事件冲突校验（布尔，默认关）：对单日定时事件做同日同时段重叠检测——重叠时刻块加 .conflict 虚线 danger 描边与 scheduler.conflict 可读提示，并派发 oas-event-conflict；判定为半开区间（首尾相接不算，与车道判据同构）、全日历口径（不限当前视图）；repeat 不展开 occurrence、跨日定时/全天事件不参与；冲突标记只是视觉提示，不阻断拖拽/缩放写入 | `string` | — |
 | `end-hour` | 时间轴结束小时（>start-hour 且 <=24，默认 20） | `string` | `20` |
 | `events` | 日程事件（JSON）：[{ id?, date: YYYY-MM-DD, endDate?, title, color?, start?, end?, repeat? { freq, interval?, until?, count?, byDay? }, resource? }]——日格渲染事件芯片，>2 合并 +N 条；endDate 支持跨日全天，repeat 支持 count/byDay | `SchedulerEvent[]` | `[]` |
 | `first-day-of-week` | 周起始日（0-6）；缺省按 locale 推导 | `string` | — |
@@ -371,7 +372,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `downloadIcs` | `downloadIcs(filename: unknown, options?: IcsExportOptions): string` | 下载当前事件的 ICS 文件（浏览器环境；返回生成的 ICS 字符串便于测试/宿主复用） |
 | `addEvent` | `addEvent(ev: SchedulerEvent): string` | 新增事件：返回分配到的 id |
 | `updateEvent` | `updateEvent(id: string, patch: Partial<SchedulerEvent>): boolean` | 按 id 更新事件（浅合并 patch 后走 sanitize 清洗；找不到或时间区间非法返回 false） |
-| `undo` | `undo(): boolean` | 撤销最近一次 updateEvent（含拖拽移动、时间块双缘缩放、跨日条终点缩放）；无快照返回 false，成功回写并派发 oas-events-change |
+| `undo` | `undo(): boolean` | 撤销最近一次 updateEvent（含拖拽移动、时间块双缘缩放、跨日条终点缩放、时刻块键盘改期/缩放）；无快照返回 false，成功回写并派发 oas-events-change |
 | `removeEvent` | `removeEvent(id: string): boolean` | 按 id 删除事件；找不到返回 false |
 
 #### 事件
@@ -381,6 +382,7 @@ el.downloadIcs('my.ics', { timeMode: 'utc', timezone: 'Asia/Shanghai' })
 | `oas-create` | 在时间格空白处拖出 >=15 分钟区间时派发，detail: { date, start, end, resource? }——组件不自动建事件，宿主接后自行 addEvent；位移不足视作 oas-day-click |
 | `oas-day-click` | 点击空白日格时派发，detail: { date, resource? }（资源视图带资源行 id）——宿主接新增表单 |
 | `oas-event-click` | 点击事件芯片时派发，detail: { id, event }（不触发日格点击） |
+| `oas-event-conflict` | conflict-check 开启时冲突快照派发（update() 内同步派发、首帧即发，宿主须先挂监听再写数据；监听后挂时移除再补回 conflict-check 即重置签名通道重发。幂等：同一数据快照不重复派发，签名变化才逐 id 重发，冲突消解向相关 id 发空数组），detail: { id, conflicts }（conflicts 为与该事件同日同时段重叠的事件 id 列表） |
 | `oas-events-change` | events 数据变化（set/addEvent/updateEvent/removeEvent/undo）时派发，detail: { events } |
 | `oas-range-request` | 宿主托管日期窗口：当前视图可见范围未被 range-start/range-end 覆盖时派发，detail: { startMs, endMs, reason }；无 range-* 时不派发 |
 | `oas-remind` | 事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器） |

@@ -117,30 +117,23 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `clearable` | 显示清空按钮（disabled/readonly 时置灰） | `boolean` | `false` |
-| `disabled` | 禁用（拦截笔画） | `boolean` | `false` |
-| `height` | 画布高度（px，默认 160；宽度随宿主 100%） | `number` | `160` |
-| `pen-color` | 笔迹颜色（11 预设名走 `--oas-preset-*` token 含 dark 变体，或任意 CSS 色值；缺省 `var(--oas-color-text-primary)` 跟随主题，主题切换自动重绘） | `string` | — |
-| `pen-size` | 笔迹粗细（px，默认 2，非法值回退） | `number` | `2` |
-| `readonly` | 只读（拦截笔画，保留笔迹展示） | `boolean` | `false` |
-| `value` | 签名图像（PNG dataURL）。输出通道：笔画结束自动写入；输入通道：宿主写入时清空笔迹并加载外部图像（受控闭环） | `string` | — |
+| `clearable` | 显示清空按钮 | `boolean` | — |
+| `disabled` | 禁用（拦截笔画） | `boolean` | — |
+| `height` | 画布高度（px，默认 160） | `string` | `160` |
+| `pen-color` | 笔迹颜色（11 预设名或 CSS 色值，缺省跟随主题文字色） | `string` | — |
+| `pen-size` | 笔迹粗细（px，默认 2） | `string` | `2` |
+| `readonly` | 只读（拦截笔画，保留笔迹展示） | `boolean` | — |
+| `value` | 签名图像（PNG dataURL），双通道可受控 | `string` | — |
 
 #### 方法
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `clear` | `clear(): void` | 清空画布与笔迹，value 归空并派发 oas-change；幂等（已空时零操作） |
-| `toDataURL` | `toDataURL(): string` | 当前画布 PNG dataURL；空画布（无笔迹且无外部图像）返回空串 |
+| `clear` | `clear(): void` | 清空画布与笔迹，value 归空并按指纹派发 oas-change。 |
+| `toDataURL` | `toDataURL(): string` | 当前画布 PNG dataURL。空画布（无笔迹且无外部图像）返回空串； |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-change` | 笔画结束（pointerup）或 clear() 时派发，detail `{ value }`；同值指纹不重复派发 |
-
-#### CSS 变量
-
-| CSS 变量 | 默认值 |
-| --- | --- |
-| `--oas-color-bg-elevated` | 画板底色（随主题） |
-| `--oas-color-border` | 画板 1px 边框（forced-colors 下保障边界可见） |
+| `oas-change` | 笔画结束或清空时派发（同值幂等去重），`detail: { value: url } \| { value: '' }` |

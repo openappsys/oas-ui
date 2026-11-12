@@ -117,30 +117,23 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `clearable` | Show the clear button (greyed out when disabled/readonly) | `boolean` | `false` |
-| `disabled` | Disabled (blocks drawing) | `boolean` | `false` |
-| `height` | Pad height (px, default 160; width fills the host at 100%) | `number` | `160` |
-| `pen-color` | Stroke color (11 preset names via `--oas-preset-*` tokens with dark variants, or any CSS color; defaults to `var(--oas-color-text-primary)` following the theme, repainted on theme switch) | `string` | — |
-| `pen-size` | Stroke width (px, default 2; invalid values fall back) | `number` | `2` |
-| `readonly` | Readonly (blocks drawing, keeps strokes visible) | `boolean` | `false` |
-| `value` | Signature image (PNG dataURL). Output: written automatically on stroke end; input: host writes clear strokes and load the external image (controlled loop) | `string` | — |
+| `clearable` | Show clear button | `boolean` | — |
+| `disabled` | Disabled (blocks drawing) | `boolean` | — |
+| `height` | Canvas height (px, default 160) | `string` | `160` |
+| `pen-color` | Stroke color (11 preset names or CSS color, defaults to theme text color) | `string` | — |
+| `pen-size` | Stroke width (px, default 2) | `string` | `2` |
+| `readonly` | Readonly (blocks drawing, keeps strokes visible) | `boolean` | — |
+| `value` | Signature image (PNG dataURL), two-way bindable | `string` | — |
 
 #### Methods
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `clear` | `clear(): void` | Clear the pad and strokes, reset value to empty and dispatch oas-change; idempotent (no-op when already empty) |
-| `toDataURL` | `toDataURL(): string` | Current pad as a PNG dataURL; empty string for an empty pad (no strokes and no external image) |
+| `clear` | `clear(): void` | 清空画布与笔迹，value 归空并按指纹派发 oas-change。 |
+| `toDataURL` | `toDataURL(): string` | 当前画布 PNG dataURL。空画布（无笔迹且无外部图像）返回空串； |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | Fired on stroke end (pointerup) or clear(); detail `{ value }`; idempotent dedup per value fingerprint |
-
-#### CSS Variables
-
-| CSS Variable | Default |
-| --- | --- |
-| `--oas-color-bg-elevated` | Pad background (theme-aware) |
-| `--oas-color-border` | Pad 1px border (keeps bounds visible under forced-colors) |
+| `oas-change` | Dispatched on stroke end or clear (idempotent per value), `detail: { value: url } \| { value: '' }` |

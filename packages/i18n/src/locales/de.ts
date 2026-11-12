@@ -434,7 +434,8 @@ export const de: LocaleMessages = {
   'scanner.camera': 'Kamera konnte nicht gestartet werden. Bitte manuell eingeben',
   'scanner.manualLabel': 'Code manuell eingeben',
   'scanner.manualSubmit': 'Bestätigen',
-  'scanner.videoLabel': 'Kamera-Scan-Vorschau', // command (Befehlspalette)
+  'scanner.videoLabel': 'Kamera-Scan-Vorschau',
+  // command (Befehlspalette)
   'command.placeholder': 'Befehle suchen…',
   'command.empty': 'Keine passenden Befehle',
   'command.search': 'Befehle suchen',

@@ -430,7 +430,8 @@ export const fa: LocaleMessages = {
   'scanner.camera': 'راه‌اندازی دوربین ناموفق بود. لطفاً کد را دستی وارد کنید',
   'scanner.manualLabel': 'ورود دستی کد',
   'scanner.manualSubmit': 'تأیید',
-  'scanner.videoLabel': 'پیش‌نمایش اسکن دوربین', // command (پالت فرمان)
+  'scanner.videoLabel': 'پیش‌نمایش اسکن دوربین',
+  // command (پالت فرمان)
   'command.placeholder': 'جستجوی فرمان…',
   'command.empty': 'فرمان مطابقی وجود ندارد',
   'command.search': 'جستجوی فرمان‌ها',

@@ -430,7 +430,8 @@ export const hi: LocaleMessages = {
   'scanner.camera': 'कैमरा प्रारंभ नहीं हो सका। कृपया कोड मैन्युअल रूप से दर्ज करें',
   'scanner.manualLabel': 'कोड मैन्युअल रूप से दर्ज करें',
   'scanner.manualSubmit': 'पुष्टि करें',
-  'scanner.videoLabel': 'कैमरा स्कैन प्रीव्यू', // command (कमांड पैलेट)
+  'scanner.videoLabel': 'कैमरा स्कैन प्रीव्यू',
+  // command (कमांड पैलेट)
   'command.placeholder': 'कमांड खोजें…',
   'command.empty': 'कोई मिलता-जुलता कमांड नहीं',
   'command.search': 'कमांड खोजें',

@@ -434,7 +434,8 @@ export const es: LocaleMessages = {
   'scanner.camera': 'No se pudo iniciar la cámara. Introduzca el código manualmente',
   'scanner.manualLabel': 'Introducir código manualmente',
   'scanner.manualSubmit': 'Confirmar',
-  'scanner.videoLabel': 'Vista previa del escaneo con cámara', // command (paleta de comandos)
+  'scanner.videoLabel': 'Vista previa del escaneo con cámara',
+  // command (paleta de comandos)
   'command.placeholder': 'Buscar comandos…',
   'command.empty': 'Sin comandos coincidentes',
   'command.search': 'Buscar comandos',

@@ -158,7 +158,7 @@
 - [Barcode 条码](https://oas-ui.dev/components/barcode): 基于纯 TypeScript 零依赖编码器（自研）的一维条码组件，覆盖 10 码制（CODE128 / GS1-128 / EAN-13 / EAN-8 / UPC-E / UPC-A / CODE39 / Codabar / MSI / ITF-14），输出内联 SVG，可扫码、可下载。
 - [Card 卡片](https://oas-ui.dev/components/card): 用于承载一组相关内容的信息容器。
 - [Carousel 轮播](https://oas-ui.dev/components/carousel): 用于在同一可视区域循环展示多屏内容，支持手动切换与自动播放。
-- [Chart 图表](https://oas-ui.dev/components/chart): 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积八型，外加系列级组合图与双轴。
+- [Chart 图表](https://oas-ui.dev/components/chart): 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 横向条形 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积九型，外加系列级组合图与双轴。
 - [Code 代码块](https://oas-ui.dev/components/code): 代码块组件（自研正则 token 高亮，零第三方高亮引擎），支持常见语言基础着色、行号与复制按钮。
 - [Collapse 折叠面板](https://oas-ui.dev/components/collapse): 用于将内容收纳在可折叠的面板中，聚焦关键信息。
 - [Collapsible 折叠面板](https://oas-ui.dev/components/collapsible): 单面板自折叠原语：无容器、自管开合的独立折叠块。
@@ -181,7 +181,9 @@
 - [QRCode 二维码](https://oas-ui.dev/components/qrcode): 基于纯 TypeScript 零依赖编码器（自研）的二维码组件，输出内联 SVG，可扫码、可下载。
 - [RelativeTime 相对时间](https://oas-ui.dev/components/relative-time): 把 epoch 毫秒 / ISO 8601 / Date 渲染为本地化相对时间，内层使用语义化 <time datetime>；可选 auto-refresh 自动刷新，页面隐藏时暂停。
 - [Resource 资源负载](https://oas-ui.dev/components/resource): 资源负载 / 泳道视图（新组件，data 族）：给定资源与任务（任务带分配的资源），渲染资源泳道（每资源一行，行内显示其被分配的任务条，共享时间轴）与负载直方图（按刻度档统计每资源并行任务数，超过容量高亮）。
+- [Scanner 扫码器](https://oas-ui.dev/components/scanner): 调用设备相机实时扫码识别的组件。
 - [Scheduler 日程调度](https://oas-ui.dev/components/scheduler): 月视图日程组件：日格内渲染事件芯片（标题 + 色条），events 读/写通道 + addEvent / updateEvent / removeEvent CRUD 方法；点事件芯片派发 oas-event-click、点日格派发 oas-day-click（宿主接编辑器），数据经 CRUD 方法变更时派发 oas-events-change（外部 setAttribute('events'…
+- [Signature 签名板](https://oas-ui.dev/components/signature): canvas 笔迹捕获的签名板组件：pointer 事件覆盖 mouse/pen/touch，DPR 高清渲染，笔色跟随主题 token（暗色自动翻转），容器 resize 笔迹保留，value（PNG dataURL）双通道受控。
 - [Statistic 统计数值](https://oas-ui.dev/components/statistic): 统计数值展示，Intl.NumberFormat 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。
 - [SwipeCell 滑动操作](https://oas-ui.dev/components/swipe-cell): 列表项横向滑动露出操作按钮组：默认插槽为内容层（列表项主体），slot="actions" 为操作按钮组（宿主放置 button / oas-button）。
 - [Table 表格](https://oas-ui.dev/components/table): 用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。

@@ -239,8 +239,27 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `aria-label` | 图表描述（缺省按类型走 locale） | — | — |
 | `data` | 数据。数组单系列 `[{label, value}]` 或对象多系列 `{labels, series:[{name, data, type?, yAxisIndex?}]}`（系列级 `type` / `yAxisIndex` 用于组合图与双轴） | `unknown` | — |
-| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false）、`max`（radar 全局量程）、`radarShape`（radar 网格 `polygon`/`circle`，默认 polygon）、`xLabelRotate`（x 轴分类标签旋转角度 0–90，默认 0 = 水平 + 按宽度自动抽稀；>0 斜排/竖排，仍按旋转后投影抽稀兜底）、`yAxis`（双轴数组，第 2 项存在且两侧均有 yAxisIndex 绑定系列才启用双轴，缺侧按单轴） | `unknown` | — |
-| `type` | 图表类型：`line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area`（组合图不设 type 值，用系列级 `series.type` 覆盖） | `ChartType` | `line` |
+| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false）、`max`（radar 全局量程）、`radarShape`（radar 网格 `polygon`/`circle`，默认 polygon）、`xLabelRotate`（x 轴分类标签旋转角度 0–90，默认 0 = 水平 + 按宽度自动抽稀；>0 斜排/竖排，仍按旋转后投影抽稀兜底）、`yAxis`（双轴数组，第 2 项存在且两侧均有 yAxisIndex 绑定系列才启用双轴，缺侧按单轴）、`tooltip`（opt-in 内置悬停浮层，默认 false = 只用原生 `<title>`、shadow 内零浮层节点） | `unknown` | — |
+| `type` | 图表类型：`line` / `bar` / `horizontal-bar` / `pie` / `area` / `donut` / `stacked-bar` / `radar` / `polar-area`（组合图不设 type 值，用系列级 `series.type` 覆盖；横向条数值轴在底部、分类标签贴左缘，不参与组合图与双轴） | `ChartType` | `line` |
+
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `tooltipFormatter` | 自定义悬停文案：`(ctx: { label, value, seriesName?, seriesIndex, percent? }) => string`，返回串按纯文本写入浮层；置 null 恢复默认文案。函数无法用 attribute 表达，只有 property 通道 | `((ctx: ChartTooltipContext) => string) \| null` | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-chart-tooltip` | 显示内置浮层前派发（仅 `options.tooltip` 开启时），`detail: { label, value, seriesName?, seriesIndex, percent? }`；`preventDefault()` 接管后不显示默认浮层 |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-tooltip-bg` | `var(--oas-color-text-primary)` |
+| `--oas-tooltip-color` | `var(--oas-color-bg)` |
 
 `data` / `options` 也支持 property 通道（JS 对象，优先级高于 attribute）。
 

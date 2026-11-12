@@ -434,7 +434,8 @@ export const ja: LocaleMessages = {
   'scanner.camera': 'カメラを起動できませんでした。手動で入力してください',
   'scanner.manualLabel': 'コードを手動入力',
   'scanner.manualSubmit': '確認',
-  'scanner.videoLabel': 'カメラスキャンプレビュー', // command（コマンドパレット）
+  'scanner.videoLabel': 'カメラスキャンプレビュー',
+  // command（コマンドパレット）
   'command.placeholder': 'コマンドを検索…',
   'command.empty': '一致するコマンドなし',
   'command.search': 'コマンドを検索',

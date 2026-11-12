@@ -1,5 +1,17 @@
 # Changelog
 
+## [未发布]
+
+### 新增
+
+- **oas-scanner（data 族，相机扫码）**：`active` 属性驱动 getUserMedia 相机预览 + 原生 `BarcodeDetector` 逐帧识别（不引第三方解码库），命中派发 `oas-scan`（detail `{ value, format? }`，1200ms 节流自动继续）；无 `BarcodeDetector`/权限被拒/相机错误自动降级手动输入模式（`manual` 属性可显式开启），`oas-error`（detail `{ code: 'not-supported' | 'permission' | 'camera' }`）幂等派发；停止/断连关流零泄漏（会话 epoch 防 stop→start 竞态孤儿流）；i18n ×16；SSR 客户端专属（NOT_SSR 登记）。
+- **oas-signature（data 族，签名板）**：canvas 笔迹捕获（pointer 事件/touch-action none/DPR 倍率/token 实色解析/主题 observer 重绘/resize 保留笔迹）；`value`（dataURL 双通道可受控）/`pen-size`/`pen-color`/`height`/`disabled`/`readonly`/`clearable`；`oas-change`（笔画结束派发，幂等）+ `clear()`/`toDataURL()`；多指 pointerId 过滤、单点不成笔（防误触假签名）；aria-live 状态播报；forced-colors 限制文档注明；SSR 客户端专属（NOT_SSR 登记）。
+
+### 增强
+
+- **oas-scheduler**：新属性 `conflict-check`（在场 opt-in）——同日同时段重叠检测（半开区间纯函数，与车道布局同构）+ `.event.conflict` 视觉标记（danger token）+ `oas-event-conflict` 幂等事件（detail `{ id, conflicts: string[] }`，先写签名再派发，消解发空数组）；时刻块补键盘路径（←/→ 整天改期 RTL 镜像、Alt+←/→ 缩放 end ±15min、aria-keyshortcuts）；i18n `scheduler.conflict` ×16。
+- **oas-chart**：新图型 `horizontal-bar`（数值轴底部、分类标签左缘、RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 默认边界不变）+ property `tooltipFormatter` 开启 shadow 单例浮层（`part="tooltip"`，反色 token，computePosition 定位）+ `oas-chart-tooltip` 事件宿主可 `preventDefault()` 接管；forced-colors 浮层兜底；i18n `chart.horizontal-bar` ×16。
+
 所有显著变更记录于此。
 
 ## [未发布]
