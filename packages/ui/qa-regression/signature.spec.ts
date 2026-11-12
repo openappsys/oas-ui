@@ -306,13 +306,15 @@ test('signature：外部图像受控回显后 resize 不抹图——画布非空
     for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) inked++
     return {
       inked,
+      // 外部签名图 contain 垫底铺满画板——非透明像素应占绝大多数（防「零星噪点即通过」）
+      total: canvas.width * canvas.height,
       url: echo.toDataURL(),
       aria: canvas.getAttribute('aria-label'),
       placeholderHidden: echo.shadowRoot!.querySelector('[part="placeholder"]')!.hasAttribute('hidden'),
       live: echo.shadowRoot!.querySelector('.sr-status')!.textContent,
     }
   })
-  expect(r.inked, 'resize 后画布仍有非透明像素（外部签名图像未被抹）').toBeGreaterThan(0)
+  expect(r.inked, 'resize 后画布非透明像素占比过半——外部签名图像未被抹成空白').toBeGreaterThan(r.total * 0.5)
   expect(r.url, 'value 契约保持非空 PNG').toMatch(/^data:image\/png;base64,/)
   expect(r.aria).toContain('已签名')
   expect(r.placeholderHidden).toBe(true)
