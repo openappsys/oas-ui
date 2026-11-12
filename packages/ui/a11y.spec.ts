@@ -803,7 +803,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
 // 基线残留已删页面的陈旧条目 / 生成逻辑漂移都会让两侧脱节，这里显式红灯而不是静默放行。
 test('a11y 基线 totals 求和不变量：各项计数等于逐页求和（skipped 双环境、sampled 不按同一规则）', () => {
   const baseline = loadBaseline()
-  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(215)
+  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(217) // 217 = 215 + signature 新页登记（light/dark 两条，2026-11 P0 批）
   const mismatch = totalsMismatch(baseline)
   expect(
     mismatch,
