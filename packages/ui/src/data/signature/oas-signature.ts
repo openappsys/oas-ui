@@ -38,6 +38,10 @@ canvas {
   pointer-events: none;
   user-select: none;
 }
+/* hidden 属性被上方 display:flex 顶掉 UA 样式——须显式还原（签名后隐藏占位） */
+.placeholder[hidden] {
+  display: none;
+}
 .clear {
   appearance: none;
   position: absolute;

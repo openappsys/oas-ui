@@ -152,6 +152,14 @@ function drawStroke(el: OASSignature, points: Array<[number, number]>): CustomEv
 }
 
 describe('OASSignature', () => {
+  it('占位 hidden 覆盖块存在于 shadow 样式（2026-11 用户视角门禁实抓：.placeholder{display:flex} 顶掉 UA [hidden] 致签名后占位仍可见）', () => {
+    const el = new OASSignature()
+    document.body.appendChild(el)
+    const styleText = el.shadowRoot?.querySelector('style')?.textContent ?? ''
+    expect(styleText).toContain('.placeholder[hidden]')
+    el.remove()
+  })
+
   beforeEach(() => {
     document.body.innerHTML = ''
     vi.spyOn(console, 'warn').mockImplementation(() => {})

@@ -87,6 +87,7 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
       aria: canvas.getAttribute('aria-label'),
       role: canvas.getAttribute('role'),
       placeholderHidden: host.shadowRoot.querySelector('[part="placeholder"]')!.hasAttribute('hidden'),
+      placeholderDisplay: getComputedStyle(host.shadowRoot.querySelector('[part="placeholder"]')!).display,
       live: host.shadowRoot.querySelector('.sr-status')!.textContent,
     }
   })
@@ -104,6 +105,9 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
   expect(r.role).toBe('img')
   expect(r.aria).toContain('已签名')
   expect(r.placeholderHidden).toBe(true)
+  expect(r.placeholderDisplay, '占位「在此签名」签名后须真实不可见（.placeholder[hidden] 覆盖 display:flex）').toBe(
+    'none',
+  )
   expect(r.live).toContain('已签名')
 
   // 清空按钮：value 归空 + 派发 { value: '' }，状态回到未签名
