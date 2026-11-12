@@ -1017,6 +1017,27 @@ export class OASKanban extends OASElement {
     }
   }
 
+  /** 受控折叠集合内容比较（echo 判定）：同 size 且逐项命中 */
+  private sameCollapsedSet(a: Set<string>, b: Set<string>): boolean {
+    if (a.size !== b.size) return false
+    for (const key of a) if (!b.has(key)) return false
+    return true
+  }
+
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    // collapsed-columns 受控回显（echo）短路：宿主监听 oas-collapse-change 同步回写相同内容
+    // （受控惯例链：用户折叠 → 事件 → 宿主回写属性）时，解析结果与当前内部集合内容相等 →
+    // 跳过基类 update——整板重建会销毁刚聚焦的窄条/折叠钮，键盘焦点跌落 body（复审实抓）。
+    // 原文真变化（内容不等）→ 走基类正常路径（update → parse 按原文变化重解析覆盖，含非法
+    // JSON 空集语义不变）。原文缓存不在本路径同步：parse() 的「原文变化才重解析」判定照常
+    // 工作（echo 短路后若其它通道触发 parse，重复解析内容相等覆盖，无视觉影响）。
+    if (name === 'collapsed-columns' && this.hasRendered) {
+      const next = this.parseCollapsedColumnsAttr(newValue)
+      if (this.sameCollapsedSet(next, this.collapsedColumns)) return
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
   private parseJsonArray(name: string): unknown[] {
     const raw = this.getAttribute(name)
     if (raw == null) return []

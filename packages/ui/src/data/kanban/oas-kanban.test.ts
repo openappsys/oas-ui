@@ -1438,6 +1438,30 @@ describe('OASKanban', () => {
       expect(shadow(el).querySelector('.column-rail')).toBeNull()
       expect(shadow(el).querySelectorAll('.lane[data-lane]').length, '泳道不受影响').toBe(3)
     })
+
+    it('受控回显（echo）：宿主回写相同内容不重建整板、窄条节点与键盘焦点保持（复审 A2 回归）', () => {
+      const el = mount({ collapsible: '', 'collapsed-columns': '[]' })
+      // 受控回显链：用户折叠 → 焦点回窄条 → 宿主监听 oas-collapse-change 同步回写相同内容
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      const rail = shadow(el).querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
+      expect(shadow(el).activeElement, '折叠后焦点在窄条').toBe(rail)
+      const paintsBefore = windowPaints(el)
+      el.setAttribute('collapsed-columns', '["todo"]') // echo：内容与内部集合相等
+      expect(windowPaints(el), 'echo 不触发整板重建（重建会销毁聚焦窄条）').toBe(paintsBefore)
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]'), '窄条节点未销毁').toBe(rail)
+      expect(shadow(el).activeElement, '焦点保持在窄条不跌 body').toBe(rail)
+    })
+
+    it('宿主原文真变化（内容不等）：照常整板重建（echo 短路不破坏受控写回语义）', () => {
+      const el = mount({ collapsible: '', 'collapsed-columns': '["todo"]' })
+      const paintsBefore = windowPaints(el)
+      el.setAttribute('collapsed-columns', '["doing"]') // 内容真变化
+      expect(windowPaints(el), '真变化触发重建').toBeGreaterThan(paintsBefore)
+      expect(shadow(el).querySelector('.column-rail[data-key="doing"]')).toBeInstanceOf(HTMLElement)
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeNull()
+    })
   })
 
   // ===== 列合计（列定义 summary 数值 → 列底合计行） =====
