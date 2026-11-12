@@ -2,6 +2,8 @@
 
 A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect. Set `type="countup"` to switch to count-up mode (increments from `start`, no end point).
 
+Timing is timestamp-based (target moment minus current time): browser throttling of timers in background tabs never accumulates drift, and the first refresh frame after returning to the foreground self-corrects to real time.
+
 ## Basic Usage
 
 <DemoBlock title="Default HH:mm:ss">

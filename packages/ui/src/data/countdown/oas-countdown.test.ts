@@ -399,4 +399,63 @@ describe('OASCountdown', () => {
     // 正计时语义：断开期间真实时间已流逝，重连后一并累计（无截止点可过期）
     expect(display(el)).toBe('00:00:06')
   })
+
+  // ---- 后台标签语义（document.hidden 期间计时基于时间戳记账，不漂移） ----
+  // 浏览器对后台标签的 setInterval 节流（时钟照走、任务不执行）；
+  // 本组件显示值恒由「目标时刻 − Date.now()」推算（非逐 tick 递减累加），
+  // 故节流不累积漂移，回到前台后首个 tick 即按真实时间校正——无需 visibilitychange 特判。
+
+  /** 模拟后台标签环境：document.hidden=true（组件不读它，仅还原真实浏览器语境） */
+  function stubHidden(): () => void {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
+    return () => {
+      Reflect.deleteProperty(document, 'hidden')
+    }
+  }
+
+  it('倒计时：后台节流期间不漂移，恢复后首个 tick 即按真实时间校正', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '10000' })
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:08')
+    const restore = stubHidden()
+    expect(document.hidden).toBe(true)
+    // 后台 5s：时钟推进但定时器任务不执行（setSystemTime 只走时间不走任务，等价于浏览器节流）
+    vi.setSystemTime(Date.now() + 5000)
+    restore()
+    // 回到前台：首个 tick 立即按「目标时刻 − now」校正（漂移实现会停留在 00:00:08）
+    vi.advanceTimersByTime(250)
+    expect(display(el)).toBe('00:00:03')
+  })
+
+  it('倒计时：后台期间跨过截止点，恢复后一次 tick 内收尾且 oas-finish 只派发一次', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '3000' })
+    let finished = 0
+    el.addEventListener('oas-finish', () => finished++)
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:01')
+    const restore = stubHidden()
+    vi.setSystemTime(Date.now() + 5000)
+    restore()
+    vi.advanceTimersByTime(250)
+    expect(finished).toBe(1)
+    expect(display(el)).toBe('00:00:00')
+    // 收尾后计时器已停，不重复派发
+    vi.advanceTimersByTime(3000)
+    expect(finished).toBe(1)
+  })
+
+  it('正计时：后台节流期间按真实时间累计，恢复后无跳变无漂移', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup' })
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:01')
+    const restore = stubHidden()
+    vi.setSystemTime(Date.now() + 5000)
+    restore()
+    vi.advanceTimersByTime(250)
+    // 已计时 = elapsed + (now - startAt)：后台流逝的真实时间一并计入（漂移实现会停留在 00:00:01）
+    expect(display(el)).toBe('00:00:06')
+  })
 })
