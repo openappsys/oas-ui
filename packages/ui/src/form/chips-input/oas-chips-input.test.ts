@@ -207,8 +207,12 @@ describe('OASChipsInput 粘贴拆分', () => {
 
   it('粘贴批量逐项去重、受 max 截断并派发 oas-exceed-limit', () => {
     const el = mount({ value: '["a@b.co"]', max: '3' })
+    const exceeded: unknown[] = []
+    el.addEventListener('oas-exceed-limit', (e: Event) => exceeded.push((e as CustomEvent).detail))
     paste(el, 'a@b.co,c@d.co,e@f.co,g@h.co')
     expect(el.value).toEqual(['a@b.co', 'c@d.co', 'e@f.co'])
+    // 超限的 g@h.co 被拦截并派发（重复项 a@b.co 走静默去重，不占上限也不派发）
+    expect(exceeded).toEqual([{ value: 'g@h.co', max: 3 }])
   })
 })
 
@@ -298,6 +302,25 @@ describe('OASChipsInput 删除与回编辑', () => {
     pressKey(el, 'Backspace')
     expect(editInput(el)).toBeNull()
     expect(el.value).toEqual([])
+  })
+
+  it('回归：blur 发起的编辑提交不抢回焦点（点页面任意位置一次即可离开）', () => {
+    const el = mount({ value: '["a@b.co"]' })
+    pressKey(el, 'Backspace')
+    editInput(el)!.value = 'x@y.co'
+    // 用户编辑 chip 后点击页面任意位置：blur 提交，焦点不得被拽回主输入框
+    editInput(el)!.dispatchEvent(new FocusEvent('blur'))
+    expect(el.value).toEqual(['x@y.co'])
+    expect(el.shadowRoot!.activeElement).not.toBe(inputEl(el))
+  })
+
+  it('键盘 Enter 发起的编辑提交仍回焦点到主输入框（连续输入心智）', () => {
+    const el = mount({ value: '["a@b.co"]' })
+    pressKey(el, 'Backspace')
+    editInput(el)!.value = 'x@y.co'
+    editInput(el)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(el.value).toEqual(['x@y.co'])
+    expect(el.shadowRoot!.activeElement).toBe(inputEl(el))
   })
 })
 

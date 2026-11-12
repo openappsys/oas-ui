@@ -368,7 +368,8 @@ export class OASChipsInput extends OASElement {
       edit.value = label
       edit.addEventListener('keydown', (e: KeyboardEvent) => this.onEditKeydown(e, idx))
       edit.addEventListener('blur', () => {
-        if (this.editingIndex === idx) this.commitEdit(idx)
+        // blur 发起的提交（点击页面任意位置）不回焦点——否则焦点被拽回主输入框，需点两次才能离开
+        if (this.editingIndex === idx) this.commitEdit(idx, true)
       })
       item.appendChild(edit)
       return item
@@ -559,27 +560,31 @@ export class OASChipsInput extends OASElement {
   /**
    * 提交编辑：空值=删除该 chip；同旧值还原退出；与其他 chip 重复静默去重还原；
    * 成功写入并走邮箱校验（非法派发 oas-invalid），派发 oas-change(trigger=edit)。
+   * 焦点回归仅键盘发起路径（Enter/Esc/清空删除）执行；blur 发起（fromBlur）不抢焦点。
    */
-  private commitEdit(idx: number): void {
+  private commitEdit(idx: number, fromBlur = false): void {
     if (this.editingIndex !== idx) return
     const edit = this.chipsEl?.querySelector<HTMLInputElement>('.chip-edit')
     const oldValue = this.chips[idx] ?? ''
     const value = (edit?.value ?? '').trim()
+    const refocus = (): void => {
+      if (!fromBlur) this.inputEl?.focus()
+    }
     if (value === oldValue) {
       this.cancelEdit()
-      this.inputEl?.focus()
+      refocus()
       return
     }
     if (value === '') {
       this.editingIndex = null
       this.removeChip(idx)
-      this.inputEl?.focus()
+      refocus()
       return
     }
     if (this.chips.some((c, i) => i !== idx && c === value)) {
       this.warnDuplicate(value)
       this.cancelEdit()
-      this.inputEl?.focus()
+      refocus()
       return
     }
     this.chips[idx] = value
@@ -593,7 +598,7 @@ export class OASChipsInput extends OASElement {
     this.syncChips()
     this.syncInputState()
     this.emitChange('edit')
-    this.inputEl?.focus()
+    refocus()
   }
 
   private cancelEdit(): void {
