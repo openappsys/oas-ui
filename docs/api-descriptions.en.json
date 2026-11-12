@@ -2812,7 +2812,11 @@
       "oas-scan": "Fired when a code is recognized, detail { value, format? }; consecutive identical fingerprints are not re-fired, and detection auto-resumes after a throttling delay",
       "oas-error": "Fired when camera or recognition capability is unavailable, detail { code }: `not-supported` (no BarcodeDetector) / `permission` (permission denied) / `camera` (camera error); the component falls back to manual input mode after firing"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "start": "Start camera scanning (equivalent to setting the `active` attribute)",
+      "stop": "Stop the camera and release the media stream (equivalent to removing the `active` attribute)"
+    }
   },
   "oas-radio": {
     "attrs": {
@@ -5316,6 +5320,10 @@
     "events": {
       "oas-change": "Dispatched on stroke end or clear (idempotent per value)"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "clear": "Clears the canvas and strokes; resets `value` to empty and dispatches `oas-change` by fingerprint",
+      "toDataURL": "Current canvas PNG dataURL; returns an empty string when the canvas has no strokes and no external image, or when canvas is unavailable"
+    }
   }
 }

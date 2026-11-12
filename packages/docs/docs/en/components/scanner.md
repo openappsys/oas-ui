@@ -81,8 +81,8 @@ Three failure classes fall back to manual mode automatically and fire `oas-error
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `start` | `start(): void` | start()/stop()：active 属性的命令式便捷（状态仍以属性为准） |
-| `stop` | `stop(): void` | 停止相机并释放媒体流（`active` 属性的命令式便捷，状态仍以属性为准） |
+| `start` | `start(): void` | Start camera scanning (equivalent to setting the `active` attribute) |
+| `stop` | `stop(): void` | Stop the camera and release the media stream (equivalent to removing the `active` attribute) |
 
 #### Events
 

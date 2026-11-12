@@ -2684,7 +2684,11 @@
       "oas-scan": "识别到码值时派发，detail { value, format? }；连续相同指纹不重复派发，命中后节流自动继续",
       "oas-error": "相机或识别能力不可用时派发，detail { code }：`not-supported`（无 BarcodeDetector）/ `permission`（权限被拒）/ `camera`（相机错误）；派发后自动降级手动输入模式"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "start": "开启相机扫描（等价于置位 `active` 属性）",
+      "stop": "停止相机并释放媒体流（等价于移除 `active` 属性）"
+    }
   },
   "oas-radio": {
     "attrs": {
@@ -5059,6 +5063,10 @@
     "events": {
       "oas-change": "笔画结束或清空时派发（同值幂等去重）"
     },
-    "slots": {}
+    "slots": {},
+    "methods": {
+      "clear": "清空画布与笔迹，value 归空并按指纹派发 oas-change",
+      "toDataURL": "当前画布 PNG dataURL；空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串"
+    }
   }
 }

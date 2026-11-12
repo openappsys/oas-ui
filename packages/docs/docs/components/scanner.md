@@ -81,8 +81,8 @@ el.stop()    // = removeAttribute('active')：停止并关流
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `start` | `start(): void` | start()/stop()：active 属性的命令式便捷（状态仍以属性为准） |
-| `stop` | `stop(): void` | 停止相机并释放媒体流（`active` 属性的命令式便捷，状态仍以属性为准） |
+| `start` | `start(): void` | 开启相机扫描（等价于置位 `active` 属性） |
+| `stop` | `stop(): void` | 停止相机并释放媒体流（等价于移除 `active` 属性） |
 
 #### 事件
 

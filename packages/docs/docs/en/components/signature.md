@@ -134,8 +134,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `clear` | `clear(): void` | 清空画布与笔迹，value 归空并按指纹派发 oas-change。 |
-| `toDataURL` | `toDataURL(): string` | 当前画布 PNG dataURL。空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串。 |
+| `clear` | `clear(): void` | Clears the canvas and strokes; resets `value` to empty and dispatches `oas-change` by fingerprint |
+| `toDataURL` | `toDataURL(): string` | Current canvas PNG dataURL; returns an empty string when the canvas has no strokes and no external image, or when canvas is unavailable |
 
 #### Events
 

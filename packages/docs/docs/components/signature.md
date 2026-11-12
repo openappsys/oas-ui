@@ -134,8 +134,8 @@ onMounted(() => {
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `clear` | `clear(): void` | 清空画布与笔迹，value 归空并按指纹派发 oas-change。 |
-| `toDataURL` | `toDataURL(): string` | 当前画布 PNG dataURL。空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串。 |
+| `clear` | `clear(): void` | 清空画布与笔迹，value 归空并按指纹派发 oas-change |
+| `toDataURL` | `toDataURL(): string` | 当前画布 PNG dataURL；空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串 |
 
 #### 事件
 
