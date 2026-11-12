@@ -210,7 +210,7 @@ No data / invalid JSON shows an empty state placeholder without errors.
 
 <script setup>
 import { onMounted } from 'vue'
-import { onUpgraded } from '../.vitepress/theme/when-defined'
+import { onUpgraded } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   // Property channel: a function cannot travel through an attribute (JSON drops it).
   // Upgrade guard: writing tooltipFormatter before upgrade creates an own property that shadows the setter
