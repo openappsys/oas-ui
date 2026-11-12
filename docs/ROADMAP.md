@@ -2,6 +2,15 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（P0 组件能力批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **scheduler 冲突校验 + 时刻块键盘可达** | 新属性 `conflict-check`（opt-in）：同日同时段重叠检测（半开区间纯函数）+ `.event.conflict` 视觉标记 + `oas-event-conflict` 幂等事件（detail `{ id, conflicts }`，消解发空数组）；时刻块补键盘路径（←/→ 整天改期 RTL 镜像、Alt+←/→ 缩放 end ±15min、aria-keyshortcuts）；i18n `scheduler.conflict` ×16。拖改期/拉伸已存在不重复 | 📋 待开发 |
+| **chart 横向条 + 自定义 tooltip（opt-in）** | `type="horizontal-bar"`（数值轴底部/分类左缘/RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 边界不破）+ property `tooltipFormatter`；开启后 shadow 单例浮层（part="tooltip"，反色 token，table cell-tooltip 模式 + computePosition）+ `oas-chart-tooltip` 事件宿主可 preventDefault 接管；i18n `chart.horizontal-bar` ×16 | 📋 待开发 |
+| **oas-scanner 新组件（data 组）** | 相机扫码：`active` 驱动 getUserMedia + 原生 `BarcodeDetector`（不引第三方解码库）；`oas-scan`（detail `{ value, format? }`）/`oas-error`（not-supported/permission/camera）幂等；无相机/无权限自动降级手动输入（`manual` 显式开）；不进 SSR 白名单（TAG_ENTRY 登记 + docs/ssr.md 计数）；forced-colors 焦点兜底 | 📋 待开发 |
+| **oas-signature 新组件（data 组）** | 签名板：canvas 笔迹（pointer 捕获/touch-action none/DPR 倍率/token 实色解析/resize 保留笔迹）；`value`（dataURL 双通道）/`pen-size`/`pen-color`/`height`/`disabled`/`readonly`/`clearable`；`oas-change`（笔画结束，幂等）+ `clear()`/`toDataURL()`；role=img + i18n aria-label；forced-colors 文档注明限制；不进 SSR 白名单；form-associated 二期 | 📋 待开发 |
+
 ## v2.6.7（工具链）
 
 | 范围 | 内容 | 状态 |

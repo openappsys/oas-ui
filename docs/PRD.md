@@ -5,6 +5,52 @@
 
 ---
 
+## 未发布：P0 组件能力批（scheduler 冲突校验 / chart 横向条与 tooltip / oas-scanner / oas-signature）
+
+### 功能定义
+
+四项组件能力一批，来源为 everything 全量应用差距调研的立项决策（原则：做组件能力，不做产品）。scheduler 补冲突校验与键盘可达；chart 补横向条与 opt-in 自定义 tooltip；新增 oas-scanner（相机扫码）与 oas-signature（签名板）两个通用件。
+
+### 详细需求
+
+**① scheduler 冲突校验 + 时刻块键盘可达**
+
+- 新属性 `conflict-check`（在场布尔，默认关）：开启后同日同时段重叠事件加视觉标记（`.event.conflict` 虚线 outline，danger token 族）+ 派发 `oas-event-conflict`（detail `{ id, conflicts: string[] }`，bubbles+composed，**幂等**：数据签名变化才重发，消解发空数组，照 gantt `oas-resource-conflict` 口径）。
+- 冲突检测纯函数：同日 + 分钟区间相交（半开区间判据，与 `layoutTimedLanes` 同构）；全日历口径，不按 resource 区分（真实需求出现再扩展）。
+- 时刻块键盘可达（现有缺口）：`.timeview .event` 加 keydown——`←/→` 整天改 `date`（RTL 镜像，照 span 条语义）、`Alt+←/→` 缩放 `end`（±15min 步进，不越过 start/24:00）；`aria-keyshortcuts` 同步声明。
+- 范围外声明：时刻块拖改期/拉伸**已存在**（HTML5 DnD move 30min 吸附 + 双缘指针缩放 15min 吸附 + undo），本批不重复。
+- i18n 新 key `scheduler.conflict`（视觉可读名/事件摘要）×16 语言。
+
+**② chart 横向条 + 自定义 tooltip（opt-in）**
+
+- `type` 新值 `horizontal-bar`：数值轴在底部（竖网格线）、分类标签贴左缘、条左→右增长；**RTL 不镜像**（`svg{direction:ltr}` 几何正交契约不破）。
+- `options.tooltip?: boolean`（attribute/property 双通道，**默认 false**——默认保持原生 `<title>`，文档既定边界「零孤儿浮层」不破）+ property 通道 `tooltipFormatter?: (ctx: {label, value, seriesName?, seriesIndex, percent?}) => string`。
+- tooltip 开启后：shadow DOM 内单例浮层（`part="tooltip"`，反色 token `--oas-tooltip-bg/color`，照 table cell-tooltip 模式），svg 上委托 pointerover/pointerout，锚点 `getBoundingClientRect` + `computePosition`（传 `resolveDirection(this)`）；数据重绘/滚动时隐藏；断连销毁。
+- 新事件 `oas-chart-tooltip`（detail 同 ctx），宿主 `preventDefault()` 可接管（接管则不显示默认浮层）。
+- i18n 新 key `chart.horizontal-bar` ×16 语言。
+
+**③ oas-scanner 新组件（data 组，相机扫码）**
+
+- `active` 属性（在场）驱动请求相机并预览；解码用浏览器原生 `BarcodeDetector`（不引第三方解码库）；`oas-scan` 事件 detail `{ value, format? }`、`oas-error` detail `{ code: 'not-supported' | 'permission' | 'camera' }`，均幂等去重。
+- 降级链：无 `BarcodeDetector`/权限被拒/相机错误 → 自动落手动输入模式（`manual` 属性可显式开启）；happy-dom 等无相机环境下行为确定可测。
+- 不进 SSR 白名单（`packages/ssr/src/index.ts` TAG_ENTRY 显式登记 + `docs/ssr.md` 计数同步）；手动输入行 label 关联；forced-colors 焦点环兜底（库级批模式）。
+- 自研解码算法**不在本期**：原生 API 覆盖 + 手动降级，限制如实写文档边界条。
+
+**④ oas-signature 新组件（data 组，签名板）**
+
+- canvas 笔迹捕获：pointer 事件（touch-action: none）、DPR 倍率（watermark `devicePixelRatioOf` 先例）、笔色取 token 实色（getComputedStyle 解析，watermark 先例）、容器 resize 重绘保留笔迹。
+- API：`value`（dataURL PNG，双通道可受控）、`pen-size`（默认 2）、`pen-color`（默认 token 解析实色）、`height`（默认 160）、`disabled`/`readonly`/`clearable`（在场=清空按钮）；`oas-change` 事件 detail `{ value }`（笔画结束派发，幂等）；方法 `clear()` / `toDataURL(): string`。
+- a11y：画布 `role="img"` + i18n aria-label；清空按钮键盘可达。forced-colors 决策：**文档注明限制**（canvas 笔迹不可被系统换色），v1 不做 DOM 描边副本。
+- 不进 SSR 白名单（template 占位骨架 + hydrate 校验，barcode 模式）；form-associated v1 不做（value + `oas-change` 契约，二期视真实需求）。
+
+### 验收
+
+- 四组件全部 TDD（RED→GREEN）：scheduler/chart 组件内单测 + qa-regression e2e 随任务固化；scanner/signature 单测随任务、注册后跑各自 e2e（收口任务统一注册后执行）。
+- 新文档页（scanner/signature）触发全量 e2e（smoke/dark/code/visual/console-sweep 自动收集）。
+- i18n completeness（slices + locales 双层守卫）零漏；`pnpm api:scan && pnpm api:gen && pnpm api:check` 零漂移；`perf:size` 不破族天花板；`pnpm llms:gen/check`、`stats:gen/check`、`ssr:check` 全绿。
+- 用户视角门禁：demo 真点/真输入（tooltip 真 hover、扫码手动模式真实输入、签名板真实笔画）、交互态、dark/RTL、console 零告警、Vue 桥接属性存活。
+- 收口 ≥2 轮 × ≥2 模型交叉 review，修复批再审；每个修复项固化回归。
+
 ## v2.6.7：gantt 资源泳道增强批（分配编辑 + reassign 避让 + 泳道内嵌负荷 + 资源日历口径固化）
 
 ### 功能定义
