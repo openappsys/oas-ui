@@ -190,6 +190,12 @@ export class OASScanner extends OASElement {
   private scanKey: string | null = null
   /** oas-error 会话内去重 */
   private errorCodes = new Set<ScanErrorCode>()
+  /**
+   * 会话代数（epoch）：beginSession 递增。getUserMedia 是异步 promise，stop→start 竞态窗口里
+   * 新会话已开启而旧会话 promise 才 resolve——仅判 sessionStarted 无法识别（已重置 true），
+   * 旧流会被挂到 this.stream 且永不停止。resolve/catch 回调比对 epoch，不等即作废旧会话流。
+   */
+  private sessionEpoch = 0
 
   /* ---------------- 相机与检测循环 ---------------- */
 
@@ -330,6 +336,8 @@ export class OASScanner extends OASElement {
   /** 开启 active 会话：重置去重指纹 → 能力检测 → 请求相机 */
   private beginSession(): void {
     this.sessionStarted = true
+    this.sessionEpoch += 1
+    const epoch = this.sessionEpoch
     this.scanKey = null
     this.errorCodes = new Set()
     this.lastError = null
@@ -355,8 +363,9 @@ export class OASScanner extends OASElement {
     media
       .getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
       .then((stream) => {
-        // 孤儿流防护：resolve 前会话已结束（active 移除/断连）→ 立即关流
-        if (!this.sessionStarted) {
+        // 孤儿流/过期会话防护：resolve 前会话已结束（active 移除/断连），或 stop→start 竞态窗口里
+        // 新会话已开启（epoch 不等）→ 旧流整体作废立即关流，不留孤儿流占用相机
+        if (!this.sessionStarted || epoch !== this.sessionEpoch) {
           for (const track of stream.getTracks()) track.stop()
           return
         }
@@ -378,23 +387,28 @@ export class OASScanner extends OASElement {
         this.update()
       })
       .catch((err: unknown) => {
-        if (!this.sessionStarted) return
+        if (!this.sessionStarted || epoch !== this.sessionEpoch) return
         const name = (err as { name?: string } | undefined)?.name ?? ''
         this.fallManual(name === 'NotAllowedError' || name === 'SecurityError' ? 'permission' : 'camera')
-        this.update()
       })
   }
 
-  /** 失败降级：落手动模式 + 停资源 + 派发 oas-error（同会话同 code 只发一次） */
+  /**
+   * 失败降级：落手动模式 + 停资源 + 派发 oas-error（同会话同 code 只发一次）。
+   * 末尾统一重刷 UI（update）：所有调用路径（同步 beginSession / 异步 play 拒绝 /
+   * detectFrame 抽帧失败）都能立即反映状态区文案与手动行，不再依赖各调用方补刷。
+   */
   private fallManual(code: ScanErrorCode): void {
     if (!this.sessionStarted) return
     this.fallbackManual = true
     this.lastError = code
+    this.streaming = false
     this.stopResources()
     if (!this.errorCodes.has(code)) {
       this.errorCodes.add(code)
       this.emit('error', { code })
     }
+    this.update()
   }
 
   /**

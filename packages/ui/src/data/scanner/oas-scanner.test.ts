@@ -424,6 +424,98 @@ describe('OASScanner', () => {
       expect(videoOf(el).hasAttribute('hidden')).toBe(true)
     })
 
+    it('play() 被拒 → oas-error {code:"camera"} 且 UI 立即刷新（状态文案 + 手动行出现）——降级后不依赖外部属性变更重刷', async () => {
+      installDetector()
+      installMediaDevices(async () => fakeStream([{ stop: vi.fn() }]))
+      const el = new OASScanner()
+      const errors = track(el, 'oas-error')
+      document.body.appendChild(el)
+      // 覆写实例 play：模拟自动播放被浏览器策略拒绝
+      ;(videoOf(el) as unknown as Record<string, unknown>).play = () => Promise.reject(new Error('play blocked'))
+      el.setAttribute('active', '')
+      await flush()
+
+      expect(errors.length, 'play 拒绝派发一次 camera 错误').toBe(1)
+      expect(errors[0]!.detail).toEqual({ code: 'camera' })
+      // 修复回归：fallManual 内部统一 update——错误态立即可见，手动行立即出现
+      expect(statusOf(el).textContent, '状态区显示相机错误文案').toContain('相机')
+      expect(statusOf(el).className, '状态区错误配色 class 生效').toContain('error')
+      expect(formOf(el).hasAttribute('hidden'), '手动行立即出现（无需属性抖动触发重刷）').toBe(false)
+      expect(videoOf(el).hasAttribute('hidden'), 'video 不显示').toBe(true)
+    })
+
+    it('抽帧 canvas 无法取得 2d 上下文 → not-supported 降级且 UI 刷新（修复回归：fallManual 后无属性变更也可见）', async () => {
+      installDetector()
+      installMediaDevices(async () => fakeStream([{ stop: vi.fn() }]))
+      const el = new OASScanner()
+      const errors = track(el, 'oas-error')
+      document.body.appendChild(el)
+      const video = videoOf(el)
+      ;(video as unknown as Record<string, unknown>).videoWidth = 640
+      ;(video as unknown as Record<string, unknown>).videoHeight = 480
+      // 恢复 happy-dom 原生 getContext（返回 null）——describe 级 stub 之后单独还原本测
+      HTMLCanvasElement.prototype.getContext = realGetContext
+      try {
+        el.setAttribute('active', '')
+        await flush()
+        await new Promise((res) => setTimeout(res, DETECT_INTERVAL_MS + 30))
+
+        expect(errors.length, 'ctx 缺失派发一次 not-supported').toBe(1)
+        expect(errors[0]!.detail).toEqual({ code: 'not-supported' })
+        expect(statusOf(el).textContent, '状态区显示不支持文案').toContain('不支持')
+        expect(statusOf(el).className).toContain('error')
+        expect(formOf(el).hasAttribute('hidden'), '手动行立即出现').toBe(false)
+      } finally {
+        HTMLCanvasElement.prototype.getContext = function (): CanvasRenderingContext2D | null {
+          return { drawImage() {} } as unknown as CanvasRenderingContext2D
+        } as unknown as typeof HTMLCanvasElement.prototype.getContext
+      }
+    })
+
+    it('stop→start 竞态：pending 旧会话流 resolve 后作废并 stop，新会话流正常工作（会话 epoch 防孤儿流）', async () => {
+      vi.useFakeTimers()
+      try {
+        installDetector()
+        const resolvers: Array<(s: MediaStream) => void> = []
+        installMediaDevices(
+          () =>
+            new Promise<MediaStream>((res) => {
+              resolvers.push(res)
+            }),
+        )
+        const el = new OASScanner()
+        const errors = track(el, 'oas-error')
+        document.body.appendChild(el)
+        const video = videoOf(el)
+        ;(video as unknown as Record<string, unknown>).videoWidth = 640
+        ;(video as unknown as Record<string, unknown>).videoHeight = 480
+
+        // S1 pending 期间 stop→start：S1 的 epoch 过期
+        el.setAttribute('active', '') // S1
+        el.removeAttribute('active')
+        el.setAttribute('active', '') // S2
+        expect(resolvers.length, '两次激活各发起一次 getUserMedia').toBe(2)
+
+        const staleStop = vi.fn()
+        resolvers[0]!(fakeStream([{ stop: staleStop }]))
+        await flush()
+        expect(staleStop, '过期会话流立即 stop（不留孤儿流占用相机）').toHaveBeenCalledTimes(1)
+        expect(video.hasAttribute('hidden'), '过期流不接管 video').toBe(true)
+        expect(errors.length, '过期会话不派发 error').toBe(0)
+
+        const freshStop = vi.fn()
+        resolvers[1]!(fakeStream([{ stop: freshStop }]))
+        await flush()
+        expect(video.hasAttribute('hidden'), '新会话流正常接管 video 显示').toBe(false)
+        expect(freshStop, '新会话流未被误停').not.toHaveBeenCalled()
+
+        el.remove()
+        expect(freshStop, '断连清理停掉新会话流').toHaveBeenCalledTimes(1)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('断开连接清理：流关闭（track.stop）+ 检测循环停止 + 定时器清零，无孤儿产物', async () => {
       vi.useFakeTimers()
       try {
