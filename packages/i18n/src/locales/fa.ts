@@ -199,6 +199,7 @@ export const fa: LocaleMessages = {
   'scheduler.allDay': 'تمام روز',
   'scheduler.noEvents': 'رویدادی در این بازه نیست',
   'scheduler.loading': 'در حال بارگذاری منابع…',
+  'scheduler.conflict': 'تعارض زمانی',
   // gantt (نمودار گانت)
   'gantt.empty': 'وظیفه‌ای وجود ندارد',
   'gantt.listLabel': 'فهرست وظایف',
@@ -383,6 +384,7 @@ export const fa: LocaleMessages = {
   'chart.stacked-bar': 'نمودار ستونی انباشته',
   'chart.radar': 'نمودار راداری',
   'chart.polar-area': 'نمودار مساحتی قطبی',
+  'chart.horizontal-bar': 'نمودار میله‌ای افقی',
   'chart.empty': 'داده‌ای وجود ندارد',
   // code (بلوک کد)
   'code.copy': 'کپی',

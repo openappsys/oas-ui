@@ -199,6 +199,7 @@ export const uk: LocaleMessages = {
   'scheduler.allDay': 'Увесь день',
   'scheduler.noEvents': 'Немає подій у цьому діапазоні',
   'scheduler.loading': 'Завантаження ресурсів…',
+  'scheduler.conflict': 'Конфлікт за часом',
   // gantt (діаграма Ганта)
   'gantt.empty': 'Немає задач',
   'gantt.listLabel': 'Список задач',
@@ -383,6 +384,7 @@ export const uk: LocaleMessages = {
   'chart.stacked-bar': 'Стовпчикова діаграма з накопиченням',
   'chart.radar': 'Радарна діаграма',
   'chart.polar-area': 'Полярна діаграма',
+  'chart.horizontal-bar': 'Горизонтальна стовпчикова діаграма',
   'chart.empty': 'Немає даних',
   // code (блок коду)
   'code.copy': 'Копіювати',

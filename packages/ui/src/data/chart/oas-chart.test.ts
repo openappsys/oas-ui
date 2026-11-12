@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
@@ -1345,5 +1345,345 @@ describe('OASChart', () => {
     expect(
       [...svgOf(ok).querySelectorAll('text.axis-text')].filter((t) => t.getAttribute('text-anchor') === 'start').length,
     ).toBe(5)
+  })
+})
+
+/** 视口矩形 mock：happy-dom 无排版，getBoundingClientRect 恒零（浮层定位输入需显式给） */
+function mockRect(el: Element, r: { left: number; top: number; width: number; height: number }): void {
+  const rect = {
+    ...r,
+    x: r.left,
+    y: r.top,
+    right: r.left + r.width,
+    bottom: r.top + r.height,
+    toJSON: () => r,
+  } as DOMRect
+  vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect)
+}
+
+function tipOf(el: OASChart): HTMLElement | null {
+  return el.shadowRoot!.querySelector<HTMLElement>('[part="tooltip"]')
+}
+
+function hover(shape: Element): void {
+  shape.dispatchEvent(new Event('pointerover', { bubbles: true }))
+}
+
+describe('OASChart 横向条形图（type=horizontal-bar）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.documentElement.removeAttribute('dir')
+    setLocale('zh-CN')
+  })
+
+  it('条从绘图区左缘向右增长：同起点、宽度按值比例、首个分类在最上且等厚', () => {
+    const el = mount({ type: 'horizontal-bar', data: SINGLE })
+    const bars = [...svgOf(el).querySelectorAll<SVGRectElement>('rect.bar')]
+    expect(bars.length, '单系列横向条数量 = 分类数').toBe(3)
+    const xs = bars.map((b) => Number(b.getAttribute('x')))
+    expect(new Set(xs).size, '所有条共享左缘起点').toBe(1)
+    const widths = bars.map((b) => Number(b.getAttribute('width')))
+    expect(widths[1]! / widths[0]!, '值 20 的条宽是值 10 的两倍').toBeCloseTo(2, 1)
+    expect(widths[2]! / widths[0]!, '值 15 的条宽是值 10 的 1.5 倍').toBeCloseTo(1.5, 1)
+    const ys = bars.map((b) => Number(b.getAttribute('y')))
+    expect(ys[0]! < ys[1]! && ys[1]! < ys[2]!, '分类自上而下排列（首分类在最上）').toBe(true)
+    expect(new Set(bars.map((b) => b.getAttribute('height'))).size, '单系列条等厚').toBe(1)
+  })
+
+  it('数值轴在底部：竖网格线（x1=x2）+ 刻度文字在轴下方居中，量程走 nice 刻度', () => {
+    const el = mount({ type: 'horizontal-bar', data: SINGLE })
+    const svg = svgOf(el)
+    const lines = [...svg.querySelectorAll<SVGLineElement>('line.axis-line')]
+    expect(lines.length, 'nice 刻度 5 档 → 5 条网格线').toBe(5)
+    for (const l of lines) {
+      expect(l.getAttribute('x1'), '横向条网格线是竖线').toBe(l.getAttribute('x2'))
+      expect(Number(l.getAttribute('y1'))).toBe(16) // PAD.t
+      expect(Number(l.getAttribute('y2'))).toBe(254) // 轴基线（底部）
+    }
+    const ticks = [...svg.querySelectorAll('text.axis-text')]
+    expect(ticks.map((t) => t.textContent)).toEqual(['0', '5', '10', '15', '20'])
+    for (const t of ticks) {
+      expect(t.getAttribute('text-anchor'), '底部刻度文字居中对齐网格线').toBe('middle')
+      expect(Number(t.getAttribute('y')), '刻度文字在轴基线下方').toBeGreaterThan(254)
+    }
+  })
+
+  it('分类标签贴左缘（右对齐、不压绘图区），标签宽计入左留白不被裁切', () => {
+    const el = mount({ type: 'horizontal-bar', data: SINGLE })
+    const svg = svgOf(el)
+    const cats = [...svg.querySelectorAll('text.category-label')]
+    expect(cats.map((c) => c.textContent)).toEqual(['一月', '二月', '三月'])
+    const firstGridX = Number(svg.querySelector('line.axis-line')!.getAttribute('x1'))
+    for (const c of cats) {
+      expect(Number(c.getAttribute('x')), '标签锚点贴绘图区左缘（留 8 间隙）').toBe(firstGridX - 8)
+      expect(c.getAttribute('class'), '分类标签走专用类（锚点在样式里给 end）').toContain('category-label')
+    }
+    // 首标签左缘 = 锚点 - 标签宽，仍须落在 viewBox 内（列宽按实际标签宽推导）
+    const firstX = Number(cats[0]!.getAttribute('x'))
+    expect(firstX - 24, '首标签不越出 viewBox 左界').toBeGreaterThanOrEqual(0)
+  })
+
+  it('数据点带原生 title（文案与竖向柱状同口径）', () => {
+    const el = mount({ type: 'horizontal-bar', data: SINGLE })
+    const bar = svgOf(el).querySelector('rect.bar')!
+    expect(bar.querySelector('title')!.textContent).toBe('一月: 10')
+  })
+
+  it('aria-label 缺省走 i18n 的 chart.horizontal-bar', () => {
+    const el = mount({ type: 'horizontal-bar', data: SINGLE })
+    expect(wrapperOf(el).getAttribute('aria-label')).toBe('横向条形图')
+  })
+
+  it('多系列：每分类带内分组（系列数 × 分类数），忽略系列级 type（不进组合图分支）', () => {
+    const el = mount({
+      type: 'horizontal-bar',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [
+          { name: 'A', data: [1, 2] },
+          { name: 'B', data: [2, 1], type: 'line' },
+        ],
+      }),
+    })
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('rect.bar').length, '2 分类 × 2 系列').toBe(4)
+    expect(svg.querySelectorAll('.line-path').length, '横向条不进入 combo 分支').toBe(0)
+    // 同分类两个系列垂直相邻不重叠：y 不同、height 相同、间隙 ≥ 0
+    const bars = [...svg.querySelectorAll<SVGRectElement>('rect.bar')]
+    const y0 = Number(bars[0]!.getAttribute('y'))
+    const h0 = Number(bars[0]!.getAttribute('height'))
+    const y1 = Number(bars[1]!.getAttribute('y'))
+    expect(y1, '第二系列在第一系列下方').toBeGreaterThanOrEqual(y0 + h0)
+  })
+
+  it('密集分类：按行高垂直抽稀（不叠字），首行保留', () => {
+    const labels = Array.from({ length: 24 }, (_, i) => `C${i + 1}`)
+    const el = mount({
+      type: 'horizontal-bar',
+      data: JSON.stringify({ labels, series: [{ name: 'S', data: labels.map((_, i) => i + 1) }] }),
+    })
+    const cats = [...svgOf(el).querySelectorAll('text.category-label')]
+    expect(cats.length, '24 行放不下 24 个标签时必须抽稀').toBeLessThan(24)
+    expect(cats.length, '抽稀后仍需保留可读的若干标签').toBeGreaterThan(1)
+    expect(cats[0]!.textContent, '首分类标签保留').toBe('C1')
+    const ys = cats.map((c) => Number(c.getAttribute('y')))
+    for (let i = 1; i < ys.length; i++) {
+      expect(ys[i]! - ys[i - 1]!, '相邻标签行距 ≥ 行高（不叠字）').toBeGreaterThanOrEqual(14)
+    }
+  })
+
+  it('RTL 不镜像：dir=rtl 下渲染产出与 LTR 逐字节一致（svg direction 钉死 ltr）', () => {
+    const ltr = mount({ type: 'horizontal-bar', data: SINGLE })
+    const ltrHtml = svgOf(ltr).innerHTML
+    const css = ltr.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css, 'svg 文字方向钉死 ltr').toContain('direction: ltr')
+    ltr.remove()
+    document.documentElement.setAttribute('dir', 'rtl')
+    const rtl = mount({ type: 'horizontal-bar', data: SINGLE })
+    expect(svgOf(rtl).innerHTML, 'RTL 下横向条几何与 LTR 完全一致').toBe(ltrHtml)
+  })
+
+  it('空数据仍走空态占位', () => {
+    const el = mount({ type: 'horizontal-bar', data: '[]' })
+    expect(emptyOf(el).hasAttribute('hidden')).toBe(false)
+    expect(svgOf(el).hasAttribute('hidden')).toBe(true)
+  })
+})
+
+describe('OASChart opt-in 自定义 tooltip（options.tooltip）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const withTip = (attrs: Record<string, string> = {}): OASChart =>
+    mount({ data: SINGLE, options: '{"tooltip":true}', ...attrs })
+
+  it('默认未开启：shadow 内零浮层节点，图形也不带 tooltip 元数据（默认行为零变化）', () => {
+    const el = mount({ data: SINGLE })
+    expect(tipOf(el), '未开启时不得出现任何浮层节点').toBeNull()
+    expect(svgOf(el).querySelector('[data-chart-datum]'), '未开启时不注入元数据属性').toBeNull()
+    const el2 = mount({ type: 'bar', data: SINGLE })
+    expect(tipOf(el2)).toBeNull()
+  })
+
+  it('tooltip=true：单例浮层存在且默认隐藏（part/role 契约，多次更新不重复创建）', () => {
+    const el = withTip()
+    const tip = tipOf(el)!
+    expect(tip).not.toBeNull()
+    expect(tip.getAttribute('role')).toBe('tooltip')
+    expect(tip.getAttribute('data-visible')).toBe('false')
+    expect(tip.textContent).toBe('')
+    el.setAttribute('data', MULTI)
+    el.setAttribute('options', '{"tooltip":true,"smooth":true}')
+    expect(el.shadowRoot!.querySelectorAll('[part="tooltip"]').length, '浮层是单例').toBe(1)
+    expect(tipOf(el)!.getAttribute('data-visible'), '重绘后保持隐藏').toBe('false')
+  })
+
+  it('pointerover 显示浮层（默认文案 label: value，锚点按 getBoundingClientRect 定位），pointerout 隐藏', () => {
+    const el = withTip({ type: 'bar' })
+    const tip = tipOf(el)!
+    const shape = svgOf(el).querySelector('rect.bar')!
+    mockRect(shape, { left: 100, top: 120, width: 40, height: 20 })
+    hover(shape)
+    expect(tip.getAttribute('data-visible')).toBe('true')
+    expect(tip.textContent).toBe('一月: 10')
+    // top-start 锚点 + gap 6：left = 锚点 left、top = 锚点 top - 浮层高 - 6（happy-dom 浮层零尺寸）
+    expect(tip.style.left).toBe('100px')
+    expect(tip.style.top).toBe('114px')
+    shape.dispatchEvent(new Event('pointerout', { bubbles: true }))
+    expect(tip.getAttribute('data-visible')).toBe('false')
+  })
+
+  it('非数据图元（网格线）触发 pointerover 不显示浮层', () => {
+    const el = withTip({ type: 'bar' })
+    const tip = tipOf(el)!
+    hover(svgOf(el).querySelector('line.axis-line')!)
+    expect(tip.getAttribute('data-visible')).toBe('false')
+  })
+
+  it('tooltipFormatter（property 通道）覆盖文案并收到 ctx（多系列带 seriesName/seriesIndex）', () => {
+    const el = withTip({ type: 'bar', data: MULTI })
+    const calls: unknown[] = []
+    el.tooltipFormatter = (ctx) => {
+      calls.push(ctx)
+      return `${ctx.seriesName}/${ctx.label}=${ctx.value}#${ctx.seriesIndex}`
+    }
+    const bars = [...svgOf(el).querySelectorAll('rect.bar')]
+    hover(bars[3]!) // 系列 B 的第 1 个分类
+    expect(tipOf(el)!.textContent).toBe('B/一月=5#1')
+    expect(calls[0]).toEqual({ label: '一月', value: 5, seriesName: 'B', seriesIndex: 1 })
+  })
+
+  it('饼图 ctx.percent：与原生 title 的占比整数一致；单系列单条不带 seriesName', () => {
+    const el = mount({
+      type: 'pie',
+      options: '{"tooltip":true}',
+      data: JSON.stringify([
+        { label: 'a', value: 1 },
+        { label: 'b', value: 3 },
+      ]),
+    })
+    el.tooltipFormatter = (ctx) => `${ctx.percent}`
+    hover(svgOf(el).querySelectorAll('.slice')[0]!)
+    expect(tipOf(el)!.textContent).toBe('25')
+    el.tooltipFormatter = (ctx) => String(ctx.seriesName)
+    hover(svgOf(el).querySelectorAll('.slice')[0]!)
+    expect(tipOf(el)!.textContent, '未命名系列不注入 seriesName').toBe('undefined')
+  })
+
+  it('默认文案带系列名与占比（饼图）', () => {
+    const el = mount({
+      type: 'donut',
+      options: '{"tooltip":true}',
+      data: JSON.stringify({
+        labels: ['a', 'b'],
+        series: [{ name: '份额', data: [1, 3] }],
+      }),
+    })
+    hover(svgOf(el).querySelectorAll('.slice')[0]!)
+    expect(tipOf(el)!.textContent).toBe('份额 · a: 1 (25%)')
+  })
+
+  it('oas-chart-tooltip：detail 为 ctx、可穿出 shadow；preventDefault 接管后不显示默认浮层', () => {
+    const el = withTip({ type: 'bar' })
+    const seen: unknown[] = []
+    const onDoc = (e: Event): void => {
+      seen.push((e as CustomEvent).detail)
+      e.preventDefault()
+    }
+    document.addEventListener('oas-chart-tooltip', onDoc)
+    hover(svgOf(el).querySelector('rect.bar')!)
+    document.removeEventListener('oas-chart-tooltip', onDoc)
+    expect(seen, '事件冒泡并穿出 shadow（宿主可接管）').toEqual([{ label: '一月', value: 10, seriesIndex: 0 }])
+    expect(tipOf(el)!.getAttribute('data-visible'), '宿主接管 → 不显示默认浮层').toBe('false')
+
+    const el2 = withTip({ type: 'bar' })
+    const seen2: unknown[] = []
+    el2.addEventListener('oas-chart-tooltip', (e) => seen2.push((e as CustomEvent).detail))
+    hover(svgOf(el2).querySelector('rect.bar')!)
+    expect(seen2.length).toBe(1)
+    expect(tipOf(el2)!.getAttribute('data-visible'), '未接管 → 显示默认浮层').toBe('true')
+  })
+
+  it('数据重绘与页面滚动时隐藏浮层', () => {
+    const el = withTip({ type: 'bar' })
+    const tip = tipOf(el)!
+    const shape = svgOf(el).querySelector('rect.bar')!
+    hover(shape)
+    expect(tip.getAttribute('data-visible')).toBe('true')
+    el.setAttribute('data', MULTI)
+    expect(tip.getAttribute('data-visible'), '数据重绘即隐藏').toBe('false')
+
+    hover(svgOf(el).querySelector('rect.bar')!)
+    expect(tip.getAttribute('data-visible')).toBe('true')
+    document.dispatchEvent(new Event('scroll'))
+    expect(tip.getAttribute('data-visible'), '页面滚动即隐藏').toBe('false')
+  })
+
+  it('options.tooltip 关闭后销毁浮层节点（零孤儿）', () => {
+    const el = withTip()
+    expect(tipOf(el)).not.toBeNull()
+    el.setAttribute('options', '{"tooltip":false}')
+    expect(tipOf(el), '关闭后不得残留浮层节点').toBeNull()
+  })
+
+  // SSR（DSD）快照可能已带浮层节点：水合不重建 shadow，必须复用/清理而不是再建一个
+  it('shadow 内已有浮层节点（快照/水合路径）：开启时复用不重复创建，关闭时一并清除', () => {
+    const el = mount({ data: SINGLE })
+    const stray = document.createElement('div')
+    stray.setAttribute('part', 'tooltip')
+    el.shadowRoot!.appendChild(stray)
+    el.setAttribute('options', '{"tooltip":true}')
+    expect(el.shadowRoot!.querySelectorAll('[part="tooltip"]').length, '复用既有节点，不重复创建').toBe(1)
+    expect(tipOf(el), '复用后登记为单例（可正常显隐）').toBe(stray)
+    el.setAttribute('options', '{"tooltip":false}')
+    expect(el.shadowRoot!.querySelectorAll('[part="tooltip"]').length, '关闭时连快照残留一并清除').toBe(0)
+  })
+
+  it('formatter 抛错/返回非字符串时回退默认文案（不中断 hover）', () => {
+    const el = withTip({ type: 'bar' })
+    el.tooltipFormatter = () => {
+      throw new Error('boom')
+    }
+    hover(svgOf(el).querySelector('rect.bar')!)
+    expect(tipOf(el)!.textContent).toBe('一月: 10')
+    el.tooltipFormatter = (() => 42) as unknown as typeof el.tooltipFormatter
+    hover(svgOf(el).querySelector('rect.bar')!)
+    expect(tipOf(el)!.textContent).toBe('一月: 10')
+  })
+
+  it('数据标签含引号/尖括号：元数据不逃逸属性，浮层按纯文本渲染', () => {
+    const evil = 'x" onmouseover="globalThis.__pwn=1" <b>'
+    const el = mount({
+      type: 'bar',
+      options: '{"tooltip":true}',
+      data: JSON.stringify([{ label: evil, value: 3 }]),
+    })
+    const rect = svgOf(el).querySelector('rect.bar')!
+    expect(rect.hasAttribute('onmouseover'), '属性不得被引号逃逸注入事件').toBe(false)
+    expect(rect.querySelector('b'), '标签文本不得闭合属性注入节点').toBeNull()
+    hover(rect)
+    const tip = tipOf(el)!
+    expect(tip.textContent, '浮层原文呈现').toBe(`${evil}: 3`)
+    expect(tip.querySelector('b'), '浮层内容按纯文本写入（不解析 HTML）').toBeNull()
+  })
+
+  it('CSS 契约：浮层走反色 token + forced-colors 边界兜底', () => {
+    const el = withTip()
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.chart-tooltip\s*\{[^}]*var\(--oas-tooltip-bg/)
+    expect(css).toMatch(/\.chart-tooltip\s*\{[^}]*var\(--oas-tooltip-color/)
+    expect(css).toMatch(/@media \(forced-colors: active\) \{[^}]*\.chart-tooltip/)
   })
 })

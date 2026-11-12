@@ -199,6 +199,7 @@ export const ptBR: LocaleMessages = {
   'scheduler.allDay': 'Dia inteiro',
   'scheduler.noEvents': 'Sem eventos neste período',
   'scheduler.loading': 'Carregando recursos…',
+  'scheduler.conflict': 'Conflito de horário',
   // gantt (diagrama de Gantt)
   'gantt.empty': 'Sem tarefas',
   'gantt.listLabel': 'Lista de tarefas',
@@ -387,6 +388,7 @@ export const ptBR: LocaleMessages = {
   'chart.stacked-bar': 'Gráfico de barras empilhadas',
   'chart.radar': 'Gráfico de radar',
   'chart.polar-area': 'Gráfico de área polar',
+  'chart.horizontal-bar': 'Gráfico de barras horizontais',
   'chart.empty': 'Sem dados',
   // code (bloco de código)
   'code.copy': 'Copiar',

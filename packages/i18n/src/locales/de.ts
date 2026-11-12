@@ -199,6 +199,7 @@ export const de: LocaleMessages = {
   'scheduler.allDay': 'Ganztägig',
   'scheduler.noEvents': 'Keine Termine in diesem Zeitraum',
   'scheduler.loading': 'Ressourcen werden geladen…',
+  'scheduler.conflict': 'Zeitkonflikt',
   // gantt (Gantt-Diagramm)
   'gantt.empty': 'Keine Aufgaben',
   'gantt.listLabel': 'Aufgabenliste',
@@ -387,6 +388,7 @@ export const de: LocaleMessages = {
   'chart.stacked-bar': 'Gestapeltes Balkendiagramm',
   'chart.radar': 'Netzdiagramm',
   'chart.polar-area': 'Polardiagramm',
+  'chart.horizontal-bar': 'Horizontales Balkendiagramm',
   'chart.empty': 'Keine Daten',
   // code (Codeblock)
   'code.copy': 'Kopieren',

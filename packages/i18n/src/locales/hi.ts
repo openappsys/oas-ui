@@ -199,6 +199,7 @@ export const hi: LocaleMessages = {
   'scheduler.allDay': 'पूरा दिन',
   'scheduler.noEvents': 'इस अवधि में कोई ईवेंट नहीं',
   'scheduler.loading': 'संसाधन लोड हो रहे हैं…',
+  'scheduler.conflict': 'समय टकराव',
   // gantt (गैंट चार्ट)
   'gantt.empty': 'कोई कार्य नहीं',
   'gantt.listLabel': 'कार्य सूची',
@@ -383,6 +384,7 @@ export const hi: LocaleMessages = {
   'chart.stacked-bar': 'स्टैक्ड बार चार्ट',
   'chart.radar': 'रडार चार्ट',
   'chart.polar-area': 'पोलर एरिया चार्ट',
+  'chart.horizontal-bar': 'क्षैतिज बार चार्ट',
   'chart.empty': 'कोई डेटा नहीं',
   // code (कोड ब्लॉक)
   'code.copy': 'कॉपी करें',

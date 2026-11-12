@@ -2,9 +2,20 @@ import { findConfigProvider } from '@oas-ui/core/config-context'
 import { escapeText, escapeAttr } from '@oas-ui/core/escape'
 import { OASElement } from '@oas-ui/core/oas-element'
 import { getLocaleName } from '@oas-ui/i18n/registry'
+import { computePosition, getViewport } from '../../overlay/floating/index.js'
+import { resolveDirection } from '../../shared/direction.js'
 import { formatTick, niceTicks, type ChartTicks } from './ticks.js'
 
-export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'donut' | 'stacked-bar' | 'radar' | 'polar-area'
+export type ChartType =
+  | 'line'
+  | 'bar'
+  | 'pie'
+  | 'area'
+  | 'donut'
+  | 'stacked-bar'
+  | 'radar'
+  | 'polar-area'
+  | 'horizontal-bar'
 
 export interface ChartDatum {
   label: string
@@ -23,6 +34,20 @@ export interface ChartSeries {
 export interface ChartData {
   labels: string[]
   series: ChartSeries[]
+}
+
+/** 单个数据点的悬停上下文（opt-in 浮层与 `oas-chart-tooltip` 事件共用同一形状） */
+export interface ChartTooltipContext {
+  /** 分类标签（`data.labels[i]`） */
+  label: string
+  /** 该数据点的数值 */
+  value: number
+  /** 系列名（单系列数组数据/无名系列不提供） */
+  seriesName?: string
+  /** 系列下标（饼系按分类着色，恒为 0） */
+  seriesIndex: number
+  /** 占比（整数百分比；仅饼/环形图按分类份额给出，其余图型不提供） */
+  percent?: number
 }
 
 export interface ChartOptions {
@@ -46,6 +71,12 @@ export interface ChartOptions {
    * 同时抬高绘图区为标签腾出底部留白。非法/非数字按 0，超范围夹到 0–90。
    */
   xLabelRotate?: number
+  /**
+   * opt-in 自定义悬停浮层（默认 false）：关闭时只用原生 `<title>`（零浮层节点）；
+   * 开启后在 shadow 内建单例浮层（`part="tooltip"`），并在 hover 数据图元时派发
+   * `oas-chart-tooltip`（宿主 `preventDefault()` 即接管、不显示默认浮层）。
+   */
+  tooltip?: boolean
 }
 
 /** 默认系列配色（只用 token，含暗色变体）；8 色循环，避免 >4 类别回落首色 */
@@ -140,6 +171,13 @@ svg {
 .bar {
   fill: currentColor;
 }
+/* 横向条分类标签：贴绘图区左缘（右对齐）。锚点写在样式里而非表现属性——
+   .axis-label 的 text-anchor: middle 会压过表现属性，横向条需要 end 对齐 */
+.category-label {
+  fill: var(--oas-color-text-secondary);
+  font-size: 12px;
+  text-anchor: end;
+}
 /* 饼图 */
 .slice {
   fill: currentColor;
@@ -199,12 +237,39 @@ svg {
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
 }
+/* ===== opt-in 自定义悬停浮层（options.tooltip）=====
+   反色浮层与 tooltip 组件同源 token（暗色自动可读）；fixed 定位 + 视口夹取由 floating 引擎计算；
+   pointer-events:none 防浮层遮挡数据图元触发 pointerout 抖动。
+   节点只在 tooltip 开启时创建（默认零浮层节点），关闭即销毁。 */
+.chart-tooltip {
+  position: fixed;
+  z-index: calc(var(--oas-z-index-base, 0) + 1000);
+  max-width: min(60vw, 360px);
+  box-sizing: border-box;
+  padding: var(--oas-space-1) var(--oas-space-2);
+  background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
+  color: var(--oas-tooltip-color, var(--oas-color-bg));
+  border-radius: var(--oas-radius-sm);
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.6;
+  word-break: break-word;
+  pointer-events: none;
+  display: none;
+}
+.chart-tooltip[data-visible='true'] {
+  display: block;
+}
 /* 数据更新动画：prefers-reduced-motion 时全局/局部关闭 */
 @media (prefers-reduced-motion: no-preference) {
   .bar.animate {
     transform-box: fill-box;
     transform-origin: bottom;
     animation: oas-chart-grow 0.5s var(--oas-ease-out);
+  }
+  /* 横向条从左侧基线向右生长（与竖条的自底向上互补） */
+  .bar.horizontal.animate {
+    transform-origin: left;
+    animation-name: oas-chart-grow-x;
   }
   .slice.animate,
   .line-path.animate,
@@ -218,8 +283,18 @@ svg {
 @keyframes oas-chart-grow {
   from { transform: scaleY(0); }
 }
+@keyframes oas-chart-grow-x {
+  from { transform: scaleX(0); }
+}
 @keyframes oas-chart-fade {
   from { opacity: 0; }
+}
+/* 高对比模式（forced-colors: active）兜底：反色底/文字被系统色覆盖后浮层与页面同色难辨 →
+   1px 系统色描边保住边界（描边落在浮层自身盒内，不参与定位计算） */
+@media (forced-colors: active) {
+  .chart-tooltip[data-visible='true'] {
+    border: 1px solid CanvasText;
+  }
 }
 `
 
@@ -239,18 +314,24 @@ const TICK_EDGE = 2
 const X_LABEL_GAP = 10
 /** x 轴旋转标签：行高余量（font-size 12px 的布局行盒 ≈14px，用于算底留白与竖排占宽） */
 const X_LABEL_LINE = 14
+/** 横向条形图底部留白：轴基线 + 刻度文字（12px 行盒，文字基线在轴下方 16 user 单位） */
+const HB_PAD_B = 26
+/** 横向条形图刻度文字与轴基线的距离（文字基线） */
+const HB_TICK_DY = 16
 
 /**
  * oas-chart —— 自研 SVG 图表（零第三方引擎）。
  *
  * 属性（kebab-case）：
- * - `type`：line / bar / pie / area / donut / stacked-bar / radar / polar-area，默认 line
+ * - `type`：line / bar / pie / area / donut / stacked-bar / radar / polar-area / horizontal-bar，默认 line
  * - `data`：JSON 字符串（数组单系列 `[{label,value}]` 或对象多系列
  *   `{labels:[...], series:[{name,data:[...]}]}`），property `data` 优先
- * - `options`：JSON 字符串（smooth / colors / showLegend / gradient / max / radarShape / xLabelRotate / yAxis）
+ * - `options`：JSON 字符串（smooth / colors / showLegend / gradient / max / radarShape / xLabelRotate / yAxis / tooltip）
+ * - property 通道：`tooltipFormatter`（函数，JSON 无法表达，只能走 JS）
  *
- * 渲染：SVG path/rect/circle 手写折线/柱状/饼图/面积/环形/堆叠柱状/雷达/极区；坐标轴刻度 + 网格线；
- * 每个数据点带原生 `<title>` 悬停显示数值；数据更新整体重绘（qrcode 同模式）。
+ * 渲染：SVG path/rect/circle 手写折线/柱状/横向条/饼图/面积/环形/堆叠柱状/雷达/极区；坐标轴刻度 + 网格线；
+ * 每个数据点带原生 `<title>` 悬停显示数值（`options.tooltip` 开启后叠加内置浮层）；
+ * 数据更新整体重绘（qrcode 同模式）。
  * 颜色只用 token（primary/success/warning/danger 系列，可 options.colors 覆盖）。
  * ARIA：容器 role="img" + aria-label（组件属性优先，缺省按类型走 i18n）。
  * 空态：无/非法数据 → 空态占位。
@@ -262,6 +343,13 @@ export class OASChart extends OASElement {
 
   private dataProp: ChartData | null = null
   private optionsProp: ChartOptions | null = null
+
+  /** 当前渲染是否开启内置浮层（update 时随 options 同步，hover 判定直接读） */
+  private tooltipOn = false
+  /** 单例浮层节点（开启时才创建，关闭即销毁） */
+  private tooltipEl: HTMLElement | null = null
+  /** 宿主自定义文案函数（property 通道；JSON 表达不了函数，attribute 无此能力） */
+  private formatterFn: ((ctx: ChartTooltipContext) => string) | null = null
 
   get data(): unknown {
     return this.dataProp
@@ -281,6 +369,21 @@ export class OASChart extends OASElement {
     if (this.isConnected) this.update()
   }
 
+  /**
+   * @apiProperty 自定义悬停文案：`el.tooltipFormatter = (ctx) => string`，返回串按纯文本写入浮层
+   * （不解析 HTML）；置 null 恢复默认文案（`系列名 · 分类: 值`，饼系带占比）。仅 `options.tooltip`
+   * 开启时参与渲染；函数无法用 attribute 表达，只有 property 通道。
+   */
+  get tooltipFormatter(): ((ctx: ChartTooltipContext) => string) | null {
+    return this.formatterFn
+  }
+
+  set tooltipFormatter(fn: ((ctx: ChartTooltipContext) => string) | null) {
+    this.formatterFn = typeof fn === 'function' ? fn : null
+    // 文案在 hover 时才求值：无需重绘 SVG，收起当前浮层避免残留旧文案
+    this.hideTooltip()
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -293,8 +396,38 @@ export class OASChart extends OASElement {
     `
   }
 
-  /** 缓存节点引用（render 与水合路径共用；chart 无事件绑定，图形渲染由 update 驱动） */
-  private bind(): void {}
+  /**
+   * 缓存节点引用与事件绑定（render 与水合路径共用，一次生命周期只走其中一条）。
+   * 图形渲染由 update 驱动重绘，但 svg 容器稳定——hover 委托挂在 svg 上；
+   * 页面级滚动隐藏用 document capture（scroll 不冒泡）。
+   */
+  private bind(): void {
+    this.bindListeners()
+    this.onCleanup(() => {
+      this.unbindListeners()
+      this.destroyTooltip()
+    })
+  }
+
+  /** 事件绑定（幂等：同 handler 同 target 由 addEventListener 规范去重；重连路径复用） */
+  private bindListeners(): void {
+    const svg = this.shadow.querySelector('svg')
+    svg?.addEventListener('pointerover', this.handlePointerOver)
+    svg?.addEventListener('pointerout', this.handlePointerOut)
+    document.addEventListener('scroll', this.handleDocScrollForTooltip, true)
+  }
+
+  private unbindListeners(): void {
+    const svg = this.shadow.querySelector('svg')
+    svg?.removeEventListener('pointerover', this.handlePointerOver)
+    svg?.removeEventListener('pointerout', this.handlePointerOut)
+    document.removeEventListener('scroll', this.handleDocScrollForTooltip, true)
+  }
+
+  /** 断开重连：cleanup 已摘除 document 级监听，此处恢复（svg shadow 内监听本就不随断开失效） */
+  protected override onReconnect(): void {
+    this.bindListeners()
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = this.template()
@@ -323,6 +456,12 @@ export class OASChart extends OASElement {
     // aria-label：组件属性优先，缺省按类型走 i18n
     wrapper.setAttribute('aria-label', this.getAttribute('aria-label') ?? this.t(`chart.${type}`))
 
+    // 浮层生命周期：重绘先收起（旧图形即将被替换）；开启才建单例、关闭即销毁（默认零浮层节点）
+    this.hideTooltip()
+    this.tooltipOn = options.tooltip === true
+    if (this.tooltipOn) this.ensureTooltip()
+    else this.destroyTooltip()
+
     if (!data || data.series.length === 0 || data.labels.length === 0) {
       svg.setAttribute('hidden', '')
       legend.setAttribute('hidden', '')
@@ -346,11 +485,12 @@ export class OASChart extends OASElement {
     this.renderLegend(legend, data, options)
   }
 
-  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar/radar/polar-area 八型 + combo 系列级混排） */
+  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar/radar/polar-area/horizontal-bar 九型 + combo 系列级混排） */
   private renderBody(type: ChartType, data: ChartData, options: ChartOptions): string {
     if (type === 'pie') return this.renderPie(data, options)
     if (type === 'donut') return this.renderDonut(data, options)
     if (type === 'stacked-bar') return this.renderStackedBars(data, options)
+    if (type === 'horizontal-bar') return this.renderHorizontalBars(data, options)
     if (type === 'polar-area') return this.renderPolarArea(data, options)
     if (type === 'radar') return this.renderRadar(data, options)
     if (type === 'area') {
@@ -451,7 +591,7 @@ export class OASChart extends OASElement {
       out += `<path class="radar-line ${cls} animate" d="${d}" fill="none"${style}></path>`
       pts.forEach((p, k) => {
         const label = this.datumLabel(data.labels[k] ?? '', series.data[k] ?? 0)
-        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${style}><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${style}${this.datumAttrs(options, data.labels[k] ?? '', series.data[k] ?? 0, si, series.name)}><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
     return out
@@ -548,7 +688,7 @@ export class OASChart extends OASElement {
       out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
-        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', series.data[i] ?? 0, si, series.name)}><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
     return out
@@ -595,7 +735,7 @@ export class OASChart extends OASElement {
       out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
-        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', series.data[i] ?? 0, si, series.name)}><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
     return defs + out
@@ -666,7 +806,7 @@ export class OASChart extends OASElement {
         const x = plotL + i * bandW + offset + bi * (barW + gap)
         const y = baseY - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
-        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', v, si, series.name)}><title>${this.escapeAttr(label)}</title></rect>`
       })
     })
 
@@ -687,7 +827,7 @@ export class OASChart extends OASElement {
       out += `<path class="line-path ${cls} animate" d="${path}"${this.colorStyle(color)}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
-        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', series.data[i] ?? 0, si, series.name)}><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
     return out
@@ -717,9 +857,84 @@ export class OASChart extends OASElement {
         const x = plotL + i * bandW + offset + si * (barW + gap)
         const y = PAD.t + plotH - h
         const label = this.datumLabel(data.labels[i] ?? '', v)
-        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></rect>`
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', v, si, series.name)}><title>${this.escapeAttr(label)}</title></rect>`
       })
     })
+    return out
+  }
+
+  /**
+   * 横向条形图：数值轴在底部（竖网格线 + 刻度文字居中于轴下方）、分类标签贴左缘、条从左向右增长。
+   * 数据口径与 `bar` 完全一致（数组单系列 / 对象多系列），多系列在分类带内上下分组（组内 1px 间隙）。
+   * 与书写方向正交：RTL 下不镜像（svg `direction: ltr` 钉死，几何恒为视口左→右增长）；
+   * 不参与组合图与双轴（单一数值轴语义，系列级 type/yAxisIndex 忽略——与 stacked-bar 同口径）。
+   */
+  private renderHorizontalBars(data: ChartData, options: ChartOptions): string {
+    const n = data.labels.length
+    const m = data.series.length
+    const plotT = PAD.t
+    const axisY = H - HB_PAD_B
+    const plotH = Math.max(1, axisY - plotT)
+
+    // 值轴刻度：全系列共用一套（横向条不启用副轴）
+    const ticks = niceTicks(this.maxValue(data), TICK_SEGMENTS)
+    const locale = this.tickLocale()
+    const labels = ticks.values.map((v) => formatTick(v, ticks.step, locale))
+
+    // 左留白 = 分类标签列宽（按实际标签宽推导，长标签不被裁切）；
+    // 右留白至少容纳末刻度标签的半宽（末刻度居中于绘图区右端）
+    const catGutter = data.labels.reduce((mx, s) => Math.max(mx, this.estimateLabelWidth(s)), 0) + TICK_GAP + TICK_EDGE
+    const plotL = Math.max(PAD.r, catGutter)
+    const lastTickW = this.estimateLabelWidth(labels[labels.length - 1] ?? '')
+    const padR = Math.max(PAD.r, lastTickW / 2 + TICK_EDGE)
+    const plotW = Math.max(1, W - plotL - padR)
+
+    // 竖网格线 + 底部刻度（刻度文字在轴基线下方，text-anchor=middle 对齐网格线）
+    let out = ''
+    const lines = ticks.values.length
+    for (let i = 0; i < lines; i++) {
+      const x = plotL + (i / (lines - 1)) * plotW
+      out += `<line class="axis-line" x1="${x.toFixed(1)}" y1="${plotT}" x2="${x.toFixed(1)}" y2="${axisY}"></line>`
+      out += `<text class="axis-text" x="${x.toFixed(1)}" y="${axisY + HB_TICK_DY}" text-anchor="middle">${labels[i] ?? ''}</text>`
+    }
+
+    out += this.renderCategoryLabels(data.labels, plotL, plotH / n, plotT)
+
+    const band = plotH / n
+    const gap = m > 1 ? 1 : 0
+    const barH = m > 1 ? (band * 0.72) / m : band * 0.45
+    // 条组整体居中于分类带（与竖条「柱组居中于 band」同口径）
+    const offset = (band - (m * barH + (m - 1) * gap)) / 2
+
+    data.series.forEach((series, si) => {
+      const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
+      const color = options.colors?.[si]
+      series.data.forEach((raw, i) => {
+        const v = Number(raw) || 0
+        const w = ticks.max > 0 ? Math.max(0, (v / ticks.max) * plotW) : 0
+        const y = plotT + i * band + offset + si * (barH + gap)
+        const label = this.datumLabel(data.labels[i] ?? '', v)
+        out += `<rect class="bar horizontal ${cls} animate" x="${plotL.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(1, barH).toFixed(1)}" rx="2"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', v, si, series.name)}><title>${this.escapeAttr(label)}</title></rect>`
+      })
+    })
+    return out
+  }
+
+  /**
+   * 横向条分类标签（贴绘图区左缘、右对齐）：按行高垂直抽稀，避免密集分类叠字；
+   * 与 x 轴水平抽稀同一取舍——只抽标签、不抽数据。行高不足时端点不与上一行硬挤
+   * （叠字优先级高于保留末分类），末行在整步网格上时自然保留。
+   */
+  private renderCategoryLabels(labels: string[], plotL: number, band: number, plotT: number): string {
+    const n = labels.length
+    if (n === 0) return ''
+    const need = X_LABEL_LINE + 2
+    const step = band > 0 ? Math.max(1, Math.ceil(need / band)) : 1
+    let out = ''
+    for (let i = 0; i < n; i += step) {
+      const cy = plotT + i * band + band / 2
+      out += `<text class="category-label" x="${(plotL - TICK_GAP).toFixed(1)}" y="${(cy + 4).toFixed(1)}">${this.escapeText(labels[i] ?? '')}</text>`
+    }
     return out
   }
 
@@ -756,7 +971,7 @@ export class OASChart extends OASElement {
         const y = PAD.t + plotH - acc - h
         const x = plotL + i * bandW + (bandW - barW) / 2
         const title = this.datumLabel(data.labels[i] ?? '', v)
-        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}><title>${this.escapeAttr(title)}</title></rect>`
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', v, si, series.name)}><title>${this.escapeAttr(title)}</title></rect>`
         acc += h
       })
     })
@@ -787,8 +1002,9 @@ export class OASChart extends OASElement {
       const y2 = cy + r * Math.sin(a2)
       const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
       const color = options.colors?.[i]
-      const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${Math.round((v / total) * 100)}%)`
-      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></path>`
+      const percent = Math.round((v / total) * 100)
+      const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${percent}%)`
+      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', v, 0, data.series[0]?.name, percent)}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out
@@ -823,8 +1039,9 @@ export class OASChart extends OASElement {
       const iy2 = cy + ir * Math.sin(a1)
       const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
       const color = options.colors?.[i]
-      const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${Math.round((v / total) * 100)}%)`
-      out += `<path class="slice ${cls} animate" d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${ix1.toFixed(1)} ${iy1.toFixed(1)} A ${ir} ${ir} 0 ${large} 0 ${ix2.toFixed(1)} ${iy2.toFixed(1)} Z"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></path>`
+      const percent = Math.round((v / total) * 100)
+      const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${percent}%)`
+      out += `<path class="slice ${cls} animate" d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${ix1.toFixed(1)} ${iy1.toFixed(1)} A ${ir} ${ir} 0 ${large} 0 ${ix2.toFixed(1)} ${iy2.toFixed(1)} Z"${this.colorStyle(color)}${this.datumAttrs(options, data.labels[i] ?? '', v, 0, data.series[0]?.name, percent)}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out
@@ -859,9 +1076,10 @@ export class OASChart extends OASElement {
       const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
       const color = options.colors?.[i]
       const label = this.datumLabel(data.labels[i] ?? '', v)
+      const tip = this.datumAttrs(options, data.labels[i] ?? '', v, 0, data.series[0]?.name)
       // 单分类（整圆）：SVG arc 起止点重合会被规范省略，改用 <circle> 才画得出来
       if (n === 1) {
-        out += `<circle class="slice ${cls} animate" cx="${cx}" cy="${cy}" r="${ri.toFixed(1)}"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></circle>`
+        out += `<circle class="slice ${cls} animate" cx="${cx}" cy="${cy}" r="${ri.toFixed(1)}"${this.colorStyle(color)}${tip}><title>${this.escapeAttr(label)}</title></circle>`
         angle += sweep
         return
       }
@@ -872,7 +1090,7 @@ export class OASChart extends OASElement {
       const y1 = cy + ri * Math.sin(a1)
       const x2 = cx + ri * Math.cos(a2)
       const y2 = cy + ri * Math.sin(a2)
-      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${this.colorStyle(color)}><title>${this.escapeAttr(label)}</title></path>`
+      out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${ri.toFixed(1)} ${ri.toFixed(1)} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${this.colorStyle(color)}${tip}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out
@@ -1053,6 +1271,164 @@ export class OASChart extends OASElement {
     return `${label}: ${value}`
   }
 
+  /**
+   * 数据图元的 tooltip 元数据。仅在 `options.tooltip` 开启时输出——默认渲染字节不变
+   * （默认行为零变化，也不给未开启的图表加无用属性）。值全部转义后注入，
+   * hover 委托据此还原 ctx，事件回调里不必反查数据表。
+   */
+  private datumAttrs(
+    options: ChartOptions,
+    label: string,
+    value: number,
+    seriesIndex: number,
+    seriesName?: string,
+    percent?: number,
+  ): string {
+    if (options.tooltip !== true) return ''
+    let out = ` data-chart-datum data-tip-label="${this.escapeAttr(label)}" data-tip-value="${this.escapeAttr(String(value))}" data-tip-series-index="${seriesIndex}"`
+    if (seriesName) out += ` data-tip-series="${this.escapeAttr(seriesName)}"`
+    if (percent != null) out += ` data-tip-percent="${this.escapeAttr(String(percent))}"`
+    return out
+  }
+
+  // ==================== opt-in 自定义浮层（options.tooltip） ====================
+
+  /**
+   * 取（或惰性建）单例浮层：render 重建 shadow 后旧节点脱离文档，按 isConnected 检查重建。
+   * DSD 水合路径不重建 shadow——快照里已带浮层节点时直接接管，避免重复创建两个浮层。
+   */
+  private ensureTooltip(): HTMLElement {
+    if (this.tooltipEl?.isConnected) return this.tooltipEl
+    const existing = this.shadow.querySelector<HTMLElement>('[part="tooltip"]')
+    if (existing) {
+      this.tooltipEl = existing
+      return existing
+    }
+    const el = document.createElement('div')
+    el.className = 'chart-tooltip'
+    el.setAttribute('part', 'tooltip')
+    el.setAttribute('role', 'tooltip')
+    el.setAttribute('data-visible', 'false')
+    this.shadow.appendChild(el)
+    this.tooltipEl = el
+    return el
+  }
+
+  /** 显示浮层：文案 + top-start 锚定数据图元 + 视口夹取（与 table cell-tooltip 同源 floating 引擎） */
+  private showTooltip(shape: Element, ctx: ChartTooltipContext): void {
+    const el = this.ensureTooltip()
+    // 纯文本写入（formatter 返回值不解析 HTML）
+    el.textContent = this.tooltipText(ctx)
+    el.setAttribute('data-visible', 'true')
+    const pos = computePosition(
+      shape.getBoundingClientRect(),
+      el.getBoundingClientRect(),
+      'top-start',
+      getViewport(),
+      6,
+      true,
+      {
+        direction: resolveDirection(this),
+      },
+    )
+    el.style.left = `${pos.left}px`
+    el.style.top = `${pos.top}px`
+  }
+
+  /** 隐藏浮层（保留单例节点复用，只切可见态） */
+  private hideTooltip(): void {
+    this.tooltipEl?.setAttribute('data-visible', 'false')
+  }
+
+  /** 销毁浮层节点（tooltip 关闭 / 断开连接清理用；默认零孤儿浮层） */
+  private destroyTooltip(): void {
+    this.tooltipEl?.remove()
+    this.tooltipEl = null
+    // DSD 快照可能带出未登记的浮层节点：一并清掉（关闭即销毁，不留残余）
+    let stray = this.shadow.querySelector('[part="tooltip"]')
+    while (stray) {
+      stray.remove()
+      stray = this.shadow.querySelector('[part="tooltip"]')
+    }
+  }
+
+  /** 从数据图元的元数据属性还原 ctx（未开启 tooltip 的图形不带这些属性 → null） */
+  private ctxOfShape(shape: Element): ChartTooltipContext | null {
+    const label = shape.getAttribute('data-tip-label')
+    if (label == null) return null
+    const rawValue = Number(shape.getAttribute('data-tip-value'))
+    const rawIndex = Number(shape.getAttribute('data-tip-series-index'))
+    const seriesName = shape.getAttribute('data-tip-series')
+    const rawPercent = shape.getAttribute('data-tip-percent')
+    const ctx: ChartTooltipContext = {
+      label,
+      value: Number.isFinite(rawValue) ? rawValue : 0,
+      seriesIndex: Number.isFinite(rawIndex) ? rawIndex : 0,
+    }
+    if (seriesName) ctx.seriesName = seriesName
+    if (rawPercent != null) {
+      const percent = Number(rawPercent)
+      if (Number.isFinite(percent)) ctx.percent = percent
+    }
+    return ctx
+  }
+
+  /** 浮层文案：宿主 formatter 优先（抛错/返回非字符串回退默认，不打断 hover） */
+  private tooltipText(ctx: ChartTooltipContext): string {
+    if (this.formatterFn) {
+      try {
+        const out: unknown = this.formatterFn(ctx)
+        if (typeof out === 'string') return out
+      } catch {
+        /* 宿主 formatter 异常不影响浮层：回退默认文案 */
+      }
+    }
+    return this.defaultTooltipText(ctx)
+  }
+
+  /** 默认文案：`分类: 值`（带系列名时前置，饼系追加占比），与原生 `<title>` 同口径 */
+  private defaultTooltipText(ctx: ChartTooltipContext): string {
+    const base = this.datumLabel(ctx.label, ctx.value)
+    const text = ctx.seriesName ? `${ctx.seriesName} · ${base}` : base
+    return ctx.percent != null ? `${text} (${ctx.percent}%)` : text
+  }
+
+  /** pointerover 委托：命中数据图元先派发 `oas-chart-tooltip`，未被 preventDefault 才显示默认浮层 */
+  private handlePointerOver = (e: Event): void => {
+    if (!this.tooltipOn) return
+    const target = e.target as Element | null
+    const shape = typeof target?.closest === 'function' ? target.closest('[data-chart-datum]') : null
+    if (!shape || !this.shadow.contains(shape)) {
+      this.hideTooltip()
+      return
+    }
+    const ctx = this.ctxOfShape(shape)
+    if (!ctx) {
+      this.hideTooltip()
+      return
+    }
+    // 先派发：宿主 preventDefault() 即接管（接管则不显示默认浮层）
+    const notPrevented = this.emit('chart-tooltip', ctx, { cancelable: true })
+    if (!notPrevented) {
+      this.hideTooltip()
+      return
+    }
+    this.showTooltip(shape, ctx)
+  }
+
+  /** pointerout 委托：离开数据图元即隐藏（浮层 pointer-events:none 不会自遮挡） */
+  private handlePointerOut = (e: Event): void => {
+    if (!this.tooltipOn) return
+    const target = e.target as Element | null
+    if (typeof target?.closest === 'function' && target.closest('[data-chart-datum]')) this.hideTooltip()
+  }
+
+  /** 页面级/外层容器滚动时隐藏浮层（scroll 不冒泡，document capture 捕获——浮层滞留原位） */
+  private handleDocScrollForTooltip = (): void => {
+    if (!this.tooltipOn) return
+    this.hideTooltip()
+  }
+
   private maxValue(data: ChartData): number {
     let max = 0
     for (const s of data.series) for (const v of s.data) max = Math.max(max, Number(v) || 0)
@@ -1191,6 +1567,7 @@ export class OASChart extends OASElement {
     if (typeof obj.max === 'number' && Number.isFinite(obj.max)) out.max = obj.max
     if (typeof obj.xLabelRotate === 'number' && Number.isFinite(obj.xLabelRotate)) out.xLabelRotate = obj.xLabelRotate
     if (obj.radarShape === 'circle' || obj.radarShape === 'polygon') out.radarShape = obj.radarShape
+    if (typeof obj.tooltip === 'boolean') out.tooltip = obj.tooltip
     if (Array.isArray(obj.colors)) out.colors = obj.colors.map((c) => String(c))
     if (Array.isArray(obj.yAxis)) {
       // 轴名可选：条目存在即占位（缺名 = 无名轴）；仅第 2 项非空才启用右轴。

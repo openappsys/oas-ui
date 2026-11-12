@@ -1,6 +1,6 @@
 # Chart
 
-A self-developed SVG chart component (no third-party chart engine) supporting line / bar / pie / area / donut / stacked-bar / radar / polar-area, plus series-level combo and dual axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`.
+A self-developed SVG chart component (no third-party chart engine) supporting line / bar / horizontal-bar / pie / area / donut / stacked-bar / radar / polar-area, plus series-level combo and dual axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`; `options.tooltip` optionally enables the built-in hover overlay (the native `<title>` is used by default).
 
 ## Line Chart
 
@@ -21,6 +21,18 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 </DemoBlock>
 
 `type="bar"` renders grouped bars.
+
+## Horizontal Bar Chart
+
+<DemoBlock title="Horizontal bar chart (value axis at the bottom, categories on the left)">
+  <div style="width: 100%">
+    <oas-chart type="horizontal-bar" data='[{"label":"Beijing","value":86},{"label":"Shanghai","value":92},{"label":"Guangzhou","value":65},{"label":"Shenzhen","value":78}]'></oas-chart>
+  </div>
+</DemoBlock>
+
+`type="horizontal-bar"` puts the **value axis at the bottom** (tick labels centered under the vertical grid lines), pins category labels to the **left edge**, and grows bars from the plot's left edge to the right — a good fit for rankings with many or long category names. The data format is identical to `type="bar"` (array single series / object multi-series); multiple series are grouped top-to-bottom inside each category row, and legend / colors / `<title>` hover work the same as vertical bars. When rows are too tight the category labels are thinned vertically (labels only — never the data).
+
+Geometry stays orthogonal to writing direction: **RTL is not mirrored** (`svg { direction: ltr }` is pinned), so bars always grow left-to-right visually. Horizontal bars do not participate in combo or dual axis (single value-axis semantics); series-level `type` / `yAxisIndex` are ignored.
 
 ## Pie Chart
 
@@ -141,6 +153,37 @@ The same 36 days laid out two ways, and the trade-offs:
 - **The two combine**: `xLabelRotate` only supplies the angle while thinning guarantees no pile-up — the stride is recomputed from the rotated footprint and labels keep being skipped while spacing is short. For short labels (e.g. `09-01`) a 45° slant still projects ≈0.7 of the width, so the gain is limited; 45° mainly helps long labels (e.g. `2026-09-01`).
 - **Cost**: rotation lifts the plot area — the bottom padding is `10 + widest label×sinθ + line height` (for 90° driven by the label width), and the right padding must cover the rightmost label's horizontal projection; the plot gets shorter, so fewer y ticks are readable. Non-numeric angles fall back to 0; out-of-range values are clamped to 0–90.
 
+## Custom Hover Overlay (opt-in)
+
+<DemoBlock title="options.tooltip + tooltipFormatter (JS property channel)">
+  <div style="width: 100%">
+    <oas-chart id="chart-tip-format" type="bar" options='{"tooltip":true}' data='{"labels":["Q1","Q2","Q3"],"series":[{"name":"Online","data":[120,132,101]},{"name":"Stores","data":[90,95,110]}]}'></oas-chart>
+  </div>
+  <p id="chart-tip-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Hover a bar: the overlay shows the custom text ("series | category: value k")</p>
+</DemoBlock>
+
+<DemoBlock title="Taking over the overlay (oas-chart-tooltip + preventDefault)">
+  <div style="width: 100%">
+    <oas-chart id="chart-tip-takeover" type="bar" options='{"tooltip":true}' data='[{"label":"Jan","value":120},{"label":"Feb","value":132},{"label":"Mar","value":101}]'></oas-chart>
+  </div>
+  <p id="chart-tip-log" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Hover a bar: the host calls preventDefault(), the built-in overlay stays hidden and the reading lands here</p>
+</DemoBlock>
+
+```js
+const chart = document.querySelector('oas-chart')
+chart.setAttribute('options', '{"tooltip":true}') // attribute channel
+chart.tooltipFormatter = (ctx) => `${ctx.seriesName} | ${ctx.label}: ${ctx.value} k`
+chart.addEventListener('oas-chart-tooltip', (e) => {
+  e.preventDefault() // take over: no built-in overlay
+  console.log(e.detail) // { label, value, seriesName, seriesIndex, percent? }
+})
+```
+
+- **Zero overlay by default**: `options.tooltip` defaults to `false`, so only the native `<title>` is used and **no overlay node is created** inside the shadow root. When enabled the component creates a **singleton overlay** (`part="tooltip"`, inverse tokens `--oas-tooltip-bg` / `--oas-tooltip-color`, readable in dark mode); it hides on data redraw and page scroll, and is destroyed on disconnect.
+- **Text**: defaults to `seriesName · label: value`, with the percentage appended for pie/donut (e.g. `Share · R&D: 35 (35%)`); `tooltipFormatter` overrides it and its return value is written as **plain text** (never parsed as HTML). A function cannot be expressed in an attribute — `tooltipFormatter` is **property-only**.
+- **Takeover**: `oas-chart-tooltip` is dispatched before the built-in overlay is shown (`detail` is the context `{ label, value, seriesName?, seriesIndex, percent? }`; `percent` is provided by the pie family only). Calling `preventDefault()` suppresses the built-in overlay so the host can render its own.
+- **Coverage**: line/area dots, bars, horizontal bars, stacked segments, pie/donut sectors, radar vertices, polar sectors. The overlay is a pointer-only visual enhancement: the accessible name is still the container `aria-label` and values remain in the native `<title>`.
+
 ## Empty Data
 
 <DemoBlock title="Empty data placeholder">
@@ -165,6 +208,27 @@ No data / invalid JSON shows an empty state placeholder without errors.
 
 > Exception: if `oas-table`'s `columns` contain function fields (such as `render`, which JSON serialization would drop), the setter takes a pure in-memory path without reflecting — read those columns via the `el.columns` property.
 
+<script setup>
+import { onMounted } from 'vue'
+import { onUpgraded } from '../.vitepress/theme/when-defined'
+onMounted(() => {
+  // Property channel: a function cannot travel through an attribute (JSON drops it).
+  // Upgrade guard: writing tooltipFormatter before upgrade creates an own property that shadows the setter
+  const chart = document.getElementById('chart-tip-format')
+  onUpgraded(chart, () => {
+    if (chart) chart.tooltipFormatter = (ctx) => `${ctx.seriesName ?? ''} | ${ctx.label}: ${ctx.value} k`
+  })
+  // Takeover demo: preventDefault keeps the built-in overlay hidden and writes the reading back
+  const takeover = document.getElementById('chart-tip-takeover')
+  const log = document.getElementById('chart-tip-log')
+  takeover?.addEventListener('oas-chart-tooltip', (e) => {
+    e.preventDefault()
+    const d = e.detail
+    if (log) log.textContent = `oas-chart-tooltip taken over: ${d.label} = ${d.value} (seriesIndex ${d.seriesIndex}, built-in overlay suppressed)`
+  })
+})
+</script>
+
 ## API
 
 ### oas-chart
@@ -184,7 +248,9 @@ No data / invalid JSON shows an empty state placeholder without errors.
 
 - Data updates redraw the SVG (same pattern as qrcode), without rebuilding nodes
 - Empty / invalid data → empty state placeholder
-- Every data point carries a native `<title>` tooltip
+- Every data point carries a native `<title>` hover hint; with the default `options.tooltip: false` the shadow root holds zero overlay nodes (zero orphaned overlays). When enabled it is a singleton overlay (`part="tooltip"`) that hides on data redraw / page scroll and is destroyed on disconnect — still no orphans
+- Horizontal bars (`type="horizontal-bar"`) share the `bar` data contract, with the value axis at the bottom and category labels on the left edge; RTL is not mirrored (geometry is orthogonal to writing direction); they do not participate in combo or dual axis, and series-level `type` / `yAxisIndex` are ignored
+- `tooltipFormatter` is property-only (a function cannot be expressed in an attribute); its return value is written as plain text and never parsed as HTML. A throwing formatter or a non-string return falls back to the default text without breaking hover
 - When x-axis category labels are dense (spacing cannot fit the widest label) they are auto-thinned by available width (line/area keep the endpoints with priority; bars thin by width and keep them only when clipped); thinning only affects labels (data points are never thinned) and never rotates or adds an ellipsis — use `options.xLabelRotate` (0–90) for slanted/vertical labels, which still thin by rotated footprint as a backstop; horizontal labels align inward (`start`/`end`) only when they overflow the viewBox, and neighbors that would collide with them are removed by their own widths (bar / combo / stacked included; unclipped labels stay centered on their bar groups), so nothing is clipped
 - Animations are pure CSS (wrapped in `@media (prefers-reduced-motion: no-preference)`), auto-disabled under reduced-motion, with no JS timers; zero orphaned overlays
 - Radar uses one global scale (`options.max` or nice ticks); per-dimension scales are not supported yet — normalize your data first if needed (e.g. a 0–100 score)

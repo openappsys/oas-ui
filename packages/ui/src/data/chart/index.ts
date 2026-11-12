@@ -8,4 +8,4 @@ if (!customElements.get('oas-chart')) {
 }
 
 export { OASChart }
-export type { ChartType, ChartDatum, ChartSeries, ChartData, ChartOptions } from './oas-chart.js'
+export type { ChartType, ChartDatum, ChartSeries, ChartData, ChartOptions, ChartTooltipContext } from './oas-chart.js'

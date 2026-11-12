@@ -1,6 +1,6 @@
 # Chart 图表
 
-自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积八型，外加系列级组合图与双轴。数据更新自动重绘，`prefers-reduced-motion` 时关闭动画。
+自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 横向条形 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积九型，外加系列级组合图与双轴。数据更新自动重绘，`prefers-reduced-motion` 时关闭动画；`options.tooltip` 可选开启内置悬停浮层（默认只用原生 `<title>`）。
 
 ## 折线图
 
@@ -21,6 +21,18 @@
 </DemoBlock>
 
 `type="bar"` 渲染分组柱状。
+
+## 横向条形图
+
+<DemoBlock title="横向条形图（数值轴在底部，分类贴左缘）">
+  <div style="width: 100%">
+    <oas-chart type="horizontal-bar" data='[{"label":"北京","value":86},{"label":"上海","value":92},{"label":"广州","value":65},{"label":"深圳","value":78}]'></oas-chart>
+  </div>
+</DemoBlock>
+
+`type="horizontal-bar"` 把数值轴放到**底部**（刻度文字居中于竖网格线下方）、分类标签贴**左缘**、条从绘图区左缘向右增长，适合类目较多或类目名较长的排行场景。数据口径与 `type="bar"` 完全一致（数组单系列 / 对象多系列），多系列在同一分类行内自上而下分组，图例 / 配色 / `<title>` 悬停同竖向柱状；分类行数放不下标签时按行高垂直抽稀（只抽标签、不抽数据）。
+
+与书写方向正交：**RTL 下不镜像**（`svg { direction: ltr }` 钉死），条永远在视觉上从左向右增长。横向条不参与组合图与双轴（单一数值轴语义），系列级 `type` / `yAxisIndex` 一律忽略。
 
 ## 饼图
 
@@ -141,6 +153,37 @@
 - **两者可组合**：`xLabelRotate` 只给角度，抽稀负责保底——旋转后仍按投影宽度求步长，间距不够就继续跳号，永不叠字。短标签（如 `09-01`）斜排 45° 的横向投影仍有约 0.7 倍宽，收益有限；45° 主要利好长标签（如 `2026-09-01`）。
 - **代价**：旋转抬高绘图区——底留白 = `10 + 最宽标签×sinθ + 行高`（90° 按标签宽算），右留白至少容下最右标签的横向投影；绘图区变矮、纵轴可读档数变少。非数字角度按 0，超范围夹到 0–90。
 
+## 自定义悬停浮层（opt-in）
+
+<DemoBlock title="options.tooltip + tooltipFormatter（JS property 通道）">
+  <div style="width: 100%">
+    <oas-chart id="chart-tip-format" type="bar" options='{"tooltip":true}' data='{"labels":["一季度","二季度","三季度"],"series":[{"name":"线上","data":[120,132,101]},{"name":"门店","data":[90,95,110]}]}'></oas-chart>
+  </div>
+  <p id="chart-tip-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">把鼠标移到柱体上：浮层显示自定义文案（「系列｜分类：数值 万元」）</p>
+</DemoBlock>
+
+<DemoBlock title="接管浮层（oas-chart-tooltip + preventDefault）">
+  <div style="width: 100%">
+    <oas-chart id="chart-tip-takeover" type="bar" options='{"tooltip":true}' data='[{"label":"一月","value":120},{"label":"二月","value":132},{"label":"三月","value":101}]'></oas-chart>
+  </div>
+  <p id="chart-tip-log" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">鼠标移入柱体：宿主 preventDefault() 接管，内置浮层不再出现，读数写在这里</p>
+</DemoBlock>
+
+```js
+const chart = document.querySelector('oas-chart')
+chart.setAttribute('options', '{"tooltip":true}') // attribute 通道
+chart.tooltipFormatter = (ctx) => `${ctx.seriesName}｜${ctx.label}：${ctx.value} 万元`
+chart.addEventListener('oas-chart-tooltip', (e) => {
+  e.preventDefault() // 接管：组件不显示内置浮层
+  console.log(e.detail) // { label, value, seriesName, seriesIndex, percent? }
+})
+```
+
+- **默认零浮层**：`options.tooltip` 缺省 `false`，只有原生 `<title>` 悬停提示，shadow 内**不创建任何浮层节点**。开启后组件建**单例浮层**（`part="tooltip"`，反色 token `--oas-tooltip-bg` / `--oas-tooltip-color`，暗色自动可读）；数据重绘与页面滚动立即隐藏，断开连接销毁。
+- **文案**：缺省为 `系列名 · 分类: 值`，饼图/环形图追加占比（如 `份额 · 研发: 35 (35%)`）；`tooltipFormatter` 覆盖，返回串按**纯文本**写入浮层（不解析 HTML）。函数无法用 attribute 表达——`tooltipFormatter` **只有 property 通道**。
+- **接管**：显示内置浮层前先派发 `oas-chart-tooltip`（`detail` 即上下文 `{ label, value, seriesName?, seriesIndex, percent? }`，`percent` 仅饼系提供）；宿主 `preventDefault()` 后组件不渲染默认浮层，由宿主自行呈现。
+- **覆盖范围**：折线/面积数据点、柱、横向条、堆叠段、饼/环扇区、雷达顶点、极区扇区。浮层是 pointer 视觉增强，读屏可达名仍是容器 `aria-label`，数值仍在原生 `<title>` 中。
+
 ## 空数据
 
 <DemoBlock title="空数据占位">
@@ -165,6 +208,27 @@
 
 > 例外：`oas-table` 的 `columns` 若含函数字段（`render` 等，JSON 序列化会丢），setter 走纯内存路径不反射——此类列的读取请走 `el.columns` property。
 
+<script setup>
+import { onMounted } from 'vue'
+import { onUpgraded } from '../.vitepress/theme/when-defined'
+onMounted(() => {
+  // property 通道：函数无法用 attribute 表达（JSON 过不了函数）。
+  // 升级守卫：升级前写 tooltipFormatter 会成为自有属性遮蔽 setter（文案静默失效）
+  const chart = document.getElementById('chart-tip-format')
+  onUpgraded(chart, () => {
+    if (chart) chart.tooltipFormatter = (ctx) => `${ctx.seriesName ?? ''}｜${ctx.label}：${ctx.value} 万元`
+  })
+  // 接管演示：preventDefault 后组件不显示内置浮层，读数回写宿主文案
+  const takeover = document.getElementById('chart-tip-takeover')
+  const log = document.getElementById('chart-tip-log')
+  takeover?.addEventListener('oas-chart-tooltip', (e) => {
+    e.preventDefault()
+    const d = e.detail
+    if (log) log.textContent = `oas-chart-tooltip 已接管：${d.label} = ${d.value}（seriesIndex ${d.seriesIndex}，内置浮层已抑制）`
+  })
+})
+</script>
+
 ## API
 
 ### oas-chart
@@ -184,7 +248,9 @@
 
 - 数据更新重绘 SVG（同 qrcode 模式），节点不重建
 - 空/非法数据 → 空态占位
-- 每个数据点带原生 `<title>` tooltip，零孤儿浮层
+- 每个数据点带原生 `<title>` 悬停提示；`options.tooltip` 缺省 `false` 时 shadow 内零浮层节点（孤儿浮层为 0）。开启后为单例浮层（`part="tooltip"`），数据重绘/页面滚动隐藏、断开连接销毁——仍无孤儿节点
+- 横向条（`type="horizontal-bar"`）数据口径与 `bar` 相同，数值轴在底部、分类标签贴左缘；RTL 下不镜像（几何与书写方向正交）；不参与组合图与双轴，系列级 `type` / `yAxisIndex` 忽略
+- `tooltipFormatter` 只有 property 通道（函数无法用 attribute 表达），返回串按纯文本写入浮层、不解析 HTML；宿主 formatter 抛错或返回非字符串时回退默认文案，不中断 hover
 - x 轴分类标签密集（间距不足以容下最宽标签）时按可用宽度自动抽稀（折线/面积端点优先保留；柱状按宽度抽稀，端点越界时才保留）；抽稀只作用于标签（数据点不抽稀），不旋转/不加省略号——需要斜排/竖排时用 `options.xLabelRotate`（0–90），旋转后仍按投影宽度抽稀兜底；水平标签仅在越过 viewBox 左右界时向内对齐（首 `start` / 末 `end`），并按各标签自身宽度剔除会与端点相撞的相邻标签（柱状/组合/堆叠同样适用，未越界时仍与柱组中心对齐），不被裁切
 - 动画为纯 CSS（`@media (prefers-reduced-motion: no-preference)` 包裹），reduced-motion 下自动关闭，无 JS 计时器
 - radar 维度量程为全局统一（`options.max` 或 nice 刻度），暂不支持逐维独立量程——需要时宿主可先自行归一化（如 0-100 分制）

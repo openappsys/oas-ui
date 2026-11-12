@@ -199,6 +199,7 @@ export const he: LocaleMessages = {
   'scheduler.allDay': 'כל היום',
   'scheduler.noEvents': 'אין אירועים בטווח זה',
   'scheduler.loading': 'טוען משאבים…',
+  'scheduler.conflict': 'התנגשות בשעות',
   // gantt (תרשים גנט)
   'gantt.empty': 'אין משימות',
   'gantt.listLabel': 'רשימת משימות',
@@ -383,6 +384,7 @@ export const he: LocaleMessages = {
   'chart.stacked-bar': 'תרשים עמודות מוערם',
   'chart.radar': 'תרשים מכ"ם',
   'chart.polar-area': 'תרשים שטח קוטבי',
+  'chart.horizontal-bar': 'תרשים עמודות אופקי',
   'chart.empty': 'אין נתונים',
   // code (בלוק קוד)
   'code.copy': 'העתק',

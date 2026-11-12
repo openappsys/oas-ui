@@ -199,6 +199,7 @@ export const ko: LocaleMessages = {
   'scheduler.allDay': '종일',
   'scheduler.noEvents': '이 기간에 일정이 없습니다',
   'scheduler.loading': '리소스를 불러오는 중…',
+  'scheduler.conflict': '시간 충돌',
   // gantt（간트 차트）
   'gantt.empty': '작업이 없습니다',
   'gantt.listLabel': '작업 목록',
@@ -387,6 +388,7 @@ export const ko: LocaleMessages = {
   'chart.stacked-bar': '누적 막대 차트',
   'chart.radar': '레이더 차트',
   'chart.polar-area': '극좌표 영역 차트',
+  'chart.horizontal-bar': '가로 막대 차트',
   'chart.empty': '데이터 없음',
   // code（코드 블록）
   'code.copy': '복사',

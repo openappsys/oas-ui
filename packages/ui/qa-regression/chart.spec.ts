@@ -624,3 +624,197 @@ test('chart 密集标签/旋转/柱组居中：dir=rtl 与 ltr 逐项几何相�
   expect(r.thinLtr.anchors[r.thinLtr.anchors.length - 1], '末标签越出 viewBox → end').toBe('end')
   expect(new Set(r.thinLtr.anchors), '水平标签锚点仅 middle/end').toEqual(new Set(['middle', 'end']))
 })
+
+// 横向条形图（horizontal-bar）：数值轴在底部（竖网格线 + 刻度文字在轴下方）、分类标签贴左缘右对齐、
+// 条从绘图区左缘向右按值增长。happy-dom 无排版，此处用真实 getBBox 核对分类标签是否越界/压进绘图区；
+// dark / RTL 下几何必须与 light 相同（颜色 token 与书写方向都不参与坐标计算）。
+test('chart 横向条形图：真实 getBBox 分类标签贴左缘不越界、网格竖向、条向右增长，dark/RTL 零告警', async ({ page }) => {
+  const consoleNoise: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' || m.type() === 'warning') consoleNoise.push(`${m.type()}: ${m.text()}`)
+  })
+  page.on('pageerror', (e) => consoleNoise.push(`pageerror: ${e.message}`))
+
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+
+  const r = await page.evaluate(async () => {
+    await document.fonts.ready
+    const labels = ['北京', '上海', '广州', '深圳', '杭州']
+    const data = JSON.stringify(labels.map((label, i) => ({ label, value: (i + 1) * 20 })))
+
+    const measure = () => {
+      const el = document.createElement('oas-chart')
+      el.setAttribute('type', 'horizontal-bar')
+      el.setAttribute('data', data)
+      document.body.appendChild(el)
+      const svg = el.shadowRoot!.querySelector('svg')!
+      const bars = [...svg.querySelectorAll('rect.bar')] as SVGRectElement[]
+      const lines = [...svg.querySelectorAll('line.axis-line')] as SVGLineElement[]
+      const cats = [...svg.querySelectorAll('.category-label')] as SVGTextElement[]
+      const ticks = [...svg.querySelectorAll('text.axis-text')] as SVGTextElement[]
+      const firstGridX = Number(lines[0]!.getAttribute('x1'))
+      const axisY = Number(lines[0]!.getAttribute('y2'))
+      const boxOf = (t: SVGTextElement) => {
+        const b = t.getBBox()
+        return { x: b.x, y: b.y, w: b.width, h: b.height }
+      }
+      const out = {
+        barCount: bars.length,
+        barXs: bars.map((b) => Number(b.getAttribute('x'))),
+        widths: bars.map((b) => Number(b.getAttribute('width'))),
+        verticalLines: lines.every((l) => l.getAttribute('x1') === l.getAttribute('x2')),
+        tickAnchors: ticks.map((t) => getComputedStyle(t).textAnchor),
+        ticksBelowAxis: ticks.every((t) => boxOf(t).y >= axisY),
+        catAnchors: cats.map((c) => getComputedStyle(c).textAnchor),
+        catLabels: cats.map((c) => c.textContent ?? ''),
+        catRight: Math.max(...cats.map((c) => boxOf(c).x + boxOf(c).w)),
+        catLeft: Math.min(...cats.map((c) => boxOf(c).x)),
+        firstGridX,
+        barLeft: Number(bars[0]!.getAttribute('x')),
+        boxes: [...cats, ...ticks].map((t) => {
+          const b = boxOf(t)
+          return `${t.textContent}|${b.x.toFixed(2)}|${b.y.toFixed(2)}|${b.w.toFixed(2)}`
+        }),
+        outside: [...cats, ...ticks]
+          .filter((t) => {
+            const b = boxOf(t)
+            return b.x < -0.5 || b.x + b.w > 520.5 || b.y < -0.5 || b.y + b.h > 280.5
+          })
+          .map((t) => t.textContent ?? ''),
+      }
+      el.remove()
+      return out
+    }
+
+    const light = measure()
+    document.documentElement.classList.add('dark')
+    const dark = measure()
+    document.documentElement.classList.remove('dark')
+    document.documentElement.setAttribute('dir', 'rtl')
+    const rtl = measure()
+    document.documentElement.removeAttribute('dir')
+    return { light, dark, rtl }
+  })
+
+  expect(r.light.barCount, '横向条数量 = 分类数（5）').toBe(5)
+  expect(new Set(r.light.barXs).size, '所有条共享绘图区左缘起点（向右增长）').toBe(1)
+  expect(r.light.barLeft, '条起点 = 首条竖网格线（绘图区左缘）').toBeCloseTo(r.light.firstGridX, 0)
+  expect(r.light.widths[1]! / r.light.widths[0]!, '条宽按值线性（40 : 20 = 2）').toBeCloseTo(2, 1)
+  expect(r.light.verticalLines, '网格线为竖向（数值轴在底部）').toBe(true)
+  expect(r.light.ticksBelowAxis, '底部刻度文字整体落在轴基线下方（未被裁切）').toBe(true)
+  expect(new Set(r.light.tickAnchors), '底部刻度文字居中于网格线').toEqual(new Set(['middle']))
+  expect(new Set(r.light.catAnchors), '分类标签右对齐（贴绘图区左缘）').toEqual(new Set(['end']))
+  expect(r.light.catLabels, '分类标签逐项渲染').toEqual(['北京', '上海', '广州', '深圳', '杭州'])
+  expect(r.light.catRight, '分类标签右缘不压进绘图区').toBeLessThanOrEqual(r.light.firstGridX - 0.5)
+  expect(r.light.catLeft, '分类标签不越出 viewBox 左界').toBeGreaterThanOrEqual(-0.5)
+  expect(r.light.outside, '分类标签与刻度文字包围盒全部在 520×280 viewBox 内').toEqual([])
+  expect(r.dark.boxes, 'dark 主题下几何与 light 相同').toEqual(r.light.boxes)
+  expect(r.rtl.boxes, 'dir=rtl 下几何与 light 相同（RTL 不镜像）').toEqual(r.light.boxes)
+  expect(consoleNoise, '横向条渲染零 console 告警/错误').toEqual([])
+})
+
+// opt-in 自定义浮层：默认零浮层节点；开启后真实 hover 可见、tooltipFormatter 文案生效、
+// pointerout 隐藏；oas-chart-tooltip 被 preventDefault 接管时不显示内置浮层（宿主自行呈现）。
+test('chart tooltip（opt-in）：默认零浮层节点；真实 hover 可见与 formatter 文案；preventDefault 接管抑制默认浮层', async ({
+  page,
+}) => {
+  await page.goto('/components/chart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-chart')
+
+  const presence = await page.evaluate(() => {
+    const plain = document.querySelector('oas-chart[type="line"]')!
+    const demo = document.getElementById('chart-tip-format')
+    const takeover = document.getElementById('chart-tip-takeover')
+    return {
+      plainHasOverlay: !!plain.shadowRoot!.querySelector('[part="tooltip"]'),
+      hasDemo: !!demo,
+      demoOverlay: !!demo?.shadowRoot?.querySelector('[part="tooltip"]'),
+      takeoverOverlay: !!takeover?.shadowRoot?.querySelector('[part="tooltip"]'),
+    }
+  })
+  expect(presence.plainHasOverlay, '默认（tooltip 未开启）shadow 内零浮层节点').toBe(false)
+  expect(presence.hasDemo, '文档页存在 tooltip demo 块').toBe(true)
+  expect(presence.demoOverlay, 'options.tooltip 开启后建单例浮层').toBe(true)
+  expect(presence.takeoverOverlay, '接管 demo 同样开启浮层（默认隐藏）').toBe(true)
+
+  // 滚到 demo 中央后取柱体中心（分两步：先滚动，再量真实位置）
+  await page.evaluate(() => {
+    const bar = document.getElementById('chart-tip-format')!.shadowRoot!.querySelector('rect.bar') as SVGRectElement
+    bar.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior })
+  })
+  await page.mouse.move(1, 1)
+  const barPoint = await page.evaluate(() => {
+    const r = (
+      document.getElementById('chart-tip-format')!.shadowRoot!.querySelector('rect.bar') as SVGRectElement
+    ).getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  await page.mouse.move(barPoint.x, barPoint.y)
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const tip = document
+            .getElementById('chart-tip-format')!
+            .shadowRoot!.querySelector('[part="tooltip"]') as HTMLElement
+          const r = tip.getBoundingClientRect()
+          return { visible: tip.getAttribute('data-visible'), text: tip.textContent ?? '', w: r.width, h: r.height }
+        }),
+      { timeout: 5000 },
+    )
+    .toMatchObject({ visible: 'true' })
+
+  const shown = await page.evaluate(() => {
+    const tip = document
+      .getElementById('chart-tip-format')!
+      .shadowRoot!.querySelector('[part="tooltip"]') as HTMLElement
+    const r = tip.getBoundingClientRect()
+    return { text: tip.textContent ?? '', w: r.width, h: r.height }
+  })
+  expect(shown.w, '真实 hover 后浮层有可见宽度（不是 0×0）').toBeGreaterThan(0)
+  expect(shown.h, '真实 hover 后浮层有可见高度').toBeGreaterThan(0)
+  expect(shown.text, 'tooltipFormatter（property 通道）文案生效').toContain('｜')
+  expect(shown.text, 'formatter 自定义文案进浮层').toContain('万元')
+
+  // 移开鼠标 → 浮层隐藏
+  await page.mouse.move(1, 1)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() =>
+          document
+            .getElementById('chart-tip-format')!
+            .shadowRoot!.querySelector('[part="tooltip"]')!
+            .getAttribute('data-visible'),
+        ),
+      { timeout: 5000 },
+    )
+    .toBe('false')
+
+  // 接管 demo：preventDefault → 内置浮层不显示，宿主文案回写
+  await page.evaluate(() => {
+    const bar = document.getElementById('chart-tip-takeover')!.shadowRoot!.querySelector('rect.bar') as SVGRectElement
+    bar.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior })
+  })
+  const takeoverPoint = await page.evaluate(() => {
+    const r = (
+      document.getElementById('chart-tip-takeover')!.shadowRoot!.querySelector('rect.bar') as SVGRectElement
+    ).getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  await page.mouse.move(takeoverPoint.x, takeoverPoint.y)
+  await expect
+    .poll(() => page.evaluate(() => document.getElementById('chart-tip-log')?.textContent ?? ''), { timeout: 5000 })
+    .toContain('已接管')
+  const takeover = await page.evaluate(() => ({
+    visible: document
+      .getElementById('chart-tip-takeover')!
+      .shadowRoot!.querySelector('[part="tooltip"]')!
+      .getAttribute('data-visible'),
+    log: document.getElementById('chart-tip-log')?.textContent ?? '',
+  }))
+  expect(takeover.visible, 'preventDefault 接管后不显示内置浮层').toBe('false')
+  expect(takeover.log, '接管读数非空（detail 有 label/value）').toMatch(/= \d+/)
+})

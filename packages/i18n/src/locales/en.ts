@@ -162,6 +162,7 @@ export const en: LocaleMessages = {
   'scheduler.allDay': 'All day',
   'scheduler.noEvents': 'No events in this range',
   'scheduler.loading': 'Loading resources…',
+  'scheduler.conflict': 'Time conflict',
   // gantt（甘特图）
   'gantt.empty': 'No tasks',
   'gantt.listLabel': 'Task list',
@@ -325,6 +326,7 @@ export const en: LocaleMessages = {
   'chart.stacked-bar': 'Stacked bar chart',
   'chart.radar': 'Radar chart',
   'chart.polar-area': 'Polar area chart',
+  'chart.horizontal-bar': 'Horizontal bar chart',
   'chart.empty': 'No data',
   'code.copy': 'Copy',
   'code.copied': 'Copied',

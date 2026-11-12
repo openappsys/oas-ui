@@ -199,6 +199,7 @@ export const ja: LocaleMessages = {
   'scheduler.allDay': '終日',
   'scheduler.noEvents': 'この期間に予定はありません',
   'scheduler.loading': 'リソースを読み込み中…',
+  'scheduler.conflict': '時間の重複',
   // gantt（ガントチャート）
   'gantt.empty': 'タスクはありません',
   'gantt.listLabel': 'タスク一覧',
@@ -387,6 +388,7 @@ export const ja: LocaleMessages = {
   'chart.stacked-bar': '積み上げ棒グラフ',
   'chart.radar': 'レーダーチャート',
   'chart.polar-area': 'ポーラーエリアチャート',
+  'chart.horizontal-bar': '横棒グラフ',
   'chart.empty': 'データなし',
   // code（コードブロック）
   'code.copy': 'コピー',

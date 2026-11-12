@@ -201,6 +201,7 @@ export const zhHant: LocaleMessages = {
   'scheduler.allDay': '全天',
   'scheduler.noEvents': '此區間無日程',
   'scheduler.loading': '正在載入資源…',
+  'scheduler.conflict': '時間衝突',
   // gantt（甘特圖）
   'gantt.empty': '暫無任務',
   'gantt.listLabel': '任務列表',
@@ -385,6 +386,7 @@ export const zhHant: LocaleMessages = {
   'chart.stacked-bar': '堆疊柱狀圖',
   'chart.radar': '雷達圖',
   'chart.polar-area': '極座標面積圖',
+  'chart.horizontal-bar': '橫向條形圖',
   'chart.empty': '暫無資料',
   // code（程式碼塊）
   'code.copy': '複製',

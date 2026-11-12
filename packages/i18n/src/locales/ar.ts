@@ -199,6 +199,7 @@ export const ar: LocaleMessages = {
   'scheduler.allDay': 'طوال اليوم',
   'scheduler.noEvents': 'لا توجد أحداث في هذا النطاق',
   'scheduler.loading': 'جارٍ تحميل الموارد…',
+  'scheduler.conflict': 'تعارض في المواعيد',
   // gantt (مخطط جانت)
   'gantt.empty': 'لا توجد مهام',
   'gantt.listLabel': 'قائمة المهام',
@@ -387,6 +388,7 @@ export const ar: LocaleMessages = {
   'chart.stacked-bar': 'مخطط أعمدة تراكمي',
   'chart.radar': 'مخطط راداري',
   'chart.polar-area': 'مخطط المساحة القطبية',
+  'chart.horizontal-bar': 'مخطط أعمدة أفقي',
   'chart.empty': 'لا توجد بيانات',
   // code (كتلة تعليمات برمجية)
   'code.copy': 'نسخ',

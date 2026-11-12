@@ -199,6 +199,7 @@ export const zhCN = {
   'scheduler.allDay': '全天',
   'scheduler.noEvents': '此区间无日程',
   'scheduler.loading': '正在加载资源…',
+  'scheduler.conflict': '时间冲突',
   // gantt（甘特图）
   'gantt.empty': '暂无任务',
   'gantt.listLabel': '任务列表',
@@ -387,6 +388,7 @@ export const zhCN = {
   'chart.stacked-bar': '堆叠柱状图',
   'chart.radar': '雷达图',
   'chart.polar-area': '极坐标面积图',
+  'chart.horizontal-bar': '横向条形图',
   'chart.empty': '暂无数据',
   // code（代码块）
   'code.copy': '复制',
