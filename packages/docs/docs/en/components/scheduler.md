@@ -22,7 +22,18 @@ Month-view scheduling component: renders event chips (title + color bar) inside 
   <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"Standup","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"Interview","start":"09:30","end":"10:30"},{"date":"2026-08-10","title":"Review","start":"14:00","end":"15:30"}]'></oas-scheduler>
 </DemoBlock>
 
-Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; **time-overlapping events are automatically split into side-by-side lanes** (equal width within a cluster, with gaps, no more complete overlap); events earlier than `start-hour` or later than `end-hour` are clipped to the range, so blocks never leave the track or cover the column header; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **two-edge drag-resize** (top edge changes `start`, bottom edge changes `end`, both in 15-minute steps); dragging the top edge past the end clamps it to `end - 15` minutes, written back with `oas-events-change` on settle. Snapping applies only to the edge being dragged; the other edge and pre-existing non-grid times are left unchanged. Overlapping events still coexist in lanes and are not treated as conflicts; only an invalid same-day range with `start >= end` is rejected.
+Week/day views show a time axis (`start-hour` / `end-hour`, default 8–20): events with `start`/`end` are positioned as blocks by time; untimed events go to the all-day row on top; **time-overlapping events are automatically split into side-by-side lanes** (equal width within a cluster, with gaps, no more complete overlap); events earlier than `start-hour` or later than `end-hour` are clipped to the range, so blocks never leave the track or cover the column header; switching views via the header buttons dispatches `oas-view-change`. Event blocks support **drag-to-move** (drop on a target column/time to change `date` + `start`, keeping duration) and **two-edge drag-resize** (top edge changes `start`, bottom edge changes `end`, both in 15-minute steps); dragging the top edge past the end clamps it to `end - 15` minutes, written back with `oas-events-change` on settle. Snapping applies only to the edge being dragged; the other edge and pre-existing non-grid times are left unchanged. Overlapping events still coexist in lanes (legitimate; writes are not blocked); only an invalid same-day range with `start >= end` is rejected.
+
+## Conflict Check & Keyboard (week/day views)
+
+<DemoBlock title="conflict-check: dashed outline on same-day overlapping blocks + oas-event-conflict">
+  <oas-scheduler id="scheduler-conflict" view="day" conflict-check page-show-date="2026-08-10" start-hour="8" end-hour="18" events='[{"id":"c1","date":"2026-08-10","title":"Review A","start":"09:00","end":"10:00"},{"id":"c2","date":"2026-08-10","title":"Review B","start":"09:30","end":"11:00"},{"id":"c3","date":"2026-08-10","title":"Retro","start":"14:00","end":"15:00"}]'></oas-scheduler>
+  <div id="scheduler-conflict-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+`conflict-check` (presence boolean, off by default) enables overlap detection for **single-day timed events** on the same day: overlapping blocks get a dashed danger outline (`.event.conflict`) plus the `scheduler.conflict` readable hint, and each affected event dispatches `oas-event-conflict` (`detail: { id, conflicts }`, where `conflicts` lists the ids of overlapping events). Dispatch is **idempotent**: the same data snapshot never re-dispatches; after a data change it re-dispatches per id only when the signature changes; when a conflict resolves, the related ids receive one empty-array payload for the host to clear its markers. Detection uses half-open intervals (back-to-back does not count, same as the lane criterion) over the whole calendar (not just the visible view); repeats are not expanded into occurrences and multi-day timed/all-day events are not included. The conflict outline is purely visual — overlapping events still coexist in lanes and drag/resize writes are unaffected.
+
+Focused event blocks are keyboard-operable: `←` / `→` shift `date` by a whole day (mirrored visually under RTL), `Alt+←` / `Alt+→` resize `end` (±15-minute steps, never past `start`, clamped at 24:00); writes go through `updateEvent()` (single-step undo snapshot + `oas-events-change`), the view follows when a block moves out of the current week/day so focus is preserved, and `aria-keyshortcuts` declares the shortcuts.
 
 ## Recurrence & Reminders
 
@@ -158,6 +169,15 @@ onMounted(async () => {
     })
     click.addEventListener('oas-day-click', (e) => {
       cout.textContent = `oas-day-click: ${e.detail.date} (host may open an add form here)`
+    })
+  }
+
+  const conflict = document.getElementById('scheduler-conflict')
+  const cfout = document.getElementById('scheduler-conflict-output')
+  if (conflict) {
+    conflict.addEventListener('oas-event-conflict', (e) => {
+      const { id, conflicts } = e.detail
+      cfout.textContent = `oas-event-conflict: ${id} ↔ ${conflicts.length ? conflicts.join(', ') : '(conflict resolved)'}`
     })
   }
 

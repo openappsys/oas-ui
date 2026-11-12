@@ -14,6 +14,7 @@ export type {
   SchedulerDayClickDetail,
   SchedulerEvent,
   SchedulerEventClickDetail,
+  SchedulerEventConflictDetail,
   SchedulerEventsChangeDetail,
   SchedulerRemindDetail,
   SchedulerRepeat,

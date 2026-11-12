@@ -2648,3 +2648,182 @@ describe('OASScheduler forced-colors 高对比兜底', () => {
     expect(css.slice(start)).toMatch(/\.nowline,\s*\.nowline::before,\s*\.res-now\s*\{[^}]*outline:\s*1px solid/)
   })
 })
+
+// conflict-check 冲突校验（opt-in 默认关）+ 时刻块键盘可达：
+// - 同日定时事件半开区间 [s,e) 相交即冲突（首尾相接不算，与车道判据同构）
+// - oas-event-conflict 幂等：数据签名变化才逐 id 重发；消解发空数组；关闭不派发且重置签名
+// - 时刻块键盘：←/→ 整天改 date（RTL 镜像）、Alt+←/→ 缩放 end（±15min，不越 start / 24:00）
+describe('OASScheduler conflict-check 冲突校验 + 时刻块键盘可达', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const CONFLICT_EVENTS: SchedulerEvent[] = [
+    { id: 'a', date: '2026-08-10', title: 'A', start: '09:00', end: '10:00' },
+    { id: 'b', date: '2026-08-10', title: 'B', start: '09:30', end: '11:00' },
+    { id: 'c', date: '2026-08-10', title: 'C', start: '14:00', end: '15:00' },
+    { id: 'd', date: '2026-08-11', title: 'D', start: '09:00', end: '10:00' },
+  ]
+
+  function conflictEl(extra: Record<string, string> = {}): OASScheduler {
+    return mount({ events: JSON.stringify(CONFLICT_EVENTS), 'page-show-date': '2026-08-10', ...extra })
+  }
+
+  /** 在挂载后收集 oas-event-conflict（含挂载首帧：append 前挂监听走 mountListen 版本） */
+  function listenConflicts(el: OASScheduler): Array<{ id: string; conflicts: string[] }> {
+    const seen: Array<{ id: string; conflicts: string[] }> = []
+    el.addEventListener('oas-event-conflict', (e) =>
+      seen.push((e as CustomEvent<{ id: string; conflicts: string[] }>).detail),
+    )
+    return seen
+  }
+
+  /** append 前挂监听的挂载（捕获首帧派发） */
+  function mountListen(attrs: Record<string, string>): {
+    el: OASScheduler
+    seen: Array<{ id: string; conflicts: string[] }>
+  } {
+    const el = new OASScheduler()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const seen: Array<{ id: string; conflicts: string[] }> = []
+    el.addEventListener('oas-event-conflict', (e) =>
+      seen.push((e as CustomEvent<{ id: string; conflicts: string[] }>).detail),
+    )
+    document.body.appendChild(el)
+    return { el, seen }
+  }
+
+  it('conflict-check 开启：同日重叠时刻块加 .conflict；未开启无标记', () => {
+    const off = conflictEl({ view: 'day' })
+    expect(off.shadowRoot!.querySelectorAll('.timeview .event.conflict').length).toBe(0)
+    const on = conflictEl({ view: 'day', 'conflict-check': '' })
+    const conflicted = [...on.shadowRoot!.querySelectorAll('.timeview .event.conflict')]
+    expect(conflicted.map((el) => el.getAttribute('data-id')).sort()).toEqual(['a', 'b'])
+    expect(conflicted.length, '非重叠块不加标记').toBe(2)
+  })
+
+  it('半开区间：首尾相接（09:00-10:00 与 10:00-11:00）不算冲突', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'conflict-check': '',
+      events: JSON.stringify([
+        { id: 'x', date: '2026-08-10', title: 'X', start: '09:00', end: '10:00' },
+        { id: 'y', date: '2026-08-10', title: 'Y', start: '10:00', end: '11:00' },
+      ]),
+    })
+    expect(el.shadowRoot!.querySelectorAll('.timeview .event.conflict').length).toBe(0)
+  })
+
+  it('oas-event-conflict：首帧按 id 带冲突列表；同数据重渲染不重发；消解发空数组', () => {
+    const { el, seen } = mountListen({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'conflict-check': '',
+      events: JSON.stringify(CONFLICT_EVENTS),
+    })
+    expect(seen.map((d) => d.id).sort()).toEqual(['a', 'b'])
+    expect(seen.find((d) => d.id === 'a')!.conflicts).toEqual(['b'])
+    expect(seen.find((d) => d.id === 'b')!.conflicts).toEqual(['a'])
+    const n = seen.length
+    // 幂等：切视图重建 DOM 但数据未变 → 不重发
+    el.setAttribute('view', 'week')
+    expect(seen.length).toBe(n)
+    // 消解：b 缩到不与 a 相交 → a、b 各收一条空数组（宿主据此清标记）
+    el.updateEvent('b', { start: '11:30', end: '12:30' })
+    expect(seen.length).toBe(n + 2)
+    expect(
+      seen
+        .filter((d) => d.conflicts.length === 0)
+        .map((d) => d.id)
+        .sort(),
+    ).toEqual(['a', 'b'])
+  })
+
+  it('conflict-check 关闭：不派发且重置签名；重新开启按新快照重发首帧', () => {
+    const el = conflictEl({ view: 'day' })
+    const seen = listenConflicts(el)
+    el.setAttribute('conflict-check', '')
+    expect(seen.map((d) => d.id).sort()).toEqual(['a', 'b'])
+    el.removeAttribute('conflict-check')
+    el.updateEvent('c', { start: '09:15', end: '10:15' })
+    expect(seen.length, '关闭期间数据变化不派发').toBe(2)
+    el.setAttribute('conflict-check', '')
+    // 重新开启：a(09:00-10:00)/b(09:30-11:00)/c(09:15-10:15) 两两相交 → 3 条全新快照
+    expect(seen.length).toBe(2 + 3)
+    expect(seen.find((d) => d.id === 'c')!.conflicts.sort()).toEqual(['a', 'b'])
+  })
+
+  it('时刻块键盘：←/→ 整天改 date（updateEvent 通道 + 撤销快照），重建后焦点回同块', () => {
+    const el = conflictEl({ view: 'week' })
+    const block = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event[data-id="a"]')!
+    block.focus()
+    let changed = 0
+    el.addEventListener('oas-events-change', () => changed++)
+    block.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.events.find((x) => x.id === 'a')!.date).toBe('2026-08-11')
+    expect(changed, '回写走 updateEvent → 派发 oas-events-change').toBe(1)
+    expect(el.canUndo, '键盘改期有撤销快照').toBe(true)
+    expect(el.undo()).toBe(true)
+    expect(el.events.find((x) => x.id === 'a')!.date).toBe('2026-08-10')
+    expect(el.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('a')
+    block.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(el.events.find((x) => x.id === 'a')!.date).toBe('2026-08-09')
+  })
+
+  it('RTL：dir=rtl 下方向键按视觉方向镜像（ArrowRight 移到前一天）', () => {
+    const el = conflictEl({ view: 'week', dir: 'rtl' })
+    const block = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event[data-id="a"]')!
+    block.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.events.find((x) => x.id === 'a')!.date).toBe('2026-08-09')
+  })
+
+  it('Alt+←/→ 缩放 end：±15 分钟步进，不越过 start', () => {
+    const el = conflictEl({ view: 'week' })
+    const block = () => el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event[data-id="c"]')!
+    block().focus()
+    block().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }))
+    expect(el.events.find((x) => x.id === 'c')!.end).toBe('15:15')
+    block().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(el.events.find((x) => x.id === 'c')!.end).toBe('15:00')
+    for (let i = 0; i < 5; i++)
+      block().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', altKey: true, bubbles: true }))
+    expect(el.events.find((x) => x.id === 'c')!.end, '缩到 start+15 后不再缩（零位移不回写）').toBe('14:15')
+    expect(el.events.find((x) => x.id === 'c')!.start).toBe('14:00')
+  })
+
+  it('Alt 缩放 24:00 钳制：放大到 24:00 后零位移不再回写', () => {
+    const el = mount({
+      view: 'day',
+      'page-show-date': '2026-08-10',
+      'end-hour': '24',
+      events: JSON.stringify([{ id: 'late', date: '2026-08-10', title: '晚班', start: '23:30', end: '23:45' }]),
+    })
+    const block = () => el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-10"] .event')!
+    block().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }))
+    expect(el.events[0]!.end).toBe('24:00')
+    let changed = 0
+    el.addEventListener('oas-events-change', () => changed++)
+    block().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }))
+    expect(el.events[0]!.end, '24:00 后不再增').toBe('24:00')
+    expect(changed, '零位移不回写不派发').toBe(0)
+  })
+
+  it('键盘平移移出当前周：视图跟随翻页，块仍渲染、焦点保持', () => {
+    const el = mount({
+      view: 'week',
+      'page-show-date': '2026-08-10',
+      events: JSON.stringify([{ id: 'tail', date: '2026-08-16', title: '周末块', start: '09:00', end: '10:00' }]),
+    })
+    const block = el.shadowRoot!.querySelector<HTMLElement>('.col[data-date="2026-08-16"] .event')!
+    block.focus()
+    block.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.events[0]!.date).toBe('2026-08-17')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026-08-17 ~ 08-23')
+    expect(el.shadowRoot!.querySelector('.col[data-date="2026-08-17"] .event')).toBeTruthy()
+    expect(el.shadowRoot!.activeElement?.getAttribute('data-id')).toBe('tail')
+  })
+})

@@ -256,6 +256,11 @@ const STYLE = `
 .timeview .event[draggable='true']:hover {
   background: color-mix(in srgb, var(--chip-color, var(--oas-color-primary)) 30%, transparent);
 }
+/* 冲突标记（conflict-check）：虚线描边与 hover/选中区分，颜色走 danger token（暗色变体随 token 切换） */
+.timeview .event.conflict {
+  outline: 2px dashed var(--oas-color-danger);
+  outline-offset: 1px;
+}
 .timeview .event .resize,
 .timeview .event .resize-start {
   position: absolute;
@@ -814,6 +819,12 @@ export interface SchedulerEventClickDetail {
   event: SchedulerEvent
 }
 
+/** event-conflict 事件载荷（conflict-check 开启时派发）：conflicts 为与该事件同时段重叠的事件 id 列表（空数组 = 该事件冲突已消解） */
+export interface SchedulerEventConflictDetail {
+  id: string
+  conflicts: string[]
+}
+
 /** day-click 事件载荷 */
 export interface SchedulerDayClickDetail {
   date: string
@@ -932,6 +943,53 @@ function parseTime(s: string | undefined): number | null {
   const [h, m] = s.split(':').map(Number)
   if (h === undefined || m === undefined || h > 24 || m > 59 || (h === 24 && m !== 0)) return null
   return h * 60 + m
+}
+
+/**
+ * 同日定时事件冲突检测（conflict-check 数据源）：按 date 分组，分钟区间半开相交（[s,e)，首尾相接
+ * 不算）即互为冲突——与 layoutTimedLanes 车道判据同构。全日历口径（不限当前视图窗口，不按
+ * resource 区分）；repeat 不展开 occurrence、跨日定时/全天事件无当日内完整时刻区间，均不参与
+ * （边界见组件文档）。end 缺省按 start+60 分钟计（与 eventSegment 缺省口径一致）。
+ */
+function computeEventConflicts(events: Array<SchedulerEvent & { id: string }>): Map<string, string[]> {
+  const byDate = new Map<string, Array<{ id: string; s: number; e: number }>>()
+  for (const ev of events) {
+    if (ev.repeat) continue
+    if (ev.endDate && ev.endDate > ev.date) continue
+    const s = parseTime(ev.start)
+    if (s === null) continue
+    const e = parseTime(ev.end) ?? s + 60
+    const bucket = byDate.get(ev.date)
+    if (bucket) bucket.push({ id: ev.id, s, e: Math.max(e, s) })
+    else byDate.set(ev.date, [{ id: ev.id, s, e: Math.max(e, s) }])
+  }
+  const out = new Map<string, string[]>()
+  for (const items of byDate.values()) {
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i]!
+        const b = items[j]!
+        if (a.s < b.e && b.s < a.e) {
+          const la = out.get(a.id)
+          if (la) la.push(b.id)
+          else out.set(a.id, [b.id])
+          const lb = out.get(b.id)
+          if (lb) lb.push(a.id)
+          else out.set(b.id, [a.id])
+        }
+      }
+    }
+  }
+  for (const list of out.values()) list.sort()
+  return out
+}
+
+/** 冲突快照签名（确定性序列化：id 排序 + 各冲突列表已排序，与键插入序无关） */
+function conflictSignature(map: Map<string, string[]>): string {
+  return [...map.keys()]
+    .sort()
+    .map((k) => `${k}:${map.get(k)!.join(',')}`)
+    .join('|')
 }
 
 function sanitizeEvents(v: unknown): SchedulerEvent[] {
@@ -1311,6 +1369,8 @@ export class OASScheduler extends OASElement {
       'timezone',
       'secondary-timezone',
       'show-now',
+      // 同日定时事件冲突校验（opt-in 默认关）
+      'conflict-check',
       'dir',
       // 服务端资源行窗口协议（resource / resource-week）
       'windowed',
@@ -1372,8 +1432,14 @@ export class OASScheduler extends OASElement {
     newEnd?: string
   } | null = null
   private dropCol: HTMLElement | null = null
-  /** 单步撤销快照：仅记录 updateEvent 前的事件数组；重叠事件仍按车道并存，不视为冲突 */
+  /** 单步撤销快照：仅记录 updateEvent 前的事件数组；重叠事件仍按车道并存渲染（conflict-check
+   *  开启时额外加 .conflict 标记并派发 oas-event-conflict，但不阻断写入、不视为非法） */
   private undoBefore: Array<SchedulerEvent & { id: string }> | null = null
+  /** conflict-check 下当前冲突事件 id 集（update 重算；renderTimedEvent 据此加 .conflict 标记） */
+  private conflictIds: Set<string> = new Set()
+  /** oas-event-conflict 幂等签名（上次派发的冲突快照 Map；null = 从未派发/已重置）——
+   *  同一快照不重复派发；关闭时重置，重新开启按新快照重发首帧（同 gantt oas-resource-conflict 口径） */
+  private lastConflictMap: Map<string, string[]> | null = null
   private createCtx: {
     mode: 'v' | 'h'
     iso: string
@@ -1864,6 +1930,36 @@ export class OASScheduler extends OASElement {
     return true
   }
 
+  /** 冲突校验开关（opt-in 缺省关；显式 "false" 视作关，同 show-now 口径） */
+  private conflictCheckOn(): boolean {
+    return this.hasAttr('conflict-check') && this.getAttr('conflict-check', '') !== 'false'
+  }
+
+  /**
+   * 冲突快照重算 + oas-event-conflict 派发（conflict-check opt-in）：
+   * - 同一快照不重复派发（签名比较）；数据变化重算后签名变化才发
+   * - 派发口径逐 id：本帧有冲突的 id 带 conflicts 列表；上一帧有冲突、本帧已消解的 id 发空数组
+   *   （宿主据此逐事件增/清标记）；全部消解时即全部收到空数组
+   * - 关闭不派发任何事件且重置签名——重新开启时按新快照重发首帧（同 gantt oas-resource-conflict 口径）
+   */
+  private emitConflicts(): void {
+    if (!this.conflictCheckOn()) {
+      this.lastConflictMap = null
+      this.conflictIds = new Set()
+      return
+    }
+    const next = computeEventConflicts(this._events)
+    const nextSig = conflictSignature(next)
+    const prevSig = this.lastConflictMap === null ? null : conflictSignature(this.lastConflictMap)
+    if (nextSig === prevSig) return
+    const ids = new Set<string>([...(this.lastConflictMap?.keys() ?? []), ...next.keys()])
+    for (const id of ids) {
+      this.emit('event-conflict', { id, conflicts: [...(next.get(id) ?? [])] } satisfies SchedulerEventConflictDetail)
+    }
+    this.lastConflictMap = next
+    this.conflictIds = new Set(next.keys())
+  }
+
   protected override update(): void {
     this.syncEvents()
     this.syncResources()
@@ -1944,6 +2040,8 @@ export class OASScheduler extends OASElement {
       next.textContent = '›'
       next.setAttribute('aria-label', this.t('scheduler.next'))
     }
+    // 冲突重算 + 事件派发在视图渲染前：renderTimedEvent 渲染时刻块时查 conflictIds 加标记
+    this.emitConflicts()
     this.renderCurrentView()
   }
 
@@ -2689,6 +2787,46 @@ export class OASScheduler extends OASElement {
     col?.classList.add('drop')
   }
 
+  /** 时刻块整天平移（键盘 ←/→，RTL 镜像；与跨日条 shiftSpanByDays 同语义）：改 date（带 endDate
+   *  的单日定时块两者一起平移），移出当前周/日时视图跟随，避免块卸载后焦点丢失 */
+  private shiftTimedByDays(ev: SchedulerEvent & { id: string }, delta: number): void {
+    if (delta === 0) return
+    const current = this._events.find((item) => item.id === ev.id) ?? ev
+    const shift = (iso: string): string => {
+      const d = parseISODate(iso)!
+      return toISODate(new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta))
+    }
+    const nextDate = shift(current.date)
+    const next = parseISODate(nextDate)!
+    if (this.viewMode === 'week') {
+      const weekStart = this.weekStartOf(this.viewDate)
+      const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6)
+      if (next < weekStart || next > weekEnd) this.viewDate = startOfDay(next)
+    } else if (this.viewMode === 'day') {
+      if (nextDate !== toISODate(this.viewDate)) this.viewDate = startOfDay(next)
+    }
+    this.updateEvent(
+      current.id,
+      current.endDate ? { date: nextDate, endDate: shift(current.endDate) } : { date: nextDate },
+    )
+  }
+
+  /** 时刻块终点缩放（键盘 Alt+←/→）：±15 分钟步进、吸附口径与缩放手柄一致（15 分钟栅格 round），
+   *  不越过 start（≥ start+15 分钟）、24:00 钳制；零位移不回写（不产生空撤销快照/事件） */
+  private resizeTimedEndBy(ev: SchedulerEvent & { id: string }, step: number): void {
+    if (step === 0) return
+    const current = this._events.find((item) => item.id === ev.id) ?? ev
+    const s = parseTime(current.start)
+    if (s === null) return
+    const e = parseTime(current.end) ?? s + 60
+    const minEnd = Math.min(24 * 60, Math.ceil((s + 15) / 15) * 15)
+    const next = Math.max(minEnd, Math.min(Math.round(e / 15) * 15 + step * 15, 24 * 60))
+    if (next === e) return
+    this.updateEvent(current.id, {
+      end: `${String(Math.floor(next / 60)).padStart(2, '0')}:${String(next % 60).padStart(2, '0')}`,
+    })
+  }
+
   private renderTimedEvent(
     ev: SchedulerEvent & { id: string },
     s: number,
@@ -2705,6 +2843,22 @@ export class OASScheduler extends OASElement {
     el.draggable = true
     el.textContent = ev.title
     if (ev.color) el.style.setProperty('--chip-color', ev.color)
+    // 冲突标记（conflict-check 重算的 conflictIds）：虚线 danger 描边 + 原生 tooltip 可读名
+    if (this.conflictIds.has(ev.id)) {
+      el.classList.add('conflict')
+      el.title = this.t('scheduler.conflict')
+    }
+    // 键盘可达：←/→ 整天改 date（RTL 镜像，语义同跨日条）；Alt+←/→ 缩放 end（±15 分钟）
+    el.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight Alt+ArrowLeft Alt+ArrowRight')
+    el.addEventListener('keydown', (evt) => {
+      if (evt.key !== 'ArrowLeft' && evt.key !== 'ArrowRight') return
+      evt.preventDefault()
+      evt.stopPropagation()
+      const dir = isRtl(this) ? -1 : 1
+      const step = evt.key === 'ArrowRight' ? dir : -dir
+      if (evt.altKey) this.resizeTimedEndBy(ev, step)
+      else this.shiftTimedByDays(ev, step)
+    })
     // 几何按日视图时段 [start-hour, end-hour] 夹取：早到/晚走的事件不能越出 track 盖住表头或下方
     const dayStart = startH * 60
     const dayEnd = endH * 60

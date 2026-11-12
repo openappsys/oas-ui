@@ -1259,3 +1259,66 @@ test('scheduler 资源时间轴：跨日连续条不断列 + 键盘平移回写 
 
   expect(errors, 'console 零告警').toEqual([])
 })
+
+// P0 冲突校验 + 时刻块键盘可达（真实键盘事件）：
+// - conflict-check demo：重叠块（c1/c2）带 .conflict 且计算样式为虚线 outline、合法块（c3）不带
+// - oas-event-conflict 有宿主可见反馈（输出行文本）
+// - 时刻块真实键盘 ←/→ 整天改 date 回写（day 视图跟随翻页 + 焦点保持）、Alt+→ 缩放 end ±15 分钟
+test('scheduler conflict-check 冲突标记计算样式 + 时刻块真实键盘改期回写', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/scheduler.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#scheduler-conflict', { timeout: 15000 })
+  const conf = page.locator('#scheduler-conflict')
+
+  // 冲突标记：只有重叠的 c1/c2 带 .conflict
+  await expect(conf.locator('.timeview .event.conflict')).toHaveCount(2)
+  await expect(conf.locator('.event[data-id="c3"]')).not.toHaveClass(/conflict/)
+
+  // 计算样式：重叠块虚线 outline（宽度非 none），合法块无 outline
+  const outline = await conf.evaluate((host) => {
+    const s = host.shadowRoot!
+    const on = s.querySelector<HTMLElement>('.event.conflict')!
+    const off = s.querySelector<HTMLElement>('.event:not(.conflict)')!
+    const cs = getComputedStyle(on)
+    return { style: cs.outlineStyle, width: cs.outlineWidth, offStyle: getComputedStyle(off).outlineStyle }
+  })
+  expect(outline.style, '重叠块计算样式为虚线 outline').toBe('dashed')
+  expect(outline.width, 'outline 有实际宽度（forced-colors 下同样可见的形状）').not.toBe('0px')
+  expect(outline.offStyle, '合法块无 outline').toBe('none')
+
+  // 宿主可见反馈：demo 输出行有 oas-event-conflict 文本（首帧派发）
+  await expect(page.locator('#scheduler-conflict-output')).toContainText('oas-event-conflict')
+
+  // 真实键盘改期：点击聚焦 c3 → ArrowRight 整天后移（day 视图跟随翻页 + 焦点保持 + 回写）
+  await conf.locator('.col[data-date="2026-08-10"] .event[data-id="c3"]').click()
+  await page.keyboard.press('ArrowRight')
+  await expect
+    .poll(() =>
+      conf.evaluate((el) =>
+        (el as unknown as { events: Array<{ id: string; date: string }> }).events.find((x) => x.id === 'c3'),
+      ),
+    )
+    .toMatchObject({ date: '2026-08-11' })
+  await expect(conf.locator('[part="title"]'), 'day 视图跟随翻页到 08-11').toHaveText('2026-08-11')
+  await expect(conf.locator('.col[data-date="2026-08-11"] .event[data-id="c3"]')).toBeVisible()
+  const focusId = await conf.evaluate(
+    (el) => (el.shadowRoot?.activeElement as HTMLElement | null)?.getAttribute('data-id') ?? null,
+  )
+  expect(focusId, '重建后焦点回同一时刻块').toBe('c3')
+
+  // Alt+ArrowRight 缩放 end：15:00 → 15:15（±15 分钟步进）
+  await page.keyboard.press('Alt+ArrowRight')
+  await expect
+    .poll(() =>
+      conf.evaluate((el) =>
+        (el as unknown as { events: Array<{ id: string; end?: string }> }).events.find((x) => x.id === 'c3'),
+      ),
+    )
+    .toMatchObject({ end: '15:15' })
+
+  expect(errors, 'console 零告警').toEqual([])
+})

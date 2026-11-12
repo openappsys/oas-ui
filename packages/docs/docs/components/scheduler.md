@@ -22,7 +22,18 @@
   <oas-scheduler id="scheduler-day" view="day" page-show-date="2026-08-10" events='[{"date":"2026-08-10","title":"晨会","start":"09:00","end":"10:00"},{"date":"2026-08-10","title":"面试","start":"09:30","end":"10:30"},{"date":"2026-08-10","title":"评审","start":"14:00","end":"15:30"}]'></oas-scheduler>
 </DemoBlock>
 
-周/日视图为时刻表（`start-hour` / `end-hour` 限幅，默认 8–20 点）：带 `start`/`end` 的事件按时间绝对定位成块，无 `start` 的事件进顶部全天行；**时间重叠的事件自动按车道并排**（聚簇内等宽、带间隙，不再完全叠印）；早于 `start-hour` / 晚于 `end-hour` 的事件按区间夹取，块不会越出轨道或盖住列头；视图按钮切换派发 `oas-view-change`。事件块支持**拖拽移动**（拖到目标列/时刻改 `date` + `start`，保持时长）与**上下双缘缩放**（顶缘改 `start`、底缘改 `end`，15 分钟步进）；顶缘拖到结束点之前即钳制为 `end - 15` 分钟，落定回写并派发 `oas-events-change`；吸附只作用于被拖拽的一端，另一端保持原值，非网格既有时间不会被改写。重叠事件仍按车道并存，不属于冲突；只有同日 `start >= end` 的非法区间会被拒绝写入。
+周/日视图为时刻表（`start-hour` / `end-hour` 限幅，默认 8–20 点）：带 `start`/`end` 的事件按时间绝对定位成块，无 `start` 的事件进顶部全天行；**时间重叠的事件自动按车道并排**（聚簇内等宽、带间隙，不再完全叠印）；早于 `start-hour` / 晚于 `end-hour` 的事件按区间夹取，块不会越出轨道或盖住列头；视图按钮切换派发 `oas-view-change`。事件块支持**拖拽移动**（拖到目标列/时刻改 `date` + `start`，保持时长）与**上下双缘缩放**（顶缘改 `start`、底缘改 `end`，15 分钟步进）；顶缘拖到结束点之前即钳制为 `end - 15` 分钟，落定回写并派发 `oas-events-change`；吸附只作用于被拖拽的一端，另一端保持原值，非网格既有时间不会被改写。重叠事件仍按车道并存渲染（合法，不阻断写入）；只有同日 `start >= end` 的非法区间会被拒绝写入。
+
+## 冲突校验与键盘操作（周/日视图）
+
+<DemoBlock title="conflict-check：同日重叠时刻块虚线标记 + oas-event-conflict">
+  <oas-scheduler id="scheduler-conflict" view="day" conflict-check page-show-date="2026-08-10" start-hour="8" end-hour="18" events='[{"id":"c1","date":"2026-08-10","title":"评审 A","start":"09:00","end":"10:00"},{"id":"c2","date":"2026-08-10","title":"评审 B","start":"09:30","end":"11:00"},{"id":"c3","date":"2026-08-10","title":"复盘","start":"14:00","end":"15:00"}]'></oas-scheduler>
+  <div id="scheduler-conflict-output" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)"></div>
+</DemoBlock>
+
+`conflict-check`（在场布尔，默认关）开启后对**单日定时事件**做同日同时段重叠检测：重叠块加虚线 danger 描边（`.event.conflict`）并挂 `scheduler.conflict` 可读提示，逐事件派发 `oas-event-conflict`（`detail: { id, conflicts }`，`conflicts` 为与之重叠的事件 id 列表）。派发**幂等**：同一数据快照不重复派发，数据重算后签名变化才逐 id 重发；冲突消解时向相关 id 发一次空数组，宿主据此清标记。判定口径为半开区间（首尾相接不算，与车道并排判据同构）、全日历（不限当前视图）；repeat 不展开 occurrence、跨日定时/全天事件不参与判定。冲突标记只是视觉提示，重叠事件仍按车道并存，拖拽/缩放写入不受影响。
+
+时刻块聚焦后支持键盘操作：`←` / `→` 整天改 `date`（RTL 下按视觉方向镜像），`Alt+←` / `Alt+→` 缩放 `end`（±15 分钟步进，不越过 `start`、24:00 钳制）；回写走 `updateEvent()`（自动单步撤销快照并派发 `oas-events-change`），块移出当前周/日时视图跟随翻页保持焦点，`aria-keyshortcuts` 同步声明快捷键。
 
 ## 重复规则与提醒
 
@@ -158,6 +169,15 @@ onMounted(async () => {
     })
     click.addEventListener('oas-day-click', (e) => {
       cout.textContent = `oas-day-click：${e.detail.date}（宿主可在此打开新增表单）`
+    })
+  }
+
+  const conflict = document.getElementById('scheduler-conflict')
+  const cfout = document.getElementById('scheduler-conflict-output')
+  if (conflict) {
+    conflict.addEventListener('oas-event-conflict', (e) => {
+      const { id, conflicts } = e.detail
+      cfout.textContent = `oas-event-conflict：${id} ↔ ${conflicts.length ? conflicts.join('、') : '（冲突已消解）'}`
     })
   }
 
