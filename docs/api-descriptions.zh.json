@@ -1344,7 +1344,10 @@
       "oas-change": "编辑提交且源码变化时派发，detail `{ value: 新源码 }`",
       "oas-editing": "编辑态进入/退出时派发，detail `{ editing: boolean }`"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "公式源码（双通道，与 `code` attribute 同源；编辑提交后读得新源码，编辑中读得编辑框现值）"
+    }
   },
   "oas-flex": {
     "attrs": {

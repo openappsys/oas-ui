@@ -33,6 +33,10 @@
     {
       "name": "avatar-color",
       "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
     }
   ],
   "props": [],

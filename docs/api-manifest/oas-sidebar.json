@@ -121,6 +121,14 @@
       "detail": "{ width: this.currentWidthPx() }"
     },
     {
+      "name": "oas-reorder",
+      "detail": "{ index: to, from, to, key: a.value }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: list.slice() }"
+    },
+    {
       "name": "oas-select",
       "detail": "{ value: item.value, label: item.label, group: item.group, }"
     },

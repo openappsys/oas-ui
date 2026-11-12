@@ -110,17 +110,17 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 禁用 | `boolean` | — |
-| `max` | chip 数量上限，超出派发 `oas-exceed-limit` 且不再新增 | `number` | — |
-| `placeholder` | 输入框占位符（缺省走 i18n 文案） | `string` | i18n 文案 |
+| `max` | chip 数量上限，超出派发 oas-exceed-limit 且不再新增 | `string` | — |
+| `placeholder` | 输入框占位符（缺省走 i18n 文案） | `string` | — |
 | `readonly` | 只读（chip 仅展示，不可增删改） | `boolean` | — |
-| `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
+| `size` | 尺寸档位 small / medium / large | `string` | `medium` |
 | `value` | 邮箱 chip 数组（property 或 JSON attribute） | `string[]` | `[]` |
 
-#### Property（JS property；写回 attribute 见说明）
+#### Property（JS property；是否写回 attribute 见各行说明）
 
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `value` | 当前值：邮箱字符串数组（写入回写 `value` attribute，不派发事件） | `string[]` | `[]` |
+| `value` | 当前值：邮箱字符串数组（写入回写 value attribute，不派发事件） | `string[]` | `[]` |
 
 #### 事件
 
@@ -128,8 +128,8 @@ onMounted(() => {
 | --- | --- |
 | `oas-add` | 新增 chip 时派发，`detail: { value, index }` |
 | `oas-blur` | 输入框失焦时派发 |
-| `oas-change` | chip 增删改后派发，`detail: { value, trigger }`，`trigger ∈ add \| remove \| edit \| paste` |
-| `oas-exceed-limit` | 超出 `max` 上限时派发且不再新增，`detail: { value, max }` |
+| `oas-change` | chip 增删改后派发，`detail: { value, trigger }`，trigger ∈ add \| remove \| edit \| paste |
+| `oas-exceed-limit` | 超出 max 上限时派发且不再新增，`detail: { value, max }` |
 | `oas-focus` | 输入框聚焦时派发 |
 | `oas-invalid` | chip 邮箱校验非法时派发（幂等：仅用户交互路径；不拦截提交语义），`detail: { value, index }` |
 | `oas-remove` | 删除 chip 时派发，`detail: { value, index }` |

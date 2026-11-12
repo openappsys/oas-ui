@@ -1,0 +1,78 @@
+{
+  "className": "OASChipsInput",
+  "sourceFile": "packages/ui/src/form/chips-input/oas-chips-input.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "string[]",
+      "default": "[]",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
+    {
+      "name": "oas-add",
+      "detail": "{ value: piece, index: this.chips.length - 1 } | { value: added, index: this.chips.length - 1 }"
+    },
+    {
+      "name": "oas-exceed-limit",
+      "detail": "{ value, max: this.maxValue() }"
+    },
+    {
+      "name": "oas-invalid",
+      "detail": "{ value, index: this.chips.length - 1 } | { value, index: idx }"
+    },
+    {
+      "name": "oas-remove",
+      "detail": "{ value: removed, index: idx }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: this.chips.slice(), trigger }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

@@ -747,7 +747,7 @@ windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。�
 | `max-height` | 列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载；分组组头在此容器内吸顶） | `string` | — |
 | `row-height` | 虚拟滚动行高（px，默认 64，要求数据行定高） | `string` | `64` |
 | `size` | 行密度：sm / md（默认）/ lg | `string` | — |
-| `sortable` | 行拖拽排序（数据通道 + 声明式） | `boolean` | — |
+| `sortable` | 行拖拽排序（数据通道 + 声明式；disabled 行不可拖、不作为落点） | `boolean` | — |
 | `split` | 是否显示条目分隔线 | `boolean` | — |
 | `stripe` | 斑马纹：视觉偶数行铺浅色底 | `boolean` | — |
 | `total` | windowed 模式下的全量行数；为 0 或非法时 windowed 不生效（回落普通模式） | `string` | — |
@@ -764,10 +764,11 @@ windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。�
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-change` | 键盘重排（Alt+↑/↓）落定后派发，`detail: { value }`——value 为新序（数据通道为行数据数组副本，声明式通道为行元素数组） |
 | `oas-click` | 条目点击（数据/虚拟行），detail 带 { index, item } |
 | `oas-item-render` | 数据通道每行渲染后派发，detail 带 { index, item, element } |
 | `oas-reach-bottom` | 滚动触底（进入触底区派发一次，滚离后重新武装），detail 带 { scrollTop } |
-| `oas-reorder` | 行拖放重排时派发，`detail: { from, to, item }` |
+| `oas-reorder` | 行重排派发：sortable 拖放落定时 `detail: { from, to, item }`；键盘 Alt+↑/↓ 逐条交换时 `detail: { index, from, to, key? }`（index 为移动后新位次、与 to 同值；key 取数据项 key/value/id 字符串字段，声明式行取 key 属性，可缺省）。键盘重排约束：行需可聚焦；disabled 行与组界（相邻行 group 不同）为墙；windowed/虚拟滚动下禁用 |
 | `oas-window-request` | windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发 |
 
 #### 插槽
@@ -790,6 +791,7 @@ windowed 下行 `aria-setsize = total`、`aria-posinset = 绝对行号 + 1`。�
 | `avatar` | 头像 URL 快捷通道（渲染首部圆形头像；slot="avatar" 优先） | `string` | — |
 | `clickable` | 整行可点：hover 反馈、可聚焦（Enter/Space 触发）、点击派发 oas-click | — | — |
 | `description` | 描述文本快捷通道（slot="description" 优先，可放富内容） | `string` | — |
+| `disabled` | 禁用条目：不可聚焦、不响应点击/键盘激活（aria-disabled 同步）；重排的墙（键盘 Alt+↑/↓ 与 sortable 拖拽同口径）——自身不可移动、不作为交换/落点目标 | — | — |
 | `href` | 整行链接：行内渲染覆盖整行的 `<a>`（可访问名称取行标题），点击任意空白处即导航；链接行不再派发 oas-click（与 clickable 语义分离） | `string` | — |
 | `rel` | 链接 rel（配合 href）；显式设置时不自动补默认值 | `string` | — |
 | `selected` | 选中行高亮（视觉态，选中态由宿主维护） | — | — |

@@ -52,6 +52,7 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Cascader 级联选择', link: '/components/cascader' },
       { text: 'Checkbox 复选框', link: '/components/checkbox' },
       { text: 'ColorPicker 颜色选择器', link: '/components/color-picker' },
+      { text: 'ChipsInput 标签输入', link: '/components/chips-input' },
       { text: 'Combobox 组合框', link: '/components/combobox' },
       { text: 'DatePicker 日期选择', link: '/components/date-picker' },
       { text: 'DynamicInput 动态列表', link: '/components/dynamic-input' },

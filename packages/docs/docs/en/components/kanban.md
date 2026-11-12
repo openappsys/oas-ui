@@ -188,7 +188,8 @@ Adding an optional `summary` (a number) to a column definition renders a totals 
 | --- | --- | --- | --- |
 | `card-estimate` | Estimated step (px, default 68) for unmeasured cards in column virtualization: numeric values <= 0 / invalid fall back to 68; ResizeObserver progressively corrects measurements. Only when the attribute is absent is the CSS variable --oas-kanban-card-step read as a fallback (attribute wins) | — | — |
 | `cards` | Card data (JSON array [{ id, column, title, ...arbitrary fields }] where column is the owning column key). After a drop the component writes the new grouping/order back to this attribute (uncontrolled write-back + attribute reflection); skipped while a renderCard function is present (the host owns the data); a card may carry an optional `color` (CSS color or token): rendered as a 3px accent bar on the card's inline-start edge (absolutely positioned, no layout shift) for priority/category; absent means no accent | `KanbanCard[] \| string` | `[]` |
-| `columns` | Column definitions (JSON array [{ key, title, limit? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited; a column may carry an optional `color`: rendered as a 3px accent bar on top of the column header (no width/layout change) | `KanbanColumn[] \| string` | `[]` |
+| `collapsible` | Column collapsing (boolean attribute, off by default — zero visual change by default): when on, each column header in the plain layout gains a collapse button; clicking it folds the column into a narrow rail (vertical column title + card count), clicking the rail expands it back; the fold state survives data changes; folded columns do not accept drops; swimlanes do not offer column collapsing (the band matrix has no rail form) | `boolean` | — |
+| `columns` | Column definitions (JSON array [{ key, title, limit?, summary? }]; the same-named property array channel works identically — the setter reflects back to the attribute). limit is a WIP limit: when the column's card count exceeds it, the header count turns warning-colored and the column gets a data-over-limit marker (advisory only — drops still land); unset/0/negative = unlimited; a column may carry an optional `color`: rendered as a 3px accent bar on top of the column header (no width/layout change); a column may carry an optional `summary` (a number): a totals row renders at the bottom of the column (label via the i18n kanban.total key); absent/non-finite values render nothing and the value re-renders when the host data updates | `KanbanColumn[] \| string` | `[]` |
 | `empty-column-text` | Override for the empty-column / empty swimlane-cell placeholder text (defaults to the i18n kanban.emptyColumn key, translated with the locale) | `string` | — |
 | `swimlane-by` | Swimlane field key: splits the board into horizontal bands by that field's value (band header = fold arrow + field value + count; all expanded by default, fold state survives data changes); missing/empty values fall into the "(empty)" band; dropping a card into another band rewrites the swimlane field value; omit for the plain column layout | `string` | — |
 
@@ -203,6 +204,7 @@ Adding an optional `summary` (a number) to a column definition renders a totals 
 | Event | Description |
 | --- | --- |
 | `oas-change` | Emitted after a drag cross-column move, an in-column reorder, or a touch move-menu action settles (dropping back at the original spot emits nothing). detail { id, from, to, index } — from/to are column keys, index is the insertion position in the target column (measured after removing the moved cards; hosts can reproduce with splice(index, 0, card) on the target array); multi-select drags move all selected cards and emit one event whose detail gains ids (all selected ids in data order, id is the first); cross-swimlane drops also gain swimlane { from, to } (the swimlane field value change) |
+| `oas-collapse-change` | Emitted after a column folds/expands (clicking the column-head collapse button or the folded rail). detail { columnId, collapsed } — columnId is the column key, collapsed is the post-toggle fold state (true=folded, false=expanded); summary value changes emit no event (they re-render through the existing data channel) |
 | `oas-column-reorder` | Emitted after a column reorder settles (column-head handle drag / keyboard ←/→ / touch move buttons; no-op at the original position emits nothing). detail { from, to, keys } — from is the moved column's original position, to its new position after the reorder, keys the full reordered list of column keys; the component also writes the new order back to the columns attribute (card data is untouched) |
 
 #### CSS Variables
@@ -213,6 +215,8 @@ Adding an optional `summary` (a number) to a column definition renders a totals 
 | `--oas-kanban-column-color` | `transparent` |
 | `--oas-kanban-column-min-height` | `60px` |
 | `--oas-kanban-column-min-width` | `220px` |
+| `--oas-kanban-rail-title-max-height` | `180px` |
+| `--oas-kanban-rail-width` | `44px` |
 
 <script setup>
 import { onMounted } from 'vue'

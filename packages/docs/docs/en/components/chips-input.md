@@ -110,17 +110,17 @@ Both are "free input becomes chips" components with different interaction models
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disabled | `boolean` | — |
-| `max` | Chip count limit; exceeding emits `oas-exceed-limit` and blocks additions | `number` | — |
-| `placeholder` | Input placeholder (falls back to the i18n message) | `string` | i18n message |
-| `readonly` | Readonly (chips are display-only; no add/remove/edit) | `boolean` | — |
-| `size` | Size: `small` / `medium` (default) / `large` | `string` | `medium` |
+| `max` | Chip count limit; exceeding emits oas-exceed-limit and blocks additions | `string` | — |
+| `placeholder` | Input placeholder (i18n default) | `string` | — |
+| `readonly` | Readonly (chips are display-only) | `boolean` | — |
+| `size` | Size: small / medium / large | `string` | `medium` |
 | `value` | Email chip array (property or JSON attribute) | `string[]` | `[]` |
 
-#### Properties (JS properties; attribute write-back as noted)
+#### Property (JS property; see each row for attribute reflection)
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `value` | Current value: email string array (writing back to the `value` attribute emits no events) | `string[]` | `[]` |
+| `value` | Current value: email string array (writing back to the value attribute emits no events) | `string[]` | `[]` |
 
 #### Events
 
@@ -128,11 +128,13 @@ Both are "free input becomes chips" components with different interaction models
 | --- | --- |
 | `oas-add` | Dispatched when a chip is added, `detail: { value, index }` |
 | `oas-blur` | Dispatched when the input is blurred |
-| `oas-change` | Dispatched after chips are added/removed/edited, `detail: { value, trigger }`, `trigger ∈ add \| remove \| edit \| paste` |
-| `oas-exceed-limit` | Dispatched when exceeding the `max` limit; addition is blocked, `detail: { value, max }` |
+| `oas-change` | Dispatched after chips are added/removed/edited, `detail: { value, trigger }`, trigger ∈ add \| remove \| edit \| paste |
+| `oas-exceed-limit` | Dispatched when exceeding the max limit; addition is blocked, `detail: { value, max }` |
 | `oas-focus` | Dispatched when the input is focused |
 | `oas-invalid` | Dispatched when a chip fails email validation (idempotent: user-interaction paths only; submission not blocked), `detail: { value, index }` |
 | `oas-remove` | Dispatched when a chip is removed, `detail: { value, index }` |
+
+#### Properties (JS properties; attribute write-back as noted)
 
 Keyboard: `Enter` / `,` / `;` commits a chip; `Backspace` on empty input edits the previous chip; in edit mode `Enter` commits / `Esc` cancels.
 

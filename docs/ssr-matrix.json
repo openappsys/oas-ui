@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 215,
+    "components": 216,
     "whitelist": 175,
-    "noSsr": 40
+    "noSsr": 41
   },
   "components": [
     {
@@ -1414,6 +1414,23 @@
       "hasHydrate": true,
       "unitTest": true,
       "dsdFixture": true,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-chips-input",
+      "family": "form",
+      "dir": "form/chips-input",
+      "className": "OASChipsInput",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（P1/P2 批新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": false,
       "docsZh": true,
       "docsEn": true
     },

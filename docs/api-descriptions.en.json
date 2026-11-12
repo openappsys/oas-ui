@@ -1388,7 +1388,10 @@
       "oas-change": "Emitted when an edit commit changes the source; detail `{ value: new source }`",
       "oas-editing": "Emitted when entering/leaving edit mode; detail `{ editing: boolean }`"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "value": "Formula source (two-way, same source as the `code` attribute; reads the new source after an edit submit, or the live editor text while editing)"
+    }
   },
   "oas-flex": {
     "attrs": {

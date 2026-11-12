@@ -66,6 +66,7 @@
 - [Cascader 级联选择](https://oas-ui.dev/components/cascader): 多级联动选择：支持多选勾选、父子解绑、多选值策略、路径搜索、动态加载、受控开合与标签折叠，键盘可操作。
 - [Checkbox 复选框](https://oas-ui.dev/components/checkbox): 原生 <input type="checkbox"> 增强，支持半选、多选组、全选联动、数量限制与卡片形态。
 - [ColorPicker 颜色选择器](https://oas-ui.dev/components/color-picker): 触发色块弹出调色面板，支持 2D 饱和度-亮度色域 + hue 竖条选色、预设色、RGB 与 hex 输入、透明度通道、渐变模式（多 stop 编辑）、宽容格式解析、清空与受控开关；面板采用 fixed 视口定位，自动避让边缘翻转，也可 inline 就地渲染。
+- [ChipsInput 收件人输入](https://oas-ui.dev/components/chips-input): 收件人 chips 输入：chip 与无边框输入同居一个控件盒。
 - [Combobox 组合框](https://oas-ui.dev/components/combobox): 输入框即控件的可过滤单选组合框：常显可编辑的输入框显示选中项 label，输入实时过滤选项，选中后 value 取 option.value。
 - [DatePicker 日期选择器](https://oas-ui.dev/components/date-picker): 日期选择器，支持 date / daterange / month / monthrange / year / yearrange / datetime / datetimerange / week / quarter 十种类型，键盘可操作，Intl.DateTimeFormat 格式化；触发器为输入框，可直接键入日期或范围（失焦或回车提交，非法输入自动回退）。
 - [DynamicInput 动态列表](https://oas-ui.dev/components/dynamic-input): 数组字段的增删编辑，每行复用 oas-input 组件，支持受控/非受控双模式、键值对行、行内容自定义与按钮排序。

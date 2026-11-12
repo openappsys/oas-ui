@@ -9,6 +9,12 @@
       "observed": true
     },
     {
+      "name": "capture",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "multiple",
       "type": "boolean",
       "observed": true

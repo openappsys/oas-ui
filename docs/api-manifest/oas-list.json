@@ -126,7 +126,11 @@
     },
     {
       "name": "oas-reorder",
-      "detail": "{ from, to, item }"
+      "detail": "{ from, to, item } | { index: to, from, to, ...(key !== undefined ? { key } : {}) }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: this.rows.slice() } | { value: this.rowElements() }"
     },
     {
       "name": "oas-click",

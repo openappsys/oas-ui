@@ -263,6 +263,23 @@ The component ships with an input row (`textarea` + submit button): **Enter subm
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Time/actions alignment: `left` (default) / `right` (logical properties, flips in RTL) | — | — |
+| `comment-id` | Entry id: passed back in the `oas-resolve` event detail (decoupled from the DOM id, same family naming as `message-id`; falls back to an empty string) | `string` | — |
+| `inputtable` | Built-in input row switch (on by default): set `inputtable="false"` explicitly to hide it. Enter submits, Shift+Enter inserts a newline; Enter during IME composition does not submit; empty text is silently ignored | `string` | `true` |
+| `resolvable` | Resolve trigger switch (boolean presence attribute, off by default — zero visual change): when present, a resolve/unresolve trigger appears in the actions row; the row also shows when the actions slot is empty because of the built-in trigger | `boolean` | — |
+| `resolved` | Resolved state (boolean presence attribute): strikethrough on the content, muted entry text, and a "Resolved" badge on the author row (token-based, adapts to dark mode). Data-driven — the host writes data back and syncs this attribute; the component never flips it internally | `boolean` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `submit` | `submit(): boolean` | 提交输入行当前文本；空文本 / 输入行隐藏返回 false 且不派发。 |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-resolve` | Dispatched when a resolve/unresolve trigger is clicked. detail { id, resolved } — id is the `comment-id` attribute value (empty string by default), resolved is the target resolution state (true = mark resolved / false = unmark); the component never flips `resolved` internally — the host writes data back and syncs the item attribute |
+| `oas-submit` | Dispatched when the built-in input row is submitted (Enter or the submit button). detail { text } — the trimmed text; empty text is not dispatched; the component never appends list items internally — the host writes data back to drive rendering (data-driven write-back) |
 
 #### Slots
 

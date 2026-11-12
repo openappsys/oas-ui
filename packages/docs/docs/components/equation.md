@@ -141,15 +141,21 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `code` | LaTeX 子集源文本 | `string` | — |
 | `display` | 显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距） | `string` | — |
-| `editable` | 编辑实时预览（在场开启）：点击/Enter 进入编辑态，输入 LaTeX 源码节流实时预览；Enter/失焦提交写回 `code`，Esc 取消恢复原值 | `boolean`（在场） | — |
+| `editable` | 编辑实时预览（在场开启）：点击/Enter 进入编辑态，输入 LaTeX 源码节流实时预览；Enter/失焦提交写回 `code`，Esc 取消恢复原值 | `boolean` | — |
+
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `value` | 公式源码（双通道，与 `code` attribute 同源；编辑提交后读得新源码，编辑中读得编辑框现值） | `string` | — |
 
 #### 事件
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-cancel` | Esc 取消编辑时派发，detail `{ value: 原源码 }` |
 | `oas-change` | 编辑提交且源码变化时派发，detail `{ value: 新源码 }` |
 | `oas-editing` | 编辑态进入/退出时派发，detail `{ editing: boolean }` |
-| `oas-cancel` | Esc 取消编辑时派发，detail `{ value: 原源码 }` |
 
 #### CSS 变量
 

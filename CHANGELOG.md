@@ -4,11 +4,19 @@
 
 ### 新增
 
+- **oas-chips-input（form 族，收件人/标签式输入）**：粘贴自动拆分（分号/逗号/换行/空白）、Enter/逗号/分号成 chip、Backspace 回编辑上一 chip、chip 单独删除；邮箱内联校验（非法 chip 红描边 + `oas-invalid`，不拦截提交语义）；`value` 双通道（字符串数组）、`max` 上限（`oas-exceed-limit`）、重复去重（一次 devWarn）；blur 提交不抢焦点（仅键盘路径回焦）；i18n ×16；SSR 客户端专属（NOT_SSR pending 登记）。
 - **oas-scanner（data 族，相机扫码）**：`active` 属性驱动 getUserMedia 相机预览 + 原生 `BarcodeDetector` 逐帧识别（不引第三方解码库），命中派发 `oas-scan`（detail `{ value, format? }`，1200ms 节流自动继续）；无 `BarcodeDetector`/权限被拒/相机错误自动降级手动输入模式（`manual` 属性可显式开启），`oas-error`（detail `{ code: 'not-supported' | 'permission' | 'camera' }`）幂等派发；停止/断连关流零泄漏（会话 epoch 防 stop→start 竞态孤儿流）；i18n ×16；SSR 客户端专属（NOT_SSR 登记）。
 - **oas-signature（data 族，签名板）**：canvas 笔迹捕获（pointer 事件/touch-action none/DPR 倍率/token 实色解析/主题 observer 重绘/resize 保留笔迹）；`value`（dataURL 双通道可受控）/`pen-size`/`pen-color`/`height`/`disabled`/`readonly`/`clearable`；`oas-change`（笔画结束派发，幂等）+ `clear()`/`toDataURL()`；多指 pointerId 过滤、单点不成笔（防误触假签名）；aria-live 状态播报；forced-colors 限制文档注明；SSR 客户端专属（NOT_SSR 登记）。
 
 ### 增强
 
+- **oas-kanban**：`collapsible`（在场 opt-in，默认关零变化）——列头折叠钮/窄条（列名+卡片数）/点击展开 + `oas-collapse-change`；列底 `summary` 合计行（缺席不渲染）；i18n ×16。
+- **oas-list / oas-sidebar**：键盘重排——焦点条目 Alt+↑/↓ 逐条移动（焦点跟随防失焦）+ `oas-reorder`（detail `{ index, from, to, key? }`）+ `oas-change` 新序；`aria-keyshortcuts` 声明；新增条目 `disabled`（墙口径：键盘/拖拽同口径不可移动、不作为落点）。
+- **oas-comment**：内置输入行（Enter 提交/Shift+Enter 换行/IME 防护，`oas-submit` detail `{ text }`，`inputtable="false"` 关闭，数据驱动写回）；resolve 态（`resolved` 弱色划线 token 化、`resolvable` 触发钮、`oas-resolve` 受控派发）；i18n ×16。
+- **oas-upload**：`capture` 属性透传 file input（`user`/`environment`/在场=`user`/`"false"` 不输出），移动端直调相机。
+- **oas-code**：高亮语言扩充 bash/shell、python、sql、diff、markdown、yaml（别名 sh/md/py/yml 归一；既有正则架构内扩展，零第三方库）。
+- **oas-countdown**：后台标签记账语义验证固化（时间戳记账不漂移，fake timers 单测 ×3 + 文档注明；零实现改动）。
+- **oas-equation**：`editable` 编辑实时预览（textarea 编辑态、200ms 节流预览、Esc 取消恢复原值、渲染失败回退源码 + 一次性 devWarn、value 双通道）；i18n ×16。
 - **oas-scheduler**：新属性 `conflict-check`（在场 opt-in）——同日同时段重叠检测（半开区间纯函数，与车道布局同构）+ `.event.conflict` 视觉标记（danger token）+ `oas-event-conflict` 幂等事件（detail `{ id, conflicts: string[] }`，先写签名再派发，消解发空数组）；时刻块补键盘路径（←/→ 整天改期 RTL 镜像、Alt+←/→ 缩放 end ±15min、aria-keyshortcuts）；i18n `scheduler.conflict` ×16。
 - **oas-chart**：新图型 `horizontal-bar`（数值轴底部、分类标签左缘、RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 默认边界不变）+ property `tooltipFormatter` 开启 shadow 单例浮层（`part="tooltip"`，反色 token，computePosition 定位）+ `oas-chart-tooltip` 事件宿主可 `preventDefault()` 接管；forced-colors 浮层兜底；i18n `chart.horizontal-bar` ×16。
 

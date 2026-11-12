@@ -448,7 +448,7 @@
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
 | `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | `boolean` | — |
 | `hide-toggle` | 隐藏底部折叠按钮（桌面端恒显示的内置折叠切换；存在即隐藏，宿主 opt-out，静态侧栏场景用）；此时若 header 槽为空，头部整体塌陷（移动抽屉打开时因关闭按钮保留） | `boolean` | — |
-| `items` | 菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单；avatar 为图片 URL，优先于 avatarText + avatarColor 首字母圆） | `SidebarEntry[] \| string` | `[]` |
+| `items` | 菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, disabled?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单；avatar 为图片 URL，优先于 avatarText + avatarColor 首字母圆；disabled 项不可聚焦/不可点，键盘重排时为墙） | `SidebarEntry[] \| string` | `[]` |
 | `loading` | 骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4） | `string` | `4` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
 | `resizable` | 边缘拖拽调宽（存在即显示宿主边缘拖拽条；仅桌面非折叠态可用） | `boolean` | — |
@@ -477,7 +477,9 @@
 | 事件 | 说明 |
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select） |
+| `oas-change` | 键盘重排落定后派发，`detail: { value }`——value 为新序（SidebarEntry[] 副本）；items 属性通道已由组件回写 items 属性持久化新序 |
 | `oas-collapse` | `detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时 |
+| `oas-reorder` | 键盘重排（Alt+↑/↓ 逐条交换）派发，`detail: { index, from, to, key? }`（from/to 为同级数组内位次；index 为移动后新位次、与 to 同值；key 为项 value）。约束：disabled 项、分隔线、组界（相邻项 group 不同）为墙；flyout 内子项不重排 |
 | `oas-resize` | `detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时 |
 | `oas-select` | `detail: { value: string, label: string, group?: string }`；触发时机：选中菜单项时（移动端同时收起抽屉；`group` 供宿主按组写回 `active-by-group`） |
 
@@ -511,6 +513,7 @@
 | `avatar-color` | 行首头像着色源（任意 CSS 色值）：作为淡底 + 色环；文字恒用主题字色，明暗主题下对比度稳定 | — | — |
 | `avatar-text` | 行首头像文字：无图时渲染首字母/缩写圆（着色源为 avatar-color，缺省主色） | — | — |
 | `badge` | 徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string\|number） | — | — |
+| `disabled` | 禁用项（在场即禁用）：渲染为禁用按钮（不可聚焦/不可点）；键盘重排的墙——自身不可移动、不作为交换目标 | — | — |
 | `group` | 分组名（连续同组项在组首项前渲染组标题） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 内置图标名；折叠图标条态显示） | — | — |
 | `icon-color` | 前置图标颜色：显式时固定该色（替换内置单色 path 的 currentColor，优先于禁用/激活态默认色）；缺省 currentColor 随态着色 | — | — |

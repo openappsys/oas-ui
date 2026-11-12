@@ -142,15 +142,21 @@ Font size follows the outer context (inherited) by default; override with the CS
 | --- | --- | --- | --- |
 | `code` | LaTeX subset source text | `string` | — |
 | `display` | Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block) | `string` | — |
-| `editable` | Live edit preview (enabled when present): click/Enter enters edit mode with throttled live preview while typing LaTeX source; Enter/blur commits back to `code`, Esc cancels and restores | `boolean` (presence) | — |
+| `editable` | Live edit preview (enabled when present): click/Enter enters edit mode with throttled live preview while typing LaTeX source; Enter/blur commits back to `code`, Esc cancels and restores the original value | `boolean` | — |
+
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `value` | Formula source (two-way, same source as the `code` attribute; reads the new source after an edit submit, or the live editor text while editing) | `string` | — |
 
 #### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-cancel` | Emitted when Esc cancels editing; detail `{ value: original source }` |
 | `oas-change` | Emitted when an edit commit changes the source; detail `{ value: new source }` |
 | `oas-editing` | Emitted when entering/leaving edit mode; detail `{ editing: boolean }` |
-| `oas-cancel` | Emitted when Esc cancels editing; detail `{ value: original source }` |
 
 #### CSS Variables
 

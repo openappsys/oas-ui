@@ -262,6 +262,23 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `align` | 时间与操作区对齐：`left`（默认）/ `right`（逻辑属性实现，RTL 自动翻转） | — | — |
+| `comment-id` | 条目 id：随 `oas-resolve` 事件 detail 回传（与 DOM id 解耦，`message-id` 同款家族命名；缺省回传空串） | `string` | — |
+| `inputtable` | 内置输入行开关（默认开）：显式 `inputtable="false"` 隐藏输入行。输入行 Enter 提交、Shift+Enter 换行；输入法组合中的 Enter 不提交；空文本静默不派发 | `string` | `true` |
+| `resolvable` | resolve 触发钮开关（布尔在场属性，默认关——默认外观零变化）：开启后 actions 行出现 resolve/unresolve 触发钮；actions 插槽为空时该行也因内置钮而显示 | `boolean` | — |
+| `resolved` | 已解决态（布尔在场属性）：正文划线 + 条目弱色 + 作者行「已解决」标记（token 化，暗色自适应）。数据驱动——宿主写回数据后同步本属性，组件不内部翻转 | `boolean` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `submit` | `submit(): boolean` | 提交输入行当前文本；空文本 / 输入行隐藏返回 false 且不派发。 |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-resolve` | 点击 resolve/unresolve 触发钮后派发。detail { id, resolved }——id 为 `comment-id` 属性值（缺省空串），resolved 为目标解决态（true=标记解决 / false=取消解决）；组件不内部翻转 `resolved`，宿主写回数据后同步条目属性 |
+| `oas-submit` | 内置输入行提交（Enter 或提交按钮）后派发。detail { text }——trim 后文本；空文本不派发；组件不内部追加列表，宿主写回数据驱动渲染（数据驱动写回范式） |
 
 #### 插槽
 

@@ -5,11 +5,48 @@
     {
       "name": "align",
       "observed": true
+    },
+    {
+      "name": "inputtable",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "resolvable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "resolved",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "comment-id",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
-  "methods": [],
-  "events": [],
+  "methods": [
+    {
+      "name": "submit",
+      "signature": "submit(): boolean",
+      "description": "提交输入行当前文本；空文本 / 输入行隐藏返回 false 且不派发。"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-resolve",
+      "detail": "{ id: this.getAttr('comment-id', ''), resolved: !this.hasAttr('resolved'), } satisfies CommentResolveDetail"
+    },
+    {
+      "name": "oas-submit",
+      "detail": "{ text } satisfies CommentSubmitDetail"
+    }
+  ],
   "slots": [
     {
       "name": ""

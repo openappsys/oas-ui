@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 149 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -36,6 +36,7 @@ OAS-UI provides 149 framework-agnostic Web Components, organized into 9 groups b
 - [Cascader](/en/components/cascader) —— Multi-level linked selection supporting submission at any level and path display.
 - [Checkbox](/en/components/checkbox) —— An enhanced native `<input type="checkbox">` supporting indeterminate state and checkbox groups.
 - [ColorPicker](/en/components/color-picker) —— Click the trigger swatch to open a color panel, supporting preset colors, HSV, and RGB input.
+- [ChipsInput](/en/components/chips-input) —— Recipient/tag-style input: paste auto-split, Enter to commit a chip, Backspace to edit the previous one, inline email validation (`oas-invalid` on invalid), `max` limit, duplicate dedup.
 - [Combobox](/en/components/combobox) —— A filterable single-select combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection.
 - [DatePicker](/en/components/date-picker) —— A date picker supporting four types — single date, date range, month, and datetime — with keyboard operation and `Intl.DateTimeFormat` formatting.
 - [DynamicInput](/en/components/dynamic-input) —— Add/remove/edit for array fields; each row reuses the `oas-input` component, supporting both controlled and uncontrolled modes.

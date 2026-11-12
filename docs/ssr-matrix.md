@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：215
+- 组件：216
 - SSR 白名单：175
-- 有意不 SSR：40
+- 有意不 SSR：41
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -91,6 +91,7 @@
 | `oas-toggle-item` | form | `form/toggle-group` | ⛔ 不 SSR | subcomponent | oas-toggle-group | — | — | — | — | — | —/— |
 | `oas-pin-input` | form | `form/pin-input` | ✅ 白名单 | — | — | `@oas-ui/ui/form/pin-input` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-dynamic-input` | form | `form/dynamic-input` | ✅ 白名单 | — | — | `@oas-ui/ui/form/dynamic-input` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-chips-input` | form | `form/chips-input` | ⛔ 不 SSR | pending | — | — | ✅ | ✅ | ✅ | — | ✅/✅ |
 | `oas-dynamic-tags` | form | `form/dynamic-tags` | ✅ 白名单 | — | — | `@oas-ui/ui/form/dynamic-tags` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-editable` | form | `form/editable` | ✅ 白名单 | — | — | `@oas-ui/ui/form/editable` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-segmented` | form | `form/segmented` | ✅ 白名单 | — | — | `@oas-ui/ui/form/segmented` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |

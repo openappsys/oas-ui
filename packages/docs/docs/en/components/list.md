@@ -750,7 +750,7 @@ ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = a
 | `max-height` | Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading; group headers stick inside this container) | `string` | — |
 | `row-height` | Virtual scroll row height (px, default 64; data rows must be fixed-height) | `string` | `64` |
 | `size` | Row density: sm / md (default) / lg | `string` | — |
-| `sortable` | Enables row drag-and-drop reordering (data channel + declarative) | `boolean` | — |
+| `sortable` | Enables row drag-and-drop reordering (data channel + declarative; disabled rows are neither draggable nor drop targets) | `boolean` | — |
 | `split` | Whether to show item dividers | `boolean` | — |
 | `stripe` | Zebra stripes: fills visually even rows with a subtle background | `boolean` | — |
 | `total` | Full row count in windowed mode; 0 or invalid disables windowed (falls back to normal mode) | `string` | — |
@@ -767,10 +767,11 @@ ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = a
 
 | Event | Description |
 | --- | --- |
+| `oas-change` | Fired after a keyboard reorder (Alt+↑/↓) settles, `detail: { value }` — value is the new order (a copy of the row data array for the data channel, or the row element array for the declarative channel) |
 | `oas-click` | Item click (data/virtual rows); detail carries { index, item } |
 | `oas-item-render` | Dispatched after each data-channel row renders; detail carries { index, item, element } |
 | `oas-reach-bottom` | Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop } |
-| `oas-reorder` | Fired on drop with the reordered row indexes and payload, `detail: { from, to, item }` |
+| `oas-reorder` | Fired on row reorder: sortable drop with `detail: { from, to, item }`; keyboard Alt+↑/↓ step-swap with `detail: { index, from, to, key? }` (index is the post-move position, same as to; key comes from the item's key/value/id string field, or the row's key attribute in the declarative channel, and may be absent). Keyboard constraints: rows must be focusable; disabled rows and group boundaries (adjacent rows with different group) are walls; disabled under windowed / virtual scrolling |
 | `oas-window-request` | Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason } (half-open, absolute row indices; reason is init / scroll / resize / data). The same expected window is not emitted twice |
 
 #### Slots
@@ -793,6 +794,7 @@ ARIA in windowed mode: rows report `aria-setsize = total` and `aria-posinset = a
 | `avatar` | Avatar URL quick channel (renders a circular avatar at the row start; slot="avatar" wins) | `string` | — |
 | `clickable` | Whole row clickable: hover feedback, focusable (Enter/Space triggers), click dispatches oas-click | — | — |
 | `description` | Description text quick channel (slot="description" wins, rich content allowed) | `string` | — |
+| `disabled` | Disabled row: not focusable, ignores click/keyboard activation (aria-disabled synced); a wall for reordering (keyboard Alt+↑/↓ and sortable drag share the same rule) — it never moves and is never a swap/drop target | — | — |
 | `href` | Whole-row link: an `<a>` stretched over the row is rendered inside (accessible name taken from the row title); clicking anywhere on the row navigates; link rows no longer emit oas-click (separated from the clickable semantics) | `string` | — |
 | `rel` | Link rel (with href); when set explicitly the default is not auto-filled | `string` | — |
 | `selected` | Selected row highlight (visual state; selection is host-controlled) | — | — |

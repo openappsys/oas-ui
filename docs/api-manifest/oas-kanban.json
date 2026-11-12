@@ -25,6 +25,11 @@
     {
       "name": "card-estimate",
       "observed": true
+    },
+    {
+      "name": "collapsible",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -47,6 +52,10 @@
   "methods": [],
   "events": [
     {
+      "name": "oas-collapse-change",
+      "detail": "{ columnId: key, collapsed } satisfies KanbanCollapseChangeDetail"
+    },
+    {
       "name": "oas-change",
       "detail": "{ id, from, to: toKey, index, ...(laneChanged ? { swimlane: { from: fromLane, to: lane } } : {}), } satisfies KanbanChangeDetail | { id: String(first.id ?? ''), from, to: toKey, index, ids: selected.map((c) => String(c.id ?? '')), ...(laneChanged ? { swimlane: { from: fromLane, to: lane } } : {}), } satisfies KanbanChangeDetail"
     },
@@ -66,8 +75,16 @@
       "default": "transparent"
     },
     {
+      "name": "--oas-kanban-rail-width",
+      "default": "44px"
+    },
+    {
       "name": "--oas-kanban-column-min-height",
       "default": "60px"
+    },
+    {
+      "name": "--oas-kanban-rail-title-max-height",
+      "default": "180px"
     },
     {
       "name": "--oas-kanban-card-color",

@@ -447,7 +447,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
 | `expand-on-hover` | Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed) | `boolean` | — |
 | `hide-toggle` | Hide the bottom collapse toggle (the built-in desktop toggle; present means hidden — host opt-out for static sidebars); when the header slot is empty the whole header collapses too (kept while the mobile drawer is open because of the close button) | `boolean` | — |
-| `items` | Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, actions?}]` (divider entries `{type:"divider"}` supported; children nests submenus; avatar is an image URL taking precedence over an avatarText + avatarColor initials circle) | `SidebarEntry[] \| string` | `[]` |
+| `items` | Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, avatar?, avatarText?, avatarColor?, children?, disabled?, actions?}]` (divider entries `{type:"divider"}` supported; children nests submenus; avatar is an image URL taking precedence over an avatarText + avatarColor initials circle; disabled items are neither focusable nor clickable and act as walls for keyboard reordering) | `SidebarEntry[] \| string` | `[]` |
 | `loading` | Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4) | `string` | `4` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
 | `resizable` | Edge drag-resize (shows a drag rail on the host edge; desktop non-collapsed only) | `boolean` | — |
@@ -476,7 +476,9 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | Event | Description |
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select) |
+| `oas-change` | Fired after a keyboard reorder settles, `detail: { value }` — value is the new order (a copy of the SidebarEntry[]); in the items-attribute channel the component has already written the new order back to the items attribute |
 | `oas-collapse` | `detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled |
+| `oas-reorder` | Fired on keyboard reorder (Alt+↑/↓ step-swap), `detail: { index, from, to, key? }` (from/to are positions within the sibling array; index is the post-move position, same as to; key is the item value). Constraints: disabled items, dividers and group boundaries (adjacent items with different group) are walls; flyout children are not reorderable |
 | `oas-resize` | `detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width |
 | `oas-select` | `detail: { value: string, label: string, group?: string }`; fired when a menu item is selected (the mobile drawer also closes; `group` lets the host write back `active-by-group`) |
 
@@ -510,6 +512,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `avatar-color` | Leading avatar tint (any CSS color) used as a soft background + colored ring; the text always uses the theme text color, keeping contrast stable in both themes | — | — |
 | `avatar-text` | Leading avatar text: renders an initials circle when there is no image (tinted by avatar-color, primary by default) | — | — |
 | `badge` | Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string \| number`) | — | — |
+| `disabled` | Disabled item (present means disabled): renders as a disabled button (neither focusable nor clickable); a wall for keyboard reordering — it never moves and is never a swap target | — | — |
 | `group` | Group name (consecutive items in the same group get a group title before the group's first item) | — | — |
 | `icon` | Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip) | — | — |
 | `icon-color` | Icon color: when set, fixes the icon color (replaces the built-in mono path's currentColor, taking precedence over disabled/active state colors); defaults to currentColor so the color follows states | — | — |

@@ -13,16 +13,39 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "editable",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "engine",
       "type": "EquationEngine | null"
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "api": true
     }
   ],
   "methods": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-editing",
+      "detail": "{ editing: true } | { editing: false }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: next }"
+    },
+    {
+      "name": "oas-cancel",
+      "detail": "{ value: this.getAttr('code', '') }"
+    }
+  ],
   "slots": [],
   "cssVars": [
     {
