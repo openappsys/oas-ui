@@ -156,10 +156,11 @@ describe('OASComment 内置输入行', () => {
     expect(composer.hasAttribute('hidden')).toBe(false)
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('[part="composer-input"]')!
     const send = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="composer-send"]')!
-    expect(textarea).toBeTruthy()
-    expect(send).toBeTruthy()
+    expect(textarea.tagName).toBe('TEXTAREA')
+    expect(send.tagName).toBe('BUTTON')
     expect(send.textContent).toBe('提交')
-    expect(textarea.getAttribute('aria-label')).toBeTruthy()
+    expect(textarea.placeholder).toBe('写下你的评论…')
+    expect(textarea.getAttribute('aria-label')).toBe('写下你的评论…')
   })
 
   it('Enter 提交：派发 oas-submit detail { text }，随后清空输入并阻止默认换行', () => {
@@ -169,8 +170,7 @@ describe('OASComment 内置输入行', () => {
     const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('[part="composer-input"]')!
     textarea.value = '  第一条评论  '
     textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
-    expect(events.length, 'Enter 触发一次提交').toBe(1)
-    expect(events[0], 'detail 只携带 trim 后文本').toEqual({ text: '第一条评论' })
+    expect(events, 'Enter 触发一次提交，detail 只携带 trim 后文本').toEqual([{ text: '第一条评论' }])
     expect(textarea.value, '提交后输入清空').toBe('')
   })
 
@@ -187,7 +187,7 @@ describe('OASComment 内置输入行', () => {
     textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
     // 空白时点击提交按钮
     send.click()
-    expect(events.length, '空 / 空白文本均不派发 oas-submit').toBe(0)
+    expect(events, '空 / 空白文本均不派发 oas-submit').toEqual([])
     expect(send.disabled, '空白文本时提交按钮禁用').toBe(true)
     // 恢复有文本后按钮可用
     textarea.value = 'ok'
@@ -203,7 +203,7 @@ describe('OASComment 内置输入行', () => {
     textarea.value = '第一行'
     const e = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true, cancelable: true })
     textarea.dispatchEvent(e)
-    expect(events.length, 'Shift+Enter 不派发 oas-submit').toBe(0)
+    expect(events, 'Shift+Enter 不派发 oas-submit').toEqual([])
     expect(e.defaultPrevented, 'Shift+Enter 走 textarea 原生换行（不 preventDefault）').toBe(false)
     expect(textarea.value).toBe('第一行')
   })
@@ -216,10 +216,10 @@ describe('OASComment 内置输入行', () => {
     textarea.value = '拼音输入中'
     textarea.dispatchEvent(new Event('compositionstart'))
     textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
-    expect(events.length, '组合中 Enter 不提交').toBe(0)
+    expect(events, '组合中 Enter 不提交').toEqual([])
     textarea.dispatchEvent(new Event('compositionend'))
     textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
-    expect(events.length, '组合结束后 Enter 正常提交').toBe(1)
+    expect(events, '组合结束后 Enter 正常提交').toEqual([{ text: '拼音输入中' }])
   })
 
   it('点击提交按钮提交；inputtable="false" 隐藏输入行（其余值不隐藏）', () => {
@@ -231,8 +231,7 @@ describe('OASComment 内置输入行', () => {
     // 真实输入路径：赋值后派发 input（否则提交按钮仍处空文本禁用态，disabled click 无效）
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="composer-send"]')!.click()
-    expect(events.length).toBe(1)
-    expect((events[0] as { text: string }).text).toBe('按钮提交')
+    expect(events).toEqual([{ text: '按钮提交' }])
 
     const off = mount('', { inputtable: 'false' })
     expect(off.shadowRoot!.querySelector('[part="composer"]')!.hasAttribute('hidden')).toBe(true)
@@ -292,8 +291,7 @@ describe('OASComment resolve 态', () => {
     const events: unknown[] = []
     el.addEventListener('oas-resolve', (e) => events.push((e as CustomEvent).detail))
     el.shadowRoot!.querySelector<HTMLButtonElement>('[part="resolve"]')!.click()
-    expect(events.length, '点击触发一次 oas-resolve').toBe(1)
-    expect(events[0]).toEqual({ id: 'c-1', resolved: true })
+    expect(events, '点击触发一次 oas-resolve').toEqual([{ id: 'c-1', resolved: true }])
     expect(el.hasAttribute('resolved'), '组件不内部翻转 resolved（数据由宿主持有并写回属性）').toBe(false)
   })
 
@@ -320,8 +318,7 @@ describe('OASComment resolve 态', () => {
     const events: unknown[] = []
     el.addEventListener('oas-resolve', (e) => events.push((e as CustomEvent).detail))
     resolve.click()
-    expect(events.length).toBe(1)
-    expect(events[0]).toEqual({ id: 'c-2', resolved: false })
+    expect(events).toEqual([{ id: 'c-2', resolved: false }])
     // 宿主写回：移除 resolved 后回到未解决态
     el.removeAttribute('resolved')
     expect(flag.hasAttribute('hidden')).toBe(true)

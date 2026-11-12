@@ -237,8 +237,7 @@ describe('OASEquation 编辑实时预览（editable）', () => {
     expect(eqOf(el).getAttribute('role')).toBe('button')
     expect(eqOf(el).getAttribute('tabindex')).toBe('0')
     expect(eqOf(el).getAttribute('aria-label')).toBe('编辑公式')
-    expect(editorOf(el)).not.toBeNull()
-    expect(editorOf(el)!.hidden).toBe(true)
+    expect(editorOf(el)?.hidden).toBe(true)
   })
 
   it('动态移除 editable：编辑区摘除、交互属性清理', () => {

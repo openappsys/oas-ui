@@ -164,13 +164,12 @@ describe('OASChipsInput 成 chip（Enter / 逗号 / 分号）', () => {
 
   it('oas-change bubbles + composed', () => {
     const el = mount()
-    let seen: Event | null = null
-    document.body.addEventListener('oas-change', (e) => (seen = e))
+    const seen: Event[] = []
+    document.body.addEventListener('oas-change', (e) => seen.push(e))
     typeValue(el, 'a@b.co')
     pressKey(el, 'Enter')
-    expect(seen).not.toBeNull()
-    expect(seen!.bubbles).toBe(true)
-    expect(seen!.composed).toBe(true)
+    expect(seen[0]?.bubbles).toBe(true)
+    expect(seen[0]?.composed).toBe(true)
   })
 })
 
@@ -244,8 +243,7 @@ describe('OASChipsInput 删除与回编辑', () => {
     const el = mount({ value: '["a@b.co","c@d.co"]' })
     pressKey(el, 'Backspace')
     const edit = editInput(el)
-    expect(edit).not.toBeNull()
-    expect(edit!.value).toBe('c@d.co')
+    expect(edit?.value, '回编辑输入框带原值').toBe('c@d.co')
     expect(el.shadowRoot!.activeElement).toBe(edit)
   })
 
