@@ -277,6 +277,12 @@ export const es: LocaleMessages = {
   'avatar.defaultAlt': 'Avatar',
   'avatar.changeAvatar': 'Cambiar avatar',
   'avatar.foldedMembers': 'Todos los miembros',
+  // comment（评论）
+  'comment.placeholder': 'Escribe un comentario…',
+  'comment.submit': 'Enviar',
+  'comment.resolve': 'Marcar como resuelto',
+  'comment.unresolve': 'Desmarcar resolución',
+  'comment.resolved': 'Resuelto',
   // typography (tipografía)
   'typography.copy': 'Copiar',
   // tag (etiqueta)

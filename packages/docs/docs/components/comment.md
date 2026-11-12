@@ -1,12 +1,12 @@
 # Comment 评论
 
-纯展示的评论块容器，通过插槽组装作者头像、名称、时间、内容与操作区；支持嵌套子评论自动缩进。
+纯展示的评论块容器，通过插槽组装作者头像、名称、时间、内容与操作区；支持嵌套子评论自动缩进。内置输入行（Enter 提交 / Shift+Enter 换行）与 resolve 态（已解决弱色划线），评论数据一律由宿主持有、写回驱动渲染。
 
 ## 基础用法
 
 <DemoBlock title="单条评论">
   <div style="width: 100%">
-    <oas-comment>
+    <oas-comment inputtable="false">
       <oas-avatar slot="avatar" size="32">张</oas-avatar>
       <span slot="author">张三</span>
       <span slot="time">3 分钟前</span>
@@ -25,7 +25,7 @@
 
 <DemoBlock title="嵌套回复（自动缩进）">
   <div style="width: 100%">
-    <oas-comment>
+    <oas-comment inputtable="false">
       <oas-avatar slot="avatar" size="32">李</oas-avatar>
       <span slot="author">李四</span>
       <span slot="time">昨天 18:20</span>
@@ -33,7 +33,7 @@
       <span slot="actions">
         <oas-button size="small" type="text">回复</oas-button>
       </span>
-      <oas-comment>
+      <oas-comment inputtable="false">
         <oas-avatar slot="avatar" size="32">王</oas-avatar>
         <span slot="author">王五</span>
         <span slot="time">昨天 19:02</span>
@@ -48,12 +48,12 @@
 
 ## 空态
 
-<DemoBlock title="空评论">
+<DemoBlock title="空评论（输入行关闭）">
   <div style="width: 100%">
-    <oas-comment></oas-comment>
+    <oas-comment inputtable="false"></oas-comment>
   </div>
   <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    无任何插槽内容时渲染为空容器，不报错；空插槽对应的区块自动隐藏。
+    无任何插槽内容时渲染为空容器，不报错；空插槽对应的区块自动隐藏。内置输入行可用 <code>inputtable="false"</code> 关闭，此处已关闭以免出现孤立输入框。
   </p>
 </DemoBlock>
 
@@ -65,7 +65,7 @@
 
 <DemoBlock title="时间 / 操作区对齐（align）">
   <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-4)">
-    <oas-comment>
+    <oas-comment inputtable="false">
       <oas-avatar slot="avatar" size="32">张</oas-avatar>
       <span slot="author">张三</span>
       <span slot="time">3 分钟前</span>
@@ -75,7 +75,7 @@
         <oas-button size="small" type="text">点赞</oas-button>
       </span>
     </oas-comment>
-    <oas-comment align="right">
+    <oas-comment align="right" inputtable="false">
       <oas-avatar slot="avatar" size="32">李</oas-avatar>
       <span slot="author">李四</span>
       <span slot="time">10 分钟前</span>
@@ -94,7 +94,7 @@
 
 <DemoBlock title="quote / reply 插槽（回复 @某人 场景）">
   <div style="width: 100%">
-    <oas-comment align="right">
+    <oas-comment align="right" inputtable="false">
       <oas-avatar slot="avatar" size="32">王</oas-avatar>
       <span slot="author">王五</span>
       <span slot="time">昨天 19:02</span>
@@ -115,7 +115,7 @@
 
 <DemoBlock title="编辑器组合（点回复出输入框）">
   <div style="width: 100%">
-    <oas-comment id="comment-editor">
+    <oas-comment id="comment-editor" inputtable="false">
       <oas-avatar slot="avatar" size="32">赵</oas-avatar>
       <span slot="author">赵六</span>
       <span slot="time">1 小时前</span>
@@ -178,8 +178,80 @@ onMounted(async () => {
       })
     })
   })
+
+  // ===== 内置输入行 demo：宿主监听 oas-submit 追加数据（数据驱动写回）=====
+  const box = document.querySelector('#comment-composer')
+  let seq = 0
+  box?.addEventListener('oas-submit', (e) => {
+    const text = e.detail.text
+    seq += 1
+    customElements.whenDefined('oas-comment').then(() => {
+      const child = document.createElement('oas-comment')
+      child.setAttribute('comment-id', `reply-${seq}`)
+      child.setAttribute('resolvable', '')
+      child.innerHTML = `
+        <oas-avatar slot="avatar" size="32">我</oas-avatar>
+        <span slot="author">我</span>
+        <span slot="time">刚刚</span>
+        <p slot="content" style="margin: 0"></p>
+      `
+      child.querySelector('p').textContent = text
+      box.appendChild(child)
+      message.success(`已提交：${text}`)
+    })
+  })
+  // resolve 写回（提交回环容器 + 下方切换 demo 条目共用同一段宿主写回逻辑）
+  for (const id of ['comment-composer', 'comment-resolve-open', 'comment-resolve-done']) {
+    document.querySelector(`#${id}`)?.addEventListener('oas-resolve', (e) => {
+      const { resolved } = e.detail
+      const item = e.target.closest('oas-comment')
+      if (resolved) item.setAttribute('resolved', '')
+      else item.removeAttribute('resolved')
+    })
+  }
 })
 </script>
+
+## 内置输入行
+
+组件自带输入行（`textarea` + 提交按钮）：**Enter 提交、Shift+Enter 换行**，输入法组合中的 Enter 不触发提交；空文本静默不派发。提交派发 `oas-submit`（detail `{ text }`，bubbles + composed）。
+
+**数据驱动写回范式**：组件不内部追加列表——宿主监听 `oas-submit`，把文本写进自己的数据源，再渲染出新条目（追加进默认插槽）。输入行可用 `inputtable="false"` 关闭（缺省显示）。
+
+<DemoBlock title="提交回环（宿主追加数据）">
+  <div style="width: 100%">
+    <oas-comment id="comment-composer" resolvable comment-id="topic-1">
+      <oas-avatar slot="avatar" size="32">组</oas-avatar>
+      <span slot="author">讨论组</span>
+      <span slot="time">今日话题</span>
+      <p slot="content" style="margin: 0">在下方输入行写点什么都行：Enter 直接提交（数据由本 demo 写回默认插槽），提交出的子评论同样带 resolve 触发钮。</p>
+    </oas-comment>
+  </div>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    宿主监听 <code>oas-submit</code> 追加一条子评论并 toast 反馈；点击条目的 resolve 钮派发 <code>oas-resolve</code>（detail <code>{ id, resolved }</code>），由宿主写回 <code>resolved</code> 属性。
+  </p>
+</DemoBlock>
+
+## resolve 态
+
+`resolvable`（布尔在场属性，默认关）显示 resolve / unresolve 触发钮；`resolved`（布尔在场属性）渲染已解决样式——正文划线 + 条目弱色（token 化，暗色自适应），并在作者行显示「已解决」标记。点击触发钮派发 `oas-resolve`（detail `{ id, resolved }`），**组件不内部翻转**：宿主写回数据后同步条目的 `resolved` 属性。
+
+<DemoBlock title="已解决 / 未解决（点击切换，宿主写回）">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-4)">
+    <oas-comment id="comment-resolve-open" resolvable comment-id="issue-42">
+      <oas-avatar slot="avatar" size="32">王</oas-avatar>
+      <span slot="author">王五</span>
+      <span slot="time">10 分钟前</span>
+      <p slot="content" style="margin: 0">未解决：点右侧「标记为已解决」，宿主把 resolved 写回该条目。</p>
+    </oas-comment>
+    <oas-comment id="comment-resolve-done" resolvable resolved comment-id="issue-41">
+      <oas-avatar slot="avatar" size="32">赵</oas-avatar>
+      <span slot="author">赵六</span>
+      <span slot="time">昨天 18:02</span>
+      <p slot="content" style="margin: 0">已解决：正文划线、条目弱色、作者行带「已解决」标记；点「取消解决」可切回。</p>
+    </oas-comment>
+  </div>
+</DemoBlock>
 
 ## API
 

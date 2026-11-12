@@ -277,6 +277,12 @@ export const ru: LocaleMessages = {
   'avatar.defaultAlt': 'Аватар',
   'avatar.changeAvatar': 'Изменить аватар',
   'avatar.foldedMembers': 'Все участники',
+  // comment（评论）
+  'comment.placeholder': 'Напишите комментарий…',
+  'comment.submit': 'Отправить',
+  'comment.resolve': 'Отметить как решённое',
+  'comment.unresolve': 'Снять отметку решения',
+  'comment.resolved': 'Решено',
   // typography (типографика)
   'typography.copy': 'Копировать',
   // tag (метка)

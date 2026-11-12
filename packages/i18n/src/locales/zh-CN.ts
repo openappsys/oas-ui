@@ -277,6 +277,12 @@ export const zhCN = {
   'avatar.defaultAlt': '头像',
   'avatar.changeAvatar': '更换头像',
   'avatar.foldedMembers': '全部成员',
+  // comment（评论）
+  'comment.placeholder': '写下你的评论…',
+  'comment.submit': '提交',
+  'comment.resolve': '标记为已解决',
+  'comment.unresolve': '取消解决',
+  'comment.resolved': '已解决',
   // typography（排版）
   'typography.copy': '复制',
   // tag（标签）

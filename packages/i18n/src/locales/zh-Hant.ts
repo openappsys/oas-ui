@@ -279,6 +279,12 @@ export const zhHant: LocaleMessages = {
   'avatar.defaultAlt': '頭像',
   'avatar.changeAvatar': '更換頭像',
   'avatar.foldedMembers': '全部成員',
+  // comment（评论）
+  'comment.placeholder': '寫下你的評論…',
+  'comment.submit': '提交',
+  'comment.resolve': '標記為已解決',
+  'comment.unresolve': '取消解決',
+  'comment.resolved': '已解決',
   // typography（排版）
   'typography.copy': '複製',
   // tag（標籤）

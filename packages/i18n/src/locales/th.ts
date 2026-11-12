@@ -225,6 +225,12 @@ export const th: LocaleMessages = {
   'avatar.defaultAlt': 'รูปโปรไฟล์',
   'avatar.changeAvatar': 'เปลี่ยนรูปโปรไฟล์',
   'avatar.foldedMembers': 'สมาชิกทั้งหมด',
+  // comment（评论）
+  'comment.placeholder': 'เขียนความคิดเห็น…',
+  'comment.submit': 'ส่ง',
+  'comment.resolve': 'ทำเครื่องหมายว่าแก้ไขแล้ว',
+  'comment.unresolve': 'ยกเลิกการแก้ไข',
+  'comment.resolved': 'แก้ไขแล้ว',
   'typography.copy': 'คัดลอก',
   'tag.close': 'ปิด',
   'tagGroup.group': 'กลุ่มแท็ก',

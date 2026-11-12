@@ -277,6 +277,12 @@ export const he: LocaleMessages = {
   'avatar.defaultAlt': 'תמונת פרופיל',
   'avatar.changeAvatar': 'החלף תמונת פרופיל',
   'avatar.foldedMembers': 'כל החברים',
+  // comment（评论）
+  'comment.placeholder': 'כתבו תגובה…',
+  'comment.submit': 'שליחה',
+  'comment.resolve': 'סימון כנפתר',
+  'comment.unresolve': 'ביטול סימון נפתר',
+  'comment.resolved': 'נפתר',
   // typography (טיפוגרפיה)
   'typography.copy': 'העתק',
   // tag (תג)

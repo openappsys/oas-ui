@@ -277,6 +277,12 @@ export const de: LocaleMessages = {
   'avatar.defaultAlt': 'Avatar',
   'avatar.changeAvatar': 'Avatar ändern',
   'avatar.foldedMembers': 'Alle Mitglieder',
+  // comment（评论）
+  'comment.placeholder': 'Kommentar schreiben…',
+  'comment.submit': 'Absenden',
+  'comment.resolve': 'Als gelöst markieren',
+  'comment.unresolve': 'Lösung aufheben',
+  'comment.resolved': 'Gelöst',
   // typography (Typografie)
   'typography.copy': 'Kopieren',
   // tag (Tag)

@@ -277,6 +277,12 @@ export const ptBR: LocaleMessages = {
   'avatar.defaultAlt': 'Avatar',
   'avatar.changeAvatar': 'Alterar avatar',
   'avatar.foldedMembers': 'Todos os membros',
+  // comment（评论）
+  'comment.placeholder': 'Escreva um comentário…',
+  'comment.submit': 'Enviar',
+  'comment.resolve': 'Marcar como resolvido',
+  'comment.unresolve': 'Desmarcar resolução',
+  'comment.resolved': 'Resolvido',
   // typography (tipografia)
   'typography.copy': 'Copiar',
   // tag (tag)

@@ -277,6 +277,12 @@ export const fa: LocaleMessages = {
   'avatar.defaultAlt': 'تصویر پروفایل',
   'avatar.changeAvatar': 'تغییر تصویر پروفایل',
   'avatar.foldedMembers': 'همه اعضا',
+  // comment（评论）
+  'comment.placeholder': 'نظر خود را بنویسید…',
+  'comment.submit': 'ارسال',
+  'comment.resolve': 'علامت‌گذاری به‌عنوان حل‌شده',
+  'comment.unresolve': 'برداشتن علامت حل',
+  'comment.resolved': 'حل‌شده',
   // typography (تایپوگرافی)
   'typography.copy': 'کپی',
   // tag (برچسب)

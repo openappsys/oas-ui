@@ -849,9 +849,16 @@
   },
   "oas-comment": {
     "attrs": {
-      "align": "时间与操作区对齐：`left`（默认）/ `right`（逻辑属性实现，RTL 自动翻转）"
+      "align": "时间与操作区对齐：`left`（默认）/ `right`（逻辑属性实现，RTL 自动翻转）",
+      "inputtable": "内置输入行开关（默认开）：显式 `inputtable=\"false\"` 隐藏输入行。输入行 Enter 提交、Shift+Enter 换行；输入法组合中的 Enter 不提交；空文本静默不派发",
+      "resolvable": "resolve 触发钮开关（布尔在场属性，默认关——默认外观零变化）：开启后 actions 行出现 resolve/unresolve 触发钮；actions 插槽为空时该行也因内置钮而显示",
+      "resolved": "已解决态（布尔在场属性）：正文划线 + 条目弱色 + 作者行「已解决」标记（token 化，暗色自适应）。数据驱动——宿主写回数据后同步本属性，组件不内部翻转",
+      "comment-id": "条目 id：随 `oas-resolve` 事件 detail 回传（与 DOM id 解耦，`message-id` 同款家族命名；缺省回传空串）"
     },
-    "events": {},
+    "events": {
+      "oas-submit": "内置输入行提交（Enter 或提交按钮）后派发。detail { text }——trim 后文本；空文本不派发；组件不内部追加列表，宿主写回数据驱动渲染（数据驱动写回范式）",
+      "oas-resolve": "点击 resolve/unresolve 触发钮后派发。detail { id, resolved }——id 为 `comment-id` 属性值（缺省空串），resolved 为目标解决态（true=标记解决 / false=取消解决）；组件不内部翻转 `resolved`，宿主写回数据后同步条目属性"
+    },
     "slots": {
       "": "嵌套的 `oas-comment` 子评论，自动缩进",
       "actions": "操作区（回复/点赞等，由宿主提供）",
@@ -5075,5 +5082,25 @@
       "clear": "清空画布与笔迹，value 归空并按指纹派发 oas-change",
       "toDataURL": "当前画布 PNG dataURL；空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串"
     }
+  },
+  "oas-chips-input": {
+    "attrs": {
+      "value": "邮箱 chip 数组（property 或 JSON attribute）",
+      "max": "chip 数量上限，超出派发 oas-exceed-limit 且不再新增",
+      "placeholder": "输入框占位符（缺省走 i18n 文案）",
+      "disabled": "禁用",
+      "readonly": "只读（chip 仅展示，不可增删改）",
+      "size": "尺寸档位 small / medium / large"
+    },
+    "events": {
+      "oas-change": "chip 增删改后派发",
+      "oas-add": "新增 chip 时派发",
+      "oas-remove": "删除 chip 时派发",
+      "oas-invalid": "chip 邮箱校验非法时派发（幂等，不拦截提交语义）",
+      "oas-exceed-limit": "超出 max 上限时派发且不再新增",
+      "oas-focus": "输入框聚焦时派发",
+      "oas-blur": "输入框失焦时派发"
+    },
+    "slots": {}
   }
 }

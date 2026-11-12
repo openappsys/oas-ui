@@ -277,6 +277,12 @@ export const hi: LocaleMessages = {
   'avatar.defaultAlt': 'प्रोफ़ाइल चित्र',
   'avatar.changeAvatar': 'प्रोफ़ाइल चित्र बदलें',
   'avatar.foldedMembers': 'सभी सदस्य',
+  // comment（评论）
+  'comment.placeholder': 'अपनी टिप्पणी लिखें…',
+  'comment.submit': 'सबमिट करें',
+  'comment.resolve': 'हल के रूप में चिह्नित करें',
+  'comment.unresolve': 'हल चिह्न हटाएँ',
+  'comment.resolved': 'हल किया गया',
   // typography (टाइपोग्राफ़ी)
   'typography.copy': 'कॉपी करें',
   // tag (टैग)

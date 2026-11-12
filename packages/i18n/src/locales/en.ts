@@ -234,6 +234,12 @@ export const en: LocaleMessages = {
   'avatar.defaultAlt': 'Avatar',
   'avatar.changeAvatar': 'Change avatar',
   'avatar.foldedMembers': 'All members',
+  // comment（评论）
+  'comment.placeholder': 'Write a comment…',
+  'comment.submit': 'Submit',
+  'comment.resolve': 'Mark as resolved',
+  'comment.unresolve': 'Unmark resolution',
+  'comment.resolved': 'Resolved',
   'typography.copy': 'Copy',
   'tag.close': 'Close',
   'tagGroup.group': 'Tag group',

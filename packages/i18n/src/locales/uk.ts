@@ -277,6 +277,12 @@ export const uk: LocaleMessages = {
   'avatar.defaultAlt': 'Аватар',
   'avatar.changeAvatar': 'Змінити аватар',
   'avatar.foldedMembers': 'Усі учасники',
+  // comment（评论）
+  'comment.placeholder': 'Напишіть коментар…',
+  'comment.submit': 'Надіслати',
+  'comment.resolve': 'Позначити як вирішене',
+  'comment.unresolve': 'Зняти позначку вирішення',
+  'comment.resolved': 'Вирішено',
   // typography (типографіка)
   'typography.copy': 'Копіювати',
   // tag (мітка)

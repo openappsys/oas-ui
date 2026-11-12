@@ -277,6 +277,12 @@ export const ja: LocaleMessages = {
   'avatar.defaultAlt': 'アバター',
   'avatar.changeAvatar': 'アバターを変更',
   'avatar.foldedMembers': 'すべてのメンバー',
+  // comment（评论）
+  'comment.placeholder': 'コメントを入力…',
+  'comment.submit': '送信',
+  'comment.resolve': '解決済みにする',
+  'comment.unresolve': '解決を取り消す',
+  'comment.resolved': '解決済み',
   // typography（タイポグラフィ）
   'typography.copy': 'コピー',
   // tag（タグ）

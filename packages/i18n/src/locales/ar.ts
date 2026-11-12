@@ -277,6 +277,12 @@ export const ar: LocaleMessages = {
   'avatar.defaultAlt': 'الصورة الرمزية',
   'avatar.changeAvatar': 'تغيير الصورة الرمزية',
   'avatar.foldedMembers': 'جميع الأعضاء',
+  // comment（评论）
+  'comment.placeholder': 'اكتب تعليقًا…',
+  'comment.submit': 'إرسال',
+  'comment.resolve': 'وضع علامة «تم الحل»',
+  'comment.unresolve': 'إزالة علامة الحل',
+  'comment.resolved': 'تم الحل',
   // typography (تنسيق نصوص)
   'typography.copy': 'نسخ',
   // tag (وسم)

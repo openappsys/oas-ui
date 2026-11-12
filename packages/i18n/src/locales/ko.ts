@@ -277,6 +277,12 @@ export const ko: LocaleMessages = {
   'avatar.defaultAlt': '아바타',
   'avatar.changeAvatar': '아바타 변경',
   'avatar.foldedMembers': '모든 멤버',
+  // comment（评论）
+  'comment.placeholder': '댓글을 입력하세요…',
+  'comment.submit': '제출',
+  'comment.resolve': '해결됨으로 표시',
+  'comment.unresolve': '해결 표시 취소',
+  'comment.resolved': '해결됨',
   // typography（타이포그래피）
   'typography.copy': '복사',
   // tag（태그）
