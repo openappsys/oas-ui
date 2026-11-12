@@ -398,6 +398,10 @@ export const fa: LocaleMessages = {
   // code (بلوک کد)
   'code.copy': 'کپی',
   'code.copied': 'کپی شد',
+  // equation (فرمول ریاضی)
+  'equation.edit': 'ویرایش فرمول',
+  'equation.editing': 'ویرایش منبع فرمول',
+  'equation.placeholder': 'منبع LaTeX را وارد کنید',
   // image (پیش‌نمایش تصویر شناور)
   'image.preview.close': 'بستن پیش‌نمایش',
   'image.preview.zoomIn': 'بزرگ‌نمایی',

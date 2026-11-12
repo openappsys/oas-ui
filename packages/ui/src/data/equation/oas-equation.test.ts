@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import '@oas-ui/i18n'
 import { OASEquation } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASEquation {
@@ -10,6 +11,29 @@ function mount(attrs: Record<string, string> = {}): OASEquation {
 
 function eqOf(el: OASEquation): HTMLElement {
   return el.shadowRoot!.querySelector('[part="equation"]')!
+}
+
+function editorOf(el: OASEquation): HTMLElement | null {
+  return el.shadowRoot!.querySelector<HTMLElement>('[part="editor"]')
+}
+
+function fieldOf(el: OASEquation): HTMLTextAreaElement {
+  return el.shadowRoot!.querySelector<HTMLTextAreaElement>('[part="field"]')!
+}
+
+/** 模拟在编辑框输入（赋值 + input 事件） */
+function type(el: OASEquation, text: string): void {
+  const f = fieldOf(el)
+  f.value = text
+  f.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+function pressField(el: OASEquation, keyName: string): void {
+  fieldOf(el).dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }))
+}
+
+function blurField(el: OASEquation): void {
+  fieldOf(el).dispatchEvent(new FocusEvent('blur', { relatedTarget: document.body }))
 }
 
 describe('OASEquation', () => {
@@ -185,5 +209,184 @@ describe('OASEquation', () => {
     // @ts-expect-error 故意注入非法形态
     el.engine = { render: 1 }
     expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
+  })
+})
+
+describe('OASEquation 编辑实时预览（editable）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('默认零变化：无 editable 属性时不渲染编辑区，equation 无交互属性', () => {
+    const el = mount({ code: 'x^2' })
+    expect(editorOf(el)).toBeNull()
+    expect(eqOf(el).hasAttribute('tabindex')).toBe(false)
+    expect(eqOf(el).hasAttribute('role')).toBe(false)
+    // 渲染与现状一致（上标照常渲染）
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
+  })
+
+  it('editable 在场：equation 可聚焦（role=button + aria-label），编辑区默认隐藏', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    expect(eqOf(el).getAttribute('role')).toBe('button')
+    expect(eqOf(el).getAttribute('tabindex')).toBe('0')
+    expect(eqOf(el).getAttribute('aria-label')).toBe('编辑公式')
+    expect(editorOf(el)).not.toBeNull()
+    expect(editorOf(el)!.hidden).toBe(true)
+  })
+
+  it('动态移除 editable：编辑区摘除、交互属性清理', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    el.removeAttribute('editable')
+    expect(editorOf(el)).toBeNull()
+    expect(eqOf(el).hasAttribute('tabindex')).toBe(false)
+    expect(eqOf(el).hasAttribute('role')).toBe(false)
+  })
+
+  it('点击 / Enter / Space 进入编辑态：编辑区显示、源码回填、聚焦、派发 oas-editing', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    const events: boolean[] = []
+    el.addEventListener('oas-editing', (e) => events.push((e as CustomEvent).detail.editing))
+    eqOf(el).click()
+    expect(editorOf(el)!.hidden).toBe(false)
+    expect(fieldOf(el).value).toBe('x^2')
+    expect(fieldOf(el).getAttribute('aria-label')).toBe('编辑公式源码')
+    expect(el.shadowRoot!.activeElement, '编辑框获得焦点').toBe(fieldOf(el))
+    expect(events).toEqual([true])
+    // 编辑态标注：宿主 data-editing + 预览态标记
+    expect(el.hasAttribute('data-editing')).toBe(true)
+    expect(eqOf(el).hasAttribute('data-preview')).toBe(true)
+
+    // Enter / Space 同样进入（键盘逃生）
+    const el2 = mount({ code: 'y_1', editable: '' })
+    eqOf(el2).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(editorOf(el2)!.hidden).toBe(false)
+    const el3 = mount({ code: 'y_1', editable: '' })
+    eqOf(el3).dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }))
+    expect(editorOf(el3)!.hidden).toBe(false)
+  })
+
+  it('输入实时预览（节流）：预览随输入刷新，code 属性在提交前不变', () => {
+    vi.useFakeTimers()
+    const el = mount({ code: 'x^2', editable: '' })
+    eqOf(el).click()
+    type(el, '\\alpha')
+    // leading edge：立即渲染一次
+    expect(eqOf(el).textContent).toContain('α')
+    expect(el.getAttribute('code')).toBe('x^2')
+    // 连续输入走 trailing 节流：窗口内不重复渲染，窗口到点带最新值渲染
+    type(el, '\\alpha + \\beta')
+    type(el, '\\alpha + \\beta + \\gamma')
+    vi.advanceTimersByTime(250)
+    const text = eqOf(el).textContent!
+    expect(text).toContain('α')
+    expect(text).toContain('β')
+    expect(text).toContain('γ')
+    expect(el.getAttribute('code'), '提交前受控值不变').toBe('x^2')
+  })
+
+  it('Enter 提交：写回 code 属性 + 派发 oas-change + 退出编辑态 + 焦点归还', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    const changes: string[] = []
+    const events: boolean[] = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail.value))
+    el.addEventListener('oas-editing', (e) => events.push((e as CustomEvent).detail.editing))
+    eqOf(el).click()
+    type(el, 'a^2 + b^2')
+    pressField(el, 'Enter')
+    expect(el.getAttribute('code')).toBe('a^2 + b^2')
+    expect(changes).toEqual(['a^2 + b^2'])
+    expect(editorOf(el)!.hidden).toBe(true)
+    expect(el.hasAttribute('data-editing')).toBe(false)
+    expect(eqOf(el).hasAttribute('data-preview')).toBe(false)
+    expect(events).toEqual([true, false])
+    expect(el.shadowRoot!.activeElement, '焦点归还 equation 容器').toBe(eqOf(el))
+    // 提交后按新值渲染（a^2 + b^2 两处上标）
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(2)
+  })
+
+  it('失焦提交：blur 视同提交（焦点移出组件）', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    eqOf(el).click()
+    type(el, '\\beta')
+    blurField(el)
+    expect(el.getAttribute('code')).toBe('\\beta')
+    expect(editorOf(el)!.hidden).toBe(true)
+  })
+
+  it('Esc 取消：恢复原值显示 + 派发 oas-cancel，code 属性不被写入', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    const cancels: string[] = []
+    const changes: unknown[] = []
+    el.addEventListener('oas-cancel', (e) => cancels.push((e as CustomEvent).detail.value))
+    el.addEventListener('oas-change', (e) => changes.push(e))
+    eqOf(el).click()
+    type(el, '\\gamma')
+    pressField(el, 'Escape')
+    expect(el.getAttribute('code'), '受控值不被写入').toBe('x^2')
+    expect(cancels).toEqual(['x^2'])
+    expect(changes).toHaveLength(0)
+    expect(editorOf(el)!.hidden).toBe(true)
+    // 显示恢复为原值渲染
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
+  })
+
+  it('提交值未变化时不派发 oas-change', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    const changes: unknown[] = []
+    el.addEventListener('oas-change', (e) => changes.push(e))
+    eqOf(el).click()
+    pressField(el, 'Enter')
+    expect(changes).toHaveLength(0)
+    expect(editorOf(el)!.hidden).toBe(true)
+  })
+
+  it('渲染失败回退显示源码 + 一次性 devWarn（同源码不重复告警）', () => {
+    vi.useFakeTimers()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ code: 'x^2', editable: '' })
+    el.engine = {
+      renderToString: () => {
+        throw new Error('engine boom')
+      },
+    }
+    eqOf(el).click()
+    type(el, '\\badcmd')
+    // 预览回退为源码显示（非引擎产物非自研渲染）
+    expect(eqOf(el).textContent).toContain('\\badcmd')
+    expect(warn).toHaveBeenCalledTimes(1)
+    // 同一失败源码再次渲染不重复告警
+    type(el, '\\badcmd')
+    vi.advanceTimersByTime(250)
+    expect(warn).toHaveBeenCalledTimes(1)
+    // 不同失败源码再告警一次
+    type(el, '\\othercmd')
+    vi.advanceTimersByTime(250)
+    expect(warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('value 双通道：编辑中读实时文本，非编辑态读 code；写入反射 code 属性', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    expect(el.value).toBe('x^2')
+    eqOf(el).click()
+    type(el, 'a^2')
+    expect(el.value, '编辑中读内部输入框实时文本').toBe('a^2')
+    pressField(el, 'Escape')
+    expect(el.value, '取消后回落受控值').toBe('x^2')
+    el.value = 'c^3'
+    expect(el.getAttribute('code')).toBe('c^3')
+    expect(eqOf(el).querySelectorAll('.sup').length).toBe(1)
+  })
+
+  it('键盘可达：editable 焦点环样式存在（focus-visible 走 --oas-focus-ring）', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toMatch(/\[editable\][^{]*\.equation:focus-visible\s*\{[^}]*--oas-focus-ring/)
   })
 })

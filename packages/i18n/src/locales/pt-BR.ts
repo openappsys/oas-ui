@@ -402,6 +402,10 @@ export const ptBR: LocaleMessages = {
   // code (bloco de código)
   'code.copy': 'Copiar',
   'code.copied': 'Copiado',
+  // equation (fórmula matemática)
+  'equation.edit': 'Editar fórmula',
+  'equation.editing': 'Editando o código da fórmula',
+  'equation.placeholder': 'Inserir código LaTeX',
   // image (camada de visualização de imagem)
   'image.preview.close': 'Fechar visualização',
   'image.preview.zoomIn': 'Ampliar',

@@ -402,6 +402,10 @@ export const ko: LocaleMessages = {
   // code（코드 블록）
   'code.copy': '복사',
   'code.copied': '복사됨',
+  // equation（수식）
+  'equation.edit': '수식 편집',
+  'equation.editing': '수식 소스 편집 중',
+  'equation.placeholder': 'LaTeX 소스 입력',
   // image（이미지 미리보기 오버레이）
   'image.preview.close': '미리보기 닫기',
   'image.preview.zoomIn': '확대',

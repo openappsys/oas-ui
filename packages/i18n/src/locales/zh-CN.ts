@@ -402,6 +402,10 @@ export const zhCN = {
   // code（代码块）
   'code.copy': '复制',
   'code.copied': '已复制',
+  // equation（数学公式）
+  'equation.edit': '编辑公式',
+  'equation.editing': '编辑公式源码',
+  'equation.placeholder': '输入 LaTeX 源码',
   // image（图片预览浮层）
   'image.preview.close': '关闭预览',
   'image.preview.zoomIn': '放大',

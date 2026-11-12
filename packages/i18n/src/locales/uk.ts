@@ -398,6 +398,10 @@ export const uk: LocaleMessages = {
   // code (блок коду)
   'code.copy': 'Копіювати',
   'code.copied': 'Скопійовано',
+  // equation (математична формула)
+  'equation.edit': 'Редагувати формулу',
+  'equation.editing': 'Редагування джерела формули',
+  'equation.placeholder': 'Введіть джерело LaTeX',
   // image (спливний перегляд зображень)
   'image.preview.close': 'Закрити перегляд',
   'image.preview.zoomIn': 'Збільшити',

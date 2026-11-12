@@ -398,6 +398,10 @@ export const hi: LocaleMessages = {
   // code (कोड ब्लॉक)
   'code.copy': 'कॉपी करें',
   'code.copied': 'कॉपी हो गया',
+  // equation (गणितीय सूत्र)
+  'equation.edit': 'सूत्र संपादित करें',
+  'equation.editing': 'सूत्र स्रोत संपादित कर रहे हैं',
+  'equation.placeholder': 'LaTeX स्रोत दर्ज करें',
   // image (चित्र पूर्वावलोकन ओवरले)
   'image.preview.close': 'पूर्वावलोकन बंद करें',
   'image.preview.zoomIn': 'ज़ूम इन',

@@ -398,6 +398,10 @@ export const he: LocaleMessages = {
   // code (בלוק קוד)
   'code.copy': 'העתק',
   'code.copied': 'הועתק',
+  // equation (נוסחה מתמטית)
+  'equation.edit': 'ערוך נוסחה',
+  'equation.editing': 'עריכת קוד המקור של הנוסחה',
+  'equation.placeholder': 'הזן קוד מקור LaTeX',
   // image (תצוגה מקדימה של תמונה)
   'image.preview.close': 'סגור תצוגה מקדימה',
   'image.preview.zoomIn': 'הגדל',

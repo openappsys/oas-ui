@@ -74,6 +74,17 @@
 
 行间公式（独立居中、上下留白）用 <code>display="block"</code>；字号不放大，跟随外层。
 
+## 编辑实时预览
+
+`editable`（布尔属性，默认关——非编辑态渲染与纯展示逐字节一致）开启后，点击公式（或聚焦后 Enter/Space）进入编辑态：输入 LaTeX 源码实时（200ms 节流）渲染预览，Enter 或失焦提交写回 `code` 并派发 `oas-change`（detail `{ value }`），Esc 取消恢复原值并派发 `oas-cancel`；编辑态进入/退出派发 `oas-editing`（detail `{ editing }`）。注入引擎渲染失败时预览回退显示源码并一次性 devWarn（同源码不重复告警）。`value` property 双通道：编辑中读输入框实时文本，非编辑态读 `code`；写入反射 `code` 属性（不派发事件）。
+
+<DemoBlock title="editable 编辑实时预览">
+  <div style="width: 100%">
+    <oas-equation id="eq-editable" code="x^2 + y_1 = z_{max}" editable></oas-equation>
+    <p id="eq-editable-output" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">点击公式进入编辑：Enter 提交 / Esc 取消</p>
+  </div>
+</DemoBlock>
+
 ## 注入渲染引擎
 
 <DemoBlock title="engine 注入（薄壳委托）">
@@ -97,6 +108,15 @@ onMounted(() => {
       renderToString: (code) =>
         `<span style="border: 1px dashed var(--oas-color-primary); border-radius: var(--oas-radius-sm); padding: 2px 8px; font-family: serif">⟦ ${code.replace(/</g, '&lt;')} ⟧</span>`,
     }
+    // 编辑实时预览 demo：提交/取消给出可见反馈
+    const eqEdit = document.querySelector('#eq-editable')
+    const editOut = document.querySelector('#eq-editable-output')
+    eqEdit?.addEventListener('oas-change', (e) => {
+      editOut.textContent = `oas-change: ${e.detail.value}`
+    })
+    eqEdit?.addEventListener('oas-cancel', () => {
+      editOut.textContent = 'oas-cancel: 已恢复原值'
+    })
   })
 })
 </script>
@@ -121,6 +141,15 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `code` | LaTeX 子集源文本 | `string` | — |
 | `display` | 显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距） | `string` | — |
+| `editable` | 编辑实时预览（在场开启）：点击/Enter 进入编辑态，输入 LaTeX 源码节流实时预览；Enter/失焦提交写回 `code`，Esc 取消恢复原值 | `boolean`（在场） | — |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 编辑提交且源码变化时派发，detail `{ value: 新源码 }` |
+| `oas-editing` | 编辑态进入/退出时派发，detail `{ editing: boolean }` |
+| `oas-cancel` | Esc 取消编辑时派发，detail `{ value: 原源码 }` |
 
 #### CSS 变量
 
@@ -131,7 +160,7 @@ onMounted(() => {
 
 ### ARIA
 
-容器 `aria-label` = 原始 LaTeX 源文本，屏幕阅读器直接朗读公式源。
+容器 `aria-label` = 原始 LaTeX 源文本，屏幕阅读器直接朗读公式源。`editable` 展示态容器为编辑入口（`role="button"` + `aria-label`「编辑公式」）；编辑中预览区 `aria-label` 跟随当前源码，编辑框 `aria-label` 标注编辑态（「编辑公式源码」）。
 
 ### 边界
 

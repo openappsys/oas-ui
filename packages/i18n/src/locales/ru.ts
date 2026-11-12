@@ -402,6 +402,10 @@ export const ru: LocaleMessages = {
   // code (блок кода)
   'code.copy': 'Копировать',
   'code.copied': 'Скопировано',
+  // equation (математическая формула)
+  'equation.edit': 'Редактировать формулу',
+  'equation.editing': 'Редактирование исходника формулы',
+  'equation.placeholder': 'Введите исходный код LaTeX',
   // image (просмотр изображений во всплывающем слое)
   'image.preview.close': 'Закрыть просмотр',
   'image.preview.zoomIn': 'Увеличить',

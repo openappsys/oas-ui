@@ -402,6 +402,10 @@ export const ja: LocaleMessages = {
   // code（コードブロック）
   'code.copy': 'コピー',
   'code.copied': 'コピーしました',
+  // equation（数式）
+  'equation.edit': '数式を編集',
+  'equation.editing': '数式ソースを編集中',
+  'equation.placeholder': 'LaTeX ソースを入力',
   // image（画像プレビューオーバーレイ）
   'image.preview.close': 'プレビューを閉じる',
   'image.preview.zoomIn': '拡大',

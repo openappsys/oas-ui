@@ -1336,9 +1336,14 @@
   "oas-equation": {
     "attrs": {
       "code": "LaTeX 子集源文本",
-      "display": "显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距）"
+      "display": "显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距）",
+      "editable": "编辑实时预览（在场开启）：点击/Enter 进入编辑态，输入 LaTeX 源码节流实时预览；Enter/失焦提交写回 `code`，Esc 取消恢复原值"
     },
-    "events": {},
+    "events": {
+      "oas-cancel": "Esc 取消编辑时派发，detail `{ value: 原源码 }`",
+      "oas-change": "编辑提交且源码变化时派发，detail `{ value: 新源码 }`",
+      "oas-editing": "编辑态进入/退出时派发，detail `{ editing: boolean }`"
+    },
     "slots": {}
   },
   "oas-flex": {

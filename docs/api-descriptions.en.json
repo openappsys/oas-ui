@@ -1380,9 +1380,14 @@
   "oas-equation": {
     "attrs": {
       "code": "LaTeX subset source text",
-      "display": "Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block)"
+      "display": "Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block)",
+      "editable": "Live edit preview (enabled when present): click/Enter enters edit mode with throttled live preview while typing LaTeX source; Enter/blur commits back to `code`, Esc cancels and restores the original value"
     },
-    "events": {},
+    "events": {
+      "oas-cancel": "Emitted when Esc cancels editing; detail `{ value: original source }`",
+      "oas-change": "Emitted when an edit commit changes the source; detail `{ value: new source }`",
+      "oas-editing": "Emitted when entering/leaving edit mode; detail `{ editing: boolean }`"
+    },
     "slots": {}
   },
   "oas-flex": {

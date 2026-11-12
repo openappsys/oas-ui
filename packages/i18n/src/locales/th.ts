@@ -321,6 +321,10 @@ export const th: LocaleMessages = {
   'chart.empty': 'ไม่มีข้อมูล',
   'code.copy': 'คัดลอก',
   'code.copied': 'คัดลอกแล้ว',
+  // equation（สูตรคณิตศาสตร์）
+  'equation.edit': 'แก้ไขสูตร',
+  'equation.editing': 'กำลังแก้ไขซอร์สสูตร',
+  'equation.placeholder': 'ป้อนซอร์ส LaTeX',
   'image.preview.close': 'ปิดตัวอย่าง',
   'image.preview.zoomIn': 'ขยาย',
   'image.preview.zoomOut': 'ย่อ',

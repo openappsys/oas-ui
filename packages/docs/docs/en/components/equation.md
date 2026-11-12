@@ -74,6 +74,17 @@ Unknown commands are displayed literally without errors.
 
 Use <code>display="block"</code> for display math (centered standalone line with vertical margin); font size is not enlarged and follows the outer context.
 
+## Live Edit Preview
+
+`editable` (boolean attribute, off by default — non-editing rendering stays byte-identical to pure display) enables click-to-edit (or Enter/Space when focused): typing LaTeX source renders a live preview (200ms throttled); Enter or blur commits the value back to `code` and emits `oas-change` (detail `{ value }`); Esc cancels and restores the original value, emitting `oas-cancel`; entering/leaving edit mode emits `oas-editing` (detail `{ editing }`). If an injected engine fails to render, the preview falls back to showing the raw source with a one-time devWarn (once per source). The `value` property is a dual channel: it reads the live text while editing and `code` otherwise; writing reflects to the `code` attribute (no event emitted).
+
+<DemoBlock title="editable live edit preview">
+  <div style="width: 100%">
+    <oas-equation id="eq-editable" code="x^2 + y_1 = z_{max}" editable></oas-equation>
+    <p id="eq-editable-output" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Click the formula to edit: Enter commits / Esc cancels</p>
+  </div>
+</DemoBlock>
+
 ## Injecting a Rendering Engine
 
 <DemoBlock title="engine injection (thin-shell delegation)">
@@ -98,6 +109,15 @@ onMounted(() => {
       renderToString: (code) =>
         `<span style="border: 1px dashed var(--oas-color-primary); border-radius: var(--oas-radius-sm); padding: 2px 8px; font-family: serif">⟦ ${code.replace(/</g, '&lt;')} ⟧</span>`,
     }
+    // Live-edit demo: visible feedback on commit/cancel
+    const eqEdit = document.querySelector('#eq-editable')
+    const editOut = document.querySelector('#eq-editable-output')
+    eqEdit?.addEventListener('oas-change', (e) => {
+      editOut.textContent = `oas-change: ${e.detail.value}`
+    })
+    eqEdit?.addEventListener('oas-cancel', () => {
+      editOut.textContent = 'oas-cancel: original value restored'
+    })
   })
 })
 </script>
@@ -122,6 +142,15 @@ Font size follows the outer context (inherited) by default; override with the CS
 | --- | --- | --- | --- |
 | `code` | LaTeX subset source text | `string` | — |
 | `display` | Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block) | `string` | — |
+| `editable` | Live edit preview (enabled when present): click/Enter enters edit mode with throttled live preview while typing LaTeX source; Enter/blur commits back to `code`, Esc cancels and restores | `boolean` (presence) | — |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Emitted when an edit commit changes the source; detail `{ value: new source }` |
+| `oas-editing` | Emitted when entering/leaving edit mode; detail `{ editing: boolean }` |
+| `oas-cancel` | Emitted when Esc cancels editing; detail `{ value: original source }` |
 
 #### CSS Variables
 
@@ -132,7 +161,7 @@ Font size follows the outer context (inherited) by default; override with the CS
 
 ### ARIA
 
-The container's `aria-label` equals the raw LaTeX source text, so screen readers read the formula source directly.
+The container's `aria-label` equals the raw LaTeX source text, so screen readers read the formula source directly. With `editable`, the display-state container is the edit entry (`role="button"` + `aria-label` "Edit formula"); while editing, the preview region's `aria-label` follows the current source and the field is labeled as the editing state ("Editing formula source").
 
 ### Boundaries
 

@@ -339,6 +339,10 @@ export const en: LocaleMessages = {
   'chart.empty': 'No data',
   'code.copy': 'Copy',
   'code.copied': 'Copied',
+  // equation (math formula)
+  'equation.edit': 'Edit formula',
+  'equation.editing': 'Editing formula source',
+  'equation.placeholder': 'Enter LaTeX source',
   'image.preview.close': 'Close preview',
   'image.preview.zoomIn': 'Zoom in',
   'image.preview.zoomOut': 'Zoom out',

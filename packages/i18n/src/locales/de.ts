@@ -402,6 +402,10 @@ export const de: LocaleMessages = {
   // code (Codeblock)
   'code.copy': 'Kopieren',
   'code.copied': 'Kopiert',
+  // equation (Mathematische Formel)
+  'equation.edit': 'Formel bearbeiten',
+  'equation.editing': 'Formelquelle wird bearbeitet',
+  'equation.placeholder': 'LaTeX-Quelle eingeben',
   // image (Bildvorschau-Overlay)
   'image.preview.close': 'Vorschau schließen',
   'image.preview.zoomIn': 'Vergrößern',

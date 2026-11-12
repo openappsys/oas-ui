@@ -400,6 +400,10 @@ export const zhHant: LocaleMessages = {
   // code（程式碼塊）
   'code.copy': '複製',
   'code.copied': '已複製',
+  // equation（數學公式）
+  'equation.edit': '編輯公式',
+  'equation.editing': '編輯公式原始碼',
+  'equation.placeholder': '輸入 LaTeX 原始碼',
   // image（圖片預覽浮層）
   'image.preview.close': '關閉預覽',
   'image.preview.zoomIn': '放大',

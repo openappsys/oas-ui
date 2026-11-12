@@ -402,6 +402,10 @@ export const ar: LocaleMessages = {
   // code (كتلة تعليمات برمجية)
   'code.copy': 'نسخ',
   'code.copied': 'تم النسخ',
+  // equation (صيغة رياضية)
+  'equation.edit': 'تحرير الصيغة',
+  'equation.editing': 'تحرير مصدر الصيغة',
+  'equation.placeholder': 'أدخل مصدر LaTeX',
   // image (معاينة الصور في طبقة منبثقة)
   'image.preview.close': 'إغلاق المعاينة',
   'image.preview.zoomIn': 'تكبير',
