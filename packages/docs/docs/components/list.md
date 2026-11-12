@@ -693,7 +693,7 @@ onMounted(() => {
 
 ## 拖拽排序（sortable）
 
-`sortable` 开启行拖拽排序（HTML5 DnD）：把行拖到目标行上放置，列表派发 `oas-reorder`（`detail: { from, to, item }`——`from` / `to` 为行索引，`item` 为数据通道下的原数据项或声明式下的行元素），由宿主据事件重排数据（组件不自动移动行）。拖到自身不派发；虚拟滚动行不支持。支持数据通道与声明式两种行通道。
+`sortable` 开启行拖拽排序（HTML5 DnD）：把行拖到目标行上放置，列表派发 `oas-reorder`（`detail: { from, to, item }`——`from` / `to` 为行索引，`item` 为数据通道下的原数据项或声明式下的行元素），由宿主据事件重排数据（组件不自动移动行）。拖到自身不派发；虚拟滚动行不支持；`disabled` 行不可拖、不作为落点（与键盘重排墙同口径）。支持数据通道与声明式两种行通道。
 
 <DemoBlock title="拖拽排序（sortable）">
   <div style="width: 100%">

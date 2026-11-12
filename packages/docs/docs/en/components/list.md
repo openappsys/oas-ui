@@ -696,7 +696,7 @@ onMounted(() => {
 
 ## Sortable (sortable)
 
-`sortable` enables row drag-and-drop reordering (HTML5 DnD): drop a row onto a target row and the list emits `oas-reorder` (`detail: { from, to, item }` — `from` / `to` are row indexes; `item` is the original data item for the data channel or the row element for declarative rows), letting the host reorder its data (the component never moves rows itself). Dropping onto the same row emits nothing; virtual-scroll rows are not supported. Works for both the data channel and declarative rows.
+`sortable` enables row drag-and-drop reordering (HTML5 DnD): drop a row onto a target row and the list emits `oas-reorder` (`detail: { from, to, item }` — `from` / `to` are row indexes; `item` is the original data item for the data channel or the row element for declarative rows), letting the host reorder its data (the component never moves rows itself). Dropping onto the same row emits nothing; virtual-scroll rows are not supported; `disabled` rows are neither draggable nor drop targets (the same wall rule as keyboard reordering). Works for both the data channel and declarative rows.
 
 <DemoBlock title="Sortable rows (sortable)">
   <div style="width: 100%">

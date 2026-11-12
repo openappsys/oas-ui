@@ -282,7 +282,7 @@ export class OASList extends OASElement {
       'windowed',
       'total',
       'window-start',
-      // sortable：行拖拽排序（HTML5 DnD，落点派发 oas-reorder）
+      // sortable：行拖拽排序（HTML5 DnD，落点派发 oas-reorder；disabled 行不可拖、不作为落点）
       'sortable',
     ]
   }
@@ -578,7 +578,7 @@ export class OASList extends OASElement {
         item.setAttribute('data-size', size)
         item.toggleAttribute('data-stripe', stripe && i % 2 === 1)
         item.toggleAttribute('data-hoverable', hoverable)
-        if (this.hasAttr('sortable')) item.setAttribute('draggable', 'true')
+        if (this.hasAttr('sortable') && !item.hasAttribute('disabled')) item.setAttribute('draggable', 'true')
         else item.removeAttribute('draggable')
         // 键盘重排快捷键声明（disabled 行不参与重排，不声明）
         if (item.hasAttribute('disabled')) item.removeAttribute('aria-keyshortcuts')
@@ -717,7 +717,7 @@ export class OASList extends OASElement {
     // 斑马纹按传入口径（windowed 用绝对行号，滚动窗口变化时条纹不闪变）
     if (stripe && index % 2 === 1) row.setAttribute('data-stripe', '')
     if (this.hasAttr('hoverable')) row.setAttribute('data-hoverable', '')
-    if (sortable) row.setAttribute('draggable', 'true')
+    if (sortable && !row.hasAttribute('disabled')) row.setAttribute('draggable', 'true')
     ;(row as { itemData?: unknown }).itemData = item
     if (tpl) row.appendChild(cloneSlotContent(tpl))
     this.emit('item-render', { index, item, element: row })
@@ -1167,6 +1167,8 @@ export class OASList extends OASElement {
     if (!this.hasAttr('sortable')) return
     const row = this.dragRowFromEvent(e)
     if (!row) return
+    // disabled 行不可拖拽（与键盘重排墙同口径：不可移动、不作为落点）
+    if (row.hasAttribute('disabled')) return
     const from = this.rowElements().indexOf(row)
     if (from < 0) return
     this.dragFrom = from
@@ -1184,6 +1186,8 @@ export class OASList extends OASElement {
     if (this.dragFrom < 0 || !this.hasAttr('sortable')) return
     const row = this.dragRowFromEvent(e)
     if (!row || row === this.dragFromEl) return
+    // disabled 行不作落点：无高亮、不拦截（拖过它相当于不可放置区）
+    if (row.hasAttribute('disabled')) return
     e.preventDefault()
     const de = e as DragEvent
     if (de.dataTransfer) de.dataTransfer.dropEffect = 'move'
@@ -1196,6 +1200,12 @@ export class OASList extends OASElement {
     if (this.dragFrom < 0 || !this.hasAttr('sortable')) return
     const row = this.dragRowFromEvent(e)
     if (!row) return
+    // disabled 行不落定（与键盘重排墙同口径）：清高亮复位拖拽，不派发 reorder
+    if (row.hasAttribute('disabled')) {
+      this.clearDropMarkers()
+      this.resetDrag()
+      return
+    }
     e.preventDefault()
     const rows = this.rowElements()
     const from = this.dragFrom

@@ -1891,7 +1891,7 @@
       "split": "是否显示条目分隔线",
       "stripe": "斑马纹：视觉偶数行铺浅色底",
       "hoverable": "不可点行的 hover 底色反馈（选中行排除）",
-      "sortable": "行拖拽排序（数据通道 + 声明式）",
+      "sortable": "行拖拽排序（数据通道 + 声明式；disabled 行不可拖、不作为落点）",
       "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，data 只承载可见窗口附近的行切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；windowed 下本地分组/拖拽重排不适用（宿主负责）",
       "total": "windowed 模式下的全量行数；为 0 或非法时 windowed 不生效（回落普通模式）",
       "window-start": "windowed 模式下切片首行的绝对行号（相对全量）"
@@ -1919,7 +1919,7 @@
       "clickable": "整行可点：hover 反馈、可聚焦（Enter/Space 触发）、点击派发 oas-click",
       "description": "描述文本快捷通道（slot=\"description\" 优先，可放富内容）",
       "selected": "选中行高亮（视觉态，选中态由宿主维护）",
-      "disabled": "禁用条目：不可聚焦、不响应点击/键盘激活（aria-disabled 同步）；键盘重排的墙——自身不可移动、不作为交换目标",
+      "disabled": "禁用条目：不可聚焦、不响应点击/键盘激活（aria-disabled 同步）；重排的墙（键盘 Alt+↑/↓ 与 sortable 拖拽同口径）——自身不可移动、不作为交换/落点目标",
       "size": "行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认）",
       "title": "条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
       "href": "整行链接：行内渲染覆盖整行的 `<a>`（可访问名称取行标题），点击任意空白处即导航；链接行不再派发 oas-click（与 clickable 语义分离）",

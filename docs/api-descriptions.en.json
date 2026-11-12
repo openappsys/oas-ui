@@ -1962,7 +1962,7 @@
       "split": "Whether to show item dividers",
       "stripe": "Zebra stripes: fills visually even rows with a subtle background",
       "hoverable": "Hover background for non-clickable rows (selected rows excluded)",
-      "sortable": "Enables row drag-and-drop reordering (data channel + declarative)",
+      "sortable": "Enables row drag-and-drop reordering (data channel + declarative; disabled rows are neither draggable nor drop targets)",
       "windowed": "Server-side row-window mode (boolean, off by default): with total / window-start, data carries only the slice near the visible window (rendered by absolute row index); when the expected row window is not covered, oas-window-request is emitted for the host to refill. In windowed mode local grouping / drag reorder do not apply (the host owns them)",
       "total": "Full row count in windowed mode; 0 or invalid disables windowed (falls back to normal mode)",
       "window-start": "Absolute row index (within the full dataset) of the first row in the slice (windowed mode)"
@@ -1993,7 +1993,7 @@
       "clickable": "Whole row clickable: hover feedback, focusable (Enter/Space triggers), click dispatches oas-click",
       "description": "Description text quick channel (slot=\"description\" wins, rich content allowed)",
       "selected": "Selected row highlight (visual state; selection is host-controlled)",
-      "disabled": "Disabled row: not focusable, ignores click/keyboard activation (aria-disabled synced); a wall for keyboard reordering — it never moves and is never a swap target",
+      "disabled": "Disabled row: not focusable, ignores click/keyboard activation (aria-disabled synced); a wall for reordering (keyboard Alt+↑/↓ and sortable drag share the same rule) — it never moves and is never a swap/drop target",
       "size": "Row density: sm / md (default) / lg",
       "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content",
       "href": "Whole-row link: an `<a>` stretched over the row is rendered inside (accessible name taken from the row title); clicking anywhere on the row navigates; link rows no longer emit oas-click (separated from the clickable semantics)",

@@ -1033,6 +1033,43 @@ describe('OASList', () => {
       expect(css).toContain('var(--oas-color-primary)')
       expect(css).toContain(':host([data-rtl])')
     })
+
+    it('disabled 行：sortable 下不可拖拽、不作为落点（与键盘重排墙同口径）', () => {
+      const el = new OASList()
+      el.setAttribute('sortable', '')
+      el.data = [{ title: '甲' }, { title: '乙', disabled: true }, { title: '丙' }]
+      document.body.appendChild(el)
+      const rows = dataRows(el)
+      // disabled 数据行不置 draggable
+      expect(rows[1]!.getAttribute('draggable')).not.toBe('true')
+      let fired = 0
+      el.addEventListener('oas-reorder', () => fired++)
+      // disabled 行 dragstart 不启动：随后的 drop 空转
+      drag(el, 'dragstart', rows[1]!)
+      drag(el, 'drop', rows[2]!)
+      expect(fired).toBe(0)
+      // 把「甲」拖到 disabled 行「乙」上：无落点高亮、不落定
+      drag(el, 'dragstart', rows[0]!)
+      drag(el, 'dragover', rows[1]!)
+      expect(rows[1]!.classList.contains('row--drag-over')).toBe(false)
+      drag(el, 'drop', rows[1]!)
+      expect(fired).toBe(0)
+      drag(el, 'dragend', rows[0]!)
+      // 非 disabled 行互拖不受影响（回归不误伤）
+      drag(el, 'dragstart', rows[0]!)
+      drag(el, 'drop', rows[2]!)
+      expect(fired).toBe(1)
+    })
+
+    it('声明式：disabled 行不置 draggable', () => {
+      const el = new OASList()
+      el.setAttribute('sortable', '')
+      el.innerHTML = '<oas-list-item title="一"></oas-list-item><oas-list-item title="二" disabled></oas-list-item>'
+      document.body.appendChild(el)
+      const rows = [...el.querySelectorAll<HTMLElement>('oas-list-item')]
+      expect(rows[0]!.getAttribute('draggable')).toBe('true')
+      expect(rows[1]!.getAttribute('draggable')).not.toBe('true')
+    })
   })
 
   describe('OASListItem 前置媒体槽（icon / image）', () => {
