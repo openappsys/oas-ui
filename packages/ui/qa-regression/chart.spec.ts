@@ -18,6 +18,7 @@ test('chart 渲染产出与 aria：图形节点随类型渲染、role=img 可命
       linePaths: svgOf(line).querySelectorAll('.line-path').length,
       lineDots: svgOf(line).querySelectorAll('circle.dot').length,
       barCount: svgOf(bar).querySelectorAll('rect.bar').length,
+      barCats: svgOf(bar).querySelectorAll('text.axis-label').length,
       emptyVisible: !empty.shadowRoot!.querySelector<HTMLElement>('[part="empty"]')!.hidden,
       emptyText: empty.shadowRoot!.querySelector('[part="empty"]')!.textContent ?? '',
       emptySvgHidden: svgOf(empty).hasAttribute('hidden'),
@@ -27,7 +28,7 @@ test('chart 渲染产出与 aria：图形节点随类型渲染、role=img 可命
   expect(r.lineAria, '缺省 aria-label 按 locale 生成（非空）').toBe('折线图')
   expect(r.linePaths, '折线图渲染系列 path').toBe(1)
   expect(r.lineDots, '单系列 5 个数据点渲染 5 个 dot').toBe(5)
-  expect(r.barCount, '柱状图柱数 = 分类数（4）').toBe(4)
+  expect(r.barCount, '柱状图柱数 = 分类轴标签数（单系列一柱一标签）').toBe(r.barCats)
   expect(r.emptyVisible, '空数据空态占位可见（不报错）').toBe(true)
   expect(r.emptyText, '空态文案非空').toBe('暂无数据')
   expect(r.emptySvgHidden, '空态下图形 svg 隐藏').toBe(true)
@@ -697,7 +698,7 @@ test('chart 横向条形图：真实 getBBox 分类标签贴左缘不越界、�
     return { light, dark, rtl }
   })
 
-  expect(r.light.barCount, '横向条数量 = 分类数（5）').toBe(5)
+  expect(r.light.barCount, '横向条数量 = 分类标签数（一标签一条）').toBe(r.light.catLabels.length)
   expect(new Set(r.light.barXs).size, '所有条共享绘图区左缘起点（向右增长）').toBe(1)
   expect(r.light.barLeft, '条起点 = 首条竖网格线（绘图区左缘）').toBeCloseTo(r.light.firstGridX, 0)
   expect(r.light.widths[1]! / r.light.widths[0]!, '条宽按值线性（40 : 20 = 2）').toBeCloseTo(2, 1)
@@ -771,10 +772,15 @@ test('chart tooltip（opt-in）：默认零浮层节点；真实 hover 可见与
       .getElementById('chart-tip-format')!
       .shadowRoot!.querySelector('[part="tooltip"]') as HTMLElement
     const r = tip.getBoundingClientRect()
-    return { text: tip.textContent ?? '', w: r.width, h: r.height }
+    // 用文本排版矩形做基准：浮层尺寸必须能容纳自身文本（DOM 现算，非校准常数）
+    const range = document.createRange()
+    range.selectNodeContents(tip)
+    const tr = range.getBoundingClientRect()
+    range.detach()
+    return { text: tip.textContent ?? '', w: r.width, h: r.height, textW: tr.width, textH: tr.height }
   })
-  expect(shown.w, '真实 hover 后浮层有可见宽度（不是 0×0）').toBeGreaterThan(0)
-  expect(shown.h, '真实 hover 后浮层有可见高度').toBeGreaterThan(0)
+  expect(shown.w, '真实 hover 后浮层宽度容纳自身文本（不是 0×0 塌缩）').toBeGreaterThanOrEqual(shown.textW)
+  expect(shown.h, '真实 hover 后浮层高度容纳自身文本').toBeGreaterThanOrEqual(shown.textH)
   expect(shown.text, 'tooltipFormatter（property 通道）文案生效').toContain('｜')
   expect(shown.text, 'formatter 自定义文案进浮层').toContain('万元')
 

@@ -1520,7 +1520,7 @@ describe('OASChart opt-in 自定义 tooltip（options.tooltip）', () => {
   it('tooltip=true：单例浮层存在且默认隐藏（part/role 契约，多次更新不重复创建）', () => {
     const el = withTip()
     const tip = tipOf(el)!
-    expect(tip).not.toBeNull()
+    expect(tip, '浮层单例存在').toBeInstanceOf(HTMLElement)
     expect(tip.getAttribute('role')).toBe('tooltip')
     expect(tip.getAttribute('data-visible')).toBe('false')
     expect(tip.textContent).toBe('')
@@ -1633,7 +1633,7 @@ describe('OASChart opt-in 自定义 tooltip（options.tooltip）', () => {
 
   it('options.tooltip 关闭后销毁浮层节点（零孤儿）', () => {
     const el = withTip()
-    expect(tipOf(el)).not.toBeNull()
+    expect(tipOf(el), '关闭前浮层节点存在').toBeInstanceOf(HTMLElement)
     el.setAttribute('options', '{"tooltip":false}')
     expect(tipOf(el), '关闭后不得残留浮层节点').toBeNull()
   })

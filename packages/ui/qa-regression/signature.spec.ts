@@ -82,6 +82,7 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
       attr: host.getAttribute('value') ?? '',
       method: host.toDataURL(),
       canvasW: canvas.width,
+      cssW: canvas.getBoundingClientRect().width,
       dpr: window.devicePixelRatio,
       aria: canvas.getAttribute('aria-label'),
       role: canvas.getAttribute('role'),
@@ -90,7 +91,7 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
     }
   })
 
-  expect(r.events.length, '两笔各派发一次').toBe(2)
+  expect(r.events, '两笔各派发一次').toHaveLength(2)
   expect(r.events[0]!.bubbles).toBe(true)
   expect(r.events[0]!.composed).toBe(true)
   expect(r.events[0]!.value, '事件 value 为 PNG dataURL').toMatch(/^data:image\/png;base64,/)
@@ -98,7 +99,7 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
   expect(r.attr).toBe(r.events[1]!.value)
   expect(r.method, 'toDataURL() 与属性通道一致').toBe(r.attr)
   expect(r.canvasW, 'canvas backing store 按 DPR 放大（高清）').toBeGreaterThan(200)
-  expect(r.dpr).toBeGreaterThan(0)
+  expect(r.canvasW, 'backing store 宽度 = CSS 宽度 × DPR（语义不变量，隐含 DPR ≥ 1）').toBe(Math.round(r.cssW * r.dpr))
   expect(r.canvasW % Math.round(r.dpr), 'backing store 宽度为 DPR 整数倍').toBe(0)
   expect(r.role).toBe('img')
   expect(r.aria).toContain('已签名')
@@ -118,7 +119,7 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
       aria: canvas.getAttribute('aria-label'),
     }
   })
-  expect(after.count).toBe(3)
+  expect(after.count, '清空按钮再派发一次（在笔画两笔的基础上 +1）').toBe(r.events.length + 1)
   expect(after.last.value).toBe('')
   expect(after.attr).toBe('')
   expect(after.aria).toContain('未签名')
@@ -220,7 +221,7 @@ test('signature：暗色下默认笔色翻转为浅色、画板边界可见', as
 
   // 暗色画板底色应为 dark token（非透明/白），边框 1px 实线保障 forced-colors 下边界可见
   expect(r.borderS).toBe('solid')
-  expect(Number.parseFloat(r.borderW)).toBeGreaterThan(0)
+  expect(Number.parseFloat(r.borderW), '边框宽 1px（CSS 固定值，与字体度量无关）').toBe(1)
   expect(r.color).not.toBe('rgb(24, 24, 27)')
 
   expect(badWarns, 'console 零告警').toEqual([])

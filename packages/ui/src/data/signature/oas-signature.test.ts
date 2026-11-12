@@ -214,8 +214,7 @@ describe('OASSignature', () => {
         [150, 30],
       ])
       expect(el.getAttribute('value')).toBe('data:image/png;base64,MOCKPNG')
-      expect(events.length).toBe(1)
-      expect(events[0]!.detail).toEqual({ value: 'data:image/png;base64,MOCKPNG' })
+      expect(events.map((e) => e.detail)).toEqual([{ value: 'data:image/png;base64,MOCKPNG' }])
       expect(events[0]!.bubbles).toBe(true)
       expect(events[0]!.composed).toBe(true)
       // 有笔迹后空态占位隐藏
@@ -259,11 +258,10 @@ describe('OASSignature', () => {
       el.addEventListener('oas-change', (e) => events.push(e as CustomEvent))
       el.clear()
       expect(el.getAttribute('value')).toBe('')
-      expect(events.length).toBe(1)
-      expect(events[0]!.detail).toEqual({ value: '' })
+      expect(events.map((e) => e.detail)).toEqual([{ value: '' }])
       expect(placeholderOf(el).hasAttribute('hidden')).toBe(false)
       el.clear()
-      expect(events.length).toBe(1)
+      expect(events.map((e) => e.detail)).toEqual([{ value: '' }])
     } finally {
       restore()
     }
@@ -282,7 +280,7 @@ describe('OASSignature', () => {
       el.addEventListener('oas-change', (e) => events.push(e as CustomEvent))
       clearBtnOf(el).click()
       expect(el.getAttribute('value')).toBe('')
-      expect(events.length).toBe(1)
+      expect(events.map((e) => e.detail)).toEqual([{ value: '' }])
     } finally {
       restore()
     }
@@ -297,7 +295,7 @@ describe('OASSignature', () => {
         [10, 10],
         [90, 90],
       ])
-      expect(events.length).toBe(0)
+      expect(events).toEqual([])
       expect(el.getAttribute('value') ?? '').toBe('')
       expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
     } finally {
@@ -320,7 +318,7 @@ describe('OASSignature', () => {
         [20, 20],
         [80, 80],
       ])
-      expect(events.length).toBe(0)
+      expect(events).toEqual([])
       expect(el.getAttribute('value')).toBe('data:image/png;base64,MOCKPNG')
       expect(canvasOf(el).getAttribute('aria-label')).toContain('已签名')
     } finally {
@@ -341,7 +339,7 @@ describe('OASSignature', () => {
       const events: CustomEvent[] = []
       el.addEventListener('oas-change', (e) => events.push(e as CustomEvent))
       el.setAttribute('value', 'data:image/png;base64,MOCKPNG')
-      expect(events.length).toBe(0)
+      expect(events).toEqual([])
       expect(placeholderOf(el).hasAttribute('hidden')).toBe(true)
       // 宿主写入外部图像值 → 笔迹清空（转外部图像加载，异步绘制）
       el.setAttribute('value', 'data:image/png;base64,EXTERNAL')
@@ -431,13 +429,13 @@ describe('OASSignature', () => {
         mockCanvasRect(el, { ...RECT, width: 600, right: 600 })
         roCallbacks.forEach((cb) => cb())
         const after = lineTos(lastCtx!)
-        expect(after.length).toBeGreaterThan(0)
+        expect(after.length, '重放与初次全量绘制产出相同线段数（新 ctx 上的纯重放）').toBe(before.length)
         expect(after[after.length - 1]![0]).toBeCloseTo(before[before.length - 1]![0]! * 2, 5)
         // value 指纹不变（同笔迹），不重复派发
         const events: CustomEvent[] = []
         el.addEventListener('oas-change', (e) => events.push(e as CustomEvent))
         roCallbacks.forEach((cb) => cb())
-        expect(events.length).toBe(0)
+        expect(events).toEqual([])
       } finally {
         vi.stubGlobal('ResizeObserver', RO)
       }
@@ -463,7 +461,7 @@ describe('OASSignature', () => {
       document.documentElement.classList.add('theme-dark')
       await new Promise((r) => setTimeout(r, 0))
       const strokes = lastCtx!.calls.filter((c) => c[0] === 'stroke').length
-      expect(strokes).toBeGreaterThan(0)
+      expect(strokes, '主题切换触发重绘，重放唯一一笔').toBe(1)
       expect(lastCtx!.strokeStyle).toBe('rgb(250, 250, 250)')
     } finally {
       vi.stubGlobal('getComputedStyle', originalGC)
@@ -505,7 +503,7 @@ describe('OASSignature', () => {
     // 笔画被记录（aria 状态翻转），但无 2d 上下文不产生 dataURL、不派发空值事件
     expect(canvasOf(el).getAttribute('aria-label')).toContain('已签名')
     expect(el.getAttribute('value') ?? '').toBe('')
-    expect(events.length).toBe(0)
+    expect(events).toEqual([])
   })
 
   it('多指触控：第二指 down/move/up 不污染首笔（按 pointerId 过滤）', () => {
@@ -535,16 +533,16 @@ describe('OASSignature', () => {
       fire('pointermove', 2, [280, 140])
       // 第二指的 up 不收尾首笔：仍处进行中，未派发
       fire('pointerup', 2, [290, 150])
-      expect(events.length).toBe(0)
+      expect(events).toEqual([])
       expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
       // 首指正常收尾：只派发一次
       fire('pointermove', 1, [90, 90])
       fire('pointerup', 1, [90, 90])
-      expect(events.length).toBe(1)
+      expect(events.map((e) => e.detail)).toEqual([{ value: 'data:image/png;base64,MOCKPNG' }])
       expect(el.getAttribute('value')).toBe('data:image/png;base64,MOCKPNG')
       // 画布绘制命令中没有第二指坐标（x≈280/290 的 lineTo 不存在）
       const lineTos = lastCtx!.calls.filter((c) => c[0] === 'lineTo')
-      expect(lineTos.length).toBeGreaterThan(0)
+      expect(lineTos.length, '重放首指完整笔迹（3 点 2 段），第二指零线段').toBe(2)
       for (const c of lineTos) {
         expect(c[1], '第二指坐标不得进首笔').toBeLessThan(150)
       }
@@ -563,7 +561,7 @@ describe('OASSignature', () => {
         [50, 50],
         [50, 50],
       ])
-      expect(events.length).toBe(0)
+      expect(events).toEqual([])
       expect(el.getAttribute('value') ?? '').toBe('')
       expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
       expect(placeholderOf(el).hasAttribute('hidden')).toBe(false)
@@ -573,7 +571,7 @@ describe('OASSignature', () => {
         [50, 50],
         [50, 50],
       ])
-      expect(events.length).toBe(0)
+      expect(events).toEqual([])
       expect(canvasOf(el).getAttribute('aria-label')).toContain('未签名')
     } finally {
       restore()
@@ -619,14 +617,14 @@ describe('OASSignature', () => {
     document.body.appendChild(el)
     // 接管成功：shadow 内没有残留指纹 meta（基类移除），骨架未被 render 重建
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('canvas')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('canvas')).toBeInstanceOf(HTMLCanvasElement)
   })
 
   it('DSD 结构不符回退 render() 重建', () => {
     const el = new OASSignature()
     el.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-signature" data-oas-ssr-v="1"><div>garbage</div>'
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('[part="clear-button"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="clear-button"]')).toBeInstanceOf(HTMLButtonElement)
     expect(el.shadowRoot!.textContent).not.toContain('garbage')
   })
 })
