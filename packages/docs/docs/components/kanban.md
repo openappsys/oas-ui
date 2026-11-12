@@ -162,6 +162,8 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 
 `collapsible`（布尔属性，默认关——默认外观零变化）开启后普通模式每列列头出现折叠按钮：点击把列折叠为窄条（纵向列名 + 卡片数），点击窄条展开；折叠状态在数据变化时保留；折叠/展开派发 `oas-collapse-change`（`detail` 为 `{ columnId, collapsed }`，`columnId` 为列 key）。折叠列不接受拖入（无列体）；泳道模式下不提供列折叠（带矩阵无窄条形态）。
 
+折叠集合可由宿主受控：`collapsed-columns`（JSON 字符串数组，列 key）宿主写属性即解析重建（受控写回）；用户折叠/展开交互只派发事件、不写回该属性（受控输入通道——宿主监听 `oas-collapse-change` 自行回写属性可实现完全受控的折叠态持久化）；非法 JSON 静默回退空集并告警一次。
+
 列定义加可选 `summary`（数值）后该列列底渲染合计行（label 随 locale 翻译）：数值由宿主业务定义（如工时/金额），`summary` 缺席或非有限数值的列不渲染合计行、多列各自独立；数值随宿主数据更新重新渲染（走既有数据通道，无新事件）。泳道模式下不渲染合计行（列已拆入带，无列底形态）：
 
 <DemoBlock title="列折叠与合计">
@@ -188,6 +190,7 @@ Ctrl/Cmd+点击逐枚切换选中，Shift+点击做范围选（锚点卡到被�
 | --- | --- | --- | --- |
 | `card-estimate` | 列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先） | — | — |
 | `cards` | 卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）；卡片可带可选 `color`（CSS 颜色或 token）：仅作卡片左侧 3px 强调条（绝对定位、不改变布局），用于优先级/分类；缺省无强调 | `KanbanCard[] \| string` | `[]` |
+| `collapsed-columns` | 宿主受控折叠集合（JSON 字符串数组，列 key）：宿主写属性 → 解析进折叠集合并重建（受控写回，与 collapsible 搭配；collapsible 关闭或泳道模式下无效果）；用户折叠/展开交互只派发 oas-collapse-change、不写回本属性（受控输入通道，宿主监听事件自行决定是否回写以实现完全受控）；非法 JSON/非数组静默回退空集并告警一次 | — | — |
 | `collapsible` | 列折叠（布尔属性，默认关——默认外观零变化）：开启后普通模式列头出现折叠按钮，点击把列折叠为窄条（纵向列名 + 卡片数），点击窄条展开；折叠状态在数据变化时保留；折叠列不接受拖入；泳道模式下不提供列折叠（带矩阵无窄条形态） | `boolean` | — |
 | `columns` | 列定义（JSON 数组 [{ key, title, limit?, summary? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制；列可带可选 `color`：仅作列头顶部 3px 强调条（不改变列宽/布局）；列可带可选 `summary`（数值）：列底渲染合计行（label 走 i18n kanban.total），缺席/非有限数值不渲染，数值随宿主数据更新重新渲染 | `KanbanColumn[] \| string` | `[]` |
 | `empty-column-text` | 空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译） | `string` | — |

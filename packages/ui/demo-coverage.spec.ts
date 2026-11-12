@@ -278,6 +278,10 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'dragmockto:oas-kanban .column:nth-of-type(2) .column-head',
       '列头手柄拖到第二列头 → oas-column-reorder（落点右半区插后，原位零操作不触发）',
     ],
+    // 折叠钮仅 #kanban-collapse demo 实例渲染（collapsible）；重复探针时可能已折叠（钮消失），
+    // 两步配对兜底：折叠钮缺席跳过、窄条补点展开，至少触发一次 oas-collapse-change
+    ['#kanban-collapse .column-collapse', 'click', '点列头折叠钮 → oas-collapse-change'],
+    ['#kanban-collapse .column-rail', 'click', '点窄条展开 → oas-collapse-change'],
   ],
   list: [
     ['oas-list[sortable] [part="data-items"] oas-list-item', 'dragmock', '拖拽数据通道行（shadow 内）→ oas-reorder'],

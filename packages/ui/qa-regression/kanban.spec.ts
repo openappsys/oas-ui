@@ -995,3 +995,110 @@ test('kanban 列折叠与合计：真实点击折叠 → 窄条可见 → 再点
 
   expect(errors, `console 应零告警，实际：${errors.join(' | ')}`).toEqual([])
 })
+
+// PRD「未发布：P1/P2 组件能力批」①：collapsed-columns 宿主受控折叠集合（事件 oas-collapse-change 之外的属性通道补交付）。
+// 受控口径（pull-refresh refreshing 同款先例）：宿主写属性 → 折叠集重建；用户交互只发事件、零属性写回。
+// 真实点击路径：窄条展开 → 折叠钮折叠；attribute 原值前后比对反证「不写回」。
+
+test('kanban collapsed-columns 受控属性：初始折叠 → 真实点击只发事件不写回 → 宿主改属性受控重建（console 零告警）', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('console', (msg) => {
+    // 只收组件自身告警（浏览器级 warning 非组件缺陷）
+    if (msg.type() === 'error' || (msg.type() === 'warning' && /^\[oas-/.test(msg.text()))) errors.push(msg.text())
+  })
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await page.goto('/components/kanban.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-kanban')
+  // 注入受控实例：collapsed-columns=["todo"] 初始折叠
+  await page.evaluate(() => {
+    const el = document.createElement('oas-kanban')
+    el.id = 'kanban-collapsed-ctrl-e2e'
+    el.setAttribute('collapsible', '')
+    el.setAttribute('collapsed-columns', '["todo"]')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'todo', title: '待办' },
+        { key: 'doing', title: '进行中' },
+      ]),
+    )
+    el.setAttribute(
+      'cards',
+      JSON.stringify([
+        { id: 'cc1', column: 'todo', title: '受控折叠卡' },
+        { id: 'cc2', column: 'doing', title: '普通卡' },
+      ]),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
+  })
+  await up(page, '#kanban-collapsed-ctrl-e2e')
+
+  // 初始：受控属性解析 → todo 为窄条
+  const initial = await page.evaluate(() => {
+    const el = document.querySelector('#kanban-collapsed-ctrl-e2e')!
+    const sr = el.shadowRoot!
+    return {
+      rail: !!sr.querySelector('.column-rail[data-key="todo"]'),
+      column: !!sr.querySelector('.column[data-key="todo"]'),
+      attr: el.getAttribute('collapsed-columns'),
+    }
+  })
+  expect(initial.rail, '受控初始折叠：todo 渲染窄条').toBe(true)
+  expect(initial.column, '受控初始折叠：todo 无普通列容器').toBe(false)
+  expect(initial.attr, 'attribute 保持宿主写入的原值').toBe('["todo"]')
+
+  // 真实点击窄条展开：事件照发、attribute 不写回
+  await page.evaluate(() => {
+    ;(window as unknown as { __ccEvents?: unknown[] }).__ccEvents = []
+    document.querySelector('#kanban-collapsed-ctrl-e2e')!.addEventListener('oas-collapse-change', (e) => {
+      ;(window as unknown as { __ccEvents?: unknown[] }).__ccEvents!.push((e as CustomEvent).detail)
+    })
+  })
+  await realClick(page, '#kanban-collapsed-ctrl-e2e', '.column-rail[data-key="todo"]')
+  await page.waitForFunction(
+    () => !!document.querySelector('#kanban-collapsed-ctrl-e2e')!.shadowRoot!.querySelector('.column[data-key="todo"]'),
+    undefined,
+    { timeout: 5000 },
+  )
+  const expanded = await page.evaluate(() => ({
+    events: ((window as unknown as { __ccEvents?: Array<{ columnId: string; collapsed: boolean }> }).__ccEvents ??
+      []) as Array<{ columnId: string; collapsed: boolean }>,
+    attr: document.querySelector('#kanban-collapsed-ctrl-e2e')!.getAttribute('collapsed-columns'),
+  }))
+  expect(expanded.events, '展开派发 oas-collapse-change').toEqual([{ columnId: 'todo', collapsed: false }])
+  expect(expanded.attr, '用户交互零属性写回').toBe('["todo"]')
+
+  // 真实点击列头折叠钮：事件 collapsed=true、attribute 仍不写回
+  await realClick(page, '#kanban-collapsed-ctrl-e2e', '.column-head[data-key="todo"] .column-collapse')
+  await page.waitForFunction(
+    () =>
+      !!document
+        .querySelector('#kanban-collapsed-ctrl-e2e')!
+        .shadowRoot!.querySelector('.column-rail[data-key="todo"]'),
+    undefined,
+    { timeout: 5000 },
+  )
+  const collapsedAgain = await page.evaluate(() => ({
+    events: ((window as unknown as { __ccEvents?: Array<{ columnId: string; collapsed: boolean }> }).__ccEvents ??
+      []) as Array<{ columnId: string; collapsed: boolean }>,
+    attr: document.querySelector('#kanban-collapsed-ctrl-e2e')!.getAttribute('collapsed-columns'),
+  }))
+  expect(collapsedAgain.events[1], '折叠派发 oas-collapse-change').toEqual({ columnId: 'todo', collapsed: true })
+  expect(collapsedAgain.attr, '折叠交互仍零属性写回').toBe('["todo"]')
+
+  // 宿主受控写回：改属性 → 折叠集重建
+  await page.evaluate(() =>
+    document.querySelector('#kanban-collapsed-ctrl-e2e')!.setAttribute('collapsed-columns', '["doing"]'),
+  )
+  await page.waitForFunction(
+    () => {
+      const sr = document.querySelector('#kanban-collapsed-ctrl-e2e')!.shadowRoot!
+      return !sr.querySelector('.column-rail[data-key="todo"]') && !!sr.querySelector('.column-rail[data-key="doing"]')
+    },
+    undefined,
+    { timeout: 5000 },
+  )
+  expect(errors, `console 应零告警，实际：${errors.join(' | ')}`).toEqual([])
+})

@@ -17,10 +17,10 @@ P1 中优先增强四项 + P2 顺手小项四件一批，来源为 everything �
 - 列头折叠按钮（在场折叠、click 展开；折叠列窄条显示列名 + 卡片数）；合计行（列底 `summary` 数值合计，`summary` 缺席不渲染）；i18n key ×16；属性 `collapsible`（在场开启，默认关，视觉零变化）；折叠态持久化不做（宿主受控：`collapsed-columns` 属性/事件）。
 
 **② oas-list / oas-sidebar：键盘重排**
-- 焦点条目 `Alt+ArrowUp/ArrowDown` 逐条移动（重排当前条目并派发 `oas-reorder`/`oas-change` 带新序）；`aria-keyshortcuts` 声明；RTL 镜像语义（Up/Down 不受 RTL 影响，仅文档注明）；disabled 条目跳过。
+- 焦点条目 `Alt+ArrowUp/ArrowDown` 逐条移动（重排当前条目并派发 `oas-reorder`/`oas-change` 带新序）；`aria-keyshortcuts` 声明；RTL 镜像语义（Up/Down 不受 RTL 影响，仅文档注明）；disabled 条目为「墙」（自身不可移动、不作为落点，键盘与拖拽同口径）。
 
 **③ oas-comment：输入框与 resolve 态**
-- 组件内置输入行（textarea + 提交，Enter 提交/Shift+Enter 换行），提交派发 `oas-submit`（detail 含文本，宿主写回数据驱动列表）；resolve 能力：`resolved` 属性/每条目 `resolved` 字段 → 已解决条目折叠样式（划线/弱色），提供 `resolve` 触发钮（可 `resolvable="false"` 关闭）；i18n ×16。
+- 组件内置输入行（textarea + 提交，Enter 提交/Shift+Enter 换行），提交派发 `oas-submit`（detail 含文本，宿主写回数据驱动列表）；resolve 能力：`resolved` 属性/每条目 `resolved` 字段 → 已解决条目折叠样式（划线/弱色），`resolvable` 在场开启 resolve 触发钮（opt-in，默认关——默认视觉零变化）；i18n ×16。
 
 **④ 收件人 chips 输入（input 族新能力）**
 - 行为：粘贴多地址自动拆分（分号/逗号/换行/空白）、Enter/逗号成 chip、Backspace 空输入回编辑上一 chip、chip 内联校验（非法邮箱红描边 + `oas-invalid` 事件 detail `{ value, index }`，不拦截提交语义——受控数据宿主裁决）；`value` 双通道（字符串数组序列化）；`max` 上限超出派发 `oas-exceed-limit`（ui-spec 语义家族）；占位符/重复值去重（重复静默丢弃一次 devWarn）；命名与形态实现者按 ui-spec §2 自定（新组件或 input 扩展，报告给一句理由）。

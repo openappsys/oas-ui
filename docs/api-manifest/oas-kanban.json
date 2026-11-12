@@ -30,6 +30,10 @@
       "name": "collapsible",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "collapsed-columns",
+      "observed": true
     }
   ],
   "props": [

@@ -1314,6 +1314,132 @@ describe('OASKanban', () => {
     })
   })
 
+  // ===== collapsed-columns 受控属性（宿主受控折叠集合） =====
+  // PRD「未发布：P1/P2 组件能力批」①「折叠态持久化不做（宿主受控：collapsed-columns 属性/事件）」。
+  // 受控口径（pull-refresh refreshing 同款先例）：属性为受控输入通道——宿主写属性 → 解析进折叠
+  // 集合并重建；用户折叠/展开交互只派发 oas-collapse-change，不写回 attribute（零属性写回）。
+
+  describe('collapsed-columns 受控属性', () => {
+    it('属性解析：JSON 字符串数组 → 对应列渲染为窄条，其余列普通', () => {
+      const el = mount({ collapsible: '', 'collapsed-columns': '["todo"]' })
+      expect(columnOf(el, 'todo'), '受控折叠列不渲染普通列容器').toBeNull()
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeInstanceOf(HTMLElement)
+      expect(columnOf(el, 'doing'), '其余列保持普通结构').toBeInstanceOf(HTMLElement)
+      expect(columnOf(el, 'done')).toBeInstanceOf(HTMLElement)
+    })
+
+    it('受控写回：宿主改属性 → 折叠集重建（窄条 ↔ 普通列跟随）', () => {
+      const el = mount({ collapsible: '', 'collapsed-columns': '["todo"]' })
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeInstanceOf(HTMLElement)
+      el.setAttribute('collapsed-columns', '[]')
+      expect(columnOf(el, 'todo'), '清空后恢复普通列').toBeInstanceOf(HTMLElement)
+      el.setAttribute('collapsed-columns', '["doing","done"]')
+      expect(columnOf(el, 'doing')).toBeNull()
+      expect(columnOf(el, 'done')).toBeNull()
+      expect(columnOf(el, 'todo')).toBeInstanceOf(HTMLElement)
+    })
+
+    it('用户交互只发事件不写回 attribute（受控输入通道）：折叠/展开后 attribute 原值不变', () => {
+      const el = mount({ collapsible: '', 'collapsed-columns': '[]' })
+      const events: CustomEvent[] = []
+      el.addEventListener('oas-collapse-change', (e) => events.push(e as CustomEvent))
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events).toHaveLength(1)
+      expect(events[0]!.detail).toEqual({ columnId: 'todo', collapsed: true })
+      expect(el.getAttribute('collapsed-columns'), 'attribute 不被写回').toBe('[]')
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]'), '视觉照常折叠').toBeInstanceOf(HTMLElement)
+      // 展开同样不写回
+      shadow(el)
+        .querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(events).toHaveLength(2)
+      expect(events[1]!.detail).toEqual({ columnId: 'todo', collapsed: false })
+      expect(el.getAttribute('collapsed-columns')).toBe('[]')
+    })
+
+    it('属性缺席时用户折叠：attribute 保持缺席（null），内部态照常工作', () => {
+      const el = mount({ collapsible: '' })
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      expect(el.hasAttribute('collapsed-columns'), '零属性写回').toBe(false)
+      expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeInstanceOf(HTMLElement)
+    })
+
+    it('用户交互后的内部态在数据变化（重渲染）时保留（属性原文未变不重解析）', () => {
+      const el = mount({ collapsible: '', 'collapsed-columns': '[]' })
+      headOf(el, 'todo')
+        .querySelector<HTMLButtonElement>('.column-collapse')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      // 拖拽落定回写 cards 触发整板重建（用未折叠列的卡片）
+      dragDrop(el, 'c3', columnOf(el, 'done').querySelector<HTMLElement>('.column-body')!, 0)
+      expect(
+        shadow(el).querySelector('.column-rail[data-key="todo"]'),
+        '重建后用户折叠态保留（attribute 未变不重解析）',
+      ).toBeInstanceOf(HTMLElement)
+    })
+
+    it('非法 JSON：静默回退空集 + 一次 devWarn（合法值解析成功重置告警标志）', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const el = mount({ collapsible: '', 'collapsed-columns': '{bad' })
+        expect(columnEls(el).length, '非法 JSON 回退空集').toBe(3)
+        el.setAttribute('collapsed-columns', '{worse')
+        expect(columnEls(el).length).toBe(3)
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        // 合法值解析成功 → 重置标志：再次非法再告一次
+        el.setAttribute('collapsed-columns', '["todo"]')
+        expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeInstanceOf(HTMLElement)
+        el.setAttribute('collapsed-columns', '[oops')
+        expect(columnEls(el).length).toBe(3)
+        expect(warnSpy).toHaveBeenCalledTimes(2)
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    it('JSON 合法但非数组（对象）同样回退空集并计入一次告警', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const el = mount({ collapsible: '', 'collapsed-columns': '{"todo":1}' })
+        expect(columnEls(el).length).toBe(3)
+        expect(warnSpy).toHaveBeenCalledTimes(1)
+        expect(String(warnSpy.mock.calls[0]?.[0])).toContain('collapsed-columns')
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    it('非字符串成员过滤（数字/null 忽略）；空白属性视同未设置（空集不告警）', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const el = mount({ collapsible: '', 'collapsed-columns': '["todo",42,null]' })
+        expect(shadow(el).querySelector('.column-rail[data-key="todo"]')).toBeInstanceOf(HTMLElement)
+        expect(columnOf(el, 'doing')).toBeInstanceOf(HTMLElement)
+        const el2 = mount({ collapsible: '', 'collapsed-columns': '  ' })
+        expect(columnEls(el2).length).toBe(3)
+        expect(warnSpy).not.toHaveBeenCalled()
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    it('collapsible 关闭：collapsed-columns 不产生折叠形态（全普通列）', () => {
+      const el = mount({ 'collapsed-columns': '["todo"]' })
+      expect(shadow(el).querySelector('.column-rail')).toBeNull()
+      expect(shadow(el).querySelector('.column-collapse')).toBeNull()
+      expect(columnEls(el).length).toBe(3)
+    })
+
+    it('泳道模式：collapsed-columns 无效果（带矩阵无窄条形态）', () => {
+      const el = mountSwim({ collapsible: '', 'collapsed-columns': '["todo"]' })
+      expect(shadow(el).querySelector('.column-rail')).toBeNull()
+      expect(shadow(el).querySelectorAll('.lane[data-lane]').length, '泳道不受影响').toBe(3)
+    })
+  })
+
   // ===== 列合计（列定义 summary 数值 → 列底合计行） =====
 
   describe('列合计（summary）', () => {

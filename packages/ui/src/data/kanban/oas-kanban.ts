@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { isRtl } from '../../shared/direction.js'
+import { devWarn } from '../../shared/dev-warn.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { HeightCache, computeDynamicWindow } from '../virtual-list/dynamic-height.js'
 
@@ -701,7 +702,11 @@ interface KanbanColumnCards {
  * - WIP 限制：列 `limit` 超限 → 列头计数 warning 色 + data-over-limit 标记（提示非阻断）；
  * - 列折叠：`collapsible`（在场布尔，默认关——默认视觉零变化）开启后普通模式列头出现折叠按钮，
  *   点击把列折叠为窄条（纵向列名 + 卡片数，点击窄条展开）；折叠状态在数据变化时保留；
- *   泳道模式下不提供列折叠（带矩阵无窄条形态）；
+ *   `collapsed-columns`（JSON 字符串数组，列 key）为宿主受控折叠集合：宿主写属性 → 解析进折叠
+ *   集合并重建（受控写回）；用户折叠/展开交互只派发 `oas-collapse-change`、不写回属性
+ *   （受控输入通道，pull-refresh `refreshing` 同口径——宿主监听事件自行决定是否回写）；
+ *   非法 JSON/非数组静默回退空集 + 一次 devWarn（合法值解析成功重置告警标志）；
+ *   泳道模式下不提供列折叠（带矩阵无窄条形态），该属性无效果；
  * - 列合计：列定义 `summary`（数值）存在时列底渲染合计行（label 走 i18n `kanban.total`）；
  *   `summary` 缺席/非有限数值的列不渲染（多列各自独立）；数值随宿主数据更新重新渲染；
  *   泳道模式下不渲染合计行（列已拆入带，无列底）；
@@ -719,7 +724,16 @@ interface KanbanColumnCards {
  */
 export class OASKanban extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['columns', 'cards', 'empty-column-text', 'swimlane-by', 'dir', 'card-estimate', 'collapsible']
+    return [
+      'columns',
+      'cards',
+      'empty-column-text',
+      'swimlane-by',
+      'dir',
+      'card-estimate',
+      'collapsible',
+      'collapsed-columns',
+    ]
   }
 
   private _columns: KanbanColumn[] = []
@@ -730,6 +744,11 @@ export class OASKanban extends OASElement {
   private _renderCard: KanbanCardRenderer | null = null
   /** 已解析的 swimlane-by 值缓存（变化时清空泳道折叠残留，同 table group-by 先例） */
   private _swimlaneByCache: string | null = null
+  /** 已解析的 collapsed-columns attribute 原文（变化才重解析——受控输入通道：
+   *  用户折叠交互只改内部集合不写回属性，原文未变时内部态保留） */
+  private _collapsedColumnsRaw: string | null = null
+  /** 非法 collapsed-columns 已告警标志（合法值解析成功重置——一次 devWarn，json-viewer expanded 同口径） */
+  private collapsedWarned = false
 
   /** 卡片多选选中集（id；内部状态不进 attribute，Esc/空白点击/普通点击/移动落定清空） */
   private selectedIds = new Set<string>()
@@ -970,6 +989,31 @@ export class OASKanban extends OASElement {
     if (swimlaneBy !== this._swimlaneByCache) {
       this._swimlaneByCache = swimlaneBy
       this.collapsedLanes.clear()
+    }
+    // collapsed-columns 受控解析：attribute 原文变化才重建折叠集合（原文未变时用户交互
+    // 写入的内部态保留；用户交互零属性写回——pull-refresh refreshing 同口径）
+    const collapsedRaw = this.getAttribute('collapsed-columns')
+    if (collapsedRaw !== this._collapsedColumnsRaw) {
+      this._collapsedColumnsRaw = collapsedRaw
+      this.collapsedColumns = this.parseCollapsedColumnsAttr(collapsedRaw)
+    }
+  }
+
+  /** collapsed-columns 受控解析：JSON 字符串数组 → 列 key 集合（非字符串成员过滤）；
+   *  非法 JSON/非数组静默回退空集 + 一次 devWarn（合法值解析成功重置告警标志） */
+  private parseCollapsedColumnsAttr(raw: string | null): Set<string> {
+    if (raw == null || raw.trim() === '') return new Set()
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) throw new Error('not-array')
+      this.collapsedWarned = false
+      return new Set(parsed.filter((k): k is string => typeof k === 'string'))
+    } catch {
+      if (!this.collapsedWarned) {
+        this.collapsedWarned = true
+        devWarn('[oas-kanban] collapsed-columns 需要 JSON 字符串数组（列 key），已回退空集')
+      }
+      return new Set()
     }
   }
 
@@ -1339,7 +1383,9 @@ export class OASKanban extends OASElement {
   /**
    * 切换列折叠：更新折叠集合 → 整板重建（窄条与列是两种结构形态，不做增量切类）→
    * 焦点回对应控件（折叠 ↔ 窄条，键盘路径不跌落 body）→ 派发 oas-collapse-change。
-   * 折叠状态不进 attribute（内部状态，数据变化保留；collapsible 关闭时一律渲染普通列）。
+   * 折叠集合为受控通道（collapsed-columns 属性）：用户交互只改内部集合 + 发事件，
+   * 零属性写回（pull-refresh refreshing 同口径）；宿主完全受控时监听事件回写属性，
+   * 属性原文变化经 parse() 重解析（collapsible 关闭时一律渲染普通列）。
    */
   private toggleColumnCollapse(key: string): void {
     if (!this._columns.some((c) => c.key === key)) return
