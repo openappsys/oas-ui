@@ -237,7 +237,7 @@ export { fib }'></oas-code>
 | `focus-lines` | Line focus: focused lines stay, the rest dim | `string` | — |
 | `highlight-lines` | Line highlight: `"1,3-5"` range syntax for highlighted lines (1-based) | `string` | — |
 | `inline` | Inline code mode: renders as a monospace light-background box for code snippets inside prose | `boolean` | — |
-| `language` | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | `string` | — |
+| `language` | Language: `js`/`ts`/`html`/`css`/`json`/`bash` (aliases `sh`/`shell`)/`python` (alias `py`)/`sql`/`diff`/`markdown` (alias `md`)/`yaml` (alias `yml`); unknown falls back to plain text | `string` | — |
 | `max-rows` | Max visible lines; overflow folds with an expand/collapse tail row (`0` = unlimited) | `string` | — |
 | `show-line-number` | Show the line number column | `boolean` | — |
 | `size` | Inline font-size tier: `xs` / `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning | `string` | — |

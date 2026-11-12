@@ -3,7 +3,24 @@ import { OASElement } from '@oas-ui/core/oas-element'
 import { normalizeSizeStrict, type OasSize } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 
-export type CodeLanguage = 'js' | 'ts' | 'html' | 'css' | 'json' | string
+export type CodeLanguage =
+  | 'js'
+  | 'ts'
+  | 'html'
+  | 'css'
+  | 'json'
+  | 'bash'
+  | 'sh'
+  | 'shell'
+  | 'python'
+  | 'py'
+  | 'sql'
+  | 'diff'
+  | 'markdown'
+  | 'md'
+  | 'yaml'
+  | 'yml'
+  | string
 export type CodeSize = 'xs' | 'small' | 'medium' | 'large'
 export type CodeVariant = 'subtle' | 'outline' | 'plain' | 'solid'
 
@@ -122,11 +139,153 @@ const TS_KEYWORDS = [
 
 const CSS_KEYWORDS = ['@media', '@import', '@keyframes', '@font-face', '@supports', 'important']
 
+const SHELL_KEYWORDS = [
+  'if',
+  'then',
+  'else',
+  'elif',
+  'fi',
+  'for',
+  'while',
+  'until',
+  'do',
+  'done',
+  'case',
+  'esac',
+  'in',
+  'function',
+  'select',
+  'return',
+  'exit',
+  'export',
+  'local',
+  'readonly',
+  'declare',
+  'unset',
+  'shift',
+  'source',
+  'alias',
+  'set',
+  'trap',
+  'wait',
+  'break',
+  'continue',
+  'eval',
+  'exec',
+]
+
+const PYTHON_KEYWORDS = [
+  'def',
+  'class',
+  'return',
+  'if',
+  'elif',
+  'else',
+  'for',
+  'while',
+  'break',
+  'continue',
+  'pass',
+  'import',
+  'from',
+  'as',
+  'with',
+  'try',
+  'except',
+  'finally',
+  'raise',
+  'lambda',
+  'yield',
+  'global',
+  'nonlocal',
+  'del',
+  'assert',
+  'async',
+  'await',
+  'and',
+  'or',
+  'not',
+  'in',
+  'is',
+  'None',
+  'True',
+  'False',
+]
+
+const SQL_KEYWORDS = [
+  'SELECT',
+  'FROM',
+  'WHERE',
+  'INSERT',
+  'INTO',
+  'VALUES',
+  'UPDATE',
+  'SET',
+  'DELETE',
+  'CREATE',
+  'TABLE',
+  'ALTER',
+  'DROP',
+  'ADD',
+  'COLUMN',
+  'INDEX',
+  'VIEW',
+  'JOIN',
+  'INNER',
+  'LEFT',
+  'RIGHT',
+  'FULL',
+  'OUTER',
+  'ON',
+  'GROUP',
+  'BY',
+  'ORDER',
+  'HAVING',
+  'LIMIT',
+  'OFFSET',
+  'AS',
+  'AND',
+  'OR',
+  'NOT',
+  'NULL',
+  'IS',
+  'IN',
+  'LIKE',
+  'BETWEEN',
+  'EXISTS',
+  'UNION',
+  'ALL',
+  'DISTINCT',
+  'CASE',
+  'WHEN',
+  'THEN',
+  'ELSE',
+  'END',
+  'PRIMARY',
+  'KEY',
+  'FOREIGN',
+  'REFERENCES',
+  'DEFAULT',
+  'CONSTRAINT',
+  'UNIQUE',
+  'CHECK',
+  'ASC',
+  'DESC',
+]
+
+const YAML_KEYWORDS = ['true', 'false', 'null', 'yes', 'no', 'on', 'off']
+
 interface LangDef {
   keywords: string[]
   operators: boolean
   html?: boolean
   css?: boolean
+  /** 行注释正则源（缺省 `//`；`false` = 该语言无行注释） */
+  lineComment?: string | false
+  /** 关键字大小写不敏感（SQL 大小写惯例混用） */
+  ignoreCase?: boolean
+  /** 语言专属分支（类别 + 正则源），排在字符串分支之前——更具体的行首/锚定 token 优先整段吞掉 */
+  extra?: Array<[TokenClass, string]>
 }
 
 const LANG_DEFS: Record<string, LangDef> = {
@@ -135,6 +294,57 @@ const LANG_DEFS: Record<string, LangDef> = {
   html: { keywords: [], operators: false, html: true },
   css: { keywords: CSS_KEYWORDS, operators: false, css: true },
   json: { keywords: ['true', 'false', 'null'], operators: false },
+  // shell：`#` 行注释；$var/${var} 变量着色（echo 等内建命令不进关键字，保持朴素）
+  bash: {
+    keywords: SHELL_KEYWORDS,
+    operators: true,
+    lineComment: '#[^\\n]*',
+    extra: [['attr', '\\$\\{[^}\\n]*\\}|\\$[A-Za-z_]\\w*|\\$[@#?$!0-9]']],
+  },
+  python: { keywords: PYTHON_KEYWORDS, operators: true, lineComment: '#[^\\n]*' },
+  // sql：关键字大小写不敏感；`--` 行注释
+  sql: { keywords: SQL_KEYWORDS, operators: true, lineComment: '--[^\\n]*', ignoreCase: true },
+  // diff：@@ hunk 头 / ---、+++ 等文件头行 / 行首 +/- 前缀（行级增删着色由 diff 属性负责）
+  diff: {
+    keywords: [],
+    operators: false,
+    lineComment: false,
+    extra: [
+      ['keyword', '^@@.*'],
+      [
+        'comment',
+        '^(?:diff --git|index |--- |\\+\\+\\+ |old mode|new mode|deleted file|new file|rename|similarity index|dissimilarity index|Binary files).*',
+      ],
+      ['operator', '^[+-]'],
+    ],
+  },
+  // markdown：标题标记 / **粗体**__下划线粗体__*斜体* / ``` 围栏行；行内代码由既有反引号字符串分支着色
+  markdown: {
+    keywords: [],
+    operators: false,
+    lineComment: false,
+    extra: [
+      ['comment', '^[ \\t]*(?:```|~~~).*'],
+      ['keyword', '^#{1,6}(?= |$)'],
+      ['attr', '\\*\\*[^*\\n]+\\*\\*|__[^_\\n]+__|\\*[^*\\n]+\\*'],
+    ],
+  },
+  // yaml：行首键（`key:`）/ `#` 行注释；true/false/null 等字面量走关键字
+  yaml: {
+    keywords: YAML_KEYWORDS,
+    operators: false,
+    lineComment: '#[^\\n]*',
+    extra: [['attr', '^[ \\t]*[A-Za-z0-9_.-]+(?=:)']],
+  },
+}
+
+/** 语言别名归一（别名键 → LANG_DEFS 规范键）：sh≈bash/shell、md≈markdown、py≈python、yml≈yaml */
+const LANG_ALIASES: Record<string, string> = {
+  sh: 'bash',
+  shell: 'bash',
+  md: 'markdown',
+  py: 'python',
+  yml: 'yaml',
 }
 
 /** 行注释模式：`// ...` */
@@ -157,8 +367,11 @@ function buildMatcher(def: LangDef): Matcher {
     classes.push(cls)
     parts.push(`(${source})`)
   }
-  if (!def.css) add('comment', LINE_COMMENT_RE.source)
+  if (!def.css && def.lineComment !== false) add('comment', def.lineComment ?? LINE_COMMENT_RE.source)
   add('comment', BLOCK_COMMENT_RE.source)
+  // 语言专属锚定分支（如 diff 文件头、markdown 围栏/标题、yaml 键、shell 变量）：
+  // 放在字符串之前——行首锚定的整行 token 需要先于字符串/通用分支整段吞掉
+  for (const [cls, source] of def.extra ?? []) add(cls, source)
   add('string', STRING_RE.source)
   if (def.html) {
     add('tag', `&lt;\\/?[A-Za-z][\\w-]*`)
@@ -173,7 +386,7 @@ function buildMatcher(def: LangDef): Matcher {
     add('function', `\\b[A-Za-z_$][\\w$]*(?=\\s*\\()`)
     if (def.operators) add('operator', OPERATOR_RE.source)
   }
-  const re = new RegExp(parts.join('|'), 'g')
+  const re = new RegExp(parts.join('|'), def.ignoreCase ? 'gi' : 'g')
   return (src: string): string =>
     src.replace(re, (m, ...args) => {
       const captures = args.slice(0, classes.length)
@@ -202,7 +415,7 @@ function buildMatcher(def: LangDef): Matcher {
  * 二次处理导致破坏已生成 span 或转义实体的问题。未知语言返回纯文本（已转义）。
  */
 export function highlightLine(src: string, language: string): string {
-  const def = LANG_DEFS[language]
+  const def = LANG_DEFS[LANG_ALIASES[language] ?? language]
   if (!def) return escapeText(src)
   const matcher = buildMatcher(def)
   return matcher(escapeText(src))
@@ -487,7 +700,8 @@ pre.code {
  *
  * 属性（kebab-case）：
  * - `code`：源代码原文
- * - `language`：js / ts / html / css / json；未知语言按纯文本渲染不报错
+ * - `language`：js / ts / html / css / json / bash（sh、shell）/ python（py）/ sql / diff /
+ *   markdown（md）/ yaml（yml）；未知语言按纯文本渲染不报错
  * - `show-line-number`：显示行号栏
  * - `copyable`：复制按钮（默认 true，false 关闭）
  *

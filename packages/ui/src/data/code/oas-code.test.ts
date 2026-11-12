@@ -154,6 +154,80 @@ describe('OASCode', () => {
     expect(htmlEl.shadowRoot!.querySelectorAll('.tok-tag').length).toBe(2)
   })
 
+  describe('语言扩充（bash/shell、python、sql、diff、markdown、yaml）', () => {
+    it('bash：# 注释、关键字、$ 变量分别着色', () => {
+      const el = mount({ code: '# 注释\nif [ -z "$x" ]; then\n  echo $HOME\nfi', language: 'bash' })
+      const code = codeEl(el)
+      expect(code.querySelectorAll('.tok-comment').length, '# 注释（shebang 同机制）').toBe(1)
+      expect(code.querySelectorAll('.tok-keyword').length, 'if/then/fi').toBe(3)
+      expect(code.querySelector('.tok-attr')?.textContent, '$HOME 变量').toBe('$HOME')
+    })
+
+    it('python：def/return 关键字、# 注释、函数名', () => {
+      const el = mount({ code: 'def add(a, b):\n  # 求和\n  return a + b', language: 'python' })
+      const code = codeEl(el)
+      expect(code.querySelectorAll('.tok-keyword').length, 'def/return').toBe(2)
+      expect(code.querySelectorAll('.tok-comment').length, '# 注释').toBe(1)
+      expect(code.querySelector('.tok-function')?.textContent, 'def 后函数名').toBe('add')
+    })
+
+    it('sql：大小写不敏感关键字、-- 注释', () => {
+      const el = mount({ code: '-- 查询\nselect id, name\nfrom users\nwhere age > 18', language: 'sql' })
+      const code = codeEl(el)
+      expect(code.querySelectorAll('.tok-comment').length, '-- 注释').toBe(1)
+      const kws = [...code.querySelectorAll('.tok-keyword')].map((n) => n.textContent)
+      expect(kws, '小写关键字也命中（大小写不敏感）').toEqual(['select', 'from', 'where'])
+    })
+
+    it('diff：@@ hunk 头、---/+++ 文件头、行首 +/- 前缀', () => {
+      const el = mount({
+        code: '@@ -1,3 +1,3 @@\n--- a/f.txt\n+++ b/f.txt\nrename from a.txt\n-old\n+new\n context',
+        language: 'diff',
+      })
+      const code = codeEl(el)
+      expect(code.querySelector('.tok-keyword')?.textContent, '@@ hunk 头整行').toContain('@@')
+      expect(code.querySelectorAll('.tok-comment').length, '---/+++/rename from 文件头行').toBe(3)
+      const ops = [...code.querySelectorAll('.tok-operator')].map((n) => n.textContent)
+      expect(ops, '行首 +/- 前缀').toEqual(['-', '+'])
+    })
+
+    it('markdown：# 标记、**粗体**、`行内代码`', () => {
+      const el = mount({ code: '# 标题\n这是 **重点** 和 `code` 混排', language: 'markdown' })
+      const code = codeEl(el)
+      expect(code.querySelector('.tok-keyword')?.textContent, '# 标记').toBe('#')
+      expect(code.querySelector('.tok-attr')?.textContent, '**粗体**').toBe('**重点**')
+      expect(code.querySelector('.tok-string')?.textContent, '`行内代码`').toBe('`code`')
+    })
+
+    it('yaml：行首键、# 注释、布尔字面量', () => {
+      const el = mount({ code: 'name: oas-ui\n# 备注\ndebug: true', language: 'yaml' })
+      const code = codeEl(el)
+      const attrs = [...code.querySelectorAll('.tok-attr')].map((n) => n.textContent)
+      expect(attrs, '行首键 name/debug').toEqual(['name', 'debug'])
+      expect(code.querySelectorAll('.tok-comment').length, '# 注释').toBe(1)
+      expect(code.querySelector('.tok-keyword')?.textContent, '布尔 true').toBe('true')
+    })
+
+    it('别名归一：sh/shell→bash、md→markdown、py→python、yml→yaml（高亮输出与规范名一致）', () => {
+      const shSrc = '# 注释\nif [ -z "$x" ]; then echo hi; fi'
+      const bash = mount({ code: shSrc, language: 'bash' })
+      for (const alias of ['sh', 'shell']) {
+        expect(codeEl(mount({ code: shSrc, language: alias })).innerHTML, `${alias} → bash`).toBe(
+          codeEl(bash).innerHTML,
+        )
+      }
+      const mdSrc = '# 标题\n**粗体**'
+      const markdown = mount({ code: mdSrc, language: 'markdown' })
+      expect(codeEl(mount({ code: mdSrc, language: 'md' })).innerHTML, 'md → markdown').toBe(codeEl(markdown).innerHTML)
+      const pySrc = 'def f(x):\n    return x  # 注释'
+      const python = mount({ code: pySrc, language: 'python' })
+      expect(codeEl(mount({ code: pySrc, language: 'py' })).innerHTML, 'py → python').toBe(codeEl(python).innerHTML)
+      const ymlSrc = 'key: value  # 备注'
+      const yaml = mount({ code: ymlSrc, language: 'yaml' })
+      expect(codeEl(mount({ code: ymlSrc, language: 'yml' })).innerHTML, 'yml → yaml').toBe(codeEl(yaml).innerHTML)
+    })
+  })
+
   it('code 变化增量更新内容', () => {
     const el = mount({ code: 'aaa', language: 'js' })
     const code = codeEl(el)

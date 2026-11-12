@@ -237,7 +237,7 @@ export { fib }'></oas-code>
 | `focus-lines` | 行聚焦：指定聚焦行，其余行淡化 | `string` | — |
 | `highlight-lines` | 行高亮：`"1,3-5"` 范围语法指定高亮行（1-based） | `string` | — |
 | `inline` | 行内代码模式：渲染为等宽浅底小框，适合正文内嵌代码片段 | `boolean` | — |
-| `language` | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string` | — |
+| `language` | 语言：`js`/`ts`/`html`/`css`/`json`/`bash`（别名 `sh`/`shell`）/`python`（别名 `py`）/`sql`/`diff`/`markdown`（别名 `md`）/`yaml`（别名 `yml`），未知按纯文本 | `string` | — |
 | `max-rows` | 最大显示行数，超出折叠 + 展开/收起尾行（`0` 不封顶） | `string` | — |
 | `show-line-number` | 显示行号栏 | `boolean` | — |
 | `size` | 行内字号档：`xs` / `small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警 | `string` | — |

@@ -689,7 +689,7 @@
     "attrs": {
       "code": "Raw source code",
       "copyable": "Show the copy button",
-      "language": "Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text",
+      "language": "Language: `js`/`ts`/`html`/`css`/`json`/`bash` (aliases `sh`/`shell`)/`python` (alias `py`)/`sql`/`diff`/`markdown` (alias `md`)/`yaml` (alias `yml`); unknown falls back to plain text",
       "show-line-number": "Show the line number column",
       "inline": "Inline code mode: renders as a monospace light-background box for code snippets inside prose",
       "word-wrap": "Wrap long code instead of horizontal scrolling",

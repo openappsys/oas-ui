@@ -671,7 +671,7 @@
     "attrs": {
       "code": "源代码原文",
       "copyable": "显示复制按钮",
-      "language": "语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本",
+      "language": "语言：`js`/`ts`/`html`/`css`/`json`/`bash`（别名 `sh`/`shell`）/`python`（别名 `py`）/`sql`/`diff`/`markdown`（别名 `md`）/`yaml`（别名 `yml`），未知按纯文本",
       "show-line-number": "显示行号栏",
       "inline": "行内代码模式：渲染为等宽浅底小框，适合正文内嵌代码片段",
       "word-wrap": "长代码换行显示，不横向滚动",
