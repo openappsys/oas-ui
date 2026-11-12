@@ -112,14 +112,18 @@ test('scanner：无 BarcodeDetector 环境下 active 置位自动落手动模式
     el.setAttribute('aria-label', '自定义名')
     await new Promise((res) => setTimeout(res, 0))
     const errorsAfterNoise = errors.length
+    // 降级态测量必须在 teardown 之前——removeAttribute('active') 会 shutdown 复位
+    // fallbackManual（会话级状态），之后表单随会话收起（2026-11 e2e 实抓的测量点错位）
+    const manualShown = !form.hasAttribute('hidden')
+    const statusTextNow = status.textContent ?? ''
     el.removeAttribute('active')
     el.remove()
     return {
       supported,
       errors,
       errorsAfterNoise,
-      manualShown: !form.hasAttribute('hidden'),
-      statusText: status.textContent ?? '',
+      manualShown,
+      statusText: statusTextNow,
     }
   })
 

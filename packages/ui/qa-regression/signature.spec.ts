@@ -25,6 +25,8 @@ function watchConsole(page: import('@playwright/test').Page): string[] {
 
 /** 真实 mouse 在画布上画一条折线（相对画布左上角的 CSS px 路径） */
 async function stroke(page: import('@playwright/test').Page, canvasSel: string, path: Array<[number, number]>) {
+  // 先滚入视口再测量——boundingBox 是页面坐标，目标在视口外时 mouse 事件打空（2026-11 e2e 实抓）
+  await page.locator(canvasSel).scrollIntoViewIfNeeded()
   const box = await page.locator(canvasSel).boundingBox()
   if (!box) throw new Error(`canvas not visible: ${canvasSel}`)
   const toAbs = ([x, y]: [number, number]) => ({ x: box.x + x, y: box.y + y })
@@ -99,7 +101,7 @@ test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归�
   expect(r.events[1]!.value, '不同路径的第二笔 value 不同').not.toBe(r.events[0]!.value)
   expect(r.attr).toBe(r.events[1]!.value)
   expect(r.method, 'toDataURL() 与属性通道一致').toBe(r.attr)
-  expect(r.canvasW, 'canvas backing store 按 DPR 放大（高清）').toBeGreaterThan(200)
+  expect(r.canvasW, 'canvas backing store 按 DPR 放大（高清，DPR=1 时等宽）').toBeGreaterThanOrEqual(200)
   expect(r.canvasW, 'backing store 宽度 = CSS 宽度 × DPR（语义不变量，隐含 DPR ≥ 1）').toBe(Math.round(r.cssW * r.dpr))
   expect(r.canvasW % Math.round(r.dpr), 'backing store 宽度为 DPR 整数倍').toBe(0)
   expect(r.role).toBe('img')
@@ -314,7 +316,10 @@ test('signature：外部图像受控回显后 resize 不抹图——画布非空
       live: echo.shadowRoot!.querySelector('.sr-status')!.textContent,
     }
   })
-  expect(r.inked, 'resize 后画布非透明像素占比过半——外部签名图像未被抹成空白').toBeGreaterThan(r.total * 0.5)
+  expect(
+    r.inked,
+    'resize 后画布非透明像素 > 0.5%——稀疏笔画签名图像被垫底重放（实测约 2.6%；断言意图是「图像内容保留」而非满幅）',
+  ).toBeGreaterThan(r.total * 0.005)
   expect(r.url, 'value 契约保持非空 PNG').toMatch(/^data:image\/png;base64,/)
   expect(r.aria).toContain('已签名')
   expect(r.placeholderHidden).toBe(true)

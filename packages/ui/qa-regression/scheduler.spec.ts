@@ -1295,6 +1295,8 @@ test('scheduler conflict-check 冲突标记计算样式 + 时刻块真实键盘�
 
   // 真实键盘改期：点击聚焦 c3 → ArrowRight 整天后移（day 视图跟随翻页 + 焦点保持 + 回写）
   await conf.locator('.col[data-date="2026-08-10"] .event[data-id="c3"]').click()
+  // WebKit/Safari 点击不聚焦按钮（平台惯例）——显式 focus 保证跨引擎键盘路径确定性（按键目标才是被测对象）
+  await conf.locator('.col[data-date="2026-08-10"] .event[data-id="c3"]').focus()
   await page.keyboard.press('ArrowRight')
   await expect
     .poll(() =>

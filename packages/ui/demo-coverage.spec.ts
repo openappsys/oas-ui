@@ -204,6 +204,7 @@ const INTERACTIONS: Array<[string, string]> = [
 //   click:n<idx>  点击第 idx 个匹配
 //   domclick      直接 el.click()（绕过 mouseenter 副作用 / <a href> 跳转）
 //   hover         真实鼠标悬停（内部 hover 通道；受控写属性静默后事件探针走真实交互）
+//   pover         派发合成 pointerover（冒泡）——svg 委托监听 pointerover 的组件（chart tooltip 等）
 //   rightclick    右键（contextmenu）
 //   fill:<v>      填充第一个匹配
 //   fillall:<v>   填充所有匹配（如 pin-input 逐格）
@@ -224,6 +225,12 @@ const INTERACTIONS: Array<[string, string]> = [
 //   resizecol     DOM 列宽拖拽：在匹配 th 右缘热区派发 pointerdown/move/up 合成事件序列
 //                 （真实指针会被原生 draggable 拖拽启动/视口外遮挡干扰）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
+  scanner: [
+    ['[part="manual"] input', 'fill:6901234567892', '手动行填码值'],
+    ['[part="manual"] button', 'click', '提交 → oas-scan'],
+  ],
+  signature: [['oas-signature [part="canvas"]', 'dragdown:100', '画布纵向下拖成笔 → oas-change']],
+  chart: [['#chart-tip-format rect.bar', 'pover', 'pointerover 命中柱体 → oas-chart-tooltip']],
   titlebar: [
     ['oas-titlebar [part="win-button"]', 'click', '点窗口操作钮 → oas-window-action'],
     [
@@ -855,6 +862,13 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         const el = page.locator(sel).first()
         if (await el.count()) {
           await el.evaluate((e) => e.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false })))
+        }
+      } else if (act === 'pover') {
+        // pointerover 派发（svg 委托监听 pointerover 的组件——mouseenter 合成事件够不着；
+        // 在 shadow 内目标上冒泡派发即达 svg 委托，无需跨边界）
+        const el = page.locator(sel).first()
+        if (await el.count()) {
+          await el.evaluate((e) => e.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })))
         }
       } else if (act === 'rightclick') {
         const el = page.locator(sel).first()
