@@ -738,6 +738,8 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-sidebar [part="action"]', 'domclick', '项操作按钮 → oas-action'],
     ['oas-sidebar[resizable] [part="rail"]', 'click', 'rail 真实点击聚焦（自动滚动入视口）'],
     ['oas-sidebar[resizable] [part="rail"]', 'press:ArrowRight', '方向键调宽 → oas-resize'],
+    ['#sidebar-kbd-reorder [part="item"]', 'focus', '聚焦条目（press 不聚焦、domclick 不聚焦——focus 动作确定性聚焦）'],
+    ['#noop', 'press:Alt+ArrowDown', 'Alt+↓ 重排 → oas-reorder'],
   ],
   image: [['oas-image[preview] [part="wrapper"]', 'click', '点图 → oas-preview']],
   code: [
@@ -888,6 +890,14 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         }
       } else if (act.startsWith('press:')) {
         await page.keyboard.press(act.slice(6))
+      } else if (act === 'focus') {
+        // el.focus() 确定性聚焦（click 在元素不可见时回落 DOM click 不聚焦；键盘路径组件必备前置）
+        // 先滚入视口——离屏 demo 有 content-visibility 不渲染，选择器静默失配（sidebar 探针实抓）
+        const el = page.locator(sel).first()
+        if (await el.count()) {
+          await el.scrollIntoViewIfNeeded()
+          await el.evaluate((e) => (e as HTMLElement).focus())
+        }
       } else if (act === 'hover') {
         // 悬停内部通道（mouseenter 不冒泡，直接派发到锚点，避免滚动容器/粘性头遮挡导致真实 hover 不稳）；
         // 受控写属性静默后，事件探针必须走组件内部交互
