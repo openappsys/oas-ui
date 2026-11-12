@@ -6,14 +6,14 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **kanban 列折叠与列合计** | `collapsible`（默认关零变化）：列头折叠钮/窄条显示列名+卡片数/点击展开；列底 `summary` 合计（缺席不渲染）；i18n ×16；持久化不做（宿主受控） | 📋 待开发 |
-| **list/sidebar 键盘重排** | 焦点条目 Alt+↑/↓ 逐条移动 + `oas-reorder`/`oas-change` 新序事件；aria-keyshortcuts；disabled 跳过 | 📋 待开发 |
-| **comment 输入与 resolve** | 内置输入行（Enter 提交/Shift+Enter 换行，`oas-submit`）；resolve 态（条目 resolved 字段→折叠样式 + 触发钮，`resolvable="false"` 关闭）；i18n ×16 | 📋 待开发 |
-| **收件人 chips 输入（input 族）** | 粘贴拆分（;/, /换行/空白）/Enter 成 chip/Backspace 回编辑/内联校验（非法邮箱红描边 + `oas-invalid`）/`value` 双通道/`max` 超限 `oas-exceed-limit`/重复去重 | 📋 待开发 |
-| **upload `capture`** | 透传 file input capture（user/environment/在场=user），移动端直调相机；桌面忽略 | 📋 待开发 |
-| **code 语言扩充** | +sh/bash/python/sql/diff/markdown/yaml（既有正则架构内扩展，零第三方库）；非法 lang 回落纯文本 | 📋 待开发 |
-| **countdown 后台记账语义** | 验证 document.hidden 漂移→时间戳记账 + visibilitychange 校正无跳变；tick/value 语义不变 | 📋 待开发 |
-| **equation 编辑实时预览** | 焦点编辑态输入 LaTeX → 实时/失焦渲染预览；value 双通道；失败回退源码 + devWarn；Esc 取消 | 📋 待开发 |
+| **kanban 列折叠与列合计** | `collapsible`（默认关零变化）：列头折叠钮/窄条显示列名+卡片数/点击展开；列底 `summary` 合计（缺席不渲染）；i18n ×16；持久化不做（宿主受控） | ✅ 已完成（未发布） |
+| **list/sidebar 键盘重排** | 焦点条目 Alt+↑/↓ 逐条移动 + `oas-reorder`/`oas-change` 新序事件；aria-keyshortcuts；disabled 跳过 | ✅ 已完成（未发布） |
+| **comment 输入与 resolve** | 内置输入行（Enter 提交/Shift+Enter 换行，`oas-submit`）；resolve 态（条目 resolved 字段→折叠样式 + 触发钮，`resolvable="false"` 关闭）；i18n ×16 | ✅ 已完成（未发布） |
+| **收件人 chips 输入（input 族）** | 粘贴拆分（;/, /换行/空白）/Enter 成 chip/Backspace 回编辑/内联校验（非法邮箱红描边 + `oas-invalid`）/`value` 双通道/`max` 超限 `oas-exceed-limit`/重复去重 | ✅ 已完成（未发布） |
+| **upload `capture`** | 透传 file input capture（user/environment/在场=user），移动端直调相机；桌面忽略 | ✅ 已完成（未发布） |
+| **code 语言扩充** | +sh/bash/python/sql/diff/markdown/yaml（既有正则架构内扩展，零第三方库）；非法 lang 回落纯文本 | ✅ 已完成（未发布） |
+| **countdown 后台记账语义** | 验证 document.hidden 漂移→时间戳记账 + visibilitychange 校正无跳变；tick/value 语义不变 | ✅ 已完成（未发布） |
+| **equation 编辑实时预览** | 焦点编辑态输入 LaTeX → 实时/失焦渲染预览；value 双通道；失败回退源码 + devWarn；Esc 取消 | ✅ 已完成（未发布） |
 
 
 ## 未发布（P0 组件能力批）
