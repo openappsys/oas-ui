@@ -416,6 +416,12 @@ export const he: LocaleMessages = {
   'barcode.invalidCharset': 'מכיל תווים שאינם מותרים בסוג הקוד',
   'barcode.invalidLength': 'מספר הספרות אינו תואם לדרישות סוג הקוד',
   'barcode.invalidChecksum': 'ספרת הביקורת שגויה',
+  // signature（לוח חתימה）
+  'signature.placeholder': 'חתום כאן',
+  'signature.clear': 'נקה',
+  'signature.signed': 'נחתם',
+  'signature.unsigned': 'לא נחתם',
+  'signature.aria': 'לוח חתימה, {status}',
   // command (לוח פקודות)
   'command.placeholder': 'חיפוש פקודות…',
   'command.empty': 'אין פקודות תואמות',

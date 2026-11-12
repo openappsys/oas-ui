@@ -420,6 +420,12 @@ export const ptBR: LocaleMessages = {
   'barcode.invalidCharset': 'Contém caracteres não permitidos pela simbologia',
   'barcode.invalidLength': 'O número de dígitos não corresponde à simbologia',
   'barcode.invalidChecksum': 'Dígito verificador inválido',
+  // signature (painel de assinatura)
+  'signature.placeholder': 'Assine aqui',
+  'signature.clear': 'Limpar',
+  'signature.signed': 'Assinado',
+  'signature.unsigned': 'Não assinado',
+  'signature.aria': 'Painel de assinatura, {status}',
   // command (paleta de comandos)
   'command.placeholder': 'Pesquisar comandos…',
   'command.empty': 'Sem comandos correspondentes',

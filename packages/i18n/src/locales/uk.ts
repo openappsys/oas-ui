@@ -416,6 +416,12 @@ export const uk: LocaleMessages = {
   'barcode.invalidCharset': 'Містить символи, недопустимі для цієї символіки',
   'barcode.invalidLength': 'Кількість цифр не відповідає вимогам символіки',
   'barcode.invalidChecksum': 'Неправильна контрольна цифра',
+  // signature（панель підпису）
+  'signature.placeholder': 'Підпишіть тут',
+  'signature.clear': 'Очистити',
+  'signature.signed': 'Підписано',
+  'signature.unsigned': 'Не підписано',
+  'signature.aria': 'Панель підпису, {status}',
   // command (палітра команд)
   'command.placeholder': 'Пошук команд…',
   'command.empty': 'Немає відповідних команд',

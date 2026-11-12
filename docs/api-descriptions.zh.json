@@ -5033,5 +5033,20 @@
       "close": "关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件）；before-close 处理器内重入 close() 不重复派发并返回 false",
       "bringToFront": "族内置前并把本面板 Esc 层提到栈顶；已是最前时不重复派发 oas-activate"
     }
+  },
+  "oas-signature": {
+    "attrs": {
+      "value": "签名图像（PNG dataURL），双通道可受控",
+      "pen-size": "笔迹粗细（px，默认 2）",
+      "pen-color": "笔迹颜色（11 预设名或 CSS 色值，缺省跟随主题文字色）",
+      "height": "画布高度（px，默认 160）",
+      "disabled": "禁用（拦截笔画）",
+      "readonly": "只读（拦截笔画，保留笔迹展示）",
+      "clearable": "显示清空按钮"
+    },
+    "events": {
+      "oas-change": "笔画结束或清空时派发（同值幂等去重）"
+    },
+    "slots": {}
   }
 }

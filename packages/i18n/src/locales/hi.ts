@@ -416,6 +416,12 @@ export const hi: LocaleMessages = {
   'barcode.invalidCharset': 'सिंबोलॉजी द्वारा अनुमत नहीं वर्ण शामिल हैं',
   'barcode.invalidLength': 'अंकों की संख्या सिंबोलॉजी की आवश्यकता से मेल नहीं खाती',
   'barcode.invalidChecksum': 'चेक डिजिट सही नहीं है',
+  // signature（हस्ताक्षर पैड）
+  'signature.placeholder': 'यहाँ हस्ताक्षर करें',
+  'signature.clear': 'साफ़ करें',
+  'signature.signed': 'हस्ताक्षरित',
+  'signature.unsigned': 'अहस्ताक्षरित',
+  'signature.aria': 'हस्ताक्षर पैड, {status}',
   // command (कमांड पैलेट)
   'command.placeholder': 'कमांड खोजें…',
   'command.empty': 'कोई मिलता-जुलता कमांड नहीं',

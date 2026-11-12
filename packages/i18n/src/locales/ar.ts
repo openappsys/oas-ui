@@ -420,6 +420,12 @@ export const ar: LocaleMessages = {
   'barcode.invalidCharset': 'يحتوي على أحرف غير مسموح بها في نوع الرمز',
   'barcode.invalidLength': 'عدد الأرقام لا يطابق متطلبات نوع الرمز',
   'barcode.invalidChecksum': 'رقم التحقق غير صحيح',
+  // signature（لوحة التوقيع）
+  'signature.placeholder': 'وقّع هنا',
+  'signature.clear': 'مسح',
+  'signature.signed': 'موقّع',
+  'signature.unsigned': 'غير موقّع',
+  'signature.aria': 'لوحة التوقيع، {status}',
   // command (لوحة الأوامر)
   'command.placeholder': 'ابحث عن الأوامر…',
   'command.empty': 'لا توجد أوامر مطابقة',

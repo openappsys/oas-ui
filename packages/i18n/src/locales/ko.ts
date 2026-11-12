@@ -420,6 +420,12 @@ export const ko: LocaleMessages = {
   'barcode.invalidCharset': '코드 체계에서 허용되지 않는 문자가 포함되어 있습니다',
   'barcode.invalidLength': '자릿수가 코드 체계의 요구 사항과 일치하지 않습니다',
   'barcode.invalidChecksum': '체크 디지트가 올바르지 않습니다',
+  // signature（서명 패드）
+  'signature.placeholder': '여기에 서명하세요',
+  'signature.clear': '지우기',
+  'signature.signed': '서명됨',
+  'signature.unsigned': '서명되지 않음',
+  'signature.aria': '서명 패드, {status}',
   // command（명령 팔레트）
   'command.placeholder': '명령어 검색…',
   'command.empty': '일치하는 명령어 없음',

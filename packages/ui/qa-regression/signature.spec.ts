@@ -1,0 +1,219 @@
+// 复核回归：signature（新组件批）——机制固化：真实 mouse 笔画 → oas-change 幂等 → 清空归零 /
+// 受控回显 / disabled 拦截 / DPR 高清 / 暗色笔色重解析 / a11y 角色与标签 / console 零告警。
+
+import { test, expect } from '@playwright/test'
+import { up } from './helpers'
+
+const allow = [
+  /net::ERR_/,
+  /Failed to load resource/,
+  /vite/,
+  /hydrating/,
+  /cookie .*overwritten/i,
+  /scroll-linked positioning effect/i,
+]
+
+function watchConsole(page: import('@playwright/test').Page): string[] {
+  const bad: string[] = []
+  page.on('console', (m) => {
+    if ((m.type() === 'error' || m.type() === 'warning') && !allow.some((re) => re.test(m.text()))) {
+      bad.push(`${m.type()}: ${m.text()}`)
+    }
+  })
+  return bad
+}
+
+/** 真实 mouse 在画布上画一条折线（相对画布左上角的 CSS px 路径） */
+async function stroke(page: import('@playwright/test').Page, canvasSel: string, path: Array<[number, number]>) {
+  const box = await page.locator(canvasSel).boundingBox()
+  if (!box) throw new Error(`canvas not visible: ${canvasSel}`)
+  const toAbs = ([x, y]: [number, number]) => ({ x: box.x + x, y: box.y + y })
+  await page.mouse.move(toAbs(path[0]!).x, toAbs(path[0]!).y)
+  await page.mouse.down()
+  for (const p of path.slice(1)) {
+    await page.mouse.move(toAbs(p).x, toAbs(p).y, { steps: 4 })
+  }
+  await page.mouse.up()
+}
+
+test('signature：真实 mouse 笔画 → oas-change 幂等 → 清空按钮归零', async ({ page }) => {
+  const badWarns = watchConsole(page)
+  await page.goto('/components/signature.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sig-basic')
+
+  const canvasSel = 'oas-signature#sig-basic [part="canvas"]'
+  const events: Array<{ value: string; bubbles: boolean; composed: boolean }> = []
+  await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement
+    ;(window as any).__sigEvents = []
+    host.addEventListener('oas-change', (e) => {
+      const d = (e as CustomEvent).detail as { value: string }
+      ;(window as any).__sigEvents.push({ value: d.value, bubbles: e.bubbles, composed: e.composed })
+    })
+  })
+
+  // 第一笔：派发一次 oas-change，value 为 PNG dataURL
+  const PATH: Array<[number, number]> = [
+    [20, 20],
+    [80, 60],
+    [140, 30],
+    [200, 80],
+  ]
+  await stroke(page, canvasSel, PATH)
+  // 第二笔（同一路径 → 同值指纹）：不重复派发
+  await stroke(page, canvasSel, PATH)
+
+  const r = await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement & {
+      toDataURL(): string
+      shadowRoot: ShadowRoot
+    }
+    const events = (window as any).__sigEvents as Array<{ value: string; bubbles: boolean; composed: boolean }>
+    const canvas = host.shadowRoot.querySelector('[part="canvas"]') as HTMLCanvasElement
+    return {
+      events,
+      attr: host.getAttribute('value') ?? '',
+      method: host.toDataURL(),
+      canvasW: canvas.width,
+      dpr: window.devicePixelRatio,
+      aria: canvas.getAttribute('aria-label'),
+      role: canvas.getAttribute('role'),
+      placeholderHidden: host.shadowRoot.querySelector('[part="placeholder"]')!.hasAttribute('hidden'),
+      live: host.shadowRoot.querySelector('.sr-status')!.textContent,
+    }
+  })
+
+  expect(r.events.length, '两笔相同路径只派发一次（幂等）').toBe(1)
+  expect(r.events[0]!.bubbles).toBe(true)
+  expect(r.events[0]!.composed).toBe(true)
+  expect(r.events[0]!.value, '事件 value 为 PNG dataURL').toMatch(/^data:image\/png;base64,/)
+  expect(r.attr).toBe(r.events[0]!.value)
+  expect(r.method, 'toDataURL() 与属性通道一致').toBe(r.attr)
+  expect(r.canvasW, 'canvas backing store 按 DPR 放大（高清）').toBeGreaterThan(200)
+  expect(r.dpr).toBeGreaterThan(0)
+  expect(r.canvasW % Math.round(r.dpr), 'backing store 宽度为 DPR 整数倍').toBe(0)
+  expect(r.role).toBe('img')
+  expect(r.aria).toContain('已签名')
+  expect(r.placeholderHidden).toBe(true)
+  expect(r.live).toContain('已签名')
+
+  // 清空按钮：value 归空 + 派发 { value: '' }，状态回到未签名
+  await page.locator('oas-signature#sig-basic [part="clear-button"]').click()
+  const after = await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement
+    const events = (window as any).__sigEvents as Array<{ value: string }>
+    const canvas = host.shadowRoot!.querySelector('[part="canvas"]') as HTMLCanvasElement
+    return {
+      count: events.length,
+      last: events[events.length - 1]!,
+      attr: host.getAttribute('value') ?? '',
+      aria: canvas.getAttribute('aria-label'),
+    }
+  })
+  expect(after.count).toBe(2)
+  expect(after.last.value).toBe('')
+  expect(after.attr).toBe('')
+  expect(after.aria).toContain('未签名')
+
+  expect(badWarns, 'console 零告警').toEqual([])
+})
+
+test('signature：受控回显与 disabled 拦截', async ({ page }) => {
+  const badWarns = watchConsole(page)
+  await page.goto('/components/signature.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sig-src')
+
+  // 左板签名 → 受控写入右板（readonly 回显板）
+  await stroke(page, 'oas-signature#sig-src [part="canvas"]', [
+    [20, 20],
+    [100, 80],
+    [180, 40],
+  ])
+  const r = await page.evaluate(async () => {
+    const src = document.querySelector('#sig-src') as HTMLElement
+    const echo = document.querySelector('#sig-echo') as HTMLElement
+    // 宿主受控闭环：回写组件自己刚派发的值 → 不清空、不震荡
+    const v = src.getAttribute('value') ?? ''
+    let echoEvents = 0
+    echo.addEventListener('oas-change', () => echoEvents++)
+    echo.setAttribute('value', v)
+    await new Promise((res) => setTimeout(res, 50))
+    const echoCanvas = echo.shadowRoot!.querySelector('[part="canvas"]') as HTMLCanvasElement
+    return {
+      srcValue: v,
+      echoValue: echo.getAttribute('value') ?? '',
+      echoEvents,
+      echoAria: echoCanvas.getAttribute('aria-label'),
+      echoDisabled: (echo.shadowRoot!.querySelector('[part="clear-button"]') as HTMLButtonElement).hidden,
+    }
+  })
+  expect(r.srcValue).toMatch(/^data:image\/png;base64,/)
+  // 外部图像异步加载完成：回显板进入已签名状态且未派发多余事件
+  expect(r.echoValue).toBe(r.srcValue)
+  expect(r.echoEvents).toBe(0)
+  expect(r.echoAria).toContain('已签名')
+
+  // disabled 板：真实 mouse 笔画被拦截（无 value、无事件）
+  const d = await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement
+    host.setAttribute('disabled', '')
+    let events = 0
+    host.addEventListener('oas-change', () => events++)
+    ;(window as any).__sigDisabledEvents = () => events
+    return host.getAttribute('value') ?? ''
+  })
+  await stroke(page, 'oas-signature#sig-basic [part="canvas"]', [
+    [30, 30],
+    [120, 90],
+  ])
+  const dAfter = await page.evaluate(() => {
+    const host = document.querySelector('#sig-basic') as HTMLElement
+    host.removeAttribute('disabled')
+    return {
+      value: host.getAttribute('value') ?? '',
+      events: (window as any).__sigDisabledEvents() as number,
+      aria: (host.shadowRoot!.querySelector('[part="canvas"]') as HTMLCanvasElement).getAttribute('aria-label'),
+    }
+  })
+  expect(dAfter.value).toBe(d)
+  expect(dAfter.events).toBe(0)
+  expect(dAfter.aria).toContain('未签名')
+
+  expect(badWarns, 'console 零告警').toEqual([])
+})
+
+test('signature：暗色下默认笔色翻转为浅色、画板边界可见', async ({ page }) => {
+  const badWarns = watchConsole(page)
+  await page.goto('/components/signature.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-signature')
+
+  const r = await page.evaluate(async () => {
+    document.documentElement.classList.add('dark')
+    const el = document.createElement('oas-signature')
+    el.setAttribute('clearable', '')
+    el.style.width = '320px'
+    document.body.append(el)
+    await customElements.whenDefined('oas-signature')
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const canvas = el.shadowRoot!.querySelector('[part="canvas"]') as HTMLCanvasElement
+    const cs = getComputedStyle(canvas)
+    // 等两次 rAF 让主题 observer 重解析完成
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+    const colorAfter = getComputedStyle(canvas).color
+    document.documentElement.classList.remove('dark')
+    return {
+      bg: cs.backgroundColor,
+      borderW: cs.borderWidth,
+      borderS: cs.borderStyle,
+      // 默认笔色 = --oas-color-text-primary 解析值：暗色应为浅色（相对亮度高）
+      color: colorAfter,
+    }
+  })
+
+  // 暗色画板底色应为 dark token（非透明/白），边框 1px 实线保障 forced-colors 下边界可见
+  expect(r.borderS).toBe('solid')
+  expect(Number.parseFloat(r.borderW)).toBeGreaterThan(0)
+  expect(r.color).not.toBe('rgb(24, 24, 27)')
+
+  expect(badWarns, 'console 零告警').toEqual([])
+})

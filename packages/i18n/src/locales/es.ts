@@ -420,6 +420,12 @@ export const es: LocaleMessages = {
   'barcode.invalidCharset': 'Contiene caracteres no permitidos por la simbología',
   'barcode.invalidLength': 'El número de dígitos no coincide con la simbología',
   'barcode.invalidChecksum': 'Dígito de control no válido',
+  // signature (panel de firma)
+  'signature.placeholder': 'Firme aquí',
+  'signature.clear': 'Borrar',
+  'signature.signed': 'Firmado',
+  'signature.unsigned': 'Sin firmar',
+  'signature.aria': 'Panel de firma, {status}',
   // command (paleta de comandos)
   'command.placeholder': 'Buscar comandos…',
   'command.empty': 'Sin comandos coincidentes',

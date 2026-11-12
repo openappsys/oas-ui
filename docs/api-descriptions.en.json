@@ -5290,5 +5290,20 @@
       "close": "Requests close: dispatches cancelable oas-before-close first; returns false and stays open when prevented (no attribute write, no open-change). Returns whether the panel is closed — already closed returns true without dispatching; a reentrant close() inside a before-close handler does not dispatch again and returns false",
       "bringToFront": "Raises the panel within the family and promotes its Esc layer to the top; no duplicate oas-activate when already frontmost"
     }
+  },
+  "oas-signature": {
+    "attrs": {
+      "value": "Signature image (PNG dataURL), two-way bindable",
+      "pen-size": "Stroke width (px, default 2)",
+      "pen-color": "Stroke color (11 preset names or CSS color, defaults to theme text color)",
+      "height": "Canvas height (px, default 160)",
+      "disabled": "Disabled (blocks drawing)",
+      "readonly": "Readonly (blocks drawing, keeps strokes visible)",
+      "clearable": "Show clear button"
+    },
+    "events": {
+      "oas-change": "Dispatched on stroke end or clear (idempotent per value)"
+    },
+    "slots": {}
   }
 }

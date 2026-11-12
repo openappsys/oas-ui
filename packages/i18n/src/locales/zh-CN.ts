@@ -420,6 +420,12 @@ export const zhCN = {
   'barcode.invalidCharset': '包含码制不允许的字符',
   'barcode.invalidLength': '位数不符合码制要求',
   'barcode.invalidChecksum': '校验位不正确',
+  // signature（签名板）
+  'signature.placeholder': '在此签名',
+  'signature.clear': '清空',
+  'signature.signed': '已签名',
+  'signature.unsigned': '未签名',
+  'signature.aria': '签名画板，{status}',
   // command（命令面板）
   'command.placeholder': '搜索命令…',
   'command.empty': '无匹配命令',

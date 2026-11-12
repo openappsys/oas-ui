@@ -420,6 +420,12 @@ export const ru: LocaleMessages = {
   'barcode.invalidCharset': 'Содержит символы, недопустимые для этой символики',
   'barcode.invalidLength': 'Количество цифр не соответствует требованиям символики',
   'barcode.invalidChecksum': 'Неверная контрольная цифра',
+  // signature (панель подписи)
+  'signature.placeholder': 'Подпишите здесь',
+  'signature.clear': 'Очистить',
+  'signature.signed': 'Подписано',
+  'signature.unsigned': 'Не подписано',
+  'signature.aria': 'Панель подписи, {status}',
   // command (палитра команд)
   'command.placeholder': 'Поиск команд…',
   'command.empty': 'Нет подходящих команд',

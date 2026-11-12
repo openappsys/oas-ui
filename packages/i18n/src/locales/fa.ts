@@ -416,6 +416,12 @@ export const fa: LocaleMessages = {
   'barcode.invalidCharset': 'شامل نویسه‌های غیرمجاز در این نوع بارکد است',
   'barcode.invalidLength': 'تعداد ارقام با الزام این نوع بارکد مطابقت ندارد',
   'barcode.invalidChecksum': 'رقم کنترلی نادرست است',
+  // signature（پد امضا）
+  'signature.placeholder': 'اینجا امضا کنید',
+  'signature.clear': 'پاک کردن',
+  'signature.signed': 'امضا شد',
+  'signature.unsigned': 'امضا نشده',
+  'signature.aria': 'پد امضا، {status}',
   // command (پالت فرمان)
   'command.placeholder': 'جستجوی فرمان…',
   'command.empty': 'فرمان مطابقی وجود ندارد',

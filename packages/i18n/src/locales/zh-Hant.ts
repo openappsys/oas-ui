@@ -418,6 +418,12 @@ export const zhHant: LocaleMessages = {
   'barcode.invalidCharset': '包含碼制不允許的字元',
   'barcode.invalidLength': '位數不符合碼制要求',
   'barcode.invalidChecksum': '校驗位不正確',
+  // signature（签名板）
+  'signature.placeholder': '在此簽名',
+  'signature.clear': '清空',
+  'signature.signed': '已簽名',
+  'signature.unsigned': '未簽名',
+  'signature.aria': '簽名畫板，{status}',
   // command（命令面板）
   'command.placeholder': '搜尋命令…',
   'command.empty': '無匹配命令',

@@ -355,6 +355,12 @@ export const en: LocaleMessages = {
   'barcode.invalidCharset': 'Contains characters not allowed by the symbology',
   'barcode.invalidLength': 'Digit count does not match the symbology',
   'barcode.invalidChecksum': 'Invalid check digit',
+  // signature（签名板）
+  'signature.placeholder': 'Sign here',
+  'signature.clear': 'Clear',
+  'signature.signed': 'Signed',
+  'signature.unsigned': 'Not signed',
+  'signature.aria': 'Signature pad, {status}',
   'command.placeholder': 'Search commands…',
   'command.empty': 'No matching commands',
   'command.search': 'Search commands',

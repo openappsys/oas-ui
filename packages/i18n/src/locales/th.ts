@@ -336,6 +336,12 @@ export const th: LocaleMessages = {
   'barcode.invalidCharset': 'มีอักขระที่รูปแบบบาร์โค้ดไม่อนุญาต',
   'barcode.invalidLength': 'จำนวนหลักไม่ตรงตามข้อกำหนดของรูปแบบบาร์โค้ด',
   'barcode.invalidChecksum': 'หลักตรวจสอบไม่ถูกต้อง',
+  // signature（แผงลายเซ็น）
+  'signature.placeholder': 'ลงชื่อที่นี่',
+  'signature.clear': 'ล้าง',
+  'signature.signed': 'ลงชื่อแล้ว',
+  'signature.unsigned': 'ยังไม่ได้ลงชื่อ',
+  'signature.aria': 'แผงลายเซ็น, {status}',
   'command.placeholder': 'ค้นหาคำสั่ง…',
   'command.empty': 'ไม่มีคำสั่งที่ตรงกัน',
   'command.search': 'ค้นหาคำสั่ง',

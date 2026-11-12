@@ -420,6 +420,12 @@ export const de: LocaleMessages = {
   'barcode.invalidCharset': 'Enthält für die Symbologie nicht erlaubte Zeichen',
   'barcode.invalidLength': 'Ziffernanzahl entspricht nicht den Anforderungen der Symbologie',
   'barcode.invalidChecksum': 'Prüfziffer ist ungültig',
+  // signature (Signaturfeld)
+  'signature.placeholder': 'Hier signieren',
+  'signature.clear': 'Löschen',
+  'signature.signed': 'Signiert',
+  'signature.unsigned': 'Nicht signiert',
+  'signature.aria': 'Signaturfeld, {status}',
   // command (Befehlspalette)
   'command.placeholder': 'Befehle suchen…',
   'command.empty': 'Keine passenden Befehle',

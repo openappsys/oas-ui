@@ -420,6 +420,12 @@ export const ja: LocaleMessages = {
   'barcode.invalidCharset': 'コード体系で許可されていない文字が含まれています',
   'barcode.invalidLength': '桁数がコード体系の要件と一致しません',
   'barcode.invalidChecksum': 'チェックデジットが正しくありません',
+  // signature（署名パッド）
+  'signature.placeholder': 'ここに署名',
+  'signature.clear': 'クリア',
+  'signature.signed': '署名済み',
+  'signature.unsigned': '未署名',
+  'signature.aria': '署名パッド、{status}',
   // command（コマンドパレット）
   'command.placeholder': 'コマンドを検索…',
   'command.empty': '一致するコマンドなし',
