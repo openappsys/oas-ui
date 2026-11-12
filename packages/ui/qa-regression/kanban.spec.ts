@@ -851,7 +851,9 @@ test('kanban 列折叠与合计：真实点击折叠 → 窄条可见 → 再点
   // 注入 collapsible + summary 实例：todo 带 summary=120、doing 无（缺席不渲染）
   await page.evaluate(() => {
     const el = document.createElement('oas-kanban')
-    el.id = 'kanban-collapse'
+    // id 用 -e2e 后缀：demo 页已有 id="kanban-collapse" 的 demo 实例，document.querySelector
+    // 命中文档序在前的 demo 元素会让 targeting 落错（railCount/summary 断言全错位）
+    el.id = 'kanban-collapse-e2e'
     el.setAttribute('collapsible', '')
     el.setAttribute(
       'columns',
@@ -870,17 +872,17 @@ test('kanban 列折叠与合计：真实点击折叠 → 窄条可见 → 再点
     )
     document.body.appendChild(el)
   })
-  await up(page, '#kanban-collapse')
+  await up(page, '#kanban-collapse-e2e')
 
   // 真实点击 todo 列头折叠按钮 → 该列渲染为窄条
-  await realClick(page, '#kanban-collapse', '.column-head[data-key="todo"] .column-collapse')
+  await realClick(page, '#kanban-collapse-e2e', '.column-head[data-key="todo"] .column-collapse')
   await page.waitForFunction(
-    () => !!document.querySelector('#kanban-collapse')!.shadowRoot!.querySelector('.column-rail[data-key="todo"]'),
+    () => !!document.querySelector('#kanban-collapse-e2e')!.shadowRoot!.querySelector('.column-rail[data-key="todo"]'),
     undefined,
     { timeout: 5000 },
   )
   const collapsed = await page.evaluate(() => {
-    const sr = document.querySelector('#kanban-collapse')!.shadowRoot!
+    const sr = document.querySelector('#kanban-collapse-e2e')!.shadowRoot!
     const rail = sr.querySelector<HTMLElement>('.column-rail[data-key="todo"]')!
     const rect = rail.getBoundingClientRect()
     const colRect = sr.querySelector<HTMLElement>('.column[data-key="doing"]')!.getBoundingClientRect()
@@ -899,14 +901,14 @@ test('kanban 列折叠与合计：真实点击折叠 → 窄条可见 → 再点
   expect(collapsed.doingStillColumn, '未折叠列保持普通结构').toBe(true)
 
   // 真实点击窄条 → 展开
-  await realClick(page, '#kanban-collapse', '.column-rail[data-key="todo"]')
+  await realClick(page, '#kanban-collapse-e2e', '.column-rail[data-key="todo"]')
   await page.waitForFunction(
-    () => !!document.querySelector('#kanban-collapse')!.shadowRoot!.querySelector('.column[data-key="todo"]'),
+    () => !!document.querySelector('#kanban-collapse-e2e')!.shadowRoot!.querySelector('.column[data-key="todo"]'),
     undefined,
     { timeout: 5000 },
   )
   const expanded = await page.evaluate(() => {
-    const sr = document.querySelector('#kanban-collapse')!.shadowRoot!
+    const sr = document.querySelector('#kanban-collapse-e2e')!.shadowRoot!
     return {
       columnBack: !!sr.querySelector('.column[data-key="todo"]'),
       railGone: !sr.querySelector('.column-rail'),
@@ -923,11 +925,11 @@ test('kanban 列折叠与合计：真实点击折叠 → 窄条可见 → 再点
 
   // 合计行：todo 列底渲染（label + 120）、doing 无 summary 不渲染；数据更新后重算
   const summary = await page.evaluate(() => {
-    const sr = document.querySelector('#kanban-collapse')!.shadowRoot!
+    const sr = document.querySelector('#kanban-collapse-e2e')!.shadowRoot!
     const foot = sr.querySelector<HTMLElement>('.column[data-key="todo"] .column-summary')!
     const label = foot.querySelector('.summary-label')!.textContent
     const value = foot.querySelector('.summary-value')!.textContent
-    const el = document.querySelector('#kanban-collapse')!
+    const el = document.querySelector('#kanban-collapse-e2e')!
     el.setAttribute(
       'columns',
       JSON.stringify([
