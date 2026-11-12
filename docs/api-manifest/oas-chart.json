@@ -31,11 +31,29 @@
     {
       "name": "options",
       "type": "unknown"
+    },
+    {
+      "name": "tooltipFormatter",
+      "type": "((ctx: ChartTooltipContext) => string) | null",
+      "api": true
     }
   ],
   "methods": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-chart-tooltip"
+    }
+  ],
   "slots": [],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-tooltip-bg",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-tooltip-color",
+      "default": "var(--oas-color-bg)"
+    }
+  ],
   "unresolved": []
 }

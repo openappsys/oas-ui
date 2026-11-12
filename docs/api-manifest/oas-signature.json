@@ -1,0 +1,67 @@
+{
+  "className": "OASSignature",
+  "sourceFile": "packages/ui/src/data/signature/oas-signature.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "pen-size",
+      "type": "string",
+      "default": "2",
+      "observed": true
+    },
+    {
+      "name": "pen-color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "160",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [
+    {
+      "name": "clear",
+      "signature": "clear(): void",
+      "description": "清空画布与笔迹，value 归空并按指纹派发 oas-change。"
+    },
+    {
+      "name": "toDataURL",
+      "signature": "toDataURL(): string",
+      "description": "当前画布 PNG dataURL。空画布（无笔迹且无外部图像）返回空串；"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: url } | { value: '' }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

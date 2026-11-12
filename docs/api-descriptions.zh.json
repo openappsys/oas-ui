@@ -2674,6 +2674,18 @@
     },
     "slots": {}
   },
+  "oas-scanner": {
+    "attrs": {
+      "active": "开启相机扫码（在场即请求 getUserMedia 并开始预览）；无 BarcodeDetector / 权限被拒 / 相机错误时自动降级手动输入模式",
+      "manual": "强制显示手动输入行（无相机、无权限或出错时也会自动进入该模式）",
+      "aria-label": "组件可访问名称，缺省走 i18n"
+    },
+    "events": {
+      "oas-scan": "识别到码值时派发，detail { value, format? }；连续相同指纹不重复派发，命中后节流自动继续",
+      "oas-error": "相机或识别能力不可用时派发，detail { code }：`not-supported`（无 BarcodeDetector）/ `permission`（权限被拒）/ `camera`（相机错误）；派发后自动降级手动输入模式"
+    },
+    "slots": {}
+  },
   "oas-radio": {
     "attrs": {
       "checked": "是否选中",

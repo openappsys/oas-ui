@@ -67,6 +67,12 @@
       "observed": true
     },
     {
+      "name": "conflict-check",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "windowed",
       "type": "boolean",
       "observed": true
@@ -155,6 +161,10 @@
     {
       "name": "oas-view-change",
       "detail": "{ view: v } satisfies SchedulerViewChangeDetail | { view: viewAttr } satisfies SchedulerViewChangeDetail"
+    },
+    {
+      "name": "oas-event-conflict",
+      "detail": "{ id, conflicts: [...(next.get(id) ?? [])] } satisfies SchedulerEventConflictDetail"
     },
     {
       "name": "oas-day-click",

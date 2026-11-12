@@ -42,8 +42,8 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
   const all = parseComponentImports(indexText)
 
   it('src/index.ts 全量清单可解析且按顶层目录对齐各族', () => {
-    // 159 = 158 组件 + data/table/auto-height（row-auto-height 注册型 L3 能力包，v2.6.6 行高批次入册）
-    expect(all.length, '全量注册表组件数').toBe(159)
+    // 161 = 158 组件 + data/table/auto-height（row-auto-height 注册型 L3 能力包，v2.6.6 行高批次入册）+ scanner/signature（P0 批次两新组件）
+    expect(all.length, '全量注册表组件数').toBe(161)
     const tops = new Set(all.map((p) => p.split('/')[0]))
     expect(tops).toEqual(new Set(Object.values(FAMILY_DIR)))
     // 每个顶层目录的全部组件都在 index.ts 全量清单里
@@ -56,8 +56,8 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
         form: 35,
         feedback: 24,
         navigation: 23,
-        // data 40 = 39 组件 + auto-height 能力包（row-auto-height L3，data/table/auto-height）
-        data: 40,
+        // data 42 = 39 组件 + auto-height 能力包（row-auto-height L3，data/table/auto-height）+ scanner/signature（P0 批次）
+        data: 42,
         conversation: 8,
         framework: 3,
       }

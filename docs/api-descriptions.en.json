@@ -2802,6 +2802,18 @@
       "download": "Download the current barcode as PNG (off-screen rasterize: the SVG-only rendering architecture adds no persistent canvas)"
     }
   },
+  "oas-scanner": {
+    "attrs": {
+      "active": "Starts camera scanning (presence requests getUserMedia and begins preview); falls back to manual input when BarcodeDetector is unavailable, permission is denied, or the camera errors",
+      "manual": "Always show the manual input row (also entered automatically when the camera or permission is unavailable)",
+      "aria-label": "Accessible name of the component, defaults to i18n"
+    },
+    "events": {
+      "oas-scan": "Fired when a code is recognized, detail { value, format? }; consecutive identical fingerprints are not re-fired, and detection auto-resumes after a throttling delay",
+      "oas-error": "Fired when camera or recognition capability is unavailable, detail { code }: `not-supported` (no BarcodeDetector) / `permission` (permission denied) / `camera` (camera error); the component falls back to manual input mode after firing"
+    },
+    "slots": {}
+  },
   "oas-radio": {
     "attrs": {
       "checked": "Whether checked",

@@ -427,6 +427,8 @@ import './data/image/index.js'
 import './data/image-group/index.js'
 import './data/qrcode/index.js'
 import './data/barcode/index.js'
+import './data/scanner/index.js'
+import './data/signature/index.js'
 import './data/watermark/index.js'
 import './data/collapse/index.js'
 import './data/collapsible/index.js'
@@ -497,6 +499,9 @@ export {
   type EncodeResult,
   type TextSegment,
 } from './data/barcode/index.js'
+export { OASScanner } from './data/scanner/index.js'
+export type { ScanErrorCode } from './data/scanner/index.js'
+export { OASSignature } from './data/signature/index.js'
 export { OASWatermark, textTileDataUri } from './data/watermark/index.js'
 export { OASCollapse, OASCollapseItem } from './data/collapse/index.js'
 export { OASCollapsible } from './data/collapsible/index.js'

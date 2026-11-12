@@ -1,0 +1,46 @@
+{
+  "className": "OASScanner",
+  "sourceFile": "packages/ui/src/data/scanner/oas-scanner.ts",
+  "attrs": [
+    {
+      "name": "active",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "manual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [
+    {
+      "name": "start",
+      "signature": "start(): void",
+      "description": "start()/stop()：active 属性的命令式便捷（状态仍以属性为准）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-scan",
+      "detail": "{ value } | best.format ? { value: best.rawValue, format: best.format } : { value: best.rawValue }"
+    },
+    {
+      "name": "oas-error",
+      "detail": "{ code }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-scanner-height",
+      "default": "220px"
+    }
+  ],
+  "unresolved": []
+}

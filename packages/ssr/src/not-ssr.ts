@@ -108,6 +108,8 @@ export const NOT_SSR: readonly NotSsrEntry[] = [
     note: '宿主受控浮层容器，服务端直出展开态无意义',
   },
   { tag: 'oas-theme-editor', reason: 'dev-tool', note: '开发期主题编辑面板' },
+  { tag: 'oas-scanner', reason: 'client-only', note: 'getUserMedia 相机能力仅客户端可用' },
+  { tag: 'oas-signature', reason: 'client-only', note: 'canvas 笔迹绘制仅客户端可用' },
 ]
 
 export const NOT_SSR_TAGS: ReadonlySet<string> = new Set(NOT_SSR.map((entry) => entry.tag))

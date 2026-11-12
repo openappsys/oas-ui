@@ -214,7 +214,7 @@ export class OASSignature extends OASElement {
     return true
   }
 
-  /** 断开重连：监听经 cleanup 摘除后由本钩子幂等恢复 */
+  /** 断开重连：补挂观察者；画布监听经 listenersBound 去重，持久有效无需恢复 */
   protected override onReconnect(): void {
     this.bind()
   }

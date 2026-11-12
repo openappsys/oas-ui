@@ -165,6 +165,8 @@
   "oas-image-group",
   "oas-qrcode",
   "oas-barcode",
+  "oas-scanner",
+  "oas-signature",
   "oas-watermark",
   "oas-collapse",
   "oas-collapse-item",
