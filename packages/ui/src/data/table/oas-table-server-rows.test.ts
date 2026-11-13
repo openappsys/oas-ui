@@ -613,3 +613,68 @@ describe('OASTable server 行模型 a6：内建 loading + 失败反馈', () => {
     expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
   })
 })
+
+describe('OASTable server 行模型 a7：refreshRows() 强刷', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function mountReq(attrs: Record<string, string>): { el: OASTable; reqs: { requestId: number; reason: string }[] } {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('data', '[]')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const reqs: { requestId: number; reason: string }[] = []
+    el.addEventListener('oas-rows-request', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    return { el, reqs }
+  }
+
+  it('同状态强刷绕过同值去重：reason=refresh、requestId 递增、在途 loading 置位', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '10' })
+    expect(reqs).toEqual([{ requestId: 1, reason: 'init' }])
+    // 回填（成功路径，状态此后与请求签名同值）
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+    // 同状态 refreshRows：绕过签名去重强制重发
+    el.refreshRows()
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]).toEqual({ requestId: 2, reason: 'refresh' })
+    // 强刷即进入在途 loading（内建视觉）
+    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    // 回填 → loading 清
+    el.setAttribute('data', JSON.stringify([{ name: '乙', age: 2 }]))
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+  })
+
+  it('{ purge: true } v1 无缓存等价 refresh（reason=refresh）', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '10' })
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    el.refreshRows({ purge: true })
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]).toEqual({ requestId: 2, reason: 'refresh' })
+  })
+
+  it('client 模式 refreshRows 静默 no-op', () => {
+    const { el, reqs } = mountReq({ total: '10' })
+    el.refreshRows()
+    el.refreshRows({ purge: true })
+    expect(reqs.length).toBe(0)
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+  })
+})
