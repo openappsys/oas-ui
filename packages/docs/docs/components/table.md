@@ -2258,12 +2258,13 @@ const visible = applyQuery(orders, state.query)
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
 | `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义） |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此， |
-| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化）。 |
+| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | `setColumnOrder(keys: string[])`：更新列显示顺序（写回 column-keys 并重渲染，派发 oas-column-order，宿主可做持久化）。server 行模型下不生效（顺序语义由服务端持有——能力闸门）：写回被拦截并告警一次，列设置面板的移动按钮同步禁用；宿主初始化恢复持久化列序（程序化调用）同样被拦 |
+| `columnReorderGate` | `columnReorderGate(): boolean` | 列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型生效时为 true—— |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
 | `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
-| `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前在途请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；晚到旧失败静默丢弃 |
+| `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前在途请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；晚到旧失败静默丢弃并一次性提示序号守卫 |
 | `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`：强制重发当前状态请求（reason='refresh'，绕过同值去重）；`purge: true` 预留清缓存语义，v1 无缓存等价 refresh；client 模式 no-op |
 
 #### 事件

@@ -3527,7 +3527,7 @@
       "translateText": "Translate built-in copy (nearest config-provider / locale; the capability controller and external custom templates look up text here)",
       "paintCell": "Repaint the cell as regular display content: clears it and mounts cellNode (respecting rich content from render/cellTemplate)",
       "notifyEdit": "Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here",
-      "setColumnOrder": "Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it)",
+      "setColumnOrder": "`setColumnOrder(keys: string[])`: Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it). Not effective under the server row model (order semantics are owned by the server): the write-back is intercepted with a one-time warning, the column panel move buttons are disabled, and programmatic calls (e.g. restoring a persisted order at init) are intercepted as well",
       "setColumnWidth": "Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition",
       "exportMatrix": "Export matrix: headers (column title / headerTemplate text) + currently visible data rows",
       "exportData": "Export and trigger a download: generate content → Blob download → dispatch `oas-export`",
