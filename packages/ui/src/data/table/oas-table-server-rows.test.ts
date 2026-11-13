@@ -6,6 +6,8 @@ import { OASTable } from './index.js'
 import './edit/index.js'
 // F13 历史闸门断言：撤销栈「翻页即失效」语义的可测面
 import { canUndo, clearHistory, enableHistory, undo } from './history/index.js'
+// R5：列设置能力宿主契约（columnReorderGate 可选化）的类型面 + 行为面断言
+import { TableColumnSettingsController, type TableColumnSettingsHost } from './oas-table-column-settings.js'
 
 /**
  * server 行模型批（a2：`row-model` 属性注册与生效前提）。
@@ -1197,19 +1199,21 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
   })
 
-  /** F5 回归：旧成功回填清 loading 后，当前在途请求的失败曾被 `!serverLoading` 前置
-      吞掉（oas-rows-error 零派发、错误条不显示）——门槛只留 requestId 单一判定 */
-  it('F5：loading 被回填清零后当前序号失败仍生效（超时兜底回填 + 错误随后到达链路）', () => {
+  /** F5→R4（第二轮修复批定策）：成功回填登记当前序号后，同序号失败上报按幂等静默丢弃
+      ——错误条以「未上报过的失败」为准。旧行为（回填后同号失败仍翻错误条）曾把「超时兜底
+      回填 + 迟到失败」当有效失败渲染，与成功回填事实矛盾；宿主超时兜底后若确认失败，
+      应以重试（refreshRows / 新一轮请求）的序号上报 */
+  it('F5/R4：成功回填后同序号失败按幂等静默丢弃（不派事件、错误条不出现）', () => {
     const { el, reqs, errs } = mountReq({ 'row-model': 'server', total: '10' })
     // 请求 1（init）→ 宿主超时兜底回填占位数据（属性写清 loading；requestId 仍为 1）
     el.setAttribute('data', JSON.stringify([{ name: '占位', age: 0 }]))
     expect(reqs.length).toBe(1)
-    // 同一序号的失败随后才到（宿主 fetch reject 晚于超时回填）——requestId 匹配在途序号，
-    // 不得因 serverLoading 已被回填清零而吞掉
+    // 同一序号的失败随后才到（宿主 fetch reject 晚于超时回填）——该序号已成功回填登记，
+    // 失败按幂等重复静默丢弃（R4 定策：错误条以「未上报过的失败」为准）
     el.reportRowsError({ requestId: 1, reason: 'init', error: new Error('timeout') })
-    expect(errs).toEqual([{ requestId: 1, reason: 'init' }])
-    expect(errorBar(el).hasAttribute('hidden')).toBe(false)
-    // 旧数据保留 + 错误条可见（交互连续性）
+    expect(errs, '已回填序号的失败不派事件').toEqual([])
+    expect(errorBar(el)!.hasAttribute('hidden'), '错误条不出现').toBe(true)
+    // 旧数据保留（回填事实不被迟到失败翻转）
     expect(rowsOf(el).length).toBe(1)
   })
 
@@ -1369,17 +1373,24 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
     document.body.appendChild(el)
     el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
-    const up = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.up')!
-    const down = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.down')!
-    expect(up).not.toBeNull()
-    expect(up.disabled, 'server 闸门：上移按钮禁用').toBe(true)
-    expect(up.getAttribute('aria-disabled')).toBe('true')
-    expect(down.disabled, 'server 闸门：下移按钮禁用').toBe(true)
-    expect(down.getAttribute('aria-disabled')).toBe('true')
+    // R9 断言收紧：querySelector 不用 `!` 非空断言——存在性断言真的可失败
+    //（expect 非空后以 `!` 收窄访问，TS 不从 expect 推断）
+    const up = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.up')
+    const down = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.down')
+    expect(up, '上移按钮在场').not.toBeNull()
+    expect(down, '下移按钮同样在场').not.toBeNull()
+    expect(up!.disabled, 'server 闸门：上移按钮禁用').toBe(true)
+    expect(up!.getAttribute('aria-disabled')).toBe('true')
+    expect(down!.disabled, 'server 闸门：下移按钮禁用').toBe(true)
+    expect(down!.getAttribute('aria-disabled')).toBe('true')
     // 点击零调用（disabled 原生拦截 + setColumnOrder 拦截双保险）：断言 column-keys 不被写回
-    const keysBefore = el.getAttribute('column-keys')
-    up.click()
-    expect(el.getAttribute('column-keys') ?? keysBefore).toBe(keysBefore)
+    // （R9 收紧：原 `getAttribute() ?? keysBefore` 两侧同为 null 恒真；改为显式 null 断言 + 零事件计数）
+    const orderEvents: unknown[] = []
+    el.addEventListener('oas-column-order', (e) => orderEvents.push(e))
+    expect(el.getAttribute('column-keys'), '闸门生效前提：column-keys 尚未被写回').toBeNull()
+    up!.click()
+    expect(el.getAttribute('column-keys'), '点击后 column-keys 仍不被写回').toBeNull()
+    expect(orderEvents.length, '零派发 oas-column-order').toBe(0)
     // client 对照：按钮可用（既有行为零变化）
     document.body.innerHTML = ''
     const client = new OASTable()
@@ -1513,5 +1524,239 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     clearHistory(el)
     expect(canUndo(el)).toBe(false)
     warn.mockRestore()
+  })
+})
+
+describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const COLS = JSON.stringify([
+    { key: 'name', title: '名称' },
+    { key: 'age', title: '年龄' },
+  ])
+
+  function mountR(attrs: Record<string, string>): {
+    el: OASTable
+    reqs: { requestId: number; reason: string }[]
+    errs: { requestId: number; reason?: string }[]
+  } {
+    const el = new OASTable()
+    el.setAttribute('columns', COLS)
+    el.setAttribute('data', '[]')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const reqs: { requestId: number; reason: string }[] = []
+    const errs: { requestId: number; reason?: string }[] = []
+    el.addEventListener('oas-rows-request', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    el.addEventListener('oas-rows-error', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      errs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    return { el, reqs, errs }
+  }
+
+  const loadingRow = (el: OASTable): HTMLElement | null => el.shadowRoot!.querySelector('td.loading')
+  const errorBar = (el: OASTable): HTMLElement | null => el.shadowRoot!.querySelector('.rows-error')
+
+  // ==================== R1：同值 row-model 写重派请求（Important） ====================
+
+  it('R1①：init 后同值 row-model 写 3 次 → 请求总数不变（同值写不触发形态迁移）', () => {
+    const { el, reqs } = mountR({ 'row-model': 'server', total: '10' })
+    expect(reqs.length, '首载 init 恰 1 次').toBe(1)
+    // 框架宿主同值重复写形态（CE 同值写仍触发 attributeChangedCallback，oldValue === newValue）：
+    // 形态未迁移 → 不得清请求状态签名 → 去重判定照常吞掉
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('row-model', 'server')
+    expect(reqs.length, '同值写零重派').toBe(1)
+    expect(
+      reqs.map((r) => r.requestId),
+      'requestId 序列不变',
+    ).toEqual([1])
+  })
+
+  it('R1②：错误条不被同值 row-model 写静默清掉（同值写不是响应信号）', () => {
+    const { el } = mountR({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+    el.setAttribute('row-model', 'server')
+    expect(errorBar(el)!.hasAttribute('hidden'), '失败态保持（清态只走 data/total 响应通道）').toBe(false)
+  })
+
+  // ==================== R2：reportRowsError 用生效形态判定（Important） ====================
+
+  it('R2①：server 在途 → removeAttribute(total) → 同序号失败静默 no-op（不在 client 渲染下点亮 server 错误条）', () => {
+    const { el, errs } = mountR({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2') // 请求 2 在途
+    el.removeAttribute('total') // 离开生效形态（client 行为渲染）
+    el.reportRowsError({ requestId: 2, reason: 'paginate' }) // 晚到失败（同序号）
+    expect(errs, '非生效形态下零事件').toEqual([])
+    expect(errorBar(el)!.hasAttribute('hidden'), '错误条不出现').toBe(true)
+  })
+
+  it('R2②：row-model=server 从未有 total → reportRowsError({requestId:0}) no-op（撞初始序号不得点亮错误条）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute('columns', COLS)
+    el.setAttribute('row-model', 'server') // 无 total：从未生效、从未派请求（rowsRequestId=0）
+    el.setAttribute('data', '[]')
+    const errs: unknown[] = []
+    el.addEventListener('oas-rows-error', (e) => errs.push(e))
+    document.body.appendChild(el)
+    el.reportRowsError({ requestId: 0 })
+    expect(errs, '初始序号 0 撞车不得生效').toEqual([])
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
+    expect(warn.mock.calls.length, '零告警（静默 no-op）').toBe(0)
+    warn.mockRestore()
+  })
+
+  it('R2③：正常生效态失败仍点亮（R2 收紧不误伤生效路径）', () => {
+    const { el, errs } = mountR({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(errs.length).toBe(1)
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+  })
+
+  // ==================== R3：三态复位缺 windowed 出口（Important） ====================
+
+  it('R3①：server 在途（loading 行）+ 加 windowed → loading 骨架消失（windowed 优先接管 + 三态复位）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const winReqs: string[] = []
+    // height/row-height：windowed 窗口请求走虚拟渲染形态（isVirtual 前置），供接管断言
+    const { el, reqs } = mountR({ 'row-model': 'server', total: '10', height: '200', 'row-height': '40' })
+    el.addEventListener('oas-window-request', (e: Event) => winReqs.push((e as CustomEvent).detail.reason))
+    expect(loadingRow(el), 'init 在途 loading').not.toBeNull()
+    el.setAttribute('windowed', '') // 互斥接管
+    expect(loadingRow(el), 'server 在途 loading 骨架不残留（互斥复位）').toBeNull()
+    expect(winReqs.length, 'windowed 接管派发窗口请求').toBeGreaterThan(0)
+    expect(reqs.length, 'server 请求不因互斥重派').toBe(1)
+    warn.mockRestore()
+  })
+
+  it('R3②：加 windowed 再移除回 server → 补发 init（请求状态已在互斥接管时复位，不吞重入请求）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el, reqs } = mountR({ 'row-model': 'server', total: '10', height: '200', 'row-height': '40' })
+    expect(reqs.length).toBe(1) // init
+    el.setAttribute('windowed', '') // 接管（复位）
+    el.removeAttribute('windowed') // 回到 server 生效形态
+    expect(reqs.length, '回切补发 init（旧行为：去重签名未复位 → 漏发 → 永久旧切片）').toBe(2)
+    expect(reqs[1]).toMatchObject({ reason: 'init', requestId: 2 })
+    warn.mockRestore()
+  })
+
+  // ==================== R4：同 requestId 重复失败收敛 ====================
+
+  it('R4①：同 requestId 重复 reportRowsError → 静默丢弃（oas-rows-error 只派一次）', () => {
+    const { el, errs } = mountR({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate', error: new Error('x') })
+    el.reportRowsError({ requestId: 2, reason: 'paginate', error: new Error('x') })
+    el.reportRowsError({ requestId: 2, reason: 'paginate', error: new Error('x') })
+    expect(errs.length, '同序号失败只派一次').toBe(1)
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('R4②：新一轮请求（序号递增）后失败上报照常生效（幂等只限同序号）', () => {
+    const { el, errs } = mountR({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    el.setAttribute('current', '3') // 请求 3 在途
+    el.reportRowsError({ requestId: 3, reason: 'paginate' })
+    expect(errs.map((e) => e.requestId)).toEqual([2, 3])
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+  })
+
+  // ==================== R7：F4 标脏条件化（轮询型宿主同值写不再全量渲染） ====================
+
+  it('R7①：同值 total 写且无态变化 → 不触发全量渲染（行节点身份保持）', () => {
+    const { el } = mountR({ 'row-model': 'server', total: '10' })
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }])) // 回填 → 稳定
+    const trBefore = el.shadowRoot!.querySelector('tbody tr')
+    el.setAttribute('total', el.getAttribute('total')!) // 同值写（无态变化）
+    const trAfter = el.shadowRoot!.querySelector('tbody tr')
+    expect(trAfter, '快路径 no-op：行节点身份保持（不再整表重建/作废缓存/打断编辑）').toBe(trBefore)
+  })
+
+  it('R7②：loading 中同值 total 回填 → loading 立即清（有态变化仍标脏，F4 同族语义保持）', () => {
+    const { el } = mountR({ 'row-model': 'server', total: '10' })
+    expect(loadingRow(el), 'init 在途').not.toBeNull()
+    el.setAttribute('total', el.getAttribute('total')!)
+    expect(loadingRow(el), '在途清态立即可见').toBeNull()
+  })
+
+  // ==================== R8：前提告警微任务加 isConnected ====================
+
+  it('R8：挂载后立即移除 → 缺 total 前提零告警（复核微任务含 isConnected 守卫）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute('columns', COLS)
+    el.setAttribute('row-model', 'server') // 无 total：前提不满足 → 预约微任务复核
+    el.setAttribute('data', '[]')
+    document.body.appendChild(el)
+    document.body.removeChild(el) // 挂载即移除（框架 churn）
+    await flushMicrotask()
+    expect(warn, '已断连元素不再落告警').not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  // ==================== R11：syncRowsErrorBar 挪序（错误条与 loading 行不再共存一帧） ====================
+
+  it('R11：失败态翻页 → 同一次更新内错误条即消失（不再等下一次渲染）', () => {
+    const { el } = mountR({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+    el.setAttribute('current', '3') // 新请求在途：派发即清 serverError → 错误条同步隐藏
+    expect(errorBar(el)!.hasAttribute('hidden'), '同一次更新后错误条隐藏').toBe(true)
+    expect(loadingRow(el), '新请求 loading 行在途').not.toBeNull()
+  })
+
+  // ==================== R5：columnReorderGate 必填契约改可选 ====================
+
+  it('R5：无 columnReorderGate 实现的第三方宿主可用 controller（闸门按 false 回落）', () => {
+    // 类型面：本对象字面量缺 columnReorderGate——契约改可选后编译通过（改前 typecheck 报缺失）
+    const hostStub: TableColumnSettingsHost = {
+      getColumns: () => [
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ],
+      effectiveColumns: () => [
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ],
+      setColumnOrder: () => {},
+      setColumnWidth: () => {},
+      translateText: (key) => key,
+    }
+    // 行为面：合成 thead/th 驱动 syncMoveButtons（经 hostUpdated 公开生命周期），不炸 + 无闸门禁用
+    const thName = document.createElement('th')
+    thName.setAttribute('data-key', 'name')
+    const thAge = document.createElement('th')
+    thAge.setAttribute('data-key', 'age')
+    const thead = document.createElement('thead')
+    thead.append(thName, thAge)
+    const shadowRoot = document.createElement('div')
+    shadowRoot.appendChild(thead)
+    const host = hostStub as unknown as HTMLElement & TableColumnSettingsHost
+    Object.defineProperty(host, 'shadowRoot', { value: shadowRoot })
+    const controller = new TableColumnSettingsController(host)
+    expect(() => controller.hostUpdated(), '宿主未实现闸门不炸').not.toThrow()
+    const up = thAge.querySelector<HTMLButtonElement>('.col-move.up')
+    expect(up, '移动按钮照常注入').not.toBeNull()
+    expect(up!.disabled, '闸门回落 false：非边界位按钮可用（禁用只由边界位决定）').toBe(false)
+    expect(up!.getAttribute('aria-disabled')).toBeNull()
   })
 })
