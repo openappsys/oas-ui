@@ -135,9 +135,11 @@ const EXEMPT_EVENTS = new Set([
 // key = demo 页组件名，value = 豁免的属性名
 const EXEMPT_ATTRS: Record<string, string[]> = {
   collapse: ['open'], // oas-collapse-item 的 open 由容器按展开集合写回（API 表已注明「由容器托管」）
-  // windowed 模式要求宿主只喂可视窗口切片并回填（服务端行窗口协议），静态 demo 无法体现；
-  // 机制由 oas-table-windowed 单测与 qa-regression/table.spec 覆盖（API 表已注明属宿主集成模式）
-  table: ['windowed', 'window-start'],
+  // windowed / row-model=server 均要求宿主集成回填（windowed 喂可视窗口切片；server 行模型
+  // 监听 oas-rows-request 取数回填），静态 demo 无法体现——静态演示会派无人应答的取数请求
+  // （错误条）；机制由 oas-table-windowed / oas-table-server-rows 单测与 qa-regression/table{,-server}.spec
+  // 覆盖（API 表已注明属宿主集成模式）
+  table: ['windowed', 'window-start', 'row-model'],
   // 同上：windowed + 宿主托管时间轴（range-start/range-end）为宿主集成模式，静态 demo 不可体现；
   // 机制由各自单测与 qa-regression/{gantt,resource}.spec 覆盖
   gantt: ['windowed', 'total', 'window-start', 'range-start', 'range-end'],
