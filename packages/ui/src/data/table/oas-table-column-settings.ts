@@ -20,6 +20,9 @@ export interface TableColumnSettingsHost {
   setColumnOrder(keys: string[]): void
   setColumnWidth(key: string, width: number): void
   translateText(key: string, params?: Record<string, string | number>): string
+  /** 列重排能力闸门（server 行模型：顺序语义服务端持有）——true 时移动按钮禁用，
+      与宿主 setColumnOrder 的写回拦截同一判定源（按钮不可用与程序化拦截不脱节） */
+  columnReorderGate(): boolean
   /** 宿主关闭/重渲染时需解绑的清理（默认无） */
   /* 无显式接口，绑定清理走控制器内部 */
 }
@@ -187,6 +190,9 @@ export class TableColumnSettingsController implements ReactiveController {
   /** 为每个列头确保上移/下移按钮存在并同步禁用态（th 重渲染后由 hostUpdated 重建） */
   private syncMoveButtons(ths: HTMLElement[]): void {
     const leaves = this.hostEl.effectiveColumns().map((c) => c.key)
+    // 能力闸门（server 行模型）：列序写回被宿主 setColumnOrder 拦截——按钮同步禁用
+    //（disabled + aria-disabled），避免「可见可点但零反馈」的死控件
+    const gated = this.hostEl.columnReorderGate()
     for (const th of ths) {
       if (!th.querySelector('.col-move')) {
         th.appendChild(this.buildMoveButton('up'))
@@ -195,8 +201,16 @@ export class TableColumnSettingsController implements ReactiveController {
       const idx = leaves.indexOf(th.dataset.key ?? '')
       const up = th.querySelector<HTMLButtonElement>('.col-move.up')
       const down = th.querySelector<HTMLButtonElement>('.col-move.down')
-      if (up) up.disabled = idx <= 0
-      if (down) down.disabled = idx < 0 || idx >= leaves.length - 1
+      if (up) {
+        up.disabled = gated || idx <= 0
+        if (gated) up.setAttribute('aria-disabled', 'true')
+        else up.removeAttribute('aria-disabled')
+      }
+      if (down) {
+        down.disabled = gated || idx < 0 || idx >= leaves.length - 1
+        if (gated) down.setAttribute('aria-disabled', 'true')
+        else down.removeAttribute('aria-disabled')
+      }
     }
   }
 

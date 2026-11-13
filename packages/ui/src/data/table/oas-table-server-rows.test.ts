@@ -1326,4 +1326,89 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(clientTable.getAttribute('aria-rowcount')).toBe('2')
     expect(rowsOf(client)[0]!.getAttribute('aria-rowindex')).toBe('1')
   })
+
+  /** F9 回归：server 模式列序写回被 setColumnOrder 拦截（顺序语义服务端持有），
+      但列设置面板的触屏移动按钮曾保持可点——生产构建静默零反馈死控件。
+      修复：闸门生效时按钮 disabled + aria-disabled（视觉与读屏同步不可用） */
+  it('F9：server 下触屏列移动按钮 disabled + aria-disabled（client 对照可用）', () => {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    document.body.appendChild(el)
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    const up = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.up')!
+    const down = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.down')!
+    expect(up).not.toBeNull()
+    expect(up.disabled, 'server 闸门：上移按钮禁用').toBe(true)
+    expect(up.getAttribute('aria-disabled')).toBe('true')
+    expect(down.disabled, 'server 闸门：下移按钮禁用').toBe(true)
+    expect(down.getAttribute('aria-disabled')).toBe('true')
+    // 点击零调用（disabled 原生拦截 + setColumnOrder 拦截双保险）：断言 column-keys 不被写回
+    const keysBefore = el.getAttribute('column-keys')
+    up.click()
+    expect(el.getAttribute('column-keys') ?? keysBefore).toBe(keysBefore)
+    // client 对照：按钮可用（既有行为零变化）
+    document.body.innerHTML = ''
+    const client = new OASTable()
+    client.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    client.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    document.body.appendChild(client)
+    client.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    const clientUp = client.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.up')!
+    // 第一列的 up 因边界（idx<=0）天然禁用——闸门断言用 down（第一列 idx=0，client 下可用）
+    const clientDown = client.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.down')!
+    expect(clientDown.disabled, 'client 无闸门：按钮照常可用（非边界位）').toBe(false)
+    expect(clientDown.getAttribute('aria-disabled')).toBeNull()
+    void clientUp
+  })
+
+  /** F9 拦截面核查注记：setColumnOrder 的 server 拦截对「宿主初始化恢复持久化列序」
+      同样生效（程序化写回也被拦）——现状保持（顺序语义服务端持有，拦截不区分调用来源），
+      收尾批文档写明；此处固化拦截现状防语义漂移 */
+  it('F9：setColumnOrder 程序化写回在 server 下同样拦截（宿主恢复持久化列序场景现状注记）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    document.body.appendChild(el)
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    el.setColumnOrder(['age', 'name'])
+    expect(el.getAttribute('column-keys'), '拦截：column-keys 不写回').toBeNull()
+    expect(warn, '能力闸门 devWarn 一次').toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
 })

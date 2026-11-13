@@ -3841,6 +3841,16 @@ export class OASTableBase extends OASElement {
     this.emit('column-order', { keys: valid })
   }
 
+  /**
+   * 列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型生效时为 true——
+   * 列设置面板的触屏移动按钮据此禁用（与 setColumnOrder 写回拦截同一判定源
+   * serverRowsActive，按钮不可用与程序化拦截不脱节）。注意：宿主初始化恢复持久化
+   * 列序（程序化 setColumnOrder）同样被拦——现状保持，收尾批文档写明。
+   */
+  columnReorderGate(): boolean {
+    return this.serverRowsActive()
+  }
+
   /** 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 */
   setColumnWidth(key: string, width: number): void {
     const update = (cols: TableColumn[]): TableColumn[] =>
