@@ -181,6 +181,8 @@ export const es: LocaleMessages = {
   'table.filter': 'Filtrar',
   'table.clear': 'Limpiar',
   'table.groupEmpty': '(vacío)',
+  'table.loadFailed': 'Error al cargar',
+  'table.retry': 'Reintentar',
   // list (lista)
   'list.empty': 'Sin datos',
   // scheduler（日程调度）

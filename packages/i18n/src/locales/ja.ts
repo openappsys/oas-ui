@@ -181,6 +181,8 @@ export const ja: LocaleMessages = {
   'table.filter': '絞り込み',
   'table.clear': 'クリア',
   'table.groupEmpty': '（空）',
+  'table.loadFailed': '読み込みに失敗しました',
+  'table.retry': '再試行',
   // list（リスト）
   'list.empty': 'データなし',
   // scheduler（日程调度）

@@ -145,6 +145,8 @@ export const en: LocaleMessages = {
   'table.filter': 'Filter',
   'table.clear': 'Clear',
   'table.groupEmpty': '(empty)',
+  'table.loadFailed': 'Load failed',
+  'table.retry': 'Retry',
   'list.empty': 'No data',
   // scheduler（日程调度）
   'scheduler.prev': 'Previous',

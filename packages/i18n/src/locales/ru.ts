@@ -181,6 +181,8 @@ export const ru: LocaleMessages = {
   'table.filter': 'Фильтр',
   'table.clear': 'Очистить',
   'table.groupEmpty': '(пусто)',
+  'table.loadFailed': 'Не удалось загрузить',
+  'table.retry': 'Повторить',
   // list (список)
   'list.empty': 'Нет данных',
   // scheduler（日程调度）

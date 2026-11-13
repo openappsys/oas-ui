@@ -124,8 +124,15 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
     { name: '丙', age: 1 },
   ])
 
+  /** server 挂载后模拟宿主首载回填（server 模式挂载即在途 → 内建 loading 行；回填清 loading 出数据） */
+  function mountServerWith(attrs: Record<string, string>): OASTable {
+    const el = mount(attrs)
+    el.setAttribute('data', attrs.data ?? DATA_ABC)
+    return el
+  }
+
   it('server：filter-values 在场不执行本地过滤（data 原样渲染；client 对照过滤生效）', () => {
-    const server = mount({
+    const server = mountServerWith({
       'row-model': 'server',
       total: '100',
       data: DATA_ABC,
@@ -139,7 +146,7 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
   })
 
   it('server：sort-key/sort-order 在场不执行本地排序（data 原样渲染；client 对照排序生效）', () => {
-    const server = mount({
+    const server = mountServerWith({
       'row-model': 'server',
       total: '100',
       data: DATA_ABC,
@@ -170,7 +177,13 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
   })
 
   it('server：分页器口径保留（current 越界钳制写回 + total 直通分页器）', () => {
-    const server = mount({ 'row-model': 'server', total: '10', data: DATA_ABC, pagination: '', current: '99' })
+    const server = mountServerWith({
+      'row-model': 'server',
+      total: '10',
+      data: DATA_ABC,
+      pagination: '',
+      current: '99',
+    })
     // 越界钳制仍生效（宿主切片口径的既有行为）：current 99 → 钳到 1
     expect(server.getAttribute('current')).toBe('1')
     expect(rowsOf(server).length).toBe(3)
@@ -180,7 +193,7 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
   })
 
   it('server：交互排序只派 oas-sort-change，不改行序（服务端排序由宿主回填）', () => {
-    const el = mount({
+    const el = mountServerWith({
       'row-model': 'server',
       total: '100',
       data: DATA_ABC,
@@ -193,8 +206,18 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
     el.addEventListener('oas-sort-change', (e) => (detail = (e as CustomEvent).detail))
     el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
     expect(detail).toEqual({ key: 'name', order: 'asc' })
-    // 行序不变（本地排序已跳过；宿主监听事件服务端排序后回填 data）
-    expect(rowsOf(el)[0]!.textContent).toContain('甲')
+    // 排序服务端化：本地不重排——在途即内建 loading 行（数据区暂由 loading 占位）
+    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    // 宿主按服务端排序结果回填 → 行序由回填数据决定（本地不改序）
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '丁', age: 0 },
+        { name: '甲', age: 3 },
+      ]),
+    )
+    expect(rowsOf(el).length).toBe(2)
+    expect(rowsOf(el)[0]!.textContent).toContain('丁')
   })
 })
 
@@ -447,5 +470,146 @@ describe('OASTable server 行模型 a5：时序规则（页码重置 + 在途新
     el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
     expect(el.getAttribute('current')).toBe('3')
     expect(reqs.length).toBe(0)
+  })
+})
+
+describe('OASTable server 行模型 a6：内建 loading + 失败反馈', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  interface Err {
+    requestId: number
+    reason?: string
+  }
+
+  function mountReq(attrs: Record<string, string>): {
+    el: OASTable
+    reqs: { requestId: number; reason: string }[]
+    errs: Err[]
+  } {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('data', '[]')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const reqs: { requestId: number; reason: string }[] = []
+    const errs: Err[] = []
+    el.addEventListener('oas-rows-request', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    el.addEventListener('oas-rows-error', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      errs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    return { el, reqs, errs }
+  }
+
+  const loadingRow = (el: OASTable): HTMLElement | null => el.shadowRoot!.querySelector('td.loading')
+  const errorBar = (el: OASTable): HTMLElement | null => el.shadowRoot!.querySelector('.rows-error')
+
+  it('在途内建 loading：首载请求后渲染 loading 行（无需宿主 loading 属性），回填后消失', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '10' })
+    expect(reqs.length).toBe(1)
+    expect(loadingRow(el)).not.toBeNull()
+    // 宿主回填 → loading 清除 + 数据行渲染
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(loadingRow(el)).toBeNull()
+    expect(rowsOf(el).length).toBe(1)
+    // 不回写宿主属性：loading 属性仍缺席
+    expect(el.hasAttribute('loading')).toBe(false)
+  })
+
+  it('宿主显式 loading 属性照常生效（取或显示；既有行为不变）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    el.setAttribute('total', '10')
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('loading', '')
+    document.body.appendChild(el)
+    // 无请求在途时（首载 init 后回填过？——首载即派发并置在途，loading 行来源两者取或，视觉一致）
+    expect(loadingRow(el)).not.toBeNull()
+  })
+
+  it('reportRowsError 生效：派 oas-rows-error + 错误条可见 + 旧数据保留', () => {
+    const { el, reqs, errs } = mountReq({ 'row-model': 'server', total: '10' })
+    // 首轮回填旧数据
+    el.setAttribute('data', JSON.stringify([{ name: '旧', age: 1 }]))
+    // 翻页 → 新请求在途（requestId 2）
+    el.setAttribute('current', '2')
+    expect(reqs.length).toBe(2)
+    el.reportRowsError({ requestId: 2, reason: 'paginate', error: new Error('boom') })
+    expect(errs).toEqual([{ requestId: 2, reason: 'paginate' }])
+    const bar = errorBar(el)
+    expect(bar).not.toBeNull()
+    expect(bar!.hasAttribute('hidden')).toBe(false)
+    expect(bar!.getAttribute('role')).toBe('alert')
+    expect(bar!.textContent).toContain('加载失败')
+    expect(bar!.textContent).toContain('重试')
+    // 失败保留旧数据（交互连续性）：仍渲染回填过的行
+    expect(rowsOf(el).length).toBe(1)
+    expect(el.shadowRoot!.querySelector('tbody')!.textContent).toContain('旧')
+  })
+
+  it('晚到旧失败静默丢弃：requestId 不匹配在途序号时不派事件、错误条不显示', () => {
+    const { el, reqs, errs } = mountReq({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2') // requestId 2 在途
+    expect(reqs.length).toBe(2)
+    el.reportRowsError({ requestId: 1, reason: 'init' }) // 晚到旧失败
+    expect(errs.length).toBe(0)
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
+    el.reportRowsError({ requestId: 999 }) // 超前未知序号
+    expect(errs.length).toBe(0)
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('重试按钮：click → refreshRows 强刷（reason=refresh、requestId+1）→ 成功回填 → 错误条消失', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '10' })
+    el.setAttribute('data', JSON.stringify([{ name: '旧', age: 1 }]))
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+    // 点击重试
+    el.shadowRoot!.querySelector<HTMLElement>('.rows-error-retry')!.click()
+    expect(reqs.length).toBe(3)
+    expect(reqs[2]).toEqual({ requestId: 3, reason: 'refresh' })
+    // 重试派发即清失败条（进入新在途轮次）
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
+    // 成功回填 → loading 清、数据渲染
+    el.setAttribute('data', JSON.stringify([{ name: '新', age: 2 }]))
+    expect(loadingRow(el)).toBeNull()
+    expect(el.shadowRoot!.querySelector('tbody')!.textContent).toContain('新')
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('成功回填清错误条：失败后宿主直接写 data（不经重试）→ 错误条消失', () => {
+    const { el } = mountReq({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
+    expect(loadingRow(el)).toBeNull()
+  })
+
+  it('client 模式 reportRowsError 静默 no-op（无事件、无错误条）', () => {
+    const { el, errs } = mountReq({ total: '10' })
+    el.reportRowsError({ requestId: 1, reason: 'init' })
+    expect(errs.length).toBe(0)
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
   })
 })

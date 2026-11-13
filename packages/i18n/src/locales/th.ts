@@ -140,6 +140,8 @@ export const th: LocaleMessages = {
   'table.filter': 'กรอง',
   'table.clear': 'ล้าง',
   'table.groupEmpty': '(ว่าง)',
+  'table.loadFailed': 'โหลดไม่สำเร็จ',
+  'table.retry': 'ลองอีกครั้ง',
   'list.empty': 'ไม่มีข้อมูล',
   'scheduler.prev': 'ก่อนหน้า',
   'scheduler.next': 'ถัดไป',

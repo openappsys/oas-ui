@@ -430,6 +430,10 @@ const SERVER_PREMISE_HINT =
 const SERVER_WINDOWED_HINT =
   '[oas-table] row-model="server" 与 windowed 同开：windowed 优先，row-model 已忽略（两协议互斥，请二选一）'
 
+/** server 行模型失败条图标（原创内联 SVG：感叹圆环，danger 语义随 currentColor 着色） */
+const ROWS_ERROR_ICON =
+  '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.8v3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11.2" r="0.9" fill="currentColor"/></svg>'
+
 /** 编译期一致性：emit 用的字面量 `'window-request'`（拼 `oas-` 前缀）须与共享契约常量一致 */
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
 void _ROW_WINDOW_EVENT_CHECK
@@ -976,6 +980,57 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
 }
 .table-toolbar:empty {
   display: none;
+}
+/* server 行模型失败条：紧凑单行（图标 + 文案 + 重试），danger 语义 token（暗色自适应）。
+   默认 hidden；reportRowsError 生效时显示。紧贴工具栏下方，不与表体滚动耦合 */
+.rows-error {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-bottom: 1px solid var(--oas-color-danger);
+  background: var(--oas-color-danger-soft, color-mix(in srgb, var(--oas-color-danger) 12%, transparent));
+  color: var(--oas-color-danger-text, var(--oas-color-text-primary));
+  font-size: var(--oas-font-size-sm);
+}
+.rows-error[hidden] {
+  display: none;
+}
+.rows-error-icon {
+  display: inline-flex;
+  flex: none;
+}
+.rows-error-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+.rows-error-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rows-error-retry {
+  flex: none;
+  height: var(--oas-control-height-sm);
+  padding: 0 var(--oas-space-3);
+  border: 1px solid var(--oas-color-danger);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-danger);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  cursor: pointer;
+}
+.rows-error-retry:hover {
+  color: var(--oas-color-danger-text, #fff);
+  background: var(--oas-color-danger);
+}
+.rows-error-retry:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
 }
 .export-btn {
   display: inline-flex;
@@ -1891,6 +1946,13 @@ export class OASTableBase extends OASElement {
     if (name === 'data' && oldValue === newValue && oldValue !== null && this.hasRendered) {
       this.markRenderDirty()
     }
+    // server 行模型：宿主响应回填通道（data/total 属性写）→ 清在途 loading 与失败条。
+    // 属性写无请求身份——本方法只负责「有响应到达」这一事实，晚到丢弃职责在宿主侧
+    //（helper 经 requestId 校验后才回写；裸宿主自行比对事件 requestId）
+    if ((name === 'data' || name === 'total') && this.hasRendered && this.getAttr('row-model', '') === 'server') {
+      this.serverLoading = false
+      this.serverError = false
+    }
     super.attributeChangedCallback(name, oldValue, newValue)
   }
 
@@ -1904,6 +1966,11 @@ export class OASTableBase extends OASElement {
     return `
       <style>${STYLE}</style>
       <div class="table-toolbar" part="toolbar"></div>
+      <div class="rows-error" part="rows-error" role="alert" hidden>
+        <span class="rows-error-icon" aria-hidden="true">${ROWS_ERROR_ICON}</span>
+        <span class="rows-error-text"></span>
+        <button type="button" class="rows-error-retry" part="rows-error-retry"></button>
+      </div>
       <div class="table-scroll" part="scroll" tabindex="0">
         <table part="table">
           <thead part="head"></thead>
@@ -2068,6 +2135,8 @@ export class OASTableBase extends OASElement {
     // 单元格溢出提示：mouseover/mouseout 委托到滚动容器（表格级单例浮层复用定位，不为每格建实例）
     this.wrap?.addEventListener('mouseover', this.handleCellMouseOver)
     this.wrap?.addEventListener('mouseout', this.handleCellMouseOut)
+    // server 行模型失败条重试按钮（模板级持久节点，bind 一次即可；click → refreshRows 强刷）
+    this.shadow.querySelector('.rows-error-retry')?.addEventListener('click', () => this.refreshRows())
     // 页面级/外层容器滚动时同步隐藏浮层（scroll 不冒泡，document capture 捕获——浮层滞留原位 实抓）
     document.addEventListener('scroll', this.handleDocumentScrollForTooltip, true)
     this.onCleanup(() => {
@@ -2146,6 +2215,8 @@ export class OASTableBase extends OASElement {
       this.t('table.editHint'),
       this.t('table.edit'),
       this.t('table.cancel'),
+      this.t('table.loadFailed'),
+      this.t('table.retry'),
       tableText(this, 'table.exportCsv', 'Export CSV'),
       tableText(this, 'table.exportExcel', 'Export Excel'),
       tableText(this, 'table.rowDragHandle', 'Drag to reorder'),
@@ -2374,6 +2445,8 @@ export class OASTableBase extends OASElement {
     if (!head || !body) return
     // D8 导出工具栏（与行数据无关，loading/empty 也要在场）
     this.renderToolbar()
+    // server 行模型失败条同步（所有渲染出口都要在场：loading/empty/常规路径）
+    this.syncRowsErrorBar()
     // D15 行拖拽与虚拟滚动不兼容：虚拟模式仅渲染窗口行，静默降级并 dev 告警一次
     if (this.hasAttr('row-draggable') && this.isVirtual()) warnRowDragVirtual()
 
@@ -2655,7 +2728,7 @@ export class OASTableBase extends OASElement {
       this.runStructuralSlot('headerRow', () => this.structuralCap?.headerRow?.({ el: tr }))
     }
 
-    if (this.hasAttr('loading')) {
+    if (this.hasAttr('loading') || this.serverLoading) {
       // 稳定清空的垫高在早退出口必须移除——否则空态/loading 下方残留旧表高的大块空白
       body.style.minHeight = ''
       const loadingTr = document.createElement('tr')
@@ -5305,6 +5378,56 @@ export class OASTableBase extends OASElement {
       return
     }
     this.dispatchRowsRequest(plan.reason)
+  }
+
+  /**
+   * 失败条同步（update 全量渲染统一出口调用，loading/empty 早退路径同样覆盖）：
+   * 可见性随 serverError 翻转；文案/按钮随 locale 刷新（renderEnvSignature 已含两个 key，
+   * locale 切换必回落全量渲染走到这里）。幂等：节点为模板级持久节点，只改内容与 hidden。
+   */
+  private syncRowsErrorBar(): void {
+    const bar = this.shadow.querySelector('.rows-error')
+    if (!bar) return
+    if (this.serverError) {
+      bar.removeAttribute('hidden')
+      const text = bar.querySelector('.rows-error-text')
+      if (text) text.textContent = this.t('table.loadFailed')
+      const retry = bar.querySelector('.rows-error-retry')
+      if (retry) retry.textContent = this.t('table.retry')
+    } else {
+      bar.setAttribute('hidden', '')
+    }
+  }
+
+  /**
+   * 宿主失败通知通道（server 行模型）：requestId === 当前在途请求序号才生效——
+   * 派发 `oas-rows-error`（detail 原样转发）+ 清在途 loading + 显示内建失败条
+   * （role="alert"，重试按钮调 refreshRows()）。晚到旧失败（序号不符或已回填成功）
+   * 静默丢弃。client 模式静默 no-op（无请求序号，天然不匹配）。
+   */
+  reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void {
+    if (this.getAttr('row-model', '') !== 'server') return
+    if (!this.serverLoading) return
+    if (detail?.requestId !== this.rowsRequestId) return
+    this.serverLoading = false
+    this.serverError = true
+    this.emit('rows-error', { requestId: detail.requestId, reason: detail.reason, error: detail.error })
+    // 非属性通道状态变化（loading/失败条）→ 强制全量渲染（跳过增量快路径）
+    this.markRenderDirty()
+    this.runUpdateAndNotify()
+  }
+
+  /**
+   * 强制重发当前状态请求（server 行模型）：reason='refresh'，绕过同值去重签名。
+   * `{ purge: true }` 预留清缓存语义——v1 无缓存，等价 refresh（参数仅收下不分支）。
+   * client 模式 no-op（无取数协议可刷）。
+   */
+  refreshRows(_options?: { purge?: boolean }): void {
+    if (!this.serverOn()) return
+    this.dispatchRowsRequest('refresh')
+    // 非属性通道状态变化（loading 置位）→ 强制全量渲染，loading 行立即可见
+    this.markRenderDirty()
+    this.runUpdateAndNotify()
   }
 
   /** column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / 固定列布局不符 → 告警一次并降级为普通渲染） */

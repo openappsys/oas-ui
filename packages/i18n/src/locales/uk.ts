@@ -181,6 +181,8 @@ export const uk: LocaleMessages = {
   'table.filter': 'Фільтр',
   'table.clear': 'Очистити',
   'table.groupEmpty': '(порожньо)',
+  'table.loadFailed': 'Не вдалося завантажити',
+  'table.retry': 'Повторити',
   // list (список)
   'list.empty': 'Немає даних',
   // scheduler (розклад подій)

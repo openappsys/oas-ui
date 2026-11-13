@@ -181,6 +181,8 @@ export const ko: LocaleMessages = {
   'table.filter': '필터',
   'table.clear': '지우기',
   'table.groupEmpty': '(비어 있음)',
+  'table.loadFailed': '불러오기 실패',
+  'table.retry': '다시 시도',
   // list（리스트）
   'list.empty': '데이터 없음',
   // scheduler（日程调度）

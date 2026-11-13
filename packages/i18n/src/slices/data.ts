@@ -30,6 +30,8 @@ export const dataMessages: Partial<LocaleMessages> = {
   'table.filter': '筛选',
   'table.clear': '清除',
   'table.groupEmpty': '（空）',
+  'table.loadFailed': '加载失败',
+  'table.retry': '重试',
   'list.empty': '暂无数据',
   'scheduler.prev': '上一页',
   'scheduler.next': '下一页',

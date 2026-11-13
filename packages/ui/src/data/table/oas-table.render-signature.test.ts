@@ -73,6 +73,14 @@ describe('OASTable client 渲染签名金本位', () => {
     expect(domSig(el.shadowRoot!)).toBe(
       [
         'div.table-toolbar@toolbar',
+        'div.rows-error@rows-error',
+        '  span.rows-error-icon',
+        '    svg',
+        '      circle',
+        '      path',
+        '      circle',
+        '  span.rows-error-text',
+        '  button.rows-error-retry@rows-error-retry',
         'div.table-scroll@scroll',
         '  table@table',
         '    thead@head',
@@ -124,6 +132,14 @@ describe('OASTable client 渲染签名金本位', () => {
     expect(domSig(el.shadowRoot!)).toBe(
       [
         'div.table-toolbar@toolbar',
+        'div.rows-error@rows-error',
+        '  span.rows-error-icon',
+        '    svg',
+        '      circle',
+        '      path',
+        '      circle',
+        '  span.rows-error-text',
+        '  button.rows-error-retry@rows-error-retry',
         'div.table-scroll@scroll',
         '  table@table',
         '    thead@head',

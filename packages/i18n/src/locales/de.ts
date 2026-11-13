@@ -181,6 +181,8 @@ export const de: LocaleMessages = {
   'table.filter': 'Filtern',
   'table.clear': 'Leeren',
   'table.groupEmpty': '(leer)',
+  'table.loadFailed': 'Laden fehlgeschlagen',
+  'table.retry': 'Erneut versuchen',
   // list (Liste)
   'list.empty': 'Keine Daten',
   // scheduler（日程调度）

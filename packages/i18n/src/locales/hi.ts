@@ -181,6 +181,8 @@ export const hi: LocaleMessages = {
   'table.filter': 'फ़िल्टर',
   'table.clear': 'साफ़ करें',
   'table.groupEmpty': '(खाली)',
+  'table.loadFailed': 'लोड करने में विफल',
+  'table.retry': 'पुनः प्रयास',
   // list (लिस्ट)
   'list.empty': 'कोई डेटा नहीं',
   // scheduler (शेड्यूलर)

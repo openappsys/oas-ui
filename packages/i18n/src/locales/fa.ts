@@ -181,6 +181,8 @@ export const fa: LocaleMessages = {
   'table.filter': 'فیلتر',
   'table.clear': 'پاک کردن',
   'table.groupEmpty': '(خالی)',
+  'table.loadFailed': 'بارگذاری ناموفق بود',
+  'table.retry': 'تلاش دوباره',
   // list (فهرست)
   'list.empty': 'داده‌ای وجود ندارد',
   // scheduler (تقویم برنامه)

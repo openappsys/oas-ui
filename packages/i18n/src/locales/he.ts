@@ -181,6 +181,8 @@ export const he: LocaleMessages = {
   'table.filter': 'סנן',
   'table.clear': 'נקה',
   'table.groupEmpty': '(ריק)',
+  'table.loadFailed': 'טעינה נכשלה',
+  'table.retry': 'נסה שוב',
   // list (רשימה)
   'list.empty': 'אין נתונים',
   // scheduler（日程调度）

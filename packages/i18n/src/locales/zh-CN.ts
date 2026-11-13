@@ -181,6 +181,8 @@ export const zhCN = {
   'table.filter': '筛选',
   'table.clear': '清除',
   'table.groupEmpty': '（空）',
+  'table.loadFailed': '加载失败',
+  'table.retry': '重试',
   // list（列表）
   'list.empty': '暂无数据',
   // scheduler（日程调度）

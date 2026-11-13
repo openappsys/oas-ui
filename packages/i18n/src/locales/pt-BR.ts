@@ -181,6 +181,8 @@ export const ptBR: LocaleMessages = {
   'table.filter': 'Filtrar',
   'table.clear': 'Limpar',
   'table.groupEmpty': '(vazio)',
+  'table.loadFailed': 'Falha ao carregar',
+  'table.retry': 'Tentar novamente',
   // list (lista)
   'list.empty': 'Sem dados',
   // scheduler（日程调度）

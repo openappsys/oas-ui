@@ -181,6 +181,8 @@ export const ar: LocaleMessages = {
   'table.filter': 'تصفية',
   'table.clear': 'مسح',
   'table.groupEmpty': '(فارغ)',
+  'table.loadFailed': 'فشل التحميل',
+  'table.retry': 'إعادة المحاولة',
   // list (قائمة)
   'list.empty': 'لا توجد بيانات',
   // scheduler（日程调度）
