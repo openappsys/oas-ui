@@ -37,7 +37,7 @@ test('grayscale：灰阶 tile 与原图 tile 的 dataURL 不同（canvas filter 
     }),
   )
   // 彩色直用原图 URL；灰阶经 canvas 转 dataURL，两者必然不同
-  expect(color).toContain('picsum.photos')
+  expect(color).toContain('/assets/demo-')
   expect(gray).toContain('data:image/png')
   expect(gray).not.toBe(color)
 })
