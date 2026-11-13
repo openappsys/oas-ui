@@ -31,6 +31,8 @@ import { devWarn } from '../../shared/dev-warn.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 // 行键计算（row-key 缺失时按行对象缓存 JSON.stringify 回退，见模块注释）
 import { rowKeyValue } from './oas-table-row-key.js'
+// server 行模型（row-model="server"）请求协议：类型 + 纯函数（原因推导 / 同值去重签名）
+import { rowsRequestPlan, rowsRequestSignature, type RowsRequestReason, type RowsRequestState } from './row-model.js'
 // 服务端行窗口协议（windowed 模式）：与宿主交换行区间的共享契约（类型 + 纯工具），
 // 数据密集型组件统一口径（table / gantt / resource / kanban / scheduler 同源）
 import {
@@ -1632,6 +1634,14 @@ export class OASTableBase extends OASElement {
   private serverPremiseWarned = false
   /** server 行模型 × windowed 同开互斥告警去重（实例级一次） */
   private serverWindowedWarned = false
+  /** server 行模型：请求序号计数器（单调递增；事件 requestId 与 reportRowsError 校验共用） */
+  private rowsRequestId = 0
+  /** server 行模型：最近一次派发的请求状态（同值去重键 + 原因推导基准；null = 尚未派发过） */
+  private lastRowsRequestState: RowsRequestState | null = null
+  /** server 行模型：请求在途（内建 loading 视觉；宿主写 data/total 或 reportRowsError 生效时清除） */
+  private serverLoading = false
+  /** server 行模型：失败条可见（reportRowsError 生效时置位；成功回填清除） */
+  private serverError = false
   /** 打印媒体查询（connectedCallback 捕获；null = 环境不支持 / 已断开） */
   private printMql: MediaQueryList | null = null
   /** 当前是否处于 print 媒体（打印/打印预览）：窗口外行不在 DOM、CSS 无法唤回，此态下行/列窗口恒全量 */
@@ -2502,6 +2512,9 @@ export class OASTableBase extends OASElement {
     }
     // row-auto-height：能力未注册 → 显式提示（opt-in 请求不静默忽略）
     this.warnAutoHeightConfigOnce()
+    // server 行模型：状态驱动的取数请求（首载/翻页/排序/过滤）——须在 loading/empty 早退
+    // 分支之前派发（复刻 windowed 先例顺序：否则空数据首载静默不发请求）
+    this.syncServerRows()
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
     const tableEl = this.shadow.querySelector('table')
@@ -5239,6 +5252,59 @@ export class OASTableBase extends OASElement {
    */
   private renderSorts(): SortState[] {
     return this.windowedOn() || this.serverOn() ? [] : this.resolveSorts()
+  }
+
+  /** server 行模型：当前请求状态快照（分页 + 排序 + 过滤，同值去重与原因推导的输入） */
+  private rowsRequestState(): RowsRequestState {
+    const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
+    const current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
+    // resolveSorts 的返回保证每项 order ∈ {asc, desc}（构造处已过滤）——类型收窄保持事实
+    const sortModel = this.resolveSorts()
+      .filter((s): s is SortState & { order: 'asc' | 'desc' } => s.order === 'asc' || s.order === 'desc')
+      .map((s) => ({ key: s.key, order: s.order }))
+    return { current, pageSize, sortModel, filterValues: this.parseFilterValues() }
+  }
+
+  /**
+   * 派发 `oas-rows-request`（server 行模型唯一出口）：先记后派（监听器同步回填时去重
+   * 状态已就位，同 windowed 先例），requestId 递增、在途 loading 置位、旧失败条清除。
+   * 本方法不做同值去重——去重判定在 syncServerRows；refreshRows 绕过路径直接调本方法。
+   */
+  private dispatchRowsRequest(reason: RowsRequestReason): void {
+    const state = this.rowsRequestState()
+    this.rowsRequestId++
+    this.lastRowsRequestState = state
+    this.serverLoading = true
+    this.serverError = false
+    const start = (state.current - 1) * state.pageSize
+    this.emit('rows-request', {
+      requestId: this.rowsRequestId,
+      start,
+      end: start + state.pageSize,
+      sortModel: state.sortModel,
+      filterValues: state.filterValues,
+      reason,
+      totalKnown: true,
+    })
+  }
+
+  /**
+   * server 行模型请求接线（update 渲染路径统一入口）：按当前状态与上次请求状态的
+   * 差异推导原因——init（首载）/ paginate（current 或 page-size 变更）/ sort / filter，
+   * 全同值静默。页码重置规则：排序/过滤/页大小变更先 current 置 1 再派（setAttribute
+   * 同步驱动嵌套 update，由嵌套的本次调用以原原因派发，事件状态已是「新口径首页」）；
+   * 纯翻页不重置。data 属性写不进状态签名——回填是响应不是新请求（防请求循环）。
+   */
+  private syncServerRows(): void {
+    if (!this.serverOn()) return
+    const state = this.rowsRequestState()
+    const plan = rowsRequestPlan(this.lastRowsRequestState, state)
+    if (plan.reason === null) return
+    if (plan.resetPage && state.current !== 1) {
+      this.setAttribute('current', '1')
+      return
+    }
+    this.dispatchRowsRequest(plan.reason)
   }
 
   /** column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / 固定列布局不符 → 告警一次并降级为普通渲染） */

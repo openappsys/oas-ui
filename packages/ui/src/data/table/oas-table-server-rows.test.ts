@@ -197,3 +197,160 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
     expect(rowsOf(el)[0]!.textContent).toContain('甲')
   })
 })
+
+describe('OASTable server 行模型 a4：oas-rows-request 请求协议', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  interface Req {
+    requestId: number
+    start: number
+    end: number
+    sortModel: Array<{ key: string; order: string }>
+    filterValues: Record<string, string | number>
+    reason: string
+    totalKnown: boolean
+  }
+
+  /** mount（监听器先于连接挂上，首帧 init 请求也能捕获） */
+  function mountReq(attrs: Record<string, string>, data = '[]'): { el: OASTable; reqs: Req[] } {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', sortable: true },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('data', data)
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const reqs: Req[] = []
+    el.addEventListener('oas-rows-request', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({
+        requestId: d.requestId,
+        start: d.start,
+        end: d.end,
+        sortModel: d.sortModel,
+        filterValues: d.filterValues,
+        reason: d.reason,
+        totalKnown: d.totalKnown,
+      })
+      // 事件通道契约（同 oas-window-request）：可冒泡、可穿出 Shadow DOM
+      expect(e.bubbles).toBe(true)
+      expect(e.composed).toBe(true)
+    })
+    document.body.appendChild(el)
+    return { el, reqs }
+  }
+
+  it('首载派发 init：detail 完整（requestId=1 / [0,10) / 空 sortModel / totalKnown=true），data 为空也先派', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100' })
+    expect(reqs).toEqual([
+      { requestId: 1, start: 0, end: 10, sortModel: [], filterValues: {}, reason: 'init', totalKnown: true },
+    ])
+    // 空数据首载：请求已派发（早退分支不吞首载请求——windowed 先例顺序）
+    expect(el.shadowRoot!.querySelector('tbody')).not.toBeNull()
+  })
+
+  it('data 非空首载同样派 init（data 属性是回填通道不是请求屏障）', () => {
+    const { reqs } = mountReq({ 'row-model': 'server', total: '100' }, JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(reqs.length).toBe(1)
+    expect(reqs[0]!.reason).toBe('init')
+  })
+
+  it('翻页：current 变更派 paginate（requestId 递增 / start 端点随页推导）', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100' })
+    el.setAttribute('current', '2')
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]).toEqual({
+      requestId: 2,
+      start: 10,
+      end: 20,
+      sortModel: [],
+      filterValues: {},
+      reason: 'paginate',
+      totalKnown: true,
+    })
+    el.setAttribute('current', '3')
+    expect(reqs.length).toBe(3)
+    expect(reqs[2]!.start).toBe(20)
+    expect(reqs[2]!.end).toBe(30)
+  })
+
+  it('排序交互派 sort：sortModel 沿用 sort-key/sort-order 词汇', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100' })
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]!.reason).toBe('sort')
+    expect(reqs[1]!.sortModel).toEqual([{ key: 'name', order: 'asc' }])
+    expect(reqs[1]!.requestId).toBe(2)
+  })
+
+  it('multi-sort 在场：sortModel 按数组序组装多键', () => {
+    const { reqs } = mountReq({
+      'row-model': 'server',
+      total: '100',
+      'multi-sort': JSON.stringify([
+        { key: 'name', order: 'desc' },
+        { key: 'age', order: 'asc' },
+      ]),
+    })
+    expect(reqs.length).toBe(1)
+    expect(reqs[0]!.sortModel).toEqual([
+      { key: 'name', order: 'desc' },
+      { key: 'age', order: 'asc' },
+    ])
+  })
+
+  it('过滤变更派 filter：filterValues 为 filter-values 现值对象原样', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100' })
+    el.setAttribute('filter-values', JSON.stringify({ name: '甲' }))
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]!.reason).toBe('filter')
+    expect(reqs[1]!.filterValues).toEqual({ name: '甲' })
+  })
+
+  it('同值属性写不重发（current/sort/filter-values 同值均静默）；data 写不发（回填是响应）', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100' })
+    expect(reqs.length).toBe(1)
+    el.setAttribute('current', '2')
+    expect(reqs.length).toBe(2)
+    el.setAttribute('current', '2') // 同值写
+    expect(reqs.length).toBe(2)
+    // 排序状态成对写（sort-key 无 order 时不是激活排序，与 resolveSorts 口径一致）
+    el.setAttribute('sort-key', 'name')
+    el.setAttribute('sort-order', 'asc')
+    expect(reqs.length).toBe(3)
+    el.setAttribute('sort-key', 'name') // 同值写
+    el.setAttribute('sort-order', 'asc')
+    expect(reqs.length).toBe(3)
+    el.setAttribute('filter-values', JSON.stringify({ name: '甲' }))
+    expect(reqs.length).toBe(4)
+    el.setAttribute('filter-values', JSON.stringify({ name: '甲' })) // 同值写
+    expect(reqs.length).toBe(4)
+    // data 回填（响应而非新请求——防请求循环）
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(reqs.length).toBe(4)
+    // 同值 data 写（markRenderDirty 重渲染通道）也不发
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(reqs.length).toBe(4)
+  })
+
+  it('client 模式一切场景零请求（翻页/排序/过滤均不派）', () => {
+    const { el, reqs } = mountReq({ total: '100' })
+    expect(reqs.length).toBe(0)
+    el.setAttribute('current', '2')
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    el.setAttribute('filter-values', JSON.stringify({ name: '甲' }))
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(reqs.length).toBe(0)
+  })
+})
