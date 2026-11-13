@@ -6,7 +6,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **table server 行模型（外部分页模式升级，缺口收窄版）** | 数据不全在前端的企业场景：排序/过滤责任移交服务端。属性 `row-model`（`client` 缺省 / `server` opt-in；生效前提 `total` 在场）+ 请求协议 `oas-rows-request`（detail `{ requestId, start, end, sortModel, filterValues, reason, totalKnown }`，requestId 权威去重、晚到回写由宿主侧校验）+ 时序规则（排序/过滤/页大小变更重置 `current=1`；失败保留旧数据 + 错误条 + `oas-rows-error`）+ `refreshRows()` 强刷入口 + 能力闸门矩阵（导出仅当前页 devWarn/合计/分组/拖拽禁用等 ~10 项逐一声明）+ 宿主侧 `createServerSource` helper（seq/abort/requestId 校验/refresh，与 windowed 宿主 helper 同族）。落点：核内单文件模块 + advanced 同族 helper；`windowed` 优先互斥守卫。文档配方区新增选用决策表与互斥规则。client 渲染签名金本位测试先行，零行为漂移 | 🚧 进行中 |
+| **table server 行模型（外部分页模式升级，缺口收窄版）** | 数据不全在前端的企业场景：排序/过滤责任移交服务端。属性 `row-model`（`client` 缺省 / `server` opt-in；生效前提 `total` 在场）+ 请求协议 `oas-rows-request`（detail `{ requestId, start, end, sortModel, filterValues, reason, totalKnown }`，requestId 权威去重、晚到回写由宿主侧校验）+ 时序规则（排序/过滤/页大小变更重置 `current=1`；失败保留旧数据 + 错误条 + `oas-rows-error`）+ `refreshRows()` 强刷入口 + 能力闸门矩阵（导出仅当前页 devWarn/合计/分组/拖拽禁用等 ~10 项逐一声明）+ 宿主侧 `createServerSource` helper（seq/abort/requestId 校验/refresh，与 windowed 宿主 helper 同族）。落点：核内单文件模块 + advanced 同族 helper；`windowed` 优先互斥守卫。文档配方区新增选用决策表与互斥规则。client 渲染签名金本位测试先行，零行为漂移 | ✅ 已完成（未发布） |
 | **table 测试债捎带** | `qa-regression/table.spec.ts` 存量 ~6 项（waitForTimeout 2 + OS 绝对量 4）改语义不变量，ratchet 数字随降 | 📋 待开发 |
 
 ## 未发布（P1/P2 组件能力批）
