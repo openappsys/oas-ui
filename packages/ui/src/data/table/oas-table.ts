@@ -5636,10 +5636,13 @@ export class OASTableBase extends OASElement {
    * （role="alert"，重试按钮调 refreshRows()）。不设 serverLoading 前置门槛：成功回填
    * / 超时兜底回填已清 loading 后，同序号失败仍须生效（错误反馈不能因「无在途 loading」
    * 被吞）。晚到旧失败（序号不符）静默丢弃 + 实例级一次性 devWarn（可诊断性）。
-   * client 模式静默 no-op（无请求序号，天然不匹配）。
+   * 非生效形态静默 no-op（serverRowsActive 判定：client 模式无请求序号天然不匹配；
+   * windowed 互斥 / total 缺失的离开形态下晚到失败同样不得在 client 渲染下点亮 server
+   * 错误条——曾因只查 row-model 属性字面值，requestId:0 撞初始序号点亮了 client 页面）。
+   * rowsRequestId 单调递增不复位（宿主晚到守卫依赖单调性）。
    */
   reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void {
-    if (this.getAttr('row-model', '') !== 'server') return
+    if (!this.serverRowsActive()) return
     if (detail?.requestId !== this.rowsRequestId) {
       if (!this.serverLateFailureWarned) {
         this.serverLateFailureWarned = true
