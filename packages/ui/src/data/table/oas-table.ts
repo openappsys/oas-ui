@@ -2020,7 +2020,9 @@ export class OASTableBase extends OASElement {
     //   每次同值写重派一个 init 请求；错误条也曾被同值 row-model 写静默清掉。
     // - 从生效形态离开（row-model 切走 / total 移除 / windowed 互斥接管）：三态复位
     //   （在途 loading、失败条、请求状态签名），回切时以 init 重新发起。
-    if (this.hasRendered && (name === 'data' || name === 'total' || name === 'row-model')) {
+    //   触发集含 windowed：server 在途加 windowed 曾无人清 serverLoading（loading 骨架
+    //   残留）；移除 windowed 回 server 曾因去重签名未复位吞掉重入 init（永久旧切片）。
+    if (this.hasRendered && (name === 'data' || name === 'total' || name === 'row-model' || name === 'windowed')) {
       const formActive = this.serverFormActive()
       if (formActive && (name === 'data' || name === 'total')) {
         if (this.serverLoading || this.serverError) {
