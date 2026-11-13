@@ -2003,9 +2003,20 @@ export class OASTableBase extends OASElement {
     // server 行模型：宿主响应回填通道（data/total 属性写）→ 清在途 loading 与失败条。
     // 属性写无请求身份——本方法只负责「有响应到达」这一事实，晚到丢弃职责在宿主侧
     //（helper 经 requestId 校验后才回写；裸宿主自行比对事件 requestId）
-    if ((name === 'data' || name === 'total') && this.hasRendered && this.getAttr('row-model', '') === 'server') {
-      this.serverLoading = false
-      this.serverError = false
+    if (this.hasRendered && (name === 'data' || name === 'total' || name === 'row-model')) {
+      if (name !== 'row-model' && this.serverRowsActive()) {
+        this.serverLoading = false
+        this.serverError = false
+      } else if (this.serverLoading || this.serverError || this.lastRowsRequestState !== null) {
+        // 离开 server 生效形态（row-model 切走 / total 移除 / 回退 client 行为）：
+        // 三态复位（在途 loading、失败条、请求状态签名）——残留会让 client 渲染出
+        // server 的 loading 行/错误条；请求状态不清则切回 server 时同值去重吞掉
+        // 本应重新发起的 init 请求。lastRowsRequestState 仅在此处与成功回填路径清零。
+        this.serverLoading = false
+        this.serverError = false
+        this.lastRowsRequestState = null
+        this.markRenderDirty()
+      }
     }
     super.attributeChangedCallback(name, oldValue, newValue)
   }

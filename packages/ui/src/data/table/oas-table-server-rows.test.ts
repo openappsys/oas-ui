@@ -1018,10 +1018,20 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     // 修复前缓存键不含 server 标志 → 与 server 时全同值 → 命中 server 行集缓存误渲染原样序
     el.setAttribute('row-model', 'client')
     expect(rowsOf(el)[0]!.textContent).toContain('甲')
-    // 再切回 server：本地排序再次跳过 → 乙 在前
+    // 再切回 server：本地排序再次跳过。切走时请求状态已复位（F3 语义）→ 重新派 init（在途 loading 行）
     el.setAttribute('row-model', 'server')
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]!.reason).toBe('init')
+    expect(reqs[1]!.requestId).toBe(2)
+    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '乙', age: 2 },
+        { name: '甲', age: 1 },
+      ]),
+    )
     expect(rowsOf(el)[0]!.textContent).toContain('乙')
-    expect(reqs.length, '模式往返不再派请求（state 未变，仅渲染语义切换）').toBe(1)
   })
 
   it('F2：serverRowsActive 纯判定不含告警副作用（windowed 互斥/缺 total 均按 false，不烧一次性 flag）', () => {
@@ -1036,5 +1046,90 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     document.body.appendChild(el)
     expect(warn, 'windowed 互斥告警恰一次').toHaveBeenCalledTimes(1)
     warn.mockRestore()
+  })
+
+  /** F3 回归：退出 server 生效形态（切 client / total 移除）三态复位——
+      serverLoading / serverError / lastRowsRequestState 清零 + 强制重渲染 */
+  it('F3①：loading 在途中切 client → loading 行消失（数据照 client 语义渲染）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', '[]')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    el.setAttribute('row-model', 'client')
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+    expect(rowsOf(el).length).toBe(0)
+  })
+
+  it('F3②：失败态切 client → 错误条消失', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', JSON.stringify([{ name: '旧', age: 1 }]))
+    document.body.appendChild(el)
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(false)
+    el.setAttribute('row-model', 'client')
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
+    // 旧数据行照常渲染（client 语义）
+    expect(rowsOf(el).length).toBe(1)
+  })
+
+  it('F3③：失败后切 client 再切回 server → 重新派 init 请求（请求状态已复位）', () => {
+    const reqs: { requestId: number; reason: string }[] = []
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', '[]')
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    expect(reqs.length).toBe(1)
+    el.setAttribute('current', '2')
+    expect(reqs.length).toBe(2)
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    // 切 client：三态复位（含请求状态）
+    el.setAttribute('row-model', 'client')
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
+    // 切回 server：请求状态已清 → 以 init 重新发起
+    el.setAttribute('row-model', 'server')
+    expect(reqs.length).toBe(3)
+    expect(reqs[2]!.reason).toBe('init')
+    expect(reqs[2]!.requestId).toBe(3)
+    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+  })
+
+  it('F3④：移除 total 清态（错误条消失），回加 total 重发 init', () => {
+    const reqs: { requestId: number; reason: string }[] = []
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', JSON.stringify([{ name: '旧', age: 1 }]))
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    el.setAttribute('current', '2')
+    expect(reqs.length).toBe(2)
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(false)
+    // 移除 total：server 失效 → 清态
+    el.removeAttribute('total')
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+    expect(rowsOf(el).length, 'client 语义渲染旧数据').toBe(1)
+    // 回加 total：server 重新生效 → 请求状态已清 → init 重发
+    el.setAttribute('total', '10')
+    expect(reqs.length).toBe(3)
+    expect(reqs[2]!.reason).toBe('init')
   })
 })
