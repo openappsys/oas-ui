@@ -197,6 +197,15 @@ test('table server：失败保留旧数据 + 错误条真点重试恢复 + conso
   await expect(errorBar).toBeHidden()
   await expect(shadow(page, 'table-server-fail').locator('tbody tr[part="row"]').first()).toContainText('行10')
 
+  // R10 收紧请求总数（此前 >= 阈值对 F6 监听叠加回归不敏感）：回填落定后总数恰 3，
+  // 单击重试只派 1 个 refresh——监听叠加/重复派发会让总数超过 3 被此处拦下
+  const settledState = await stateOf(page, 'table-server-fail')
+  expect(settledState.reqs.length, '重试单击只派 1 个 refresh（总数收紧）').toBe(3)
+  expect(
+    settledState.reqs.map((r: { requestId: number }) => r.requestId),
+    'requestId 严格单调 [1,2,3]',
+  ).toEqual([1, 2, 3])
+
   // ⑥ console 零告警
   expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
 })
@@ -205,7 +214,9 @@ test('table server：重试按钮 hover 前后可读（F1：hover 文字 text-on
   page,
 }) => {
   await gotoTablePage(page)
-  await mountServerFixture(page, 'table-server-hover')
+  // hold 预置于挂载前（R4 幂等语义）：init 请求只收集不响应——失败上报发生在任何成功
+  // 回填之前，确保错误条必现（回填后再报同号失败按幂等静默，旧写法曾依赖回填前竞态）
+  await mountServerFixture(page, 'table-server-hover', {}, { hold: true })
 
   // 进入失败态（错误条 + 重试按钮在场）
   await page.waitForFunction(() => (window as any)['__srvState_table-server-hover'].reqs.length >= 1, null, {
