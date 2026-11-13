@@ -214,8 +214,9 @@ test('table server：重试按钮 hover 前后可读（F1：hover 文字 text-on
   page,
 }) => {
   await gotoTablePage(page)
-  // hold 预置于挂载前（R4 幂等语义）：init 请求只收集不响应——失败上报发生在任何成功
-  // 回填之前，确保错误条必现（回填后再报同号失败按幂等静默，旧写法曾依赖回填前竞态）
+  // hold 预置于挂载前（失败上报时序确定性）：init 请求只收集不响应——失败上报与异步
+  // 回填零竞态（时序固定：请求在途 → 直接报告失败），错误条必现；回填后同号失败同生效
+  //（登记语义收窄后成功回填不占序号），此处 hold 仅为断言时序稳定
   await mountServerFixture(page, 'table-server-hover', {}, { hold: true })
 
   // 进入失败态（错误条 + 重试按钮在场）

@@ -1199,21 +1199,24 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
   })
 
-  /** F5→R4（第二轮修复批定策）：成功回填登记当前序号后，同序号失败上报按幂等静默丢弃
-      ——错误条以「未上报过的失败」为准。旧行为（回填后同号失败仍翻错误条）曾把「超时兜底
-      回填 + 迟到失败」当有效失败渲染，与成功回填事实矛盾；宿主超时兜底后若确认失败，
-      应以重试（refreshRows / 新一轮请求）的序号上报 */
-  it('F5/R4：成功回填后同序号失败按幂等静默丢弃（不派事件、错误条不出现）', () => {
+  /** F5（第三轮修复批恢复原语义）：成功回填（含超时兜底回填）后同序号失败仍生效——
+      派 oas-rows-error + 错误条出现（601c27c9 为「回填清 loading 后同号失败被吞」立的
+      回归）。R4（0dee0b80）曾定策「成功回填登记序号 → 同号失败幂等静默」，交叉审判定
+      越界且反向：成功回填登记让首个真实失败被静默吞掉（同值 total 例行写后 reportRowsError
+      零派发）。定策最终裁决：幂等登记语义收窄为「已上报过失败的序号」，成功回填不登记——
+      「超时兜底回填 + 迟到失败」场景错误条让用户知道数据可能不可靠（可重试），比静默更
+      符合失败反馈语义 */
+  it('F5：成功回填后同序号失败仍生效（派事件 + 错误条出现；兜底回填 + 迟到失败须可感知可重试）', () => {
     const { el, reqs, errs } = mountReq({ 'row-model': 'server', total: '10' })
     // 请求 1（init）→ 宿主超时兜底回填占位数据（属性写清 loading；requestId 仍为 1）
     el.setAttribute('data', JSON.stringify([{ name: '占位', age: 0 }]))
     expect(reqs.length).toBe(1)
-    // 同一序号的失败随后才到（宿主 fetch reject 晚于超时回填）——该序号已成功回填登记，
-    // 失败按幂等重复静默丢弃（R4 定策：错误条以「未上报过的失败」为准）
+    // 同一序号的失败随后才到（宿主 fetch reject 晚于超时回填）——兜底回填只是占位，数据
+    // 可靠性未证实：失败须生效（错误条 + 重试入口），静默吞掉曾让宿主无从感知数据不可靠
     el.reportRowsError({ requestId: 1, reason: 'init', error: new Error('timeout') })
-    expect(errs, '已回填序号的失败不派事件').toEqual([])
-    expect(errorBar(el)!.hasAttribute('hidden'), '错误条不出现').toBe(true)
-    // 旧数据保留（回填事实不被迟到失败翻转）
+    expect(errs, '回填后同号失败派事件').toEqual([{ requestId: 1, reason: 'init' }])
+    expect(errorBar(el)!.hasAttribute('hidden'), '错误条出现').toBe(false)
+    // 兜底回填的占位行保留（失败条是叠加提示，不回滚已回填数据）
     expect(rowsOf(el).length).toBe(1)
   })
 
@@ -1722,6 +1725,61 @@ describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
     el.setAttribute('current', '3') // 新请求在途：派发即清 serverError → 错误条同步隐藏
     expect(errorBar(el)!.hasAttribute('hidden'), '同一次更新后错误条隐藏').toBe(true)
     expect(loadingRow(el), '新请求 loading 行在途').not.toBeNull()
+  })
+
+  // ==================== R12/R13：第三轮修复批（登记越界回收 + windowed 接管探针固化） ====================
+
+  /** R12（N-5c）：跨无关属性写后首错仍可见——成功回填不登记序号（第三轮定策）后，
+      同值 total 例行写（轮询型宿主形态）同样不得吞掉首个真实失败。R4 登记越界曾让
+      「请求在途 + 宿主写同值 total + reportRowsError」零派发、错误条不亮 */
+  it('R12：请求在途时宿主写同值 total → 首个失败上报仍生效（属性写不登记序号）', () => {
+    const { el, reqs, errs } = mountR({ 'row-model': 'server', total: '10' })
+    expect(reqs.length, 'init 请求 1 在途').toBe(1)
+    // 宿主例行同值写 total（CE 规范：同值写同样触发 attributeChangedCallback）
+    el.setAttribute('total', el.getAttribute('total')!)
+    // 同序号首错上报：跨无关属性写不得登记/吞掉首个失败（错误条让用户可感知 + 可重试）
+    el.reportRowsError({ requestId: 1, reason: 'init', error: new Error('x') })
+    expect(errs, '首错派发').toEqual([{ requestId: 1, reason: 'init' }])
+    expect(errorBar(el)!.hasAttribute('hidden'), '错误条可见').toBe(false)
+  })
+
+  // ==================== R13：windowed 接管复位路径与互斥形态（探针已验证路径固化） ====================
+
+  /** R13①（N-5ab）：「windowed 生效由 total 写触发」的复位路径——server 失败态下写
+      total>0 使 windowed 接管（接管条件 windowed 在场且 total>0），ACC 按「离开生效形态」
+      三态复位：错误条消失 + 请求状态签名清零（切回 server 时 init 重发，不被同值去重吞） */
+  it('R13①：server 失败态写 total>0 → windowed 接管三态复位（错误条消失 + 切回补发 init）', () => {
+    const { el, reqs, errs } = mountR({ 'row-model': 'server', total: '0', windowed: '' })
+    // total=0 → windowed 不接管（接管条件 total>0），server 生效：init 请求 1
+    expect(reqs.length, 'server 生效（windowed 未接管）：init 恰 1 次').toBe(1)
+    el.reportRowsError({ requestId: 1, reason: 'init' })
+    expect(errs.length).toBe(1)
+    expect(errorBar(el)!.hasAttribute('hidden'), 'server 失败态就位').toBe(false)
+    // 写 total>0 → windowed 接管（互斥：windowed 优先）→ server 离开生效形态 → 三态复位
+    el.setAttribute('total', '100')
+    expect(errorBar(el)!.hasAttribute('hidden'), 'windowed 接管后错误条消失').toBe(true)
+    // 请求状态已复位：total=0 写回（windowed 不再生效）→ server 重新生效 → init 重发
+    //（签名未清则 rowsRequestPlan 判全同值 no-op，重入 init 被吞 → 永久旧切片）
+    el.setAttribute('total', '0')
+    expect(reqs.length, '复位后切回 server → init 重发').toBe(2)
+    expect(reqs[1]!.reason).toBe('init')
+  })
+
+  /** R13②（N-5ab）：windowed 激活时 reportRowsError no-op——离开生效形态后同序号迟到
+      失败静默丢弃（不得点亮 windowed 页面的 server 错误条）且不烧任何一次性告警 flag */
+  it('R13②：windowed 接管后 reportRowsError no-op（静默、零告警、错误条不亮）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el, errs } = mountR({ 'row-model': 'server', total: '0', windowed: '' })
+    // server 生效（total=0）：init 请求 1 → 宿主写 total>0 → windowed 接管
+    el.setAttribute('total', '100')
+    // 同序号失败在接管后才到：serverRowsActive=false → no-op（零派发 + 零告警 + 错误条不亮）
+    el.reportRowsError({ requestId: 1, reason: 'init' })
+    expect(errs, '互斥形态零派发').toEqual([])
+    expect(errorBar(el)!.hasAttribute('hidden'), '错误条不亮').toBe(true)
+    // 恰 1 次 = windowed 接管的既有互斥告警（a2 组语义）；reportRowsError 的晚到/重复
+    // 告警 flag 不得被静默 no-op 路径误耗（调用后总数不变）
+    expect(warn, 'reportRowsError 零追加告警（互斥接管恰 1 次）').toHaveBeenCalledTimes(1)
+    warn.mockRestore()
   })
 
   // ==================== R5：columnReorderGate 必填契约改可选 ====================
