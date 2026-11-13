@@ -2264,7 +2264,7 @@ const visible = applyQuery(orders, state.query)
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
 | `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
-| `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前在途请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；每个 requestId 只应上报一次失败，同序号重复上报或成功回填后才到的同号失败按幂等静默丢弃（一次性提示）；晚到旧失败静默丢弃并一次性提示序号守卫 |
+| `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前在途请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；每个 requestId 只应上报一次失败，同序号重复上报按幂等静默丢弃（一次性提示）；晚到旧失败静默丢弃并一次性提示序号守卫 |
 | `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`：强制重发当前状态请求（reason='refresh'，绕过同值去重）；`purge: true` 预留清缓存语义，v1 无缓存等价 refresh；client 模式 no-op |
 
 #### 事件
