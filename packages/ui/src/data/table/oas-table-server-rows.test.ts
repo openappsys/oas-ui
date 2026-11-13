@@ -354,3 +354,98 @@ describe('OASTable server 行模型 a4：oas-rows-request 请求协议', () => {
     expect(reqs.length).toBe(0)
   })
 })
+
+describe('OASTable server 行模型 a5：时序规则（页码重置 + 在途新请求）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  interface Req {
+    requestId: number
+    start: number
+    end: number
+    reason: string
+  }
+
+  function mountReq(attrs: Record<string, string>): { el: OASTable; reqs: Req[] } {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', sortable: true },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('data', '[]')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const reqs: Req[] = []
+    el.addEventListener('oas-rows-request', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, start: d.start, end: d.end, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    return { el, reqs }
+  }
+
+  it('排序变更先 current 置 1 再派请求（事件派发时属性已可见；请求区间 = 新口径首页）', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100', current: '3' })
+    // 首载 init 以 current=3 的状态派发（宿主显式页码不受 init 重置）
+    expect(reqs.length).toBe(1)
+    expect(reqs[0]!.start).toBe(20)
+    // 派发瞬间断言 current 属性已是 '1'（先置后派）
+    el.addEventListener('oas-rows-request', () => {
+      if (reqs.length >= 2) expect(el.getAttribute('current')).toBe('1')
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    expect(el.getAttribute('current')).toBe('1')
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]).toEqual({ requestId: 2, start: 0, end: 10, reason: 'sort' })
+  })
+
+  it('过滤变更先 current 置 1 再派请求', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100', current: '2' })
+    expect(reqs.length).toBe(1)
+    el.setAttribute('filter-values', JSON.stringify({ name: '甲' }))
+    expect(el.getAttribute('current')).toBe('1')
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]).toEqual({ requestId: 2, start: 0, end: 10, reason: 'filter' })
+  })
+
+  it('页大小变更先 current 置 1 再派请求（区间按新 pageSize）', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100', current: '3' })
+    expect(reqs.length).toBe(1)
+    el.setAttribute('page-size', '20')
+    expect(el.getAttribute('current')).toBe('1')
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]).toEqual({ requestId: 2, start: 0, end: 20, reason: 'paginate' })
+  })
+
+  it('在途再变更：以最新状态派新请求（requestId 递增），未回填不拦截新请求', () => {
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100' })
+    expect(reqs.length).toBe(1)
+    // 第一请求在途（宿主未回填）→ 再翻页：旧请求作废语义由 requestId 承载（宿主只认最新）
+    el.setAttribute('current', '2')
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]!.requestId).toBe(2)
+    // 在途再排序：新请求以最新排序状态派发（区间仍从首页 0 起——排序已重置页码）
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    expect(reqs.length).toBe(3)
+    expect(reqs[2]!.requestId).toBe(3)
+    expect(reqs[2]!.reason).toBe('sort')
+    expect(reqs[2]!.start).toBe(0)
+    expect(el.getAttribute('current')).toBe('1')
+  })
+
+  it('client 模式排序不重置页码（现状保持：current 仍为 3）', () => {
+    const { el, reqs } = mountReq({ total: '100', pagination: '', current: '3' })
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    expect(el.getAttribute('current')).toBe('3')
+    expect(reqs.length).toBe(0)
+  })
+})
