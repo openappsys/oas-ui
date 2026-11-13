@@ -758,7 +758,7 @@ export class OASKanban extends OASElement {
   private collapsedLanes = new Set<string>()
 
   /** 列折叠状态（列 key 集合；collapsible 关闭时不渲染窄条；数据变化保留，列删除后残留无害） */
-  private collapsedColumns = new Set<string>()
+  private collapsedSet = new Set<string>()
 
   /** 拖拽源卡片 id 集（多选拖拽为全部选中 id；空 = 无进行中卡片拖拽；不依赖 dataTransfer——部分环境 DragEvent 不带） */
   private dragIds: string[] = []
@@ -955,7 +955,7 @@ export class OASKanban extends OASElement {
     const built: Array<{ col: KanbanColumn; cards: KanbanColumnCards; body: HTMLElement }> = []
     for (const col of this._columns) {
       // 列折叠（collapsible 开启时）：折叠列渲染为窄条（纵向列名 + 卡片数），无列体不进虚拟化
-      if (this.collapsibleOn && this.collapsedColumns.has(col.key)) {
+      if (this.collapsibleOn && this.collapsedSet.has(col.key)) {
         board.appendChild(this.buildColumnRail(col))
         continue
       }
@@ -995,7 +995,7 @@ export class OASKanban extends OASElement {
     const collapsedRaw = this.getAttribute('collapsed-columns')
     if (collapsedRaw !== this._collapsedColumnsRaw) {
       this._collapsedColumnsRaw = collapsedRaw
-      this.collapsedColumns = this.parseCollapsedColumnsAttr(collapsedRaw)
+      this.collapsedSet = this.parseCollapsedColumnsAttr(collapsedRaw)
     }
   }
 
@@ -1033,7 +1033,7 @@ export class OASKanban extends OASElement {
     // 工作（echo 短路后若其它通道触发 parse，重复解析内容相等覆盖，无视觉影响）。
     if (name === 'collapsed-columns' && this.hasRendered) {
       const next = this.parseCollapsedColumnsAttr(newValue)
-      if (this.sameCollapsedSet(next, this.collapsedColumns)) return
+      if (this.sameCollapsedSet(next, this.collapsedSet)) return
     }
     super.attributeChangedCallback(name, oldValue, newValue)
   }
@@ -1410,8 +1410,8 @@ export class OASKanban extends OASElement {
    */
   private toggleColumnCollapse(key: string): void {
     if (!this._columns.some((c) => c.key === key)) return
-    const collapsed = !this.collapsedColumns.delete(key)
-    if (collapsed) this.collapsedColumns.add(key)
+    const collapsed = !this.collapsedSet.delete(key)
+    if (collapsed) this.collapsedSet.add(key)
     this.runUpdateAndNotify()
     const active = collapsed
       ? this.shadow.querySelector<HTMLElement>(`.column-rail[data-key="${key}"]`)
