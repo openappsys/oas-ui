@@ -42,10 +42,12 @@ export interface RowsRequestState {
 const sortSig = (sortModel: Array<{ key: string; order: string }>): string =>
   sortModel.map((s) => `${s.key}:${s.order}`).join(',')
 
-/** 过滤组签名（键序敏感：与 filter-values 属性 JSON 序一致） */
+/** 过滤组签名（键排序后签名：宿主以不同键序写 filter-values 属语义同值——框架序列化
+ *  顺序不定，按对象键序签名会误判变化重发请求且页码跳回 1） */
 const filterSig = (filterValues: Record<string, string | number>): string =>
-  Object.entries(filterValues)
-    .map(([k, v]) => `${k}=${v}`)
+  Object.keys(filterValues)
+    .sort()
+    .map((k) => `${k}=${filterValues[k]}`)
     .join(',')
 
 /** 请求签名（同值去重键）：current+pageSize+排序组+过滤组 */

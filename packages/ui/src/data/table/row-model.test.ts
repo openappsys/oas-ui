@@ -68,6 +68,23 @@ describe('rowsRequestPlan（请求原因推导）', () => {
     expect(rowsRequestPlan(state({ filterValues: { a: '1' } }), state()).reason).toBe('filter')
   })
 
+  it('F10：filter-values 键序不同但语义同值 → 不视为变化（键排序后签名）', () => {
+    // 宿主以不同键序写 filter-values（框架序列化顺序不定）属语义同值：不重发、页码不重置
+    expect(rowsRequestPlan(state({ filterValues: { a: 1, b: 2 } }), state({ filterValues: { b: 2, a: 1 } }))).toEqual({
+      reason: null,
+      resetPage: false,
+    })
+    // 三键乱序同样同值
+    expect(
+      rowsRequestPlan(state({ filterValues: { a: 1, b: 2, c: 3 } }), state({ filterValues: { c: 3, a: 1, b: 2 } }))
+        .reason,
+    ).toBeNull()
+    // 键序不同且值确实不同 → 仍视为 filter 变化
+    expect(
+      rowsRequestPlan(state({ filterValues: { a: 1, b: 2 } }), state({ filterValues: { b: 9, a: 1 } })).reason,
+    ).toBe('filter')
+  })
+
   it('页大小变化 → paginate + 重置页码', () => {
     expect(rowsRequestPlan(state({ current: 3, pageSize: 10 }), state({ current: 3, pageSize: 20 }))).toEqual({
       reason: 'paginate',

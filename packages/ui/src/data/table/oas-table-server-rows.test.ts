@@ -1263,6 +1263,29 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     warn.mockRestore()
   })
 
+  /** F10 集成层回归：不同键序写 filter-values（语义同值）不重发请求、页码不跳回 1 */
+  it('F10：同值不同键序写 filter-values → 零重发、页码保持', () => {
+    const { el, reqs } = mountReq({
+      'row-model': 'server',
+      total: '20',
+      pagination: '',
+      'filter-values': JSON.stringify({ a: 1, b: 2 }),
+    })
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(reqs.length).toBe(1)
+    el.setAttribute('current', '2')
+    expect(reqs.length).toBe(2)
+    // 同值不同键序（框架序列化顺序不定）：语义同值 → 不重发
+    el.setAttribute('filter-values', JSON.stringify({ b: 2, a: 1 }))
+    expect(reqs.length, '语义同值不重发').toBe(2)
+    expect(el.getAttribute('current'), '页码不被重置回 1').toBe('2')
+    // 值真实变化 → filter 重发 + 页码重置
+    el.setAttribute('filter-values', JSON.stringify({ b: 9, a: 1 }))
+    expect(reqs.length).toBe(3)
+    expect(reqs[2]!.reason).toBe('filter')
+    expect(el.getAttribute('current')).toBe('1')
+  })
+
   /** F6 回归：重试按钮匿名监听不随 bind 幂等——onReconnect（断连重连）重跑 bind 后
       监听线性叠加，单击重试触发多次 refreshRows（重复请求风暴） */
   it('F6：断连重连后单击重试只派 1 次 refresh 请求（监听不叠加）', () => {
