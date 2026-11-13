@@ -106,3 +106,94 @@ describe('OASTable server 行模型 a2：row-model 属性', () => {
     warn.mockRestore()
   })
 })
+
+describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝位）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const DATA_ABC = JSON.stringify([
+    { name: '甲', age: 3 },
+    { name: '乙', age: 2 },
+    { name: '丙', age: 1 },
+  ])
+
+  it('server：filter-values 在场不执行本地过滤（data 原样渲染；client 对照过滤生效）', () => {
+    const server = mount({
+      'row-model': 'server',
+      total: '100',
+      data: DATA_ABC,
+      'filter-values': JSON.stringify({ name: '甲' }),
+    })
+    expect(rowsOf(server).length).toBe(3)
+    document.body.innerHTML = ''
+    const client = mount({ total: '100', data: DATA_ABC, 'filter-values': JSON.stringify({ name: '甲' }) })
+    expect(rowsOf(client).length).toBe(1)
+    expect(rowsOf(client)[0]!.textContent).toContain('甲')
+  })
+
+  it('server：sort-key/sort-order 在场不执行本地排序（data 原样渲染；client 对照排序生效）', () => {
+    const server = mount({
+      'row-model': 'server',
+      total: '100',
+      data: DATA_ABC,
+      'sort-key': 'age',
+      'sort-order': 'asc',
+      columns: JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    })
+    // data 原样：甲(3) 乙(2) 丙(1)——本地排序会把它变成 丙(1) 乙(2) 甲(3)
+    expect(rowsOf(server).length).toBe(3)
+    expect(rowsOf(server)[0]!.textContent).toContain('甲')
+    expect(rowsOf(server)[2]!.textContent).toContain('丙')
+    document.body.innerHTML = ''
+    const client = mount({
+      total: '100',
+      data: DATA_ABC,
+      'sort-key': 'age',
+      'sort-order': 'asc',
+      columns: JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    })
+    expect(rowsOf(client)[0]!.textContent).toContain('丙')
+    expect(rowsOf(client)[2]!.textContent).toContain('甲')
+  })
+
+  it('server：分页器口径保留（current 越界钳制写回 + total 直通分页器）', () => {
+    const server = mount({ 'row-model': 'server', total: '10', data: DATA_ABC, pagination: '', current: '99' })
+    // 越界钳制仍生效（宿主切片口径的既有行为）：current 99 → 钳到 1
+    expect(server.getAttribute('current')).toBe('1')
+    expect(rowsOf(server).length).toBe(3)
+    const pager = server.shadowRoot!.querySelector('.pagination oas-pagination')
+    expect(pager).not.toBeNull()
+    expect(pager!.getAttribute('total')).toBe('10')
+  })
+
+  it('server：交互排序只派 oas-sort-change，不改行序（服务端排序由宿主回填）', () => {
+    const el = mount({
+      'row-model': 'server',
+      total: '100',
+      data: DATA_ABC,
+      columns: JSON.stringify([
+        { key: 'name', title: '名称', sortable: true },
+        { key: 'age', title: '年龄' },
+      ]),
+    })
+    let detail: unknown
+    el.addEventListener('oas-sort-change', (e) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    expect(detail).toEqual({ key: 'name', order: 'asc' })
+    // 行序不变（本地排序已跳过；宿主监听事件服务端排序后回填 data）
+    expect(rowsOf(el)[0]!.textContent).toContain('甲')
+  })
+})

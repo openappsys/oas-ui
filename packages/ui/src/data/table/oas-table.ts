@@ -2375,7 +2375,7 @@ export class OASTableBase extends OASElement {
     // 直取 this._data，过滤行复活、分页失效，交叉审运行时复现）
     const { roots, fullRoots, current, pageSize, total, paginationOn } = this.computeDisplayRoots()
 
-    const sorts = this.windowedOn() ? [] : this.resolveSorts()
+    const sorts = this.renderSorts()
     // 分组视图：group-by 在场且无互斥形态时生效（判定统一走 groupByEffective，
     // 与虚拟滚动重建路径同源，防孪生路径漂移）；windowed 下分组不本地执行（groupByEffective 返回 ''）
     const groupBy = this.windowedOn() ? '' : this.groupByEffective()
@@ -2771,14 +2771,16 @@ export class OASTableBase extends OASElement {
     total: number
     paginationOn: boolean
   } {
+    // server 行模型判定：windowed 在场时也必须先跑一次（互斥告警在此出口；生效分支见下）
+    const serverRows = this.getAttr('row-model', '') === 'server' ? this.serverOn() : false
     // windowed：data 即宿主切好的绝对行窗口切片——本地过滤/排序/分页切片一律不执行
-    // server 行模型前提/互斥告警探测（生效行为由 a3/a4 缝位接管；client 路径在此零变化）
-    if (this.getAttr('row-model', '') === 'server') this.serverOn()
     if (this.windowedOn()) return this.computeDisplayRootsWindowed()
-    // 过滤：按 filter-values 过滤顶层行（在排序/分页之前，保证分页页数反映过滤后数据）
+    // 过滤：按 filter-values 过滤顶层行（在排序/分页之前，保证分页页数反映过滤后数据）。
+    // server 行模型「全有或全无」：本地过滤/排序整体跳过（服务端已按当前排序/过滤条件
+    // 返回当前页切片，data 原样展示）——不提供逐段混用配置（「只排当前页」是错误语义）
     const filterValues = this.parseFilterValues()
     let roots = this._data
-    if (Object.keys(filterValues).length > 0) {
+    if (!serverRows && Object.keys(filterValues).length > 0) {
       roots = roots.filter((row) => this.matchesFilters(row, filterValues))
     }
     // 分页切片前的完整筛选+排序集合（summary-scope=all 时合计基于此）
@@ -2796,17 +2798,25 @@ export class OASTableBase extends OASElement {
         current = pageCount
         this.setAttribute('current', String(current))
       }
-      const sorted = [...roots]
-      const sorts = this.resolveSorts()
-      if (sorts.length > 0) {
-        const tm = this.columnTypeMap()
-        sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
-      }
-      // 内部切片模式：全局排序后取当前页；外部总数模式：宿主已切片，只排序不再切片
+      // 内部切片模式：全局排序后取当前页；外部总数模式：宿主已切片，只排序不再切片。
+      // server 行模型（前提即 externalTotal 在场）：排序也由服务端负责——data 原样透传；
+      // client 路径（externalTotal 在场但未开 server）保持现状：本地排序仍作用于当前页切片
       if (externalTotal === null) {
+        const sorted = [...roots]
+        const sorts = this.resolveSorts()
+        if (sorts.length > 0) {
+          const tm = this.columnTypeMap()
+          sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
+        }
         const start = (current - 1) * pageSize
         roots = sorted.slice(start, start + pageSize)
-      } else {
+      } else if (!serverRows) {
+        const sorted = [...roots]
+        const sorts = this.resolveSorts()
+        if (sorts.length > 0) {
+          const tm = this.columnTypeMap()
+          sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
+        }
         roots = sorted
       }
     }
@@ -5222,6 +5232,15 @@ export class OASTableBase extends OASElement {
     return true
   }
 
+  /**
+   * 渲染管线的排序输入（update 全量 / 滚动帧共用）：windowed 与 server 行模型不执行
+   * 本地排序（排序职责在服务端，data 已按当前排序条件就绪），恒空数组——
+   * 排序状态本身（sort-key/sort-order/multi-sort）仍是受控属性，表头指示器照常显示。
+   */
+  private renderSorts(): SortState[] {
+    return this.windowedOn() || this.serverOn() ? [] : this.resolveSorts()
+  }
+
   /** column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / 固定列布局不符 → 告警一次并降级为普通渲染） */
   private columnVirtualOn(): boolean {
     if (!this.hasAttr('column-virtual')) return false
@@ -5575,7 +5594,7 @@ export class OASTableBase extends OASElement {
       // I6：展示集（visibleFlat + 序号前缀 + 行数）按签名缓存复用，滚动帧只做窗口切片，
       // 不再每帧重跑 O(总量) 的过滤切片 / 可见性过滤 / 序号扫描（visibleBuilds 诊断锁定）
       const groupBy = this.groupByEffective()
-      const vis = this.displayWithCache(this.resolveSorts(), rowKey, groupBy, expanded)
+      const vis = this.displayWithCache(this.renderSorts(), rowKey, groupBy, expanded)
       let display = vis.display
       this._logicalRowCount = vis.logicalRows
       if (this.windowedOn()) {
