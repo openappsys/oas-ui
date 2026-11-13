@@ -11,6 +11,12 @@
  * 激活 server 行模型；options.total 在场即挂载前写入 `total`（生效前提——server
  * 生效要求 total 属性在场，未提供且宿主未自设时组件按 client 行为执行并一次性 devWarn）。
  *
+ * 首屏时序：创建时会主动发起一次刷新取首屏——静态 HTML 标签（先于脚本在场）升级瞬间
+ * init 请求已派发、helper 监听未就绪会丢，创建时 refreshRows 兜底保证取数；init 已被
+ * 接住（动态 createElement + append 后创建）时不重复刷新；元素已预填 data（宿主 SSR/
+ * 预填场景）时不主动刷，首屏数据由宿主负责，后续翻页/排序/过滤仍由 helper 接管。
+ * 另外要求元素已连接（已挂载）：请先 append 再创建。
+ *
  * 缓存 TTL 位（预留，v1 未实现）：未来在 options 预留 cache / ttl 选项，
  * 缓存键 = 完整查询（页码 + 页大小 + 排序组 + 过滤组，对齐组件请求签名口径）；
  * 当前接口不暴露任何缓存选项，v1 仅当前请求。
@@ -63,6 +69,9 @@ type ServerRowsHost = HTMLElement & {
 export function createServerSource(table: HTMLElement, options: ServerSourceOptions): ServerSource {
   if (!table.shadowRoot) {
     throw new Error('[oas-table] createServerSource 需要已升级的 oas-table 元素（请先 import 表格入口）')
+  }
+  if (table.isConnected === false) {
+    throw new Error('[oas-table] createServerSource 需要已连接（已挂载）的 oas-table 元素（请先 append 再创建）')
   }
   let destroyed = false
   /** 组件最新在途请求序号（事件 detail 权威记录；-1 = 尚未见过任何请求） */
@@ -119,6 +128,18 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
   // 组件的前提延后复核（queueMicrotask）静默，不落「缺 total」误报告警
   if (options.total != null) table.setAttribute('total', String(options.total))
   table.setAttribute('row-model', 'server')
+  // 首载兜底：静态 HTML 标签场景（<oas-table row-model="server" ...> 先于脚本在场）元素升级
+  // 瞬间 init 请求已同步派发、helper 监听尚未挂上 → 事件丢失；此后 helper 的 row-model/total
+  // 同值写入不再触发组件请求（attributeChangedCallback 同值静默）——不兜底则 fetchRows 永不
+  // 执行、data 永空。兜底走 refreshRows（reason=refresh 绕过同值去重签名）保证取数。
+  // 两个前提收窄触发面：
+  // - latestRequestId 仍为 -1（init 未被上方监听接住）：动态路径（createElement + append 后创建）
+  //   的 init 已被接住，不重复刷新（避免同一首屏双请求、第一笔被 abort 的浪费）；
+  // - 无预填 data：宿主 SSR/预填场景首屏数据已就位，尊重预填不覆盖（此时首屏取数由宿主负责，
+  //   后续翻页/排序/过滤仍由 helper 接管）。
+  if (latestRequestId === -1 && !table.hasAttribute('data')) {
+    ;(table as ServerRowsHost).refreshRows()
+  }
 
   return {
     refresh() {

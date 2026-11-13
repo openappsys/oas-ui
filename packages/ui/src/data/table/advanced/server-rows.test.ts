@@ -34,6 +34,46 @@ describe('createServerSource', () => {
     )
   })
 
+  it('未连接元素抛错（须先 append 再创建）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    expect(() => createServerSource(el, { fetchRows: async () => [] })).toThrow(/需要已连接（已挂载）/)
+  })
+
+  it('静态标签首载兜底：升级先于 helper（init 丢失）→ 创建时主动 refreshRows 取首屏并回填 data', async () => {
+    // 真实浏览器时序陷阱：静态 HTML 标签在脚本执行前已升级，init 请求同步派发时 helper
+    // 监听尚未挂上 → 事件丢失；helper 后续 row-model/total 同值写入不再触发组件请求。
+    // 创建时兜底 refreshRows（reason=refresh 绕过同值去重）保证取数。
+    document.body.innerHTML =
+      '<oas-table row-model="server" total="10" columns=\'[{"key":"name","title":"名称"}]\'></oas-table>'
+    const el = document.querySelector<OASTable>('oas-table')!
+    const fetchRows = vi.fn(async ({ end }: ServerRowsRequest) => ({
+      rows: Array.from({ length: end }, (_, i) => ({ name: `行${i}` })),
+      total: 10,
+    }))
+    const source = createServerSource(el, { fetchRows })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    expect(fetchRows.mock.calls[0]![0]).toMatchObject({ reason: 'refresh', start: 0, end: 10 })
+    await vi.waitFor(() => expect(el.data).toHaveLength(10))
+    expect((el.data[0] as { name: string }).name).toBe('行0')
+    source.destroy()
+  })
+
+  it('预填 data（SSR 预填）：创建时不兜底刷新（首屏由宿主负责），后续状态变更照常接管', async () => {
+    document.body.innerHTML =
+      '<oas-table row-model="server" total="10" columns=\'[{"key":"name","title":"名称"}]\' data=\'[{"name":"预填行"}]\'></oas-table>'
+    const el = document.querySelector<OASTable>('oas-table')!
+    const fetchRows = vi.fn(async (_request: ServerRowsRequest) => ({ rows: [{ name: '服务端行' }], total: 10 }))
+    const source = createServerSource(el, { fetchRows })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(fetchRows, '预填在场：不主动刷新').not.toHaveBeenCalled()
+    expect((el.data[0] as { name: string }).name).toBe('预填行')
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    expect(fetchRows.mock.calls[0]![0]).toMatchObject({ reason: 'paginate', start: 10, end: 20 })
+    source.destroy()
+  })
+
   it('首载：init 请求派发 → fetchRows 收到 detail 全字段（含 signal）→ 回填 data/total', async () => {
     const el = mount()
     const fetchRows = vi.fn(async ({ start, end }: ServerRowsRequest) => ({

@@ -629,13 +629,13 @@ table.addEventListener('oas-expand', async (e) => {
 ></oas-table>
 ```
 
-宿主侧用 `createServerSource` 接管取数（协议监听、requestId 校验、abort 在途、失败上报全部内建；import 自 `@oas-ui/ui/data/table/advanced`，纯宿主侧 helper，不新增组件 API）：
+宿主侧用 `createServerSource` 接管取数（协议监听、requestId 校验、abort 在途、失败上报全部内建；import 自 `@oas-ui/ui/data/table/advanced`，纯宿主侧 helper，不新增组件 API）。要求元素已连接（先 append 再创建）；创建时主动发起一次首屏刷新兜底——静态标签升级瞬间的 init 请求早于脚本执行、helper 监听未就绪会丢（动态创建 init 已被接住、或元素已预填 data 的 SSR 场景不重复刷新，首屏由宿主负责）：
 
 ```ts
 import { createServerSource } from '@oas-ui/ui/data/table/advanced'
 
 const source = createServerSource(table, {
-  // 挂载前写入 total（server 生效前提；省略时须自行保证 total 属性在场）
+  // 创建时先写入 total（server 激活前生效前提已在场；省略时须自行保证 total 属性在场）
   total: 1000,
   fetchRows: async ({ requestId, start, end, sortModel, filterValues, reason, signal }) => {
     // requestId：组件内单调递增，可透传服务端做 trace 关联

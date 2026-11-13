@@ -629,13 +629,13 @@ Three pieces on the component: `row-model="server"` (enable) + `total` (activati
 ></oas-table>
 ```
 
-On the host, use `createServerSource` to take over fetching (protocol listening, requestId validation, aborting in-flight requests, and failure reporting are all built in; imported from `@oas-ui/ui/data/table/advanced` — a pure host-side helper that adds no component API):
+On the host, use `createServerSource` to take over fetching (protocol listening, requestId validation, aborting in-flight requests, and failure reporting are all built in; imported from `@oas-ui/ui/data/table/advanced` — a pure host-side helper that adds no component API). The element must be connected (append before creating). On creation the helper proactively issues one refresh to fetch the first page — with static markup the element upgrades before the script runs, so the init request fires before any listener exists (dynamic creation where init was already caught, or elements prefilled with data for SSR, are not refreshed again — the first page is the host's responsibility there):
 
 ```ts
 import { createServerSource } from '@oas-ui/ui/data/table/advanced'
 
 const source = createServerSource(table, {
-  // Writes total before mount (server activation premise; if omitted the host must set the attribute itself)
+  // Writes total up front, before server mode activates (activation premise; if omitted the host must set the attribute itself)
   total: 1000,
   fetchRows: async ({ requestId, start, end, sortModel, filterValues, reason, signal }) => {
     // requestId: monotonically increasing inside the component; can be forwarded to the server for trace correlation
