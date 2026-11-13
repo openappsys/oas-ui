@@ -2567,8 +2567,6 @@ export class OASTableBase extends OASElement {
     if (!head || !body) return
     // D8 导出工具栏（与行数据无关，loading/empty 也要在场）
     this.renderToolbar()
-    // server 行模型失败条同步（所有渲染出口都要在场：loading/empty/常规路径）
-    this.syncRowsErrorBar()
     // D15 行拖拽与虚拟滚动不兼容：虚拟模式仅渲染窗口行，静默降级并 dev 告警一次
     if (this.hasAttr('row-draggable') && this.isVirtual()) warnRowDragVirtual()
 
@@ -2718,6 +2716,11 @@ export class OASTableBase extends OASElement {
     // setAttribute('current','1') 会同步驱动一次嵌套 update，由嵌套这次以新口径派发请求——
     // 若在此调用点之前新增任何早退 return，嵌套重入链断裂，server 请求会被静默丢弃（改动需复核）
     this.syncServerRows()
+    // server 行模型失败条同步：必须在 syncServerRows 之后——同一次更新内新派发的请求会
+    // 清掉 serverError（翻页/排序/过滤新请求在途），挪序前错误条要等下一次渲染才隐藏
+    //（实测：失败态翻页短暂「错误条 + loading 行」共存一帧）。所有渲染出口都覆盖：
+    // loading/empty 早退分支（本方法之后）与常规路径都经过此处
+    this.syncRowsErrorBar()
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
     const tableEl = this.shadow.querySelector('table')
