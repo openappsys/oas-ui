@@ -30,6 +30,12 @@ function mount(attrs: Record<string, string>): OASTable {
 
 const rowsOf = (el: OASTable): HTMLElement[] => [...el.shadowRoot!.querySelectorAll('[part="row"]')] as HTMLElement[]
 
+/** 等待微任务队列清空（server 前提告警复核在 queueMicrotask 回调中落定） */
+const flushMicrotask = async (): Promise<void> => {
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
 describe('OASTable server 行模型 a2：row-model 属性', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -41,7 +47,7 @@ describe('OASTable server 行模型 a2：row-model 属性', () => {
     setLocale('zh-CN')
   })
 
-  it('row-model="server" 缺 total：devWarn 一次 + 按 client 行为（本地排序照常执行）', () => {
+  it('row-model="server" 缺 total：devWarn 一次 + 按 client 行为（本地排序照常执行）', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({
       'row-model': 'server',
@@ -50,6 +56,8 @@ describe('OASTable server 行模型 a2：row-model 属性', () => {
         { name: '甲', age: 1 },
       ]),
     })
+    // 前提告警经微任务复核后落一次（F7：延后判定规避逐 prop 赋值瞬时空窗误报）
+    await flushMicrotask()
     expect(warn).toHaveBeenCalledTimes(1)
     expect(String(warn.mock.calls[0]![0])).toContain('row-model')
     // 同实例再渲染不重复告警（一次）
@@ -60,6 +68,7 @@ describe('OASTable server 行模型 a2：row-model 属性', () => {
         { name: '乙', age: 2 },
       ]),
     )
+    await flushMicrotask()
     expect(warn).toHaveBeenCalledTimes(1)
     warn.mockRestore()
     // client 行为：点击表头本地排序照常生效（码点序 丙(0x4E19) < 乙(0x4E59)，asc 首行 = 丙）
@@ -1213,6 +1222,44 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.reportRowsError({ requestId: 999 })
     expect(errs.length).toBe(0)
     expect(warn, '同实例去重：第二次不重复告警').toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+
+  /** F7 回归：前提告警延后到微任务复核（框架宿主逐 prop 赋值必出现「先 row-model 后
+      total」的同 tick 两写，同步判定曾立即误报「前提不满足」） */
+  it('F7①：已连接后先写 row-model 再写 total（同 tick 两写）→ 零误报且 server 正常生效', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const reqs: { requestId: number; reason: string }[] = []
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    // 框架宿主逐 prop 赋值形态：先 row-model（此刻 total 未到，渲染按 client 行为）
+    el.setAttribute('row-model', 'server')
+    // 同 tick 补 total
+    el.setAttribute('total', '10')
+    // 微任务合并窗口后：前提已满足 → 不告警；server 生效派 init
+    await flushMicrotask()
+    expect(warn, '逐 prop 赋值的临时前提空窗不误报').not.toHaveBeenCalled()
+    expect(reqs.length).toBe(1)
+    expect(reqs[0]!.reason).toBe('init')
+    warn.mockRestore()
+  })
+
+  it('F7②：确实缺 total → 微任务复核后仍告警恰一次', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    el.setAttribute('row-model', 'server')
+    document.body.appendChild(el)
+    await flushMicrotask()
+    expect(warn, '持续缺前提仍告警一次').toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('total')
     warn.mockRestore()
   })
 

@@ -5449,10 +5449,35 @@ export class OASTableBase extends OASElement {
     return this.getAttr('row-model', '') === 'server' && !this.windowedOn() && this.externalTotal() !== null
   }
 
+  /** 前提复核微任务窗口 flag（同一 tick 多次 serverOn 判定合并为一次复核） */
+  private serverPremiseCheckQueued = false
+
+  /**
+   * 前提告警延后复核（queueMicrotask 合并窗口）：框架宿主逐 prop 赋值（先 row-model 后
+   * total 的同 tick 两写）会制造「瞬时前提空窗」——同步判定立即告警属误报。渲染路径的
+   * 同步生效判定（serverOn 返回 false、按 client 行为执行）不动，仅告警延后：微任务时
+   * 前提已满足则静默；仍不满足才落一次性告警（serverPremiseWarned「每实例最多一次」
+   * 语义不变）。
+   */
+  private scheduleServerPremiseCheck(): void {
+    if (this.serverPremiseCheckQueued) return
+    this.serverPremiseCheckQueued = true
+    queueMicrotask(() => {
+      this.serverPremiseCheckQueued = false
+      if (this.serverPremiseWarned) return
+      if (this.getAttr('row-model', '') !== 'server') return
+      if (this.windowedOn()) return
+      if (this.externalTotal() !== null) return
+      this.serverPremiseWarned = true
+      devWarn(SERVER_PREMISE_HINT)
+    })
+  }
+
   /**
    * server 行模型是否生效（判定点内联前提/互斥告警，同 columnVirtualOn 的先例）：
    * - `row-model="server"` 且 `total` 属性在场（外部分页形态）才生效；
-   * - 前提不满足 → devWarn 一次 + 按 client 行为执行（返回 false，零行为变化）；
+   * - 前提不满足 → 按 client 行为执行（返回 false，零行为变化）；告警经微任务复核后
+   *   落一次（延后判定规避框架宿主逐 prop 赋值的瞬时前提空窗误报，见 scheduleServerPremiseCheck）；
    * - 与 windowed 同开 → windowed 优先（返回 false）+ 互斥 devWarn 一次。
    * 告警为实例级去重一次（devWarn 属 dev-only 通道，不可作运行时契约依赖）。
    */
@@ -5466,10 +5491,8 @@ export class OASTableBase extends OASElement {
       return false
     }
     if (this.externalTotal() === null) {
-      if (!this.serverPremiseWarned) {
-        this.serverPremiseWarned = true
-        devWarn(SERVER_PREMISE_HINT)
-      }
+      // 告警延后到微任务复核（同 tick 内宿主可能补写 total；判定本身同步返回 false 不变）
+      this.scheduleServerPremiseCheck()
       return false
     }
     return true
