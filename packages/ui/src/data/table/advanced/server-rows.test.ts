@@ -194,4 +194,64 @@ describe('createServerSource', () => {
     expect(errs).toHaveLength(1)
     source.destroy()
   })
+
+  it('refresh → refreshRows → reason=refresh；destroy 后 refresh no-op', async () => {
+    const el = mount()
+    const fetchRows = vi.fn(async ({ end }: ServerRowsRequest) => ({
+      rows: Array.from({ length: end }, (_, i) => ({ name: `行${i}` })),
+      total: 100,
+    }))
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    source.refresh()
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
+    expect(fetchRows.mock.calls[1]![0]).toMatchObject({ requestId: 2, reason: 'refresh', start: 0, end: 10 })
+    source.destroy()
+    source.refresh()
+    expect(fetchRows, 'destroy 后 refresh 静默 no-op').toHaveBeenCalledTimes(2)
+  })
+
+  it('destroy：解绑后属性变更不再触发 fetchRows；在途 abort；迟到结果不写回', async () => {
+    const el = mount()
+    const signals: AbortSignal[] = []
+    const resolvers: Array<() => void> = []
+    const fetchRows = vi.fn(({ signal }: ServerRowsRequest) => {
+      signals.push(signal)
+      return new Promise<never>((resolve) => {
+        resolvers.push(resolve as () => void)
+      })
+    })
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    source.destroy()
+    expect(signals[0]!.aborted, 'destroy 即中止在途').toBe(true)
+    // 组件侧仍会派发请求（组件未解绑），helper 已解绑：不再触发 fetchRows
+    const before = fetchRows.mock.calls.length
+    el.setAttribute('current', '2')
+    expect(fetchRows).toHaveBeenCalledTimes(before)
+    // 迟到结果不写回（不动宿主属性）
+    resolvers[0]!()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(el.data).toEqual([])
+  })
+
+  it('destroy 后迟到失败不桥接 reportRowsError（零错误条、零事件）', async () => {
+    const el = mount()
+    const errs: CustomEvent[] = []
+    el.addEventListener('oas-rows-error', (e) => errs.push(e as CustomEvent))
+    const rejects: Array<(reason: unknown) => void> = []
+    const fetchRows = vi.fn(
+      () =>
+        new Promise<never>((_, reject) => {
+          rejects.push(reject)
+        }),
+    )
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(rejects).toHaveLength(1))
+    source.destroy()
+    rejects[0]!(new Error('late'))
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(errs).toHaveLength(0)
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
+  })
 })

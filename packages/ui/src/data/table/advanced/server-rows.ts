@@ -48,8 +48,9 @@ export interface ServerSource {
   destroy(): void
 }
 
-/** helper 回写通道只依赖两个宿主面：属性写（HTMLElement 原生）与 reportRowsError 失败桥接 */
+/** helper 回写通道只依赖三个宿主面：属性写（HTMLElement 原生）、refreshRows 强刷与 reportRowsError 失败桥接 */
 type ServerRowsHost = HTMLElement & {
+  refreshRows(options?: { purge?: boolean }): void
   reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void
 }
 
@@ -120,7 +121,17 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
   table.setAttribute('row-model', 'server')
 
   return {
-    refresh() {},
-    destroy() {},
+    refresh() {
+      // 强刷走组件公开通道：reason='refresh' 绕过同值去重，经 onRequest 走同一取数循环
+      if (destroyed) return
+      ;(table as ServerRowsHost).refreshRows()
+    },
+    destroy() {
+      destroyed = true
+      controller?.abort()
+      controller = null
+      table.removeEventListener('oas-rows-request', onRequest)
+      // 不动宿主属性：row-model / total 归宿主管辖，destroy 只摘除 helper 自身接线
+    },
   }
 }
