@@ -950,3 +950,34 @@ describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
     expect(reqs.length).toBe(0)
   })
 })
+
+describe('OASTable server 行模型修复批（交叉审回归）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** shadow 内 style 文本（scoped CSS 随模板注入，真实渲染路径产物） */
+  const styleTextOf = (el: OASTable): string => el.shadowRoot!.querySelector('style')?.textContent ?? ''
+
+  /** F1 回归：重试按钮 hover 文字用 text-on-danger 实底反色 token（原 danger-text 在
+      dark 主题与底色同值、light 近同值——hover 即文字不可读）。happy-dom 测不了真
+      hover，此处断言样式源规则；视觉层由 qa-regression/table-server.spec.ts 覆盖 */
+  it('F1：.rows-error-retry:hover 文字色走 --oas-color-text-on-danger（不再用 danger-text）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', '[]')
+    document.body.appendChild(el)
+    const hover = styleTextOf(el).match(/\.rows-error-retry:hover\s*\{[^}]*\}/)
+    expect(hover, 'hover 规则存在于注入样式').not.toBeNull()
+    expect(hover![0]).toContain('var(--oas-color-text-on-danger)')
+    expect(hover![0]).not.toContain('danger-text')
+  })
+})

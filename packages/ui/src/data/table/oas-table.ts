@@ -1071,7 +1071,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   cursor: pointer;
 }
 .rows-error-retry:hover {
-  color: var(--oas-color-danger-text, #fff);
+  color: var(--oas-color-text-on-danger);
   background: var(--oas-color-danger);
 }
 .rows-error-retry:focus-visible {
