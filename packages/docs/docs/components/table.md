@@ -609,6 +609,85 @@ table.addEventListener('oas-expand', async (e) => {
 
 > 完整宿主取数配方（分段、取消在途、按 id 合并、原子回填）与可运行示例见 [服务端窗口取数](/guide/windowed-data)。
 
+## 服务端行模型（row-model="server"）
+
+> 排序/过滤责任移交服务端的取数模式（企业数据集 10 万+ 行场景）：`data` 为宿主回填的当前页切片，本地过滤/排序变换**整体跳过**（全有或全无——「只排当前页」是错误语义，组件不提供逐段混用配置）。**生效前提 = `total` 属性在场**（外部分页形态），前提不满足时回落 client 行为并 devWarn 一次；与 `windowed` 同开时 **windowed 优先**（`row-model` 被忽略）并 devWarn 一次——两协议互斥，请二选一。
+
+### 模式配方（最小可用）
+
+组件侧三件：`row-model="server"`（开启）+ `total`（生效前提，随响应回写总行数）+ `pagination`（内置分页条，翻页即重请求）：
+
+```html
+<oas-table
+  id="orders-table"
+  row-model="server"
+  total="0"
+  pagination
+  page-size="10"
+  row-key="id"
+  columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"名称"},{"key":"amount","title":"金额","sortable":true}]'
+></oas-table>
+```
+
+宿主侧用 `createServerSource` 接管取数（协议监听、requestId 校验、abort 在途、失败上报全部内建；import 自 `@oas-ui/ui/data/table/advanced`，纯宿主侧 helper，不新增组件 API）：
+
+```ts
+import { createServerSource } from '@oas-ui/ui/data/table/advanced'
+
+const source = createServerSource(table, {
+  // 挂载前写入 total（server 生效前提；省略时须自行保证 total 属性在场）
+  total: 1000,
+  fetchRows: async ({ requestId, start, end, sortModel, filterValues, reason, signal }) => {
+    // requestId：组件内单调递增，可透传服务端做 trace 关联
+    // start / end：当前页半开区间 (current-1)*pageSize ~ current*pageSize
+    // sortModel / filterValues：服务端排序/过滤条件（沿用 sort-key / filter-values 词汇）
+    // signal：同表新请求派发或 destroy 时中止——取数实现应尽早响应中止
+    const res = await api.listOrders({ start, end, sort: sortModel, filter: filterValues, signal })
+    // 返回 { rows, total } 时 helper 自动同步 total 属性；返回裸数组则要求 total 属性已在场
+    return { rows: res.list, total: res.total }
+  },
+})
+// source.refresh()：强刷当前页（reason='refresh'，绕过同值去重）
+// source.destroy()：解绑监听并中止在途（不动 row-model / total 属性）
+```
+
+请求触发时机：挂载首载、翻页/改页大小、排序变更、过滤变更、`refreshRows()`（`reason` 分别为 `init` / `paginate` / `sort` / `filter` / `refresh`；排序/过滤/页大小变更自动重置 `current=1` 再请求——用户看到新口径首页，而非「新排序的第 N 页」）。请求在途时组件内建 loading 行；`fetchRows` 失败时 helper 经 `reportRowsError` 桥接内建失败通道——**保留旧数据 + 派发 `oas-rows-error` + 显示错误条**（`role="alert"`，重试按钮调 `refreshRows()`），宿主无需自建失败反馈。协议细节（requestId 去重、同值不重发、竞态规则）见下方 API 表的 `row-model` / `oas-rows-request` / `reportRowsError` 条目。
+
+### 服务端数据方案选用决策表
+
+四套方案按「谁持有全量、谁管排序/过滤」选择，不要逐段混用：
+
+| 方案 | 适用场景 | 谁管排序/过滤 | 竞态守卫 | 错误反馈 | 推荐度 |
+| --- | --- | --- | --- | --- | --- |
+| 外部分页 `total`（宿主自管取数） | 纯分页浏览，排序/过滤在前端完成或不需要 | 宿主（监听 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 自行处理） | 宿主自建（序号/快照） | 宿主自建 | 轻量：服务端只做切片时够用 |
+| `row-model="server"` | 排序/过滤在服务端的企业数据集，需要内建 loading / 错误条 / 重试 | 服务端（本地变换整体跳过，请求携带 sortModel / filterValues） | 内建（requestId 单调递增 + helper 回写校验） | 内建（错误条 + `oas-rows-error` + 重试按钮） | 服务端排序/过滤场景首选 |
+| windowed（服务端行窗口） | 十万行级**滚动**场景：宿主只喂可视窗口切片，免翻页 | 宿主（组件跳过本地执行并 devWarn） | `createWindowedSource` 内建（中止过期在途 + 覆盖判定） | helper 派发 `oas-window-error`，组件无内建错误条 | 滚动虚拟化场景首选 |
+| 宿主自管事件监听 | 深度定制取数链路（自建缓存/合并/SSE 推送），或上述形态覆盖不了的组合 | 宿主完全自管 | 宿主自建 | 宿主自建 | 自由度最大、成本最高 |
+
+互斥与前提规则：`row-model="server"` 与 `windowed` 同开时 **windowed 优先**（server 被忽略）+ 一次性 devWarn；server 生效前提 = `total` 属性在场（缺失回落 client + 一次性 devWarn）；「逐段混用（只排当前页）」是错误语义，组件不提供该配置——排序/过滤要么全在服务端（server 模式），要么全在本地/宿主。
+
+### 能力闸门（server 模式逐项声明）
+
+「跨全量」能力在当前页切片上执行会得到错误结果——server 模式逐项声明如下（均 devWarn 一次；与 windowed 同型判定，重合项标注同口径）：
+
+| 能力 | server 模式语义 | 与 windowed 对照 |
+| --- | --- | --- |
+| 导出 / 打印 | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出） | 同口径（windowed 输出已装载切片、server 输出当前页切片——切片口径不同，机制同型） |
+| 合计 `summary-scope="all"` | 禁用 + devWarn（全量口径未知）；`scope="page"` 页内合计照常 | windowed 下合计同为交宿主（本地跳过 + devWarn） |
+| 分组 `group-by` | 禁用 + devWarn（v1 只做平铺数据） | windowed 同为交宿主（本地跳过 + devWarn） |
+| 行拖拽 | 禁用 + devWarn（行序语义服务端未定） | windowed 虚拟形态同样不可用（虚拟窗口行序不稳定，虚拟不兼容守卫） |
+| 列拖拽 / `setColumnOrder` | 写回拦截 + devWarn（列序语义服务端未定）；列设置面板移动按钮同步禁用 | windowed 无此闸门（列序是显示层语义，切片内成立） |
+| merge / span-method | 禁用 + devWarn | **同口径**（两边都跳过本地合并——占位行/切片边界与跨行合并相互腐蚀） |
+| 填充柄 / 区域选择 | 页内相对行号语义（`data-row-index` 为页内 0 起序）；只写当前已装载行、不静默扩行 | 同口径（windowed 同为只写已装载行、不静默扩行） |
+| 过滤面板候选值 | 来自当前页数据（页内语义，面板照常打开） | 不同口径：windowed 下面板不打开（宿主监听 `oas-filter-change` 自行实现全量过滤） |
+| 历史（撤销） | 仅记录本地操作，翻页即失效 | — |
+| 编辑 | 页内编辑仅本地、翻页回填即丢失（v1 无服务端编辑回写契约） | — |
+
+### 边界：列序与编辑持久化
+
+- **列序持久化**：server 下 `setColumnOrder()` 写回被拦截（能力闸门）——**宿主初始化恢复持久化列序的程序化调用同样被拦**；列设置面板的移动按钮同步禁用（`columnReorderGate()` 与写回拦截同一判定源）。需要列序持久化请由宿主自管（如随请求参数传递列序）或关闭 row-model。
+- **页内编辑**：编辑仅本地生效，翻页回填新切片后草稿即丢失——v1 不提供服务端编辑回写契约；需要持久化编辑请在 `oas-edit` 监听中自行提交服务端，且不要依赖跨页草稿。
+
 ## 列过滤
 
 <DemoBlock title="表头列过滤（filterable + filter-values 受控）">

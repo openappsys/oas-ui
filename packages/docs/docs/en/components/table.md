@@ -609,6 +609,85 @@ Both attributes must be **valid at the same time** to activate (windowed only): 
 
 > For the full host recipe (segment fetch, abort in-flight, merge by id, atomic refill) and a runnable example, see [Server-side windowed data](/en/guide/windowed-data).
 
+## Server row model (row-model="server")
+
+> A fetching mode that hands sorting/filtering responsibility to the server (enterprise datasets with 100k+ rows): `data` is the host-refilled current-page slice, and the local filter/sort transforms are **skipped entirely** (all or nothing — "sort only the current page" is wrong semantics; the component provides no partially-mixed configuration). **Activation requires the `total` attribute** (external pagination form); without it the component falls back to client behavior and devWarns once. When combined with `windowed`, **windowed wins** (`row-model` is ignored) and devWarns once — the two protocols are mutually exclusive; pick one.
+
+### Mode recipe (minimal)
+
+Three pieces on the component: `row-model="server"` (enable) + `total` (activation premise; rewritten as responses arrive) + `pagination` (built-in pager; each page change refetches):
+
+```html
+<oas-table
+  id="orders-table"
+  row-model="server"
+  total="0"
+  pagination
+  page-size="10"
+  row-key="id"
+  columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"Name"},{"key":"amount","title":"Amount","sortable":true}]'
+></oas-table>
+```
+
+On the host, use `createServerSource` to take over fetching (protocol listening, requestId validation, aborting in-flight requests, and failure reporting are all built in; imported from `@oas-ui/ui/data/table/advanced` — a pure host-side helper that adds no component API):
+
+```ts
+import { createServerSource } from '@oas-ui/ui/data/table/advanced'
+
+const source = createServerSource(table, {
+  // Writes total before mount (server activation premise; if omitted the host must set the attribute itself)
+  total: 1000,
+  fetchRows: async ({ requestId, start, end, sortModel, filterValues, reason, signal }) => {
+    // requestId: monotonically increasing inside the component; can be forwarded to the server for trace correlation
+    // start / end: current page half-open range (current-1)*pageSize ~ current*pageSize
+    // sortModel / filterValues: server-side sort/filter conditions (reusing the sort-key / filter-values vocabulary)
+    // signal: aborted when a newer request is emitted or on destroy — respond to it early in your fetch
+    const res = await api.listOrders({ start, end, sort: sortModel, filter: filterValues, signal })
+    // Returning { rows, total } lets the helper sync the total attribute automatically; a bare array requires total to be present already
+    return { rows: res.list, total: res.total }
+  },
+})
+// source.refresh(): force-refetch the current page (reason='refresh', bypassing same-value dedup)
+// source.destroy(): unbind listeners and abort in-flight work (does not touch row-model / total attributes)
+```
+
+Request triggers: mount first load, page change / page-size change, sort change, filter change, `refreshRows()` (`reason` is `init` / `paginate` / `sort` / `filter` / `refresh`; sort/filter/page-size changes reset `current` to 1 before refetching — the user sees the first page under the new criteria, not "page N of the new sort"). While a request is in flight the component shows its built-in loading row; when `fetchRows` fails, the helper bridges the built-in failure channel via `reportRowsError` — **keep the old data + emit `oas-rows-error` + show the error bar** (`role="alert"`, retry button calls `refreshRows()`), so the host needs no custom failure UI. Protocol details (requestId dedup, same-value suppression, race rules) are in the `row-model` / `oas-rows-request` / `reportRowsError` entries of the API tables below.
+
+### Server data approach decision table
+
+Pick one of the four approaches by "who holds the full data and who owns sorting/filtering"; do not mix them per-segment:
+
+| Approach | Best for | Who owns sort/filter | Race guard | Error feedback | Recommendation |
+| --- | --- | --- | --- | --- | --- |
+| External pagination `total` (host-managed fetching) | Pure paged browsing; sorting/filtering done on the client or not needed | Host (listens to `oas-sort-change` / `oas-filter-change` / `oas-page-change` and handles them) | Host-built (sequence/snapshot) | Host-built | Lightweight: enough when the server only slices |
+| `row-model="server"` | Enterprise datasets with server-side sorting/filtering that want built-in loading / error bar / retry | Server (local transforms skipped entirely; requests carry sortModel / filterValues) | Built-in (monotonic requestId + helper write-back validation) | Built-in (error bar + `oas-rows-error` + retry button) | First choice for server-side sort/filter |
+| windowed (server-side row window) | 100k+ row **scrolling** scenarios: host supplies only the visible-window slice, no paging | Host (component skips local execution and devWarns) | `createWindowedSource` built-in (aborts stale in-flight + coverage checks) | Helper emits `oas-window-error`; no built-in error bar | First choice for scroll virtualization |
+| Host-managed event listening | Deeply customized fetching (own cache/merge/SSE push), or combinations the above do not cover | Host fully owns | Host-built | Host-built | Most freedom, most cost |
+
+Mutual exclusion and premise rules: when `row-model="server"` and `windowed` are both set, **windowed wins** (server is ignored) with a one-time devWarn; server activation requires the `total` attribute (falls back to client + one-time devWarn when missing); "partial mixing (sort only the current page)" is wrong semantics and the component provides no such configuration — sorting/filtering lives either entirely on the server (server mode) or entirely locally/host-side.
+
+### Capability gates (declared per feature under server mode)
+
+"Cross-full-data" capabilities produce wrong results when executed on the current-page slice — server mode declares them one by one (each devWarns once; judged in the same shape as windowed, with overlapping items marked accordingly):
+
+| Capability | Server-mode semantics | Compared to windowed |
+| --- | --- | --- |
+| Export / print | Current-page slice only + devWarn once (not blocking; prevents silent partial export) | Same mechanism (windowed prints the loaded slice, server prints the current-page slice — different slice scope, same mechanism) |
+| Summary `summary-scope="all"` | Disabled + devWarn (full-data scope unknown); `scope="page"` page summaries still work | windowed likewise hands summaries to the host (local skipped + devWarn) |
+| Grouping `group-by` | Disabled + devWarn (v1 serves flat data only) | windowed likewise hands grouping to the host (local skipped + devWarn) |
+| Row drag | Disabled + devWarn (row-order semantics owned by the server) | Also unavailable in virtual windowed (unstable row order in a virtual window; virtual-incompatibility guard) |
+| Column drag / `setColumnOrder` | Write-back intercepted + devWarn (column-order semantics owned by the server); settings-panel move buttons disabled in sync | No such gate in windowed (column order is a display-layer semantic, valid within a slice) |
+| merge / span-method | Disabled + devWarn | **Same mechanism** (both skip local merging — placeholder rows/slice boundaries corrupt cross-row merges) |
+| Fill handle / range selection | Page-relative row semantics (`data-row-index` is the 0-based in-page index); writes only already-loaded rows, never silently extends | Same mechanism (windowed likewise writes only loaded rows, never silently extends) |
+| Filter panel candidates | From current-page data (in-page semantics; the panel opens as usual) | Different: in windowed the panel does not open (the host implements full-data filtering via `oas-filter-change`) |
+| History (undo) | Records local operations only; invalidated on page change | — |
+| Editing | In-page edits are local only and lost on refill after paging (v1 has no server-side edit write-back contract) | — |
+
+### Boundaries: column order and edit persistence
+
+- **Column order persistence**: under server mode, `setColumnOrder()` write-backs are intercepted (capability gate) — **programmatic calls that restore persisted column order during host initialization are intercepted too**; the settings panel's move buttons are disabled in sync (`columnReorderGate()` shares the same predicate as the write-back guard). For column-order persistence, manage it on the host (e.g. send the order as a request parameter) or turn off row-model.
+- **In-page editing**: edits apply locally only and drafts are lost when a new slice is refilled after paging — v1 provides no server-side edit write-back contract; to persist edits, submit to your server in an `oas-edit` listener and do not rely on cross-page drafts.
+
 ## Column filter
 
 <DemoBlock title="Column filter (filterable + filter-values controlled)">
