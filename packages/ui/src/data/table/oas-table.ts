@@ -2682,6 +2682,9 @@ export class OASTableBase extends OASElement {
     this.warnAutoHeightConfigOnce()
     // server 行模型：状态驱动的取数请求（首载/翻页/排序/过滤）——须在 loading/empty 早退
     // 分支之前派发（复刻 windowed 先例顺序：否则空数据首载静默不发请求）
+    // ⚠ 页码重置嵌套重入依赖「此处之前无早退」：syncServerRows 内排序/过滤触发的
+    // setAttribute('current','1') 会同步驱动一次嵌套 update，由嵌套这次以新口径派发请求——
+    // 若在此调用点之前新增任何早退 return，嵌套重入链断裂，server 请求会被静默丢弃（改动需复核）
     this.syncServerRows()
     // table-layout：fixed/auto 透传 table 元素（列宽定宽场景配 fixed；缺省/非法不写——浏览器 auto 基线）
     const tableLayout = this.getAttr('table-layout', '')
