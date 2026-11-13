@@ -479,10 +479,11 @@ const SERVER_LATE_FAILURE_HINT =
   '[oas-table] reportRowsError 的 requestId 与当前在途请求序号不符，已按晚到旧失败静默丢弃（请核对 oas-rows-request detail.requestId 后回传同一序号）'
 
 /** server 行模型：同序号重复失败上报被幂等静默丢弃的告警文案（实例级去重一次）。
- *  每个 requestId 只应上报一次失败（重复上报/回填后才到的同号失败一律丢弃）——
- *  静默是正确行为，一次性提示守卫存在，便于宿主排查「为什么第二次上报没生效」 */
+ *  每个 requestId 只应上报一次失败（同序号重复上报一律丢弃；成功回填不占用序号——
+ *  回填后同号首错仍生效，兜底回填 + 迟到失败须可感知）——静默是正确行为，一次性提示
+ *  守卫存在，便于宿主排查「为什么第二次上报没生效」 */
 const SERVER_DUPLICATE_FAILURE_HINT =
-  '[oas-table] reportRowsError 的 requestId 已上报过失败或已成功回填，重复上报按幂等静默丢弃（每个 requestId 只应上报一次失败；确需重试请走 refreshRows 触发新请求）'
+  '[oas-table] reportRowsError 的 requestId 已上报过失败，重复上报按幂等静默丢弃（每个 requestId 只应上报一次失败；确需重试请走 refreshRows 触发新请求）'
 
 /** server 行模型能力闸门：merge 列 / span-method 跳过的告警文案（实例级去重一次；与 windowed 同口径） */
 const SERVER_SPAN_HINT =
@@ -1767,9 +1768,9 @@ export class OASTableBase extends OASElement {
   /** server 行模型：失败条可见（reportRowsError 生效时置位；成功回填清除） */
   private serverError = false
   /**
-   * server 行模型：已登记终态的请求序号（失败上报或成功回填消费过的身份）。
-   * 同序号重复 reportRowsError 按幂等静默丢弃；成功回填也登记当前序号（回填后同号失败
-   * 不再翻错误条——错误条以「未上报过的失败」为准）。-1 = 尚无任何登记。
+   * server 行模型：已上报过失败的请求序号（仅失败上报登记；成功回填不占用序号——
+   * 回填后同号首错仍生效，「超时兜底回填 + 迟到失败」须可感知可重试）。
+   * 同序号重复 reportRowsError 按幂等静默丢弃。-1 = 尚无任何登记。
    */
   private reportedRowsRequestId = -1
   /** 同序号重复失败上报的一次性可诊断提示 flag（实例级去重） */
@@ -2049,9 +2050,11 @@ export class OASTableBase extends OASElement {
           // 强制下一次 update 回落全量渲染路径）
           this.markRenderDirty()
         }
-        // 成功回填登记：当前序号已收到响应——同序号后续失败上报按幂等静默丢弃
-        //（reportRowsError 的重复收敛判定输入）
-        this.reportedRowsRequestId = this.rowsRequestId
+        // 成功回填不登记 reportedRowsRequestId：幂等登记语义收窄为「已上报过失败的序号」
+        //（reportRowsError 失败侧登记）。R4 曾在此登记成功回填序号，让首个真实失败被静默
+        // 吞掉（请求在途 + 宿主同值写 total + reportRowsError 同号 → 零派发、错误条不亮）；
+        // 定策裁决：「超时兜底回填 + 迟到失败」场景错误条让用户知道数据可能不可靠（可重试），
+        // 比静默更符合失败反馈语义——同号重复上报的幂等收敛仍由失败侧登记承担。
       } else if (!formActive && (this.serverLoading || this.serverError || this.lastRowsRequestState !== null)) {
         // 从生效形态离开：三态复位（在途 loading、失败条、请求状态签名）——残留会让 client
         // 渲染出 server 的 loading 行/错误条；请求状态不清则切回 server 时同值去重吞掉
@@ -5667,11 +5670,14 @@ export class OASTableBase extends OASElement {
    * 非生效形态静默 no-op（serverRowsActive 判定：client 模式无请求序号天然不匹配；
    * windowed 互斥 / total 缺失的离开形态下晚到失败同样不得在 client 渲染下点亮 server
    * 错误条——曾因只查 row-model 属性字面值，requestId:0 撞初始序号点亮了 client 页面）。
-   * 同序号幂等收敛：每个 requestId 只应上报一次失败——重复上报、或成功回填后才到的
-   * 同号失败一律静默丢弃（错误条以「未上报过的失败」为准），一次性 devWarn 可诊断。
+   * 同序号幂等收敛：每个 requestId 只应上报一次失败——重复上报一律静默丢弃（成功回填
+   * 不登记序号，回填后同号首错仍生效），一次性 devWarn 可诊断。
    * rowsRequestId 单调递增不复位（宿主晚到守卫依赖单调性）。
    */
   reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void {
+    // serverRowsActive() 读 parse 缓存（_winMode）——成立前提是属性写经
+    // attributeChangedCallback 同步驱动 update，宿主在事件监听/promise 回调上报时缓存已新；
+    // 勿挪进 ACC 类同步路径（本写刚引发的 windowed 增删不在缓存里，ACC 时点是陈旧的）
     if (!this.serverRowsActive()) return
     if (detail?.requestId !== this.rowsRequestId) {
       if (!this.serverLateFailureWarned) {
