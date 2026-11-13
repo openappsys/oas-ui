@@ -2011,18 +2011,28 @@ export class OASTableBase extends OASElement {
     }
     // server 行模型：宿主响应回填通道（data/total 属性写）→ 清在途 loading 与失败条。
     // 属性写无请求身份——本方法只负责「有响应到达」这一事实，晚到丢弃职责在宿主侧
-    //（helper 经 requestId 校验后才回写；裸宿主自行比对事件 requestId）
+    //（helper 经 requestId 校验后才回写；裸宿主自行比对事件 requestId）。
+    // 复位/清态分流按「生效形态迁移」判定（serverFormActive 为属性即时读数——不能用
+    // serverRowsActive()：其 windowed 判定读 parse 缓存 _winMode，本写刚引发的属性变化
+    // 不在缓存里，ACC 时点是陈旧的）：
+    // - 保持生效形态（含同值写——CE 同值写同样触发本回调，oldValue === newValue）：不清态
+    //   不复位。曾把同值 row-model 写误判为形态切换清掉请求状态签名 → 同值去重失效 →
+    //   每次同值写重派一个 init 请求；错误条也曾被同值 row-model 写静默清掉。
+    // - 从生效形态离开（row-model 切走 / total 移除 / windowed 互斥接管）：三态复位
+    //   （在途 loading、失败条、请求状态签名），回切时以 init 重新发起。
     if (this.hasRendered && (name === 'data' || name === 'total' || name === 'row-model')) {
-      if (name !== 'row-model' && this.serverRowsActive()) {
-        this.serverLoading = false
-        this.serverError = false
-        // 同值写入不进渲染签名（增量快路径按签名判定为 no-op）——清态后必须显式标脏
-        // 强制全量渲染，否则 loading 行/失败条卡在屏上（实测：同值 total 回填错误条不消失）
-        this.markRenderDirty()
-      } else if (this.serverLoading || this.serverError || this.lastRowsRequestState !== null) {
-        // 离开 server 生效形态（row-model 切走 / total 移除 / 回退 client 行为）：
-        // 三态复位（在途 loading、失败条、请求状态签名）——残留会让 client 渲染出
-        // server 的 loading 行/错误条；请求状态不清则切回 server 时同值去重吞掉
+      const formActive = this.serverFormActive()
+      if (formActive && (name === 'data' || name === 'total')) {
+        if (this.serverLoading || this.serverError) {
+          this.serverLoading = false
+          this.serverError = false
+          // 同值写入不进渲染签名（增量快路径按签名判定为 no-op）——清态后必须显式标脏
+          // 强制全量渲染，否则 loading 行/失败条卡在屏上（实测：同值 total 回填错误条不消失）
+          this.markRenderDirty()
+        }
+      } else if (!formActive && (this.serverLoading || this.serverError || this.lastRowsRequestState !== null)) {
+        // 从生效形态离开：三态复位（在途 loading、失败条、请求状态签名）——残留会让 client
+        // 渲染出 server 的 loading 行/错误条；请求状态不清则切回 server 时同值去重吞掉
         // 本应重新发起的 init 请求。lastRowsRequestState 仅在此处与成功回填路径清零。
         this.serverLoading = false
         this.serverError = false
@@ -5473,6 +5483,21 @@ export class OASTableBase extends OASElement {
    */
   private serverRowsActive(): boolean {
     return this.getAttr('row-model', '') === 'server' && !this.windowedOn() && this.externalTotal() !== null
+  }
+
+  /**
+   * server 行模型生效形态的即时判定（attributeChangedCallback 专用）：与 serverRowsActive()
+   * 同口径，但 windowed 生效性改用属性即时读数——serverRowsActive() 的 windowedOn() 读
+   * parse 缓存 _winMode，本写刚引发的 windowed 增删不在缓存里（ACC 时点缓存陈旧），
+   * 会把「windowed 接管/退出」误判成形态未变。生效口径同 readWindowedMode：windowed 在场
+   * 且 total > 0 才接管（total=0 / 非法 → windowed 不生效，server 不让位）。
+   */
+  private serverFormActive(): boolean {
+    if (this.getAttr('row-model', '') !== 'server') return false
+    const total = this.externalTotal()
+    if (total === null) return false
+    if (this.hasAttr('windowed') && total > 0) return false
+    return true
   }
 
   /** 前提复核微任务窗口 flag（同一 tick 多次 serverOn 判定合并为一次复核） */
