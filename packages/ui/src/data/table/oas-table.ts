@@ -1782,6 +1782,7 @@ export class OASTableBase extends OASElement {
    * server 行模型：已上报过失败的请求序号（仅失败上报登记；成功回填不占用序号——
    * 回填后同号首错仍生效，「超时兜底回填 + 迟到失败」须可感知可重试）。
    * 同序号重复 reportRowsError 按幂等静默丢弃。-1 = 尚无任何登记。
+   * rowsRequestId 单调递增永不复位——本登记依赖该不变量保证陈旧登记不与新请求撞号。
    */
   private reportedRowsRequestId = -1
   /** 同序号重复失败上报的一次性可诊断提示 flag（实例级去重） */
@@ -2069,7 +2070,8 @@ export class OASTableBase extends OASElement {
       } else if (!formActive && (this.serverLoading || this.serverError || this.lastRowsRequestState !== null)) {
         // 从生效形态离开：三态复位（在途 loading、失败条、请求状态签名）——残留会让 client
         // 渲染出 server 的 loading 行/错误条；请求状态不清则切回 server 时同值去重吞掉
-        // 本应重新发起的 init 请求。lastRowsRequestState 仅在此处与成功回填路径清零。
+        // 本应重新发起的 init 请求。lastRowsRequestState 仅在此处清零（成功回填不清——
+        // 回填是响应，不动同值去重签名）。
         this.serverLoading = false
         this.serverError = false
         this.lastRowsRequestState = null
