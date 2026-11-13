@@ -81,4 +81,117 @@ describe('createServerSource', () => {
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
+
+  it('翻页：current 变更 → paginate 请求 → 新 fetchRows（上一在途被 abort）', async () => {
+    const el = mount()
+    const signals: AbortSignal[] = []
+    const fetchRows = vi.fn(({ signal }: ServerRowsRequest) => {
+      signals.push(signal)
+      return new Promise<never>(() => {})
+    })
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
+    expect(fetchRows.mock.calls[1]![0]).toMatchObject({ requestId: 2, start: 10, end: 20, reason: 'paginate' })
+    expect(signals[0]!.aborted, '新请求派发即中止上一笔在途').toBe(true)
+    expect(signals[1]!.aborted).toBe(false)
+    source.destroy()
+  })
+
+  it('竞态：慢请求 A（不 resolve）+ 快请求 B → B 回填后 A 才 resolve → A 的回写被丢弃', async () => {
+    const el = mount()
+    const resolvers: Array<(result: unknown[] | { rows: unknown[]; total?: number }) => void> = []
+    const fetchRows = vi.fn(
+      () =>
+        new Promise<unknown[] | { rows: unknown[]; total?: number }>((resolve) => {
+          resolvers.push(resolve)
+        }),
+    )
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+    // B（页 2，requestId 2）先回填
+    resolvers[1]!({ rows: [{ name: '页2' }], total: 100 })
+    await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('页2'))
+    // A（页 1，requestId 1）迟到 resolve：晚到旧响应静默丢弃（组件 requestId 单调性保证比对可靠）
+    resolvers[0]!({ rows: [{ name: '页1旧' }], total: 1 })
+    await Promise.resolve()
+    await Promise.resolve()
+    expect((el.data[0] as { name: string }).name, 'data 仍是 B 的').toBe('页2')
+    expect(el.getAttribute('total'), 'total 不被晚到旧响应覆盖').toBe('100')
+    source.destroy()
+  })
+
+  it('失败：fetchRows reject → oas-rows-error 派发 + 错误条可见（桥接 reportRowsError）', async () => {
+    const el = mount()
+    const errs: CustomEvent[] = []
+    el.addEventListener('oas-rows-error', (e) => errs.push(e as CustomEvent))
+    const source = createServerSource(el, {
+      fetchRows: async () => {
+        throw new Error('network')
+      },
+      total: 100,
+    })
+    await vi.waitFor(() => expect(errs).toHaveLength(1))
+    expect(errs[0]!.detail).toMatchObject({ requestId: 1, reason: 'init' })
+    expect(errs[0]!.detail.error).toBeInstanceOf(Error)
+    expect(errs[0]!.bubbles).toBe(true)
+    expect(errs[0]!.composed).toBe(true)
+    // 组件内建失败条可见（reportRowsError 生效形态），错误可重试入口在场
+    const bar = el.shadowRoot!.querySelector('.rows-error')
+    expect(bar).not.toBeNull()
+    expect(bar!.hasAttribute('hidden')).toBe(false)
+    expect(bar!.querySelector('.rows-error-retry')).not.toBeNull()
+    source.destroy()
+  })
+
+  it('晚到失败静默丢弃：旧请求 reject 晚于新请求派发 → 不桥接 reportRowsError（错误条不亮）', async () => {
+    const el = mount()
+    const errs: CustomEvent[] = []
+    el.addEventListener('oas-rows-error', (e) => errs.push(e as CustomEvent))
+    const rejects: Array<(reason: unknown) => void> = []
+    const fetchRows = vi.fn(
+      () =>
+        new Promise<never>((_, reject) => {
+          rejects.push(reject)
+        }),
+    )
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(rejects).toHaveLength(1))
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(rejects).toHaveLength(2))
+    // 旧请求（init，requestId 1）此刻才失败：已被新请求作废，helper 同序号校验拦截，
+    // 不上报组件（组件侧晚到 devWarn 噪音也不会出现）
+    rejects[0]!(new Error('stale'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(errs).toHaveLength(0)
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
+    source.destroy()
+  })
+
+  it('fetchRows 同步 throw 走同一失败路径（一次 error，可重试）', async () => {
+    const el = mount()
+    const errs: CustomEvent[] = []
+    el.addEventListener('oas-rows-error', (e) => errs.push(e as CustomEvent))
+    let mode: 'ok' | 'throw' = 'ok'
+    const fetchRows = vi.fn(({ end }: ServerRowsRequest) => {
+      if (mode === 'throw') throw new Error('sync network')
+      return Promise.resolve({ rows: Array.from({ length: end }, (_, i) => ({ name: `行${i}` })), total: 100 })
+    })
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(el.data).toHaveLength(10))
+    mode = 'throw'
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(errs).toHaveLength(1))
+    expect(errs[0]!.detail).toMatchObject({ requestId: 2, reason: 'paginate' })
+    // 修正后可重试：翻回第 1 页成功回填，错误不再新增
+    mode = 'ok'
+    el.setAttribute('current', '1')
+    await vi.waitFor(() => expect(el.data).toHaveLength(10))
+    expect(errs).toHaveLength(1)
+    source.destroy()
+  })
 })

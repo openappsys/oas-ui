@@ -48,6 +48,11 @@ export interface ServerSource {
   destroy(): void
 }
 
+/** helper 回写通道只依赖两个宿主面：属性写（HTMLElement 原生）与 reportRowsError 失败桥接 */
+type ServerRowsHost = HTMLElement & {
+  reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void
+}
+
 /**
  * server 表格数据源胶水（纯宿主侧 helper，不进入 table 运行时，不新增组件 API）：
  * 每次请求先中止上一笔在途，再以新 AbortController 取数；响应仅当其 requestId 仍是
@@ -61,6 +66,8 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
   let destroyed = false
   /** 组件最新在途请求序号（事件 detail 权威记录；-1 = 尚未见过任何请求） */
   let latestRequestId = -1
+  /** 当前在途取数的 abort 通道（新请求派发 / destroy 时中止上一笔） */
+  let controller: AbortController | null = null
 
   const onRequest = (event: Event): void => {
     if (destroyed) return
@@ -82,14 +89,25 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
     const sortModel = Array.isArray(detail.sortModel) ? detail.sortModel : []
     const filterValues = detail.filterValues ?? {}
     const reason = detail.reason ?? 'init'
-    const signal = new AbortController().signal
+    // 先中止上一笔在途再取数：fetcher 收到的 signal 是真正的取消通知；
+    // 晚到兜底由 requestId 守卫承担（fetcher 不响应 signal 时响应照样被丢弃）
+    controller?.abort()
+    controller = new AbortController()
+    const signal = controller.signal
     void (async () => {
-      const result = await options.fetchRows({ requestId, start, end, sortModel, filterValues, reason, signal })
-      if (destroyed) return
-      const rows = Array.isArray(result) ? result : result.rows
-      table.setAttribute('data', JSON.stringify(rows))
-      if (!Array.isArray(result) && result.total != null && table.getAttribute('total') !== String(result.total)) {
-        table.setAttribute('total', String(result.total))
+      try {
+        const result = await options.fetchRows({ requestId, start, end, sortModel, filterValues, reason, signal })
+        // requestId 校验：仅当该序号仍是组件最新在途序号才回写（晚到旧响应静默丢弃）
+        if (destroyed || signal.aborted || requestId !== latestRequestId) return
+        const rows = Array.isArray(result) ? result : result.rows
+        table.setAttribute('data', JSON.stringify(rows))
+        if (!Array.isArray(result) && result.total != null && table.getAttribute('total') !== String(result.total)) {
+          table.setAttribute('total', String(result.total))
+        }
+      } catch (error) {
+        // 失败同序号校验后才上报（晚到旧失败静默丢弃，组件侧幂等收敛不再叠加噪音）
+        if (destroyed || signal.aborted || requestId !== latestRequestId) return
+        ;(table as ServerRowsHost).reportRowsError({ requestId, reason, error })
       }
     })()
   }
