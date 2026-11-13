@@ -1070,6 +1070,9 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* 正文色：light 下语义文字色压 danger 12% 混合底对比 4.14:1，不达 13px 正常文本 AA 门 4.5。
+     错误语义由底色/边框/图标承担，文字不重复承载语义色 */
+  color: var(--oas-color-text-primary);
 }
 .rows-error-retry {
   flex: none;

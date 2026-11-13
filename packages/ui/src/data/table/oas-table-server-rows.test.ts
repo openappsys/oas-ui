@@ -1029,6 +1029,23 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(hover![0]).not.toContain('danger-text')
   })
 
+  /** T1 回归：错误条正文文字用 text-primary（原 danger-text 压 danger 12% 混合底在
+      light 下对比 4.14:1，不达 13px 正常文本 AA 门 4.5）。语义色由底色/边框/图标承担，
+      文字不重复承载；暗色正文 token 为浅色系，压暗红 12% 底对比只会更高。happy-dom
+      测不了真渲染对比度，断言样式源规则；视觉层由 qa-regression/table-server.spec.ts 覆盖 */
+  it('T1：.rows-error-text 文字色走 --oas-color-text-primary（不再用 danger-text）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', '[]')
+    document.body.appendChild(el)
+    const text = styleTextOf(el).match(/\.rows-error-text\s*\{[^}]*\}/)
+    expect(text, 'text 规则存在于注入样式').not.toBeNull()
+    expect(text![0]).toContain('var(--oas-color-text-primary)')
+    expect(text![0]).not.toContain('danger-text')
+  })
+
   /** F2 回归：显示缓存键（flatCacheSignature）缺 server 标志——client↔server 切换后
       重渲染命中旧缓存行集（client 本地排序产物被 server 模式复用，反之亦然） */
   it('F2：client↔server 切换后行集按新模式语义刷新（缓存键含 server 标志；total 不变场景）', () => {
