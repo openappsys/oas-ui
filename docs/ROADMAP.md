@@ -2,6 +2,13 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
+## 未发布（table 核模块化批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **table 核模块化（gantt 同款流程）** | `oas-table.ts` 6327 行核按技术边界拆 4 旁路模块：`table-style.ts`（905 行 CSS 模板）/ `table-types.ts`（类型+常量 ~385 行）/ `table-render.ts`（虚拟渲染主路径+分页+paintCell+字段渲染 ~2300 行）/ `table-helpers.ts`（tooltip 级联/列设置/导出 glue/行拖拽/grid-navigation/auto-height/windowed glue ~1650 行），主文件收口至 ~1400 行骨架。公开 API 零漂移；施工纪律：模块导出最小化（防伪公开面扩散）、模块按技术层诚实命名（不暗示 headless 核心边界）、渲染状态机私有协议不跨模块外泄。含 `scripts/api-docs/scan.mjs` 适配 + 预算再定档评估（主链 64.2→~67KB 触预警线 66.6 时按 gantt 先例走 P2 审计+再定档） | 🚧 进行中 |
+| **table 测试债捎带** | `qa-regression/table.spec.ts` 存量 ~6 项（waitForTimeout 2 + OS 绝对量 4）改语义不变量，ratchet 数字随降 | 📋 待开发 |
+
 ## 未发布（P1/P2 组件能力批）
 
 | 范围 | 内容 | 状态 |
@@ -14,7 +21,6 @@
 | **code 语言扩充** | +sh/bash/python/sql/diff/markdown/yaml（既有正则架构内扩展，零第三方库）；非法 lang 回落纯文本 | ✅ 已完成（未发布） |
 | **countdown 后台记账语义** | 验证 document.hidden 漂移→时间戳记账 + visibilitychange 校正无跳变；tick/value 语义不变 | ✅ 已完成（未发布） |
 | **equation 编辑实时预览** | 焦点编辑态输入 LaTeX → 实时/失焦渲染预览；value 双通道；失败回退源码 + devWarn；Esc 取消 | ✅ 已完成（未发布） |
-
 
 ## 未发布（P0 组件能力批）
 
