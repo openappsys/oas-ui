@@ -4,6 +4,8 @@ import '@oas-ui/i18n'
 import { OASTable } from './index.js'
 // a8 编辑仅本地断言需编辑能力（主入口 v2.6.4 起不含编辑；显式注册，与族内其他测试同路径）
 import './edit/index.js'
+// F13 历史闸门断言：撤销栈「翻页即失效」语义的可测面
+import { canUndo, clearHistory, enableHistory, undo } from './history/index.js'
 
 /**
  * server 行模型批（a2：`row-model` 属性注册与生效前提）。
@@ -1432,6 +1434,84 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.setColumnOrder(['age', 'name'])
     expect(el.getAttribute('column-keys'), '拦截：column-keys 不写回').toBeNull()
     expect(warn, '能力闸门 devWarn 一次').toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+
+  /** F13 回归：能力闸门总表「历史（撤销）仅本地，翻页即失效」的固化为可测断言。
+      实现口径（读 history 能力确认）：undo 命令按行键定位当前 data 回写——server 模式
+      翻页回填不同行键切片后，旧页命令执行时定位不到行 → 不回写、不复活幽灵行、不覆盖
+      当前页（撤销不可达 = 失效）。栈本身不清空；宿主要彻底清空在翻页回调里调 clearHistory */
+  it('F13：server 翻页回填后旧页撤销不可达（不回写不覆盖当前页）；clearHistory 配方可彻底清栈', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-key', 'id')
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '4')
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { id: 'r1', name: '甲' },
+        { id: 'r2', name: '乙' },
+      ]),
+    )
+    document.body.appendChild(el)
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { id: 'r1', name: '甲' },
+        { id: 'r2', name: '乙' },
+      ]),
+    )
+    enableHistory(el)
+    // 页 1 编辑 r1 生效（编辑链路回写 data）+ oas-edit 通知历史栈记录
+    el.data = [
+      { id: 'r1', name: '甲改' },
+      { id: 'r2', name: '乙' },
+    ]
+    el.dispatchEvent(
+      new CustomEvent('oas-edit', {
+        detail: { rowIndex: 0, key: 'r1', column: 'name', oldValue: '甲', value: '甲改' },
+      }),
+    )
+    expect(canUndo(el)).toBe(true)
+    expect((el.data[0] as { name: string }).name).toBe('甲改')
+    // 翻到页 2：宿主回填不同行键切片（数据全量在服务端）
+    el.data = [
+      { id: 'r3', name: '丙' },
+      { id: 'r4', name: '丁' },
+    ]
+    // 撤销旧页编辑：栈弹出，但 r1 不在当前页 → 不回写、不覆盖当前页数据
+    expect(undo(el)).toBe(true)
+    expect(el.data.map((r: Record<string, unknown>) => r.id)).toEqual(['r3', 'r4'])
+    expect(el.data.map((r: Record<string, unknown>) => r.name)).toEqual(['丙', '丁'])
+    // 配方：宿主翻页回调主动 clearHistory → 栈彻底清空（撤销不可达从机制层保证）。
+    // 此处先在当前页做一次有效编辑并撤销成功（r3 在当前页可达），验证配方语义完整
+    el.data = [
+      { id: 'r3', name: '丙改' },
+      { id: 'r4', name: '丁' },
+    ]
+    el.dispatchEvent(
+      new CustomEvent('oas-edit', {
+        detail: { rowIndex: 0, key: 'r3', column: 'name', oldValue: '丙', value: '丙改' },
+      }),
+    )
+    expect(canUndo(el)).toBe(true)
+    expect(undo(el)).toBe(true)
+    expect((el.data[0] as { name: string }).name, '当前页行键可达：撤销正常回写').toBe('丙')
+    // 再做一次编辑入栈 → clearHistory 清栈 → 撤销不可用
+    el.data = [
+      { id: 'r3', name: '丙改' },
+      { id: 'r4', name: '丁' },
+    ]
+    el.dispatchEvent(
+      new CustomEvent('oas-edit', {
+        detail: { rowIndex: 0, key: 'r3', column: 'name', oldValue: '丙', value: '丙改' },
+      }),
+    )
+    expect(canUndo(el)).toBe(true)
+    clearHistory(el)
+    expect(canUndo(el)).toBe(false)
     warn.mockRestore()
   })
 })
