@@ -1,8 +1,25 @@
 import { expect, test, type Page } from '@playwright/test'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // server 行模型（row-model="server"）真实浏览器回归：请求协议、失败反馈、模式切换、
 // hover 可读性（F1 修复的视觉层——happy-dom 测不了真 hover，这里以真实渲染计算样式闭环）。
 // mock 宿主写法与 table.spec.ts 的 windowed spec 同构：动态注入 fixture 元素 + 事件监听回填。
+
+/** packages/ui/dist 真实路径：helper 不在 docs bundle 的全局，路由映射 dist 后动态 import（同 table.spec.ts 先例） */
+const builtUiDist = fileURLToPath(new URL('../dist', import.meta.url))
+
+/** 把构建产物按稳定前缀暴露给页面，保证浏览器回归跑的是真实构建产物 */
+async function serveBuiltUi(page: Page): Promise<void> {
+  await page.route('**/__qa_ui__/**', (route) => {
+    const pathname = new URL(route.request().url()).pathname
+    const relative = decodeURIComponent(pathname.replace(/^\/__qa_ui__\//, ''))
+    return route.fulfill({
+      path: join(builtUiDist, relative),
+      contentType: 'text/javascript',
+    })
+  })
+}
 
 /** 收集 console error / [oas-table] warning / pageerror（零告警门禁口径，与 table.spec.ts 同构） */
 function collectConsoleIssues(page: Page): string[] {
@@ -340,5 +357,110 @@ test('table server：模式切换三态复位（loading/错误条/请求状态�
   await expect(bar).toBeHidden()
 
   // ⑥ console 零告警
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+})
+
+test('table server helper：竞态丢弃——慢响应晚到不覆盖快响应（两档延迟 + requestId 单调 + console 零告警）', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await serveBuiltUi(page)
+  await gotoTablePage(page)
+
+  // createServerSource 接管取数：fetchRows 两档延迟（慢 600ms / 快 100ms），档位在请求
+  // 发起时快照进内容标识（慢响应 resolve 时档位可能已切快，标识必须在发起时定死）。
+  // mock 不响应 signal——helper 的 requestId 守卫是「fetcher 不响应取消时」的兜底路径，
+  // 本用例固化正是这条兜底：晚到旧响应静默丢弃。
+  await page.evaluate(async () => {
+    const moduleUrl = '/__qa_ui__/data/table/advanced/server-rows.js'
+    const { createServerSource } = (await import(moduleUrl)) as {
+      createServerSource: (table: HTMLElement, options: Record<string, unknown>) => { destroy(): void }
+    }
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-race'
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称', sortable: true }]))
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+    const state = {
+      /** 取数延迟档位：slow=600ms / fast=100ms */
+      mode: 'fast' as 'fast' | 'slow',
+      /** helper 收到的请求（requestId 单调性断言输入） */
+      reqs: [] as Array<{ requestId: number; reason: string }>,
+    }
+    ;(window as any)['__srvState_table-server-race'] = state
+    const source = createServerSource(el, {
+      total: 40,
+      fetchRows: (req: { requestId: number; reason: string; start: number; end: number; signal: AbortSignal }) => {
+        // 发起时快照档位（resolve 时读全局 mode 会把慢响应误标成快内容）
+        const reqMode = state.mode
+        state.reqs.push({ requestId: req.requestId, reason: req.reason })
+        return new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                rows: Array.from({ length: req.end - req.start }, (_, i) => ({
+                  id: `r${req.start + i}`,
+                  name: `${reqMode === 'slow' ? '慢' : '快'}${req.start + i}`,
+                })),
+                total: 40,
+              }),
+            reqMode === 'slow' ? 600 : 100,
+          ),
+        )
+      },
+    })
+    ;(window as any)['__srvSource_table-server-race'] = source
+  })
+
+  // ① init（快档 100ms）→ 首屏渲染快内容
+  await page.waitForFunction(() => (window as any)['__srvState_table-server-race'].reqs.length >= 1, null, {
+    timeout: 15000,
+  })
+  await expect(shadow(page, 'table-server-race').locator('tbody tr[part="row"]').first()).toContainText('快0')
+
+  // ② 切慢档 → 第一次排序（requestId 2，600ms 在途）
+  await page.evaluate(() => {
+    ;(window as any)['__srvState_table-server-race'].mode = 'slow'
+    document.querySelector('#table-server-race')!.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+  })
+  await page.waitForFunction(() => (window as any)['__srvState_table-server-race'].reqs.length >= 2, null, {
+    timeout: 15000,
+  })
+
+  // ③ 在慢请求 600ms 窗口内切回快档 → 第二次排序反向（requestId 3，100ms）——快速触发两次请求
+  await page.evaluate(() => {
+    ;(window as any)['__srvState_table-server-race'].mode = 'fast'
+    document.querySelector('#table-server-race')!.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+  })
+
+  // ④ 快响应回填（100ms）→ data 只含快请求内容
+  await page.waitForFunction(
+    () => document.querySelector('#table-server-race')!.getAttribute('data')?.includes('"快0"') === true,
+    null,
+    { timeout: 15000 },
+  )
+  await expect(shadow(page, 'table-server-race').locator('tbody tr[part="row"]').first()).toContainText('快0')
+
+  // ⑤ 慢响应晚到（600ms 到期）→ 不得覆盖快内容
+  await page.waitForTimeout(650)
+  const dataAfter = await page.evaluate(() => document.querySelector('#table-server-race')!.getAttribute('data'))
+  expect(dataAfter, '慢响应晚到后 data 仍只含快请求结果').toContain('"快0"')
+  expect(dataAfter, 'data 无慢请求内容').not.toContain('"慢')
+  await expect(shadow(page, 'table-server-race').locator('tbody tr[part="row"]').first()).toContainText('快0')
+
+  // ⑥ requestId 严格单调
+  const state = await stateOf(page, 'table-server-race')
+  expect(
+    state.reqs.map((r: { requestId: number }) => r.requestId),
+    'requestId 严格单调',
+  ).toEqual([1, 2, 3])
+  expect(
+    state.reqs.map((r: { reason: string }) => r.reason),
+    '原因序列 init→sort→sort',
+  ).toEqual(['init', 'sort', 'sort'])
+
+  // ⑦ console 零告警
   expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
 })
