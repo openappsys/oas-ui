@@ -980,4 +980,61 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(hover![0]).toContain('var(--oas-color-text-on-danger)')
     expect(hover![0]).not.toContain('danger-text')
   })
+
+  /** F2 回归：显示缓存键（flatCacheSignature）缺 server 标志——client↔server 切换后
+      重渲染命中旧缓存行集（client 本地排序产物被 server 模式复用，反之亦然） */
+  it('F2：client↔server 切换后行集按新模式语义刷新（缓存键含 server 标志；total 不变场景）', () => {
+    const reqs: { requestId: number; reason: string }[] = []
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '2')
+    el.setAttribute('sort-key', 'age')
+    el.setAttribute('sort-order', 'asc')
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    el.setAttribute('data', '[]')
+    document.body.appendChild(el)
+    expect(reqs.length, 'server 挂载即派 init').toBe(1)
+    // 宿主回填当前页切片（乱序内容）→ server 不执行本地排序 → data 原样序，乙(2) 在前
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '乙', age: 2 },
+        { name: '甲', age: 1 },
+      ]),
+    )
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+    expect(rowsOf(el)[0]!.textContent).toContain('乙')
+    // 切 client（total 保留不变——宿主仍持总数语义）：本地排序恢复 → 甲(1) 在前。
+    // 修复前缓存键不含 server 标志 → 与 server 时全同值 → 命中 server 行集缓存误渲染原样序
+    el.setAttribute('row-model', 'client')
+    expect(rowsOf(el)[0]!.textContent).toContain('甲')
+    // 再切回 server：本地排序再次跳过 → 乙 在前
+    el.setAttribute('row-model', 'server')
+    expect(rowsOf(el)[0]!.textContent).toContain('乙')
+    expect(reqs.length, '模式往返不再派请求（state 未变，仅渲染语义切换）').toBe(1)
+  })
+
+  it('F2：serverRowsActive 纯判定不含告警副作用（windowed 互斥/缺 total 均按 false，不烧一次性 flag）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('windowed', '')
+    el.setAttribute('window-start', '0')
+    el.setAttribute('data', JSON.stringify([{ name: '甲' }]))
+    document.body.appendChild(el)
+    expect(warn, 'windowed 互斥告警恰一次').toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
 })

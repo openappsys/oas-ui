@@ -2310,7 +2310,11 @@ export class OASTableBase extends OASElement {
   private flatCacheSignature(groupBy: string): string {
     const colSig = this._columns.map((c) => `${c.key}:${c.type ?? ''}`).join(',')
     return [
-      this.windowedOn() ? 'W' : 'F',
+      // 行模型标志位（client 'F' / windowed 'W' / server 'S'）：模式切换（row-model 写回）
+      // 在 total 等其余键值不变时也必须使行集缓存失效——server 与 client 的行集语义不同
+      //（本地过滤/排序跳过与否），跨模式命中旧缓存会渲染错误的行集/行序（实测：server 回填
+      // 切片切 client 后仍显示 server 原样序，本地排序不生效）
+      this.windowedOn() ? 'W' : this.serverRowsActive() ? 'S' : 'F',
       this.getAttr('data', ''),
       this.getAttr('sort-key', ''),
       this.getAttr('sort-order', ''),
@@ -5402,6 +5406,16 @@ export class OASTableBase extends OASElement {
   }
 
   // ==================== server 行模型（row-model="server"） ====================
+
+  /**
+   * server 行模型纯属性判定（无告警、无副作用）：`row-model="server"` 且 total 在场
+   * 且不与 windowed 冲突——生效结论与 serverOn() 一致，但可在高频路径（缓存键/签名/ARIA
+   * 口径）安全调用：不烧一次性告警 flag，也不依赖 serverOn() 内联的前提/互斥告警副作用
+   *（告警 flag 每实例仅一次，被高频判定提前消耗会让真正的告警场景失声）。
+   */
+  private serverRowsActive(): boolean {
+    return this.getAttr('row-model', '') === 'server' && !this.windowedOn() && this.externalTotal() !== null
+  }
 
   /**
    * server 行模型是否生效（判定点内联前提/互斥告警，同 columnVirtualOn 的先例）：
