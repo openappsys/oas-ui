@@ -157,4 +157,13 @@ describe('oas-table 打印视图（print 媒体全量渲染）', () => {
     el.remove()
     expect(() => printCtl.setPrint(true)).not.toThrow()
   })
+
+  it('✕ print 样式源：失败条与 loading 行不进纸面（print 块含 .rows-error 与 tr:has(td.loading)）', () => {
+    const el = mount(new OASTable())
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const printBlock = css.slice(css.indexOf('@media print'))
+    expect(printBlock.length, '样式源应含 @media print 块').toBeGreaterThan(0)
+    expect(printBlock).toContain('.rows-error')
+    expect(printBlock).toContain('tr:has(td.loading)')
+  })
 })

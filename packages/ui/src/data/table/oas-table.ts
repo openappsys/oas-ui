@@ -1467,6 +1467,17 @@ tr.group-header .toggle {
   tr.spacer {
     display: none;
   }
+  /* server 行模型失败条不进纸面：错误条是屏显交互反馈（重试按钮在纸上无意义），
+     打印输出只收数据行（错误态下打印 = 输出保留的旧数据切片） */
+  .rows-error {
+    display: none;
+  }
+  /* loading 行不进纸面：在途态是屏显过渡，打印等待中的表格只输出已回填数据。
+     loading td 为早退分支动态节点，用 :has 从 td 反查宿主 tr（不给 tr 加类——
+     仓内 :has 先例：carousel / chips-input / combobox / segmented） */
+  tr:has(td.loading) {
+    display: none;
+  }
 }
 `
 
