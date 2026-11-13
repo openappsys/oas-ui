@@ -21,8 +21,9 @@ export interface TableColumnSettingsHost {
   setColumnWidth(key: string, width: number): void
   translateText(key: string, params?: Record<string, string | number>): string
   /** 列重排能力闸门（server 行模型：顺序语义服务端持有）——true 时移动按钮禁用，
-      与宿主 setColumnOrder 的写回拦截同一判定源（按钮不可用与程序化拦截不脱节） */
-  columnReorderGate(): boolean
+      与宿主 setColumnOrder 的写回拦截同一判定源（按钮不可用与程序化拦截不脱节）。
+      可选：第三方自建宿主可以不实现——闸门按 false 回落（移动按钮可用性只由边界位决定） */
+  columnReorderGate?(): boolean
   /** 宿主关闭/重渲染时需解绑的清理（默认无） */
   /* 无显式接口，绑定清理走控制器内部 */
 }
@@ -191,8 +192,9 @@ export class TableColumnSettingsController implements ReactiveController {
   private syncMoveButtons(ths: HTMLElement[]): void {
     const leaves = this.hostEl.effectiveColumns().map((c) => c.key)
     // 能力闸门（server 行模型）：列序写回被宿主 setColumnOrder 拦截——按钮同步禁用
-    //（disabled + aria-disabled），避免「可见可点但零反馈」的死控件
-    const gated = this.hostEl.columnReorderGate()
+    //（disabled + aria-disabled），避免「可见可点但零反馈」的死控件。
+    // 可选契约：宿主未实现（第三方自建宿主）按 false 回落
+    const gated = this.hostEl.columnReorderGate?.() ?? false
     for (const th of ths) {
       if (!th.querySelector('.col-move')) {
         th.appendChild(this.buildMoveButton('up'))
