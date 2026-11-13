@@ -35,7 +35,7 @@
   "events": [
     {
       "name": "oas-editing",
-      "detail": "{ editing: true } | { editing: false }"
+      "detail": "{ editing: false } | { editing: true }"
     },
     {
       "name": "oas-change",

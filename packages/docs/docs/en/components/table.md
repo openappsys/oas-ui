@@ -2242,6 +2242,7 @@ const visible = applyQuery(orders, state.query)
 | `row-draggable` | Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling | `boolean` | — |
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
+| `row-model` | Row model: `client` (default, local full dataset: filter/sort/pagination slicing run in-component) / `server` (server row model: pairs with the `total` external-pagination shape — `data` holds the current page slice, local filter/sort are skipped entirely, page turns / sort / filter fetch via oas-rows-request; sort / filter / page-size changes auto-reset current=1; in-flight requests show built-in loading, failures surface an error bar via reportRowsError). Together with `windowed`, windowed wins (mutual-exclusion warning); without `total` it falls back to client with a warning | `string` | — |
 | `selected` | Set of selected row keys (comma-separated) | `string` | — |
 | `show-header` | Toggles the header (default true); with `false` no header row is rendered while column configuration still aligns data cells | `string` | `true` |
 | `size` | Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height` | `string` | `medium` |
@@ -2275,6 +2276,8 @@ const visible = applyQuery(orders, state.query)
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | Export matrix: headers (column title / headerTemplate text) + currently visible data rows |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | Export and trigger a download: generate content → Blob download → dispatch `oas-export` |
 | `requestAutoHeightSync` | `requestAutoHeightSync(): void` | Auto-height capability callback: after measure backfill changes the prefix sums, re-anchors row identity and performs a regular update render. |
+| `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`: host-side failure notification — effective only when requestId equals the in-flight request id (emits oas-rows-error, clears loading, shows the error bar); stale late failures are silently dropped |
+| `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`: force-refetch the current state (reason='refresh', bypassing same-value dedup); `purge: true` reserves cache-clearing semantics — v1 has no cache so it equals refresh; no-op in client mode |
 
 #### Events
 
@@ -2294,6 +2297,8 @@ const visible = applyQuery(orders, state.query)
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
 | `oas-row-dblclick` | Fired on data-row double-click, `detail: { row, rowIndex }` |
 | `oas-row-reorder` | Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data) |
+| `oas-rows-error` | Server row-model fetch failure (notified by the host via reportRowsError), `detail: { requestId, reason, error }`; the component also shows its built-in error bar (role=alert; the retry button calls refreshRows) |
+| `oas-rows-request` | Server row-model fetch request (init=mount / paginate=page or page-size change / sort=sort change / filter=filter change / refresh=refreshRows), `detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown }` (start/end is the half-open current-page range `(current-1)*pageSize ~ current*pageSize`; requestId increases monotonically in-component — hosts drop stale late responses by it; same-value attribute writes do not re-emit, and a `data` write is a refill, not a new request) |
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
 | `oas-window-request` | Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason, visualStart?, visualEnd } (start/end are half-open absolute DATA row indices and always stay in data coordinates; reason is init / scroll / resize / data). When the slice contains expand rows or the visual protocol is active, the expected range is mapped through the visual slots to cover the actually visible data rows (including expand owner rows), and visualStart / visualEnd carry the visible window's visual coordinates for host-side visual fetching (not the slice's visual-start). The same expected window (including visual fields) is not emitted twice |

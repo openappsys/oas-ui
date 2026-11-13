@@ -2229,6 +2229,7 @@ const visible = applyQuery(orders, state.query)
 | `row-draggable` | 行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次 | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
+| `row-model` | 行模型：`client`（缺省，本地全量：过滤/排序/分页切片组件内执行）/ `server`（服务端行模型：需与 total 外部分页形态配合，data 为当前页切片，本地过滤/排序整体跳过，翻页/排序/过滤经 oas-rows-request 向宿主取数；排序/过滤/页大小变更自动重置 current=1；请求在途内建 loading，失败经 reportRowsError 显示错误条）。与 windowed 同开时 windowed 优先（互斥告警）；缺 total 回落 client 并告警 | `string` | — |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
 | `show-header` | 表头显隐（默认 true）；`false` 时不渲染表头行，列配置仍作用于数据行对齐 | `string` | `true` |
 | `size` | 密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交 | `string` | `medium` |
@@ -2257,11 +2258,13 @@ const visible = applyQuery(orders, state.query)
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
 | `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义） |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此， |
-| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） |
+| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化）。 |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
 | `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
+| `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前在途请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；晚到旧失败静默丢弃 |
+| `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`：强制重发当前状态请求（reason='refresh'，绕过同值去重）；`purge: true` 预留清缓存语义，v1 无缓存等价 refresh；client 模式 no-op |
 
 #### 事件
 
@@ -2281,6 +2284,8 @@ const visible = applyQuery(orders, state.query)
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-row-dblclick` | 双击数据行派发，`detail: { row, rowIndex }` |
 | `oas-row-reorder` | 行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data） |
+| `oas-rows-error` | server 行模型取数失败（宿主经 reportRowsError 通知），`detail: { requestId, reason, error }`；组件同时显示内建错误条（role=alert，重试按钮调 refreshRows） |
+| `oas-rows-request` | server 行模型取数请求（init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷），`detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown }`（start/end 为当前页半开区间 `(current-1)*pageSize ~ current*pageSize`；requestId 组件内单调递增，宿主据此丢弃晚到旧响应；同值属性写不重发，data 写是回填不是新请求） |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
 | `oas-window-request` | windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason, visualStart?, visualEnd }（start/end 半开区间、绝对数据行下标，永远是数据坐标；reason 为 init / scroll / resize / data）。切片内含展开行或视觉协议生效时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行），并附带 visualStart / visualEnd（当前可视窗口的视觉坐标，供宿主视觉取数；不是切片 visual-start）。同一期望区间（含视觉字段）不重复派发 |

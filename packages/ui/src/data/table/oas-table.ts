@@ -5533,7 +5533,8 @@ export class OASTableBase extends OASElement {
    * `{ purge: true }` 预留清缓存语义——v1 无缓存，等价 refresh（参数仅收下不分支）。
    * client 模式 no-op（无取数协议可刷）。
    */
-  refreshRows(_options?: { purge?: boolean }): void {
+  refreshRows(options?: { purge?: boolean }): void {
+    void options // v1 无缓存：purge 等价 refresh（参数收下不分支，前向兼容预留）
     if (!this.serverOn()) return
     this.dispatchRowsRequest('refresh')
     // 非属性通道状态变化（loading 置位）→ 强制全量渲染，loading 行立即可见
