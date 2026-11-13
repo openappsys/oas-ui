@@ -1215,4 +1215,25 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(warn, '同实例去重：第二次不重复告警').toHaveBeenCalledTimes(1)
     warn.mockRestore()
   })
+
+  /** F6 回归：重试按钮匿名监听不随 bind 幂等——onReconnect（断连重连）重跑 bind 后
+      监听线性叠加，单击重试触发多次 refreshRows（重复请求风暴） */
+  it('F6：断连重连后单击重试只派 1 次 refresh 请求（监听不叠加）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
+    // 断连重连两次（bind 重跑三次）
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    el.remove()
+    parent.appendChild(el)
+    // 单击重试：若监听叠加会派多次 refresh
+    el.shadowRoot!.querySelector<HTMLElement>('.rows-error-retry')!.click()
+    expect(reqs.length).toBe(3)
+    expect(reqs[2]).toEqual({ requestId: 3, reason: 'refresh' })
+    warn.mockRestore()
+  })
 })

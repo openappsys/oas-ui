@@ -2170,6 +2170,11 @@ export class OASTableBase extends OASElement {
     if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
   }
 
+  /** server 失败条重试按钮 click（类字段引用——bind 重入幂等去重，与 onTheadSortClick 同纪律） */
+  private onRowsErrorRetryClick = (): void => {
+    this.refreshRows()
+  }
+
   /** 断开重连重绑（core onReconnect 钩子）：bind() 幂等重入——委托监听同引用去重、
       ResizeObserver 复用实例重 observe、cleanup 断开已清空故重新注册 */
   protected override onReconnect(): void {
@@ -2212,8 +2217,10 @@ export class OASTableBase extends OASElement {
     // 单元格溢出提示：mouseover/mouseout 委托到滚动容器（表格级单例浮层复用定位，不为每格建实例）
     this.wrap?.addEventListener('mouseover', this.handleCellMouseOver)
     this.wrap?.addEventListener('mouseout', this.handleCellMouseOut)
-    // server 行模型失败条重试按钮（模板级持久节点，bind 一次即可；click → refreshRows 强刷）
-    this.shadow.querySelector('.rows-error-retry')?.addEventListener('click', () => this.refreshRows())
+    // server 行模型失败条重试按钮（模板级持久节点，bind 重入幂等：具名 handler 同引用
+    // 去重 + onCleanup 摘除；click → refreshRows 强刷。匿名箭头会在 onReconnect 重跑
+    // bind 时线性叠加监听，单击重试触发多次请求）
+    this.shadow.querySelector('.rows-error-retry')?.addEventListener('click', this.onRowsErrorRetryClick)
     // 页面级/外层容器滚动时同步隐藏浮层（scroll 不冒泡，document capture 捕获——浮层滞留原位 实抓）
     document.addEventListener('scroll', this.handleDocumentScrollForTooltip, true)
     this.onCleanup(() => {
@@ -2243,6 +2250,8 @@ export class OASTableBase extends OASElement {
       tbody?.removeEventListener('dragend', this.handleRowDragEnd)
       this.wrap?.removeEventListener('mouseover', this.handleCellMouseOver)
       this.wrap?.removeEventListener('mouseout', this.handleCellMouseOut)
+      // server 失败条重试按钮监听随 cleanup 摘（重连由 onReconnect→bind 重挂）
+      this.shadow.querySelector('.rows-error-retry')?.removeEventListener('click', this.onRowsErrorRetryClick)
       if (this.scrollRaf) cancelAnimationFrame(this.scrollRaf)
       this.scrollRaf = 0
       this.closeFilterPanel()
