@@ -5,6 +5,70 @@
 
 ---
 
+## 未发布：table server 行模型批（externalTotal 模式升级：服务端排序/过滤 + 请求协议 + 竞态时序 + 能力闸门 + 宿主 helper）
+
+### 功能定义
+
+数据不全在前端的企业场景（10 万+ 行）：排序/过滤责任移交服务端，本地对应变换段跳过。本批把既有「外部分页」托管形态（`total` 属性在场 + `data` 为当前页切片，宿主自管取数回填）升级为完整的 server 行模型：内建请求事件协议（requestId 去重）、翻页/排序/过滤时序规则、失败语义与可见反馈、`refreshRows()` 强刷入口、能力闸门矩阵、宿主侧取数 helper。零 API 破坏：缺省现状零变化。
+
+### 详细需求
+
+**① 模式开关 `row-model`**
+
+- 属性 `row-model`：`client`（缺省，现状零变化）| `server`；server 生效前提 = `total` 属性在场（外部分页形态），前提不满足时一次性 devWarn 并按 client 行为
+- server 模式语义「全有或全无」：本地排序变换与本地过滤变换整体跳过（服务端已按当前排序/过滤条件返回当前页切片）；分页切片仍由宿主完成（沿用外部分页口径）；不提供逐段混用配置（「只排当前页」是错误语义，必须整体移交）
+- 互斥：`windowed` 与 server 同开时 windowed 优先 + 一次性 devWarn
+
+**② 请求协议 `oas-rows-request`**
+
+- detail：`{ requestId, start, end, sortModel, filterValues, reason, totalKnown }`
+  - `requestId`：组件内单调递增——宿主据此丢弃晚到旧响应的回写（属性写无请求身份，晚到丢弃职责在宿主侧；helper 内建此守卫）
+  - `start`/`end`：当前页期望区间 `[start, end)`（= `(current-1)*pageSize ~ current*pageSize`）
+  - `sortModel`：`[{ key, order }]` 数组形态，沿用既有 `sort-key`/`sort-order` 词汇（多列排序预留）
+  - `filterValues`：沿用 `filter-values` 属性对象形状，不另造第三套词汇
+  - `reason`：`init | paginate | sort | filter | refresh`（与 windowed 协议的 `init|scroll|resize|data` 两套并存，文档给选用决策表）
+  - `totalKnown`：总数已知性声明字段（v1 server 模式要求宿主回写 `total`；未知总数场景预留）
+- 触发时机：挂载首载（`data` 为空也必须先发请求再进 loading/empty 早退分支——复刻 windowed 先例顺序）、翻页、排序变更、过滤变更、`refreshRows()`；同值属性写不重发
+- 竞态：requestId 为权威去重依据；在途期间状态再变 → 旧请求作废、以最新状态重发、只认最新 requestId 的回写
+
+**③ 时序与失败语义**
+
+- 排序/过滤/页大小变更 → `current` 重置为 1 并触发重请求（用户看到新口径首页，而非「新排序的第 N 页」）
+- loading：请求在途 → 组件内建 loading 态（沿用既有 loading 行视觉），与宿主显式 `loading` 属性取或；不回写宿主属性（无双写冲突）
+- 失败：保留旧数据（交互连续性取舍）+ 派发 `oas-rows-error`（detail `{ requestId, reason, error? }`）+ 组件内建轻量错误条（语义色 token、暗色适配、`role="alert"`、重试按钮调 `refreshRows()`）；错误条同时是「排序指示器与数据短暂不一致」的显式缓解；i18n ×16
+
+**④ `refreshRows()` 公开方法**
+
+- 强制重发当前状态请求（`reason: 'refresh'`），绕过同值去重；`{ purge: true }` 预留清缓存语义（v1 无缓存，等价 refresh）；补齐既有「同值 `data` 写只重渲染不重查、宿主无强刷入口」缺口
+
+**⑤ 能力闸门矩阵（server 模式逐项声明，与 windowed 同型判定）**
+
+- 导出/打印：仅当前页切片——一次性 devWarn（防静默部分导出）
+- 合计（`summary-scope="all"`）：禁用 + devWarn（全量口径未知，页内合计是错误值）
+- 分组：禁用 + devWarn（v1 只做平铺数据，服务端分组后置）
+- 行拖拽/列拖拽：禁用 + devWarn（顺序语义服务端未定）
+- 填充柄/区域选择：页内相对行号语义 + 文档声明
+- 过滤面板候选值：来自当前页数据（页内语义）+ 文档声明
+- 历史（撤销）：仅记录本地操作，翻页即失效 + 文档声明
+- merge/span：禁用（与 windowed 同口径）
+- 编辑：页内编辑仅本地、翻页回填即丢失 + 文档声明（v1 不提供服务端编辑回写契约）
+
+**⑥ 宿主侧 helper `createServerSource`**
+
+- 与既有 windowed 宿主 helper 同族同目录：seq 守卫 + abort + requestId 回写校验 + `refresh()` + error 事件桥接；缓存键 = 完整查询（页码+排序+过滤）并预留 TTL 缓存位（v1 仅当前请求）；导出面参照同族先例
+
+**⑦ 文档**
+
+- table.md 服务端数据配方区新增 `row-model="server"` 模式：与既有三套配方（外部分页 total / windowed / 宿主自管事件监听）的**选用决策表与互斥规则**；zh/en 双语 + api-descriptions zh/en + 站点索引生成物同步
+
+### 验收
+
+- **client 零行为漂移**：既有 table 全量测试套件全绿；client 渲染签名金本位测试先行落地（重构回归可量化判据）
+- server 模式 TDD 单测：请求序列 / requestId 去重 / 页码重置 / 失败保留旧数据 / 能力闸门逐项断言
+- qa-regression 新增 server 模式 e2e spec：真实浏览器首载请求、翻页、排序重置页码、竞态丢弃、错误条可见反馈、dark、console 零告警
+- api:scan/gen 零漂移；i18n ×16 零漏；perf:size 结构门零残留 + 主链预算核查（触预警线走审计再定档，不为省体积砍功能）；llms 索引同步；全量 e2e 三引擎
+- 收口 ≥2 轮 × ≥2 模型交叉审 + 修复批再审 + 用户视角验证门禁
+
 ## 未发布：P1/P2 组件能力批（kanban 列折叠合计 / list·sidebar 键盘重排 / comment 输入与 resolve / 收件人 chips / upload capture / code 语言扩充 / countdown 语义 / equation 实时预览）
 
 ### 功能定义
