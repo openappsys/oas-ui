@@ -472,6 +472,12 @@ const SERVER_ROW_DRAG_HINT =
 const SERVER_COLUMN_DRAG_HINT =
   '[oas-table] server 行模型下列拖拽重排不生效（顺序语义由服务端持有）：列序持久化请由宿主自行管理或关闭 row-model'
 
+/** server 行模型：晚到失败（requestId 不匹配在途序号）被静默丢弃的告警文案（实例级去重一次）。
+ *  丢弃是正确行为（防旧失败覆盖新轮次），但完全无声会让宿主排查「为什么我的 reportRowsError
+ *  没生效」无从下手——一次性提示序号守卫的存在，不刷屏 */
+const SERVER_LATE_FAILURE_HINT =
+  '[oas-table] reportRowsError 的 requestId 与当前在途请求序号不符，已按晚到旧失败静默丢弃（请核对 oas-rows-request detail.requestId 后回传同一序号）'
+
 /** server 行模型能力闸门：merge 列 / span-method 跳过的告警文案（实例级去重一次；与 windowed 同口径） */
 const SERVER_SPAN_HINT =
   '[oas-table] server 行模型下 merge 列 / span-method 不生效（当前页切片跨界合并语义不确定，与 windowed 同口径跳过本地合并）'
@@ -1742,6 +1748,9 @@ export class OASTableBase extends OASElement {
   private serverGroupWarned = false
   private serverRowDragWarned = false
   private serverColumnDragWarned = false
+
+  /** 晚到旧失败（requestId 不匹配）的一次性可诊断提示 flag（实例级去重） */
+  private serverLateFailureWarned = false
   private serverSpanWarned = false
   /** server 行模型：请求序号计数器（单调递增；事件 requestId 与 reportRowsError 校验共用） */
   private rowsRequestId = 0
@@ -5541,13 +5550,20 @@ export class OASTableBase extends OASElement {
   /**
    * 宿主失败通知通道（server 行模型）：requestId === 当前在途请求序号才生效——
    * 派发 `oas-rows-error`（detail 原样转发）+ 清在途 loading + 显示内建失败条
-   * （role="alert"，重试按钮调 refreshRows()）。晚到旧失败（序号不符或已回填成功）
-   * 静默丢弃。client 模式静默 no-op（无请求序号，天然不匹配）。
+   * （role="alert"，重试按钮调 refreshRows()）。不设 serverLoading 前置门槛：成功回填
+   * / 超时兜底回填已清 loading 后，同序号失败仍须生效（错误反馈不能因「无在途 loading」
+   * 被吞）。晚到旧失败（序号不符）静默丢弃 + 实例级一次性 devWarn（可诊断性）。
+   * client 模式静默 no-op（无请求序号，天然不匹配）。
    */
   reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void {
     if (this.getAttr('row-model', '') !== 'server') return
-    if (!this.serverLoading) return
-    if (detail?.requestId !== this.rowsRequestId) return
+    if (detail?.requestId !== this.rowsRequestId) {
+      if (!this.serverLateFailureWarned) {
+        this.serverLateFailureWarned = true
+        devWarn(SERVER_LATE_FAILURE_HINT)
+      }
+      return
+    }
     this.serverLoading = false
     this.serverError = true
     this.emit('rows-error', { requestId: detail.requestId, reason: detail.reason, error: detail.error })

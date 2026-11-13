@@ -568,6 +568,7 @@ describe('OASTable server 行模型 a6：内建 loading + 失败反馈', () => {
   })
 
   it('晚到旧失败静默丢弃：requestId 不匹配在途序号时不派事件、错误条不显示', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { el, reqs, errs } = mountReq({ 'row-model': 'server', total: '10' })
     el.setAttribute('current', '2') // requestId 2 在途
     expect(reqs.length).toBe(2)
@@ -577,6 +578,7 @@ describe('OASTable server 行模型 a6：内建 loading + 失败反馈', () => {
     el.reportRowsError({ requestId: 999 }) // 超前未知序号
     expect(errs.length).toBe(0)
     expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
+    warn.mockRestore()
   })
 
   it('重试按钮：click → refreshRows 强刷（reason=refresh、requestId+1）→ 成功回填 → 错误条消失', () => {
@@ -962,6 +964,39 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     setLocale('zh-CN')
   })
 
+  /** server 挂载 + oas-rows-request / oas-rows-error 事件收集（与 a6 mountReq 同构） */
+  function mountReq(attrs: Record<string, string>): {
+    el: OASTable
+    reqs: { requestId: number; reason: string }[]
+    errs: { requestId: number; reason?: string }[]
+  } {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('data', '[]')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    const reqs: { requestId: number; reason: string }[] = []
+    const errs: { requestId: number; reason?: string }[] = []
+    el.addEventListener('oas-rows-request', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    el.addEventListener('oas-rows-error', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      errs.push({ requestId: d.requestId, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    return { el, reqs, errs }
+  }
+
+  /** 失败条查询（模板级持久节点，hidden 属性翻转可见性） */
+  const errorBar = (el: OASTable): HTMLElement => el.shadowRoot!.querySelector('.rows-error')!
+
   /** shadow 内 style 文本（scoped CSS 随模板注入，真实渲染路径产物） */
   const styleTextOf = (el: OASTable): string => el.shadowRoot!.querySelector('style')?.textContent ?? ''
 
@@ -1149,5 +1184,35 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.setAttribute('total', el.getAttribute('total')!)
     expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
     expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+  })
+
+  /** F5 回归：旧成功回填清 loading 后，当前在途请求的失败曾被 `!serverLoading` 前置
+      吞掉（oas-rows-error 零派发、错误条不显示）——门槛只留 requestId 单一判定 */
+  it('F5：loading 被回填清零后当前序号失败仍生效（超时兜底回填 + 错误随后到达链路）', () => {
+    const { el, reqs, errs } = mountReq({ 'row-model': 'server', total: '10' })
+    // 请求 1（init）→ 宿主超时兜底回填占位数据（属性写清 loading；requestId 仍为 1）
+    el.setAttribute('data', JSON.stringify([{ name: '占位', age: 0 }]))
+    expect(reqs.length).toBe(1)
+    // 同一序号的失败随后才到（宿主 fetch reject 晚于超时回填）——requestId 匹配在途序号，
+    // 不得因 serverLoading 已被回填清零而吞掉
+    el.reportRowsError({ requestId: 1, reason: 'init', error: new Error('timeout') })
+    expect(errs).toEqual([{ requestId: 1, reason: 'init' }])
+    expect(errorBar(el).hasAttribute('hidden')).toBe(false)
+    // 旧数据保留 + 错误条可见（交互连续性）
+    expect(rowsOf(el).length).toBe(1)
+  })
+
+  it('F5：requestId 不匹配（晚到旧失败）静默丢弃 + 实例级一次性 devWarn（可诊断性不刷屏）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el, errs } = mountReq({ 'row-model': 'server', total: '10' })
+    el.setAttribute('current', '2') // 请求 2 在途
+    el.reportRowsError({ requestId: 1, reason: 'init' }) // 晚到旧失败
+    expect(errs.length).toBe(0)
+    expect(errorBar(el)!.hasAttribute('hidden')).toBe(true)
+    expect(warn, '晚到失败给一次性可诊断提示').toHaveBeenCalledTimes(1)
+    el.reportRowsError({ requestId: 999 })
+    expect(errs.length).toBe(0)
+    expect(warn, '同实例去重：第二次不重复告警').toHaveBeenCalledTimes(1)
+    warn.mockRestore()
   })
 })
