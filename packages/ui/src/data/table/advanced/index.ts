@@ -53,4 +53,10 @@ export {
   type WindowedVisualAdapter,
   type WindowedVisualGeometry,
 } from './windowed.js'
+export {
+  createServerSource,
+  type ServerRowsRequest,
+  type ServerSource,
+  type ServerSourceOptions,
+} from './server-rows.js'
 export { parseTsv, toTsv, type TsvColumn } from './clipboard.js'

@@ -254,4 +254,9 @@ describe('createServerSource', () => {
     expect(errs).toHaveLength(0)
     expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
   })
+
+  it('advanced 入口导出接线：createServerSource 与直连模块为同一函数', async () => {
+    const { createServerSource: fromIndex } = await import('./index.js')
+    expect(fromIndex).toBe(createServerSource)
+  })
 })
