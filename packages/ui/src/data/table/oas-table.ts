@@ -2007,6 +2007,9 @@ export class OASTableBase extends OASElement {
       if (name !== 'row-model' && this.serverRowsActive()) {
         this.serverLoading = false
         this.serverError = false
+        // 同值写入不进渲染签名（增量快路径按签名判定为 no-op）——清态后必须显式标脏
+        // 强制全量渲染，否则 loading 行/失败条卡在屏上（实测：同值 total 回填错误条不消失）
+        this.markRenderDirty()
       } else if (this.serverLoading || this.serverError || this.lastRowsRequestState !== null) {
         // 离开 server 生效形态（row-model 切走 / total 移除 / 回退 client 行为）：
         // 三态复位（在途 loading、失败条、请求状态签名）——残留会让 client 渲染出

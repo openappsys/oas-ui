@@ -1132,4 +1132,22 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(reqs.length).toBe(3)
     expect(reqs[2]!.reason).toBe('init')
   })
+
+  /** F4 回归：同值 total 写入清态后强制重渲染（同值不进渲染签名，增量快路径会吞掉
+      清态后的重渲染——错误条/loading 行卡死在屏上） */
+  it('F4：错误态下宿主写同值 total → 错误条消失（同值回填清态立即生效）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '10')
+    el.setAttribute('data', JSON.stringify([{ name: '旧', age: 1 }]))
+    document.body.appendChild(el)
+    el.setAttribute('current', '2')
+    el.reportRowsError({ requestId: 2, reason: 'paginate' })
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(false)
+    // 同值 total 写入（宿主重发响应语义）：清 loading/失败条必须立即可见
+    el.setAttribute('total', el.getAttribute('total')!)
+    expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+  })
 })
