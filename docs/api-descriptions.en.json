@@ -3534,7 +3534,7 @@
       "scrollToRow": "`scrollToRow(key: string): boolean`: scroll to the given row (virtual / windowed viewports only; returns false otherwise; non-windowed virtual supports flat data only). Host-recipe anchor for windowed tree lazy-loading: call it after a total-changing refeed to restore the viewport (the anchoring scroll goes through the scroll channel and may emit a reason='scroll' oas-window-request - same semantics as scroll-driven window refills)",
       "requestAutoHeightSync": "Auto-height capability callback: after measure backfill changes the prefix sums, re-anchors row identity and performs a regular update render.",
       "refreshRows": "`refreshRows(options?: { purge?: boolean })`: force-refetch the current state (reason='refresh', bypassing same-value dedup); `purge: true` reserves cache-clearing semantics — v1 has no cache so it equals refresh; no-op in client mode",
-      "reportRowsError": "`reportRowsError(detail: { requestId, reason?, error? })`: host-side failure notification — effective only when requestId equals the in-flight request id (emits oas-rows-error, clears loading, shows the error bar); stale late failures are silently dropped"
+      "reportRowsError": "`reportRowsError(detail: { requestId, reason?, error? })`: host-side failure notification — effective only when requestId equals the in-flight request id (emits oas-rows-error, clears loading, shows the error bar); each requestId should report failure at most once — duplicate reports for the same id, or a same-id failure arriving after a successful refill, are silently dropped as duplicates (one-time hint); stale late failures are silently dropped"
     }
   },
   "oas-table-column": {

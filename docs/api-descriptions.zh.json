@@ -3369,7 +3369,7 @@
       "setCapabilityOptions": "Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染",
       "scrollToRow": "`scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义）",
       "refreshRows": "`refreshRows(options?: { purge?: boolean })`：强制重发当前状态请求（reason='refresh'，绕过同值去重）；`purge: true` 预留清缓存语义，v1 无缓存等价 refresh；client 模式 no-op",
-      "reportRowsError": "`reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前在途请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；晚到旧失败静默丢弃并一次性提示序号守卫",
+      "reportRowsError": "`reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前在途请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；每个 requestId 只应上报一次失败，同序号重复上报或成功回填后才到的同号失败按幂等静默丢弃（一次性提示）；晚到旧失败静默丢弃并一次性提示序号守卫",
       "setColumnOrder": "`setColumnOrder(keys: string[])`：更新列显示顺序（写回 column-keys 并重渲染，派发 oas-column-order，宿主可做持久化）。server 行模型下不生效（顺序语义由服务端持有——能力闸门）：写回被拦截并告警一次，列设置面板的移动按钮同步禁用；宿主初始化恢复持久化列序（程序化调用）同样被拦"
     },
     "slots": {
