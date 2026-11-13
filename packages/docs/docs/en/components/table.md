@@ -651,7 +651,7 @@ const source = createServerSource(table, {
 // source.destroy(): unbind listeners and abort in-flight work (does not touch row-model / total attributes)
 ```
 
-Request triggers: mount first load, page change / page-size change, sort change, filter change, `refreshRows()` (`reason` is `init` / `paginate` / `sort` / `filter` / `refresh`; sort/filter/page-size changes reset `current` to 1 before refetching — the user sees the first page under the new criteria, not "page N of the new sort"). While a request is in flight the component shows its built-in loading row; when `fetchRows` fails, the helper bridges the built-in failure channel via `reportRowsError` — **keep the old data + emit `oas-rows-error` + show the error bar** (`role="alert"`, retry button calls `refreshRows()`), so the host needs no custom failure UI. Protocol details (requestId dedup, same-value suppression, race rules) are in the `row-model` / `oas-rows-request` / `reportRowsError` entries of the API tables below.
+Request triggers: mount first load, page change / page-size change, sort change, filter change, `refreshRows()` (`reason` is `init` / `paginate` / `sort` / `filter` / `refresh`; sort/filter/page-size changes reset `current` to 1 before refetching — the user sees the first page under the new criteria, not "page N of the new sort"). While a request is in flight the component shows its built-in loading row; when `fetchRows` fails, the helper bridges the built-in failure channel via `reportRowsError` — **keep the old data + emit `oas-rows-error` + show the error bar** (`role="alert"`, retry button calls `refreshRows()`), so the host needs no custom failure UI. The helper refills asynchronously and is not subject to the "synchronous `data` write inside the listener lags a frame" restriction (see the refill-timing note after the decision table below). Protocol details (requestId dedup, same-value suppression, race rules) are in the `row-model` / `oas-rows-request` / `reportRowsError` entries of the API tables below.
 
 ### Server data approach decision table
 
@@ -665,6 +665,8 @@ Pick one of the four approaches by "who holds the full data and who owns sorting
 | Host-managed event listening | Deeply customized fetching (own cache/merge/SSE push), or combinations the above do not cover | Host fully owns | Host-built | Host-built | Most freedom, most cost |
 
 Mutual exclusion and premise rules: when `row-model="server"` and `windowed` are both set, **windowed wins** (server is ignored) with a one-time devWarn; server activation requires the `total` attribute (falls back to client + one-time devWarn when missing); "partial mixing (sort only the current page)" is wrong semantics and the component provides no such configuration — sorting/filtering lives either entirely on the server (server mode) or entirely locally/host-side.
+
+Refill-timing note: on the "Host-managed event listening" path, refill **asynchronously** inside event listeners — writing `data` synchronously in the listener callback lags the DOM by one frame due to render-pipeline reentry; the `createServerSource` helper refills asynchronously out of the box and has no such restriction.
 
 ### Capability gates (declared per feature under server mode)
 

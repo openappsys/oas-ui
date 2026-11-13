@@ -651,7 +651,7 @@ const source = createServerSource(table, {
 // source.destroy()：解绑监听并中止在途（不动 row-model / total 属性）
 ```
 
-请求触发时机：挂载首载、翻页/改页大小、排序变更、过滤变更、`refreshRows()`（`reason` 分别为 `init` / `paginate` / `sort` / `filter` / `refresh`；排序/过滤/页大小变更自动重置 `current=1` 再请求——用户看到新口径首页，而非「新排序的第 N 页」）。请求在途时组件内建 loading 行；`fetchRows` 失败时 helper 经 `reportRowsError` 桥接内建失败通道——**保留旧数据 + 派发 `oas-rows-error` + 显示错误条**（`role="alert"`，重试按钮调 `refreshRows()`），宿主无需自建失败反馈。协议细节（requestId 去重、同值不重发、竞态规则）见下方 API 表的 `row-model` / `oas-rows-request` / `reportRowsError` 条目。
+请求触发时机：挂载首载、翻页/改页大小、排序变更、过滤变更、`refreshRows()`（`reason` 分别为 `init` / `paginate` / `sort` / `filter` / `refresh`；排序/过滤/页大小变更自动重置 `current=1` 再请求——用户看到新口径首页，而非「新排序的第 N 页」）。请求在途时组件内建 loading 行；`fetchRows` 失败时 helper 经 `reportRowsError` 桥接内建失败通道——**保留旧数据 + 派发 `oas-rows-error` + 显示错误条**（`role="alert"`，重试按钮调 `refreshRows()`），宿主无需自建失败反馈。helper 回填为异步写属性，无「监听回调同步写 `data` 落后一帧」的限制（详见下方决策表后的回填时序注意）。协议细节（requestId 去重、同值不重发、竞态规则）见下方 API 表的 `row-model` / `oas-rows-request` / `reportRowsError` 条目。
 
 ### 服务端数据方案选用决策表
 
@@ -665,6 +665,8 @@ const source = createServerSource(table, {
 | 宿主自管事件监听 | 深度定制取数链路（自建缓存/合并/SSE 推送），或上述形态覆盖不了的组合 | 宿主完全自管 | 宿主自建 | 宿主自建 | 自由度最大、成本最高 |
 
 互斥与前提规则：`row-model="server"` 与 `windowed` 同开时 **windowed 优先**（server 被忽略）+ 一次性 devWarn；server 生效前提 = `total` 属性在场（缺失回落 client + 一次性 devWarn）；「逐段混用（只排当前页）」是错误语义，组件不提供该配置——排序/过滤要么全在服务端（server 模式），要么全在本地/宿主。
+
+回填时序注意：「宿主自管事件监听」路径在事件监听内回填请**异步写属性**——监听回调中同步写 `data` 会因渲染管线重入导致 DOM 落后一帧；`createServerSource` helper 已内置异步回填，无此限制。
 
 ### 能力闸门（server 模式逐项声明）
 
