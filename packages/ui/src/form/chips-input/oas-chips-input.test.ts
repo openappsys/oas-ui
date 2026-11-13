@@ -192,6 +192,15 @@ describe('OASChipsInput 粘贴拆分', () => {
     expect(el.value).toEqual(['a@b.co', 'c@d.co', 'e@f.co', 'g@h.co', 'i@j.co'])
   })
 
+  it('全角分号 / 全角逗号（中文 IME）同样拆分与成 chip（T15）', () => {
+    const el = mount()
+    paste(el, 'a@b.co；c@d.co，e@f.co')
+    expect(el.value).toEqual(['a@b.co', 'c@d.co', 'e@f.co'])
+    typeValue(el, 'g@h.co')
+    pressKey(el, '；')
+    expect(el.value).toEqual(['a@b.co', 'c@d.co', 'e@f.co', 'g@h.co'])
+  })
+
   it('粘贴含分隔符时拦截默认插入（preventDefault），oas-change 仅一次（trigger=paste）', () => {
     const el = mount()
     const details: unknown[] = []

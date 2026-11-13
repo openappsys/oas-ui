@@ -248,6 +248,17 @@ describe('OASEquation 编辑实时预览（editable）', () => {
     expect(eqOf(el).hasAttribute('role')).toBe(false)
   })
 
+  it('编辑态中移除 editable：补派 oas-editing(false)（宿主状态机不丢退出通知）', () => {
+    const el = mount({ code: 'x^2', editable: '' })
+    const events: boolean[] = []
+    el.addEventListener('oas-editing', (e) => events.push((e as CustomEvent).detail.editing))
+    eqOf(el).click()
+    expect(events).toEqual([true])
+    el.removeAttribute('editable')
+    expect(events).toEqual([true, false])
+    expect(editorOf(el)).toBeNull()
+  })
+
   it('点击 / Enter / Space 进入编辑态：编辑区显示、源码回填、聚焦、派发 oas-editing', () => {
     const el = mount({ code: 'x^2', editable: '' })
     const events: boolean[] = []

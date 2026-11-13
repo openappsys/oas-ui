@@ -1313,7 +1313,7 @@ export class OASKanban extends OASElement {
       collapse.className = 'column-collapse'
       collapse.setAttribute('part', 'column-collapse')
       collapse.setAttribute('aria-expanded', 'true')
-      collapse.setAttribute('aria-label', this.t('kanban.collapse'))
+      collapse.setAttribute('aria-label', `${this.t('kanban.collapse')}：${col.title}`)
       collapse.innerHTML = COLLAPSE_ICON
       parts.push(collapse)
     }

@@ -1201,11 +1201,12 @@ describe('OASKanban', () => {
 
     it('collapsible 开启：列头出现折叠按钮（aria-expanded=true + aria-label i18n），无窄条', () => {
       const el = mount({ collapsible: '' })
+      const TITLES: Record<string, string> = { todo: '待办', doing: '进行中', done: '已完成' }
       for (const col of columnEls(el)) {
         const btn = col.querySelector<HTMLButtonElement>('.column-collapse')!
         expect(btn, `列 ${col.getAttribute('data-key')} 有折叠按钮`).toBeInstanceOf(HTMLButtonElement)
         expect(btn.getAttribute('aria-expanded')).toBe('true')
-        expect(btn.getAttribute('aria-label')).toBe('收起列')
+        expect(btn.getAttribute('aria-label')).toBe(`收起列：${TITLES[col.getAttribute('data-key')!]}`)
         expect(btn.getAttribute('type')).toBe('button')
       }
       expect(shadow(el).querySelector('.column-rail'), '初始全展开无窄条').toBeNull()

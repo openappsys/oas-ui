@@ -13,7 +13,7 @@ const VALID_SIZES = ['small', 'medium', 'large'] as const
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/
 
 /** 粘贴拆分隔符：分号 / 逗号 / 换行 / 空白（邮箱本地语义不含这些字符，可安全切分） */
-const PASTIT_SEP_RE = /[;,\s]+/
+const PASTE_SEP_RE = /[;；,，\s]+/
 
 /** 输入法组合态判定：isComposing 或旧浏览器 keyCode 229 均视为组合中（Enter 选词不触发提交） */
 function isComposing(e: KeyboardEvent): boolean {
@@ -431,7 +431,7 @@ export class OASChipsInput extends OASElement {
     if (!inputEl) return
     // IME 组合态防护：中文输入法 Enter/分隔符选词确认不触发提交（isComposing / keyCode 229）
     if (isComposing(e)) return
-    if (e.key === 'Enter' || e.key === ',' || e.key === ';') {
+    if (e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === '，' || e.key === '；') {
       e.preventDefault()
       this.commitInput()
     } else if (e.key === 'Backspace' && inputEl.value === '' && this.chips.length > 0) {
@@ -458,10 +458,10 @@ export class OASChipsInput extends OASElement {
   /** 粘贴拆分：文本含分隔符（分号/逗号/换行/空白）时批量建 chip，否则保持原生插入 */
   private onPaste(e: ClipboardEvent): void {
     const text = e.clipboardData?.getData('text') ?? ''
-    if (!PASTIT_SEP_RE.test(text)) return
+    if (!PASTE_SEP_RE.test(text)) return
     e.preventDefault()
     const pieces = text
-      .split(PASTIT_SEP_RE)
+      .split(PASTE_SEP_RE)
       .map((s) => s.trim())
       .filter((s) => s !== '')
     let added = false

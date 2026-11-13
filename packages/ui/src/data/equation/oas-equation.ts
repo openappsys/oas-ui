@@ -642,7 +642,10 @@ export class OASEquation extends OASElement {
       if (editor) {
         editor.remove()
         this.fieldEl = null
+        // 编辑态中被移除 editable：补派退出通知（宿主状态机否则只收到过 editing:true）
+        const wasEditing = this.editingState
         this.editingState = false
+        if (wasEditing) this.emit('editing', { editing: false })
       }
       this.removeAttribute('data-editing')
       eq.removeAttribute('role')
