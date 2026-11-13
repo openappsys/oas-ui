@@ -2043,7 +2043,10 @@ export class OASTableBase extends OASElement {
           this.serverLoading = false
           this.serverError = false
           // 同值写入不进渲染签名（增量快路径按签名判定为 no-op）——清态后必须显式标脏
-          // 强制全量渲染，否则 loading 行/失败条卡在屏上（实测：同值 total 回填错误条不消失）
+          // 强制全量渲染，否则 loading 行/失败条卡在屏上（实测：同值 total 回填错误条不消失）。
+          // 仅在确有态变化时标脏：轮询型宿主每次同值写 total（无态变化）不再全量渲染 +
+          // 作废 flat/visible 缓存 + 打断进行中编辑（markRenderDirty 会递增 propChannelVersion
+          // 强制下一次 update 回落全量渲染路径）
           this.markRenderDirty()
         }
         // 成功回填登记：当前序号已收到响应——同序号后续失败上报按幂等静默丢弃
