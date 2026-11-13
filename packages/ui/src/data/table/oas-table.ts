@@ -413,6 +413,21 @@ const WINDOWED_TREE_EXPAND_HINT =
 const VISUAL_OVERFLOW_HINT =
   '[oas-table] 视觉窗口越界（visual-start + 已装载条目数 > visual-total）：界外条目不在渲染窗口内，请宿主扩充 visual-total 或回填更小的切片'
 
+/**
+ * server 行模型（row-model="server"）前提不满足的告警文案（实例级去重一次）。
+ * 生效前提 = `total` 属性在场（外部分页形态：data 为宿主切好的当前页切片）；
+ * 前提不满足时按 client 行为执行（本地过滤/排序/切片照常），不部分生效。
+ */
+const SERVER_PREMISE_HINT =
+  '[oas-table] row-model="server" 需要 total 属性在场（外部分页形态：data 为当前页切片、宿主监听 oas-rows-request 取数回填）——前提不满足，已按 client 行为执行'
+
+/**
+ * server 行模型与 windowed 同开的互斥告警文案（实例级去重一次）。
+ * 两者都是「数据不全在前端」的宿主托管形态，协议互斥：windowed 优先，row-model 被忽略。
+ */
+const SERVER_WINDOWED_HINT =
+  '[oas-table] row-model="server" 与 windowed 同开：windowed 优先，row-model 已忽略（两协议互斥，请二选一）'
+
 /** 编译期一致性：emit 用的字面量 `'window-request'`（拼 `oas-` 前缀）须与共享契约常量一致 */
 const _ROW_WINDOW_EVENT_CHECK: typeof ROW_WINDOW_EVENT = 'oas-window-request'
 void _ROW_WINDOW_EVENT_CHECK
@@ -1406,6 +1421,10 @@ export class OASTableBase extends OASElement {
       'windowed',
       // windowed：data[0] 在全量中的绝对行下标
       'window-start',
+      // server 行模型（配合 total 外部分页形态）：本地过滤/排序整体跳过（服务端已按当前
+      // 排序/过滤条件返回当前页切片），翻页/排序/过滤经 oas-rows-request 与宿主交换。
+      // 生效前提见 serverOn()；与 windowed 同开时 windowed 优先（互斥告警一次）
+      'row-model',
       // 可选视觉协议（须同时有效才启用）：visual-total=全量视觉行数（数据行 + 行内嵌展开内容行，
       // ≥ 数据 total）；visual-start=当前 data[0] 的视觉行号。生效后渲染 flow 从 visual-start×行高起、
       // 渲染 count=visual-total，展开由宿主完全控制（本地 toggle 只发 oas-expand）
@@ -1609,6 +1628,10 @@ export class OASTableBase extends OASElement {
   private winTreeExpandWarned = false
   /** windowed × print「仅输出已装载切片」守卫告警去重（实例级一次） */
   private windowedPrintWarned = false
+  /** server 行模型前提不满足（缺 total）告警去重（实例级一次） */
+  private serverPremiseWarned = false
+  /** server 行模型 × windowed 同开互斥告警去重（实例级一次） */
+  private serverWindowedWarned = false
   /** 打印媒体查询（connectedCallback 捕获；null = 环境不支持 / 已断开） */
   private printMql: MediaQueryList | null = null
   /** 当前是否处于 print 媒体（打印/打印预览）：窗口外行不在 DOM、CSS 无法唤回，此态下行/列窗口恒全量 */
@@ -2749,6 +2772,8 @@ export class OASTableBase extends OASElement {
     paginationOn: boolean
   } {
     // windowed：data 即宿主切好的绝对行窗口切片——本地过滤/排序/分页切片一律不执行
+    // server 行模型前提/互斥告警探测（生效行为由 a3/a4 缝位接管；client 路径在此零变化）
+    if (this.getAttr('row-model', '') === 'server') this.serverOn()
     if (this.windowedOn()) return this.computeDisplayRootsWindowed()
     // 过滤：按 filter-values 过滤顶层行（在排序/分页之前，保证分页页数反映过滤后数据）
     const filterValues = this.parseFilterValues()
@@ -5167,6 +5192,34 @@ export class OASTableBase extends OASElement {
   /** windowed 模式是否生效（parse 后的缓存判定：windowed 属性在场且 total 为合法正数） */
   private windowedOn(): boolean {
     return this._winMode.windowed
+  }
+
+  // ==================== server 行模型（row-model="server"） ====================
+
+  /**
+   * server 行模型是否生效（判定点内联前提/互斥告警，同 columnVirtualOn 的先例）：
+   * - `row-model="server"` 且 `total` 属性在场（外部分页形态）才生效；
+   * - 前提不满足 → devWarn 一次 + 按 client 行为执行（返回 false，零行为变化）；
+   * - 与 windowed 同开 → windowed 优先（返回 false）+ 互斥 devWarn 一次。
+   * 告警为实例级去重一次（devWarn 属 dev-only 通道，不可作运行时契约依赖）。
+   */
+  private serverOn(): boolean {
+    if (this.getAttr('row-model', '') !== 'server') return false
+    if (this.windowedOn()) {
+      if (!this.serverWindowedWarned) {
+        this.serverWindowedWarned = true
+        devWarn(SERVER_WINDOWED_HINT)
+      }
+      return false
+    }
+    if (this.externalTotal() === null) {
+      if (!this.serverPremiseWarned) {
+        this.serverPremiseWarned = true
+        devWarn(SERVER_PREMISE_HINT)
+      }
+      return false
+    }
+    return true
   }
 
   /** column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / 固定列布局不符 → 告警一次并降级为普通渲染） */
