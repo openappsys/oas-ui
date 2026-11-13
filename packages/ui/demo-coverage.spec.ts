@@ -128,6 +128,8 @@ const EXEMPT_EVENTS = new Set([
   'oas-action', // message-actions：需点 shadow 内操作按钮（qa-regression/ai-actions.spec.ts 已固化）
   'oas-toggle', // tool-call：需点 shadow 内头部（qa-regression/ai-actions.spec.ts 已固化）
   'oas-window-request', // table：windowed 模式需宿主只喂可视窗口切片才触发（通用探针不可达；qa-regression/table.spec.ts 已固化真实滚动→请求→回填链路）
+  'oas-rows-request', // table：row-model="server" 需宿主监听取数回填才触发（通用探针不可达；qa-regression/table-server.spec.ts 已固化真实请求链路）
+  'oas-rows-error', // table：server 行模型失败反馈需宿主 reportRowsError 通知（通用探针不可达；qa-regression/table-server.spec.ts 已固化失败链路）
   'oas-range-request', // gantt/resource：宿主托管时间范围时滚到轴端才触发（通用探针不可达；qa-regression/gantt.spec.ts 与 resource.spec.ts 已固化真实链路）
 ])
 
