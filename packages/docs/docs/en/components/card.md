@@ -50,7 +50,7 @@ The `cover-src` attribute or the `cover` slot places a full-width cover image at
 
 <DemoBlock title="cover-src cover image">
   <div style="width: 320px">
-    <oas-card title="City Cycling" cover-src="https://picsum.photos/seed/isui-card-cover/640/360" cover-alt="Cycling photo along the river">
+    <oas-card title="City Cycling" cover-src="/assets/demo-wide-6.svg" cover-alt="Cycling photo along the river">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">A 15 km leisure cycling route along the river, perfect for a weekend.</p>
     </oas-card>
   </div>
@@ -71,7 +71,7 @@ The bottom `actions` slot holds a button group, with a divider automatically add
 
 <DemoBlock title="Product card">
   <div style="width: 320px">
-    <oas-card title="Wireless Noise-Canceling Headphones" hoverable cover-src="https://picsum.photos/seed/isui-card-product/640/360" cover-alt="Headphones product photo">
+    <oas-card title="Wireless Noise-Canceling Headphones" hoverable cover-src="/assets/demo-wide-2.svg" cover-alt="Headphones product photo">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Active noise canceling · 30h battery · Bluetooth 5.3</p>
       <p style="color: var(--oas-color-primary); font-weight: 600; margin: var(--oas-space-2) 0 0;">¥ 899</p>
       <oas-button slot="actions" size="small">View details</oas-button>
@@ -94,7 +94,7 @@ The bottom `actions` slot holds a button group, with a divider automatically add
 
 <DemoBlock title="Clickable + actions without interference">
   <div style="width: 320px">
-    <oas-card clickable title="Collab Project" cover-src="https://picsum.photos/seed/isui-card-team/640/360" cover-alt="Team collaboration illustration">
+    <oas-card clickable title="Collab Project" cover-src="/assets/demo-wide-4.svg" cover-alt="Team collaboration illustration">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Click the card body to fire the whole-card click; click the buttons for their own actions.</p>
       <oas-button slot="actions" size="small">Invite members</oas-button>
       <oas-button slot="actions" size="small" type="danger">Archive</oas-button>
@@ -258,7 +258,7 @@ Use `slot="avatar"` for an avatar on the left of the title, and the `description
 <DemoBlock title="Meta user card">
   <div style="width: 360px">
     <oas-card description="Frontend Engineer · Shanghai">
-      <oas-avatar slot="avatar" src="https://picsum.photos/seed/isui-card-meta/160" size="48" alt="Member avatar"></oas-avatar>
+      <oas-avatar slot="avatar" src="/assets/demo-square-4.svg" size="48" alt="Member avatar"></oas-avatar>
       <span slot="title">Lin Xiao</span>
       <oas-button slot="extra" size="small">Follow</oas-button>
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Owns component architecture and rendering performance; recently exploring SSR hydration.</p>
@@ -364,7 +364,7 @@ A typical product card: cover image + price area + actions + footer.
 
 <DemoBlock title="Product card">
   <div style="width: 320px">
-    <oas-card hoverable cover-src="https://picsum.photos/seed/isui-card-keyboard/640/360" cover-alt="Portable mechanical keyboard product photo">
+    <oas-card hoverable cover-src="/assets/demo-wide-2.svg" cover-alt="Portable mechanical keyboard product photo">
       <span slot="title">Portable Mechanical Keyboard</span>
       <p style="margin: 0;">
         <span style="color: var(--oas-color-primary); font-weight: 600; font-size: var(--oas-font-size-lg);">¥ 429</span>
@@ -457,11 +457,11 @@ onMounted(async () => {
 
 <DemoBlock title="horizontal with left cover">
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
-    <oas-card orientation="horizontal" hoverable title="Horizontal news card" cover-src="https://picsum.photos/seed/isui-card-horiz/640/640" cover-alt="Horizontal card cover">
+    <oas-card orientation="horizontal" hoverable title="Horizontal news card" cover-src="/assets/demo-square-1.svg" cover-alt="Horizontal card cover">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Cover on the left; title, body and actions on the right.</p>
       <oas-button slot="actions" size="small" type="primary">Read more</oas-button>
     </oas-card>
-    <oas-card hoverable title="Default vertical (comparison)" cover-src="https://picsum.photos/seed/isui-card-horiz/640/360" cover-alt="Vertical card cover">
+    <oas-card hoverable title="Default vertical (comparison)" cover-src="/assets/demo-wide-1.svg" cover-alt="Vertical card cover">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Cover spreads full width on top (current default).</p>
     </oas-card>
   </div>

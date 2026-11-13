@@ -56,7 +56,7 @@
 `illustration` 属性支持图片 URL 与内联 SVG/HTML 标记；`slot="illustration"` 可传入任意内容，优先级最高。标记内容按 HTML 渲染，只可传入可信数据；不可信内容请先在宿主侧转义。
 
 <DemoBlock title="图片 URL">
-  <oas-empty title="暂无数据" illustration="https://picsum.photos/seed/oas-empty/120"></oas-empty>
+  <oas-empty title="暂无数据" illustration="/assets/demo-square-6.svg"></oas-empty>
 </DemoBlock>
 
 <DemoBlock title="SVG 标记">

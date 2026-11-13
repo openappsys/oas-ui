@@ -5,7 +5,7 @@ Displays image resources, with an optional built-in preview feature.
 ## Basic Usage
 
 <DemoBlock title="Basic image">
-  <oas-image src="https://picsum.photos/seed/isui/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2Y5Y2Y1Jy8+PC9zdmc+" alt="Example image"></oas-image>
+  <oas-image src="/assets/demo-wide-5.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2Y5Y2Y1Jy8+PC9zdmc+" alt="Example image"></oas-image>
 </DemoBlock>
 
 ## Fit Mode
@@ -14,11 +14,11 @@ Displays image resources, with an optional built-in preview feature.
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap">
     <div>
       <p class="image-cap">cover (crop to fill)</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-cover/600/300" fit="cover" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVhOTdmJy8+PC9zdmc+" alt="cover"></oas-image>
+      <oas-image class="fit-demo" src="/assets/demo-wide-5.svg" fit="cover" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVhOTdmJy8+PC9zdmc+" alt="cover"></oas-image>
     </div>
     <div>
       <p class="image-cap">contain (fit fully)</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-contain/600/300" fit="contain" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2ZkMGE5Jy8+PC9zdmc+" alt="contain"></oas-image>
+      <oas-image class="fit-demo" src="/assets/demo-wide-2.svg" fit="contain" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2ZkMGE5Jy8+PC9zdmc+" alt="contain"></oas-image>
     </div>
   </div>
 </DemoBlock>
@@ -75,7 +75,7 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
 ## Placeholder and Fallback
 
 <DemoBlock title="Loading placeholder">
-  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZTU5YWQxJy8+PC9zdmc+" alt="Loading placeholder"></oas-image>
+  <oas-image src="/assets/demo-wide-5.svg" placeholder fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZTU5YWQxJy8+PC9zdmc+" alt="Loading placeholder"></oas-image>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     With <code>placeholder</code>, a light-gray placeholder is shown until the image finishes loading, then it switches to the image.
   </p>
@@ -101,14 +101,14 @@ When the image fails to load, an "Image failed to load" placeholder is shown by 
 <DemoBlock title="Lazy-loading long list (loads image by image while scrolling)">
   <p class="image-cap">With <code>lazy</code>, an image only starts loading when it enters the viewport; pair it with <code>placeholder</code> to show a "Loading" placeholder. Scroll down the list and watch the placeholder → loaded transition (images already in the viewport load immediately).</p>
   <div class="lazy-list" id="image-lazy-list">
-    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVjOTdmJy8+PC9zdmc+" alt="Lazy loading example"></oas-image>
+    <oas-image lazy placeholder src="/assets/demo-wide-3.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVjOTdmJy8+PC9zdmc+" alt="Lazy loading example"></oas-image>
   </div>
 </DemoBlock>
 
 ## Preview
 
 <DemoBlock title="Click to preview (built-in overlay)">
-  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="Preview image"></oas-image>
+  <oas-image id="image-preview" src="/assets/demo-wide-4.svg" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="Preview image"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     Click the image to open a full-screen preview overlay: the toolbar supports zoom in / out, rotate, flip horizontal / vertical, and download; after zooming in you can drag to pan and use the wheel to zoom. On touch screens, pinch with two fingers to zoom (anchored at the finger midpoint, which also pans as it moves) or drag with one finger to pan. Press Esc or click the mask to close. The close button is focused when opened, and focus is restored on close. Emits <code>oas-preview</code> (detail contains src).
   </p>
@@ -119,14 +119,14 @@ When opened, the preview overlay is mounted to <code>document.body</code> (porta
 ## Gallery Preview
 
 <DemoBlock title="Gallery preview (multi-image paging)">
-  <oas-image id="image-gallery" preview src="https://picsum.photos/seed/isui-gallery-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-gallery-1/1200/600","https://picsum.photos/seed/isui-gallery-2/1200/600","https://picsum.photos/seed/isui-gallery-3/1200/600","https://picsum.photos/seed/isui-gallery-4/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYzRiNWU1Jy8+PC9zdmc+" alt="Gallery"></oas-image>
+  <oas-image id="image-gallery" preview src="/assets/demo-wide-4.svg" preview-src-list='["/assets/demo-wide-4.svg","/assets/demo-wide-5.svg","/assets/demo-wide-6.svg","/assets/demo-wide-1.svg"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYzRiNWU1Jy8+PC9zdmc+" alt="Gallery"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     Set <code>preview-src-list</code> (a JSON array of URLs) to enter gallery mode: use the side arrows, the toolbar paging buttons, or ←→ keys to page through, with an "n/total" counter. If an image fails to load, a failure placeholder (reusing the <code>error</code> slot content) is shown instead of a blank stage.
   </p>
 </DemoBlock>
 
 <DemoBlock title="Infinite loop (infinite)">
-  <oas-image id="image-gallery-infinite" preview infinite src="https://picsum.photos/seed/isui-loop-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-loop-1/1200/600","https://picsum.photos/seed/isui-loop-2/1200/600","https://picsum.photos/seed/isui-loop-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOTVjN2NlJy8+PC9zdmc+" alt="Looping gallery"></oas-image>
+  <oas-image id="image-gallery-infinite" preview infinite src="/assets/demo-wide-2.svg" preview-src-list='["/assets/demo-wide-2.svg","/assets/demo-wide-3.svg","/assets/demo-wide-4.svg"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOTVjN2NlJy8+PC9zdmc+" alt="Looping gallery"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     With <code>infinite</code>, paging wraps around: "next" on the last image returns to the first, and "prev" on the first image jumps to the last.
   </p>
@@ -135,7 +135,7 @@ When opened, the preview overlay is mounted to <code>document.body</code> (porta
 ## Thumbnail vs. Original
 
 <DemoBlock title="preview-src (separate thumbnail and original)">
-  <oas-image preview src="https://picsum.photos/seed/isui-thumb/240/150" preview-src="https://picsum.photos/seed/isui-thumb/1600/1000" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Thumbnail and original"></oas-image>
+  <oas-image preview src="/assets/demo-wide-4.svg" preview-src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Thumbnail and original"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     The list shows the <code>src</code> thumbnail, while the preview loads the high-resolution original from <code>preview-src</code> (the download link points to the original as well).
   </p>
@@ -146,7 +146,7 @@ When opened, the preview overlay is mounted to <code>document.body</code> (porta
 <DemoBlock title="Controlled preview (preview-open + openPreview())">
   <div style="width: 100%; display: flex; gap: var(--oas-space-3); align-items: center; flex-wrap: wrap">
     <oas-button id="image-controlled-open">Open preview</oas-button>
-    <oas-image id="image-controlled" preview src="https://picsum.photos/seed/isui-controlled/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZDRhNWU4Jy8+PC9zdmc+" alt="Controlled preview"></oas-image>
+    <oas-image id="image-controlled" preview src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZDRhNWU4Jy8+PC9zdmc+" alt="Controlled preview"></oas-image>
     <span id="image-controlled-state" class="image-cap" style="margin: 0">State: preview closed</span>
   </div>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
@@ -157,7 +157,7 @@ When opened, the preview overlay is mounted to <code>document.body</code> (porta
 ## Custom Toolbar
 
 <DemoBlock title="Custom toolbar (slot=toolbar + oas-toolbar-render)">
-  <oas-image id="image-custom-toolbar" preview src="https://picsum.photos/seed/isui-ct-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-ct-1/1200/600","https://picsum.photos/seed/isui-ct-2/1200/600","https://picsum.photos/seed/isui-ct-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTRjYWY4Jy8+PC9zdmc+" alt="Custom toolbar">
+  <oas-image id="image-custom-toolbar" preview src="/assets/demo-wide-5.svg" preview-src-list='["/assets/demo-wide-5.svg","/assets/demo-wide-6.svg","/assets/demo-wide-1.svg"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTRjYWY4Jy8+PC9zdmc+" alt="Custom toolbar">
     <template slot="toolbar">
       <button type="button" data-cmd="zoom-out">Zoom out</button>
       <button type="button" data-cmd="zoom-in">Zoom in</button>
@@ -202,7 +202,7 @@ The shared preview of <code>oas-image-group</code> supports this as well: place 
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
     <div>
       <p class="image-cap">Load success → oas-load</p>
-      <oas-image id="image-events-ok" class="fit-demo" src="https://picsum.photos/seed/isui-events-ok/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZWViNmZmJy8+PC9zdmc+" alt="Event demo (success)"></oas-image>
+      <oas-image id="image-events-ok" class="fit-demo" src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZWViNmZmJy8+PC9zdmc+" alt="Event demo (success)"></oas-image>
     </div>
     <div>
       <p class="image-cap">Load failure → oas-error</p>
@@ -220,7 +220,7 @@ The shared preview of <code>oas-image-group</code> supports this as well: place 
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
     <div>
       <p class="image-cap">slot="placeholder"</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-slot-ph/600/300" placeholder>
+      <oas-image class="fit-demo" src="/assets/demo-wide-1.svg" placeholder>
         <template slot="placeholder"><span style="color: var(--oas-color-primary)">Custom loading placeholder…</span></template>
       </oas-image>
     </div>
@@ -239,7 +239,7 @@ The shared preview of <code>oas-image-group</code> supports this as well: place 
 ## Flip
 
 <DemoBlock title="Flip (flipX / flipY)">
-  <oas-image preview src="https://picsum.photos/seed/isui-flip/900/500" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5MDAnIGhlaWdodD0nNTAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjBjNWE4Jy8+PC9zdmc+" alt="Flippable image"></oas-image>
+  <oas-image preview src="/assets/demo-wide-3.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5MDAnIGhlaWdodD0nNTAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjBjNWE4Jy8+PC9zdmc+" alt="Flippable image"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
     The toolbar provides "Flip horizontal" and "Flip vertical", composed into the same transform state machine as zoom, rotate, and pan — they compose without interfering with each other.
   </p>
@@ -248,7 +248,7 @@ The shared preview of <code>oas-image-group</code> supports this as well: place 
 ## Drag to Pan and Wheel to Zoom
 
 <DemoBlock title="Drag to pan + wheel to zoom (large images)">
-  <oas-image preview src="https://picsum.photos/seed/isui-pan/1800/1100" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAwJyBoZWlnaHQ9JzExMDAnPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9JyM5ZGMzZTYnLz48L3N2Zz4=" alt="Large image pan and zoom"></oas-image>
+  <oas-image preview src="/assets/demo-wide-5.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAwJyBoZWlnaHQ9JzExMDAnPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9JyM5ZGMzZTYnLz48L3N2Zz4=" alt="Large image pan and zoom"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
     After zooming in, press and drag on the preview image to pan (clamped to the visible bounds). Scroll the wheel inside the preview area to zoom (page scrolling is blocked). Zoom step and limits can be overridden with CSS variables (see the table below).
   </p>
@@ -259,7 +259,7 @@ The shared preview of <code>oas-image-group</code> supports this as well: place 
 <DemoBlock title="Photo wall (each image enters the same gallery)">
   <p class="image-cap">A grid of thumbnails: clicking any one opens the shared gallery starting from that image (opening index matches the thumbnail src against the list).</p>
   <div class="album-grid" id="image-album">
-    <oas-image preview src="https://picsum.photos/seed/isui-album-1/800/500" preview-src-list='["https://picsum.photos/seed/isui-album-1/800/500","https://picsum.photos/seed/isui-album-2/800/500","https://picsum.photos/seed/isui-album-3/800/500","https://picsum.photos/seed/isui-album-4/800/500","https://picsum.photos/seed/isui-album-5/800/500","https://picsum.photos/seed/isui-album-6/800/500"]' alt="Album image"></oas-image>
+    <oas-image preview src="/assets/demo-wide-1.svg" preview-src-list='["/assets/demo-wide-1.svg","/assets/demo-wide-2.svg","/assets/demo-wide-3.svg","/assets/demo-wide-4.svg","/assets/demo-wide-5.svg","/assets/demo-wide-6.svg"]' alt="Album image"></oas-image>
   </div>
 </DemoBlock>
 
@@ -268,10 +268,10 @@ The shared preview of <code>oas-image-group</code> supports this as well: place 
 <DemoBlock title="Image group (declarative photo wall → shared preview)">
   <p class="image-cap">Put multiple <code>oas-image</code> elements inside <code>oas-image-group</code> and the container collects them into a shared gallery: clicking any image opens the preview from that image, and the side arrows / keyboard ←→ page through the whole set (n/total counter). A child's own <code>preview</code> click is taken over by the container as the shared gallery — no per-image <code>preview-src-list</code> needed.</p>
   <oas-image-group id="image-group-demo" class="group-wall">
-    <oas-image src="https://picsum.photos/seed/isui-group-1/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 1"></oas-image>
-    <oas-image src="https://picsum.photos/seed/isui-group-2/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 2"></oas-image>
-    <oas-image src="https://picsum.photos/seed/isui-group-3/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 3"></oas-image>
-    <oas-image src="https://picsum.photos/seed/isui-group-4/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 4"></oas-image>
+    <oas-image src="/assets/demo-wide-1.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 1"></oas-image>
+    <oas-image src="/assets/demo-wide-2.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 2"></oas-image>
+    <oas-image src="/assets/demo-wide-3.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 3"></oas-image>
+    <oas-image src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 4"></oas-image>
   </oas-image-group>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
     Dynamically adding/removing children (or changing their <code>src</code>) syncs the gallery automatically; <code>current</code> optionally controls the current index — when present, clicks open at <code>current</code> and internal paging reflects back to the attribute; when absent, the attribute is not created and only <code>oas-change</code> is emitted (<code>detail: { current, prev }</code>, see the message feedback above); <code>infinite</code> is passed through to the shared preview.
@@ -300,7 +300,7 @@ onMounted(async () => {
       const el = document.createElement('oas-image')
       el.setAttribute('lazy', '')
       el.setAttribute('placeholder', '')
-      el.setAttribute('src', `https://picsum.photos/seed/isui-lazy-${i}/600/300`)
+      el.setAttribute('src', `/assets/demo-wide-4.svg`)
       el.setAttribute('fallback', "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjNzJjN2QwJy8+PC9zdmc+")
       el.setAttribute('alt', `Lazy image ${i}`)
       list.appendChild(el)
@@ -369,12 +369,12 @@ onMounted(async () => {
   // Photo wall: grid of thumbnails sharing one gallery; clicking any image
   // opens the gallery starting from that image
   const ALBUM = [
-    'https://picsum.photos/seed/isui-album-1/800/500',
-    'https://picsum.photos/seed/isui-album-2/800/500',
-    'https://picsum.photos/seed/isui-album-3/800/500',
-    'https://picsum.photos/seed/isui-album-4/800/500',
-    'https://picsum.photos/seed/isui-album-5/800/500',
-    'https://picsum.photos/seed/isui-album-6/800/500',
+    '/assets/demo-wide-1.svg',
+    '/assets/demo-wide-2.svg',
+    '/assets/demo-wide-3.svg',
+    '/assets/demo-wide-4.svg',
+    '/assets/demo-wide-5.svg',
+    '/assets/demo-wide-6.svg',
   ]
   const album = document.querySelector('#image-album')
   if (album) {
@@ -396,12 +396,12 @@ onMounted(async () => {
 `width` / `height` set explicit dimensions: numbers are treated as px, and any CSS size string (e.g. `50%`) passes through as-is onto the inner `img` (the `max-width: 100%` responsive constraint is preserved); empty values clear the sizing back to auto layout. `referrerpolicy` passes through to the inner `img` to control the privacy policy (e.g. `no-referrer`); an empty value falls back to the browser default.
 
 <DemoBlock title="Explicit width / height">
-  <oas-image src="https://picsum.photos/seed/isui-img-dim1/480/320" width="240" height="160" alt="Fixed size" style="margin-inline-end: var(--oas-space-4)"></oas-image>
-  <oas-image src="https://picsum.photos/seed/isui-img-dim2/480/320" width="240" alt="Width only"></oas-image>
+  <oas-image src="/assets/demo-wide-5.svg" width="240" height="160" alt="Fixed size" style="margin-inline-end: var(--oas-space-4)"></oas-image>
+  <oas-image src="/assets/demo-wide-6.svg" width="240" alt="Width only"></oas-image>
 </DemoBlock>
 
 <DemoBlock title="referrerpolicy pass-through">
-  <oas-image src="https://picsum.photos/seed/isui-img-dim3/480/320" width="240" referrerpolicy="no-referrer" alt="no-referrer"></oas-image>
+  <oas-image src="/assets/demo-wide-1.svg" width="240" referrerpolicy="no-referrer" alt="no-referrer"></oas-image>
 </DemoBlock>
 
 ## API

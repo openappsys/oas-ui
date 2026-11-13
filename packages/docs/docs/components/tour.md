@@ -220,7 +220,7 @@
 
 <DemoBlock title="打字机动画 + 锁滚动">
   <oas-button type="primary" onclick="document.getElementById('tour-tw').setAttribute('open','')">开始引导</oas-button>
-  <oas-tour id="tour-tw" typewriter typewriter-speed="30" lock-scroll close-on-press-escape steps='[{"selector":"#tour-t1","title":"打字机动画","description":"这段描述会逐字显示，营造营销页引导氛围。","cover":"https://picsum.photos/seed/oas-tour/320/120"},{"selector":"#tour-t2","title":"锁滚动 + 无 Esc","description":"lock-scroll 锁定页面滚动，close-on-press-escape=false 时 Esc 不关闭。"}]'></oas-tour>
+  <oas-tour id="tour-tw" typewriter typewriter-speed="30" lock-scroll close-on-press-escape steps='[{"selector":"#tour-t1","title":"打字机动画","description":"这段描述会逐字显示，营造营销页引导氛围。","cover":"/assets/demo-wide-3.svg"},{"selector":"#tour-t2","title":"锁滚动 + 无 Esc","description":"lock-scroll 锁定页面滚动，close-on-press-escape=false 时 Esc 不关闭。"}]'></oas-tour>
   <div id="tour-t1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">打字机目标一（含 cover 封面）</div>
   <div id="tour-t2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">打字机目标二</div>
 </DemoBlock>

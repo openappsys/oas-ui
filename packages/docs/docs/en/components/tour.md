@@ -220,7 +220,7 @@ With `dont-show-again`, checking "Don't show this again" on close remembers the 
 
 <DemoBlock title="Typewriter animation + scroll lock">
   <oas-button type="primary" onclick="document.getElementById('tour-tw').setAttribute('open','')">Start tour</oas-button>
-  <oas-tour id="tour-tw" typewriter typewriter-speed="30" lock-scroll close-on-press-escape steps='[{"selector":"#tour-t1","title":"Typewriter animation","description":"This description reveals itself character by character, for a marketing-page tour vibe.","cover":"https://picsum.photos/seed/oas-tour/320/120"},{"selector":"#tour-t2","title":"Scroll lock, no Esc","description":"lock-scroll locks page scrolling; with close-on-press-escape=false, Esc does not close."}]'></oas-tour>
+  <oas-tour id="tour-tw" typewriter typewriter-speed="30" lock-scroll close-on-press-escape steps='[{"selector":"#tour-t1","title":"Typewriter animation","description":"This description reveals itself character by character, for a marketing-page tour vibe.","cover":"/assets/demo-wide-3.svg"},{"selector":"#tour-t2","title":"Scroll lock, no Esc","description":"lock-scroll locks page scrolling; with close-on-press-escape=false, Esc does not close."}]'></oas-tour>
   <div id="tour-t1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Typewriter target 1 (with cover image)</div>
   <div id="tour-t2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Typewriter target 2</div>
 </DemoBlock>

@@ -173,10 +173,10 @@ Content is not limited to text — putting images or logos in the slot produces 
 
 <DemoBlock title="Image scrolling (img)">
   <oas-marquee speed="36" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
-    <img src="https://picsum.photos/seed/isui-mq-1/120/60" alt="Image 1" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
-    <img src="https://picsum.photos/seed/isui-mq-2/120/60" alt="Image 2" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
-    <img src="https://picsum.photos/seed/isui-mq-3/120/60" alt="Image 3" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
-    <img src="https://picsum.photos/seed/isui-mq-4/120/60" alt="Image 4" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="/assets/demo-wide-6.svg" alt="Image 1" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="/assets/demo-wide-1.svg" alt="Image 2" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="/assets/demo-wide-2.svg" alt="Image 3" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="/assets/demo-wide-3.svg" alt="Image 4" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
   </oas-marquee>
 </DemoBlock>
 

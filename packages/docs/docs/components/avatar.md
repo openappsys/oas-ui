@@ -26,17 +26,17 @@
 ## 图片头像
 
 <DemoBlock title="图片头像">
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-1/160" size="32" alt="头像一"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-2/160" size="48" alt="头像二"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-3/160" size="64" alt="头像三"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-5.svg" size="32" alt="头像一"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-6.svg" size="48" alt="头像二"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-1.svg" size="64" alt="头像三"></oas-avatar>
 </DemoBlock>
 
 ## 头像组
 
 <DemoBlock title="头像组">
   <oas-avatar-group>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g1/160" size="40" alt="成员一"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g2/160" size="40" alt="成员二"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-6.svg" size="40" alt="成员一"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" size="40" alt="成员二"></oas-avatar>
     <oas-avatar size="40">张</oas-avatar>
     <oas-avatar size="40">李</oas-avatar>
   </oas-avatar-group>
@@ -46,8 +46,8 @@
 
 <DemoBlock title="最大展示数">
   <oas-avatar-group max="3">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g3/160" size="40" alt="成员一"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g4/160" size="40" alt="成员二"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-2.svg" size="40" alt="成员一"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-3.svg" size="40" alt="成员二"></oas-avatar>
     <oas-avatar size="40">张</oas-avatar>
     <oas-avatar size="40">李</oas-avatar>
     <oas-avatar size="40">王</oas-avatar>
@@ -62,13 +62,13 @@
 
 <DemoBlock title="统一尺寸 size">
   <oas-avatar-group size="48">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga1/160" alt="成员一"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga2/160" alt="成员二"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" alt="成员一"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-2.svg" alt="成员二"></oas-avatar>
     <oas-avatar>张</oas-avatar>
     <oas-avatar>李</oas-avatar>
   </oas-avatar-group>
   <oas-avatar-group size="24" max="3">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga3/160" alt="成员一"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-3.svg" alt="成员一"></oas-avatar>
     <oas-avatar>张</oas-avatar>
     <oas-avatar>李</oas-avatar>
     <oas-avatar>王</oas-avatar>
@@ -82,14 +82,14 @@
 
 <DemoBlock title="组间距 spacing">
   <oas-avatar-group spacing="4">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp1/160" size="40" alt="成员一"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp2/160" size="40" alt="成员二"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-4.svg" size="40" alt="成员一"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-5.svg" size="40" alt="成员二"></oas-avatar>
     <oas-avatar size="40">张</oas-avatar>
     <oas-avatar size="40">李</oas-avatar>
   </oas-avatar-group>
   <oas-avatar-group spacing="-16">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp3/160" size="40" alt="成员一"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp4/160" size="40" alt="成员二"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-6.svg" size="40" alt="成员一"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" size="40" alt="成员二"></oas-avatar>
     <oas-avatar size="40">张</oas-avatar>
     <oas-avatar size="40">李</oas-avatar>
   </oas-avatar-group>
@@ -101,8 +101,8 @@
 
 <DemoBlock title="折叠成员弹层">
   <oas-avatar-group max="4">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ov1/160" size="40" alt="成员一"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ov2/160" size="40" alt="成员二"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-6.svg" size="40" alt="成员一"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" size="40" alt="成员二"></oas-avatar>
     <oas-avatar size="40">张</oas-avatar>
     <oas-avatar size="40">李</oas-avatar>
     <oas-avatar size="40">王</oas-avatar>
@@ -128,8 +128,8 @@
 </DemoBlock>
 
 <DemoBlock title="位置与图片头像">
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b1/160" size="48" alt="头像四" badge="7"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b2/160" size="48" alt="头像五" badge="5" badge-placement="bottom-right"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-1.svg" size="48" alt="头像四" badge="7"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-2.svg" size="48" alt="头像五" badge="5" badge-placement="bottom-right"></oas-avatar>
 </DemoBlock>
 
 ## 加载失败回退
@@ -209,8 +209,8 @@
 `fit` 映射图片的 `object-fit`，默认 `cover`（裁切填满）；长图可用 `contain` 完整显示。
 
 <DemoBlock title="图片填充 fit">
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-fit/120/240" size="64" fit="cover" alt="cover 裁切填满"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-fit/120/240" size="64" fit="contain" alt="contain 完整显示"></oas-avatar>
+  <oas-avatar src="/assets/demo-tall-3.svg" size="64" fit="cover" alt="cover 裁切填满"></oas-avatar>
+  <oas-avatar src="/assets/demo-tall-3.svg" size="64" fit="contain" alt="contain 完整显示"></oas-avatar>
 </DemoBlock>
 
 ## 图标头像
@@ -227,7 +227,7 @@
 `fallback` 属性提供回退图 URL：主图加载失败时先切回退图重试一次，再失败才进入文字回退链。每次失败派发 `oas-error` 事件（`detail.src` 为失败的 URL），宿主可埋点或自定义回退。
 
 <DemoBlock title="回退图 fallback">
-  <oas-avatar src="https://invalid.example.com/primary.png" fallback="https://picsum.photos/seed/isui-avatar-fb/160" size="48" alt="回退图"></oas-avatar>
+  <oas-avatar src="https://invalid.example.com/primary.png" fallback="/assets/demo-square-6.svg" size="48" alt="回退图"></oas-avatar>
   <oas-avatar src="https://invalid.example.com/primary.png" fallback="https://invalid.example.com/backup.png" size="48" alt="两级都失败">张</oas-avatar>
 </DemoBlock>
 
@@ -239,7 +239,7 @@
   <div id="avatar-trigger-demo" style="display: flex; gap: 16px">
     <oas-avatar size="64" text="张"><span slot="trigger"></span></oas-avatar>
     <oas-avatar size="64" text="李"><span slot="trigger">更换</span></oas-avatar>
-    <oas-avatar size="64" src="https://picsum.photos/seed/isui-avatar-tr/160" alt="头像"><span slot="trigger"></span></oas-avatar>
+    <oas-avatar size="64" src="/assets/demo-square-6.svg" alt="头像"><span slot="trigger"></span></oas-avatar>
   </div>
 </DemoBlock>
 
@@ -276,7 +276,7 @@ onMounted(() => {
 
 <DemoBlock title="姓名悬浮提示（oas-tooltip 组合）">
   <oas-tooltip content="林晓雨" placement="top"><oas-avatar size="40">林</oas-avatar></oas-tooltip>
-  <oas-tooltip content="陈以宁" placement="top"><oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-tt1/160" alt="陈以宁"></oas-avatar></oas-tooltip>
+  <oas-tooltip content="陈以宁" placement="top"><oas-avatar size="40" src="/assets/demo-square-3.svg" alt="陈以宁"></oas-avatar></oas-tooltip>
   <oas-tooltip content="赵启铭" placement="top"><oas-avatar size="40" color="geekblue">赵</oas-avatar></oas-tooltip>
 </DemoBlock>
 
@@ -285,8 +285,8 @@ onMounted(() => {
 `srcset` 透传内层 `img`，按设备像素比等条件挑选图源（如 1x/2x 双倍图，高分屏自动取高清版）；空值移除，回落单 `src`。
 
 <DemoBlock title="srcset 双倍图源">
-  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss1/80" srcset="https://picsum.photos/seed/isui-avatar-ss1/80 1x, https://picsum.photos/seed/isui-avatar-ss1/160 2x" alt="响应式头像"></oas-avatar>
-  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss2/80" srcset="https://picsum.photos/seed/isui-avatar-ss2/80 1x, https://picsum.photos/seed/isui-avatar-ss2/160 2x" alt="响应式头像"></oas-avatar>
+  <oas-avatar size="40" src="/assets/demo-square-1.svg" srcset="/assets/demo-square-1.svg 1x, /assets/demo-square-1.svg 2x" alt="响应式头像"></oas-avatar>
+  <oas-avatar size="40" src="/assets/demo-square-2.svg" srcset="/assets/demo-square-2.svg 1x, /assets/demo-square-2.svg 2x" alt="响应式头像"></oas-avatar>
 </DemoBlock>
 
 ## API

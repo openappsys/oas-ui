@@ -101,6 +101,8 @@ onMounted(() => {
 
 Both are "free input becomes chips" components with different interaction models: DynamicTags is a tag flow plus a persistent input below (sorting / collapse / custom tag templates); ChipsInput keeps chips inline in a single control box (a single-control mental model close to a native input) with built-in per-chip email validation and red outlines. Use **ChipsInput for recipient / email sets**; use DynamicTags for generic tags (keywords, categories) that need sorting / collapsing / template customization.
 
+Framework binding note: the `value` attribute channel takes a JSON string; for dynamic binding in host frameworks (e.g. Vue `:value="..."`), pass a **string array via the property channel** — do not dynamically patch the attribute with a raw string, which normalizes to an empty array.
+
 ## API
 
 ### oas-chips-input

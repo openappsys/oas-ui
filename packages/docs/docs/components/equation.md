@@ -155,7 +155,7 @@ onMounted(() => {
 | --- | --- |
 | `oas-cancel` | Esc 取消编辑时派发，detail `{ value: 原源码 }` |
 | `oas-change` | 编辑提交且源码变化时派发，detail `{ value: 新源码 }` |
-| `oas-editing` | 编辑态进入/退出时派发，detail `{ editing: boolean }` |
+| `oas-editing` | 编辑态进入/退出时派发，detail `{ editing: boolean }`（编辑态中移除 `editable` 属性也会补派 `editing: false`） |
 
 #### CSS 变量
 
@@ -172,3 +172,4 @@ onMounted(() => {
 
 - 文本全部 HTML 转义，杜绝注入
 - 空 `code` 渲染空容器，不报错
+- 编辑态中宿主改写 `code`（受控值）不刷新编辑框，提交时以编辑框内容为准（编辑胜出）

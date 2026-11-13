@@ -1389,7 +1389,7 @@
     "events": {
       "oas-cancel": "Emitted when Esc cancels editing; detail `{ value: original source }`",
       "oas-change": "Emitted when an edit commit changes the source; detail `{ value: new source }`",
-      "oas-editing": "Emitted when entering/leaving edit mode; detail `{ editing: boolean }`"
+      "oas-editing": "Emitted when entering/leaving edit mode; detail `{ editing: boolean }` — removing the `editable` attribute mid-edit also emits `editing: false`"
     },
     "slots": {},
     "props": {

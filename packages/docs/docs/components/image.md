@@ -5,7 +5,7 @@
 ## 基础用法
 
 <DemoBlock title="基础图片">
-  <oas-image src="https://picsum.photos/seed/isui/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2Y5Y2Y1Jy8+PC9zdmc+" alt="示例图"></oas-image>
+  <oas-image src="/assets/demo-wide-5.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2Y5Y2Y1Jy8+PC9zdmc+" alt="示例图"></oas-image>
 </DemoBlock>
 
 ## 适应方式
@@ -14,11 +14,11 @@
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap">
     <div>
       <p class="image-cap">cover（裁切填充）</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-cover/600/300" fit="cover" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVhOTdmJy8+PC9zdmc+" alt="cover"></oas-image>
+      <oas-image class="fit-demo" src="/assets/demo-wide-5.svg" fit="cover" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVhOTdmJy8+PC9zdmc+" alt="cover"></oas-image>
     </div>
     <div>
       <p class="image-cap">contain（完整显示）</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-contain/600/300" fit="contain" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2ZkMGE5Jy8+PC9zdmc+" alt="contain"></oas-image>
+      <oas-image class="fit-demo" src="/assets/demo-wide-2.svg" fit="contain" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2ZkMGE5Jy8+PC9zdmc+" alt="contain"></oas-image>
     </div>
   </div>
 </DemoBlock>
@@ -75,7 +75,7 @@
 ## 占位与兜底
 
 <DemoBlock title="加载占位">
-  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZTU5YWQxJy8+PC9zdmc+" alt="加载占位"></oas-image>
+  <oas-image src="/assets/demo-wide-5.svg" placeholder fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZTU5YWQxJy8+PC9zdmc+" alt="加载占位"></oas-image>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     设置 <code>placeholder</code> 后，图片加载完成前显示浅灰占位；加载完成后自动切换为图片。
   </p>
@@ -101,14 +101,14 @@
 <DemoBlock title="懒加载长列表（滚动逐图加载）">
   <p class="image-cap">设置 <code>lazy</code> 后图片进入视口才发起加载；配合 <code>placeholder</code> 展示「加载中」占位。向下滚动列表，观察占位 → 加载的过渡（视口内图片立即加载）。</p>
   <div class="lazy-list" id="image-lazy-list" tabindex="0">
-    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVjOTdmJy8+PC9zdmc+" alt="懒加载示例图"></oas-image>
+    <oas-image lazy placeholder src="/assets/demo-wide-3.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVjOTdmJy8+PC9zdmc+" alt="懒加载示例图"></oas-image>
   </div>
 </DemoBlock>
 
 ## 预览
 
 <DemoBlock title="点击预览（内置浮层）">
-  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="可预览图片"></oas-image>
+  <oas-image id="image-preview" src="/assets/demo-wide-4.svg" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="可预览图片"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/水平翻转/垂直翻转/下载，放大后可拖拽平移、滚动滚轮缩放；触屏支持双指捏合缩放（锚定双指中点，中点移动自带平移）与单指拖拽平移；Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
   </p>
@@ -119,14 +119,14 @@
 ## 图集预览
 
 <DemoBlock title="图集预览（多图翻页）">
-  <oas-image id="image-gallery" preview src="https://picsum.photos/seed/isui-gallery-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-gallery-1/1200/600","https://picsum.photos/seed/isui-gallery-2/1200/600","https://picsum.photos/seed/isui-gallery-3/1200/600","https://picsum.photos/seed/isui-gallery-4/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYzRiNWU1Jy8+PC9zdmc+" alt="图集"></oas-image>
+  <oas-image id="image-gallery" preview src="/assets/demo-wide-4.svg" preview-src-list='["/assets/demo-wide-4.svg","/assets/demo-wide-5.svg","/assets/demo-wide-6.svg","/assets/demo-wide-1.svg"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYzRiNWU1Jy8+PC9zdmc+" alt="图集"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     设置 <code>preview-src-list</code>（JSON URL 数组）进入图集模式：点击后可用两侧箭头、工具栏翻页按钮或键盘 ←→ 翻页，页码指示「n/total」；某张加载失败显示失败占位（复用 <code>error</code> 插槽内容）而非空白。
   </p>
 </DemoBlock>
 
 <DemoBlock title="无限循环（infinite）">
-  <oas-image id="image-gallery-infinite" preview infinite src="https://picsum.photos/seed/isui-loop-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-loop-1/1200/600","https://picsum.photos/seed/isui-loop-2/1200/600","https://picsum.photos/seed/isui-loop-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOTVjN2NlJy8+PC9zdmc+" alt="循环图集"></oas-image>
+  <oas-image id="image-gallery-infinite" preview infinite src="/assets/demo-wide-2.svg" preview-src-list='["/assets/demo-wide-2.svg","/assets/demo-wide-3.svg","/assets/demo-wide-4.svg"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOTVjN2NlJy8+PC9zdmc+" alt="循环图集"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     加 <code>infinite</code> 后翻页首尾循环：最后一张再「下一张」回到第一张，第一张再「上一张」跳到最后一张。
   </p>
@@ -135,7 +135,7 @@
 ## 缩略图与原图分离
 
 <DemoBlock title="preview-src（缩略图与原图分离）">
-  <oas-image preview src="https://picsum.photos/seed/isui-thumb/240/150" preview-src="https://picsum.photos/seed/isui-thumb/1600/1000" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="缩略图与原图分离"></oas-image>
+  <oas-image preview src="/assets/demo-wide-4.svg" preview-src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="缩略图与原图分离"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     列表内显示 <code>src</code> 缩略图，点开预览时加载 <code>preview-src</code> 指定的高清原图（下载地址同步指向原图）。
   </p>
@@ -146,7 +146,7 @@
 <DemoBlock title="受控预览（preview-open + openPreview()）">
   <div style="width: 100%; display: flex; gap: var(--oas-space-3); align-items: center; flex-wrap: wrap">
     <oas-button id="image-controlled-open">打开预览</oas-button>
-    <oas-image id="image-controlled" preview src="https://picsum.photos/seed/isui-controlled/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZDRhNWU4Jy8+PC9zdmc+" alt="受控预览"></oas-image>
+    <oas-image id="image-controlled" preview src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZDRhNWU4Jy8+PC9zdmc+" alt="受控预览"></oas-image>
     <span id="image-controlled-state" class="image-cap" style="margin: 0">当前状态：预览未打开</span>
   </div>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
@@ -157,7 +157,7 @@
 ## 自定义工具栏
 
 <DemoBlock title="自定义工具栏（slot=toolbar + oas-toolbar-render）">
-  <oas-image id="image-custom-toolbar" preview src="https://picsum.photos/seed/isui-ct-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-ct-1/1200/600","https://picsum.photos/seed/isui-ct-2/1200/600","https://picsum.photos/seed/isui-ct-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTRjYWY4Jy8+PC9zdmc+" alt="自定义工具栏">
+  <oas-image id="image-custom-toolbar" preview src="/assets/demo-wide-5.svg" preview-src-list='["/assets/demo-wide-5.svg","/assets/demo-wide-6.svg","/assets/demo-wide-1.svg"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTRjYWY4Jy8+PC9zdmc+" alt="自定义工具栏">
     <template slot="toolbar">
       <button type="button" data-cmd="zoom-out">缩小</button>
       <button type="button" data-cmd="zoom-in">放大</button>
@@ -202,7 +202,7 @@ el.addEventListener('oas-toolbar-render', (e) => {
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
     <div>
       <p class="image-cap">加载成功 → oas-load</p>
-      <oas-image id="image-events-ok" class="fit-demo" src="https://picsum.photos/seed/isui-events-ok/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZWViNmZmJy8+PC9zdmc+" alt="事件示例（成功）"></oas-image>
+      <oas-image id="image-events-ok" class="fit-demo" src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZWViNmZmJy8+PC9zdmc+" alt="事件示例（成功）"></oas-image>
     </div>
     <div>
       <p class="image-cap">加载失败 → oas-error</p>
@@ -220,7 +220,7 @@ el.addEventListener('oas-toolbar-render', (e) => {
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
     <div>
       <p class="image-cap">slot="placeholder"</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-slot-ph/600/300" placeholder>
+      <oas-image class="fit-demo" src="/assets/demo-wide-1.svg" placeholder>
         <template slot="placeholder"><span style="color: var(--oas-color-primary)">自定义加载占位…</span></template>
       </oas-image>
     </div>
@@ -239,7 +239,7 @@ el.addEventListener('oas-toolbar-render', (e) => {
 ## 翻转
 
 <DemoBlock title="翻转（flipX / flipY）">
-  <oas-image preview src="https://picsum.photos/seed/isui-flip/900/500" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5MDAnIGhlaWdodD0nNTAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjBjNWE4Jy8+PC9zdmc+" alt="可翻转图片"></oas-image>
+  <oas-image preview src="/assets/demo-wide-3.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5MDAnIGhlaWdodD0nNTAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjBjNWE4Jy8+PC9zdmc+" alt="可翻转图片"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
     工具栏提供「水平翻转」「垂直翻转」，与缩放、旋转、拖拽平移串接为同一份 transform 状态机，互不打断。
   </p>
@@ -248,7 +248,7 @@ el.addEventListener('oas-toolbar-render', (e) => {
 ## 拖拽与滚轮缩放
 
 <DemoBlock title="拖拽平移 + 滚轮缩放（大图/长图）">
-  <oas-image preview src="https://picsum.photos/seed/isui-pan/1800/1100" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAwJyBoZWlnaHQ9JzExMDAnPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9JyM5ZGMzZTYnLz48L3N2Zz4=" alt="大图拖拽缩放"></oas-image>
+  <oas-image preview src="/assets/demo-wide-5.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAwJyBoZWlnaHQ9JzExMDAnPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9JyM5ZGMzZTYnLz48L3N2Zz4=" alt="大图拖拽缩放"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
     放大后在预览图上按住拖拽平移（超出可视范围的部分按边界自动收敛），在预览区滚动滚轮缩放（已阻断页面滚动）。缩放步进与上下限可经 CSS 变量覆盖（见下表）。
   </p>
@@ -259,7 +259,7 @@ el.addEventListener('oas-toolbar-render', (e) => {
 <DemoBlock title="相册墙（多图各自进图集）">
   <p class="image-cap">网格排布多张缩略图，点击任意一张从该张开始进入同一图集翻页（主图 src 命中列表时按该张起开）。</p>
   <div class="album-grid" id="image-album">
-    <oas-image preview src="https://picsum.photos/seed/isui-album-1/800/500" preview-src-list='["https://picsum.photos/seed/isui-album-1/800/500","https://picsum.photos/seed/isui-album-2/800/500","https://picsum.photos/seed/isui-album-3/800/500","https://picsum.photos/seed/isui-album-4/800/500","https://picsum.photos/seed/isui-album-5/800/500","https://picsum.photos/seed/isui-album-6/800/500"]' alt="相册图片"></oas-image>
+    <oas-image preview src="/assets/demo-wide-1.svg" preview-src-list='["/assets/demo-wide-1.svg","/assets/demo-wide-2.svg","/assets/demo-wide-3.svg","/assets/demo-wide-4.svg","/assets/demo-wide-5.svg","/assets/demo-wide-6.svg"]' alt="相册图片"></oas-image>
   </div>
 </DemoBlock>
 
@@ -268,10 +268,10 @@ el.addEventListener('oas-toolbar-render', (e) => {
 <DemoBlock title="图集容器（声明式图片墙 → 共享预览）">
   <p class="image-cap">把多个 <code>oas-image</code> 放进 <code>oas-image-group</code>，容器自动收集为共享图集：点击任一图片从该张起打开预览，两侧箭头 / 键盘 ←→ 在整组图间翻页（页码 n/total）。子图带 <code>preview</code> 时点击同样被容器接管为组图集，不再需要各自配置 <code>preview-src-list</code>。</p>
   <oas-image-group id="image-group-demo" class="group-wall">
-    <oas-image src="https://picsum.photos/seed/isui-group-1/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 1"></oas-image>
-    <oas-image src="https://picsum.photos/seed/isui-group-2/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 2"></oas-image>
-    <oas-image src="https://picsum.photos/seed/isui-group-3/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 3"></oas-image>
-    <oas-image src="https://picsum.photos/seed/isui-group-4/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 4"></oas-image>
+    <oas-image src="/assets/demo-wide-1.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 1"></oas-image>
+    <oas-image src="/assets/demo-wide-2.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 2"></oas-image>
+    <oas-image src="/assets/demo-wide-3.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 3"></oas-image>
+    <oas-image src="/assets/demo-wide-4.svg" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 4"></oas-image>
   </oas-image-group>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
     子图动态增删（或修改 <code>src</code>）图集自动同步；<code>current</code> 可选受控当前索引——属性在场时点击按 <code>current</code> 起开、内部翻页反射回该属性，缺席时不造属性、仅派发 <code>oas-change</code>（detail <code>{ current, prev }</code>，演示见上方消息反馈）；<code>infinite</code> 透传共享预览。
@@ -300,7 +300,7 @@ onMounted(async () => {
       const el = document.createElement('oas-image')
       el.setAttribute('lazy', '')
       el.setAttribute('placeholder', '')
-      el.setAttribute('src', `https://picsum.photos/seed/isui-lazy-${i}/600/300`)
+      el.setAttribute('src', `/assets/demo-wide-4.svg`)
       el.setAttribute('fallback', "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjNzJjN2QwJy8+PC9zdmc+")
       el.setAttribute('alt', `懒加载图片 ${i}`)
       list.appendChild(el)
@@ -367,12 +367,12 @@ onMounted(async () => {
 
   // 相册墙：网格多图共享同一图集，点击任意一张从该张开始
   const ALBUM = [
-    'https://picsum.photos/seed/isui-album-1/800/500',
-    'https://picsum.photos/seed/isui-album-2/800/500',
-    'https://picsum.photos/seed/isui-album-3/800/500',
-    'https://picsum.photos/seed/isui-album-4/800/500',
-    'https://picsum.photos/seed/isui-album-5/800/500',
-    'https://picsum.photos/seed/isui-album-6/800/500',
+    '/assets/demo-wide-1.svg',
+    '/assets/demo-wide-2.svg',
+    '/assets/demo-wide-3.svg',
+    '/assets/demo-wide-4.svg',
+    '/assets/demo-wide-5.svg',
+    '/assets/demo-wide-6.svg',
   ]
   const album = document.querySelector('#image-album')
   if (album) {
@@ -394,12 +394,12 @@ onMounted(async () => {
 `width` / `height` 显式尺寸：数字按 px，也接受任意 CSS 尺寸串（如 `50%`），写在内层 `img` 上（`max-width: 100%` 响应式约束保留）；空值清除恢复 auto 布局。`referrerpolicy` 透传内层 `img` 控制隐私策略（如 `no-referrer`），空值回落浏览器默认。
 
 <DemoBlock title="显式尺寸 width / height">
-  <oas-image src="https://picsum.photos/seed/isui-img-dim1/480/320" width="240" height="160" alt="固定尺寸" style="margin-inline-end: var(--oas-space-4)"></oas-image>
-  <oas-image src="https://picsum.photos/seed/isui-img-dim2/480/320" width="240" alt="仅定宽"></oas-image>
+  <oas-image src="/assets/demo-wide-5.svg" width="240" height="160" alt="固定尺寸" style="margin-inline-end: var(--oas-space-4)"></oas-image>
+  <oas-image src="/assets/demo-wide-6.svg" width="240" alt="仅定宽"></oas-image>
 </DemoBlock>
 
 <DemoBlock title="referrerpolicy 透传">
-  <oas-image src="https://picsum.photos/seed/isui-img-dim3/480/320" width="240" referrerpolicy="no-referrer" alt="no-referrer"></oas-image>
+  <oas-image src="/assets/demo-wide-1.svg" width="240" referrerpolicy="no-referrer" alt="no-referrer"></oas-image>
 </DemoBlock>
 
 ## API

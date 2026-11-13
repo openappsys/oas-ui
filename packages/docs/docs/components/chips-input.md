@@ -101,6 +101,8 @@ onMounted(() => {
 
 两者都是「自由输入成 chip」形态，差异在交互模型：DynamicTags 是标签流 + 下方常驻输入框（排序 / 折叠 / 自定义标签模板）；ChipsInput 是 chip 内联在单个控件盒内（类输入框单控件心智），内建逐 chip 邮箱校验与红描边。**收件人 / 邮箱集合**场景用 ChipsInput；通用标签（关键词、分类）且需要排序 / 折叠 / 模板定制用 DynamicTags。
 
+框架绑定注意：`value` 的 attribute 通道是 JSON 字符串；宿主框架动态绑定（如 Vue `:value="str"`）走 property 通道传**字符串数组**，不要动态 patch attribute 字符串——字符串会被归一为空数组。
+
 ## API
 
 ### oas-chips-input

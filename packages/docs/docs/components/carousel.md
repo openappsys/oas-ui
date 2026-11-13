@@ -99,9 +99,9 @@
 <DemoBlock title="图片轮播（img + 自动播放）">
   <div style="width: 100%">
     <oas-carousel autoplay interval="2500">
-      <img src="https://picsum.photos/seed/isui-cv-1/800/260" alt="轮播图 1" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-cv-2/800/260" alt="轮播图 2" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-cv-3/800/260" alt="轮播图 3" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-1.svg" alt="轮播图 1" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-2.svg" alt="轮播图 2" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-3.svg" alt="轮播图 3" style="width:100%; height:220px; object-fit: cover; display:block;">
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -336,15 +336,15 @@ onMounted(() => {
 <DemoBlock title="缩略图指示器（thumbs，取子项内 img）">
   <div style="width: 100%">
     <oas-carousel thumbs>
-      <img src="https://picsum.photos/seed/isui-th-1/800/260" alt="轮播图 1" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-th-2/800/260" alt="轮播图 2" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-th-3/800/260" alt="轮播图 3" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-4.svg" alt="轮播图 1" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-5.svg" alt="轮播图 2" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-6.svg" alt="轮播图 3" style="width:100%; height:220px; object-fit: cover; display:block;">
     </oas-carousel>
   </div>
 </DemoBlock>
 
 <DemoBlock title="缩略图数据源（thumbs JSON 数组）">
-  <oas-carousel thumbs='["https://picsum.photos/seed/isui-ts-1/200/120","https://picsum.photos/seed/isui-ts-2/200/120","https://picsum.photos/seed/isui-ts-3/200/120"]' style="max-width: 480px">
+  <oas-carousel thumbs='["/assets/demo-wide-3.svg","/assets/demo-wide-4.svg","/assets/demo-wide-5.svg"]' style="max-width: 480px">
     <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
     <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
     <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>

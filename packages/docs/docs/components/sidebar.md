@@ -245,7 +245,7 @@
 
 焦点菜单项按 `Alt+ArrowUp` / `Alt+ArrowDown` 与同级相邻项逐条交换位置（无需开启任何属性），移动后焦点跟随条目（防失焦）。项按钮声明 `aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"`。组件自行交换菜单序（items 属性通道回写 `items` 属性 / 子元素通道交换子项位置）并派发 `oas-reorder`（`detail: { index, from, to, key? }`，from/to 为同级数组内位次）与 `oas-change`（`detail: { value }`，新序）。
 
-约束：`disabled` 项为墙（自身不可移动、不作为交换目标，不可聚焦不可点）；分隔线与组界（相邻项 `group` 不同）同为墙；嵌套子项在同级 children 内交换；折叠图标条 flyout 内的子项不重排。首项上移 / 末项下移零位移零事件。RTL 不影响 Up/Down 纵向语义。
+约束：`disabled` 项为墙（自身不可移动、不作为交换目标，不可聚焦不可点）；分隔线与组界（相邻项 `group` 不同）同为墙；嵌套子项在同级 children 内交换（此时 `oas-change` 的 value 为该同级数组副本，不含父级路径）；折叠图标条 flyout 内的子项不重排。首项上移 / 末项下移零位移零事件。RTL 不影响 Up/Down 纵向语义。
 
 <DemoBlock title="键盘重排（Alt+↑/↓）">
   <div style="height: 260px; width: 100%; display: flex">

@@ -87,13 +87,13 @@ Displays a collection of related items, capable of carrying a title, description
 <DemoBlock title="Avatar + description (attribute channel)">
   <div style="width: 100%">
     <oas-list bordered>
-      <oas-list-item title="Lin Xiaoyu" description="Product manager · just updated the PRD" avatar="https://picsum.photos/seed/oas-list-a/96/96">
+      <oas-list-item title="Lin Xiaoyu" description="Product manager · just updated the PRD" avatar="/assets/demo-square-5.svg">
         <oas-tag slot="extra" type="primary">Online</oas-tag>
       </oas-list-item>
-      <oas-list-item title="Chen Yining" description="Frontend engineer · commented on your design" avatar="https://picsum.photos/seed/oas-list-b/96/96">
+      <oas-list-item title="Chen Yining" description="Frontend engineer · commented on your design" avatar="/assets/demo-square-6.svg">
         <oas-tag slot="extra">30 min ago</oas-tag>
       </oas-list-item>
-      <oas-list-item title="Zhao Qiming" description="QA engineer · filed 3 defects" avatar="https://picsum.photos/seed/oas-list-c/96/96">
+      <oas-list-item title="Zhao Qiming" description="QA engineer · filed 3 defects" avatar="/assets/demo-square-1.svg">
         <oas-tag slot="extra" type="warning">To confirm</oas-tag>
       </oas-list-item>
     </oas-list>
@@ -131,12 +131,12 @@ Besides the round avatar, rows have two more leading media slots; all three show
         <oas-tag slot="extra">12 docs</oas-tag>
       </oas-list-item>
       <oas-list-item title="Cover assets" description="slot=&quot;image&quot; takes a square thumbnail">
-        <img slot="image" src="https://picsum.photos/seed/oas-list-img/96/96" alt="Cover thumbnail" />
+        <img slot="image" src="/assets/demo-square-5.svg" alt="Cover thumbnail" />
         <oas-tag slot="extra" type="success">Synced</oas-tag>
       </oas-list-item>
       <oas-list-item title="Design spec" description="Icon and thumbnail can coexist (independently toggled)">
         <oas-icon name="star" slot="icon"></oas-icon>
-        <img slot="image" src="https://picsum.photos/seed/oas-list-img2/96/96" alt="Spec thumbnail" />
+        <img slot="image" src="/assets/demo-square-5.svg" alt="Spec thumbnail" />
       </oas-list-item>
     </oas-list>
   </div>
@@ -296,13 +296,13 @@ The default slot of an item can hold a thumbnail, combining it with the title an
 <DemoBlock title="Image-text list (thumbnail + title + description)">
   <div style="width: 100%">
     <oas-list bordered>
-      <oas-list-item title="Product Weekly #12" description="6 new components shipped this week" avatar="https://picsum.photos/seed/isui-list-1/96/96">
+      <oas-list-item title="Product Weekly #12" description="6 new components shipped this week" avatar="/assets/demo-square-4.svg">
         <oas-tag slot="extra">Weekly</oas-tag>
       </oas-list-item>
-      <oas-list-item title="Design review log" description="Interaction states and dark theme review" avatar="https://picsum.photos/seed/isui-list-2/96/96">
+      <oas-list-item title="Design review log" description="Interaction states and dark theme review" avatar="/assets/demo-square-5.svg">
         <oas-tag slot="extra">Log</oas-tag>
       </oas-list-item>
-      <oas-list-item title="Release v1.6" description="All display components released" avatar="https://picsum.photos/seed/isui-list-3/96/96">
+      <oas-list-item title="Release v1.6" description="All display components released" avatar="/assets/demo-square-6.svg">
         <oas-tag slot="extra" type="success">Released</oas-tag>
       </oas-list-item>
     </oas-list>

@@ -26,17 +26,17 @@ A text avatar renders the first character of its content; with no content at all
 ## Image Avatars
 
 <DemoBlock title="Image avatars">
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-1/160" size="32" alt="Avatar 1"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-2/160" size="48" alt="Avatar 2"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-3/160" size="64" alt="Avatar 3"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-5.svg" size="32" alt="Avatar 1"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-6.svg" size="48" alt="Avatar 2"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-1.svg" size="64" alt="Avatar 3"></oas-avatar>
 </DemoBlock>
 
 ## Avatar Groups
 
 <DemoBlock title="Avatar group">
   <oas-avatar-group>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g1/160" size="40" alt="Member 1"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g2/160" size="40" alt="Member 2"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-6.svg" size="40" alt="Member 1"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" size="40" alt="Member 2"></oas-avatar>
     <oas-avatar size="40">A</oas-avatar>
     <oas-avatar size="40">B</oas-avatar>
   </oas-avatar-group>
@@ -46,8 +46,8 @@ Multiple `oas-avatar` elements wrapped in `oas-avatar-group` are laid out left-t
 
 <DemoBlock title="Max display count">
   <oas-avatar-group max="3">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g3/160" size="40" alt="Member 1"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g4/160" size="40" alt="Member 2"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-2.svg" size="40" alt="Member 1"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-3.svg" size="40" alt="Member 2"></oas-avatar>
     <oas-avatar size="40">A</oas-avatar>
     <oas-avatar size="40">B</oas-avatar>
     <oas-avatar size="40">C</oas-avatar>
@@ -62,13 +62,13 @@ When `max` is set, the overflow is hidden and a `+N` count badge is shown at the
 
 <DemoBlock title="Unified size size">
   <oas-avatar-group size="48">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga1/160" alt="Member 1"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga2/160" alt="Member 2"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" alt="Member 1"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-2.svg" alt="Member 2"></oas-avatar>
     <oas-avatar>A</oas-avatar>
     <oas-avatar>B</oas-avatar>
   </oas-avatar-group>
   <oas-avatar-group size="24" max="3">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga3/160" alt="Member 1"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-3.svg" alt="Member 1"></oas-avatar>
     <oas-avatar>A</oas-avatar>
     <oas-avatar>B</oas-avatar>
     <oas-avatar>C</oas-avatar>
@@ -82,14 +82,14 @@ The overlap is driven by a CSS variable: `-8px` overlap by default. The `spacing
 
 <DemoBlock title="Group spacing">
   <oas-avatar-group spacing="4">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp1/160" size="40" alt="Member 1"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp2/160" size="40" alt="Member 2"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-4.svg" size="40" alt="Member 1"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-5.svg" size="40" alt="Member 2"></oas-avatar>
     <oas-avatar size="40">A</oas-avatar>
     <oas-avatar size="40">B</oas-avatar>
   </oas-avatar-group>
   <oas-avatar-group spacing="-16">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp3/160" size="40" alt="Member 1"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-sp4/160" size="40" alt="Member 2"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-6.svg" size="40" alt="Member 1"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" size="40" alt="Member 2"></oas-avatar>
     <oas-avatar size="40">A</oas-avatar>
     <oas-avatar size="40">B</oas-avatar>
   </oas-avatar-group>
@@ -101,8 +101,8 @@ With `max` set, hover, keyboard-focus, or click the `+N` count button to open a 
 
 <DemoBlock title="Folded members popover">
   <oas-avatar-group max="4">
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ov1/160" size="40" alt="Member 1"></oas-avatar>
-    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ov2/160" size="40" alt="Member 2"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-6.svg" size="40" alt="Member 1"></oas-avatar>
+    <oas-avatar src="/assets/demo-square-1.svg" size="40" alt="Member 2"></oas-avatar>
     <oas-avatar size="40">A</oas-avatar>
     <oas-avatar size="40">B</oas-avatar>
     <oas-avatar size="40">C</oas-avatar>
@@ -128,8 +128,8 @@ With `max` set, hover, keyboard-focus, or click the `+N` count button to open a 
 </DemoBlock>
 
 <DemoBlock title="Placement and image avatars">
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b1/160" size="48" alt="Avatar 4" badge="7"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b2/160" size="48" alt="Avatar 5" badge="5" badge-placement="bottom-right"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-1.svg" size="48" alt="Avatar 4" badge="7"></oas-avatar>
+  <oas-avatar src="/assets/demo-square-2.svg" size="48" alt="Avatar 5" badge="5" badge-placement="bottom-right"></oas-avatar>
 </DemoBlock>
 
 ## Load-Failure Fallback
@@ -209,8 +209,8 @@ When `text` has multiple characters (organization or team names), it is no longe
 `fit` maps to the image's `object-fit`; `cover` by default (crop to fill). Use `contain` to show a tall image in full.
 
 <DemoBlock title="Image fit">
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-fit/120/240" size="64" fit="cover" alt="cover crops to fill"></oas-avatar>
-  <oas-avatar src="https://picsum.photos/seed/isui-avatar-fit/120/240" size="64" fit="contain" alt="contain shows in full"></oas-avatar>
+  <oas-avatar src="/assets/demo-tall-3.svg" size="64" fit="cover" alt="cover crops to fill"></oas-avatar>
+  <oas-avatar src="/assets/demo-tall-3.svg" size="64" fit="contain" alt="contain shows in full"></oas-avatar>
 </DemoBlock>
 
 ## Icon Avatar
@@ -227,7 +227,7 @@ Place an icon in `slot="icon"` (an `oas-icon` or any svg/content): when an icon 
 The `fallback` attribute provides a fallback image URL: when the primary image fails to load, the avatar switches to the fallback image and retries once before entering the text fallback chain. Every failure dispatches an `oas-error` event (`detail.src` is the URL that failed) so hosts can track errors or customize the fallback.
 
 <DemoBlock title="Fallback image">
-  <oas-avatar src="https://invalid.example.com/primary.png" fallback="https://picsum.photos/seed/isui-avatar-fb/160" size="48" alt="Fallback image"></oas-avatar>
+  <oas-avatar src="https://invalid.example.com/primary.png" fallback="/assets/demo-square-6.svg" size="48" alt="Fallback image"></oas-avatar>
   <oas-avatar src="https://invalid.example.com/primary.png" fallback="https://invalid.example.com/backup.png" size="48" alt="Both levels fail">A</oas-avatar>
 </DemoBlock>
 
@@ -239,7 +239,7 @@ Drop any `slot="trigger"` node in to enable the change-avatar entry: hovering or
   <div id="avatar-trigger-demo" style="display: flex; gap: 16px">
     <oas-avatar size="64" text="A"><span slot="trigger"></span></oas-avatar>
     <oas-avatar size="64" text="B"><span slot="trigger">Change</span></oas-avatar>
-    <oas-avatar size="64" src="https://picsum.photos/seed/isui-avatar-tr/160" alt="Avatar"><span slot="trigger"></span></oas-avatar>
+    <oas-avatar size="64" src="/assets/demo-square-6.svg" alt="Avatar"><span slot="trigger"></span></oas-avatar>
   </div>
 </DemoBlock>
 
@@ -277,7 +277,7 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 
 <DemoBlock title="Name tooltip (oas-tooltip composition)">
   <oas-tooltip content="Alice Lin" placement="top"><oas-avatar size="40">A</oas-avatar></oas-tooltip>
-  <oas-tooltip content="Bob Chen" placement="top"><oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-tt1/160" alt="Bob Chen"></oas-avatar></oas-tooltip>
+  <oas-tooltip content="Bob Chen" placement="top"><oas-avatar size="40" src="/assets/demo-square-3.svg" alt="Bob Chen"></oas-avatar></oas-tooltip>
   <oas-tooltip content="Carol Zhao" placement="top"><oas-avatar size="40" color="geekblue">C</oas-avatar></oas-tooltip>
 </DemoBlock>
 
@@ -286,8 +286,8 @@ To show a name or description per avatar, compose with a wrapping `oas-tooltip` 
 `srcset` passes through to the inner `img`, letting the browser pick a source by device pixel ratio (e.g. 1x/2x pairs — high-DPI screens get the sharper image automatically); an empty value removes it and falls back to the single `src`.
 
 <DemoBlock title="srcset 1x / 2x sources">
-  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss1/80" srcset="https://picsum.photos/seed/isui-avatar-ss1/80 1x, https://picsum.photos/seed/isui-avatar-ss1/160 2x" alt="Responsive avatar"></oas-avatar>
-  <oas-avatar size="40" src="https://picsum.photos/seed/isui-avatar-ss2/80" srcset="https://picsum.photos/seed/isui-avatar-ss2/80 1x, https://picsum.photos/seed/isui-avatar-ss2/160 2x" alt="Responsive avatar"></oas-avatar>
+  <oas-avatar size="40" src="/assets/demo-square-1.svg" srcset="/assets/demo-square-1.svg 1x, /assets/demo-square-1.svg 2x" alt="Responsive avatar"></oas-avatar>
+  <oas-avatar size="40" src="/assets/demo-square-2.svg" srcset="/assets/demo-square-2.svg 1x, /assets/demo-square-2.svg 2x" alt="Responsive avatar"></oas-avatar>
 </DemoBlock>
 
 ## API

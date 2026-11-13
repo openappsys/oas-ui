@@ -87,13 +87,13 @@
 <DemoBlock title="头像 + 描述（属性通道）">
   <div style="width: 100%">
     <oas-list bordered>
-      <oas-list-item title="林晓雨" description="产品经理 · 刚刚更新了需求文档" avatar="https://picsum.photos/seed/oas-list-a/96/96">
+      <oas-list-item title="林晓雨" description="产品经理 · 刚刚更新了需求文档" avatar="/assets/demo-square-5.svg">
         <oas-tag slot="extra" type="primary">在线</oas-tag>
       </oas-list-item>
-      <oas-list-item title="陈以宁" description="前端工程师 · 评论了你的设计稿" avatar="https://picsum.photos/seed/oas-list-b/96/96">
+      <oas-list-item title="陈以宁" description="前端工程师 · 评论了你的设计稿" avatar="/assets/demo-square-6.svg">
         <oas-tag slot="extra">30 分钟前</oas-tag>
       </oas-list-item>
-      <oas-list-item title="赵启铭" description="测试工程师 · 提交了 3 个缺陷" avatar="https://picsum.photos/seed/oas-list-c/96/96">
+      <oas-list-item title="赵启铭" description="测试工程师 · 提交了 3 个缺陷" avatar="/assets/demo-square-1.svg">
         <oas-tag slot="extra" type="warning">待确认</oas-tag>
       </oas-list-item>
     </oas-list>
@@ -131,12 +131,12 @@
         <oas-tag slot="extra">12 篇</oas-tag>
       </oas-list-item>
       <oas-list-item title="封面素材包" description="slot=&quot;image&quot; 放方形缩略图">
-        <img slot="image" src="https://picsum.photos/seed/oas-list-img/96/96" alt="封面缩略图" />
+        <img slot="image" src="/assets/demo-square-5.svg" alt="封面缩略图" />
         <oas-tag slot="extra" type="success">已同步</oas-tag>
       </oas-list-item>
       <oas-list-item title="设计规范" description="图标与缩略图可并存（各自判空）">
         <oas-icon name="star" slot="icon"></oas-icon>
-        <img slot="image" src="https://picsum.photos/seed/oas-list-img2/96/96" alt="规范缩略图" />
+        <img slot="image" src="/assets/demo-square-5.svg" alt="规范缩略图" />
       </oas-list-item>
     </oas-list>
   </div>
@@ -294,13 +294,13 @@
 <DemoBlock title="图文列表（缩略图 + 标题 + 描述）">
   <div style="width: 100%">
     <oas-list bordered>
-      <oas-list-item title="产品周报第 12 期" description="本周上线 6 个新组件" avatar="https://picsum.photos/seed/isui-list-1/96/96">
+      <oas-list-item title="产品周报第 12 期" description="本周上线 6 个新组件" avatar="/assets/demo-square-4.svg">
         <oas-tag slot="extra">周报</oas-tag>
       </oas-list-item>
-      <oas-list-item title="设计走查记录" description="交互态与暗色主题复核" avatar="https://picsum.photos/seed/isui-list-2/96/96">
+      <oas-list-item title="设计走查记录" description="交互态与暗色主题复核" avatar="/assets/demo-square-5.svg">
         <oas-tag slot="extra">记录</oas-tag>
       </oas-list-item>
-      <oas-list-item title="发布 v1.6" description="展示组件全部发布" avatar="https://picsum.photos/seed/isui-list-3/96/96">
+      <oas-list-item title="发布 v1.6" description="展示组件全部发布" avatar="/assets/demo-square-6.svg">
         <oas-tag slot="extra" type="success">已发布</oas-tag>
       </oas-list-item>
     </oas-list>

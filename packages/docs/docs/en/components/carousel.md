@@ -99,9 +99,9 @@ Carousel items are not limited to color blocks — putting in an `<img>` or SVG 
 <DemoBlock title="Image carousel (img + autoplay)">
   <div style="width: 100%">
     <oas-carousel autoplay interval="2500">
-      <img src="https://picsum.photos/seed/isui-cv-1/800/260" alt="Slide 1" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-cv-2/800/260" alt="Slide 2" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-cv-3/800/260" alt="Slide 3" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-1.svg" alt="Slide 1" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-2.svg" alt="Slide 2" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-3.svg" alt="Slide 3" style="width:100%; height:220px; object-fit: cover; display:block;">
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -336,15 +336,15 @@ Besides the automatic hover/focus pause, `pause-button` renders an explicit paus
 <DemoBlock title="Thumbnail indicators (thumbs, from slide img)">
   <div style="width: 100%">
     <oas-carousel thumbs>
-      <img src="https://picsum.photos/seed/isui-th-1/800/260" alt="Slide 1" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-th-2/800/260" alt="Slide 2" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-th-3/800/260" alt="Slide 3" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-4.svg" alt="Slide 1" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-5.svg" alt="Slide 2" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="/assets/demo-wide-6.svg" alt="Slide 3" style="width:100%; height:220px; object-fit: cover; display:block;">
     </oas-carousel>
   </div>
 </DemoBlock>
 
 <DemoBlock title="Thumbnail source (thumbs JSON array)">
-  <oas-carousel thumbs='["https://picsum.photos/seed/isui-ts-1/200/120","https://picsum.photos/seed/isui-ts-2/200/120","https://picsum.photos/seed/isui-ts-3/200/120"]' style="max-width: 480px">
+  <oas-carousel thumbs='["/assets/demo-wide-3.svg","/assets/demo-wide-4.svg","/assets/demo-wide-5.svg"]' style="max-width: 480px">
     <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Slide 1</div>
     <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Slide 2</div>
     <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">Slide 3</div>

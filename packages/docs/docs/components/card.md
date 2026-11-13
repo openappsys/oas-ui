@@ -50,7 +50,7 @@
 
 <DemoBlock title="cover-src 封面图">
   <div style="width: 320px">
-    <oas-card title="城市骑行" cover-src="https://picsum.photos/seed/isui-card-cover/640/360" cover-alt="沿江骑行照片">
+    <oas-card title="城市骑行" cover-src="/assets/demo-wide-6.svg" cover-alt="沿江骑行照片">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">沿江 15 公里休闲骑行线路，周末出发正合适。</p>
     </oas-card>
   </div>
@@ -71,7 +71,7 @@
 
 <DemoBlock title="商品卡">
   <div style="width: 320px">
-    <oas-card title="无线降噪耳机" hoverable cover-src="https://picsum.photos/seed/isui-card-product/640/360" cover-alt="耳机产品图">
+    <oas-card title="无线降噪耳机" hoverable cover-src="/assets/demo-wide-2.svg" cover-alt="耳机产品图">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">主动降噪 · 30 小时续航 · 蓝牙 5.3</p>
       <p style="color: var(--oas-color-primary); font-weight: 600; margin: var(--oas-space-2) 0 0;">¥ 899</p>
       <oas-button slot="actions" size="small">查看详情</oas-button>
@@ -94,7 +94,7 @@
 
 <DemoBlock title="可点击 + 操作区互不干扰">
   <div style="width: 320px">
-    <oas-card clickable title="协作项目" cover-src="https://picsum.photos/seed/isui-card-team/640/360" cover-alt="团队协作插画">
+    <oas-card clickable title="协作项目" cover-src="/assets/demo-wide-4.svg" cover-alt="团队协作插画">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">点卡片主体触发整卡点击；点右下按钮走各自操作。</p>
       <oas-button slot="actions" size="small">邀请成员</oas-button>
       <oas-button slot="actions" size="small" type="danger">归档</oas-button>
@@ -258,7 +258,7 @@
 <DemoBlock title="Meta 用户卡">
   <div style="width: 360px">
     <oas-card description="前端工程师 · 上海">
-      <oas-avatar slot="avatar" src="https://picsum.photos/seed/isui-card-meta/160" size="48" alt="成员头像"></oas-avatar>
+      <oas-avatar slot="avatar" src="/assets/demo-square-4.svg" size="48" alt="成员头像"></oas-avatar>
       <span slot="title">林晓</span>
       <oas-button slot="extra" size="small">关注</oas-button>
       <p style="color: var(--oas-color-text-secondary); margin: 0;">负责组件库架构与渲染性能优化，最近在研究 SSR 水合。</p>
@@ -364,7 +364,7 @@
 
 <DemoBlock title="电商商品卡">
   <div style="width: 320px">
-    <oas-card hoverable cover-src="https://picsum.photos/seed/isui-card-keyboard/640/360" cover-alt="便携机械键盘产品图">
+    <oas-card hoverable cover-src="/assets/demo-wide-2.svg" cover-alt="便携机械键盘产品图">
       <span slot="title">便携机械键盘</span>
       <p style="margin: 0;">
         <span style="color: var(--oas-color-primary); font-weight: 600; font-size: var(--oas-font-size-lg);">¥ 429</span>
@@ -458,11 +458,11 @@ const refreshSelectCount = () => {
 
 <DemoBlock title="horizontal 封面左置">
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
-    <oas-card orientation="horizontal" hoverable title="横向新闻卡" cover-src="https://picsum.photos/seed/isui-card-horiz/640/640" cover-alt="横向卡片封面">
+    <oas-card orientation="horizontal" hoverable title="横向新闻卡" cover-src="/assets/demo-square-1.svg" cover-alt="横向卡片封面">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">封面在左，标题与内容在右，操作区仍在底部。</p>
       <oas-button slot="actions" size="small" type="primary">阅读全文</oas-button>
     </oas-card>
-    <oas-card hoverable title="默认纵向（对照）" cover-src="https://picsum.photos/seed/isui-card-horiz/640/360" cover-alt="纵向卡片封面">
+    <oas-card hoverable title="默认纵向（对照）" cover-src="/assets/demo-wide-1.svg" cover-alt="纵向卡片封面">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">封面在顶部全宽铺开（现状默认）。</p>
     </oas-card>
   </div>

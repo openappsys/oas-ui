@@ -76,7 +76,7 @@ Use <code>display="block"</code> for display math (centered standalone line with
 
 ## Live Edit Preview
 
-`editable` (boolean attribute, off by default — non-editing rendering stays byte-identical to pure display) enables click-to-edit (or Enter/Space when focused): typing LaTeX source renders a live preview (200ms throttled); Enter or blur commits the value back to `code` and emits `oas-change` (detail `{ value }`); Esc cancels and restores the original value, emitting `oas-cancel`; entering/leaving edit mode emits `oas-editing` (detail `{ editing }`). If an injected engine fails to render, the preview falls back to showing the raw source with a one-time devWarn (once per source). The `value` property is a dual channel: it reads the live text while editing and `code` otherwise; writing reflects to the `code` attribute (no event emitted).
+`editable` (boolean attribute, off by default — non-editing rendering stays byte-identical to pure display) enables click-to-edit (or Enter/Space when focused): typing LaTeX source renders a live preview (200ms throttled); Enter or blur commits the value back to `code` and emits `oas-change` (detail `{ value }`); Esc cancels and restores the original value, emitting `oas-cancel`; entering/leaving edit mode emits `oas-editing` (detail `{ editing }`) — including a `false` notification when `editable` is removed mid-edit. If an injected engine fails to render, the preview falls back to showing the raw source with a one-time devWarn (once per source). The `value` property is a dual channel: it reads the live text while editing and `code` otherwise; writing reflects to the `code` attribute (no event emitted). While editing, a host-side controlled write to `code` does not refresh the editor — the editor content wins on commit.
 
 <DemoBlock title="editable live edit preview">
   <div style="width: 100%">
@@ -156,7 +156,7 @@ Font size follows the outer context (inherited) by default; override with the CS
 | --- | --- |
 | `oas-cancel` | Emitted when Esc cancels editing; detail `{ value: original source }` |
 | `oas-change` | Emitted when an edit commit changes the source; detail `{ value: new source }` |
-| `oas-editing` | Emitted when entering/leaving edit mode; detail `{ editing: boolean }` |
+| `oas-editing` | Emitted when entering/leaving edit mode; detail `{ editing: boolean }` — removing the `editable` attribute mid-edit also emits `editing: false` |
 
 #### CSS Variables
 

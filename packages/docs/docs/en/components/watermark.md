@@ -34,7 +34,7 @@ Rendering engine: text and grayscale image watermarks are drawn on a canvas (the
 ## Image Watermark
 
 <DemoBlock title="Image watermark">
-  <oas-watermark image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.25" repeat>
+  <oas-watermark image="/assets/demo-square-4.svg" opacity="0.25" repeat>
     <div style="height: 160px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
       The `image` attribute takes an image URL; when both text and image are present, image wins
     </div>
@@ -45,8 +45,8 @@ Rendering engine: text and grayscale image watermarks are drawn on a canvas (the
 
 <DemoBlock title="grayscale: grayscale image filter">
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--oas-space-4); width: 100%">
-    <oas-watermark id="wm-img-color" image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.35" repeat style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
-    <oas-watermark id="wm-img-gray" image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.35" repeat grayscale style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark id="wm-img-color" image="/assets/demo-square-4.svg" opacity="0.35" repeat style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark id="wm-img-gray" image="/assets/demo-square-4.svg" opacity="0.35" repeat grayscale style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
   </div>
 </DemoBlock>
 
