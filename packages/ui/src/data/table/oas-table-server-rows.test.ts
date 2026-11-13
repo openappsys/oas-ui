@@ -1283,4 +1283,47 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(reqs[2]).toEqual({ requestId: 3, reason: 'refresh' })
     warn.mockRestore()
   })
+
+  /** F8 回归：server 模式 ARIA 行数口径对齐 windowed 全量语义——aria-rowcount 用
+      total（此前误用当前页行数）、行 aria-rowindex 加页偏移（此前页内 1..n，
+      读屏「第 x 行/共 N 行」跨页错乱） */
+  it('F8：server 下 aria-rowcount=total、首行 rowindex=(current-1)*pageSize+1', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '100')
+    el.setAttribute('pagination', '')
+    el.setAttribute('page-size', '10')
+    el.setAttribute('current', '2')
+    el.setAttribute('data', '[]')
+    document.body.appendChild(el)
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: 'a', age: 1 },
+        { name: 'b', age: 2 },
+        { name: 'c', age: 3 },
+      ]),
+    )
+    const table = el.shadowRoot!.querySelector('table')!
+    expect(table.getAttribute('aria-rowcount'), 'rowcount 用外部 total 全量口径').toBe('100')
+    const first = rowsOf(el)[0]!
+    expect(first.getAttribute('aria-rowindex'), '第 2 页首行 = (2-1)*10+1 = 11').toBe('11')
+    expect(rowsOf(el)[1]!.getAttribute('aria-rowindex')).toBe('12')
+    // client 模式（无 total/非 server）口径不变：rowcount = 当前展示集数据行数、rowindex 页内 1..n
+    document.body.innerHTML = ''
+    const client = new OASTable()
+    client.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    client.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: 'a', age: 1 },
+        { name: 'b', age: 2 },
+      ]),
+    )
+    document.body.appendChild(client)
+    const clientTable = client.shadowRoot!.querySelector('table')!
+    expect(clientTable.getAttribute('aria-rowcount')).toBe('2')
+    expect(rowsOf(client)[0]!.getAttribute('aria-rowindex')).toBe('1')
+  })
 })

@@ -5050,15 +5050,28 @@ export class OASTableBase extends OASElement {
    * - 每个数据行 `aria-rowindex` = 绝对数据行号 + 1（1 基，与 oas-cell-click / oas-edit 的 rowIndex 同口径）。
    * 虚拟/windowed 下仅渲染窗口内的行带序号，读屏据此播报「第 x 行 / 共 N 行」，
    * 不受渲染窗口切片影响。始终应用（非 grid-navigation 下亦有效——table 隐式 role 同样吃这两个属性）。
+   * server 行模型对齐 windowed 全量口径：rowcount 用外部 `total`，rowindex 加页偏移
+   * `(current-1)*pageSize`（`data-row-index` 保持页内 0 起序——range/编辑能力的页内相对
+   * 行号语义不受影响，仅 ARIA 播报走全量坐标系）。
    */
   private applyRowAriaSemantics(): void {
     const table = this.shadow.querySelector('table') as HTMLTableElement | null
     if (!table) return
-    const total = this.windowedOn() ? this._winMode.total : this._logicalRowCount
+    const serverOn = this.serverRowsActive()
+    const serverOffset = serverOn
+      ? (Math.max(1, Number(this.getAttr('current', '1')) || 1) - 1) *
+        Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
+      : 0
+    const total =
+      serverOn && this.externalTotal() !== null
+        ? this.externalTotal()!
+        : this.windowedOn()
+          ? this._winMode.total
+          : this._logicalRowCount
     table.setAttribute('aria-rowcount', String(total))
     for (const tr of this.dragRows()) {
       const abs = this.absRowIndexOf(tr)
-      if (abs >= 0) tr.setAttribute('aria-rowindex', String(abs + 1))
+      if (abs >= 0) tr.setAttribute('aria-rowindex', String(abs + serverOffset + 1))
       else tr.removeAttribute('aria-rowindex')
     }
   }
