@@ -8,8 +8,8 @@
     "ratio": 286,
     "exempt": 692,
     "skipped": {
-      "local": 3980,
-      "ci": 4286
+      "local": 3996,
+      "ci": 4302
     }
   },
   "topPairs": [],
@@ -439,8 +439,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 1,
-        "ci": 1
+        "local": 9,
+        "ci": 9
       }
     },
     "comment.html::dark": {
@@ -450,8 +450,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 1,
-        "ci": 1
+        "local": 9,
+        "ci": 9
       }
     },
     "config-provider.html": {

@@ -26,7 +26,7 @@ test('card clickable：整卡 tabindex 存活（不挂缺省 role）、点击派
   })
   expect(r.role, 'clickable 卡不挂缺省 role（避免与行内按钮构成交互嵌套）').toBe(null)
   expect(r.tabindex).toBe('0')
-  expect(r.coverSrc).toContain('picsum')
+  expect(r.coverSrc).toContain('/assets/demo-')
   expect(r.actionsHidden).toBe(false)
 
   // 点击整卡 → message 可见反馈（demo 监听 oas-click 弹消息）

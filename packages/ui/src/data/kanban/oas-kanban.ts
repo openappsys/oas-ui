@@ -955,7 +955,7 @@ export class OASKanban extends OASElement {
     const built: Array<{ col: KanbanColumn; cards: KanbanColumnCards; body: HTMLElement }> = []
     for (const col of this._columns) {
       // 列折叠（collapsible 开启时）：折叠列渲染为窄条（纵向列名 + 卡片数），无列体不进虚拟化
-      if (this.collapsible && this.collapsedColumns.has(col.key)) {
+      if (this.collapsibleOn && this.collapsedColumns.has(col.key)) {
         board.appendChild(this.buildColumnRail(col))
         continue
       }
@@ -1307,7 +1307,7 @@ export class OASKanban extends OASElement {
     // 列折叠按钮（collapsible 开启 + 普通模式；泳道带矩阵无窄条形态不提供）。
     // 用 this.hasLanes 现场判定（两种模式共用本方法）：泳道下不渲染，保持零标记
     const parts: HTMLElement[] = [handle, title, prev, next]
-    if (!this.hasLanes && this.collapsible) {
+    if (!this.hasLanes && this.collapsibleOn) {
       const collapse = document.createElement('button')
       collapse.type = 'button'
       collapse.className = 'column-collapse'
@@ -1347,7 +1347,7 @@ export class OASKanban extends OASElement {
   }
 
   /** collapsible 在场布尔（列折叠开关；默认关——默认视觉零变化） */
-  private get collapsible(): boolean {
+  private get collapsibleOn(): boolean {
     return this.hasAttr('collapsible')
   }
 
