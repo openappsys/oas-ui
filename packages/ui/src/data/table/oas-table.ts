@@ -5537,6 +5537,9 @@ export class OASTableBase extends OASElement {
     this.serverPremiseCheckQueued = true
     queueMicrotask(() => {
       this.serverPremiseCheckQueued = false
+      // 挂载即移除（框架 churn）：已断连元素不再落告警——告警对象是「接入中的宿主」，
+      // 卸载后复核既无诊断价值也制造噪音
+      if (!this.isConnected) return
       if (this.serverPremiseWarned) return
       if (this.getAttr('row-model', '') !== 'server') return
       if (this.windowedOn()) return
