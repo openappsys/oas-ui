@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
 import { OASTable } from './index.js'
+// a8 编辑仅本地断言需编辑能力（主入口 v2.6.4 起不含编辑；显式注册，与族内其他测试同路径）
+import './edit/index.js'
 
 /**
  * server 行模型批（a2：`row-model` 属性注册与生效前提）。
@@ -676,5 +678,275 @@ describe('OASTable server 行模型 a7：refreshRows() 强刷', () => {
     el.refreshRows({ purge: true })
     expect(reqs.length).toBe(0)
     expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+  })
+})
+
+describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** server 挂载 + 首载回填（脱离内建 loading 在途态，便于断言闸门后的渲染产物） */
+  function mountServer(attrs: Record<string, string>, data = '[]'): OASTable {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      attrs.columns ??
+        JSON.stringify([
+          { key: 'name', title: '名称' },
+          { key: 'age', title: '年龄' },
+        ]),
+    )
+    el.setAttribute('data', data)
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    el.setAttribute('data', data)
+    return el
+  }
+
+  it('导出仅当前页切片 + devWarn 一次（不阻断：内容照常生成）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      { 'row-model': 'server', total: '100', exportable: '' },
+      JSON.stringify([{ name: '甲', age: 1 }]),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    const content = el.exportData('csv')
+    expect(content).toContain('甲')
+    expect(content).toContain('乙')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('导出')
+    el.exportData('csv')
+    expect(warn).toHaveBeenCalledTimes(1) // 去重一次
+    warn.mockRestore()
+  })
+
+  it('print 媒体下 devWarn 一次（打印仅当前页切片；与 windowed 守卫同口径）', () => {
+    const real = window.matchMedia.bind(window)
+    const cbs = new Set<(e: unknown) => void>()
+    const mql = {
+      matches: true,
+      media: 'print',
+      onchange: null,
+      addEventListener: (_: string, cb: (e: unknown) => void) => cbs.add(cb),
+      removeEventListener: (_: string, cb: (e: unknown) => void) => cbs.delete(cb),
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }
+    window.matchMedia = ((query: string) =>
+      query === 'print' ? (mql as unknown as MediaQueryList) : real(query)) as typeof window.matchMedia
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer({ 'row-model': 'server', total: '100' }, JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('打印')
+    el.setAttribute('data', JSON.stringify([{ name: '乙', age: 2 }]))
+    expect(warn).toHaveBeenCalledTimes(1) // 去重一次
+    warn.mockRestore()
+    window.matchMedia = real
+  })
+
+  it('合计 scope=all 禁用（无合计行 + devWarn）；scope=page 页内合计照常', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        summary: JSON.stringify([{ key: 'age', type: 'sum' }]),
+      },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    expect(el.shadowRoot!.querySelector('tr.summary')).toBeNull()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('summary-scope')
+    document.body.innerHTML = ''
+    warn.mockRestore()
+    // scope=page：页内合计显式声明 → 照常生效（页内切片聚合恰好正确）
+    const page = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        'summary-scope': 'page',
+        summary: JSON.stringify([{ key: 'age', type: 'sum' }]),
+      },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    expect(page.shadowRoot!.querySelector('tr.summary')!.textContent).toContain('3')
+  })
+
+  it('分组禁用：group-by 在场无分节头 + devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      { 'row-model': 'server', total: '100', 'group-by': 'name' },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '甲', age: 2 },
+      ]),
+    )
+    expect(el.shadowRoot!.querySelector('tr.group-header')).toBeNull()
+    expect(rowsOf(el).length).toBe(2)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('group-by')
+    warn.mockRestore()
+  })
+
+  it('行拖拽禁用：无手柄列 + devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      { 'row-model': 'server', total: '100', 'row-draggable': '' },
+      JSON.stringify([{ name: '甲', age: 1 }]),
+    )
+    expect(el.shadowRoot!.querySelector('.row-drag-cell')).toBeNull()
+    expect(el.shadowRoot!.querySelector('.row-drag-handle')).toBeNull()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('row-draggable')
+    warn.mockRestore()
+  })
+
+  it('列拖拽禁用：setColumnOrder 拦截写回 + devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer({ 'row-model': 'server', total: '100' }, JSON.stringify([{ name: '甲', age: 1 }]))
+    let fired = 0
+    el.addEventListener('oas-column-order', () => fired++)
+    el.setColumnOrder(['age', 'name'])
+    expect(fired).toBe(0)
+    expect(el.hasAttribute('column-keys')).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('列拖拽')
+    warn.mockRestore()
+  })
+
+  it('merge 列与 span-method 禁用（与 windowed 同口径）：不合并 + devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        columns: JSON.stringify([
+          { key: 'name', title: '名称', merge: true },
+          { key: 'age', title: '年龄' },
+        ]),
+      },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '甲', age: 2 },
+        { name: '甲', age: 3 },
+      ]),
+    )
+    // 本地合并会对同值 name 列 rowspan——禁用后每行独立 td（无 rowspan>1）
+    const cells = [...el.shadowRoot!.querySelectorAll<HTMLTableCellElement>('td[data-col="name"]')]
+    expect(cells.length).toBe(3)
+    for (const td of cells) expect(td.rowSpan).toBe(1)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('merge')
+    warn.mockRestore()
+  })
+
+  it('span-method 禁用：跨行声明不生效（每格 rowspan/colspan=1）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      { 'row-model': 'server', total: '100' },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    el.spanMethod = (_row, _col, rowIndex, colIndex) =>
+      rowIndex === 0 && colIndex === 0 ? { rowspan: 2, colspan: 1 } : undefined
+    expect(el.shadowRoot!.querySelectorAll('td[data-col="name"]').length).toBe(2)
+    const first = el.shadowRoot!.querySelector<HTMLTableCellElement>('td[data-col="name"]')!
+    expect(first.rowSpan).toBe(1)
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+  })
+
+  it('页内相对行号语义（填充柄/区域选择基础）：data-row-index 为页内 0 起序', () => {
+    const el = mountServer(
+      { 'row-model': 'server', total: '100', pagination: '' },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+        { name: '丙', age: 3 },
+      ]),
+    )
+    const idx = rowsOf(el).map((r) => r.getAttribute('data-row-index'))
+    expect(idx).toEqual(['0', '1', '2'])
+  })
+
+  it('过滤面板照常打开且候选值来自当前页数据（页内语义）', () => {
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        columns: JSON.stringify([
+          { key: 'name', title: '名称', filterable: true },
+          { key: 'age', title: '年龄' },
+        ]),
+      },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    el.shadowRoot!.querySelector<HTMLElement>('th[data-key="name"] .filter-btn')!.click()
+    const panel = el.shadowRoot!.querySelector('.filter-panel')
+    expect(panel).not.toBeNull()
+    const options = [...panel!.querySelectorAll('.filter-option')].map((o) => o.textContent)
+    expect(options).toContain('甲')
+    expect(options).toContain('乙')
+  })
+
+  it('编辑仅本地：oas-edit 正常派发且不触发任何新请求（v1 无服务端编辑回写契约）', () => {
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '10',
+        editable: '',
+        columns: JSON.stringify([
+          { key: 'name', title: '名称', editable: true },
+          { key: 'age', title: '年龄' },
+        ]),
+      },
+      JSON.stringify([{ name: '甲', age: 1 }]),
+    )
+    const reqs: unknown[] = []
+    el.addEventListener('oas-rows-request', () => reqs.push(1))
+    let editDetail: unknown
+    el.addEventListener('oas-edit', (e) => (editDetail = (e as CustomEvent).detail))
+    // 双击进入编辑 → 输入 → Enter 提交（既有本地编辑流）
+    const td = el.shadowRoot!.querySelector<HTMLElement>('td[data-col="name"]')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')
+    expect(input).not.toBeNull()
+    input!.value = '甲改'
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect((editDetail as { value?: string } | undefined)?.value).toBe('甲改')
+    // 编辑提交零请求（仅本地语义；翻页回填即丢失由宿主文档声明）
+    expect(reqs.length).toBe(0)
   })
 })

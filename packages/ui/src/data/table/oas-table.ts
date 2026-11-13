@@ -430,6 +430,52 @@ const SERVER_PREMISE_HINT =
 const SERVER_WINDOWED_HINT =
   '[oas-table] row-model="server" 与 windowed 同开：windowed 优先，row-model 已忽略（两协议互斥，请二选一）'
 
+/**
+ * ==================== server 行模型能力闸门总表（与 windowed 同型判定） ====================
+ *
+ * | 能力              | server 模式语义                                                     | 生效点 |
+ * |-------------------|---------------------------------------------------------------------|--------|
+ * | 导出              | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出）                 | exportData |
+ * | 打印              | 仅当前页切片 + devWarn 一次（不阻断）                                | update × printModeOn |
+ * | 合计 scope=all    | 禁用 + devWarn（全量口径未知；scope=page 页内合计照常）               | buildSummaryConfigs |
+ * | 分组 group-by     | 禁用 + devWarn（v1 服务端只做平铺数据）                               | groupByEffective |
+ * | 行拖拽            | 禁用 + devWarn（顺序语义服务端未定）                                  | rowDragEnabled |
+ * | 列拖拽            | 禁用 + devWarn（写回拦截）                                            | setColumnOrder |
+ * | merge/span-method | 禁用 + devWarn（与 windowed 同口径跳过本地合并）                      | update / buildRow useSpan |
+ * | 填充柄/区域选择   | 页内相对行号语义（data-row-index 为页内 0 起序）——文档声明批落地      | range 能力 |
+ * | 过滤面板候选值    | 来自当前页数据（页内语义，面板照常打开）——文档声明批落地              | openFilterPanel / filterOptions |
+ * | 历史（撤销）      | 仅记录本地操作，翻页即失效——文档声明批落地                           | range/edit 能力内部 |
+ * | 编辑              | 页内编辑仅本地、翻页回填即丢失（v1 无服务端编辑回写契约）——文档声明批落地 | edit 能力 |
+ */
+
+/** server 行模型能力闸门：导出仅当前页切片的告警文案（实例级去重一次） */
+const SERVER_EXPORT_PAGE_HINT =
+  '[oas-table] server 行模型下导出仅包含当前页切片（全量数据在服务端，组件只持有当前页）：需要全量导出请由宿主在服务端生成'
+
+/** server 行模型能力闸门：打印仅当前页切片的告警文案（实例级去重一次；与 windowed 打印守卫同口径） */
+const SERVER_PRINT_HINT =
+  '[oas-table] server 行模型下打印仅输出当前页切片（全量数据在服务端，客户端无从渲染全量）：需要全量打印请由宿主在服务端生成打印视图'
+
+/** server 行模型能力闸门：合计 summary-scope=all 禁用的告警文案（实例级去重一次） */
+const SERVER_SUMMARY_ALL_HINT =
+  '[oas-table] server 行模型下 summary-scope="all" 不生效（全量口径未知，对当前页切片聚合会得到错误的「全量合计」）：页内合计可用 summary-scope="page"'
+
+/** server 行模型能力闸门：分组禁用的告警文案（实例级去重一次） */
+const SERVER_GROUP_HINT =
+  '[oas-table] server 行模型下 group-by 不生效（v1 服务端只做平铺数据，分组视图是本地全量语义）：请由服务端返回分组结果或关闭 row-model'
+
+/** server 行模型能力闸门：行拖拽禁用的告警文案（实例级去重一次） */
+const SERVER_ROW_DRAG_HINT =
+  '[oas-table] server 行模型下 row-draggable 不生效（行顺序语义由服务端持有，本地重排无法回写全量序）：请关闭 row-draggable'
+
+/** server 行模型能力闸门：列拖拽禁用的告警文案（实例级去重一次） */
+const SERVER_COLUMN_DRAG_HINT =
+  '[oas-table] server 行模型下列拖拽重排不生效（顺序语义由服务端持有）：列序持久化请由宿主自行管理或关闭 row-model'
+
+/** server 行模型能力闸门：merge 列 / span-method 跳过的告警文案（实例级去重一次；与 windowed 同口径） */
+const SERVER_SPAN_HINT =
+  '[oas-table] server 行模型下 merge 列 / span-method 不生效（当前页切片跨界合并语义不确定，与 windowed 同口径跳过本地合并）'
+
 /** server 行模型失败条图标（原创内联 SVG：感叹圆环，danger 语义随 currentColor 着色） */
 const ROWS_ERROR_ICON =
   '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.8v3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11.2" r="0.9" fill="currentColor"/></svg>'
@@ -1689,6 +1735,14 @@ export class OASTableBase extends OASElement {
   private serverPremiseWarned = false
   /** server 行模型 × windowed 同开互斥告警去重（实例级一次） */
   private serverWindowedWarned = false
+  /** server 行模型能力闸门告警去重（导出/打印/合计/分组/行拖拽/列拖拽/merge-span，各实例级一次） */
+  private serverExportWarned = false
+  private serverPrintWarned = false
+  private serverSummaryWarned = false
+  private serverGroupWarned = false
+  private serverRowDragWarned = false
+  private serverColumnDragWarned = false
+  private serverSpanWarned = false
   /** server 行模型：请求序号计数器（单调递增；事件 requestId 与 reportRowsError 校验共用） */
   private rowsRequestId = 0
   /** server 行模型：最近一次派发的请求状态（同值去重键 + 原因推导基准；null = 尚未派发过） */
@@ -2583,6 +2637,11 @@ export class OASTableBase extends OASElement {
     if (virtual && !this.windowedOn() && (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge))) {
       this.warnVirtualSpanOnce()
     }
+    // server 行模型 × print 守卫（与 windowed 同口径）：打印输出仅当前页切片——显式提示一次
+    if (this.printModeOn() && this.serverOn() && !this.serverPrintWarned) {
+      this.serverPrintWarned = true
+      devWarn(SERVER_PRINT_HINT)
+    }
     // row-auto-height：能力未注册 → 显式提示（opt-in 请求不静默忽略）
     this.warnAutoHeightConfigOnce()
     // server 行模型：状态驱动的取数请求（首载/翻页/排序/过滤）——须在 loading/empty 早退
@@ -2801,9 +2860,18 @@ export class OASTableBase extends OASElement {
           body.appendChild(tr)
         }
       }
-      // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并；windowed 切片同样跳过——
-      // 跨界 rowspan 会与占位行相互腐蚀，见 WINDOWED_SPAN_HINT）
-      if (!this.windowedOn()) this.applyRowMerge(rowInfos)
+      // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并；windowed/server 行模型
+      // 切片同样跳过——跨界 rowspan 语义不确定，见 WINDOWED_SPAN_HINT / SERVER_SPAN_HINT）
+      if (this.serverOn()) {
+        if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
+          if (!this.serverSpanWarned) {
+            this.serverSpanWarned = true
+            devWarn(SERVER_SPAN_HINT)
+          }
+        }
+      } else if (!this.windowedOn()) {
+        this.applyRowMerge(rowInfos)
+      }
     }
 
     if (summaryConfigs.length > 0 && summaryFlat.length > 0 && summaryValues) {
@@ -3077,7 +3145,7 @@ export class OASTableBase extends OASElement {
     const effCols = this.effectiveColumns()
     // 受控合并（span-method）仅在非虚拟、非 windowed 模式生效：
     // 虚拟模式受定高限制；windowed 下切片边界会与占位行相互腐蚀（见 WINDOWED_SPAN_HINT）
-    const useSpan = !this.isVirtual() && !this.windowedOn() && this._spanMethod !== null
+    const useSpan = !this.isVirtual() && !this.windowedOn() && !this.serverOn() && this._spanMethod !== null
     // 列序列：column-virtual 时 = [左占位 colSpan][窗口列…][右占位 colSpan]（占位项 col=null）；
     // 非 column-virtual = 全列（span 1），行为与旧版完全一致
     const colSeq = this.columnWindowSequence()
@@ -3720,8 +3788,16 @@ export class OASTableBase extends OASElement {
     else this.emit('edit-invalid', detail)
   }
 
-  /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） */
+  /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化）。
+   *  server 行模型下禁用（顺序语义由服务端持有——能力闸门）：拦截写回 + devWarn 一次 */
   setColumnOrder(keys: string[]): void {
+    if (this.serverOn()) {
+      if (!this.serverColumnDragWarned) {
+        this.serverColumnDragWarned = true
+        devWarn(SERVER_COLUMN_DRAG_HINT)
+      }
+      return
+    }
     const leaves = this.flattenLeaves(this._columns)
     const valid = keys.filter((k) => leaves.some((c) => c.key === k))
     if (valid.length === 0) return
@@ -4394,6 +4470,17 @@ export class OASTableBase extends OASElement {
       if (this.getAttr('group-by', '')) this.warnWindowedOpsOnce()
       return ''
     }
+    // server 行模型：分组禁用（v1 服务端只做平铺数据；配置在场告警一次）
+    if (this.serverOn()) {
+      if (this.getAttr('group-by', '')) {
+        if (!this.serverGroupWarned) {
+          this.serverGroupWarned = true
+          devWarn(SERVER_GROUP_HINT)
+        }
+        return ''
+      }
+      return ''
+    }
     const groupBy = this.getAttr('group-by', '')
     if (this._groupByAttrCache !== groupBy) {
       // 分组字段变化：清空旧组键的折叠残留（旧组键在新分组下无意义）
@@ -4506,6 +4593,17 @@ export class OASTableBase extends OASElement {
         this.warnWindowedOpsOnce()
       }
       return []
+    }
+    // server 行模型：scope=all 的全量合计是对当前页切片的错误聚合 → 禁用（告警一次）；
+    // scope=page 是页内小计的显式声明（对切片聚合恰好正确），照常生效
+    if (this.serverOn() && this.getAttr('summary-scope', 'all') !== 'page') {
+      if (this.getAttr('summary', '') || this.effectiveColumns().some((c) => isSummaryType(c.summary))) {
+        if (!this.serverSummaryWarned) {
+          this.serverSummaryWarned = true
+          devWarn(SERVER_SUMMARY_ALL_HINT)
+        }
+        return []
+      }
     }
     const configs: SummaryConfig[] = []
     const raw = this.getAttr('summary', '')
@@ -4652,6 +4750,11 @@ export class OASTableBase extends OASElement {
    * 即使未开启 `exportable`（无工具栏）也可编程式调用。
    */
   exportData(format: ExportFormat = this.exportFormats()[0]!, options: { fileName?: string } = {}): string {
+    // server 行模型：导出仅当前页切片（不阻断——显式 devWarn 一次，防静默部分导出）
+    if (this.serverOn() && !this.serverExportWarned) {
+      this.serverExportWarned = true
+      devWarn(SERVER_EXPORT_PAGE_HINT)
+    }
     const { headers, rows } = this.exportMatrix()
     const fileName = `${sanitizeFileName(options.fileName ?? this.generateExportFileName())}.${EXPORT_EXT[format]}`
     const content = format === 'excel' ? toExcelXml(headers, rows) : toCSV(headers, rows, { bom: true })
@@ -4696,8 +4799,16 @@ export class OASTableBase extends OASElement {
 
   // ==================== D15 行拖拽排序（row-draggable） ====================
 
-  /** 行拖拽是否生效（虚拟滚动下禁用：窗口行序无稳定 from/to 语义） */
+  /** 行拖拽是否生效（虚拟滚动下禁用：窗口行序无稳定 from/to 语义；
+   *  server 行模型禁用：顺序语义由服务端持有，本地重排无法回写全量序——告警一次） */
   private rowDragEnabled(): boolean {
+    if (this.hasAttr('row-draggable') && this.serverOn()) {
+      if (!this.serverRowDragWarned) {
+        this.serverRowDragWarned = true
+        devWarn(SERVER_ROW_DRAG_HINT)
+      }
+      return false
+    }
     return this.hasAttr('row-draggable') && !this.isVirtual()
   }
 
