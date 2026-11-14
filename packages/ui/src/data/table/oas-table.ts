@@ -33,6 +33,9 @@ import { cloneSlotContent } from '../../shared/slot-template.js'
 import { rowKeyValue } from './oas-table-row-key.js'
 // server 行模型（row-model="server"）请求协议：类型 + 纯函数（原因推导 / 同值去重签名）
 import { rowsRequestPlan, rowsRequestSignature, type RowsRequestReason, type RowsRequestState } from './row-model.js'
+// 行模型数据层（headless 纯函数，`@oas-ui/ui/data/table/model` 同一实现的组件侧消费）：
+// 过滤解析/匹配、排序状态解析（后续批次逐步接线其余变换段）
+import { parseFilterValues, matchesFilters, resolveSorts, type SortState } from './model/index.js'
 // 服务端行窗口协议（windowed 模式）：与宿主交换行区间的共享契约（类型 + 纯工具），
 // 数据密集型组件统一口径（table / gantt / resource / kanban / scheduler 同源）
 import {
@@ -268,11 +271,9 @@ export interface TableStructuralHeaderCellCtx {
 
 export type SortOrder = '' | 'asc' | 'desc'
 
-/** 参与排序的单个列状态（多列排序时按数组顺序决定优先级） */
-export interface SortState {
-  key: string
-  order: Exclude<SortOrder, ''> | undefined
-}
+// 排序状态类型从数据层（data/table/model）解析：单一真相源（headless 公开面与组件同形）。
+// 此处 re-export 保持既有 `import { type SortState } from '…/oas-table.js'` 的消费路径不变。
+export type { SortState }
 
 /** 密度档位：与控件 size 体系同词（small/medium/large），默认 medium */
 export type TableSize = 'small' | 'medium' | 'large'
@@ -4097,38 +4098,15 @@ export class OASTableBase extends OASElement {
   /**
    * 过滤状态：filter-values 属性 JSON `{ [colKey]: value }`；空/缺省 = 无过滤。
    * 智能跳过空值（'' / null），避免误过滤。
+   * 薄壳：读属性 → 调数据层纯函数（`data/table/model`，与 headless 公开面同一实现）。
    */
   private parseFilterValues(): Record<string, string | number> {
-    const raw = this.getAttr('filter-values', '')
-    if (!raw) return {}
-    try {
-      const parsed = JSON.parse(raw) as Record<string, unknown>
-      if (!parsed || typeof parsed !== 'object') return {}
-      const out: Record<string, string | number> = {}
-      for (const [k, v] of Object.entries(parsed)) {
-        if (v === '' || v === null || v === undefined) continue
-        out[k] = typeof v === 'number' ? v : String(v)
-      }
-      return out
-    } catch {
-      return {}
-    }
+    return parseFilterValues(this.getAttr('filter-values', ''))
   }
 
-  /** 该行是否命中所有过滤条件 */
+  /** 该行是否命中所有过滤条件（薄壳：列定义取自组件 → 调数据层纯函数） */
   private matchesFilters(row: Record<string, unknown>, filterValues: Record<string, string | number>): boolean {
-    const leaves = this.flattenLeaves(this._columns)
-    for (const [key, fv] of Object.entries(filterValues)) {
-      const col = leaves.find((c) => c.key === key)
-      if (!col) continue
-      const cell = row[key]
-      if (col.filterMatch) {
-        if (!col.filterMatch(cell, fv)) return false
-      } else if (String(cell ?? '') !== String(fv)) {
-        return false
-      }
-    }
-    return true
+    return matchesFilters(row, filterValues, this._columns)
   }
 
   /** 该列过滤选项：列级 filters 优先，否则取该列数据唯一非空值 */
@@ -4334,25 +4312,14 @@ export class OASTableBase extends OASElement {
   /**
    * 解析当前排序状态：无 multi-sort 时回退单列 sort-key/sort-order（向后兼容）。
    * 返回数组按优先级排序（先比较首个，相等再比较次个）。
-   */ private resolveSorts(): SortState[] {
-    const raw = this.getAttr('multi-sort', '')
-    if (raw) {
-      try {
-        const arr = JSON.parse(raw) as Array<{ key: string; order?: SortOrder }>
-        const out = (Array.isArray(arr) ? arr : [])
-          .filter(
-            (s): s is { key: string; order: 'asc' | 'desc' } =>
-              !!s && typeof s.key === 'string' && (s.order === 'asc' || s.order === 'desc'),
-          )
-          .map((s): SortState => ({ key: s.key, order: s.order }))
-        return out
-      } catch {
-        /* 非法 multi-sort 忽略，回退单列 */
-      }
-    }
-    const key = this.getAttr('sort-key', '')
-    const order = this.getAttr('sort-order', '') as SortOrder
-    return key && (order === 'asc' || order === 'desc') ? [{ key, order }] : []
+   * 薄壳：读属性 → 调数据层纯函数（`data/table/model`，与 headless 公开面同一实现）。
+   */
+  private resolveSorts(): SortState[] {
+    return resolveSorts({
+      sortKey: this.getAttr('sort-key', ''),
+      sortOrder: this.getAttr('sort-order', ''),
+      multiSort: this.getAttr('multi-sort', ''),
+    })
   }
 
   /** key → 列 type 映射（排序比较器热路径外提：sort 每次比较都全树走查 flattenLeaves 是 O(列数) 重复开销——实抓万行排序 14 万次全列树走查） */
