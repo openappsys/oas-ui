@@ -1835,3 +1835,65 @@ describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
     expect(up!.getAttribute('aria-disabled')).toBeNull()
   })
 })
+
+describe('OASTable server 行模型 × 本地虚拟（height）叠加（审查回归）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** server 与本地虚拟（height，非 windowed）可叠加：虚拟窗口几何按「页内切片
+      （pageSize 行）」计界，不按外部 total 展开——渲染行数与顶/底占位高都以当前页为界，
+      不跨页。此前该叠加形态无测试覆盖，固化防虚拟几何回归破坏 server 组合 */
+  it('server + height + pagination：虚拟渲染行与占位以页内切片为界（不跨页）', () => {
+    const reqs: { requestId: number; start: number; end: number; reason: string }[] = []
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '1000')
+    el.setAttribute('pagination', '')
+    el.setAttribute('page-size', '10')
+    el.setAttribute('current', '2')
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('data', '[]')
+    el.addEventListener('oas-rows-request', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      reqs.push({ requestId: d.requestId, start: d.start, end: d.end, reason: d.reason })
+    })
+    document.body.appendChild(el)
+    // 虚拟叠加不改变 server 请求语义：init 按页 2 区间派发（(2-1)*10 ~ 2*10）
+    expect(reqs).toEqual([{ requestId: 1, start: 10, end: 20, reason: 'init' }])
+    // 宿主回填页 2 切片（恰 pageSize 行）→ loading 清、数据行渲染
+    const page2 = Array.from({ length: 10 }, (_, i) => ({ name: `行${10 + i}`, age: 30 + i }))
+    el.setAttribute('data', JSON.stringify(page2))
+    expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
+    // 虚拟生效；渲染行 = 页内窗口（可见 5 + buffer 4 = 9 ≤ pageSize 10），首行 = 切片首行
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.table-scroll')!
+    expect(wrap.getAttribute('data-virtual')).toBe('true')
+    const trs = [...el.shadowRoot!.querySelectorAll('tbody tr')]
+    expect(trs.length, '9 渲染行 + 顶/底占位').toBe(11)
+    const rendered = [...el.shadowRoot!.querySelectorAll('[part="row"]')]
+    expect(rendered.length, '渲染行不超页界').toBe(9)
+    expect(rendered[0]!.textContent).toContain('行10')
+    // 占位几何按页内切片计：顶占位 0、底占位 = (pageSize 10 − 渲染 9) × 行高 40 = 40px
+    //（若误用外部 total=1000 计界，底占位会是 39640px）
+    const topSpacerHeight = (trs[0]!.firstElementChild as HTMLElement).style.height
+    const bottomSpacerHeight = (trs.at(-1)!.firstElementChild as HTMLElement).style.height
+    expect(trs[0]!.className).toContain('spacer')
+    expect(trs.at(-1)!.className).toContain('spacer')
+    expect(topSpacerHeight).toBe('0px')
+    expect(bottomSpacerHeight).toBe('40px')
+  })
+})

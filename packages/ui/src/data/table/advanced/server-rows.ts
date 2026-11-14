@@ -17,8 +17,9 @@
  * 预填场景）时不主动刷，首屏数据由宿主负责，后续翻页/排序/过滤仍由 helper 接管。
  * 另外要求元素已连接（已挂载）：请先 append 再创建。
  *
- * 实例守卫：每元素一个 source 实例——同一元素重复创建会双监听双取数，devWarn 一次
- * 并照常返回新实例（不阻断宿主）；请先 destroy() 再重建（destroy 解除登记，重建无告警）。
+ * 实例守卫：每元素一个 source 实例——同一元素重复创建会双监听双取数，每次重复创建
+ * 各 devWarn 一次（不阻断宿主，照常返回新实例）；请先 destroy() 再重建（destroy 解除
+ * 登记，重建无告警）。
  *
  * 缓存 TTL 位（预留，v1 未实现）：未来在 options 预留 cache / ttl 选项，
  * 缓存键 = 完整查询（页码 + 页大小 + 排序组 + 过滤组，对齐组件请求签名口径）；
@@ -66,9 +67,10 @@ type ServerRowsHost = HTMLElement & {
 
 /**
  * 每元素一个 source 实例的登记表（元素 → 在册）：
- * 二次创建 = 双监听双取数（两个 source 各自响应同一批请求，各写一次 data），dev 提醒但不阻断——
- * 组件库不炸宿主，照常返回新实例；destroy 时解除登记（先毁后建无告警）。
- * 仅 devWarn 通道，生产零开销（WeakMap 随元素回收，不产生泄漏面）。
+ * 二次创建 = 双监听双取数（两个 source 各自响应同一批请求，各写一次 data），每次重复创建
+ * 各 dev 提醒一次、提醒但不阻断——组件库不炸宿主，照常返回新实例；destroy 时解除登记
+ * （先毁后建无告警）。
+ * 仅 devWarn 通道，生产仅告警静默（WeakMap 登记操作仍在，随元素回收，不产生泄漏面）。
  */
 const serverSourceRegistry = new WeakMap<HTMLElement, true>()
 
@@ -85,7 +87,7 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
   if (table.isConnected === false) {
     throw new Error('[oas-table] createServerSource 需要已连接（已挂载）的 oas-table 元素（请先 append 再创建）')
   }
-  // 每元素一个实例守卫：重复创建双监听双取数，dev 提醒一次、照常返回新实例（生产静默不阻断）
+  // 每元素一个实例守卫：重复创建双监听双取数，每次重复创建各提醒一次、照常返回新实例（生产静默不阻断）
   if (serverSourceRegistry.has(table)) {
     devWarn('[oas-table] 该元素已存在 createServerSource 实例——重复创建会双监听双取数，请先 destroy() 再重建')
   }

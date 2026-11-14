@@ -27,6 +27,12 @@
 - **oas-equation**：`editable` 编辑实时预览（textarea 编辑态、200ms 节流预览、Esc 取消恢复原值、渲染失败回退源码 + 一次性 devWarn、value 双通道）；i18n ×16。
 - **oas-scheduler**：新属性 `conflict-check`（在场 opt-in）——同日同时段重叠检测（半开区间纯函数，与车道布局同构）+ `.event.conflict` 视觉标记（danger token）+ `oas-event-conflict` 幂等事件（detail `{ id, conflicts: string[] }`，先写签名再派发，消解发空数组）；时刻块补键盘路径（←/→ 整天改期 RTL 镜像、Alt+←/→ 缩放 end ±15min、aria-keyshortcuts）；i18n `scheduler.conflict` ×16。
 - **oas-chart**：新图型 `horizontal-bar`（数值轴底部、分类标签左缘、RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 默认边界不变）+ property `tooltipFormatter` 开启 shadow 单例浮层（`part="tooltip"`，反色 token，computePosition 定位）+ `oas-chart-tooltip` 事件宿主可 `preventDefault()` 接管；forced-colors 浮层兜底；i18n `chart.horizontal-bar` ×16。
+- **`@oas-ui/theme` 新语义 token `--oas-color-danger-soft`（light / dark / high-contrast 三档，danger 12% 混合底）**：`oas-table` 编辑校验失败单元格底色与 server 失败条底色改引该 token（替代组件内联 `color-mix` 兜底表达式）——宿主覆写一处生效，主题分支不再漂移。
+- **`oas-table` `createServerSource` 重复创建 dev 提示**：同一元素重复创建第二个 source 时 dev 环境提示（每次重复创建各提示一次，不阻断、照常返回新实例；`destroy()` 解除登记后重建无告警）——双监听双取数不再静默发生；生产环境告警静默，行为不变。
+
+### 修复
+
+- **`oas-table` 编辑校验警示条文字色**：`.edit-error` 文字改用 danger 实底反色 token `--oas-color-text-on-danger`（警示条为 danger 实底，原文字色压实底 light 约 1.03:1、dark 约 1.00:1 不可读）——与失败重试按钮 hover 反色同一体系，light / dark 双档对比度达标，暗色随 token 自适应。
 
 所有显著变更记录于此。
 

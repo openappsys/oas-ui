@@ -1051,7 +1051,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   padding: var(--oas-space-2) var(--oas-space-3);
   border-bottom: 1px solid var(--oas-color-danger);
   background: var(--oas-color-danger-soft);
-  color: var(--oas-color-danger-text, var(--oas-color-text-primary));
+  color: var(--oas-color-danger-text);
   font-size: var(--oas-font-size-sm);
 }
 .rows-error[hidden] {
