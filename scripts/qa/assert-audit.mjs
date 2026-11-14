@@ -24,7 +24,7 @@
  *   node scripts/qa/assert-audit.mjs --json
  *   node scripts/qa/assert-audit.mjs --check
  *   node scripts/qa/assert-audit.mjs --check --max-wait 400 --max-weak 380 --max-event-len 105
- *   node scripts/qa/assert-audit.mjs --check --max-os-absolute 82
+ *   node scripts/qa/assert-audit.mjs --check --max-os-absolute 77
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -562,14 +562,16 @@ function main() {
   const check = process.argv.includes('--check')
   const verbose = process.env.QA_AUDIT_VERBOSE === '1'
   // 阈值 = 已收口的历史债快照（2026-11-01 收尾）：waitForTimeout 440 → 26（四批清理后仅剩
-  // 已登记的时间流逝/否定断言/测量仪器例外，逐处带 audit-exception 注释）；弱断言 1967 → **0**
+  // 已登记的时间流逝/否定断言/测量仪器例外，逐处带 audit-exception 注释；2026-11-14 上限
+  // 随降至实测 26）；弱断言 1967 → **0**
   // （单测 1549 + e2e 418 全部换成精确契约；2026-11-01 归 0，maxWeak=0 = 零增量容忍——
   // 新测试不得引入弱断言，确属合理例外须在提交说明写清并调整阈值）。
   // 口径不变：**只防增量、不要求清零**；再改阈值必须在提交说明写清为什么。
-  const maxWait = argValue('--max-wait', 28)
+  const maxWait = argValue('--max-wait', 26)
   const maxWeak = argValue('--max-weak', 0)
   const maxEventLen = argValue('--max-event-len', 105)
-  // OS 绝对量维度：默认上限 = 收口后的存量快照（2026-11-02：79 → 40 → **82**）。
+  // OS 绝对量维度：默认上限 = 收口后的存量快照（2026-11-02：79 → 40 → 82；2026-11-14 清理
+  // table 系滚动偏移/弱容差后随降 → **77**）。
   // 本批已把 17 条布局高危（[layout] 标记：视口内渲染/窗口计数）与 17 条滚动偏移、3 条 rect 绝对
   // 坐标全部改写为语义不变量（元素关系 / 前后差 / DOM 现算期望值），0 条登记例外；
   // **82 的构成**：数据驱动计数 78 条（demo 数据条数、固定配置项数、文档页数等，与字体度量/视口
@@ -579,7 +581,7 @@ function main() {
   // 常数）——所以存量从 40 上升到 82，均与字体度量无关，属口径补齐而非新违规。
   // 口径不变「只防增量、不要求清零」：清理一条或登记一条例外后必须同步下调上限，
   // 避免上限虚高把新增违规一起放过。
-  const maxOsAbsolute = argValue('--max-os-absolute', 82)
+  const maxOsAbsolute = argValue('--max-os-absolute', 77)
 
   const exceptions = loadOsAssertExceptions()
   const osRaw = results.flatMap((item) => item.osAbsoluteAssertions)
