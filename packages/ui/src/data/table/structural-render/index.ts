@@ -5,6 +5,11 @@ import type {
   TableStructuralBodyCellCtx,
   TableStructuralHeaderRowCtx,
   TableStructuralHeaderCellCtx,
+  TableStructuralEmptyCtx,
+  TableStructuralLoadingCtx,
+  TableStructuralPaginationCtx,
+  TableStructuralApi,
+  TableStructuralPaginationApi,
 } from '../oas-table.js'
 
 /**
@@ -13,10 +18,11 @@ import type {
  * import 即注册：控制器本体是一个纯委托——每个渲染槽调用时**现读** `host.structuralRenderers`
  * （property 通道），自身不缓存任何钩子引用：
  * - 宿主晚赋值 / 运行时整体替换 hooks → 下一轮渲染立即生效，无闭包过期问题；
- * - 未设 property → 四个方法存在但委托落空，开销一次属性读取 + 可选链。
+ * - 未设 property → 七个方法存在但委托落空，开销一次属性读取 + 可选链。
  *
  * 默认 `data/table` 链不含本能力（注册型 L3 按需 import；全量入口与 CDN data 族包含）。
- * 挂接点（oas-table.ts 四处 structuralCap?. 调用）在能力未注册时恒 null，判空跳过零开销。
+ * 挂接点（oas-table.ts 七处 structuralCap?. 调用）在能力未注册时恒 null，判空跳过零开销
+ * （ctx 与 api 对象仅在钩子链可达时构造——可选链短路连参数求值一起跳过）。
  *
  * 形态取舍（同类方案对照，仅记结论）：依赖框架协调器的「组件整体替换」方案不可直译为命令式
  * DOM；headless 表格的「渲染全权归宿主」是趋势方向；「渲染器实例生命周期」是重 DOM 复用时代的
@@ -49,6 +55,18 @@ class StructuralRenderController {
   headerCell(ctx: TableStructuralHeaderCellCtx): void {
     this.host.structuralRenderers?.headerCell?.(ctx)
   }
+
+  empty(ctx: TableStructuralEmptyCtx): void {
+    this.host.structuralRenderers?.empty?.(ctx)
+  }
+
+  loading(ctx: TableStructuralLoadingCtx): void {
+    this.host.structuralRenderers?.loading?.(ctx)
+  }
+
+  pagination(ctx: TableStructuralPaginationCtx): void {
+    this.host.structuralRenderers?.pagination?.(ctx)
+  }
 }
 
 /** 幂等注册 structural-render 能力（`@oas-ui/ui` 全量入口/CDN data 族含本调用，tree-shaking 不受影响） */
@@ -64,5 +82,10 @@ export type {
   TableStructuralBodyCellCtx,
   TableStructuralHeaderRowCtx,
   TableStructuralHeaderCellCtx,
+  TableStructuralEmptyCtx,
+  TableStructuralLoadingCtx,
+  TableStructuralPaginationCtx,
+  TableStructuralApi,
+  TableStructuralPaginationApi,
 }
 export type { TableColumn } from '../oas-table.js'

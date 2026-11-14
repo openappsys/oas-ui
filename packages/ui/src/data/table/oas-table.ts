@@ -242,9 +242,11 @@ export interface TableAutoHeightCapability {
 }
 
 /** 结构级渲染钩子集合（structuralRenderers property 通道）：接管表头行/表头单元格/正文行/
-    正文单元格四个结构槽的「包裹/增强/替换」。钩子在某元素**默认装配完成后**调用——默认内容、
-    事件与能力装饰（edit/format/range 装饰链在内层）已全部就位，宿主可包 wrapper、加 class、
-    挂监听，或清空 el 后全自定义（替换模式自担 a11y：不得移除 role/tabindex）。
+    正文单元格/空态/loading 行/分页器七个结构槽的「包裹/增强/替换」。钩子在某元素**默认装配
+    完成后**调用——默认内容、事件与能力装饰（edit/format/range 装饰链在内层）已全部就位，
+    宿主可包 wrapper、加 class、挂监听，或清空 el 后全自定义（替换模式自担 a11y：不得移除
+    role/tabindex）。各槽 ctx 携带 api 操作面（选中/编辑态查询、展开切换、跳页，见
+    TableStructuralApi）。
     元素随窗口化滚动重建：监听随元素销毁，跨元素状态宿主自管；每轮渲染现读 property，无闭包缓存。
     需 import `@oas-ui/ui/data/table/structural-render` 注册能力后生效（默认 table 链零增量） */
 export interface TableStructuralRenderers {
@@ -256,6 +258,15 @@ export interface TableStructuralRenderers {
   headerRow?: (ctx: TableStructuralHeaderRowCtx) => void
   /** 表头叶子单元格（th；多级表头仅叶子列，组列不进 v1） */
   headerCell?: (ctx: TableStructuralHeaderCellCtx) => void
+  /** 空态容器 td：默认内容（插槽 / empty-text / 内置文案）装配后调用；仅空态出口调用
+      （windowed 未装载不属空态，不调）。清空 el 后全自定义 */
+  empty?: (ctx: TableStructuralEmptyCtx) => void
+  /** loading 行 tr：默认行结构装配后调用；仅 loading 早退出口调用（宿主 loading 属性
+      或 server 行模型在途态）。清空 el 后改行结构/内容（colSpan 全宽 td 语义自担） */
+  loading?: (ctx: TableStructuralLoadingCtx) => void
+  /** 分页器：默认 oas-pagination 装配后调用；分页未开启不调用。全量渲染出口统一调用
+      （含 loading/empty 早退路径——分页器与行数据无关），虚拟滚动帧不重调 */
+  pagination?: (ctx: TableStructuralPaginationCtx) => void
 }
 
 /** 正文行结构槽上下文：rowIndex 与 tr[data-row-index] 同口径（windowed 为绝对数据行号） */
@@ -263,6 +274,7 @@ export interface TableStructuralBodyRowCtx {
   el: HTMLTableRowElement
   row: Record<string, unknown>
   rowIndex: number
+  api: TableStructuralApi
 }
 
 export interface TableStructuralBodyCellCtx {
@@ -271,15 +283,81 @@ export interface TableStructuralBodyCellCtx {
   /** 与 data-row-index 同口径（windowed 为绝对数据行号） */
   rowIndex: number
   column: TableColumn
+  api: TableStructuralApi
 }
 
 export interface TableStructuralHeaderRowCtx {
   el: HTMLTableRowElement
+  api: TableStructuralApi
 }
 
 export interface TableStructuralHeaderCellCtx {
   el: HTMLTableCellElement
   column: TableColumn
+  api: TableStructuralApi
+}
+
+/**
+ * 结构槽 ctx 操作 API（七槽 ctx.api 共享面）：只读状态查询 + 受控操作。
+ * 全部走组件既有公开/受控通道——属性读（selected / expanded / 编辑 DOM 标记）、
+ * 属性写（expanded / current）与既有事件（oas-expand），不暴露任何内部私有状态。
+ * 函数引用随每轮 ctx 新建（闭包只持组件实例，无跨轮状态）；读到的选择/编辑态恒为
+ * 调用时刻的最新值（不依赖构建期快照——选择局部补丁等不重跑钩子的路径下依然准确）。
+ */
+export interface TableStructuralApi {
+  /** 行选择态查询：rowKey 是否在当前 selected 属性集合中。
+      空串恒 false（选择键集合不含空项）；未开启勾选按属性集合原样判定（无 selected 属性 = 全 false） */
+  isSelected(rowKey: string): boolean
+  /** 行内编辑态查询：该行当前是否有单元格处于编辑；columnKey 缺省 = 限行不限列，
+      给定 = 限行限列。编辑能力未注册 / 无进行中编辑恒 false。
+      读渲染 DOM 的编辑标记（td[data-editing] + tr[data-key] + td[data-col]），与
+      enterEdit/exitEdit/paintCell 同步维护，行重建（编辑被静默取消）后自然回落 false */
+  isEditing(rowKey: string, columnKey?: string): boolean
+  /** 树行展开/折叠切换：读当前 expanded 属性集合取反后经既有 toggleExpand 通道写回
+      （写 expanded 属性 + 派发 oas-expand + 触发重渲染）。visual-proto / windowed 树形
+      模式下与内置展开钮同口径：只派 oas-expand 上报意图，本地不写 expanded（由宿主回写）。
+      空串 rowKey 为 no-op（不写属性、不派事件）；rowKey 不在当前数据中时照常写属性
+      （无渲染效果，与手工写属性等价） */
+  toggleExpand(rowKey: string): void
+}
+
+/** 分页器槽扩展 API：gotoPage 与内置分页器 oas-change 写回同一通道 */
+export interface TableStructuralPaginationApi extends TableStructuralApi {
+  /** 跳页：写 current 属性（与内置分页器 oas-change 处理器同通道）。
+      非有限数（NaN / ±Infinity）no-op；与 current 属性同值时跳过写（避免无谓重渲染）；
+      不做本地钳制——超页由下一轮渲染的既有钳制写回归位到末页，下限由读侧归一化
+      （normalizeCurrent）兜底为第 1 页（属性值可能保留原样，行为以渲染页为准）。
+      server 行模型下与内置翻页同语义：current 变更触发宿主重新取数。
+      仅分页器槽 ctx 提供本方法（分页未开启时分页器槽不调，本 API 不会出现在其他槽） */
+  gotoPage(page: number): void
+}
+
+/** 空态结构槽上下文：el = 空态容器 td（默认内容已装配——slot="empty" 插槽 /
+    empty-text 属性 / 内置文案三者按既有优先级就位；清空 el 后全自定义，自担 a11y） */
+export interface TableStructuralEmptyCtx {
+  el: HTMLElement
+  api: TableStructuralApi
+}
+
+/** loading 行结构槽上下文：el = loading 行 tr（默认装配：part="loading-row" +
+    全宽 td + 旋转指示 + 文案）；text = 默认文案（translateText('table.loading') 同源，
+    宿主自渲染时可复用）。只在 loading 早退出口调用（宿主 loading 属性或 server 在途态） */
+export interface TableStructuralLoadingCtx {
+  el: HTMLTableRowElement
+  text: string
+  api: TableStructuralApi
+}
+
+/** 分页器结构槽上下文：el = 默认装配的分页器元素（oas-pagination；清空后全自定义，
+    可经 el.parentElement 触达容器）。current/total/pageSize 为本轮渲染的分页元数据，
+    pageCount 按 total/pageSize 既有口径计算（至少 1）。分页未开启不调用 */
+export interface TableStructuralPaginationCtx {
+  el: HTMLElement
+  current: number
+  pageCount: number
+  total: number
+  pageSize: number
+  api: TableStructuralPaginationApi
 }
 
 export type SortOrder = '' | 'asc' | 'desc'
@@ -1887,7 +1965,51 @@ export class OASTableBase extends OASElement {
 
   /** 数据行结构槽统一出口：行挂入 tbody 后调用（宿主钩子里 parentElement 可用） */
   private structuralBodyRow(tr: HTMLTableRowElement, row: Record<string, unknown>, rowIndex: number): void {
-    this.runStructuralSlot('bodyRow', () => this.structuralCap?.bodyRow?.({ el: tr, row, rowIndex }))
+    this.runStructuralSlot('bodyRow', () =>
+      this.structuralCap?.bodyRow?.({ el: tr, row, rowIndex, api: this.structuralApi() }),
+    )
+  }
+
+  /**
+   * 结构槽 ctx 操作 API（TableStructuralApi 实现）：只读状态查询 + 受控操作，全部走
+   * 组件既有公开/受控通道——selected/expanded 属性读、编辑 DOM 标记读、expanded/current
+   * 属性写与既有事件，不直接改内部私有状态。每次 ctx 组装新建（ctx 仅在钩子在场时构造，
+   * 默认链零增量）；箭头函数保 this。
+   */
+  private structuralApi(): TableStructuralApi {
+    return {
+      isSelected: (rowKey) => {
+        if (rowKey === '') return false
+        return this.getAttr('selected', '').split(',').filter(Boolean).includes(rowKey)
+      },
+      isEditing: (rowKey, columnKey) => {
+        if (rowKey === '') return false
+        // 编辑态读渲染 DOM 的标记（td[data-editing] 由 edit 能力 enter/exit 同步维护），
+        // 不触达 edit controller 私有 editState；行 key 用 tr[data-key]、列 key 用 td[data-col]
+        const td = this.shadow.querySelector('td[data-editing="true"]')
+        if (!td) return false
+        if ((td.closest('tr')?.getAttribute('data-key') ?? '') !== rowKey) return false
+        return columnKey === undefined || (td.getAttribute('data-col') ?? '') === columnKey
+      },
+      toggleExpand: (rowKey) => {
+        if (rowKey === '') return
+        const set = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
+        this.toggleExpand(rowKey, !set.has(rowKey))
+      },
+    }
+  }
+
+  /** 分页器槽扩展 API：gotoPage 走 current 属性写回（与内置分页器 oas-change 处理器同通道；
+      钳制由既有渲染逻辑负责，这里不做本地钳制），边界口径见 TableStructuralPaginationApi */
+  private structuralPaginationApi(): TableStructuralPaginationApi {
+    return {
+      ...this.structuralApi(),
+      gotoPage: (page) => {
+        if (!Number.isFinite(page)) return
+        if (String(page) === this.getAttr('current', '1')) return
+        this.setAttribute('current', String(page))
+      },
+    }
   }
 
   /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
@@ -2017,6 +2139,9 @@ export class OASTableBase extends OASElement {
         bodyCell: pick<(ctx: TableStructuralBodyCellCtx) => void>(v.bodyCell),
         headerRow: pick<(ctx: TableStructuralHeaderRowCtx) => void>(v.headerRow),
         headerCell: pick<(ctx: TableStructuralHeaderCellCtx) => void>(v.headerCell),
+        empty: pick<(ctx: TableStructuralEmptyCtx) => void>(v.empty),
+        loading: pick<(ctx: TableStructuralLoadingCtx) => void>(v.loading),
+        pagination: pick<(ctx: TableStructuralPaginationCtx) => void>(v.pagination),
       }
     }
     this.markRenderDirty()
@@ -2853,7 +2978,9 @@ export class OASTableBase extends OASElement {
           row.appendChild(th)
           // 表头叶子单元格结构槽（组列不进 v1）：append 后调用——宿主钩子里 parentElement 可用
           if (cell.isLeaf) {
-            this.runStructuralSlot('headerCell', () => this.structuralCap?.headerCell?.({ el: th, column: cell.col }))
+            this.runStructuralSlot('headerCell', () =>
+              this.structuralCap?.headerCell?.({ el: th, column: cell.col, api: this.structuralApi() }),
+            )
           }
         }
         if (r === 0 && this._expandable) {
@@ -2864,7 +2991,9 @@ export class OASTableBase extends OASElement {
         }
         head.appendChild(row)
         // 表头行结构槽：多级表头每一行都调用（append 后）
-        this.runStructuralSlot('headerRow', () => this.structuralCap?.headerRow?.({ el: row }))
+        this.runStructuralSlot('headerRow', () =>
+          this.structuralCap?.headerRow?.({ el: row, api: this.structuralApi() }),
+        )
       }
     } else if (showHeader) {
       // 扁平表头（单行，向后兼容）；column-virtual 时走窗口序列（占位 colSpan 归并窗口外列）
@@ -2888,7 +3017,9 @@ export class OASTableBase extends OASElement {
         if (col.width) th.style.width = col.width
         tr.appendChild(th)
         // 表头叶子单元格结构槽：append 后调用（宿主钩子里 parentElement 可用）
-        this.runStructuralSlot('headerCell', () => this.structuralCap?.headerCell?.({ el: th, column: col }))
+        this.runStructuralSlot('headerCell', () =>
+          this.structuralCap?.headerCell?.({ el: th, column: col, api: this.structuralApi() }),
+        )
       }
       if (this._expandable) {
         const th = document.createElement('th')
@@ -2896,7 +3027,7 @@ export class OASTableBase extends OASElement {
         tr.appendChild(th)
       }
       head.appendChild(tr)
-      this.runStructuralSlot('headerRow', () => this.structuralCap?.headerRow?.({ el: tr }))
+      this.runStructuralSlot('headerRow', () => this.structuralCap?.headerRow?.({ el: tr, api: this.structuralApi() }))
     }
 
     if (this.hasAttr('loading') || this.serverLoading) {
@@ -2909,9 +3040,14 @@ export class OASTableBase extends OASElement {
       loadingTd.className = 'loading'
       const spin = document.createElement('span')
       spin.className = 'spin'
-      loadingTd.append(spin, document.createTextNode(this.t('table.loading')))
+      const loadingText = this.t('table.loading')
+      loadingTd.append(spin, document.createTextNode(loadingText))
       loadingTr.appendChild(loadingTd)
       body.appendChild(loadingTr)
+      // loading 行结构槽：默认行结构装配后调用（宿主可改行结构/内容；未注册零调用零漂移）
+      this.runStructuralSlot('loading', () =>
+        this.structuralCap?.loading?.({ el: loadingTr, text: loadingText, api: this.structuralApi() }),
+      )
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
       this.settleRenderState()
@@ -2933,6 +3069,8 @@ export class OASTableBase extends OASElement {
       else emptyTd.textContent = this.getAttr('empty-text', this.t('table.empty'))
       emptyTr.appendChild(emptyTd)
       body.appendChild(emptyTr)
+      // 空态结构槽：默认内容装配后调用（宿主可清空 el 全自定义；未注册零调用零漂移）
+      this.runStructuralSlot('empty', () => this.structuralCap?.empty?.({ el: emptyTd, api: this.structuralApi() }))
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
       this.settleRenderState()
@@ -3121,6 +3259,18 @@ export class OASTableBase extends OASElement {
       this.emit('page-change', { page, pageSize: size })
     })
     holder.appendChild(p)
+    // 分页器结构槽：默认分页器装配后调用（宿主可替换/增强；未注册零调用零漂移）。
+    // pageCount 与内置钳制同口径（pageCountOf，至少 1）
+    this.runStructuralSlot('pagination', () =>
+      this.structuralCap?.pagination?.({
+        el: p,
+        current,
+        pageCount: pageCountOf(total, pageSize),
+        total,
+        pageSize,
+        api: this.structuralPaginationApi(),
+      }),
+    )
   }
 
   /** 渲染一行数据（非虚拟模式逐行调用；虚拟模式仅窗口内行调用）。
@@ -3339,7 +3489,7 @@ export class OASTableBase extends OASElement {
       if (col.merge) MERGE_VALUE.set(td, this.cellText(col, row))
       // 结构槽在最外层（装饰在内、结构在外）：默认内容 + 能力装饰就位后交给宿主包裹/增强
       this.runStructuralSlot('bodyCell', () =>
-        this.structuralCap?.bodyCell?.({ el: td, row, rowIndex: dataIndex, column: col }),
+        this.structuralCap?.bodyCell?.({ el: td, row, rowIndex: dataIndex, column: col, api: this.structuralApi() }),
       )
     }
     if (this._expandable) {
@@ -3840,7 +3990,9 @@ export class OASTableBase extends OASElement {
     const node = this.cellNode(col, row)
     if (node) td.appendChild(node)
     const rowIndex = Number(td.closest('tr')?.getAttribute('data-row-index') ?? 0)
-    this.runStructuralSlot('bodyCell', () => this.structuralCap?.bodyCell?.({ el: td, row, rowIndex, column: col }))
+    this.runStructuralSlot('bodyCell', () =>
+      this.structuralCap?.bodyCell?.({ el: td, row, rowIndex, column: col, api: this.structuralApi() }),
+    )
   }
 
   /** 滚动到指定行（virtual / windowed 视口生效，其余形态返回 false）。

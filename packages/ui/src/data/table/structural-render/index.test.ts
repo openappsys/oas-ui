@@ -4,7 +4,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import './index.js'
 // 公共元素类在 table barrel（带默认文案注册），与既有 table 测试同导入路径
 import { OASTable } from '../index.js'
-import type { TableStructuralRenderers } from '../oas-table.js'
+// 编辑能力：isEditing 查询测试需要（import 即注册）
+import '../edit/index.js'
+import type { TableStructuralApi, TableStructuralPaginationApi, TableStructuralRenderers } from '../oas-table.js'
 
 function mount(attrs: Record<string, string> = {}): OASTable {
   const el = new OASTable()
@@ -29,6 +31,10 @@ function calls() {
     headerCell: (ctx) => log.push(`headerCell:${ctx.column.key}`),
     bodyRow: (ctx) => log.push(`bodyRow:${ctx.rowIndex}:${(ctx.row as { name: string }).name}`),
     bodyCell: (ctx) => log.push(`bodyCell:${ctx.rowIndex}:${ctx.column.key}`),
+    // 三新槽：常规数据场景不触发（无 loading/空态/分页配置），占位以满足 Required 契约
+    empty: () => {},
+    loading: () => {},
+    pagination: () => {},
   }
   return { log, renderers }
 }
@@ -249,6 +255,295 @@ describe('OASTable structural-render 能力（注册型 L3）', () => {
     } finally {
       un1()
       un2()
+    }
+  })
+})
+
+describe('OASTable structural-render 七槽协议与 ctx api（双形态批 2）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('① empty 槽：空态出口调用，ctx.el = 默认内容已装配的空态 td；清空后全自定义', () => {
+    const el = mount({ columns: COLUMNS, data: '[]' })
+    const seen: { tag: string; cls: string; text: string }[] = []
+    el.structuralRenderers = {
+      empty: ({ el: td }) => {
+        seen.push({ tag: td.tagName, cls: td.className, text: td.textContent ?? '' })
+        td.textContent = ''
+        const custom = document.createElement('span')
+        custom.className = 'host-empty'
+        custom.textContent = '自定义空态'
+        td.appendChild(custom)
+      },
+    }
+    expect(seen, '空态出口恰按默认内容契约调用').toEqual([{ tag: 'TD', cls: 'empty', text: '暂无数据' }])
+    expect(el.shadowRoot!.querySelectorAll('td.empty span.host-empty')).toHaveLength(1)
+    expect(el.shadowRoot!.querySelector('td.empty')?.textContent).toBe('自定义空态')
+  })
+
+  it('② empty 槽负面清单：loading 出口与常规出口都不调', () => {
+    const loading = mount({ columns: COLUMNS, loading: '' })
+    const loadingCalls: string[] = []
+    loading.structuralRenderers = { empty: () => loadingCalls.push('x') }
+    expect(loadingCalls, 'loading 出口不调 empty 槽').toEqual([])
+    expect(loading.shadowRoot!.querySelectorAll('td.empty')).toHaveLength(0)
+
+    const normal = mount({ columns: COLUMNS, data: DATA })
+    const normalCalls: string[] = []
+    normal.structuralRenderers = { empty: () => normalCalls.push('x') }
+    expect(normalCalls, '常规出口不调 empty 槽').toEqual([])
+    expect(normal.shadowRoot!.querySelectorAll('td.empty')).toHaveLength(0)
+  })
+
+  it('③ empty-text 与 slot="empty" 优先级下 empty 槽拿到的默认内容同步变化', () => {
+    const el = mount({ columns: COLUMNS, data: '[]', 'empty-text': '没有行' })
+    const texts: string[] = []
+    el.structuralRenderers = { empty: ({ el: td }) => texts.push(td.textContent ?? '') }
+    expect(texts, 'empty-text 在场时默认内容为该文案').toEqual(['没有行'])
+  })
+
+  it('④ loading 槽：loading 出口调用，ctx el/text 契约与默认结构一致', () => {
+    const el = mount({ columns: COLUMNS, loading: '' })
+    const seen: { tag: string; part: string; text: string; cells: number }[] = []
+    el.structuralRenderers = {
+      loading: ({ el: tr, text }) => {
+        seen.push({
+          tag: tr.tagName,
+          part: tr.getAttribute('part') ?? '',
+          text,
+          cells: tr.querySelectorAll('td').length,
+        })
+      },
+    }
+    expect(seen, 'loading 行 ctx：默认装配（part=loading-row + 全宽 td + 内置文案）后调用').toEqual([
+      { tag: 'TR', part: 'loading-row', text: '加载中…', cells: 1 },
+    ])
+  })
+
+  it('⑤ loading 槽接管：清空行重建自定义结构后默认 td 不在场', () => {
+    const el = mount({ columns: COLUMNS, loading: '' })
+    el.structuralRenderers = {
+      loading: ({ el: tr, text }) => {
+        tr.textContent = ''
+        const td = document.createElement('td')
+        td.colSpan = 2
+        td.className = 'host-loading'
+        td.textContent = `宿主加载文案（原文：${text}）`
+        tr.appendChild(td)
+      },
+    }
+    expect(el.shadowRoot!.querySelectorAll('td.loading')).toHaveLength(0)
+    const host = el.shadowRoot!.querySelector('td.host-loading')
+    expect(host?.getAttribute('colspan')).toBe('2')
+    expect(host?.textContent).toBe('宿主加载文案（原文：加载中…）')
+  })
+
+  it('⑥ loading 槽负面清单：常规与空态出口不调', () => {
+    const el = mount({ columns: COLUMNS, data: DATA })
+    const calls: string[] = []
+    el.structuralRenderers = { loading: () => calls.push('x') }
+    expect(calls, '常规出口不调 loading 槽').toEqual([])
+    const empty = mount({ columns: COLUMNS, data: '[]' })
+    const emptyCalls: string[] = []
+    empty.structuralRenderers = { loading: () => emptyCalls.push('x') }
+    expect(emptyCalls, '空态出口不调 loading 槽').toEqual([])
+  })
+
+  it('⑦ pagination 槽：分页开启才调用，ctx 元数据契约（current/pageCount/total/pageSize）', () => {
+    const el = mount({
+      columns: COLUMNS,
+      data: JSON.stringify([
+        { name: '一', status: 'ok' },
+        { name: '二', status: 'ok' },
+        { name: '三', status: 'ok' },
+        { name: '四', status: 'ok' },
+        { name: '五', status: 'ok' },
+      ]),
+      pagination: '',
+      'page-size': '2',
+    })
+    const seen: string[] = []
+    el.structuralRenderers = {
+      pagination: ({ el: p, current, pageCount, total, pageSize }) => {
+        seen.push(JSON.stringify({ tag: p.tagName, current, pageCount, total, pageSize }))
+      },
+    }
+    // 各轮渲染元数据一致且恰为契约值（去重后唯一 = 「有调用且每次同值」的精确表达）
+    expect([...new Set(seen)]).toEqual([
+      JSON.stringify({ tag: 'OAS-PAGINATION', current: 1, pageCount: 3, total: 5, pageSize: 2 }),
+    ])
+  })
+
+  it('⑧ pagination 槽负面清单：分页未开启不调', () => {
+    const el = mount({ columns: COLUMNS, data: DATA })
+    const calls: string[] = []
+    el.structuralRenderers = { pagination: () => calls.push('x') }
+    expect(calls).toEqual([])
+    expect(el.shadowRoot!.querySelectorAll('.pagination oas-pagination')).toHaveLength(0)
+  })
+
+  it('⑨ pagination 槽在 loading 出口同样调用（分页器与行数据无关，全量渲染出口统一调）', () => {
+    const el = mount({ columns: COLUMNS, data: DATA, loading: '', pagination: '', 'page-size': '1' })
+    const slots: string[] = []
+    el.structuralRenderers = {
+      loading: () => slots.push('loading'),
+      pagination: () => slots.push('pagination'),
+    }
+    expect(new Set(slots), 'loading 与 pagination 两槽同轮在场').toEqual(new Set(['loading', 'pagination']))
+    expect(slots.filter((s) => s === 'loading')).toHaveLength(slots.filter((s) => s === 'pagination').length)
+  })
+
+  it('⑩ api.isSelected：读 selected 属性实时判定（局部补丁后旧 ctx 仍准确）+ 空串恒 false', () => {
+    const el = mount({ columns: COLUMNS, data: DATA, checkable: '', 'row-key': 'name' })
+    const apis: TableStructuralApi[] = []
+    el.structuralRenderers = { bodyRow: ({ api }) => apis.push(api) }
+    const api = apis[apis.length - 1]!
+    expect(api.isSelected('甲')).toBe(false)
+    expect(api.isSelected('乙')).toBe(false)
+    expect(api.isSelected('')).toBe(false)
+    // 属性直写（可能走 patchSelection 局部补丁、不重跑钩子）：旧 ctx 的 api 读实时属性仍准确
+    el.setAttribute('selected', '甲')
+    expect(api.isSelected('甲')).toBe(true)
+    expect(api.isSelected('乙')).toBe(false)
+    el.setAttribute('selected', '乙,甲')
+    expect(api.isSelected('乙')).toBe(true)
+    expect(api.isSelected('甲')).toBe(true)
+  })
+
+  it('⑪ api.isEditing：行内编辑态查询（限行 / 限行限列 / 退出后回落 false）', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '名称', editable: true },
+        { key: 'status', title: '状态' },
+      ]),
+      data: DATA,
+      'row-key': 'name',
+      editable: '',
+    })
+    const apis: TableStructuralApi[] = []
+    el.structuralRenderers = { bodyRow: ({ api }) => apis.push(api) }
+    const api = apis[apis.length - 1]!
+    expect(api.isEditing('甲')).toBe(false)
+    // 双击 name 格进入编辑（沿用既有测试的 dblclick 派发惯例）
+    const td = el.shadowRoot!.querySelector<HTMLElement>('tr[data-key="甲"] td[data-col="name"]')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(api.isEditing('甲')).toBe(true)
+    expect(api.isEditing('甲', 'name')).toBe(true)
+    expect(api.isEditing('甲', 'status')).toBe(false)
+    expect(api.isEditing('乙')).toBe(false)
+    // Esc 取消编辑 → 回落 false（data-editing 标记随 exitEdit 清除）
+    const input = td.querySelector('input')
+    input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(api.isEditing('甲')).toBe(false)
+    expect(api.isEditing('甲', 'name')).toBe(false)
+  })
+
+  it('⑫ api.toggleExpand：树行展开/折叠写 expanded 属性 + 派 oas-expand + 子行随之渲染/消失', () => {
+    const el = mount({
+      columns: COLUMNS,
+      'row-key': 'name',
+      data: JSON.stringify([{ name: '甲', status: 'ok', children: [{ name: '甲子', status: 'ok' }] }]),
+    })
+    const apis: TableStructuralApi[] = []
+    el.structuralRenderers = { bodyRow: ({ api }) => apis.push(api) }
+    const api = apis[apis.length - 1]!
+    expect(el.shadowRoot!.querySelectorAll('tr[data-key="甲子"]')).toHaveLength(0)
+    const events: Array<{ key: unknown; expanded: unknown }> = []
+    el.addEventListener('oas-expand', (e) => {
+      const d = (e as CustomEvent).detail
+      events.push({ key: d.key, expanded: d.expanded })
+    })
+    api.toggleExpand('甲')
+    expect(el.getAttribute('expanded')).toBe('甲')
+    expect(events).toEqual([{ key: '甲', expanded: true }])
+    expect(el.shadowRoot!.querySelectorAll('tr[data-key="甲子"]'), '展开后子行渲染').toHaveLength(1)
+    // 再切一次：折叠
+    api.toggleExpand('甲')
+    expect(el.getAttribute('expanded')).toBe('')
+    expect(events).toEqual([
+      { key: '甲', expanded: true },
+      { key: '甲', expanded: false },
+    ])
+    expect(el.shadowRoot!.querySelectorAll('tr[data-key="甲子"]')).toHaveLength(0)
+    // 空串 no-op：不写属性不派事件
+    api.toggleExpand('')
+    expect(el.getAttribute('expanded')).toBe('')
+    expect(events).toHaveLength(2)
+  })
+
+  it('⑬ api.gotoPage：写 current 属性翻页生效；超页由既有钳制归位；非有限数 no-op', () => {
+    const el = mount({
+      columns: COLUMNS,
+      data: JSON.stringify([
+        { name: '一', status: 'ok' },
+        { name: '二', status: 'ok' },
+        { name: '三', status: 'ok' },
+        { name: '四', status: 'ok' },
+        { name: '五', status: 'ok' },
+      ]),
+      pagination: '',
+      'page-size': '2',
+      'row-key': 'name',
+    })
+    const holder: { api: TableStructuralPaginationApi | null } = { api: null }
+    el.structuralRenderers = {
+      pagination: ({ api }) => {
+        holder.api = api
+      },
+    }
+    // 第 1 页：current 属性未写（读侧默认 1），DOM 呈现第一行切片
+    expect(el.getAttribute('current')).toBeNull()
+    expect(el.shadowRoot!.querySelector('tr[data-key="三"]')).toBeNull()
+    holder.api!.gotoPage(3)
+    expect(el.getAttribute('current')).toBe('3')
+    // 第 3 页恰一行（5 行 ÷ 每页 2）
+    expect(el.shadowRoot!.querySelectorAll('tbody tr[data-key]')).toHaveLength(1)
+    expect(el.shadowRoot!.querySelectorAll('tr[data-key="五"]')).toHaveLength(1)
+    // 超页（99 > pageCount 3）：写属性后由既有钳制写回归位到末页
+    holder.api!.gotoPage(99)
+    expect(el.getAttribute('current')).toBe('3')
+    // 非有限数 no-op
+    holder.api!.gotoPage(Number.NaN)
+    holder.api!.gotoPage(Number.POSITIVE_INFINITY)
+    expect(el.getAttribute('current')).toBe('3')
+    // < 1 不做本地钳制：读侧归一化（normalizeCurrent）兜底按第 1 页渲染（属性值原样保留）
+    holder.api!.gotoPage(0)
+    expect(el.shadowRoot!.querySelectorAll('tbody tr[data-key]')).toHaveLength(2)
+    expect(el.shadowRoot!.querySelectorAll('tr[data-key="一"]')).toHaveLength(1)
+  })
+
+  it('⑭ 零漂移：未注册任何钩子时空态/loading/分页默认 DOM 与批前一致', () => {
+    const empty = mount({ columns: COLUMNS, data: '[]' })
+    expect(empty.shadowRoot!.querySelector('td.empty')?.textContent).toBe('暂无数据')
+    expect(empty.shadowRoot!.querySelectorAll('td.empty')).toHaveLength(1)
+
+    const loading = mount({ columns: COLUMNS, loading: '' })
+    expect(loading.shadowRoot!.querySelectorAll('tr[part="loading-row"]')).toHaveLength(1)
+    expect(loading.shadowRoot!.querySelectorAll('td.loading span.spin')).toHaveLength(1)
+    expect(loading.shadowRoot!.querySelector('td.loading')?.textContent).toBe('加载中…')
+
+    const paged = mount({ columns: COLUMNS, data: DATA, pagination: '', 'page-size': '1' })
+    expect(paged.shadowRoot!.querySelectorAll('.pagination oas-pagination')).toHaveLength(1)
+  })
+
+  it('⑮ 四槽 ctx 向后兼容：既有注册者拿到的 ctx 增加只增不改的 api 字段', () => {
+    const el = mount({ columns: COLUMNS, data: DATA, checkable: '', 'row-key': 'name' })
+    const apis: TableStructuralApi[] = []
+    el.structuralRenderers = {
+      bodyCell: ({ api }) => apis.push(api),
+      headerRow: ({ api }) => apis.push(api),
+      headerCell: ({ api }) => apis.push(api),
+    }
+    // 2 行 × 2 列 bodyCell + 1 headerRow + 2 headerCell = 7 次调用，全部携带 api
+    expect(apis).toHaveLength(7)
+    for (const api of apis) {
+      expect(typeof api.isSelected).toBe('function')
+      expect(typeof api.isEditing).toBe('function')
+      expect(typeof api.toggleExpand).toBe('function')
     }
   })
 })

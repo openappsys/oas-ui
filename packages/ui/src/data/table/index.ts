@@ -24,6 +24,11 @@ import {
   type TableStructuralBodyCellCtx,
   type TableStructuralHeaderRowCtx,
   type TableStructuralHeaderCellCtx,
+  type TableStructuralEmptyCtx,
+  type TableStructuralLoadingCtx,
+  type TableStructuralPaginationCtx,
+  type TableStructuralApi,
+  type TableStructuralPaginationApi,
 } from './oas-table.js'
 import { createColumnSettingsController } from './oas-table-column-settings.js'
 import { registerTableCapability, registeredTableCapabilities, hasTableCapability } from './oas-table-capability.js'
@@ -83,4 +88,9 @@ export {
   type TableStructuralBodyCellCtx,
   type TableStructuralHeaderRowCtx,
   type TableStructuralHeaderCellCtx,
+  type TableStructuralEmptyCtx,
+  type TableStructuralLoadingCtx,
+  type TableStructuralPaginationCtx,
+  type TableStructuralApi,
+  type TableStructuralPaginationApi,
 }
