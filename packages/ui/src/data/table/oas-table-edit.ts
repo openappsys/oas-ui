@@ -5,8 +5,8 @@ import { isTruthyCell } from './oas-table.js'
 // 行内交互宿主排除清单：双击进编辑判定与行点击共用同一份（单一事实来源，
 // 见 oas-table-interactive.js 的维护纪律注释——库内新增交互型组件须同步该清单）
 import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
-// 行键计算（与 oas-table 同源：row-key 缺失时按行对象缓存 JSON.stringify 回退）
-import { rowKeyValue } from './oas-table-row-key.js'
+// 行键计算（数据层同源工具：row-key 缺失时按行对象缓存 JSON.stringify 回退）
+import { rowKeyValue } from './model-core/row-key.js'
 
 /**
  * 行内编辑能力（edit 能力包）：把「编辑 + 校验 machinery」从 OASTableBase 外置为
@@ -235,12 +235,20 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     td.appendChild(stack)
   }
 
-  /** 外部重渲染（数据/排序/滚动等触发整体重建）前静默取消进行中的编辑 */
+  /**
+   * 外部重渲染（数据/排序/滚动/仅 selected 快路径等任一轮 update）前静默取消进行中的编辑。
+   *
+   * 完整退出编辑（与 exitEdit 同口径）：移除编辑器 DOM、还原单元格内容、清除
+   * td[data-editing] / th[data-editing-col] 标记、刷新操作列。此前只清逻辑态（editState）
+   * 不动 DOM——在「不重建行 DOM」的增量快路径（如仅 selected 变化）下会留下三方撕裂：
+   * 编辑器在、标记在（api.isEditing 读标记恒 true）、却不响应 Enter/Esc。清编辑是常数
+   * 操作（paintCell + 属性/类名清理 + 操作列按钮重画），不触行重建，快路径性能初衷不受影响；
+   * 全量重建路径本就整体重建 tbody，paintCell 作用在即将销毁的节点上同样无害。
+   */
   settleEdit(): void {
-    // 浮层编辑器的 document 级守卫不随编辑器 DOM 移除自动消失，重建取消时必须显式拆除
-    //（否则泄漏的 Esc capture 会在表格外键盘流里误触发取消）
-    this.teardownOverlayGuards()
-    this.editState = null
+    const st = this.editState
+    if (!st) return
+    this.exitEdit(st)
   }
 
   // ==================== 编辑交互 ====================

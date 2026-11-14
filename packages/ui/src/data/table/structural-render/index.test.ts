@@ -546,4 +546,43 @@ describe('OASTable structural-render 七槽协议与 ctx api（双形态批 2）
       expect(typeof api.toggleExpand).toBe('function')
     }
   })
+
+  it('⑯ 快路径 settleEdit 完整退出编辑：仅 selected 变化 → 编辑器移除、标记清除、api.isEditing 回落 false', () => {
+    // 状态撕裂回归（api.isEditing 读 DOM 标记 vs 编辑逻辑态）：快路径（仅 selected 变化）
+    // 不重建行 DOM，settleEdit 若只清逻辑态会留下「编辑器在、data-editing 在
+    // （isEditing 恒 true）、Enter/Esc 已不响应」的三方撕裂。修复 = 完整退出编辑
+    // （移除编辑器 / paintCell 还原 / 清 td+th 标记），与全量重建路径同口径。
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '名称', editable: true },
+        { key: 'status', title: '状态' },
+      ]),
+      data: DATA,
+      'row-key': 'name',
+      editable: '',
+    })
+    const apis: TableStructuralApi[] = []
+    el.structuralRenderers = { bodyRow: ({ api }) => apis.push(api) }
+    const api = apis[apis.length - 1]!
+    const td = el.shadowRoot!.querySelector<HTMLElement>('tr[data-key="甲"] td[data-col="name"]')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')
+    expect(input!.tagName, '双击进入编辑（input 通道）').toBe('INPUT')
+    expect(api.isEditing('甲')).toBe(true)
+    input!.value = '改名'
+    // 仅选择变化（另一行）：渲染签名一致 → 行级局部补丁快路径，行 DOM 不重建
+    el.setAttribute('selected', '乙')
+    expect(td.isConnected, '快路径不重建行 DOM').toBe(true)
+    expect(el.shadowRoot!.querySelector('input.cell-editor'), '编辑器已移除（完整退出编辑）').toBeNull()
+    expect(el.shadowRoot!.querySelector('td[data-editing="true"]'), 'td[data-editing] 标记已清除').toBeNull()
+    expect(
+      el.shadowRoot!.querySelector('th[data-editing-col="true"]'),
+      'th[data-editing-col] 表头标记已清除',
+    ).toBeNull()
+    expect(td.textContent, '单元格还原为常规展示内容').toContain('甲')
+    expect(api.isEditing('甲'), 'api.isEditing 经 DOM 标记读渲染态 → 回落 false').toBe(false)
+    expect(api.isEditing('甲', 'name')).toBe(false)
+    // 数据未改写：取消是静默的（无 oas-edit / oas-edit-cancel），data 原样
+    expect((JSON.parse(el.getAttribute('data')!) as Array<Record<string, unknown>>)[0]!['name']).toBe('甲')
+  })
 })

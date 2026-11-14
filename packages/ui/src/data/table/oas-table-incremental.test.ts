@@ -249,9 +249,11 @@ describe('OASTable 增量渲染（选择切换零重算）', () => {
     expect(keys(), '选择变化不重建行集').toEqual(['a', 'b'])
   })
 
-  it('F5 仅 selected 变化走快路径同样静默取消进行中的编辑：Enter 不提交、Esc 不派发取消', () => {
-    // 快路径与全量渲染同语义：任一轮 update 都静默取消进行中的编辑。快路径不重建行 DOM
-    // （编辑器节点留存、data-editing 仍在），但编辑状态已清空——Enter/Esc 不得再提交/取消。
+  it('F5 仅 selected 变化走快路径同样静默取消进行中的编辑：编辑器移除、标记清除，Enter 不提交、Esc 不派发取消', () => {
+    // 快路径与全量渲染同语义：任一轮 update 都静默取消进行中的编辑。快路径不重建行 DOM，
+    // 因此取消必须是**完整退出编辑**（移除编辑器、还原单元格、清 data-editing /
+    // data-editing-col 标记）——否则留下「编辑器在、标记在（api.isEditing 恒 true）、
+    // 却不响应 Enter/Esc」的状态撕裂。清编辑是常数操作，不触行重建。
     const el = new OASTable()
     el.setAttribute('editable', '')
     el.setAttribute('row-key', 'name')
@@ -266,15 +268,23 @@ describe('OASTable 增量渲染（选择切换零重算）', () => {
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')
     expect(input!.tagName, '双击进入编辑（input 通道）').toBe('INPUT')
+    expect(td.hasAttribute('data-editing'), '编辑态 DOM 标记在场').toBe(true)
     input!.value = '新名'
     // 仅选择变化（另一行）：渲染签名一致 → 局部补丁快路径（不重建行 DOM）
     el.setAttribute('selected', '李四')
     expect(td.isConnected, '快路径不重建行 DOM').toBe(true)
-    expect(el.shadowRoot!.querySelector('input.cell-editor'), '编辑器节点留存（快路径不重建行）').toBe(input)
+    expect(el.shadowRoot!.querySelector('input.cell-editor'), '编辑器已随取消移除（完整退出编辑）').toBeNull()
+    expect(td.hasAttribute('data-editing'), 'td[data-editing] 标记已清除（api.isEditing 回落 false）').toBe(false)
+    expect(
+      el.shadowRoot!.querySelector('th[data-editing-col="true"]'),
+      'th[data-editing-col] 表头高亮标记已清除',
+    ).toBeNull()
+    expect(td.textContent, '单元格还原为常规展示内容').toContain('张三')
     expect(
       el.shadowRoot!.querySelector('tr[data-key="李四"]')!.getAttribute('data-selected'),
       '选择经局部补丁生效',
     ).toBe('true')
+    // 编辑已取消：残留的旧 input 引用派发按键不得再提交/取消（编辑状态已清）
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(edits, 'Enter 不得提交（编辑已静默取消）').toBe(0)
