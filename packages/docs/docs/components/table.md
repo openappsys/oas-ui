@@ -836,6 +836,60 @@ onMounted(() => {
   })
 })
 
+// ctx api 查询 demo：bodyCell 接管 probe 列为「查该行状态」按钮——点击时经 ctx.api
+// 实时查询该行选中/编辑态（勾选走局部补丁不重跑钩子，烘焙态会过期；api 读取永远新鲜）
+onMounted(() => {
+  const t = document.getElementById('table-structural-api')
+  const fb = document.getElementById('table-structural-api-feedback')
+  if (!t) return
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'name', title: '任务', editable: true },
+      { key: 'owner', title: '负责人' },
+      { key: 'probe', title: '行状态' },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { id: 't1', name: '发布准备', owner: '张三' },
+      { id: 't2', name: '评审排队', owner: '李四' },
+      { id: 't3', name: '回归验证', owner: '王五' },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(() => {
+    t.structuralRenderers = {
+      bodyCell({ el: td, row, column, api }) {
+        if (column.key !== 'probe') return
+        td.textContent = ''
+        const btn = document.createElement('oas-button')
+        btn.setAttribute('size', 'small')
+        btn.textContent = '查该行状态'
+        // 查询结果渲染在按钮旁的独立容器（按钮保持可复点——api 每次点击实时重查）
+        const result = document.createElement('span')
+        result.className = 'probe-result'
+        btn.addEventListener('click', () => {
+          const key = String(row.id)
+          const picked = api.isSelected(key) // selected 属性实时判定
+          const editing = api.isEditing(key) // 编辑 DOM 标记实时判定
+          result.textContent = ''
+          const tag = document.createElement('oas-tag')
+          tag.setAttribute('type', picked ? 'success' : 'default')
+          tag.textContent = picked ? '已选' : '未选'
+          result.append(tag, document.createTextNode(' '))
+          const editTag = document.createElement('oas-tag')
+          editTag.setAttribute('type', editing ? 'warning' : 'default')
+          editTag.textContent = editing ? '编辑中' : '未编辑'
+          result.append(editTag)
+          if (fb) fb.textContent = `行 ${key}：选中=${picked ? '是' : '否'} · 编辑中=${editing ? '是' : '否'}`
+        })
+        td.append(btn, result)
+      },
+    }
+  })
+})
+
 // validate demo：金额列提交前校验（property 通道函数）——失败保持编辑态 + 行内消息 + 事件反馈
 onMounted(() => {
   const t = document.getElementById('table-edit-validate')
@@ -2192,16 +2246,69 @@ const source = createWindowedSource(table, {
 import '@oas-ui/ui/data/table/structural-render'
 // 之后给任意 oas-table 实例挂 hooks（property 通道，函数不落 attribute）：
 table.structuralRenderers = {
-  bodyCell: ({ el: td, row, column }) => { /* 默认内容渲染后调用：包裹/增强 */ },
-  bodyRow: ({ el: tr, row, rowIndex }) => { /* 行装配完成后调用 */ },
-  headerCell: ({ el: th, column }) => { /* 表头叶子单元格；多级表头组列不进 v1 */ },
-  headerRow: ({ el: tr }) => { /* thead 每一行（扁平/多级） */ },
+  bodyCell: ({ el: td, row, column, api }) => { /* 正文数据单元格：默认内容与装饰链完成后调用 */ },
+  bodyRow: ({ el: tr, row, rowIndex, api }) => { /* 正文数据行：默认装配完成后调用 */ },
+  headerCell: ({ el: th, column, api }) => { /* 表头叶子单元格；多级表头组列不进 v1 */ },
+  headerRow: ({ el: tr, api }) => { /* thead 每一行（扁平/多级） */ },
+  empty: ({ el, api }) => { /* 空态容器 td：默认文案装配后调用；清空后全自定义 */ },
+  loading: ({ el, text, api }) => { /* loading 行 tr：默认行结构装配后调用；text 为内置文案 */ },
+  pagination: ({ el, current, pageCount, total, pageSize, api }) => { /* 分页器：默认装配后调用；api.gotoPage 跳页 */ },
 }
 ```
 
+### 七槽总表
+
+| 槽名 | ctx 字段 | 调用时机 | 默认不注册时 |
+| --- | --- | --- | --- |
+| `bodyRow` | `el: HTMLTableRowElement` · `row` · `rowIndex` · `api` | 正文数据行默认装配（勾选/拖拽/展开/单元格/行事件）完成后；全量渲染 + 虚拟滚动帧（窗口行重建时逐行调） | 行为逐字节不变 |
+| `bodyCell` | `el: HTMLTableCellElement` · `row` · `rowIndex` · `column` · `api` | 单元格默认内容与装饰链（edit/format/range）完成后；全量渲染 + 虚拟滚动帧 + paintCell 局部恢复 | 行为逐字节不变 |
+| `headerRow` | `el: HTMLTableRowElement` · `api` | thead 每一行（扁平/多级表头）append 后；仅全量渲染 | 行为逐字节不变 |
+| `headerCell` | `el: HTMLTableCellElement` · `column` · `api` | 表头叶子单元格 append 后（组列不调）；仅全量渲染 | 行为逐字节不变 |
+| `empty` | `el: HTMLElement`（空态容器 td）· `api` | 空态早退出口（`display` 为空且非 windowed）；默认内容（slot="empty" 插槽 → `empty-text` → 内置文案）装配后调用 | 空态逐字节不变 |
+| `loading` | `el: HTMLTableRowElement` · `text: string`（内置文案，宿主自渲染可复用）· `api` | loading 早退出口（宿主 `loading` 属性或 server 行模型在途态）；默认行结构（`part="loading-row"` + 全宽 td + 旋转指示 + 文案）装配后调用 | loading 行逐字节不变 |
+| `pagination` | `el: HTMLElement`（默认装配的 oas-pagination）· `current` · `pageCount` · `total` · `pageSize` · `api`（含 `gotoPage`） | 每轮全量渲染的分页器装配后（**含 loading/empty 早退路径**——分页器与行数据无关）；分页未开启不调；虚拟滚动帧不重调 | 分页器逐字节不变 |
+
+所有槽位共同点：**默认装配后调用**（默认内容/事件/能力装饰已就位，装饰在内、结构在外）；**未注册零调用零漂移**（能力未 import 时挂接点判空跳过，ctx 连同 api 对象都不构造——默认链零增量）；钩子抛错被守卫捕获（同槽同错 devWarn 一次、渲染继续）。
+
+### ctx.api 操作面
+
+七槽 ctx 携带 `api`（分页器槽为 `TableStructuralPaginationApi`，多一个 `gotoPage`）——只读状态查询 + 受控操作，全部走组件既有公开/受控通道（属性读/属性写/既有事件），**不暴露私有状态**；读取恒为调用时刻的最新值（选择局部补丁等不重跑钩子的路径下依然准确）：
+
+```ts
+table.structuralRenderers = {
+  bodyCell({ el: td, row, column, api }) {
+    if (column.key !== 'probe') return
+    // 行选择态查询：selected 属性实时判定（空串恒 false）
+    api.isSelected(String(row.id)) // => boolean
+    // 行内编辑态查询：编辑能力未注册 / 无进行中编辑恒 false；columnKey 缺省 = 限行不限列
+    api.isEditing(String(row.id)) // => boolean
+    api.isEditing(String(row.id), 'name') // => boolean（限行限列）
+    // 树行展开/折叠切换：写 expanded 属性 + 派发 oas-expand（visual-proto / windowed 树形
+    // 模式下与内置展开钮同口径——只上报意图，本地不写 expanded，由宿主回写）
+    api.toggleExpand(String(row.id))
+  },
+  pagination({ el, current, pageCount, api }) {
+    // 跳页：写 current 属性（与内置分页器 oas-change 同通道）；超页由既有钳制写回归位，
+    // 非有限数（NaN / ±Infinity）no-op；server 行模型下与内置翻页同语义（触发宿主重新取数）
+    api.gotoPage(Math.min(current + 1, pageCount))
+  },
+}
+```
+
+api 边界速查：`isSelected('')` 恒 false；`isEditing('')` 恒 false（编辑 DOM 标记读渲染态，行重建即回落）；`toggleExpand('')` 为 no-op（不写属性不派事件）；`gotoPage` 与 current 属性同值时跳过写。
+
+### 槽位接管与既有能力的交互边界
+
+- **虚拟滚动**：`bodyRow` / `bodyCell` 随窗口化滚动**重建**逐帧重调（监听随元素销毁，跨元素状态宿主自管）；`empty` / `loading` / `pagination` 只在全量渲染出口调用，滚动帧不重调。替换模式自担 a11y：不得移除 `role` / `tabindex`。
+- **编辑**：进编辑清空 td（结构装饰随之销毁），提交未变更/取消走 `paintCell` 局部恢复——恢复默认内容后 `bodyCell` 自动重跑，装饰自动回来；接管者若在钩子外持 td 引用，编辑重建后引用即失效（以 `ctx.el` 为准）。`api.isEditing` 读渲染 DOM 的编辑标记，与进/出编辑同步，不依赖编辑能力内部状态。
+- **选择**：勾选走**局部补丁**（只就地更新 `data-selected` 与复选框态，不重建行、不重跑钩子）——把选中态烘进自建 DOM 的接管在勾选后会过期；需要实时选中态时在交互时刻调 `api.isSelected`（属性实时读，永远新鲜）。
+- **打印**：loading 行默认**不进纸面**（print 规则按 `tr:has(td.loading)` 反查）——`loading` 槽接管后请保留 td 的 `loading` 类名，否则该规则不再命中、在途态会被打印出来；`empty` / `pagination` 槽接管内容照常进纸面（空态/分页器是终态输出的一部分）。
+- **windowed**：数据未装载时 `display` 为空**不属空态**（total>0，渲染全量占位而非空态文案）——`empty` 槽不调；树形懒装载/视觉协议模式下 `api.toggleExpand` 只派 `oas-expand` 上报意图，展开状态由宿主回写（与内置展开钮同口径）。
+- **异常策略**：钩子抛错被守卫捕获、devWarn 一次（同槽同错去重）并跳过该槽，表格渲染继续不白屏；宿主修复钩子后下一轮渲染自动恢复。
+
 **契约纪律**：钩子在元素**默认装配完成后**调用（默认内容、行事件、edit/format/range 装饰链全部就位，装饰在内、结构在外；grid 语义/ARIA 收尾在整轮渲染末统一补齐——钩子里读 `role=gridcell` 等属性拿到空属正常，统一在 thead/tbody 挂载后调用，`el.parentElement` 可用）；tr/td 随窗口化滚动**重建**，监听随元素销毁——跨元素状态宿主自管；每轮渲染现读 property，运行时替换 hooks 下一轮即生效（能力晚注册前已赋的值自动生效，无需重赋）；替换模式（清空 `el` 自渲染）**不得移除 `role` / `tabindex`**（gridcell 网格语义）；`rowIndex` 与 `data-row-index` 同口径（windowed 为绝对数据行号）。
 
-**覆盖边界（负面清单）**：`bodyRow` 只作用于数据行——分节头（group-by）、展开内容、合计、空态/loading/占位行不调；`bodyCell` 只作用于数据列 td——勾选列、拖拽列、行尾展开钮列、列虚拟化占位格、被 span-method 声明覆盖的格不调（序号列/操作列/树形 toggle 首列/合并格照调）；`headerCell` 只叶子列（多级组列、拖拽/全选/展开 th 不调）；`headerRow` 为 thead 每一行。
+**覆盖边界（负面清单）**：`bodyRow` 只作用于数据行——分节头（group-by）、展开内容、合计、空态/loading/占位行不调；`bodyCell` 只作用于数据列 td——勾选列、拖拽列、行尾展开钮列、列虚拟化占位格、被 span-method 声明覆盖的格不调（序号列/操作列/树形 toggle 首列/合并格照调）；`headerCell` 只叶子列（多级组列、拖拽/全选/展开 th 不调）；`headerRow` 为 thead 每一行；`empty` 只在真空态出口调（windowed 未装载不属空态、loading 在途不属空态）；`loading` 只在 loading 早退出口调（宿主 `loading` 属性或 server 在途态）；`pagination` 只在分页开启时调，未开启连默认分页器都不渲染。
 
 **交互注意**：① 合并列——bodyCell 在合并删格前调用，被吞 td 上的包裹白做；同值合并判定用钩子改写前的原始显示值（宿主把合并列渲染成图标/加包裹不影响合并分组）；② 编辑——进编辑清空 td、提交未变更/取消走 paintCell 局部恢复，恢复默认内容后 bodyCell 自动重跑（结构装饰自动回来）；③ 选择补丁——patchSelection 只就地更新 `data-selected` 不重跑钩子（从 `el` 读状态是最新的；把选中态烘进自建 DOM 的状态补丁路径不刷新）；④ 表头排序委托——thead 点击直通内置排序，钩子注入可点控件会与内置排序同发，自建排序 UI 需自行 `stopPropagation`；⑤ 异常策略——钩子抛错被守卫捕获、devWarn 一次（同槽同错去重）并跳过该槽，表格渲染继续不白屏，修复后下一轮自动恢复。形态取舍：依赖框架协调器的「组件整体替换」方案不可直译为命令式 DOM；headless 表格「渲染全权归宿主」是趋势方向；渲染器实例生命周期是重 DOM 复用时代的细粒度优化——本库 tr/td 随窗口重建，「默认装配后调用 + 每轮现读」的粗粒度模型等价覆盖。
 
@@ -2267,6 +2374,63 @@ customElements.whenDefined('oas-table').then(() => {
 ```
 
 > 行重建监听随旧 tr 销毁是契约的一部分（虚拟滚动下不要指望监听常驻）；跨行/跨渲染状态请挂在表格事件（`oas-row-click` 等）或宿主框架层。
+
+<DemoBlock title="ctx api 查询：bodyCell 接管「行状态」列，点按钮实时读该行选中/编辑态（isSelected / isEditing）">
+  <oas-table id="table-structural-api" checkable editable row-key="id" height="200" row-height="36" bordered></oas-table>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 8px 0 0">
+    最近查询：<span id="table-structural-api-feedback">—</span>（勾选行 / 双击「任务」格进编辑后再点按钮，结果实时变化）
+  </p>
+</DemoBlock>
+
+```ts
+// 实际接线在页面 <script setup> 的 onMounted 里（此处为节选）：
+// bodyCell 接管 probe 列为「查该行状态」按钮——点击时经 ctx.api 实时查询，
+// 不把状态烘进 DOM（勾选走局部补丁不重跑钩子，烘焙态会过期；api 读取永远新鲜）
+const t = document.getElementById('table-structural-api')
+const fb = document.getElementById('table-structural-api-feedback')
+t.setAttribute('columns', JSON.stringify([
+  { key: 'name', title: '任务', editable: true },
+  { key: 'owner', title: '负责人' },
+  { key: 'probe', title: '行状态' },
+]))
+t.setAttribute('data', JSON.stringify([
+  { id: 't1', name: '发布准备', owner: '张三' },
+  { id: 't2', name: '评审排队', owner: '李四' },
+  { id: 't3', name: '回归验证', owner: '王五' },
+]))
+customElements.whenDefined('oas-table').then(() => {
+  t.structuralRenderers = {
+    bodyCell({ el: td, row, column, api }) {
+      if (column.key !== 'probe') return
+      td.textContent = ''
+      const btn = document.createElement('oas-button')
+      btn.setAttribute('size', 'small')
+      btn.textContent = '查该行状态'
+      // 查询结果渲染在按钮旁的独立容器（按钮保持可复点——api 每次点击实时重查）
+      const result = document.createElement('span')
+      result.className = 'probe-result'
+      btn.addEventListener('click', () => {
+        const key = String(row.id)
+        const picked = api.isSelected(key) // selected 属性实时判定
+        const editing = api.isEditing(key) // 编辑 DOM 标记实时判定
+        result.textContent = ''
+        const tag = document.createElement('oas-tag')
+        tag.setAttribute('type', picked ? 'success' : 'default')
+        tag.textContent = picked ? '已选' : '未选'
+        result.append(tag, document.createTextNode(' '))
+        const editTag = document.createElement('oas-tag')
+        editTag.setAttribute('type', editing ? 'warning' : 'default')
+        editTag.textContent = editing ? '编辑中' : '未编辑'
+        result.append(editTag)
+        if (fb) fb.textContent = `行 ${key}：选中=${picked ? '是' : '否'} · 编辑中=${editing ? '是' : '否'}`
+      })
+      td.append(btn, result)
+    },
+  }
+})
+```
+
+> api 是**调用时刻**的查询接口：勾选/编辑变化不重跑钩子（局部补丁/编辑清空 td），但 `isSelected` / `isEditing` 在下一次调用时读到的一定是当前属性与渲染态——把状态烘进自建 DOM 会过期，交互时刻查询不会。
 
 ## Pro helper（按需引入）
 

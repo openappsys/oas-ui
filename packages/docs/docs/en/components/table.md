@@ -837,6 +837,62 @@ onMounted(() => {
   })
 })
 
+// ctx api query demo: bodyCell takes over the probe column as a "query this row" button - on
+// click it queries ctx.api live instead of baking state into the DOM (selection patches do not
+// re-run hooks; baked state goes stale, api reads are always fresh)
+onMounted(() => {
+  const t = document.getElementById('table-structural-api')
+  const fb = document.getElementById('table-structural-api-feedback')
+  if (!t) return
+  t.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'name', title: 'Task', editable: true },
+      { key: 'owner', title: 'Owner' },
+      { key: 'probe', title: 'Row state' },
+    ]),
+  )
+  t.setAttribute(
+    'data',
+    JSON.stringify([
+      { id: 't1', name: 'Release prep', owner: 'Alice' },
+      { id: 't2', name: 'Review queue', owner: 'Bob' },
+      { id: 't3', name: 'Regression check', owner: 'Carol' },
+    ]),
+  )
+  void customElements.whenDefined('oas-table').then(() => {
+    t.structuralRenderers = {
+      bodyCell({ el: td, row, column, api }) {
+        if (column.key !== 'probe') return
+        td.textContent = ''
+        const btn = document.createElement('oas-button')
+        btn.setAttribute('size', 'small')
+        btn.textContent = 'Query row'
+        // Results render into a chip container next to the button (the button stays clickable -
+        // api re-queries live on every click)
+        const result = document.createElement('span')
+        result.className = 'probe-result'
+        btn.addEventListener('click', () => {
+          const key = String(row.id)
+          const picked = api.isSelected(key) // live read of the selected attribute
+          const editing = api.isEditing(key) // live read of the rendered edit markers
+          result.textContent = ''
+          const tag = document.createElement('oas-tag')
+          tag.setAttribute('type', picked ? 'success' : 'default')
+          tag.textContent = picked ? 'selected' : 'not selected'
+          result.append(tag, document.createTextNode(' '))
+          const editTag = document.createElement('oas-tag')
+          editTag.setAttribute('type', editing ? 'warning' : 'default')
+          editTag.textContent = editing ? 'editing' : 'not editing'
+          result.append(editTag)
+          if (fb) fb.textContent = `row ${key}: selected=${picked ? 'yes' : 'no'} - editing=${editing ? 'yes' : 'no'}`
+        })
+        td.append(btn, result)
+      },
+    }
+  })
+})
+
 // validate demo: amount column validated before commit (property-channel function) —
 // failure keeps the edit state + inline message + event feedback
 onMounted(() => {
@@ -2207,12 +2263,62 @@ Failure semantics: an invalid mapping (non-finite / end ≤ start / a synchronou
 import '@oas-ui/ui/data/table/structural-render'
 // Then attach hooks to any oas-table instance (property channel, functions never become attributes):
 table.structuralRenderers = {
-  bodyCell: ({ el: td, row, column }) => { /* called after default content: wrap / enhance */ },
-  bodyRow: ({ el: tr, row, rowIndex }) => { /* called after the row is fully assembled */ },
-  headerCell: ({ el: th, column }) => { /* header leaf cells; multi-level group cells not in v1 */ },
-  headerRow: ({ el: tr }) => { /* every thead row (flat and multi-level) */ },
+  bodyCell: ({ el: td, row, column, api }) => { /* body data cell: default content + decorator chain done */ },
+  bodyRow: ({ el: tr, row, rowIndex, api }) => { /* body data row: default assembly done */ },
+  headerCell: ({ el: th, column, api }) => { /* header leaf cells; multi-level group cells not in v1 */ },
+  headerRow: ({ el: tr, api }) => { /* every thead row (flat and multi-level) */ },
+  empty: ({ el, api }) => { /* empty-state container td: default text assembled; clear and fully customize */ },
+  loading: ({ el, text, api }) => { /* loading row tr: default row assembled; text is the built-in label */ },
+  pagination: ({ el, current, pageCount, total, pageSize, api }) => { /* paginator: api.gotoPage jumps pages */ },
 }
 ```
+
+### The seven slots at a glance
+
+| Slot | ctx fields | Called when | Unregistered default |
+| --- | --- | --- | --- |
+| `bodyRow` | `el: HTMLTableRowElement` - `row` - `rowIndex` - `api` | After the body data row is fully assembled (check / drag / expand / cells / row events); full renders + virtual-scroll frames (per windowed row) | Byte-identical behavior |
+| `bodyCell` | `el: HTMLTableCellElement` - `row` - `rowIndex` - `column` - `api` | After default content and the decorator chain (edit/format/range); full renders + virtual-scroll frames + paintCell partial restore | Byte-identical behavior |
+| `headerRow` | `el: HTMLTableRowElement` - `api` | After each thead row (flat / multi-level) is appended; full renders only | Byte-identical behavior |
+| `headerCell` | `el: HTMLTableCellElement` - `column` - `api` | After each header leaf cell is appended (group cells excluded); full renders only | Byte-identical behavior |
+| `empty` | `el: HTMLElement` (the empty-state td) - `api` | The empty early-exit (`display` empty, not windowed), after default content (slot="empty" -> `empty-text` -> built-in text) is assembled | Empty state byte-identical |
+| `loading` | `el: HTMLTableRowElement` - `text: string` (built-in label, reusable by the host) - `api` | The loading early-exit (host `loading` attribute or server model in-flight), after the default row (`part="loading-row"` + full-width td + spinner + text) is assembled | Loading row byte-identical |
+| `pagination` | `el: HTMLElement` (assembled oas-pagination) - `current` - `pageCount` - `total` - `pageSize` - `api` (adds `gotoPage`) | After the paginator assembles on every full render (**including the loading/empty early exits** - pagination is row-data independent); not called when pagination is off; virtual-scroll frames do not re-call it | Paginator byte-identical |
+
+All slots share: **called after default assembly** (default content/events/capability decorations in place; decorators inside, structure outside); **zero calls and zero drift when unregistered** (the attach point short-circuits when the capability is not imported - neither ctx nor the api object is even constructed); throwing hooks are caught by a guard (devWarn once per slot+message, rendering continues).
+
+### ctx.api surface
+
+Every slot's ctx carries `api` (the pagination slot gets `TableStructuralPaginationApi`, adding `gotoPage`) - read-only state queries plus controlled operations, all through the component's existing public/controlled channels (attribute reads, attribute writes, existing events). **No private state is exposed**; reads always return the value at call time (still accurate on patch paths that do not re-run hooks):
+
+```ts
+table.structuralRenderers = {
+  bodyCell({ el: td, row, column, api }) {
+    if (column.key !== 'probe') return
+    api.isSelected(String(row.id)) // row selection query, reads the selected attribute live
+    api.isEditing(String(row.id)) // inline-edit query, row-scoped
+    api.isEditing(String(row.id), 'name') // row + column scoped
+    api.toggleExpand(String(row.id)) // toggle tree row (writes expanded + emits oas-expand)
+  },
+  pagination({ el, current, pageCount, api }) {
+    // Writes the current attribute (same channel as the built-in paginator's oas-change);
+    // over-page clamp is handled by the component's existing clamp write-back; non-finite input is a no-op
+    api.gotoPage(Math.min(current + 1, pageCount))
+  },
+}
+```
+
+Edge quick reference: `isSelected('')` / `isEditing('')` are always false; `toggleExpand('')` is a no-op (no attribute write, no event); `gotoPage` skips the write when the value equals the current attribute.
+
+### Slot takeover vs. virtual scrolling / editing / selection / printing
+
+- **Virtual scrolling**: `bodyRow` / `bodyCell` re-run per frame as windowed rows are rebuilt (listeners die with their element; keep cross-element state yourself); `empty` / `loading` / `pagination` are only called on full-render exits, never on scroll frames. Replace mode owns a11y: do not remove `role` / `tabindex`.
+- **Editing**: entering edit clears the td (structural decorations are destroyed); commit-unchanged / cancel restore via `paintCell`, which re-runs `bodyCell` so decorations come back automatically; td references held outside hooks die with the rebuild (always use `ctx.el`). `api.isEditing` reads the rendered edit markers and stays in sync with enter/exit edit.
+- **Selection**: checking goes through a **partial patch** (updates `data-selected` and checkbox state in place, without rebuilding rows or re-running hooks) - selection baked into host-built DOM goes stale; query `api.isSelected` at interaction time instead (live attribute read).
+- **Printing**: the loading row is excluded from print by default (the print rule matches `tr:has(td.loading)`) - when taking over the `loading` slot, keep the `loading` class on the td, otherwise the in-flight row will be printed; `empty` / `pagination` takeover content prints as usual (both are part of the terminal output).
+- **windowed**: an unloaded window (`display` empty, total > 0) is **not** an empty state (full-size placeholders render instead) - the `empty` slot is not called; under windowed-tree / visual-protocol modes `api.toggleExpand` only emits `oas-expand` intent (host writes state back), same as the built-in toggle.
+- **Exceptions**: a throwing hook is caught by the guard, devWarns once (deduped per slot+message), and is skipped; rendering continues (no white screen) and recovers on the next pass once fixed.
+
 
 **Contract discipline**: hooks run **after the element''s default assembly** (default content, row events, and the edit/format/range decorator chain are all in place 鈥?decorators inside, structure outside; grid semantics/ARIA are finalized at the end of the render pass 鈥?reading `role=gridcell` etc. inside a hook returns empty, which is expected; hooks are invoked after the element is attached to thead/tbody, so `el.parentElement` is available); tr/td are **recreated** as the window scrolls 鈥?listeners die with their element, keep cross-element state yourself; the property is re-read every render pass, so replacing hooks at runtime takes effect next pass (values assigned before the capability is registered activate automatically once it registers 鈥?no need to re-assign); in replace mode (clear `el` and render your own) you must **not remove `role` / `tabindex`** (gridcell semantics); `rowIndex` follows the `data-row-index` convention (absolute data row number under windowed).
 
@@ -2282,6 +2388,65 @@ customElements.whenDefined('oas-table').then(() => {
 ```
 
 > Listeners dying with the rebuilt tr is part of the contract (don't expect listeners to survive virtual scrolling); cross-row / cross-render state belongs in table events (`oas-row-click` etc.) or your framework layer.
+
+<DemoBlock title="ctx api queries: bodyCell takes over a 「Row state」 column, the button reads this row's selection/edit state live (isSelected / isEditing)">
+  <oas-table id="table-structural-api" checkable editable row-key="id" height="200" row-height="36" bordered></oas-table>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 8px 0 0">
+    Last query: <span id="table-structural-api-feedback">-</span> (check rows / double-click the "Task" cell to edit, then click the button - results update live)
+  </p>
+</DemoBlock>
+
+```ts
+// Actual wiring lives in the page's <script setup> onMounted (excerpted here):
+// bodyCell takes over the probe column as a "query this row" button - on click it queries
+// ctx.api live instead of baking state into the DOM (selection patches do not re-run hooks;
+// baked state goes stale, api reads are always fresh)
+const t = document.getElementById('table-structural-api')
+const fb = document.getElementById('table-structural-api-feedback')
+t.setAttribute('columns', JSON.stringify([
+  { key: 'name', title: 'Task', editable: true },
+  { key: 'owner', title: 'Owner' },
+  { key: 'probe', title: 'Row state' },
+]))
+t.setAttribute('data', JSON.stringify([
+  { id: 't1', name: 'Release prep', owner: 'Alice' },
+  { id: 't2', name: 'Review queue', owner: 'Bob' },
+  { id: 't3', name: 'Regression check', owner: 'Carol' },
+]))
+customElements.whenDefined('oas-table').then(() => {
+  t.structuralRenderers = {
+    bodyCell({ el: td, row, column, api }) {
+      if (column.key !== 'probe') return
+      td.textContent = ''
+      const btn = document.createElement('oas-button')
+      btn.setAttribute('size', 'small')
+      btn.textContent = 'Query row'
+      // Results render into a chip container next to the button (the button stays clickable -
+      // api re-queries live on every click)
+      const result = document.createElement('span')
+      result.className = 'probe-result'
+      btn.addEventListener('click', () => {
+        const key = String(row.id)
+        const picked = api.isSelected(key) // live read of the selected attribute
+        const editing = api.isEditing(key) // live read of the rendered edit markers
+        result.textContent = ''
+        const tag = document.createElement('oas-tag')
+        tag.setAttribute('type', picked ? 'success' : 'default')
+        tag.textContent = picked ? 'selected' : 'not selected'
+        result.append(tag, document.createTextNode(' '))
+        const editTag = document.createElement('oas-tag')
+        editTag.setAttribute('type', editing ? 'warning' : 'default')
+        editTag.textContent = editing ? 'editing' : 'not editing'
+        result.append(editTag)
+        if (fb) fb.textContent = `row ${key}: selected=${picked ? 'yes' : 'no'} - editing=${editing ? 'yes' : 'no'}`
+      })
+      td.append(btn, result)
+    },
+  }
+})
+```
+
+> The api is a **query interface at call time**: checking/editing does not re-run hooks (partial patches / edit clears the td), but `isSelected` / `isEditing` always read the current attributes and render state on the next call - baking state into your own DOM goes stale, querying at interaction time does not.
 
 ## Pro helpers (on-demand)
 
