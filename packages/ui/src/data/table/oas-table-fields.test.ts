@@ -360,6 +360,24 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     expect(css).toMatch(/\.edit-error\s*\{[^}]*position:\s*absolute/)
   })
 
+  it('CSS：.edit-error 文字走 --oas-color-text-primary（原 danger-text 压 danger 实底同值系 ~1:1 不可读）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const rule = css.match(/\.edit-error\s*\{[^}]*\}/)
+    expect(rule, '.edit-error 规则存在于注入样式').not.toBeNull()
+    expect(rule![0]).toContain('var(--oas-color-text-primary)')
+    expect(rule![0]).not.toContain('danger-text')
+    // danger 语义保留在底色（容器不随文字色改动而丢失语义）
+    expect(rule![0]).toContain('background: var(--oas-color-danger)')
+  })
+
+  it('CSS：danger-soft 引用无 fallback（token 已在 theme 三档真实定义，消除恒生效死兜底）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toContain('var(--oas-color-danger-soft)')
+    expect(css, '不应残留 var(--oas-color-danger-soft, …) 形式的兜底').not.toContain('--oas-color-danger-soft,')
+  })
+
   it('type=number 编辑提交：回写保持 number 类型', () => {
     const el = editableMount([{ key: 'v', title: '数值', type: 'number', editable: true }], [{ id: 1, v: 5 }])
     const td = enterEdit(el, 'v')

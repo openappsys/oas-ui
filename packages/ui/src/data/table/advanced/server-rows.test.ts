@@ -295,6 +295,47 @@ describe('createServerSource', () => {
     expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(true)
   })
 
+  it('二次创建：devWarn 一次 + 照常返回新实例（新实例可取数；生产不阻断）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    const fetchRows1 = vi.fn(async () => [{ name: '第一实例' }])
+    const source1 = createServerSource(el, { fetchRows: fetchRows1, total: 100 })
+    await vi.waitFor(() => expect(fetchRows1).toHaveBeenCalledTimes(1))
+    expect(warn).not.toHaveBeenCalled()
+    // 同元素二次创建：告警一次，新实例照常接线（组件库不炸宿主）
+    const fetchRows2 = vi.fn(async () => [{ name: '第二实例' }])
+    const source2 = createServerSource(el, { fetchRows: fetchRows2, total: 100 })
+    expect(warn, '重复创建 devWarn 一次').toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('createServerSource')
+    // 新实例功能完整：refresh 触发自身 fetchRows（双实例并存是宿主自担的错用，helper 不阻断）
+    source2.refresh()
+    await vi.waitFor(() => expect(fetchRows2.mock.calls.length).toBeGreaterThanOrEqual(1))
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    source1.destroy()
+    source2.destroy()
+  })
+
+  it('destroy 后可重建：无重复创建告警（WeakMap 登记随 destroy 解除）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    const fetchRows1 = vi.fn(async () => [{ name: 'A' }])
+    const source1 = createServerSource(el, { fetchRows: fetchRows1, total: 100 })
+    await vi.waitFor(() => expect(fetchRows1).toHaveBeenCalledTimes(1))
+    source1.destroy()
+    // destroy 解除登记：重建同一元素不告警。重建的 row-model/total 为同值写入（组件同值静默，
+    // 不重发 init——与静态标签首载兜底注释同口径），取数由强刷触发
+    const fetchRows2 = vi.fn(async (_request: ServerRowsRequest) => [{ name: 'B' }])
+    const source2 = createServerSource(el, { fetchRows: fetchRows2, total: 100 })
+    expect(warn, 'destroy 后重建无告警').not.toHaveBeenCalled()
+    // 新实例接线完整：refresh 强刷（reason='refresh' 绕过同值去重）触发自身取数
+    source2.refresh()
+    await vi.waitFor(() => expect(fetchRows2).toHaveBeenCalledTimes(1))
+    expect(fetchRows2.mock.calls[0]![0]).toMatchObject({ reason: 'refresh' })
+    warn.mockRestore()
+    source2.destroy()
+  })
+
   it('advanced 入口导出接线：createServerSource 与直连模块为同一函数', async () => {
     const { createServerSource: fromIndex } = await import('./index.js')
     expect(fromIndex).toBe(createServerSource)

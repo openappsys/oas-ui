@@ -446,6 +446,7 @@ const SERVER_WINDOWED_HINT =
  * | 过滤面板候选值    | 来自当前页数据（页内语义，面板照常打开）——文档声明批落地              | openFilterPanel / filterOptions |
  * | 历史（撤销）      | 仅记录本地操作，翻页即失效——文档声明批落地                           | range/edit 能力内部 |
  * | 编辑              | 页内编辑仅本地、翻页回填即丢失（v1 无服务端编辑回写契约）——文档声明批落地 | edit 能力 |
+ * | 虚拟滚动 × server | 可叠加（无闸门）：页大小是请求单位，页内渲染走既有虚拟化（与分页 × 虚拟同口径）；不拼接跨页数据，滚动/渲染边界始终是当前页（windowed 才是像素驱动混合模型） | 渲染层 |
  */
 
 /** server 行模型能力闸门：导出仅当前页切片的告警文案（实例级去重一次） */
@@ -890,8 +891,7 @@ tr[data-sticky='true'] td[data-editing='true'] {
 .edit-error {
   /* 校验消息 = 单元格顶部警示条（absolute 覆于编辑器上沿，z-index 压过编辑器）：
      行高固定/虚拟滚动模型下挂 td 下方会被 .table-scroll overflow:auto 在视口底缘裁掉
-     （末行滚不到 = 永远不可见）；条带形态在 td 内部，任何行位/滚动位置都完整可见。
-     danger 实底 + 文字安全档 token，暗色自适应 */
+     （末行滚不到 = 永远不可见）；条带形态在 td 内部，任何行位/滚动位置都完整可见 */
   position: absolute;
   top: 0;
   inset-inline: 0;
@@ -900,7 +900,9 @@ tr[data-sticky='true'] td[data-editing='true'] {
   padding: 1px 6px;
   font-size: var(--oas-font-size-xs, 12px);
   line-height: 16px;
-  color: var(--oas-color-danger-text, #fff);
+  /* 正文色：light 下语义文字色压 danger 实底对比 ~1:1（同值系），文字不可读。
+     错误语义由 danger 实底承担，文字不重复承载语义色（与错误条 .rows-error-text 同口径） */
+  color: var(--oas-color-text-primary);
   background: var(--oas-color-danger);
   white-space: nowrap;
   overflow: hidden;
@@ -933,7 +935,7 @@ tr.row:hover td.editing[data-invalid='true'],
 tr.row[data-selected='true'] td.editing[data-invalid='true'],
 tr[data-sticky='true'][data-selected='true'] td.editing[data-invalid='true'],
 td.editing[data-invalid='true'] {
-  background: var(--oas-color-danger-soft, color-mix(in srgb, var(--oas-color-danger) 12%, transparent));
+  background: var(--oas-color-danger-soft);
 }
 td.editing[data-invalid='true'] .cell-editor:focus {
   box-shadow: inset 0 0 0 2px var(--oas-color-danger);
@@ -1048,7 +1050,7 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
   gap: var(--oas-space-2);
   padding: var(--oas-space-2) var(--oas-space-3);
   border-bottom: 1px solid var(--oas-color-danger);
-  background: var(--oas-color-danger-soft, color-mix(in srgb, var(--oas-color-danger) 12%, transparent));
+  background: var(--oas-color-danger-soft);
   color: var(--oas-color-danger-text, var(--oas-color-text-primary));
   font-size: var(--oas-font-size-sm);
 }
