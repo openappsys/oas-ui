@@ -204,6 +204,41 @@ oas-ui/
 - **全局 DOM shim 的进程边界**：`@oas-ui/ssr` 首次渲染把 happy-dom 的 `window`/`document`/`HTMLElement` 装到 `globalThis`（组件类求值需要）。与框架 SSR 同进程会改变框架的环境探测（Nuxt 实测：DSD 请求后 Vue 页面 500 `history is not defined`）。Nuxt fixture 因此把 DSD 渲染放进常驻 `worker_threads` worker；生产接入同栈时应采用 worker/子进程/独立服务隔离，而不是在同一进程混跑。
 - **性能基线**：`scripts/perf/browser-bench.mjs` + `docs/perf-browser-baseline.json` 记录真实 Chromium 的 CSR/DSD 首屏数据（原始样本 + 每轮 min/median/p95 + 环境元数据 + gitSha/包版本/同 SHA 噪声）。它是**观测档案，不是预算**：数值回归只 WARN，只有测量无效（构建失败/选择器缺失/样本不足/指标非有限/count ≠ rounds×perRound/LCP 未采集/pageerror/console error）才非零退出；`--update-baseline` 写盘前走同一校验，性能预算仍由 `perf:size` 负责。
 
+### 3.3 table 双形态（数据层公开 + 渲染扩展点）
+
+table 的行模型（数据层）与渲染（组件壳）解耦为双形态：同一份行模型管道，两条消费入口。本节记录架构定位与依赖规则；能力细节（槽位契约、api 边界、用法示例）以组件文档 table.md 为准。
+
+**分层依赖（单向）**：
+
+```text
+组件壳 oas-table / data/table（L2）
+  渲染壳：属性读取 / 副作用写回 / DOM 装配 / 事件与 A11y
+   │ 静态 import（同源接线）
+   ▼
+数据层 data/table/model-core（行模型纯函数管道）
+  过滤 → 排序 → 分页切片 → 分组 → 展平 → 可见集
+   ▼
+（无下游依赖：零 DOM、零组件实例、i18n 文案参数注入——node / worker / SSR 可直接运行）
+```
+
+- 依赖方向唯一：组件 → 数据层；数据层不反向 import 组件。副作用（`current` 超页钳制的属性写回、渲染态维护等）全部留在壳层，纯函数只返回结果与建议值（如 `clampedCurrent` + `clamped` 标记）。
+- 数据层零 DOM 依赖由测试环境守护：`model-core` 与入口壳单测跑在 node 环境（`@vitest-environment node`），任何 DOM API 引用即刻失败。
+
+**单一真相源（同源接线）**：组件内部的行变换与公开 headless 管道（`@oas-ui/ui/data/table/model`）是同一份实现（`data/table/model-core/`）。组件侧为薄壳：只做属性读取、副作用写回与 DOM 装配，行变换逻辑一律下沉数据层。改行模型行为只改一处，两条形态同步生效——同一份输入喂给组件或 `computeRowModel`，行集与行序一致（金本位 + 全量测试守护零漂移）。
+
+**两个公开入口**（按需引入，预算各自独立，登记与不变量归 §3.1 层间门禁管）：
+
+| 入口 | 层级 | 面向 | 形态 |
+| --- | --- | --- | --- |
+| 组件入口 `data/table` | L2 | 开箱即用：默认渲染 + 七槽结构扩展点接管外观 | 渲染壳（DOM / A11y / 事件由组件负责） |
+| headless 入口 `data/table/model` | helper 型 L3 | 只要数据与状态：拿行模型自渲染（任意框架 / Canvas / SSR / worker） | 入口壳纯 re-export；实现居 `model-core/` 并随组件链进族包，入口路径不进 L1/CDN |
+
+预算口径：headless 入口立独立预算档（首档实测 gzip 4.3 KB / 8 文件，定档 5 KB）；组件接线为同源搬迁（非重复打包），默认链预算重定档一次后增量中性。两条链由 `perf:size` 结构门禁独立计量。
+
+**扩展点协议定位**：`structural-render`（注册型 L3）提供七槽——四结构槽（`headerRow` / `headerCell` / `bodyRow` / `bodyCell`）+ 空态（`empty`）/ loading 行（`loading`）/ 分页器（`pagination`）三壳槽；槽位 ctx 携带 `api` 操作面（只读查询：`isSelected` / `isEditing`；受控操作：`toggleExpand` / `gotoPage`），全部走组件既有公开通道（属性读/写、既有事件），不暴露私有状态。协议契约：钩子在默认装配完成后调用（装饰在内、结构在外）、未注册零调用零漂移、钩子抛错守卫降级不阻断渲染。
+
+**触发式后续（不写入承诺）**：阶段 3（渲染组织 / worker 化——如行模型挪 worker 计算、渲染层进一步解耦）仅为触发式候选，挂触发条件：行模型计算量在主线程成为实测瓶颈，或同一行模型出现多渲染宿主并存的真实消费需求。触发前不立项、不预建抽象、不留过渡层；届时按 §3.1 新增 L3 判据单独评估。
+
 ## 4. 构建与产物
 
 - library mode：`es`（ESM），`preserveModules` 保持每组件独立文件，`sideEffects` 白名单仅含注册入口与 CSS，支持 tree-shaking

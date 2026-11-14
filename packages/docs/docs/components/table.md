@@ -2238,6 +2238,18 @@ const source = createWindowedSource(table, {
 
 失败语义：映射非法（非有限 / end ≤ start / `getDataRange` 同步抛错）不 fetch、不残留在途标记、派发一次 `oas-window-error`（detail `{ start, end, visualStart, visualEnd, error }`，含视觉区间与原始数据区间）；geometry 非法（非有限、start<0、total≤0、start>total、total<数据 total，total 按表格同口径截断后比较）不写错误视觉属性（陈旧 `visual-start` / `visual-total` 移除、表格整体回落当前模型），数据照常回填并走同一失败事件——降级后表格请求携带的是本地口径视觉字段，助手不再映射（按事件 `start` / `end` 原样取数，不按宿主全局布局拉错行）。两种失败的恢复语义相同：**新窗口**事件可重试；**同窗口**推荐调用 `source.refresh()` 强制重拉（表格 winReq 同窗口去重与已装载覆盖判定可能吞掉同窗口重试）；初始同步配置错误直接抛给调用方（不写任何属性、不挂监听）。不传 `visual` 不写任何视觉属性，既有行为逐值不变。
 
+## 三档用法选择指南
+
+table 按消费方式分三档，按「谁负责渲染」选择，不要逐格混用：
+
+| 档位 | 入口 | 适用场景 | 边界（谁负责什么） |
+| --- | --- | --- | --- |
+| 开箱即用 | 默认组件 `data/table` | 标准 UI 场景：默认表格外观 + 全套内建行为（排序/过滤/分页/编辑/选择/键盘导航） | 容器与行为全由组件负责——外观定制走列配置、主题 token 与既有插槽 |
+| 自定义外观 | `structural-render` 七槽 | 要接管**结构**（包 wrapper、加 class、挂监听、清空自渲染），但保留组件的数据与行为 | 容器与行为仍由组件负责：默认装配后调用钩子、行为/A11y/事件照旧，接管的是 td/tr/th 本体（见[结构级渲染](#结构级渲染structural-render-入口注册型-l3)） |
+| 只要数据与状态 | `@oas-ui/ui/data/table/model` | 渲染完全自理（任意框架 / Canvas / SSR 快照 / worker / 程序化驱动），只要行模型计算结果 | **交互与 A11y 由你负责**：组件的排序/分页/展开交互、键盘可达、ARIA 同步都不存在——拿到的是纯函数管道的输出（见[headless 数据层](#headless-数据层datatablemodelhelper-型-l3)） |
+
+三档共用同一份行模型管道（同一输入 → 同一行集与行序）；选定档位后，组件形态内的**数据获取方式**（外部分页 / server 行模型 / windowed / 宿主自管）另见上方[服务端数据方案选用决策表](#服务端数据方案选用决策表)。
+
 ## 结构级渲染（structural-render 入口，注册型 L3）
 
 `@oas-ui/ui/data/table/structural-render` 提供**结构级**单元格/行渲染钩子——列定义的 `render` 只能定制单元格**内容**，本能力接管**结构**（td/tr/th 本体）：包 wrapper、加 class、挂监听、清空后全自定义——「内容级 render 管不了结构」的补位通道（形态取舍见契约段末）。按需 import 注册，默认 table 链零增量：
