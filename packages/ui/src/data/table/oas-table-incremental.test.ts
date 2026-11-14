@@ -269,6 +269,11 @@ describe('OASTable 增量渲染（选择切换零重算）', () => {
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')
     expect(input!.tagName, '双击进入编辑（input 通道）').toBe('INPUT')
     expect(td.hasAttribute('data-editing'), '编辑态 DOM 标记在场').toBe(true)
+    // 前置自证：进入编辑时表头高亮标记在场（使下方清除断言非恒真）
+    expect(
+      el.shadowRoot!.querySelector('th[data-key="name"]')!.getAttribute('data-editing-col'),
+      '进入编辑：th[data-editing-col] 表头高亮标记在场',
+    ).toBe('true')
     input!.value = '新名'
     // 仅选择变化（另一行）：渲染签名一致 → 局部补丁快路径（不重建行 DOM）
     el.setAttribute('selected', '李四')

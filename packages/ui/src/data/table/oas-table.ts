@@ -213,7 +213,9 @@ export interface TableEditCapability {
   decorateCell(td: HTMLTableCellElement, col: TableColumn): void
   /** 操作列（col.actions）单元格渲染：编辑/保存/取消按钮 */
   renderActionCell(td: HTMLTableCellElement, tr: HTMLTableRowElement): void
-  /** 外部重渲染（data/排序/滚动等整体重建）前静默取消进行中的编辑 */
+  /** 任何外部重渲染（data/排序/滚动等整体重建，含仅选择变化的增量快路径）前完整退出编辑：
+      移除编辑器 DOM、还原单元格内容、清 data-editing 标记、刷新操作列；
+      不派发 edit/cancel 事件 */
   settleEdit(): void
 }
 
@@ -311,7 +313,8 @@ export interface TableStructuralApi {
   /** 行内编辑态查询：该行当前是否有单元格处于编辑；columnKey 缺省 = 限行不限列，
       给定 = 限行限列。编辑能力未注册 / 无进行中编辑恒 false。
       读渲染 DOM 的编辑标记（td[data-editing] + tr[data-key] + td[data-col]），与
-      enterEdit/exitEdit/paintCell 同步维护，行重建（编辑被静默取消）后自然回落 false */
+      enterEdit/exitEdit/paintCell 同步维护，编辑被取消后回落 false
+      （不依赖行重建——增量快路径同样回落） */
   isEditing(rowKey: string, columnKey?: string): boolean
   /** 树行展开/折叠切换：读当前 expanded 属性集合取反后经既有 toggleExpand 通道写回
       （写 expanded 属性 + 派发 oas-expand + 触发重渲染）。visual-proto / windowed 树形
@@ -324,7 +327,8 @@ export interface TableStructuralApi {
 /** 分页器槽扩展 API：gotoPage 与内置分页器 oas-change 写回同一通道 */
 export interface TableStructuralPaginationApi extends TableStructuralApi {
   /** 跳页：写 current 属性（与内置分页器 oas-change 处理器同通道）。
-      非有限数（NaN / ±Infinity）no-op；与 current 属性同值时跳过写（避免无谓重渲染）；
+      入参按整数截断（Math.trunc）；非有限数（NaN / ±Infinity）no-op；
+      与 current 属性同值时跳过写（避免无谓重渲染）；
       不做本地钳制——超页由下一轮渲染的既有钳制写回归位到末页，下限由读侧归一化
       （normalizeCurrent）兜底为第 1 页（属性值可能保留原样，行为以渲染页为准）。
       server 行模型下与内置翻页同语义：current 变更触发宿主重新取数。
@@ -2711,7 +2715,8 @@ export class OASTableBase extends OASElement {
     const selectedAttr = this.getAttr('selected', '')
     if (!this.forceFullRender && this.renderState && this.renderSignature() === this.renderState.sig) {
       this.hideCellTooltip()
-      // 与全量渲染同语义：任一轮 update 都静默取消进行中的编辑（只拆守卫与状态，不动行 DOM）
+      // 与全量渲染同语义：任一轮 update 都完整退出进行中的编辑（settleEdit：移除编辑器/
+      // 还原单元格内容/清 data-editing 标记/刷新操作列），不触行重建
       this.editCap?.settleEdit()
       if (this.renderState.selection !== selectedAttr) this.patchSelection(selectedAttr)
       return

@@ -2554,8 +2554,8 @@ const model = computeRowModel({
 
 model.pageRows          // current page slice (full set when pagination is off)
 model.roots             // filtered + sorted top-level rows (unsliced)
-model.fullRoots         // filtered top-level rows in pre-sort order (input basis for scope=all summaries)
-model.total / model.pageCount / model.pageSize   // pageSize is the normalized value (invalid input falls back)
+model.fullRoots         // filtered top-level rows in pre-sort order (differs from roots only in sort order — roots is a sorted copy, fullRoots keeps the post-filter order; input basis for scope=all summaries)
+model.total / model.pageCount / model.pageSize   // pageSize is the normalized value (invalid input falls back; returns 10 when pagination is off, i.e. no pagination input)
 model.clampedCurrent    // over-page clamp suggestion (pure function writes no state: write your own current back when clamped)
 model.flat              // flattened list (data/group/expand rows; section rows carry groupKey/groupLabel/groupCount)
 model.visible           // visible set (after expanded / collapsedGroups filtering) — render this directly

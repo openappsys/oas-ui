@@ -521,6 +521,12 @@ describe('OASTable structural-render 七槽协议与 ctx api（双形态批 2）
       tr.getAttribute('data-key'),
     )
     expect(pageKeys, '第 2 页 = 第 3、4 行（三、四）').toEqual(['三', '四'])
+    // 负小数边界：Math.trunc(-0.5) = -0 → String(-0) = "0" → 写 current="0"；
+    // 渲染走既有 normalizeCurrent 回落口径（0 不大于 1 → 按第 1 页呈现，属性值保留 "0"）
+    holder.api!.gotoPage(-0.5)
+    expect(el.getAttribute('current')).toBe('0')
+    expect(el.shadowRoot!.querySelectorAll('tr[data-key="一"]')).toHaveLength(1)
+    expect(el.shadowRoot!.querySelector('tr[data-key="三"]'), '第 1 页不含第 3 行').toBeNull()
   })
 
   it('⑭ 零漂移：未注册任何钩子时空态/loading/分页默认 DOM 与批前一致', () => {
@@ -576,6 +582,11 @@ describe('OASTable structural-render 七槽协议与 ctx api（双形态批 2）
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')
     expect(input!.tagName, '双击进入编辑（input 通道）').toBe('INPUT')
     expect(api.isEditing('甲')).toBe(true)
+    // 前置自证：进入编辑时表头高亮标记在场（使下方清除断言非恒真）
+    expect(
+      el.shadowRoot!.querySelector('th[data-key="name"]')!.getAttribute('data-editing-col'),
+      '进入编辑：th[data-editing-col] 表头标记在场',
+    ).toBe('true')
     input!.value = '改名'
     // 仅选择变化（另一行）：渲染签名一致 → 行级局部补丁快路径，行 DOM 不重建
     el.setAttribute('selected', '乙')

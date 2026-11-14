@@ -110,13 +110,13 @@ export interface RowModelInput<T = Record<string, unknown>> {
 export interface DisplayRootsResult<T = Record<string, unknown>> {
   /** 过滤 + 排序后的全量顶层行（未切片；外部分页时 = data 本身） */
   roots: T[]
-  /** 过滤后的全量顶层行（与 roots 的差异仅在内部切片模式的排序；合计 scope=all 消费） */
+  /** 过滤后的全量顶层行（与 roots 的差异仅为排序口径——roots 为排序后副本，fullRoots 保持过滤后原序；合计 scope=all 消费） */
   fullRoots: T[]
   /** 当前页切片（内部切片模式；外部分页 = roots；未开分页 = roots） */
   pageRows: T[]
   /** 总行数（外部分页 = 输入 total；否则 = 过滤后数据长度） */
   total: number
-  /** 归一化后的页尺寸（非法入参回落后值；壳层分页器直用） */
+  /** 归一化后的页尺寸（非法入参回落后值；分页关闭（未传 pagination）时归一化返回 10；壳层分页器直用） */
   pageSize: number
   /** 总页数（未开分页恒 1） */
   pageCount: number
@@ -135,13 +135,13 @@ export interface DisplayRootsResult<T = Record<string, unknown>> {
 export interface RowModelResult<T = Record<string, unknown>> {
   /** 过滤 + 排序后全量顶层行（未切片） */
   roots: T[]
-  /** 过滤后的全量顶层行（与 roots 的差异仅在内部切片模式的排序；合计 scope=all 的输入基准） */
+  /** 过滤后的全量顶层行（与 roots 的差异仅为排序口径——roots 为排序后副本，fullRoots 保持过滤后原序；合计 scope=all 的输入基准） */
   fullRoots: T[]
   /** 当前页切片（未开分页 = roots；外部分页 = data 本身经排序） */
   pageRows: T[]
   /** 总行数（外部分页口径 = 输入 total） */
   total: number
-  /** 归一化后的页尺寸（非法入参回落后值，最小 1） */
+  /** 归一化后的页尺寸（非法入参回落后值，最小 1；分页关闭（未传 pagination）时归一化返回 10） */
   pageSize: number
   /** 总页数（未开分页恒 1） */
   pageCount: number

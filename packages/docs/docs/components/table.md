@@ -2538,8 +2538,8 @@ const model = computeRowModel({
 
 model.pageRows          // 当前页切片（分页关闭 = 全量）
 model.roots             // 过滤 + 排序后的全量顶层行（未切片）
-model.fullRoots         // 过滤后的全量顶层行（排序前原序；合计 scope=all 的输入基准）
-model.total / model.pageCount / model.pageSize   // pageSize 为归一化落值（非法入参回落后值）
+model.fullRoots         // 过滤后的全量顶层行（保持过滤后原序——与 roots 的差异仅为排序口径，roots 为排序后副本；合计 scope=all 的输入基准）
+model.total / model.pageCount / model.pageSize   // pageSize 为归一化落值（非法入参回落后值；分页关闭（未传 pagination）时归一化返回 10）
 model.clampedCurrent    // 超页钳制建议值（纯函数不写状态：clamped = true 时由你写回自己的 current）
 model.flat              // 展平列表（data/group/expand 三类行；分节头行含 groupKey/groupLabel/groupCount）
 model.visible           // 可见集（按 expanded / collapsedGroups 过滤后）——拿它直接渲染
