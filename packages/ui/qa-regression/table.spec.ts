@@ -78,18 +78,16 @@ async function navUntilLanded(
   targetRow: number,
   scrollExpect: 'top' | 'bottom',
 ): Promise<void> {
+  const landedExpr = ({ sel, row, mode }: { sel: string; row: number; mode: string }) => {
+    const el = document.querySelector(sel) as HTMLElement | null
+    const wrap = el?.shadowRoot?.querySelector<HTMLElement>('.table-scroll')
+    if (!el || !wrap) return false
+    const max = wrap.scrollHeight - wrap.clientHeight
+    const at = mode === 'top' ? wrap.scrollTop < 40 : Math.abs(wrap.scrollTop - max) <= 1
+    return at && !!el.shadowRoot!.querySelector(`tr[data-row-index="${row}"] td.range-focus`)
+  }
   const landed = (): Promise<boolean> =>
-    page.evaluate(
-      ({ sel, row, mode }) => {
-        const el = document.querySelector(sel) as HTMLElement | null
-        const wrap = el?.shadowRoot?.querySelector<HTMLElement>('.table-scroll')
-        if (!el || !wrap) return false
-        const max = wrap.scrollHeight - wrap.clientHeight
-        const at = mode === 'top' ? wrap.scrollTop < 40 : Math.abs(wrap.scrollTop - max) <= 1
-        return at && !!el.shadowRoot!.querySelector(`tr[data-row-index="${row}"] td.range-focus`)
-      },
-      { sel: `#${id}`, row: targetRow, mode: scrollExpect },
-    )
+    page.evaluate(landedExpr, { sel: `#${id}`, row: targetRow, mode: scrollExpect })
   for (let attempt = 0; attempt < 3; attempt++) {
     if (await landed()) return
     await settleTableScroll(page, id)
@@ -112,7 +110,11 @@ async function navUntilLanded(
       },
       { sel: `#${id}`, k: key },
     )
-    await page.waitForTimeout(250)
+    // 条件等待替代固定 250ms：键处理 + rAF 链路落点成立即提前返回；慢环境下 250ms 可能
+    // 不够（漏等竞态帧）。超时吞掉（未落点）→ 由循环顶 landed() 检查触发补发，保留 3 次补发语义
+    await page
+      .waitForFunction(landedExpr, { sel: `#${id}`, row: targetRow, mode: scrollExpect }, { timeout: 1000 })
+      .catch(() => {})
   }
   expect(
     await landed(),
@@ -1235,15 +1237,19 @@ test('table P2 批：cell-click/row-dblclick 事件反馈可见 + row-expandable
   // 单击/双击反馈行有可见文本变化、max-height 落成滚动容器内联样式
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-cell-events')
-  // 等 rowExpandable property 赋值生效（whenDefined 链）——条件等待替代盲等
-  // （该 demo 数据固定 3 行：张三/李四/王五）
+  // 等 rowExpandable property 赋值生效（whenDefined 链）——条件等待替代盲等。
+  // 期望行数不写死：与元素自身 data 属性现算长度比较（该 demo 数据 3 行写在模板属性里，
+  // 数据驱动口径下 demo 数据增减测试自动跟随；expected>0 守卫排除「data 未到 + 0===0」的早退假绿）
   await expect
     .poll(() =>
-      page.evaluate(
-        () => document.querySelector('oas-table#table-cell-events')!.shadowRoot!.querySelectorAll('tbody tr').length,
-      ),
+      page.evaluate(() => {
+        const el = document.querySelector('oas-table#table-cell-events')!
+        const expected = JSON.parse(el.getAttribute('data') ?? '[]').length
+        const rows = el.shadowRoot!.querySelectorAll('tbody tr').length
+        return expected > 0 && rows === expected
+      }),
     )
-    .toBe(3)
+    .toBe(true)
 
   // rowExpandable（property 函数通道）：key=c 的行（王五）无展开钮，其余行有
   const expand = await page.evaluate(() => {
@@ -2159,7 +2165,7 @@ test('table windowed：滚动派发 oas-window-request、宿主回填渲染绝�
     const el = document.querySelector('#table-windowed-fixture')!
     return [...el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')].map((r) => r.textContent)
   })
-  expect(afterSort.length).toBe(10)
+  expect(afterSort.length, '本地排序禁用：窗口渲染行数不因排序变化（与排序前 DOM 现算值比较）').toBe(layout.rowCount)
   expect(afterSort[0], '本地排序禁用：首行仍是行100（行序不变）').toContain('行100')
   // devWarn 属 dev-only 通道（docs 为生产构建 → NODE_ENV=production 时被摇掉），故此 e2e 不断言告警；
   // 「windowed 下本地操作禁用 + 告警（实例级去重）」由 oas-table-windowed.test.ts 单测覆盖
@@ -3064,6 +3070,7 @@ test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节�
     const ms = Math.round(performance.now() - t0)
     const after = [...body.querySelectorAll('tr[data-key]')] as HTMLTableRowElement[]
     return {
+      clickCount: targets.length,
       rowCountBefore: trs.length,
       rowCountAfter: after.length,
       identityKept: targets.every((tr, i) => tr === after[i]),
@@ -3093,7 +3100,7 @@ test('table 万行虚拟滚动：连续选择 20 次渲染行数有界、行节�
   expect(r.rowCountAfter, '渲染行数有界：不随选择次数增长').toBe(r.rowCountBefore)
   expect(r.rowCountAfter, '虚拟窗口行数远小于总量 10000').toBeLessThan(50)
   expect(r.identityKept, '行节点身份保持（局部补丁而非整表重建）').toBe(true)
-  expect(r.selectedCount, '20 行全部呈选中态').toBe(20)
+  expect(r.selectedCount, '点击过的行全部呈选中态（与实际点击数比较）').toBe(r.clickCount)
   expect(consoleIssues, 'console 零告警（error + [oas-table] warning 口径）').toEqual([])
   await page.evaluate(() => document.querySelector('#qa-virtual-select')?.remove())
 })
@@ -3731,13 +3738,22 @@ test('table Pro 第二批：区域选择/复制、行详情、Shift 扩展与编
   )
 
   await page.locator('#table-pro-range').click()
+  // 期望格数不写死：demo 按钮语义 = setRangeSelection(row0,name → row1,team)，即 2 行 ×
+  // 「name..team 列跨」——列跨按元素 columns 配置现算（配置重排/增列测试自动跟随）；
+  // expected>0 守卫排除列名缺席时的 0===0 假绿
   await expect
     .poll(() =>
-      page.evaluate(
-        () => document.querySelector('#table-pro')!.shadowRoot!.querySelectorAll('td.range-selected').length,
-      ),
+      page.evaluate(() => {
+        const el = document.querySelector('#table-pro')!
+        const cols = JSON.parse(el.getAttribute('columns') ?? '[]').map((c: { key: string }) => c.key)
+        const from = cols.indexOf('name')
+        const to = cols.indexOf('team')
+        const expected = from >= 0 && to >= 0 ? (to - from + 1) * 2 : 0
+        const rendered = el.shadowRoot!.querySelectorAll('td.range-selected').length
+        return expected > 0 && rendered === expected
+      }),
     )
-    .toBe(4)
+    .toBe(true)
   const status = () => page.evaluate(() => document.querySelector('#table-pro-status')?.textContent ?? '')
   expect(await status()).toContain('2 行')
 
@@ -4264,16 +4280,16 @@ test('table Pro 第三批：虚拟表 Ctrl+End / Shift+Ctrl+End 在浏览器 max
   )
 
   // Shift+Ctrl+End 同样受上文的滚动帧竞态影响：落点未成立时补发（断言不变：anchor=0 行、end=99 行）
-  const extended = (): Promise<boolean> =>
-    page.evaluate(() => {
-      const last = (
-        (window as any).__endRangeChanges as Array<{
-          start?: { row?: number }
-          end?: { row?: number }
-        }>
-      ).at(-1)
-      return last?.start?.row === 0 && last?.end?.row === 99
-    })
+  const extendedExpr = () => {
+    const last = (
+      (window as any).__endRangeChanges as Array<{
+        start?: { row?: number }
+        end?: { row?: number }
+      }>
+    ).at(-1)
+    return last?.start?.row === 0 && last?.end?.row === 99
+  }
+  const extended = (): Promise<boolean> => page.evaluate(extendedExpr)
   for (let attempt = 0; attempt < 3; attempt++) {
     if (await extended()) break
     await settleTableScroll(page, 'qa-pro-virtual-end')
@@ -4303,7 +4319,9 @@ test('table Pro 第三批：虚拟表 Ctrl+End / Shift+Ctrl+End 在浏览器 max
         }),
       )
     })
-    await page.waitForTimeout(250)
+    // 条件等待替代固定 250ms：range-change 事件落点成立即提前返回；超时吞掉（未落点）
+    // → 下一轮补发，保留 3 次补发语义
+    await page.waitForFunction(extendedExpr, null, { timeout: 1000 }).catch(() => {})
   }
   expect(await extended(), 'Shift+Ctrl+End 保留首行锚点、末行扩展').toBe(true)
   await page.evaluate(() => document.querySelector('#qa-pro-virtual-end')?.remove())

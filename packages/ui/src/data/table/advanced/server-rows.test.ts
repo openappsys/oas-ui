@@ -181,9 +181,8 @@ describe('createServerSource', () => {
     expect(errs[0]!.composed).toBe(true)
     // 组件内建失败条可见（reportRowsError 生效形态），错误可重试入口在场
     const bar = el.shadowRoot!.querySelector('.rows-error')
-    expect(bar).not.toBeNull()
-    expect(bar!.hasAttribute('hidden')).toBe(false)
-    expect(bar!.querySelector('.rows-error-retry')).not.toBeNull()
+    expect(bar?.hasAttribute('hidden'), '失败条模板节点在场且可见（缺席 → undefined ≠ false 一并拦下）').toBe(false)
+    expect(bar?.querySelector('.rows-error-retry')?.tagName, '重试入口在场且为按钮').toBe('BUTTON')
     source.destroy()
   })
 

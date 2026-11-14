@@ -261,8 +261,16 @@ test('table server：重试按钮 hover 前后可读（F1：hover 文字 text-on
   // 文档站页面流的 actionability 拦截（目录浮层/滚动容器）会卡 locator.hover()——
   // 改用真实鼠标坐标移动（scrollIntoView 居中后取 boundingBox 中心，等价真 hover）
   await retry.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  // 精确契约替代存在性断言：boundingBox 与按钮自身布局盒一致（缺席 → null 不过
+  // objectContaining；数值漂移 → 与 DOM 现算值不等一并拦下），下游鼠标坐标移动才可信
+  const boxRect = await retry.evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    return { x: r.x, y: r.y, width: r.width, height: r.height }
+  })
   const box = await retry.boundingBox()
-  expect(box, '重试按钮可取到视口坐标').not.toBeNull()
+  expect(box, '重试按钮可取到视口坐标，且与自身布局盒一致').toEqual(
+    expect.objectContaining({ x: boxRect.x, y: boxRect.y, width: boxRect.width, height: boxRect.height }),
+  )
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
   const hoverLight = await retry.evaluate((el) => {
     const cs = getComputedStyle(el)
@@ -388,6 +396,8 @@ test('table server helper：竞态丢弃——慢响应晚到不覆盖快响应�
       mode: 'fast' as 'fast' | 'slow',
       /** helper 收到的请求（requestId 单调性断言输入） */
       reqs: [] as Array<{ requestId: number; reason: string }>,
+      /** fetcher 实际 resolve 的 requestId 序列（慢响应到齐观测——条件等待用，不盲等时长） */
+      resolved: [] as number[],
     }
     ;(window as any)['__srvState_table-server-race'] = state
     const source = createServerSource(el, {
@@ -398,14 +408,16 @@ test('table server helper：竞态丢弃——慢响应晚到不覆盖快响应�
         state.reqs.push({ requestId: req.requestId, reason: req.reason })
         return new Promise((resolve) =>
           setTimeout(
-            () =>
+            () => {
+              state.resolved.push(req.requestId)
               resolve({
                 rows: Array.from({ length: req.end - req.start }, (_, i) => ({
                   id: `r${req.start + i}`,
                   name: `${reqMode === 'slow' ? '慢' : '快'}${req.start + i}`,
                 })),
                 total: 40,
-              }),
+              })
+            },
             reqMode === 'slow' ? 600 : 100,
           ),
         )
@@ -443,8 +455,12 @@ test('table server helper：竞态丢弃——慢响应晚到不覆盖快响应�
   )
   await expect(shadow(page, 'table-server-race').locator('tbody tr[part="row"]').first()).toContainText('快0')
 
-  // ⑤ 慢响应晚到（600ms 到期）→ 不得覆盖快内容
-  await page.waitForTimeout(650)
+  // ⑤ 慢响应晚到（600ms 到期）→ 不得覆盖快内容。条件等待「慢 fetcher 已 resolve」：
+  // 竞态用例共 3 个请求（init/慢 sort/快 sort），resolved 计数达 3 即最后一个（慢）已到——
+  // 替代固定 650ms 盲等，慢档真正到期即放行，不依赖时长估计
+  await page.waitForFunction(() => (window as any)['__srvState_table-server-race'].resolved.length >= 3, null, {
+    timeout: 15000,
+  })
   const dataAfter = await page.evaluate(() => document.querySelector('#table-server-race')!.getAttribute('data'))
   expect(dataAfter, '慢响应晚到后 data 仍只含快请求结果').toContain('"快0"')
   expect(dataAfter, 'data 无慢请求内容').not.toContain('"慢')

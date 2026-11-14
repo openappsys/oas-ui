@@ -207,7 +207,9 @@ describe('OASTable client 渲染签名金本位', () => {
     expect(rowsOf(el).length).toBe(2)
     expect(bodyText(el)).toContain('行10')
     expect(bodyText(el)).toContain('行11')
-    expect(el.shadowRoot!.querySelector('.pagination oas-pagination')).not.toBeNull()
+    const pager = el.shadowRoot!.querySelector('.pagination oas-pagination')
+    expect(pager?.getAttribute('total'), '分页器在场且 total=数据行数 12（缺席 → undefined 一并拦下）').toBe('12')
+    expect(pager?.getAttribute('current')).toBe('2')
   })
 
   it('树展开：children + expanded 渲染父子行', () => {
@@ -221,12 +223,18 @@ describe('OASTable client 渲染签名金本位', () => {
     })
     expect(rowsOf(el).length).toBe(3)
     expect(bodyText(el)).toContain('子')
-    expect(el.shadowRoot!.querySelector('button.toggle')).not.toBeNull()
+    expect(
+      el.shadowRoot!.querySelector('button.toggle')?.getAttribute('aria-expanded'),
+      '展开钮在场且父行呈展开态（缺席 → undefined 一并拦下）',
+    ).toBe('true')
   })
 
   it('行选择：checkable + selected 行选中态', () => {
     const el = mount({ checkable: '', selected: '张三', 'row-key': 'name' })
-    expect(el.shadowRoot!.querySelector('th.check-cell')).not.toBeNull()
+    expect(
+      el.shadowRoot!.querySelector('th.check-cell input[type="checkbox"]')?.tagName,
+      '全列表头在场且含真实 checkbox（缺席 → undefined 一并拦下）',
+    ).toBe('INPUT')
     expect(rowsOf(el).length).toBe(3)
     const checked = el.shadowRoot!.querySelectorAll('tr.row[data-selected="true"]')
     expect(checked.length).toBe(1)
@@ -237,16 +245,14 @@ describe('OASTable client 渲染签名金本位', () => {
   it('合计：summary 聚合行渲染', () => {
     const el = mount({ summary: JSON.stringify([{ key: 'age', type: 'sum' }]) })
     const summaryRow = el.shadowRoot!.querySelector('tr.summary')
-    expect(summaryRow).not.toBeNull()
-    expect(summaryRow!.textContent).toContain('90')
+    expect(summaryRow?.textContent, '合计行在场且聚合值正确（缺席 → undefined 一并拦下）').toContain('90')
     expect(rowsOf(el).length).toBe(3)
   })
 
   it('空态：data 为空渲染 .empty 占位', () => {
     const el = mount({ data: '[]' })
     const emptyTd = el.shadowRoot!.querySelector('td.empty')
-    expect(emptyTd).not.toBeNull()
-    expect(emptyTd!.textContent).toContain('暂无数据')
+    expect(emptyTd?.textContent, '空态占位在场且文案正确（缺席 → undefined 一并拦下）').toContain('暂无数据')
     expect(rowsOf(el).length).toBe(0)
     expect(domSig(el.shadowRoot!)).toContain('td.empty')
   })
@@ -254,11 +260,10 @@ describe('OASTable client 渲染签名金本位', () => {
   it('loading：加载占位行（spin + 文案，表头保留）', () => {
     const el = mount({ loading: '' })
     const loadingTd = el.shadowRoot!.querySelector('td.loading')
-    expect(loadingTd).not.toBeNull()
-    expect(loadingTd!.querySelector('span.spin')).not.toBeNull()
-    expect(loadingTd!.textContent).toContain('加载中')
+    expect(loadingTd?.querySelector('span.spin')?.tagName, 'loading 行在场且含 spin 图标').toBe('SPAN')
+    expect(loadingTd?.textContent, 'loading 行在场且文案正确（缺席 → undefined 一并拦下）').toContain('加载中')
     expect(rowsOf(el).length).toBe(0)
-    expect(el.shadowRoot!.querySelector('thead th')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('thead th')).toHaveLength(2)
     expect(domSig(el.shadowRoot!)).toContain('td.loading')
   })
 })

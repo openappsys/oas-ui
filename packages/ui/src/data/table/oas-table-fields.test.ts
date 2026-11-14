@@ -364,8 +364,9 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     const el = mount()
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     const rule = css.match(/\.edit-error\s*\{[^}]*\}/)
-    expect(rule, '.edit-error 规则存在于注入样式').not.toBeNull()
-    expect(rule![0]).toContain('var(--oas-color-text-on-danger)')
+    expect(rule?.[0], '.edit-error 规则存在于注入样式（规则缺席 → undefined 一并拦下）').toContain(
+      'var(--oas-color-text-on-danger)',
+    )
     expect(rule![0]).not.toContain('danger-text')
     // danger 语义保留在底色（容器不随文字色改动而丢失语义）
     expect(rule![0]).toContain('background: var(--oas-color-danger)')

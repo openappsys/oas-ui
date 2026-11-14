@@ -203,8 +203,7 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
     expect(server.getAttribute('current')).toBe('1')
     expect(rowsOf(server).length).toBe(3)
     const pager = server.shadowRoot!.querySelector('.pagination oas-pagination')
-    expect(pager).not.toBeNull()
-    expect(pager!.getAttribute('total')).toBe('10')
+    expect(pager?.getAttribute('total'), "分页器在场且 total 直通（节点缺席 → undefined ≠ '10' 一并拦下）").toBe('10')
   })
 
   it('server：交互排序只派 oas-sort-change，不改行序（服务端排序由宿主回填）', () => {
@@ -221,8 +220,9 @@ describe('OASTable server 行模型 a3：本地过滤/排序整体跳过（缝�
     el.addEventListener('oas-sort-change', (e) => (detail = (e as CustomEvent).detail))
     el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
     expect(detail).toEqual({ key: 'name', order: 'asc' })
-    // 排序服务端化：本地不重排——在途即内建 loading 行（数据区暂由 loading 占位）
-    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    // 排序服务端化：本地不重排——在途即内建 loading 行（数据区暂由 loading 占位；
+    // 节点缺席 → undefined 不含文案，存在与文案一并断言）
+    expect(el.shadowRoot!.querySelector('td.loading')?.textContent, '在途 loading 行在场').toContain('加载中')
     // 宿主按服务端排序结果回填 → 行序由回填数据决定（本地不改序）
     el.setAttribute(
       'data',
@@ -294,8 +294,11 @@ describe('OASTable server 行模型 a4：oas-rows-request 请求协议', () => {
     expect(reqs).toEqual([
       { requestId: 1, start: 0, end: 10, sortModel: [], filterValues: {}, reason: 'init', totalKnown: true },
     ])
-    // 空数据首载：请求已派发（早退分支不吞首载请求——windowed 先例顺序）
-    expect(el.shadowRoot!.querySelector('tbody')).not.toBeNull()
+    // 空数据首载：请求已派发（早退分支不吞首载请求——windowed 先例顺序）；
+    // tbody 渲染在途 loading 占位（loading 分支先于空态分支，缺席 → undefined 一并拦下）
+    expect(el.shadowRoot!.querySelector('tbody td.loading')?.textContent, '空数据首载 tbody 照常渲染').toContain(
+      '加载中',
+    )
   })
 
   it('data 非空首载同样派 init（data 属性是回填通道不是请求屏障）', () => {
@@ -539,7 +542,7 @@ describe('OASTable server 行模型 a6：内建 loading + 失败反馈', () => {
   it('在途内建 loading：首载请求后渲染 loading 行（无需宿主 loading 属性），回填后消失', () => {
     const { el, reqs } = mountReq({ 'row-model': 'server', total: '10' })
     expect(reqs.length).toBe(1)
-    expect(loadingRow(el)).not.toBeNull()
+    expect(loadingRow(el)?.textContent, '首载在途 loading 行在场（无需宿主 loading 属性）').toContain('加载中')
     // 宿主回填 → loading 清除 + 数据行渲染
     el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
     expect(loadingRow(el)).toBeNull()
@@ -557,7 +560,7 @@ describe('OASTable server 行模型 a6：内建 loading + 失败反馈', () => {
     el.setAttribute('loading', '')
     document.body.appendChild(el)
     // 无请求在途时（首载 init 后回填过？——首载即派发并置在途，loading 行来源两者取或，视觉一致）
-    expect(loadingRow(el)).not.toBeNull()
+    expect(loadingRow(el)?.textContent, '显式 loading 属性渲染 loading 行').toContain('加载中')
   })
 
   it('reportRowsError 生效：派 oas-rows-error + 错误条可见 + 旧数据保留', () => {
@@ -570,8 +573,7 @@ describe('OASTable server 行模型 a6：内建 loading + 失败反馈', () => {
     el.reportRowsError({ requestId: 2, reason: 'paginate', error: new Error('boom') })
     expect(errs).toEqual([{ requestId: 2, reason: 'paginate' }])
     const bar = errorBar(el)
-    expect(bar).not.toBeNull()
-    expect(bar!.hasAttribute('hidden')).toBe(false)
+    expect(bar?.hasAttribute('hidden'), '错误条模板节点在场且可见（缺席 → undefined ≠ false 一并拦下）').toBe(false)
     expect(bar!.getAttribute('role')).toBe('alert')
     expect(bar!.textContent).toContain('加载失败')
     expect(bar!.textContent).toContain('重试')
@@ -673,7 +675,7 @@ describe('OASTable server 行模型 a7：refreshRows() 强刷', () => {
     expect(reqs.length).toBe(2)
     expect(reqs[1]).toEqual({ requestId: 2, reason: 'refresh' })
     // 强刷即进入在途 loading（内建视觉）
-    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('td.loading')?.textContent, '强刷在途 loading 行在场').toContain('加载中')
     // 回填 → loading 清
     el.setAttribute('data', JSON.stringify([{ name: '乙', age: 2 }]))
     expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
@@ -930,8 +932,8 @@ describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
     )
     el.shadowRoot!.querySelector<HTMLElement>('th[data-key="name"] .filter-btn')!.click()
     const panel = el.shadowRoot!.querySelector('.filter-panel')
-    expect(panel).not.toBeNull()
-    const options = [...panel!.querySelectorAll('.filter-option')].map((o) => o.textContent)
+    // 面板缺席 → 空选项集 → 下方 toContain 失败（存在性由选项契约一并承担）
+    const options = [...(panel?.querySelectorAll('.filter-option') ?? [])].map((o) => o.textContent)
     expect(options).toContain('甲')
     expect(options).toContain('乙')
   })
@@ -957,7 +959,7 @@ describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
     const td = el.shadowRoot!.querySelector<HTMLElement>('td[data-col="name"]')!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     const input = td.querySelector<HTMLInputElement>('input.cell-editor')
-    expect(input).not.toBeNull()
+    expect(input, '双击进入编辑：单元格编辑器 input 在场').toBeInstanceOf(HTMLInputElement)
     input!.value = '甲改'
     input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect((editDetail as { value?: string } | undefined)?.value).toBe('甲改')
@@ -1024,8 +1026,9 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.setAttribute('data', '[]')
     document.body.appendChild(el)
     const hover = styleTextOf(el).match(/\.rows-error-retry:hover\s*\{[^}]*\}/)
-    expect(hover, 'hover 规则存在于注入样式').not.toBeNull()
-    expect(hover![0]).toContain('var(--oas-color-text-on-danger)')
+    expect(hover?.[0], 'hover 规则存在于注入样式（规则缺席 → undefined 一并拦下）').toContain(
+      'var(--oas-color-text-on-danger)',
+    )
     expect(hover![0]).not.toContain('danger-text')
   })
 
@@ -1041,8 +1044,9 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.setAttribute('data', '[]')
     document.body.appendChild(el)
     const text = styleTextOf(el).match(/\.rows-error-text\s*\{[^}]*\}/)
-    expect(text, 'text 规则存在于注入样式').not.toBeNull()
-    expect(text![0]).toContain('var(--oas-color-text-primary)')
+    expect(text?.[0], 'text 规则存在于注入样式（规则缺席 → undefined 一并拦下）').toContain(
+      'var(--oas-color-text-primary)',
+    )
     expect(text![0]).not.toContain('danger-text')
   })
 
@@ -1088,7 +1092,10 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(reqs.length).toBe(2)
     expect(reqs[1]!.reason).toBe('init')
     expect(reqs[1]!.requestId).toBe(2)
-    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    expect(
+      el.shadowRoot!.querySelector('td.loading')?.textContent,
+      '切回 server 重发 init：在途 loading 行在场',
+    ).toContain('加载中')
     el.setAttribute(
       'data',
       JSON.stringify([
@@ -1122,7 +1129,9 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.setAttribute('total', '10')
     el.setAttribute('data', '[]')
     document.body.appendChild(el)
-    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('td.loading')?.textContent, 'server 首载在途 loading 行在场').toContain(
+      '加载中',
+    )
     el.setAttribute('row-model', 'client')
     expect(el.shadowRoot!.querySelector('td.loading')).toBeNull()
     expect(rowsOf(el).length).toBe(0)
@@ -1168,7 +1177,9 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(reqs.length).toBe(3)
     expect(reqs[2]!.reason).toBe('init')
     expect(reqs[2]!.requestId).toBe(3)
-    expect(el.shadowRoot!.querySelector('td.loading')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('td.loading')?.textContent, '重发 init：在途 loading 行在场').toContain(
+      '加载中',
+    )
   })
 
   it('F3④：移除 total 清态（错误条消失），回加 total 重发 init', () => {
@@ -1397,12 +1408,10 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     //（expect 非空后以 `!` 收窄访问，TS 不从 expect 推断）
     const up = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.up')
     const down = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.down')
-    expect(up, '上移按钮在场').not.toBeNull()
-    expect(down, '下移按钮同样在场').not.toBeNull()
-    expect(up!.disabled, 'server 闸门：上移按钮禁用').toBe(true)
-    expect(up!.getAttribute('aria-disabled')).toBe('true')
-    expect(down!.disabled, 'server 闸门：下移按钮禁用').toBe(true)
-    expect(down!.getAttribute('aria-disabled')).toBe('true')
+    expect(up?.disabled, 'server 闸门：上移按钮在场且禁用（缺席 → undefined ≠ true 一并拦下）').toBe(true)
+    expect(up?.getAttribute('aria-disabled')).toBe('true')
+    expect(down?.disabled, 'server 闸门：下移按钮在场且禁用').toBe(true)
+    expect(down?.getAttribute('aria-disabled')).toBe('true')
     // 点击零调用（disabled 原生拦截 + setColumnOrder 拦截双保险）：断言 column-keys 不被写回
     // （R9 收紧：原 `getAttribute() ?? keysBefore` 两侧同为 null 恒真；改为显式 null 断言 + 零事件计数）
     const orderEvents: unknown[] = []
@@ -1658,10 +1667,10 @@ describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
     // height/row-height：windowed 窗口请求走虚拟渲染形态（isVirtual 前置），供接管断言
     const { el, reqs } = mountR({ 'row-model': 'server', total: '10', height: '200', 'row-height': '40' })
     el.addEventListener('oas-window-request', (e: Event) => winReqs.push((e as CustomEvent).detail.reason))
-    expect(loadingRow(el), 'init 在途 loading').not.toBeNull()
+    expect(loadingRow(el)?.textContent, 'init 在途 loading').toContain('加载中')
     el.setAttribute('windowed', '') // 互斥接管
     expect(loadingRow(el), 'server 在途 loading 骨架不残留（互斥复位）').toBeNull()
-    expect(winReqs.length, 'windowed 接管派发窗口请求').toBeGreaterThan(0)
+    expect(winReqs, 'windowed 接管派发窗口请求（接管即派 1 个 init，winInitDone 首帧前为 false）').toEqual(['init'])
     expect(reqs.length, 'server 请求不因互斥重派').toBe(1)
     warn.mockRestore()
   })
@@ -1712,7 +1721,7 @@ describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
 
   it('R7②：loading 中同值 total 回填 → loading 立即清（有态变化仍标脏，F4 同族语义保持）', () => {
     const { el } = mountR({ 'row-model': 'server', total: '10' })
-    expect(loadingRow(el), 'init 在途').not.toBeNull()
+    expect(loadingRow(el)?.textContent, 'init 在途').toContain('加载中')
     el.setAttribute('total', el.getAttribute('total')!)
     expect(loadingRow(el), '在途清态立即可见').toBeNull()
   })
@@ -1741,7 +1750,7 @@ describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
     expect(errorBar(el)!.hasAttribute('hidden')).toBe(false)
     el.setAttribute('current', '3') // 新请求在途：派发即清 serverError → 错误条同步隐藏
     expect(errorBar(el)!.hasAttribute('hidden'), '同一次更新后错误条隐藏').toBe(true)
-    expect(loadingRow(el), '新请求 loading 行在途').not.toBeNull()
+    expect(loadingRow(el)?.textContent, '新请求 loading 行在途').toContain('加载中')
   })
 
   // ==================== R12/R13：第三轮修复批（登记越界回收 + windowed 接管探针固化） ====================
@@ -1830,9 +1839,8 @@ describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
     const controller = new TableColumnSettingsController(host)
     expect(() => controller.hostUpdated(), '宿主未实现闸门不炸').not.toThrow()
     const up = thAge.querySelector<HTMLButtonElement>('.col-move.up')
-    expect(up, '移动按钮照常注入').not.toBeNull()
-    expect(up!.disabled, '闸门回落 false：非边界位按钮可用（禁用只由边界位决定）').toBe(false)
-    expect(up!.getAttribute('aria-disabled')).toBeNull()
+    expect(up?.disabled, '移动按钮照常注入且非边界位可用（缺席 → undefined ≠ false 一并拦下）').toBe(false)
+    expect(up?.getAttribute('aria-disabled')).toBeNull()
   })
 })
 

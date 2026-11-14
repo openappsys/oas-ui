@@ -162,7 +162,10 @@ describe('oas-table 打印视图（print 媒体全量渲染）', () => {
     const el = mount(new OASTable())
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     const printBlock = css.slice(css.indexOf('@media print'))
-    expect(printBlock.length, '样式源应含 @media print 块').toBeGreaterThan(0)
+    expect(
+      printBlock.startsWith('@media print'),
+      '样式源应含 @media print 块（未命中 → slice 起点为 -1，非空样式源不会以 @media print 开头）',
+    ).toBe(true)
     expect(printBlock).toContain('.rows-error')
     expect(printBlock).toContain('tr:has(td.loading)')
   })
