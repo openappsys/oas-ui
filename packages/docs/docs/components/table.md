@@ -204,7 +204,7 @@
 
 ### 单元格校验（validate）
 
-列配置 `validate`（**property 函数通道**，attribute JSON 声明式通道无法携带函数）在提交前拦截非法值：`(value, row) => 错误消息 | false | 空串/undefined 通过`。校验失败：**不提交、保持编辑态**（可直接修正重试）、单元格红底（`data-invalid`）+ 顶部 danger 警示条消息（`.edit-error`，覆于编辑器上沿、行高固定/虚拟滚动下也不被滚动容器裁切）、编辑器 focus 环 danger 色（浮层编辑器通道同步）、焦点回编辑器，并派发 `oas-edit-invalid`（`detail: { rowIndex, key, column, value, oldValue, oldRawValue, message }`——宿主可监听做错误汇总/日志）；修正重试成功后标记与消息自动清除。`type: 'date'` 列未自定义 validate 时内置 `YYYY-MM-DD` 形态校验（旧值为 ISO/时间戳形态时「未改动提交」豁免，不被误拦）。错误视觉走 danger 语义 token（`--oas-color-danger-soft` 底 / `--oas-color-danger` 环与警示条 / `--oas-color-danger-text` 警示条文字，暗色自动适配）。
+列配置 `validate`（**property 函数通道**，attribute JSON 声明式通道无法携带函数）在提交前拦截非法值：`(value, row) => 错误消息 | false | 空串/undefined 通过`。校验失败：**不提交、保持编辑态**（可直接修正重试）、单元格红底（`data-invalid`）+ 顶部 danger 警示条消息（`.edit-error`，覆于编辑器上沿、行高固定/虚拟滚动下也不被滚动容器裁切）、编辑器 focus 环 danger 色（浮层编辑器通道同步）、焦点回编辑器，并派发 `oas-edit-invalid`（`detail: { rowIndex, key, column, value, oldValue, oldRawValue, message }`——宿主可监听做错误汇总/日志）；修正重试成功后标记与消息自动清除。`type: 'date'` 列未自定义 validate 时内置 `YYYY-MM-DD` 形态校验（旧值为 ISO/时间戳形态时「未改动提交」豁免，不被误拦）。错误视觉走 danger 语义 token（`--oas-color-danger-soft` 失败单元格底 / `--oas-color-danger` focus 环与警示条实底 / `--oas-color-text-on-danger` 警示条文字，暗色自动适配）。
 
 <DemoBlock title="validate 拦截：金额为正数，失败保持编辑态 + 行内消息 + oas-edit-invalid 事件">
   <div style="width: 100%">
@@ -629,7 +629,7 @@ table.addEventListener('oas-expand', async (e) => {
 ></oas-table>
 ```
 
-宿主侧用 `createServerSource` 接管取数（协议监听、requestId 校验、abort 在途、失败上报全部内建；import 自 `@oas-ui/ui/data/table/advanced`，纯宿主侧 helper，不新增组件 API）。要求元素已连接（先 append 再创建）；**每元素一个 source 实例**——同一元素重复创建会双监听双取数（dev 提醒一次并照常返回新实例），请先 `destroy()` 再重建。创建时主动发起一次首屏刷新兜底——静态标签升级瞬间的 init 请求早于脚本执行、helper 监听未就绪会丢（动态创建 init 已被接住、或元素已预填 data 的 SSR 场景不重复刷新，首屏由宿主负责）：
+宿主侧用 `createServerSource` 接管取数（协议监听、requestId 校验、abort 在途、失败上报全部内建；import 自 `@oas-ui/ui/data/table/advanced`，纯宿主侧 helper，不新增组件 API）。要求元素已连接（先 append 再创建）；**每元素一个 source 实例**——同一元素重复创建会双监听双取数（每次重复创建各提示一次并照常返回新实例），请先 `destroy()` 再重建（destroy 后重建无告警）；destroy() 后重建：若 `data` 仍在场则不再自动取首屏（首载兜底只对无数据元素生效），需要刷新请调 `source.refresh()`。创建时主动发起一次首屏刷新兜底——静态标签升级瞬间的 init 请求早于脚本执行、helper 监听未就绪会丢（动态创建 init 已被接住、或元素已预填 data 的 SSR 场景不重复刷新，首屏由宿主负责）：
 
 ```ts
 import { createServerSource } from '@oas-ui/ui/data/table/advanced'
@@ -651,7 +651,7 @@ const source = createServerSource(table, {
 // source.destroy()：解绑监听并中止在途（不动 row-model / total 属性）
 ```
 
-超时与取消：组件不内置请求超时——超时是数据层（宿主 fetcher）的职责。在 `fetchRows` 内组合中止信号再交给宿主 fetch：`AbortSignal.any([signal, AbortSignal.timeout(8000)])`（helper 的 `signal` + 8s 超时取先到者；现代 AbortSignal 组合，各主流浏览器 2022+ 均支持）——超时即 reject，与其它失败走同一路径：自动经 helper 桥接错误条 + 可重试，无需自建超时反馈：
+超时与取消：组件不内置请求超时——超时是数据层（宿主 fetcher）的职责。在 `fetchRows` 内组合中止信号再交给宿主 fetch：`AbortSignal.any([signal, AbortSignal.timeout(8000)])`（helper 的 `signal` + 8s 超时取先到者；`AbortSignal.any`/`AbortSignal.timeout` 基线 2024 年，各引擎 2023-08 ~ 2024-04 陆续支持——旧环境可 `typeof AbortSignal.any === 'function'` 检测，降级为手动 AbortController + setTimeout 组合或宿主侧超时）——超时即 reject，与其它失败走同一路径：自动经 helper 桥接错误条 + 可重试，无需自建超时反馈：
 
 ```ts
 fetchRows: async ({ signal, ...rest }) => {
