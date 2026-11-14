@@ -970,4 +970,56 @@ describe('createWindowedSource × 视觉适配器', () => {
       source.destroy()
     }
   })
+
+  it('二次创建：devWarn 一次 + 照常返回新实例（新实例可取数；生产不阻断）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    const fetchRows1 = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => ({
+      rows: Array.from({ length: end - start }, (_, i) => ({ name: `${start + i}` })),
+      total: 100,
+    }))
+    const source1 = createWindowedSource(el, { fetchRows: fetchRows1, windowSize: 5 })
+    await vi.waitFor(() => expect(fetchRows1).toHaveBeenCalledTimes(1))
+    expect(warn, '首实例创建不告警').not.toHaveBeenCalled()
+    // 同元素二次创建：告警一次，新实例照常接线（组件库不炸宿主，双实例并存是宿主自担的错用）
+    const fetchRows2 = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => ({
+      rows: Array.from({ length: end - start }, (_, i) => ({ name: `${start + i}` })),
+      total: 100,
+    }))
+    const source2 = createWindowedSource(el, { fetchRows: fetchRows2, windowSize: 5 })
+    expect(warn, '重复创建 devWarn 一次').toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('createWindowedSource')
+    // 新实例功能完整：首屏 + refresh 均走自身 fetchRows
+    source2.refresh()
+    await vi.waitFor(() => expect(fetchRows2.mock.calls.length).toBeGreaterThanOrEqual(2))
+    expect(warn, 'refresh 不再追加告警（每次重复创建各提示一次）').toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    source1.destroy()
+    source2.destroy()
+  })
+
+  it('destroy 后可重建：无重复创建告警（WeakMap 登记随 destroy 解除）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    const fetchRows1 = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => ({
+      rows: Array.from({ length: end - start }, (_, i) => ({ name: `${start + i}` })),
+      total: 100,
+    }))
+    const source1 = createWindowedSource(el, { fetchRows: fetchRows1, windowSize: 5 })
+    await vi.waitFor(() => expect(fetchRows1).toHaveBeenCalledTimes(1))
+    source1.destroy()
+    // destroy 解除登记：重建同一元素不告警
+    const fetchRows2 = vi.fn(async ({ start, end }: { start: number; end: number; signal: AbortSignal }) => ({
+      rows: Array.from({ length: end - start }, (_, i) => ({ name: `${start + i}` })),
+      total: 100,
+    }))
+    const source2 = createWindowedSource(el, { fetchRows: fetchRows2, windowSize: 5 })
+    expect(warn, 'destroy 后重建无告警').not.toHaveBeenCalled()
+    // 新实例接线完整：首屏 + refresh 重拉最近窗口
+    source2.refresh()
+    await vi.waitFor(() => expect(fetchRows2).toHaveBeenCalledTimes(2))
+    expect(warn, '重建实例 refresh 亦无告警').not.toHaveBeenCalled()
+    warn.mockRestore()
+    source2.destroy()
+  })
 })

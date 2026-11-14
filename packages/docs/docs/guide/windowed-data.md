@@ -82,7 +82,7 @@ const adapter = {
 }
 ```
 
-不想手写胶水时，`@oas-ui/ui/data/table/advanced` 的 `createWindowedSource` 可直接接入该适配器：初始化与回填自动重新求值 geometry 并齐写 `visual-start` / `visual-total`，请求自动按 `getDataRange` 映射取数——映射结果与事件数据区间取**并集**（事件 `start` / `end` 永远携带键盘目标行与视口缓冲，映射只补可视行缺口，宿主 adapter 不必自带缓冲）。映射非法（须有限且 end > start）或 geometry 非法（非有限、`start<0`、`total≤0`、`start>total`、`total<` 数据 total）时不拉取/不写错误视觉属性，派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间）。geometry 失败后表格整体回落本地模型，此后事件视觉字段是本地口径、助手不再映射（按事件 `start` / `end` 原样取数）。映射与 geometry 失败的恢复语义相同：**新窗口**事件可重试；**同窗口**推荐调用 `source.refresh()` 强制重拉——表格 winReq 同窗口去重与已装载覆盖判定可能吞掉同窗口重试。不传 `visual` 时助手不写任何视觉属性，行为与此前逐值一致。
+不想手写胶水时，`@oas-ui/ui/data/table/advanced` 的 `createWindowedSource` 可直接接入该适配器：初始化与回填自动重新求值 geometry 并齐写 `visual-start` / `visual-total`，请求自动按 `getDataRange` 映射取数——映射结果与事件数据区间取**并集**（事件 `start` / `end` 永远携带键盘目标行与视口缓冲，映射只补可视行缺口，宿主 adapter 不必自带缓冲）。映射非法（须有限且 end > start）或 geometry 非法（非有限、`start<0`、`total≤0`、`start>total`、`total<` 数据 total）时不拉取/不写错误视觉属性，派发一次 `oas-window-error`（detail 含视觉区间与原始数据区间）。geometry 失败后表格整体回落本地模型，此后事件视觉字段是本地口径、助手不再映射（按事件 `start` / `end` 原样取数）。映射与 geometry 失败的恢复语义相同：**新窗口**事件可重试；**同窗口**推荐调用 `source.refresh()` 强制重拉——表格 winReq 同窗口去重与已装载覆盖判定可能吞掉同窗口重试。不传 `visual` 时助手不写任何视觉属性，行为与此前逐值一致。**每元素一个 source 实例**：同一元素重复创建会双监听双取数（每次重复创建 dev 提示一次并照常返回新实例），请先 `destroy()` 再重建（destroy 后重建无告警）。
 
 > 非虚拟 windowed（无 `height`）下协议只影响「展开由宿主接管」，不改变布局：没有可视窗口滚动，`visual-start` / `visual-total` 仅约束展开控制权归属。
 

@@ -2083,7 +2083,7 @@ const source = createWindowedSource(table, {
 // source.refresh() / source.destroy()
 ```
 
-监听 `oas-window-request`，中止过期请求并回填 `data` / `window-start` / `total`；满足 windowed 协议，不引入运行时依赖（需配合 `height` 开启虚拟滚动）。`windowSize` 应不大于服务端单次返回上限；服务端单次返回不足时自动向后补齐同一窗口（按实际返回行数计覆盖）。`fetchRows` 返回裸数组时必须提供 `total`（options 或表格 `total` 属性），否则 windowed 不激活。
+监听 `oas-window-request`，中止过期请求并回填 `data` / `window-start` / `total`；满足 windowed 协议，不引入运行时依赖（需配合 `height` 开启虚拟滚动）。`windowSize` 应不大于服务端单次返回上限；服务端单次返回不足时自动向后补齐同一窗口（按实际返回行数计覆盖）。`fetchRows` 返回裸数组时必须提供 `total`（options 或表格 `total` 属性），否则 windowed 不激活。**每元素一个 source 实例**——同一元素重复创建会双监听双取数（每次重复创建 dev 提示一次并照常返回新实例），请先 `destroy()` 再重建（destroy 后重建无告警）。
 
 每次处理 `oas-window-request` 时，覆盖判定都读表格**当前切片**（`window-start` + `data` 长度，有限数、截断、最小 0 的半开区间），不缓存自身装载状态：宿主外部清空/替换 `data` 或切换 `window-start` 后，同窗口请求会重新拉取；在途标记去重、回写回声抑制、`refresh()` 强制重拉、`destroy()` 中止过期请求与构造首拉行为不变。`fetchRows` 同步抛错与 Promise rejection 走同一失败路径：清在途标记并派发一次 `oas-window-error`（detail `{ start, end, error }`，`bubbles` + `composed`），之后同窗口可重试；过期失败不会清掉新请求的在途标记。不自动重试，也不改表格 `oas-window-request` 的派发。
 

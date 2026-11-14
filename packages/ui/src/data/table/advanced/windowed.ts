@@ -1,3 +1,5 @@
+import { devWarn } from '../../../shared/dev-warn.js'
+
 export interface WindowedRequest {
   start: number
   end: number
@@ -67,6 +69,15 @@ const geometrySummary = (geometry: WindowedVisualGeometry): string => {
 }
 
 /**
+ * 每元素一个 source 实例的登记表（元素 → 在册）：
+ * 二次创建 = 双监听双取数（两个 source 各自响应同一批请求，各写一次 data），每次重复创建
+ * 各 dev 提醒一次、提醒但不阻断——组件库不炸宿主，照常返回新实例；destroy 时解除登记
+ * （先毁后建无告警）。
+ * 仅 devWarn 通道，生产仅告警静默（WeakMap 登记操作仍在，随元素回收，不产生泄漏面）。
+ */
+const windowedSourceRegistry = new WeakMap<HTMLElement, true>()
+
+/**
  * windowed 表格数据源胶水：监听 `oas-window-request`，中止过期请求并回填 data / window-start / total。
  * 纯宿主侧 helper，不进入 table 运行时。已装载区间按实际返回行数计覆盖；服务端部分页会自动补齐。
  *
@@ -82,6 +93,10 @@ const geometrySummary = (geometry: WindowedVisualGeometry): string => {
 export function createWindowedSource(table: HTMLElement, options: WindowedSourceOptions): WindowedSource {
   if (!(table as HTMLElement).shadowRoot) {
     throw new Error('[oas-table] createWindowedSource 需要已升级的 oas-table 元素（请先 import 表格入口）')
+  }
+  // 每元素一个实例守卫：重复创建双监听双取数，每次重复创建各提醒一次、照常返回新实例（生产静默不阻断）
+  if (windowedSourceRegistry.has(table)) {
+    devWarn('[oas-table] 该元素已存在 createWindowedSource 实例——重复创建会双监听双取数，请先 destroy() 再重建')
   }
   let controller: AbortController | null = null
   let lastRequest: { start: number; end: number } | null = null
@@ -319,6 +334,9 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
   }
 
   table.addEventListener('oas-window-request', onRequest)
+  // 登记在所有同步 throw（升级/初始快照校验）之后：校验 throw 不留半初始化登记，
+  // 宿主修正配置后重建不被误告警；此后唯一出口是正常返回（destroy 解除登记）
+  windowedSourceRegistry.set(table, true)
   // 视觉属性写在 windowed/total 之前：表格尚未进入 windowed 模式时逐个写入不会触发
   // 「只有其一」的回落告警（readVisualProtocol 在非 windowed 下静默），total 最后落位即一次激活
   if (initialGeometry) {
@@ -344,6 +362,8 @@ export function createWindowedSource(table: HTMLElement, options: WindowedSource
       controller?.abort()
       controller = null
       table.removeEventListener('oas-window-request', onRequest)
+      // 解除登记：destroy 后可重建同一元素的 source（重建不再触发重复创建告警）
+      windowedSourceRegistry.delete(table)
     },
   }
 }
