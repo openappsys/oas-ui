@@ -900,9 +900,9 @@ tr[data-sticky='true'] td[data-editing='true'] {
   padding: 1px 6px;
   font-size: var(--oas-font-size-xs, 12px);
   line-height: 16px;
-  /* 正文色：light 下语义文字色压 danger 实底对比 ~1:1（同值系），文字不可读。
-     错误语义由 danger 实底承担，文字不重复承载语义色（与错误条 .rows-error-text 同口径） */
-  color: var(--oas-color-text-primary);
+  /* 实底反色：danger 实底上文字用 on-danger token（专为实底设计，light/dark 双档 AA 达标，
+     与 .rows-error-retry:hover 实底反色同一体系） */
+  color: var(--oas-color-text-on-danger);
   background: var(--oas-color-danger);
   white-space: nowrap;
   overflow: hidden;

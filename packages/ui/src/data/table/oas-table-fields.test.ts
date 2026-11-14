@@ -360,12 +360,12 @@ describe('OASTable 字段类型编辑（type × editable）', () => {
     expect(css).toMatch(/\.edit-error\s*\{[^}]*position:\s*absolute/)
   })
 
-  it('CSS：.edit-error 文字走 --oas-color-text-primary（原 danger-text 压 danger 实底同值系 ~1:1 不可读）', () => {
+  it('CSS：.edit-error 文字走 --oas-color-text-on-danger（danger 实底反色，与重试按钮 hover 同体系）', () => {
     const el = mount()
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     const rule = css.match(/\.edit-error\s*\{[^}]*\}/)
     expect(rule, '.edit-error 规则存在于注入样式').not.toBeNull()
-    expect(rule![0]).toContain('var(--oas-color-text-primary)')
+    expect(rule![0]).toContain('var(--oas-color-text-on-danger)')
     expect(rule![0]).not.toContain('danger-text')
     // danger 语义保留在底色（容器不随文字色改动而丢失语义）
     expect(rule![0]).toContain('background: var(--oas-color-danger)')
