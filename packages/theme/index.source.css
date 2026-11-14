@@ -82,6 +82,10 @@
   --oas-color-danger-text: #d82525;
   --oas-color-info-text: #0e7490;
 
+  /* 语义色 -soft：弱化语义底（danger 12% 透明混合，叠于任意底色上自适应）。
+     透明度叠加使混合结果随所处底色联动，无须按底色枚举三档值 */
+  --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
+
   /* 差异查看：新增/删除行底色、词级高亮底色与行号文字（不透明，保证对比度可被 axe 评分） */
   --oas-color-diff-add-bg: #e8f6ec;
   --oas-color-diff-add-word-bg: #bee5cc;
@@ -226,6 +230,10 @@ html.dark {
   --oas-color-warning-text: #fbbf24;
   --oas-color-danger-text: #fbb2b2;
   --oas-color-info-text: #23d3ef;
+  /* 语义色 -soft dark：与 light 同比例（12%）——混合基色已随本档 danger 亮化联动，
+     叠于暗底上的实际观感由透明度叠加自适应（每主题须显式声明：
+     custom property 继承的是替换后的值，只靠 :root 会把 light danger 烤进 dark 结果） */
+  --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
   /* 差异查看：暗色下的不透明新增/删除底色与行号文字 */
   --oas-color-diff-add-bg: #40524d;
   --oas-color-diff-add-word-bg: #43795b;
@@ -246,6 +254,8 @@ html.dark {
   --oas-color-success: #006d1b;
   --oas-color-warning: #8c4a00;
   --oas-color-danger: #a8071a;
+  /* 语义色 -soft：与 light/dark 同比例（12%），基色随本档深 danger 联动 */
+  --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
   /* 高对比主题保持白字（primary #0050b3 等深色底对比充足） */
   --oas-color-text-on-primary: #ffffff;
   --oas-color-text-on-success: #ffffff;

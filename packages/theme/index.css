@@ -59,6 +59,7 @@
   --oas-color-warning-text: #a75c05;
   --oas-color-danger-text: #d82525;
   --oas-color-info-text: #0e7490;
+  --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
   --oas-color-diff-add-bg: #e8f6ec;
   --oas-color-diff-add-word-bg: #bee5cc;
   --oas-color-diff-del-bg: #fbe9e9;
@@ -173,6 +174,7 @@ html.dark {
   --oas-color-warning-text: #fbbf24;
   --oas-color-danger-text: #fbb2b2;
   --oas-color-info-text: #23d3ef;
+  --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
   --oas-color-diff-add-bg: #40524d;
   --oas-color-diff-add-word-bg: #43795b;
   --oas-color-diff-del-bg: #564d53;
@@ -190,6 +192,7 @@ html.dark {
   --oas-color-success: #006d1b;
   --oas-color-warning: #8c4a00;
   --oas-color-danger: #a8071a;
+  --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
   --oas-color-text-on-primary: #ffffff;
   --oas-color-text-on-success: #ffffff;
   --oas-color-text-on-warning: #ffffff;

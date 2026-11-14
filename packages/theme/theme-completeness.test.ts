@@ -24,6 +24,7 @@ describe('主题语义 token 完整性', () => {
     '--oas-color-text-primary',
     '--oas-color-text-secondary',
     '--oas-color-border',
+    '--oas-color-danger-soft',
   ]
 
   it.each(themes)('%s 主题覆盖核心语义 token', (_name, selector) => {
