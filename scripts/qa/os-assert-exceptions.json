@@ -18,6 +18,18 @@
       "rule": "count-literal",
       "snippet": "导入数据写入表格 data",
       "reason": "行数由同用例临时写入的 CSV 内容决定（3 行字面量文本），断言导入链路写入完整性——数据驱动，与 OS 布局无关。"
+    },
+    {
+      "file": "packages/ui/qa-regression/table-server.spec.ts",
+      "rule": "count-literal",
+      "snippet": "同值属性写去重：零新请求",
+      "reason": "请求计数由客户端协议/交互驱动（requestId 序列与重试次数），与 OS 字体度量/滚动条/布局无关。"
+    },
+    {
+      "file": "packages/ui/qa-regression/table-server.spec.ts",
+      "rule": "count-literal",
+      "snippet": "重试单击只派 1 个 refresh",
+      "reason": "请求计数由客户端协议/交互驱动（requestId 序列与重试次数），与 OS 字体度量/滚动条/布局无关。"
     }
   ]
 }
