@@ -135,8 +135,10 @@ function computeRowModel<T extends Record<string, unknown>>(input: RowModelInput
   const visible = visibleFlat(flat, input.expanded ?? EMPTY_SET, rowKey, input.collapsedGroups ?? EMPTY_SET)
   return {
     roots: display.roots,
+    fullRoots: display.fullRoots,
     pageRows: display.pageRows,
     total: display.total,
+    pageSize: display.pageSize,
     pageCount: display.pageCount,
     clampedCurrent: display.clampedCurrent,
     clamped: display.clamped,

@@ -2307,7 +2307,7 @@ table.structuralRenderers = {
 }
 ```
 
-api 边界速查：`isSelected('')` 恒 false；`isEditing('')` 恒 false（编辑 DOM 标记读渲染态，行重建即回落）；`toggleExpand('')` 为 no-op（不写属性不派事件）；`gotoPage` 与 current 属性同值时跳过写。
+api 边界速查：`isSelected('')` 恒 false；`isEditing('')` 恒 false（编辑 DOM 标记读渲染态，编辑被取消后回落）；`toggleExpand('')` 为 no-op（不写属性不派事件）；`gotoPage` 与 current 属性同值时跳过写，入参按整数截断（小数截断到整数页）。
 
 ### 槽位接管与既有能力的交互边界
 
@@ -2538,7 +2538,8 @@ const model = computeRowModel({
 
 model.pageRows          // 当前页切片（分页关闭 = 全量）
 model.roots             // 过滤 + 排序后的全量顶层行（未切片）
-model.total / model.pageCount
+model.fullRoots         // 过滤后的全量顶层行（排序前原序；合计 scope=all 的输入基准）
+model.total / model.pageCount / model.pageSize   // pageSize 为归一化落值（非法入参回落后值）
 model.clampedCurrent    // 超页钳制建议值（纯函数不写状态：clamped = true 时由你写回自己的 current）
 model.flat              // 展平列表（data/group/expand 三类行；分节头行含 groupKey/groupLabel/groupCount）
 model.visible           // 可见集（按 expanded / collapsedGroups 过滤后）——拿它直接渲染
@@ -2550,8 +2551,10 @@ model.visible           // 可见集（按 expanded / collapsedGroups 过滤后�
 - **超页钳制零副作用**：`current` 超出 `pageCount` 时不改写任何状态，只返回 `clampedCurrent` 建议值与 `clamped` 标记（组件内部把这个写回 `current` 属性；headless 场景写回你自己的状态）
 - **分段可单用**：`parseFilterValues` / `matchesFilters` / `resolveSorts` / `computeDisplayRoots` / `buildFlat` / `visibleFlat` / `compareRows` 均为独立导出的纯函数，可按需组合；i18n 文案以参数注入（如 `groupEmptyLabel`），运行闭包不含组件本体 / core / i18n
 - **运行环境不限**：node / worker / SSR 直接 import 可跑（零 DOM 依赖有 node 环境单测守护）；输入数组不被修改（纯函数）
+- **windowed 形态的等价用法**：`data` 传宿主已切好的窗口切片 + `pagination: { current, pageSize, total }`（外部分页口径：只透传不切片），不传 `sorters` / `filters`——本地变换整体跳过（data 原样透传、total 直通输出）。对应组件 `windowed` 模式的 headless 等价形态（组件侧窗口请求/回填协议是组件形态专属，headless 下窗口由你自己管理）
+- **命名对照（既有 API 面保留）**：组件属性 `filter-values` / `sort-key` + `sort-order` 对应 headless 输入的 `filters` / `sorters`（`sorters: [{ key, order }]` 数组即组件多列排序 `multi-sort` 的同构形态）；两种拼写指同一套过滤/排序语义，major 版本前不统一
 
-<DemoBlock title="headless：computeRowModel + 自定义渲染（与组件同源管道）">
+<DemoBlock title="headless：computeRowModel 喂组件渲染（与组件同源管道）">
   <div style="width: 100%">
     <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
       <oas-button id="table-headless-sort" size="small" aria-pressed="false">按金额倒序</oas-button>
@@ -2563,6 +2566,47 @@ model.visible           // 可见集（按 expanded / collapsedGroups 过滤后�
 </DemoBlock>
 
 > 体积（gzip，2026-11-14 首档实测）：入口壳 + 管道实现共 4.3 KB / 8 文件；组件默认链已同源携带同一份实现（组件消费者零额外体积——接线为同源搬迁，非重复打包）。入口路径自身不进 L1 / CDN 分包（helper 型 L3，显式 import 才进入构建产物；组件消费者按需 import 本入口时只补入口壳转发的极小开销）。
+
+**headless 档：渲染与交互由你负责**（真正的手写渲染配方，不依赖 `oas-table`）：拿 `model.visible` 用原生 DOM（或任意框架的列表渲染）拼装成表——模型只产出行集与行序，结构与交互全归调用方：
+
+```ts
+import { computeRowModel } from '@oas-ui/ui/data/table/model'
+
+const model = computeRowModel({
+  data: rows,
+  columns: [{ key: 'name' }, { key: 'age', type: 'number' }],
+  sorters: [{ key: 'age', order: 'desc' }],
+  pagination: { current: 1, pageSize: 10 },
+  rowKey: 'key',
+})
+
+// 原生 DOM 渲染（示例）：分节头行 / 数据行按 kind 分派；expand 内容行是否渲染由你决定
+const tbody = document.createElement('tbody')
+for (const f of model.visible) {
+  if (f.kind === 'group') {
+    const tr = document.createElement('tr')
+    const th = document.createElement('th')
+    th.colSpan = 2
+    th.textContent = `${f.groupLabel}（${f.groupCount}）` // 分节头：文案 + 组内计数
+    tr.appendChild(th)
+    tbody.appendChild(tr)
+  } else if (f.kind === 'data') {
+    const tr = document.createElement('tr')
+    for (const key of ['name', 'age']) {
+      const td = document.createElement('td')
+      td.textContent = String(f.row[key] ?? '')
+      tr.appendChild(td)
+    }
+    tbody.appendChild(tr)
+  }
+}
+document.querySelector('table')!.appendChild(tbody)
+
+// 排序 / 翻页 / 展开 / 折叠交互与键盘可达性（ARIA 同步）同样由你负责：
+// 改 sorters / pagination.current（或 expanded / collapsedGroups）→ 重算模型 → 重跑渲染循环
+```
+
+> 与上面 DemoBlock 的区别：该 demo 用 `computeRowModel` 算行模型、仍由 `<oas-table>` 负责渲染与交互（同源管道演示）；本配方才是 headless 档的完整形态——渲染、交互、A11y 全部自理，组件本体不出现在运行闭包里。
 
 ## API
 

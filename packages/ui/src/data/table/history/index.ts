@@ -1,5 +1,5 @@
 import { createHistory, createSequenceEntry, type HistoryEntry, type HistoryStack } from '../advanced/history.js'
-import { rowKeyValue } from '../oas-table-row-key.js'
+import { rowKeyValue } from '../model-core/row-key.js'
 import { isInteractiveEvent } from '../oas-table-interactive.js'
 import type { RangeWriteChange, RangeWriteDetail } from '../oas-table-range-write.js'
 

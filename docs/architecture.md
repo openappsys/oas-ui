@@ -233,7 +233,7 @@ table 的行模型（数据层）与渲染（组件壳）解耦为双形态：�
 | 组件入口 `data/table` | L2 | 开箱即用：默认渲染 + 七槽结构扩展点接管外观 | 渲染壳（DOM / A11y / 事件由组件负责） |
 | headless 入口 `data/table/model` | helper 型 L3 | 只要数据与状态：拿行模型自渲染（任意框架 / Canvas / SSR / worker） | 入口壳纯 re-export；实现居 `model-core/` 并随组件链进族包，入口路径不进 L1/CDN |
 
-预算口径：headless 入口立独立预算档（首档实测 gzip 4.3 KB / 8 文件，定档 5 KB）；组件接线为同源搬迁（非重复打包），默认链预算重定档一次后增量中性。两条链由 `perf:size` 结构门禁独立计量。
+预算口径：headless 入口立独立预算档（首档实测 gzip 4.3 KB / 8 文件，定档 5 KB）；组件接线为同源搬迁（非重复打包），主链仅 preserveModules 拆分税级增量（实测 +2.3KB/5 文件，真实 bundler 单 bundle 中性或更小），预算按实测重定档并归因。两条链由 `perf:size` 结构门禁独立计量。
 
 **扩展点协议定位**：`structural-render`（注册型 L3）提供七槽——四结构槽（`headerRow` / `headerCell` / `bodyRow` / `bodyCell`）+ 空态（`empty`）/ loading 行（`loading`）/ 分页器（`pagination`）三壳槽；槽位 ctx 携带 `api` 操作面（只读查询：`isSelected` / `isEditing`；受控操作：`toggleExpand` / `gotoPage`），全部走组件既有公开通道（属性读/写、既有事件），不暴露私有状态。协议契约：钩子在默认装配完成后调用（装饰在内、结构在外）、未注册零调用零漂移、钩子抛错守卫降级不阻断渲染。
 

@@ -1,4 +1,4 @@
-import { rowKeyValue } from '../oas-table-row-key.js'
+import { rowKeyValue } from '../model-core/row-key.js'
 import { isInteractiveEvent } from '../oas-table-interactive.js'
 
 export interface RowDetail {

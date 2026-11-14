@@ -4,7 +4,7 @@
  * 与组件 `oas-table.ts` 的 `visibleFlat` 单一真相源：组件侧为薄壳（传入展开集 /
  * 折叠组集合 → 调用本模块），语义逐字节一致。零 DOM 依赖。
  */
-import { rowKeyValue } from '../oas-table-row-key.js'
+import { rowKeyValue } from './row-key.js'
 import type { FlatRow } from './types.js'
 
 /** 空组折叠集合缺省值（模块级只读共享；函数不修改入参集合） */

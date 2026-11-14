@@ -135,10 +135,14 @@ export interface DisplayRootsResult<T = Record<string, unknown>> {
 export interface RowModelResult<T = Record<string, unknown>> {
   /** 过滤 + 排序后全量顶层行（未切片） */
   roots: T[]
+  /** 过滤后的全量顶层行（与 roots 的差异仅在内部切片模式的排序；合计 scope=all 的输入基准） */
+  fullRoots: T[]
   /** 当前页切片（未开分页 = roots；外部分页 = data 本身经排序） */
   pageRows: T[]
   /** 总行数（外部分页口径 = 输入 total） */
   total: number
+  /** 归一化后的页尺寸（非法入参回落后值，最小 1） */
+  pageSize: number
   /** 总页数（未开分页恒 1） */
   pageCount: number
   /** 建议 current（纯函数不写 DOM；超页时与输入 current 不同） */

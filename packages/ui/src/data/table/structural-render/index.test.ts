@@ -514,6 +514,13 @@ describe('OASTable structural-render 七槽协议与 ctx api（双形态批 2）
     holder.api!.gotoPage(0)
     expect(el.shadowRoot!.querySelectorAll('tbody tr[data-key]')).toHaveLength(2)
     expect(el.shadowRoot!.querySelectorAll('tr[data-key="一"]')).toHaveLength(1)
+    // 小数按整数截断：gotoPage(2.5) → 第 2 页（写 current="2"，不产生「第 2.5 页」窗口错位）
+    holder.api!.gotoPage(2.5)
+    expect(el.getAttribute('current')).toBe('2')
+    const pageKeys = [...el.shadowRoot!.querySelectorAll<HTMLTableRowElement>('tbody tr[data-key]')].map((tr) =>
+      tr.getAttribute('data-key'),
+    )
+    expect(pageKeys, '第 2 页 = 第 3、4 行（三、四）').toEqual(['三', '四'])
   })
 
   it('⑭ 零漂移：未注册任何钩子时空态/loading/分页默认 DOM 与批前一致', () => {

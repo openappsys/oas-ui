@@ -1,7 +1,7 @@
 import type { TableColumn, TableDisplaySnapshot } from '../oas-table.js'
 import { registerTableCapability } from '../oas-table-capability.js'
 import { isInteractiveEvent } from '../oas-table-interactive.js'
-import { rowKeyValue } from '../oas-table-row-key.js'
+import { rowKeyValue } from '../model-core/row-key.js'
 import { expandWindow, loadedRange, windowCovered, WINDOW_MARGIN } from '../../../shared/window-data.js'
 import { parseTsv } from '../advanced/clipboard.js'
 import { inferFillValue, type FillDirection } from './fill-series.js'

@@ -189,7 +189,8 @@ describe('computeDisplayRoots（过滤 + 排序 + 分页切片）', () => {
       filterValues: { dept: '研发' },
     })
     expect(r.fullRoots.map((x) => x.name)).toEqual(['张三', '王五'])
-    expect(r.pageRows).toEqual(r.fullRoots)
+    // 未开分页：pageRows = 全量（显式内容断言——同一引用自比较是恒真，等价于没断言）
+    expect(r.pageRows.map((x) => x.name)).toEqual(['张三', '王五'])
     expect(r.total).toBe(2)
     expect(r.paginationOn).toBe(false)
     expect(r.pageCount).toBe(1)
@@ -235,7 +236,12 @@ describe('computeDisplayRoots（过滤 + 排序 + 分页切片）', () => {
     expect(r.pageRows.map((x) => x.age)).toEqual([25, 28])
     expect(r.total).toBe(100)
     expect(r.pageCount).toBe(50)
-    expect(r.roots).toEqual(r.pageRows)
+    // roots = 排序后的当前页切片副本（外部分页不切片）：显式内容断言，另证入参未被原地改写
+    expect(r.roots.map((x) => x.name)).toEqual(['李四', '赵六'])
+    expect(
+      slice.map((x) => x.age),
+      '纯函数：宿主切片的原始顺序不被改写',
+    ).toEqual([28, 25])
   })
 
   it('server 行模型：过滤/排序整体跳过（data 原样透传）', () => {
@@ -458,7 +464,7 @@ describe('computeRowModel（管道入口）', () => {
       rowKey: 'key',
       expanded: new Set(['a']),
     })
-    // 排序后全量：25, 30, 35；切片第 1 页：a(30), b(25)？——asc 升序前 2 = b(25), a(30)
+    // asc 升序全量：b(25), a(30), c(35)；切片第 1 页 = 前 2 行：b, a
     expect(m.roots.map((x) => x.key)).toEqual(['b', 'a', 'c'])
     expect(m.pageRows.map((x) => x.key)).toEqual(['b', 'a'])
     // a 无 children 且已展开 → expand 行紧随 a（b 在前）
@@ -467,10 +473,32 @@ describe('computeRowModel（管道入口）', () => {
 
   it('未开分页：pageRows = roots，pageCount = 1', () => {
     const m = computeRowModel({ data: PEOPLE })
-    expect(m.pageRows).toEqual(m.roots)
+    // 未开分页：排序与切片整体跳过（显式内容断言——同一引用自比较是恒真，等价于没断言）
+    expect(m.pageRows.map((x) => x.name)).toEqual(['张三', '李四', '王五', '赵六', '钱七'])
+    expect(m.roots.map((x) => x.name)).toEqual(['张三', '李四', '王五', '赵六', '钱七'])
     expect(m.pageCount).toBe(1)
     expect(m.total).toBe(5)
     expect(m.visible.map((f) => f.kind)).toEqual(['data', 'data', 'data', 'data', 'data'])
+  })
+
+  it('返回值补全壳层消费字段：pageSize（归一化落值）与 fullRoots（合计 scope=all 输入基准）', () => {
+    const m = computeRowModel({
+      data: PEOPLE,
+      columns: [{ key: 'age', type: 'number' }],
+      sorters: [{ key: 'age', order: 'asc' }],
+      pagination: { current: 1, pageSize: 2 },
+    })
+    expect(m.pageSize, '归一化落值原样透出').toBe(2)
+    // fullRoots = 过滤后全量、排序前原序；roots = 排序后全量——两者顺序差异成立
+    expect(m.fullRoots.map((x) => x.name)).toEqual(['张三', '李四', '王五', '赵六', '钱七'])
+    expect(m.roots.map((x) => x.name)).toEqual(['钱七', '李四', '赵六', '张三', '王五'])
+    // pageSize 非法回落 10（与组件读属性口径一致）
+    const bad = computeRowModel({ data: PEOPLE, pagination: { current: 1, pageSize: 0 } })
+    expect(bad.pageSize).toBe(10)
+    // 过滤场景：fullRoots 是「过滤后」基准（合计 scope=all 不含被过滤行）
+    const f = computeRowModel({ data: PEOPLE, columns: [{ key: 'dept' }], filters: { dept: '研发' } })
+    expect(f.fullRoots.map((x) => x.name)).toEqual(['张三', '王五'])
+    expect(f.total).toBe(2)
   })
 
   it('serverModel：过滤/排序输入作废，data 原样透传', () => {

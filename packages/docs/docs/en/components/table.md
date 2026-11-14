@@ -2320,7 +2320,7 @@ table.structuralRenderers = {
 }
 ```
 
-Edge quick reference: `isSelected('')` / `isEditing('')` are always false; `toggleExpand('')` is a no-op (no attribute write, no event); `gotoPage` skips the write when the value equals the current attribute.
+Edge quick reference: `isSelected('')` / `isEditing('')` are always false (`isEditing` reads the rendered edit markers, falling back once the edit is cancelled); `toggleExpand('')` is a no-op (no attribute write, no event); `gotoPage` skips the write when the value equals the current attribute, and arguments are truncated to integers (fractional pages truncate down).
 
 ### Slot takeover vs. virtual scrolling / editing / selection / printing
 
@@ -2554,7 +2554,8 @@ const model = computeRowModel({
 
 model.pageRows          // current page slice (full set when pagination is off)
 model.roots             // filtered + sorted top-level rows (unsliced)
-model.total / model.pageCount
+model.fullRoots         // filtered top-level rows in pre-sort order (input basis for scope=all summaries)
+model.total / model.pageCount / model.pageSize   // pageSize is the normalized value (invalid input falls back)
 model.clampedCurrent    // over-page clamp suggestion (pure function writes no state: write your own current back when clamped)
 model.flat              // flattened list (data/group/expand rows; section rows carry groupKey/groupLabel/groupCount)
 model.visible           // visible set (after expanded / collapsedGroups filtering) — render this directly
@@ -2566,8 +2567,10 @@ Notes:
 - **Side-effect-free clamping**: when `current` exceeds `pageCount` nothing is written; you only get the `clampedCurrent` suggestion plus the `clamped` flag (the component writes it back to the `current` attribute; in headless usage write it back to your own state)
 - **Composable pieces**: `parseFilterValues` / `matchesFilters` / `resolveSorts` / `computeDisplayRoots` / `buildFlat` / `visibleFlat` / `compareRows` are all standalone pure-function exports; i18n strings are injected as parameters (e.g. `groupEmptyLabel`) and the runtime closure contains no component / core / i18n code
 - **Environment agnostic**: import directly in node / worker / SSR (zero DOM dependency is guarded by a node-environment test); input arrays are never mutated (pure functions)
+- **Windowed-equivalent usage**: pass the host-sliced window as `data` plus `pagination: { current, pageSize, total }` (external pagination: pass-through, no slicing), and omit `sorters` / `filters` — local transforms are skipped entirely (`data` passes through, `total` goes straight to the output). This is the headless equivalent of the component's `windowed` mode (the component-side window request/refill protocol belongs to the component form; in headless usage you manage the window yourself)
+- **Naming cross-reference (published API kept as is)**: the component attributes `filter-values` / `sort-key` + `sort-order` correspond to the headless inputs `filters` / `sorters` (a `sorters: [{ key, order }]` array is isomorphic to the component's `multi-sort`); both spellings refer to the same filter/sort semantics; no unification before a major version
 
-<DemoBlock title="Headless: computeRowModel + custom rendering (same pipeline as the component)">
+<DemoBlock title="Headless: computeRowModel feeds the component renderer (same pipeline as the component)">
   <div style="width: 100%">
     <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
       <oas-button id="table-headless-sort" size="small" aria-pressed="false">Amount descending</oas-button>
@@ -2579,6 +2582,49 @@ Notes:
 </DemoBlock>
 
 > Size (gzip, first band measured 2026-11-14): entry shell + pipeline implementation 4.3 KB / 8 files; the component default chain already carries the same implementation (zero extra size for component consumers — wiring is a same-source move, not a duplicate bundle). The entry path itself is not in the L1 / CDN bundles (helper L3, only explicit imports pull it into your build).
+
+**Headless tier: rendering and interactions are yours** (a genuine hand-rolled rendering recipe, no `oas-table` involved): take `model.visible` and assemble the table with native DOM (or any framework's list rendering) — the model only produces row sets and order; structure and interactions belong to the caller:
+
+```ts
+import { computeRowModel } from '@oas-ui/ui/data/table/model'
+
+const model = computeRowModel({
+  data: rows,
+  columns: [{ key: 'name' }, { key: 'age', type: 'number' }],
+  sorters: [{ key: 'age', order: 'desc' }],
+  pagination: { current: 1, pageSize: 10 },
+  rowKey: 'key',
+})
+
+// Native DOM rendering (example): dispatch section rows / data rows by kind;
+// whether expand content rows render is up to you
+const tbody = document.createElement('tbody')
+for (const f of model.visible) {
+  if (f.kind === 'group') {
+    const tr = document.createElement('tr')
+    const th = document.createElement('th')
+    th.colSpan = 2
+    th.textContent = `${f.groupLabel} (${f.groupCount})` // section header: label + row count
+    tr.appendChild(th)
+    tbody.appendChild(tr)
+  } else if (f.kind === 'data') {
+    const tr = document.createElement('tr')
+    for (const key of ['name', 'age']) {
+      const td = document.createElement('td')
+      td.textContent = String(f.row[key] ?? '')
+      tr.appendChild(td)
+    }
+    tbody.appendChild(tr)
+  }
+}
+document.querySelector('table')!.appendChild(tbody)
+
+// Sort / paginate / expand / collapse interactions and keyboard reachability (ARIA sync)
+// are yours too: change sorters / pagination.current (or expanded / collapsedGroups)
+// → recompute the model → re-run the render loop
+```
+
+> Difference from the DemoBlock above: that demo computes the row model with `computeRowModel` but still lets `<oas-table>` render and interact (same-source pipeline demo); this recipe is the full headless tier — rendering, interactions, and A11y are all self-managed, and the component itself never enters the runtime closure.
 
 ## API
 

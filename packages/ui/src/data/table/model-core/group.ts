@@ -5,7 +5,7 @@
  * 调用本模块），语义逐字节一致。组件内的诊断计数（flatBuilds）与 i18n 文案查找留在壳层
  * ——本模块只接参数化的 `groupEmptyLabel`。零 DOM 依赖。
  */
-import { rowKeyValue } from '../oas-table-row-key.js'
+import { rowKeyValue } from './row-key.js'
 import { columnTypeMap, compareRows } from './sort.js'
 import type { DataColumn, FlatRow, SortState } from './types.js'
 

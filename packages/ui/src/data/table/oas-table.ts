@@ -29,8 +29,8 @@ import {
 import { devWarn } from '../../shared/dev-warn.js'
 // slot 模板双形态克隆（静态 HTML 在 template.content；Vue 等 CSR 直插元素 childNodes）
 import { cloneSlotContent } from '../../shared/slot-template.js'
-// 行键计算（row-key 缺失时按行对象缓存 JSON.stringify 回退，见模块注释）
-import { rowKeyValue } from './oas-table-row-key.js'
+// 行键计算（数据层工具，row-key 缺失时按行对象缓存 JSON.stringify 回退，见模块注释）
+import { rowKeyValue } from './model-core/row-key.js'
 // server 行模型（row-model="server"）请求协议：类型 + 纯函数（原因推导 / 同值去重签名）
 import { rowsRequestPlan, rowsRequestSignature, type RowsRequestReason, type RowsRequestState } from './row-model.js'
 // 行模型数据层（headless 纯函数，`@oas-ui/ui/data/table/model` 公开面与组件同源消费
@@ -2005,9 +2005,13 @@ export class OASTableBase extends OASElement {
     return {
       ...this.structuralApi(),
       gotoPage: (page) => {
-        if (!Number.isFinite(page)) return
-        if (String(page) === this.getAttr('current', '1')) return
-        this.setAttribute('current', String(page))
+        // 页码语义为整数：入参按整数截断（gotoPage(2.5) → 第 2 页），否则小数直写 current
+        // 会产生「第 2.5 页」的窗口错位（读侧 normalizeCurrent 不拦小数）。截断后仍非有限数
+        //（NaN / ±Infinity）保持 no-op
+        const target = Math.trunc(page)
+        if (!Number.isFinite(target)) return
+        if (String(target) === this.getAttr('current', '1')) return
+        this.setAttribute('current', String(target))
       },
     }
   }
