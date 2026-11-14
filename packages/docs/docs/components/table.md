@@ -629,7 +629,7 @@ table.addEventListener('oas-expand', async (e) => {
 ></oas-table>
 ```
 
-宿主侧用 `createServerSource` 接管取数（协议监听、requestId 校验、abort 在途、失败上报全部内建；import 自 `@oas-ui/ui/data/table/advanced`，纯宿主侧 helper，不新增组件 API）。要求元素已连接（先 append 再创建）；创建时主动发起一次首屏刷新兜底——静态标签升级瞬间的 init 请求早于脚本执行、helper 监听未就绪会丢（动态创建 init 已被接住、或元素已预填 data 的 SSR 场景不重复刷新，首屏由宿主负责）：
+宿主侧用 `createServerSource` 接管取数（协议监听、requestId 校验、abort 在途、失败上报全部内建；import 自 `@oas-ui/ui/data/table/advanced`，纯宿主侧 helper，不新增组件 API）。要求元素已连接（先 append 再创建）；**每元素一个 source 实例**——同一元素重复创建会双监听双取数（dev 提醒一次并照常返回新实例），请先 `destroy()` 再重建。创建时主动发起一次首屏刷新兜底——静态标签升级瞬间的 init 请求早于脚本执行、helper 监听未就绪会丢（动态创建 init 已被接住、或元素已预填 data 的 SSR 场景不重复刷新，首屏由宿主负责）：
 
 ```ts
 import { createServerSource } from '@oas-ui/ui/data/table/advanced'
@@ -651,7 +651,17 @@ const source = createServerSource(table, {
 // source.destroy()：解绑监听并中止在途（不动 row-model / total 属性）
 ```
 
-请求触发时机：挂载首载、翻页/改页大小、排序变更、过滤变更、`refreshRows()`（`reason` 分别为 `init` / `paginate` / `sort` / `filter` / `refresh`；排序/过滤/页大小变更自动重置 `current=1` 再请求——用户看到新口径首页，而非「新排序的第 N 页」）。请求在途时组件内建 loading 行；`fetchRows` 失败时 helper 经 `reportRowsError` 桥接内建失败通道——**保留旧数据 + 派发 `oas-rows-error` + 显示错误条**（`role="alert"`，重试按钮调 `refreshRows()`），宿主无需自建失败反馈。helper 回填为异步写属性，无「监听回调同步写 `data` 落后一帧」的限制（详见下方决策表后的回填时序注意）。协议细节（requestId 去重、同值不重发、竞态规则）见下方 API 表的 `row-model` / `oas-rows-request` / `reportRowsError` 条目。
+超时与取消：组件不内置请求超时——超时是数据层（宿主 fetcher）的职责。在 `fetchRows` 内组合中止信号再交给宿主 fetch：`AbortSignal.any([signal, AbortSignal.timeout(8000)])`（helper 的 `signal` + 8s 超时取先到者；现代 AbortSignal 组合，各主流浏览器 2022+ 均支持）——超时即 reject，与其它失败走同一路径：自动经 helper 桥接错误条 + 可重试，无需自建超时反馈：
+
+```ts
+fetchRows: async ({ signal, ...rest }) => {
+  // helper signal + 8s 超时取「先到者」：翻页/destroy 的中止与超时互不吞并
+  const res = await api.listOrders({ ...rest, signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) })
+  return { rows: res.list, total: res.total }
+}
+```
+
+请求触发时机：挂载首载、翻页/改页大小、排序变更、过滤变更、`refreshRows()`（`reason` 分别为 `init` / `paginate` / `sort` / `filter` / `refresh`；排序/过滤/页大小变更自动重置 `current=1` 再请求——用户看到新口径首页，而非「新排序的第 N 页」）。请求在途时组件内建 loading 行；`fetchRows` 失败时 helper 经 `reportRowsError` 桥接内建失败通道——**保留旧数据 + 派发 `oas-rows-error` + 显示错误条**（`role="alert"`，重试按钮调 `refreshRows()`），宿主无需自建失败反馈。组件无内建请求超时：宿主 fetch 永不 settle 时 loading 保持——请在 fetcher 侧用 signal + 超时组合（见上方「超时与取消」）。helper 回填为异步写属性，无「监听回调同步写 `data` 落后一帧」的限制（详见下方决策表后的回填时序注意）。协议细节（requestId 去重、同值不重发、竞态规则）见下方 API 表的 `row-model` / `oas-rows-request` / `reportRowsError` 条目。
 
 ### 服务端数据方案选用决策表
 
@@ -684,6 +694,8 @@ const source = createServerSource(table, {
 | 过滤面板候选值 | 来自当前页数据（页内语义，面板照常打开） | 不同口径：windowed 下面板不打开（宿主监听 `oas-filter-change` 自行实现全量过滤） |
 | 历史（撤销） | 仅记录本地操作，翻页即失效 | — |
 | 编辑 | 页内编辑仅本地、翻页回填即丢失（v1 无服务端编辑回写契约） | — |
+
+**与虚拟滚动（`height`）可叠加**：server 行模型不排斥虚拟滚动——页大小是请求单位，页内渲染走既有虚拟化（与普通分页 × 虚拟同口径）；与 windowed 的混合模型（像素驱动、跨页拼接切片）不同，server 模式不拼接跨页数据——滚动/渲染边界始终是当前页。
 
 ### 边界：列序与编辑持久化
 

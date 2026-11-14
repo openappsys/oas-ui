@@ -29,6 +29,7 @@
 | `--oas-color-success`        | `#16a34a`        | `#4ade80`        | 成功               |
 | `--oas-color-warning`        | `#d97706`        | `#fbbf24`        | 警告               |
 | `--oas-color-danger`         | `#dc2626`        | `#fbb2b2`        | 危险/删除          |
+| `--oas-color-danger-soft`    | `color-mix(danger 12%, transparent)` | `color-mix(danger 12%, transparent)` | 危险弱化底（编辑校验失败底/错误条底；三档同比例，基色随各档 danger 联动，透明叠加随所处底色自适应；高对比同式） |
 | `--oas-color-diff-add-bg`    | `#e8f6ec`        | `#40524d`        | Diff 新增行底（不透明；HC `#d7f5e1`） |
 | `--oas-color-diff-add-word-bg` | `#bee5cc`      | `#43795b`        | Diff 新增词级高亮底（HC `#a6e6bd`） |
 | `--oas-color-diff-del-bg`    | `#fbe9e9`        | `#564d53`        | Diff 删除行底（HC `#ffe3e3`） |

@@ -629,7 +629,7 @@ Three pieces on the component: `row-model="server"` (enable) + `total` (activati
 ></oas-table>
 ```
 
-On the host, use `createServerSource` to take over fetching (protocol listening, requestId validation, aborting in-flight requests, and failure reporting are all built in; imported from `@oas-ui/ui/data/table/advanced` — a pure host-side helper that adds no component API). The element must be connected (append before creating). On creation the helper proactively issues one refresh to fetch the first page — with static markup the element upgrades before the script runs, so the init request fires before any listener exists (dynamic creation where init was already caught, or elements prefilled with data for SSR, are not refreshed again — the first page is the host's responsibility there):
+On the host, use `createServerSource` to take over fetching (protocol listening, requestId validation, aborting in-flight requests, and failure reporting are all built in; imported from `@oas-ui/ui/data/table/advanced` — a pure host-side helper that adds no component API). The element must be connected (append before creating). **One source instance per element** — creating a second source on the same element doubles listeners and fetches (devWarns once and still returns the new instance); call `destroy()` first and rebuild. On creation the helper proactively issues one refresh to fetch the first page — with static markup the element upgrades before the script runs, so the init request fires before any listener exists (dynamic creation where init was already caught, or elements prefilled with data for SSR, are not refreshed again — the first page is the host's responsibility there):
 
 ```ts
 import { createServerSource } from '@oas-ui/ui/data/table/advanced'
@@ -651,7 +651,17 @@ const source = createServerSource(table, {
 // source.destroy(): unbind listeners and abort in-flight work (does not touch row-model / total attributes)
 ```
 
-Request triggers: mount first load, page change / page-size change, sort change, filter change, `refreshRows()` (`reason` is `init` / `paginate` / `sort` / `filter` / `refresh`; sort/filter/page-size changes reset `current` to 1 before refetching — the user sees the first page under the new criteria, not "page N of the new sort"). While a request is in flight the component shows its built-in loading row; when `fetchRows` fails, the helper bridges the built-in failure channel via `reportRowsError` — **keep the old data + emit `oas-rows-error` + show the error bar** (`role="alert"`, retry button calls `refreshRows()`), so the host needs no custom failure UI. The helper refills asynchronously and is not subject to the "synchronous `data` write inside the listener lags a frame" restriction (see the refill-timing note after the decision table below). Protocol details (requestId dedup, same-value suppression, race rules) are in the `row-model` / `oas-rows-request` / `reportRowsError` entries of the API tables below.
+Timeout and cancellation: the component has no built-in request timeout — timeouts are the data layer's (host fetcher's) responsibility. Compose abort signals inside `fetchRows` before handing them to your fetch: `AbortSignal.any([signal, AbortSignal.timeout(8000)])` (the helper's `signal` + an 8s timeout, whichever fires first; modern AbortSignal composition, supported by all mainstream browsers since 2022). A timeout rejects like any other failure and takes the same path: the helper bridges it to the error bar + retry automatically — no custom timeout UI needed:
+
+```ts
+fetchRows: async ({ signal, ...rest }) => {
+  // helper signal + 8s timeout, whichever fires first: page-change/destroy aborts and timeouts don't swallow each other
+  const res = await api.listOrders({ ...rest, signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) })
+  return { rows: res.list, total: res.total }
+}
+```
+
+Request triggers: mount first load, page change / page-size change, sort change, filter change, `refreshRows()` (`reason` is `init` / `paginate` / `sort` / `filter` / `refresh`; sort/filter/page-size changes reset `current` to 1 before refetching — the user sees the first page under the new criteria, not "page N of the new sort"). While a request is in flight the component shows its built-in loading row; when `fetchRows` fails, the helper bridges the built-in failure channel via `reportRowsError` — **keep the old data + emit `oas-rows-error` + show the error bar** (`role="alert"`, retry button calls `refreshRows()`), so the host needs no custom failure UI. The component has no built-in request timeout: if the host fetch never settles, loading stays — compose signal + a timeout on the fetcher side (see "Timeout and cancellation" above). The helper refills asynchronously and is not subject to the "synchronous `data` write inside the listener lags a frame" restriction (see the refill-timing note after the decision table below). Protocol details (requestId dedup, same-value suppression, race rules) are in the `row-model` / `oas-rows-request` / `reportRowsError` entries of the API tables below.
 
 ### Server data approach decision table
 
@@ -684,6 +694,8 @@ Refill-timing note: on the "Host-managed event listening" path, refill **asynchr
 | Filter panel candidates | From current-page data (in-page semantics; the panel opens as usual) | Different: in windowed the panel does not open (the host implements full-data filtering via `oas-filter-change`) |
 | History (undo) | Records local operations only; invalidated on page change | — |
 | Editing | In-page edits are local only and lost on refill after paging (v1 has no server-side edit write-back contract) | — |
+
+**Composable with virtual scroll (`height`)**: the server row model does not exclude virtual scrolling — the page size is the request unit, and in-page rendering goes through the existing virtualization (same mechanism as plain pagination × virtual). Unlike the windowed hybrid model (pixel-driven, splices slices across pages), server mode never splices data across pages — the scroll/render boundary is always the current page.
 
 ### Boundaries: column order and edit persistence
 
