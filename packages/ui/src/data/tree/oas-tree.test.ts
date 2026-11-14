@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 
@@ -1965,5 +1967,21 @@ describe('OASTree size 五档 / block-node / selectable 整树开关（P2 批）
       expect(css).toContain('.check-all')
       expect(css).toContain('var(--oas-color-primary)')
     })
+  })
+})
+
+describe('OASTree 选中底色/命中高亮 token 收口（组件私有变量）', () => {
+  it('选中行底色走 --_oas-row-selected-bg（primary 10%）、搜索命中 mark 走 --_oas-match-highlight-bg（primary 18%），不引用未定义全局 token', () => {
+    const src = readFileSync(join(import.meta.dirname, 'oas-tree.ts'), 'utf8')
+    // 定义：各含 color-mix 与 --oas-color-primary，比例保持原值（选中 10% / 命中高亮 18%，视觉零变化）
+    expect(src).toMatch(/--_oas-row-selected-bg:\s*color-mix\(in srgb, var\(--oas-color-primary\) 10%, transparent\)/)
+    expect(src).toMatch(
+      /--_oas-match-highlight-bg:\s*color-mix\(in srgb, var\(--oas-color-primary\) 18%, transparent\)/,
+    )
+    // 引用：两条规则各自消费私有变量
+    expect(src).toMatch(/background:\s*var\(--_oas-row-selected-bg\)/)
+    expect(src).toMatch(/background:\s*var\(--_oas-match-highlight-bg\)/)
+    // 误导源清零：全文件不再以 var() 引用 theme 中不存在的 --oas-color-primary-soft（注释提及不算引用）
+    expect(src, '不得再以 var() 引用未定义的 --oas-color-primary-soft').not.toContain('var(--oas-color-primary-soft')
   })
 })

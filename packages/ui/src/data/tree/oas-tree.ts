@@ -105,7 +105,10 @@ const ROW_STYLE = `
   background: var(--oas-color-bg-hover);
 }
 .row[data-selected='true'] {
-  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 10%, transparent));
+  /* 选中行底色：组件私有变量（角色化命名），primary 10% 混 transparent；
+     不引用 --oas-color-primary-soft——该全局 token 不存在（定义即误导），配方就地私有定义 */
+  --_oas-row-selected-bg: color-mix(in srgb, var(--oas-color-primary) 10%, transparent);
+  background: var(--_oas-row-selected-bg);
   color: var(--oas-color-primary-text);
 }
 .row:focus-visible {
@@ -245,7 +248,10 @@ const ROW_STYLE = `
   white-space: nowrap;
 }
 .label mark {
-  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 18%, transparent));
+  /* 搜索命中高亮：组件私有变量（角色化命名），primary 18% 混 transparent；
+     不引用 --oas-color-primary-soft——该全局 token 不存在（定义即误导），配方就地私有定义 */
+  --_oas-match-highlight-bg: color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
+  background: var(--_oas-match-highlight-bg);
   color: inherit;
   border-radius: 2px;
 }

@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
@@ -4097,5 +4099,17 @@ describe('table 行键回退缓存', () => {
       spy.mockRestore()
     }
     expect(count, '同一批行对象的回退键已缓存，增量路径应零 stringify').toBe(0)
+  })
+})
+
+describe('OASTable 编辑态底色 token 收口（组件私有变量）', () => {
+  it('td[data-editing] 底色定义走私有变量 --_oas-cell-editing-bg（primary 8% color-mix，视觉零变化），不引用未定义全局 token', () => {
+    const src = readFileSync(join(import.meta.dirname, 'oas-table.ts'), 'utf8')
+    // 定义：含 color-mix 与 --oas-color-primary，比例保持 8%（编辑中单元格底色配方原值）
+    expect(src).toMatch(/--_oas-cell-editing-bg:\s*color-mix\(in srgb, var\(--oas-color-primary\) 8%, transparent\)/)
+    // 引用：编辑态规则消费私有变量
+    expect(src).toMatch(/background:\s*var\(--_oas-cell-editing-bg\)/)
+    // 误导源清零：全文件不再以 var() 引用 theme 中不存在的 --oas-color-primary-soft（注释提及不算引用）
+    expect(src, '不得再以 var() 引用未定义的 --oas-color-primary-soft').not.toContain('var(--oas-color-primary-soft')
   })
 })

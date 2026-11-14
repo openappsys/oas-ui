@@ -884,9 +884,12 @@ td.editing {
 .action-stack > .action-group.group-hidden {
   visibility: hidden;
 }
+/* 编辑中单元格底色：组件私有变量（角色化命名），primary 8% 混 transparent；
+   不引用 --oas-color-primary-soft——该全局 token 不存在（定义即误导），配方就地私有定义 */
 td[data-editing='true'],
 tr[data-sticky='true'] td[data-editing='true'] {
-  background: var(--oas-color-primary-soft, color-mix(in srgb, var(--oas-color-primary) 8%, transparent));
+  --_oas-cell-editing-bg: color-mix(in srgb, var(--oas-color-primary) 8%, transparent);
+  background: var(--_oas-cell-editing-bg);
 }
 .edit-error {
   /* 校验消息 = 单元格顶部警示条（absolute 覆于编辑器上沿，z-index 压过编辑器）：
