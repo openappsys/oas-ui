@@ -40,6 +40,7 @@ import {
   normalizePageSize,
   pageCountOf,
   type DisplayRootsInput,
+  type PageInput,
 } from './paginate.js'
 import { parseFilterValues, matchesFilters, flattenLeaves } from './filter.js'
 import { resolveSorts, columnTypeMap, codePointCompare, compareRows, type SortAttrs } from './sort.js'
@@ -84,6 +85,7 @@ export type {
   DisplayRootsResult,
   FilterValues,
   FlatRow,
+  PageInput,
   RowModelInput,
   RowModelResult,
   SortAttrs,

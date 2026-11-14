@@ -12,6 +12,18 @@ import { matchesFilters } from './filter.js'
 import { columnTypeMap, compareRows } from './sort.js'
 import type { DataColumn, DisplayRootsResult, FilterValues, SortState } from './types.js'
 
+/**
+ * 分页输入：缺省/null = 未开启分页（无全局排序、无切片）。
+ * current / pageSize 接受属性原值（字符串形态），归一化在本函数内完成
+ * （壳层薄壳直传属性原值）；total 在场 = 外部分页口径（data 即当前页切片：
+ * 只排序不切片，total 直通输出）。
+ */
+export interface PageInput {
+  current: number | string
+  pageSize: number | string
+  total?: number
+}
+
 /** `computeDisplayRoots` 的输入：数据 + 各属性归一化前的原值（归一化在本函数内完成） */
 export interface DisplayRootsInput<T = Record<string, unknown>> {
   /** 行数据（顶层行） */
@@ -22,11 +34,8 @@ export interface DisplayRootsInput<T = Record<string, unknown>> {
   filterValues?: FilterValues
   /** 排序状态（serverModel=true 时被忽略；排序只在分页开启时在此执行——与组件口径一致） */
   sorts?: SortState[]
-  /**
-   * 分页输入：缺省/null = 未开启分页（无全局排序、无切片）。
-   * total 在场 = 外部分页口径（data 即当前页切片：只排序不切片，total 直通输出）。
-   */
-  pagination?: { current: number; pageSize: number; total?: number } | null
+  /** 分页输入（形态见 PageInput；缺省/null = 未开启分页） */
+  pagination?: PageInput | null
   /** server 行模型语义：true = 跳过本地过滤与本地排序（全有或全无，不逐段混用） */
   serverModel?: boolean
 }
@@ -120,6 +129,7 @@ export function computeDisplayRoots<T extends Record<string, unknown>>(
     fullRoots,
     pageRows,
     total,
+    pageSize,
     pageCount,
     clampedCurrent: current,
     clamped,

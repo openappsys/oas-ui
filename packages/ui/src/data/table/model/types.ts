@@ -116,6 +116,8 @@ export interface DisplayRootsResult<T = Record<string, unknown>> {
   pageRows: T[]
   /** 总行数（外部分页 = 输入 total；否则 = 过滤后数据长度） */
   total: number
+  /** 归一化后的页尺寸（非法入参回落后值；壳层分页器直用） */
+  pageSize: number
   /** 总页数（未开分页恒 1） */
   pageCount: number
   /** 建议 current（归一化 ≥1 且不超过 pageCount；纯函数不写 DOM，写回由调用方决定） */

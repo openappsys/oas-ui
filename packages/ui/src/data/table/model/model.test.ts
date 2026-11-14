@@ -260,6 +260,7 @@ describe('computeDisplayRoots（过滤 + 排序 + 分页切片）', () => {
       fullRoots: [],
       pageRows: [],
       total: 0,
+      pageSize: 10,
       pageCount: 1,
       clampedCurrent: 1,
       clamped: false,

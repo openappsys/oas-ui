@@ -34,8 +34,20 @@ import { rowKeyValue } from './oas-table-row-key.js'
 // server 行模型（row-model="server"）请求协议：类型 + 纯函数（原因推导 / 同值去重签名）
 import { rowsRequestPlan, rowsRequestSignature, type RowsRequestReason, type RowsRequestState } from './row-model.js'
 // 行模型数据层（headless 纯函数，`@oas-ui/ui/data/table/model` 同一实现的组件侧消费）：
-// 过滤解析/匹配、排序状态解析（后续批次逐步接线其余变换段）
-import { parseFilterValues, matchesFilters, resolveSorts, type SortState } from './model/index.js'
+// 过滤/排序/分页切片/分组展平/可见集全部变换段 + 行模型类型（SortState/FlatRow）
+import {
+  parseFilterValues,
+  matchesFilters,
+  resolveSorts,
+  computeDisplayRoots as computeDisplayRootsModel,
+  buildFlat as buildFlatModel,
+  visibleFlat as visibleFlatModel,
+  normalizePageSize,
+  normalizeCurrent,
+  pageCountOf,
+  type SortState,
+  type FlatRow,
+} from './model/index.js'
 // 服务端行窗口协议（windowed 模式）：与宿主交换行区间的共享契约（类型 + 纯工具），
 // 数据密集型组件统一口径（table / gantt / resource / kanban / scheduler 同源）
 import {
@@ -3015,6 +3027,8 @@ export class OASTableBase extends OASElement {
    * 过滤 + 分页切片（update 与虚拟滚动重建共用——孪生路径必须同口径）：
    * 顶层行先过滤（filter-values），分页开启时先全局排序再切片当前页。
    * 返回分页元数据（renderPagination 用）与分页前完整集合（summary-scope=all 用）。
+   * 薄壳：读属性 → 调数据层纯函数（`data/table/model`，与 headless 公开面同一实现）。
+   * 副作用（current 超页钳制的 setAttribute 写回）留在壳层——纯函数只返回 clamped 建议值。
    */
   private computeDisplayRoots(): {
     roots: Array<Record<string, unknown>>
@@ -3028,52 +3042,33 @@ export class OASTableBase extends OASElement {
     const serverRows = this.getAttr('row-model', '') === 'server' ? this.serverOn() : false
     // windowed：data 即宿主切好的绝对行窗口切片——本地过滤/排序/分页切片一律不执行
     if (this.windowedOn()) return this.computeDisplayRootsWindowed()
-    // 过滤：按 filter-values 过滤顶层行（在排序/分页之前，保证分页页数反映过滤后数据）。
-    // server 行模型「全有或全无」：本地过滤/排序整体跳过（服务端已按当前排序/过滤条件
-    // 返回当前页切片，data 原样展示）——不提供逐段混用配置（「只排当前页」是错误语义）
-    const filterValues = this.parseFilterValues()
-    let roots = this._data
-    if (!serverRows && Object.keys(filterValues).length > 0) {
-      roots = roots.filter((row) => this.matchesFilters(row, filterValues))
+    const result = computeDisplayRootsModel({
+      data: this._data,
+      columns: this._columns,
+      filterValues: this.parseFilterValues(),
+      sorts: this.resolveSorts(),
+      pagination: this.hasAttr('pagination')
+        ? {
+            current: this.getAttr('current', '1'),
+            pageSize: this.getAttr('page-size', '10'),
+            // 外部总数（服务端分页）：total 属性在场时 data 已是当前页切片（null = 内部切片模式）
+            total: this.externalTotal() ?? undefined,
+          }
+        : null,
+      serverModel: serverRows,
+    })
+    // 超页钳制写回（setAttribute 同步触发嵌套 update——与原内联实现同时序：均在外层本轮
+    // DOM 渲染之前、且嵌套读到的已是新值）
+    if (result.clamped) this.setAttribute('current', String(result.clampedCurrent))
+    return {
+      // 组件消费口径：roots = 当前页切片；fullRoots = 过滤后全量（未切片）
+      roots: result.pageRows,
+      fullRoots: result.fullRoots,
+      current: result.clampedCurrent,
+      pageSize: result.pageSize,
+      total: result.total,
+      paginationOn: result.paginationOn,
     }
-    // 分页切片前的完整筛选+排序集合（summary-scope=all 时合计基于此）
-    const fullRoots = roots
-    // 分页：顶层行先全局排序再切片为当前页，喂给 buildFlat（页内子行 children 随父行保留）
-    const paginationOn = this.hasAttr('pagination')
-    const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
-    let current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
-    // 外部总数（服务端分页）：total 属性在场时 data 已是当前页切片，总数不走 data 长度
-    const externalTotal = this.externalTotal()
-    const total = externalTotal ?? roots.length
-    if (paginationOn) {
-      const pageCount = Math.max(1, Math.ceil(total / pageSize))
-      if (current > pageCount) {
-        current = pageCount
-        this.setAttribute('current', String(current))
-      }
-      // 内部切片模式：全局排序后取当前页；外部总数模式：宿主已切片，只排序不再切片。
-      // server 行模型（前提即 externalTotal 在场）：排序也由服务端负责——data 原样透传；
-      // client 路径（externalTotal 在场但未开 server）保持现状：本地排序仍作用于当前页切片
-      if (externalTotal === null) {
-        const sorted = [...roots]
-        const sorts = this.resolveSorts()
-        if (sorts.length > 0) {
-          const tm = this.columnTypeMap()
-          sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
-        }
-        const start = (current - 1) * pageSize
-        roots = sorted.slice(start, start + pageSize)
-      } else if (!serverRows) {
-        const sorted = [...roots]
-        const sorts = this.resolveSorts()
-        if (sorts.length > 0) {
-          const tm = this.columnTypeMap()
-          sorted.sort((a, b) => this.compareRows(a, b, sorts, tm))
-        }
-        roots = sorted
-      }
-    }
-    return { roots, fullRoots, current, pageSize, total, paginationOn }
   }
 
   /**
@@ -3081,6 +3076,7 @@ export class OASTableBase extends OASElement {
    * （在部分数据上执行会得到错误结果，由宿主监听事件自行处理全量数据）。
    * total（全量行数）直通分页器：pagination UI 保留为宿主服务端分页的控制条
    * （翻页派发 oas-page-change，宿主回填新窗口切片），仅做 current 越界钳制写回。
+   * 保留在壳层（windowed 切片语义不进纯函数），页尺寸/页码归一化与页数推导复用 model 工具。
    */
   private computeDisplayRootsWindowed(): {
     roots: Array<Record<string, unknown>>
@@ -3091,11 +3087,11 @@ export class OASTableBase extends OASElement {
     paginationOn: boolean
   } {
     const paginationOn = this.hasAttr('pagination')
-    const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
-    let current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
+    const pageSize = normalizePageSize(this.getAttr('page-size', '10'))
+    let current = normalizeCurrent(this.getAttr('current', '1'))
     const total = this._winMode.total
     if (paginationOn) {
-      const pageCount = Math.max(1, Math.ceil(total / pageSize))
+      const pageCount = pageCountOf(total, pageSize)
       if (current > pageCount) {
         current = pageCount
         this.setAttribute('current', String(current))
@@ -4322,58 +4318,13 @@ export class OASTableBase extends OASElement {
     })
   }
 
-  /** key → 列 type 映射（排序比较器热路径外提：sort 每次比较都全树走查 flattenLeaves 是 O(列数) 重复开销——实抓万行排序 14 万次全列树走查） */
-  private columnTypeMap(): Map<string, TableColumn['type']> {
-    const map = new Map<string, TableColumn['type']>()
-    for (const c of this.flattenLeaves(this._columns)) map.set(c.key, c.type)
-    return map
-  }
+  /** key → 列 type 映射已迁至数据层（data/table/model，columnTypeMap 纯函数）——排序比较器
+   *  热路径外提的原始动机与实现说明见该模块（避免 sort 每次比较都全树走查叶子列） */
 
   /**
-   * 排序比较器：按 sorts 数组逐级比较，数字按数值、其余按字符串码点确定性比较。
-   * type 数值类列（number/currency/progress/rate）无论原始形态按数值序、date 按时间序
-   *（解析失败回落码点）；不依赖宿主 locale（localeCompare 无显式 locale 时 Windows full-ICU
-   * 中文拼音与 Linux small-ICU 码点排序结果不同，导致跨环境行为不一致）；语言感知排序
-   *（如中文拼音）应由宿主在数据侧预排序或提供自定义 comparator。
+   * 排序比较器：已迁至数据层（data/table/model，compareRows / codePointCompare 纯函数）。
+   * 比较语义（数值类型列按数值序、date 按时间序、其余码点序，不依赖宿主 locale）以该模块为单一真相源。
    */
-  private compareRows(
-    a: Record<string, unknown>,
-    b: Record<string, unknown>,
-    sorts: SortState[],
-    typeMap: Map<string, TableColumn['type']>,
-  ): number {
-    for (const { key, order } of sorts) {
-      if (!order) continue
-      const av = a[key]
-      const bv = b[key]
-      let cmp = 0
-      const type = typeMap.get(key)
-      if (type === 'number' || type === 'currency' || type === 'progress' || type === 'rate') {
-        // 数值类型列：按数值序比较（原始形态为数字或数字字符串）；null/空串/非数字回落码点
-        const an = av === null || av === undefined || av === '' ? NaN : Number(av)
-        const bn = bv === null || bv === undefined || bv === '' ? NaN : Number(bv)
-        cmp = Number.isFinite(an) && Number.isFinite(bn) ? an - bn : this.codePointCompare(av, bv)
-      } else if (type === 'date') {
-        // date 列：时间序（时间戳/ISO 串）；解析失败回落码点
-        const ad = av === null || av === undefined || av === '' ? NaN : new Date(av as string | number).getTime()
-        const bd = bv === null || bv === undefined || bv === '' ? NaN : new Date(bv as string | number).getTime()
-        cmp = Number.isNaN(ad) || Number.isNaN(bd) ? this.codePointCompare(av, bv) : ad - bd
-      } else if (typeof av === 'number' && typeof bv === 'number') {
-        cmp = av - bv
-      } else {
-        cmp = this.codePointCompare(av, bv)
-      }
-      if (cmp !== 0) return order === 'asc' ? cmp : -cmp
-    }
-    return 0
-  }
-
-  /** 字符串码点确定性比较（不依赖宿主 locale） */
-  private codePointCompare(av: unknown, bv: unknown): number {
-    const sa = String(av ?? '')
-    const sb = String(bv ?? '')
-    return sa < sb ? -1 : sa > sb ? 1 : 0
-  }
 
   /**
    * 构建扁平行列表（含树形 children 递归）。排序在各层级兄弟间独立进行，不破坏父子结构；
@@ -4381,6 +4332,8 @@ export class OASTableBase extends OASElement {
    * roots 传入时只遍历这些顶层行（供分页切片用），否则遍历 this._data。
    * groupBy 传入字段 key 时按该字段值分节：分节头行（kind='group'）前置于组内行，
    * 组间按字段值首次出现序、组内独立排序（sorts 作用于组内）；空值行归入「（空）」组（i18n）。
+   * 薄壳：诊断计数与 i18n 文案留在壳层，变换本体调数据层纯函数
+   * （`data/table/model`，与 headless 公开面同一实现）。
    */
   private buildFlat(
     sorts: SortState[],
@@ -4390,81 +4343,22 @@ export class OASTableBase extends OASElement {
   ): FlatRow[] {
     // 仅内部诊断：热路径计数（性能回归测试断言缓存复用）
     tableRenderDiagnostics.flatBuilds++
-    const flat: FlatRow[] = []
-    const sortTypeMap = sorts.length > 0 ? this.columnTypeMap() : null
-    const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
-      const list = [...nodes]
-      if (sorts.length > 0) {
-        list.sort((a, b) => this.compareRows(a, b, sorts, sortTypeMap!))
-      }
-      for (const row of list) {
-        flat.push({ row, depth, parent, kind: 'data' })
-        const children = row.children
-        if (Array.isArray(children) && children.length > 0) {
-          walk(children, depth + 1, rowKeyValue(row, rowKey))
-        }
-      }
-    }
-    if (groupBy) {
-      // 分组：Map 保持首次出现序（组间序 = 字段值首次出现序）
-      const groups = new Map<string, Array<Record<string, unknown>>>()
-      for (const row of roots) {
-        const v = row[groupBy]
-        // null/undefined/空白串归入「（空）」组（键为空串，与真实值键不冲突）
-        const key = v === null || v === undefined || String(v).trim() === '' ? '' : String(v)
-        const bucket = groups.get(key)
-        if (bucket) bucket.push(row)
-        else groups.set(key, [row])
-      }
-      for (const [key, rows] of groups) {
-        flat.push({
-          row: {},
-          depth: 0,
-          kind: 'group',
-          groupKey: key,
-          groupLabel: key === '' ? tableText(this, 'table.groupEmpty', '(empty)') : key,
-          groupCount: rows.length,
-        })
-        walk(rows, 0)
-      }
-      return flat
-    }
-    walk(roots, 0)
-    return flat
+    return buildFlatModel(roots, this._columns, {
+      sorts,
+      rowKey,
+      groupBy,
+      groupEmptyLabel: tableText(this, 'table.groupEmpty', '(empty)'),
+    })
   }
 
   /**
    * 可见行列表：树形数据按 expanded（父行 key）过滤；可展开行的内容行紧随数据行。
    * 父行有 children 时优先展示子树（不叠加 expand 内容行）。
    * 分组模式下跟踪当前组折叠态（collapsedGroups 内部语义）：折叠组只保留分节头行。
+   * 薄壳：折叠集合取自组件状态 → 调数据层纯函数。
    */
   private visibleFlat(flat: FlatRow[], expanded: Set<string>, rowKey: string): FlatRow[] {
-    const out: FlatRow[] = []
-    let groupCollapsed = false
-    for (const f of flat) {
-      if (f.kind === 'group') {
-        groupCollapsed = this.collapsedGroups.has(f.groupKey ?? '')
-        out.push(f)
-        continue
-      }
-      if (groupCollapsed) continue
-      if (f.parent !== undefined && !expanded.has(f.parent)) continue
-      out.push(f)
-      const row = f.row
-      const children = row.children
-      const hasChildren = Array.isArray(children) && children.length > 0
-      const key = rowKeyValue(row, rowKey)
-      if (!hasChildren && expanded.has(key) && typeof row.expand === 'string' && row.expand.length > 0) {
-        out.push({
-          row,
-          depth: f.depth,
-          parent: f.parent,
-          kind: 'expand',
-          expandContent: row.expand,
-        })
-      }
-    }
-    return out
+    return visibleFlatModel(flat, expanded, rowKey, this.collapsedGroups)
   }
 
   /** 展开/收起某行（树形子行或可展开内容行共用），派发 oas-expand。
@@ -6844,18 +6738,5 @@ export interface TableDisplaySnapshot {
   keysByIndex: readonly string[]
 }
 
-/** 扁平行：树形/可展开行/分节头统一渲染单位 */
-interface FlatRow {
-  row: Record<string, unknown>
-  depth: number
-  parent?: string
-  kind: 'data' | 'expand' | 'group'
-  /** expand 类型行的自定义内容（来自 row.expand 字段） */
-  expandContent?: string
-  /** group 类型行：组键（折叠状态集合的标识；空值组为空串） */
-  groupKey?: string
-  /** group 类型行：分节头展示文案（空值组走 i18n「（空）」） */
-  groupLabel?: string
-  /** group 类型行：组内数据行计数 */
-  groupCount?: number
-}
+// 扁平行类型（树形/可展开行/分节头统一渲染单位）已迁至数据层（data/table/model）：
+// 本模块经顶部 import type 引用，与 headless 公开面同一类型定义。
