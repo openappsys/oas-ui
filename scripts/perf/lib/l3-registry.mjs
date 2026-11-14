@@ -72,6 +72,19 @@ export const L3_REGISTRY = [
   },
   { id: 'tableValueFormat', entry: 'data/table/value-format', family: 'data', kind: 'helper', measured: true },
   { id: 'tableQuery', entry: 'data/table/query', family: 'data', kind: 'helper', measured: true },
+  // table 行模型数据层（2026-11-14 批）：headless 纯函数管道（过滤→排序→分页切片→分组→
+  // 展平→可见集）。入口路径 `data/table/model` 本体只有 re-export 壳（实现居
+  // `model-core/`，oas-table 组件静态 import 同一份实现——resourceLoad/level 同款
+  // 「入口壳 + 实现分离」判定：实现随组件链进 L1/data 族包，入口路径无属性触发面
+  // 不进 L1/族包，路径标记 `/data/table/model/` 只匹配入口壳、不匹配 `model-core/`
+  // 实现——两层口径互不干扰）。激活唯一入口是显式 import computeRowModel 等导出函数。
+  {
+    id: 'tableModel',
+    entry: 'data/table/model',
+    family: 'data',
+    kind: 'helper',
+    measured: true,
+  },
   // 逐行动态行高（row-auto-height 注册型 capability L3；核心接缝为亚 KB 常数判空钩子）
   {
     id: 'tableAutoHeight',

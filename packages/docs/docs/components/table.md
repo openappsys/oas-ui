@@ -771,6 +771,7 @@ import { applyViewState, captureViewState, loadViewState, saveViewState } from '
 import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
 import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
 import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
+import { computeRowModel } from '@oas-ui/ui/data/table/model'
 import '@oas-ui/ui/data/table/structural-render'
 
 // 结构级渲染 demo：注册型 L3 已在上方 import 激活；给 #table-structural 挂四槽 hooks
@@ -1602,6 +1603,63 @@ onMounted(() => {
   })
 })
 
+// —— headless 数据层 demo：computeRowModel 算行模型，表格只负责渲染当前页切片 ——
+// （排序/过滤/分页全部由纯函数管道完成；与组件内置行模型同一份实现，行集/行序一致）
+const HEADLESS_ORDERS = [
+  { id: 'B-2001', customer: '观澜文旅', amount: 640, dept: '华东' },
+  { id: 'B-2002', customer: '鹿鸣山居', amount: 1280, dept: '华北' },
+  { id: 'B-2003', customer: '汀兰小筑', amount: 96, dept: '华东' },
+  { id: 'B-2004', customer: '松间客栈', amount: 540, dept: '华南' },
+  { id: 'B-2005', customer: '竹里馆', amount: 320, dept: '华北' },
+  { id: 'B-2006', customer: '云栖民宿', amount: 1750, dept: '华东' },
+  { id: 'B-2007', customer: '半山书房', amount: 210, dept: '华南' },
+]
+onMounted(() => {
+  const table = document.querySelector('#table-headless')
+  const status = document.querySelector('#table-headless-status')
+  if (!table) return
+  const PAGE_SIZE = 3
+  let current = 1
+  let order = null // null = 组件默认序；'desc' = 金额倒序
+  table.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'id', title: '订单号' },
+      { key: 'customer', title: '客户' },
+      { key: 'amount', title: '金额', align: 'right' },
+      { key: 'dept', title: '区域' },
+    ]),
+  )
+  const buildInput = () => ({
+    data: HEADLESS_ORDERS,
+    columns: [{ key: 'amount', type: 'number' }],
+    sorters: order ? [{ key: 'amount', order }] : [],
+    pagination: { current, pageSize: PAGE_SIZE },
+    rowKey: 'id',
+  })
+  const render = () => {
+    const model = computeRowModel(buildInput())
+    if (model.clamped) current = model.clampedCurrent // 超页钳制建议值写回自己的状态
+    table.setAttribute('data', JSON.stringify(model.pageRows))
+    if (status) {
+      status.textContent = `第 ${current} / ${model.pageCount} 页 · 共 ${model.total} 条（当前显示 ${model.pageRows.length} 条）`
+    }
+  }
+  render()
+  document.querySelector('#table-headless-sort')?.addEventListener('click', () => {
+    const pressed = document.querySelector('#table-headless-sort').getAttribute('aria-pressed') === 'true'
+    document.querySelector('#table-headless-sort').setAttribute('aria-pressed', String(!pressed))
+    order = pressed ? null : 'desc'
+    current = 1
+    render()
+  })
+  document.querySelector('#table-headless-page')?.addEventListener('click', () => {
+    const model = computeRowModel(buildInput())
+    current = (current % model.pageCount) + 1
+    render()
+  })
+})
+
 // —— 拖拽填充柄 demo：选区激活后右下角菱形柄，auto 语义（单值复制/数值首差/日期日步进/循环平铺）——
 onMounted(() => {
   const fillTable = document.querySelector('#table-fill')
@@ -2280,6 +2338,55 @@ const visible = applyQuery(orders, state.query)
 </DemoBlock>
 
 > 三个 helper 都是纯函数（不读写 DOM、不注册自定义元素），可在 SSR / Node 里直接调用；与 `advanced` 入口的 `pivot()` / `compileQuery()` 互不依赖：advanced 版直接产出 `oas-table` 的 `columns` / `data` 与表格内部过滤通道，这三个子路径分别输出矩阵、展示文本与查询状态。体积（gzip，2026-11-03 首档实测）：pivot 1276 B / value-format 1899 B / query 1818 B。
+
+## headless 数据层（data/table/model，helper 型 L3）
+
+只想要行模型的计算结果、渲染完全自理（任意框架 / Canvas / SSR 快照 / worker / 程序化驱动）时，按需引入 `@oas-ui/ui/data/table/model`：一条零 DOM 依赖、零副作用的行模型纯函数管道——**过滤 → 排序 → 分页切片 → 分组 → 展平 → 可见集**，一次算齐全部派生值。
+
+**与组件形态同源**：`oas-table` 组件内部的行变换（过滤/排序/分页/分组/树展开）调用的就是同一份实现（组件壳层只负责读属性、写回属性与 DOM 渲染）。把同一份 `columns` / `data` / 过滤值 / 排序状态喂给组件或 `computeRowModel`，得到的行集与行序完全一致——不会各算各的。
+
+```ts
+import { computeRowModel } from '@oas-ui/ui/data/table/model'
+
+const model = computeRowModel({
+  data: rows,
+  columns: [{ key: 'name' }, { key: 'age', type: 'number' }],
+  sorters: [{ key: 'age', order: 'desc' }],          // 多列排序按数组顺序决定优先级
+  filters: { name: '张' },                            // 同 filter-values 语义（filterMatch 列契约生效）
+  pagination: { current: 1, pageSize: 10 },           // total 在场 = 外部分页口径（只排序不切片）
+  grouping: { by: 'dept' },                           // 可选：按字段值分节
+  rowKey: 'key',
+  expanded: new Set(['n1']),                          // 树展开/行内展开共用
+  collapsedGroups: new Set(),                         // 分组折叠集合
+})
+
+model.pageRows          // 当前页切片（分页关闭 = 全量）
+model.roots             // 过滤 + 排序后的全量顶层行（未切片）
+model.total / model.pageCount
+model.clampedCurrent    // 超页钳制建议值（纯函数不写状态：clamped = true 时由你写回自己的 current）
+model.flat              // 展平列表（data/group/expand 三类行；分节头行含 groupKey/groupLabel/groupCount）
+model.visible           // 可见集（按 expanded / collapsedGroups 过滤后）——拿它直接渲染
+```
+
+要点：
+
+- **server 行模型语义**：`serverModel: true` 整体跳过本地过滤与本地排序（服务端已按当前条件返回当前页切片，`data` 原样透传）——「全有或全无」，与组件 `row-model="server"` 同一口径
+- **超页钳制零副作用**：`current` 超出 `pageCount` 时不改写任何状态，只返回 `clampedCurrent` 建议值与 `clamped` 标记（组件内部把这个写回 `current` 属性；headless 场景写回你自己的状态）
+- **分段可单用**：`parseFilterValues` / `matchesFilters` / `resolveSorts` / `computeDisplayRoots` / `buildFlat` / `visibleFlat` / `compareRows` 均为独立导出的纯函数，可按需组合；i18n 文案以参数注入（如 `groupEmptyLabel`），运行闭包不含组件本体 / core / i18n
+- **运行环境不限**：node / worker / SSR 直接 import 可跑（零 DOM 依赖有 node 环境单测守护）；输入数组不被修改（纯函数）
+
+<DemoBlock title="headless：computeRowModel + 自定义渲染（与组件同源管道）">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-headless-sort" size="small" aria-pressed="false">按金额倒序</oas-button>
+      <oas-button id="table-headless-page" size="small">下一页</oas-button>
+      <span id="table-headless-status" role="status" aria-live="polite" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">—</span>
+    </div>
+    <oas-table id="table-headless" row-height="32" bordered></oas-table>
+  </div>
+</DemoBlock>
+
+> 体积（gzip，2026-11-14 首档实测）：入口壳 + 管道实现共 4.3 KB / 8 文件；组件默认链已同源携带同一份实现（组件消费者零额外体积——接线为同源搬迁，非重复打包）。入口路径自身不进 L1 / CDN 分包（helper 型 L3，显式 import 才进入构建产物；组件消费者按需 import 本入口时只补入口壳转发的极小开销）。
 
 ## API
 

@@ -1,13 +1,15 @@
 /**
- * table 行模型数据层（headless 子路径 `@oas-ui/ui/data/table/model`）。
+ * table 行模型数据层（headless 公开入口 `@oas-ui/ui/data/table/model`）。
  *
  * 框架无关、零 DOM 依赖、零副作用的行模型纯函数管道：
  *
  *   过滤 → 排序 → 分页切片 → 分组 → 展平 → 可见集（树展开/分组折叠）
  *
  * 与 `oas-table` 组件内部行模型**同一实现**（单一真相源）：组件壳层负责读属性 /
- * 写回属性（如 current 超页钳制）与 DOM 渲染，变换本身全部走本模块——两种形态
- * （组件渲染 / 拿数据自己渲染）共享同一套行语义，不会各算各的。
+ * 写回属性（如 current 超页钳制）与 DOM 渲染，变换本体居 `model-core/`（组件静态
+ * import 同一份实现——resourceLoad/level 同款「入口壳 + 实现分离」口径，入口路径
+ * 自身无属性触发面、不进 L1/CDN 族包；实现随组件链进族包，两层互不干扰）——
+ * 两种形态（组件渲染 / 拿数据自己渲染）共享同一套行语义，不会各算各的。
  *
  * - 按需引入：`import { computeRowModel } from '@oas-ui/ui/data/table/model'`；
  *   运行闭包不含组件本体 / core / i18n / 任何 DOM API，可在 node / worker / SSR
@@ -32,32 +34,6 @@
  * render(model.visible) // 或消费 pageRows / total / pageCount 自行拼装
  * ```
  */
-import { buildFlat } from './group.js'
-import {
-  computeDisplayRoots,
-  normalizeCurrent,
-  normalizeExternalTotal,
-  normalizePageSize,
-  pageCountOf,
-  type DisplayRootsInput,
-  type PageInput,
-} from './paginate.js'
-import { parseFilterValues, matchesFilters, flattenLeaves } from './filter.js'
-import { resolveSorts, columnTypeMap, codePointCompare, compareRows, type SortAttrs } from './sort.js'
-import { visibleFlat } from './visible.js'
-import type {
-  DataColumnType,
-  DataColumn,
-  DisplayRootsResult,
-  FilterValues,
-  FlatRow,
-  RowModelInput,
-  RowModelResult,
-  SortDirection,
-  SortState,
-} from './types.js'
-
-// —— 公开面：管道入口 + 分段纯函数 + 归一化工具 + 全部类型 ——
 export {
   // 管道入口
   computeRowModel,
@@ -77,7 +53,7 @@ export {
   normalizeCurrent,
   normalizeExternalTotal,
   pageCountOf,
-}
+} from '../model-core/index.js'
 export type {
   DataColumnType,
   DataColumn,
@@ -91,51 +67,4 @@ export type {
   SortAttrs,
   SortDirection,
   SortState,
-}
-
-/** 模块级只读空集合（expanded / collapsedGroups 缺省值） */
-const EMPTY_SET: ReadonlySet<string> = new Set()
-
-/**
- * 行模型管道入口：过滤 → 排序 → 分页切片 → 分组 → 展平 → 可见集，一次算齐全部派生值。
- *
- * - `serverModel: true`：本地过滤与本地排序整体跳过（服务端已按当前条件返回当前页
- *   切片，data 原样透传）；分页切片仍由调用方输入描述（外部分页口径）。
- * - `pagination.total` 在场 = 外部分页口径：data 即当前页切片，只排序不切片，
- *   total 直通输出；缺省 = 内部切片模式。
- * - 纯函数：不改写入参（data / filters / sorters 等均不被修改），无 DOM 副作用；
- *   超页钳制只产出 `clampedCurrent` / `clamped` 建议值。
- */
-function computeRowModel<T extends Record<string, unknown>>(input: RowModelInput<T>): RowModelResult<T> {
-  const serverModel = input.serverModel === true
-  // server「全有或全无」：排序/过滤输入整体作废（与组件 renderSorts / 过滤跳过同口径）
-  const sorts = serverModel ? [] : (input.sorters ?? [])
-  const filters = serverModel ? {} : (input.filters ?? {})
-  const rowKey = input.rowKey ?? 'key'
-  const groupBy = input.grouping?.by ?? ''
-  const display = computeDisplayRoots<T>({
-    data: input.data,
-    columns: input.columns,
-    filterValues: filters,
-    sorts,
-    pagination: input.pagination ?? null,
-    serverModel,
-  })
-  const flat = buildFlat(display.pageRows as Array<Record<string, unknown>>, input.columns, {
-    sorts,
-    rowKey,
-    groupBy,
-    groupEmptyLabel: input.groupEmptyLabel,
-  })
-  const visible = visibleFlat(flat, input.expanded ?? EMPTY_SET, rowKey, input.collapsedGroups ?? EMPTY_SET)
-  return {
-    roots: display.roots,
-    pageRows: display.pageRows,
-    total: display.total,
-    pageCount: display.pageCount,
-    clampedCurrent: display.clampedCurrent,
-    clamped: display.clamped,
-    flat,
-    visible,
-  }
-}
+} from '../model-core/index.js'

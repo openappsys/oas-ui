@@ -771,6 +771,7 @@ import { applyViewState, captureViewState, loadViewState, saveViewState } from '
 import { addRangeSelection, applyRangePaste, copyRange, cutRange, enableRangeSelection, fillRange, setRangeSelection } from '@oas-ui/ui/data/table/range'
 import { disableHistory, enableHistory, redo, undo } from '@oas-ui/ui/data/table/history'
 import { createMasterDetail } from '@oas-ui/ui/data/table/detail'
+import { computeRowModel } from '@oas-ui/ui/data/table/model'
 import '@oas-ui/ui/data/table/structural-render'
 
 // Structural rendering demo: the registered L3 is activated by the import above;
@@ -1613,6 +1614,65 @@ onMounted(() => {
   })
 })
 
+// —— Headless data layer demo: computeRowModel computes the row model,
+// the table only renders the current page slice ——
+// (filtering / sorting / pagination are all done by the pure-function pipeline;
+// the same implementation as the component's built-in row model, identical row sets and order)
+const HEADLESS_ORDERS = [
+  { id: 'B-2001', customer: 'Guanlan Travel', amount: 640, dept: 'East' },
+  { id: 'B-2002', customer: 'Luming Lodge', amount: 1280, dept: 'North' },
+  { id: 'B-2003', customer: 'Tinglan House', amount: 96, dept: 'East' },
+  { id: 'B-2004', customer: 'Songjian Inn', amount: 540, dept: 'South' },
+  { id: 'B-2005', customer: 'Zhuli Studio', amount: 320, dept: 'North' },
+  { id: 'B-2006', customer: 'Yunqi Stay', amount: 1750, dept: 'East' },
+  { id: 'B-2007', customer: 'Banshan Books', amount: 210, dept: 'South' },
+]
+onMounted(() => {
+  const table = document.querySelector('#table-headless')
+  const status = document.querySelector('#table-headless-status')
+  if (!table) return
+  const PAGE_SIZE = 3
+  let current = 1
+  let order = null // null = insertion order; 'desc' = amount descending
+  table.setAttribute(
+    'columns',
+    JSON.stringify([
+      { key: 'id', title: 'Order' },
+      { key: 'customer', title: 'Customer' },
+      { key: 'amount', title: 'Amount', align: 'right' },
+      { key: 'dept', title: 'Region' },
+    ]),
+  )
+  const buildInput = () => ({
+    data: HEADLESS_ORDERS,
+    columns: [{ key: 'amount', type: 'number' }],
+    sorters: order ? [{ key: 'amount', order }] : [],
+    pagination: { current, pageSize: PAGE_SIZE },
+    rowKey: 'id',
+  })
+  const render = () => {
+    const model = computeRowModel(buildInput())
+    if (model.clamped) current = model.clampedCurrent // write the clamp suggestion back to our own state
+    table.setAttribute('data', JSON.stringify(model.pageRows))
+    if (status) {
+      status.textContent = `Page ${current} / ${model.pageCount} · ${model.total} rows total (showing ${model.pageRows.length})`
+    }
+  }
+  render()
+  document.querySelector('#table-headless-sort')?.addEventListener('click', () => {
+    const pressed = document.querySelector('#table-headless-sort').getAttribute('aria-pressed') === 'true'
+    document.querySelector('#table-headless-sort').setAttribute('aria-pressed', String(!pressed))
+    order = pressed ? null : 'desc'
+    current = 1
+    render()
+  })
+  document.querySelector('#table-headless-page')?.addEventListener('click', () => {
+    const model = computeRowModel(buildInput())
+    current = (current % model.pageCount) + 1
+    render()
+  })
+})
+
 // —— Fill handle demo: diamond at the active selection's corner; auto semantics
 // (single-value copy / numeric first-diff series / date day-step / cyclic tiling) ——
 onMounted(() => {
@@ -2293,6 +2353,55 @@ const visible = applyQuery(orders, state.query)
 </DemoBlock>
 
 > All three helpers are pure functions (no DOM access, no custom-element registration) and can run in SSR / Node directly. They are independent from the `advanced` entry's `pivot()` / `compileQuery()`: the advanced versions produce `oas-table` `columns` / `data` and the table's internal filter channel, while these subpaths output a matrix, display text and query state respectively. Size (gzip, first band measured 2026-11-03): pivot 1276 B / value-format 1899 B / query 1818 B.
+
+## Headless data layer (data/table/model, helper L3)
+
+When you only want the row-model computations and take over rendering yourself (any framework / Canvas / SSR snapshots / workers / programmatic drivers), import `@oas-ui/ui/data/table/model` on demand: a zero-DOM, side-effect-free pure-function row-model pipeline — **filter → sort → paginate slice → group → flatten → visible set** — computing every derived value in one pass.
+
+**Same source as the component**: the row transforms inside `oas-table` (filter / sort / pagination / grouping / tree expand) call this very implementation (the component shell only reads attributes, writes attributes back and renders DOM). Feed the same `columns` / `data` / filter values / sort state to the component or to `computeRowModel` and you get identical row sets and order — never two divergent computations.
+
+```ts
+import { computeRowModel } from '@oas-ui/ui/data/table/model'
+
+const model = computeRowModel({
+  data: rows,
+  columns: [{ key: 'name' }, { key: 'age', type: 'number' }],
+  sorters: [{ key: 'age', order: 'desc' }],          // multi-sort: array order = priority
+  filters: { name: 'Zhang' },                        // same semantics as filter-values (filterMatch honored)
+  pagination: { current: 1, pageSize: 10 },           // total present = external pagination (sort only, no slice)
+  grouping: { by: 'dept' },                           // optional: section rows by field value
+  rowKey: 'key',
+  expanded: new Set(['n1']),                          // tree expand and inline expand share this set
+  collapsedGroups: new Set(),                         // collapsed group keys
+})
+
+model.pageRows          // current page slice (full set when pagination is off)
+model.roots             // filtered + sorted top-level rows (unsliced)
+model.total / model.pageCount
+model.clampedCurrent    // over-page clamp suggestion (pure function writes no state: write your own current back when clamped)
+model.flat              // flattened list (data/group/expand rows; section rows carry groupKey/groupLabel/groupCount)
+model.visible           // visible set (after expanded / collapsedGroups filtering) — render this directly
+```
+
+Notes:
+
+- **Server row-model semantics**: `serverModel: true` skips local filtering and sorting entirely (the server already returned the current page slice for the current conditions, `data` passes through untouched) — all-or-nothing, same as the component's `row-model="server"`
+- **Side-effect-free clamping**: when `current` exceeds `pageCount` nothing is written; you only get the `clampedCurrent` suggestion plus the `clamped` flag (the component writes it back to the `current` attribute; in headless usage write it back to your own state)
+- **Composable pieces**: `parseFilterValues` / `matchesFilters` / `resolveSorts` / `computeDisplayRoots` / `buildFlat` / `visibleFlat` / `compareRows` are all standalone pure-function exports; i18n strings are injected as parameters (e.g. `groupEmptyLabel`) and the runtime closure contains no component / core / i18n code
+- **Environment agnostic**: import directly in node / worker / SSR (zero DOM dependency is guarded by a node-environment test); input arrays are never mutated (pure functions)
+
+<DemoBlock title="Headless: computeRowModel + custom rendering (same pipeline as the component)">
+  <div style="width: 100%">
+    <div style="display:flex;gap:var(--oas-space-2);flex-wrap:wrap;align-items:center;margin-bottom:var(--oas-space-2)">
+      <oas-button id="table-headless-sort" size="small" aria-pressed="false">Amount descending</oas-button>
+      <oas-button id="table-headless-page" size="small">Next page</oas-button>
+      <span id="table-headless-status" role="status" aria-live="polite" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm)">—</span>
+    </div>
+    <oas-table id="table-headless" row-height="32" bordered></oas-table>
+  </div>
+</DemoBlock>
+
+> Size (gzip, first band measured 2026-11-14): entry shell + pipeline implementation 4.3 KB / 8 files; the component default chain already carries the same implementation (zero extra size for component consumers — wiring is a same-source move, not a duplicate bundle). The entry path itself is not in the L1 / CDN bundles (helper L3, only explicit imports pull it into your build).
 
 ## API
 

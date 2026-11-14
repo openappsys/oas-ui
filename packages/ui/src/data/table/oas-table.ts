@@ -33,7 +33,8 @@ import { cloneSlotContent } from '../../shared/slot-template.js'
 import { rowKeyValue } from './oas-table-row-key.js'
 // server 行模型（row-model="server"）请求协议：类型 + 纯函数（原因推导 / 同值去重签名）
 import { rowsRequestPlan, rowsRequestSignature, type RowsRequestReason, type RowsRequestState } from './row-model.js'
-// 行模型数据层（headless 纯函数，`@oas-ui/ui/data/table/model` 同一实现的组件侧消费）：
+// 行模型数据层（headless 纯函数，`@oas-ui/ui/data/table/model` 公开面与组件同源消费
+// 的实现本体 `model-core/`——resourceLoad/level 同款「入口壳 + 实现分离」口径）：
 // 过滤/排序/分页切片/分组展平/可见集全部变换段 + 行模型类型（SortState/FlatRow）
 import {
   parseFilterValues,
@@ -47,7 +48,7 @@ import {
   pageCountOf,
   type SortState,
   type FlatRow,
-} from './model/index.js'
+} from './model-core/index.js'
 // 服务端行窗口协议（windowed 模式）：与宿主交换行区间的共享契约（类型 + 纯工具），
 // 数据密集型组件统一口径（table / gantt / resource / kanban / scheduler 同源）
 import {
@@ -4308,12 +4309,14 @@ export class OASTableBase extends OASElement {
   /**
    * 解析当前排序状态：无 multi-sort 时回退单列 sort-key/sort-order（向后兼容）。
    * 返回数组按优先级排序（先比较首个，相等再比较次个）。
-   * 薄壳：读属性 → 调数据层纯函数（`data/table/model`，与 headless 公开面同一实现）。
+   * 薄壳：读属性 → 调数据层纯函数（`data/table/model-core`，与 headless 公开面同一实现）。
+   * sort-order 的 `as SortOrder` 标注是 API manifest 类型推断的依据（api:scan 按
+   * `as XxxType` 强转识别属性类型），不可省略。
    */
   private resolveSorts(): SortState[] {
     return resolveSorts({
       sortKey: this.getAttr('sort-key', ''),
-      sortOrder: this.getAttr('sort-order', ''),
+      sortOrder: this.getAttr('sort-order', '') as SortOrder,
       multiSort: this.getAttr('multi-sort', ''),
     })
   }

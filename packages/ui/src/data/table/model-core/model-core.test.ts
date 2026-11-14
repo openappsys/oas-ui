@@ -157,9 +157,12 @@ describe('compareRows（类型感知比较器）', () => {
     expect(compareRows({ v: '2024-01-01' }, { v: '2024-06-01' }, sorts, tm)).toBeLessThan(0)
   })
 
-  it('desc = 反向', () => {
+  it('desc = 反向（与 asc 严格对称：desc(x,y) === -asc(x,y) 且 asc(x,y) < 0）', () => {
     const tm = new Map()
-    expect(compareRows({ v: 2 }, { v: 10 }, [{ key: 'v', order: 'desc' }], tm)).toBeGreaterThan(0)
+    const asc = compareRows({ v: 2 }, { v: 10 }, [{ key: 'v', order: 'asc' }], tm)
+    expect(asc).toBeLessThan(0)
+    // 精确对称恒等式（比较器数学契约）：desc 与 asc 幅度严格相等、符号严格相反
+    expect(compareRows({ v: 2 }, { v: 10 }, [{ key: 'v', order: 'desc' }], tm)).toBe(-asc)
   })
 
   it('多键：先比较首个，相等再比较次个', () => {
@@ -168,7 +171,12 @@ describe('compareRows（类型感知比较器）', () => {
       { key: 'a', order: 'asc' as const },
       { key: 'b', order: 'desc' as const },
     ]
-    expect(compareRows({ a: 1, b: 2 }, { a: 1, b: 5 }, multi, tm)).toBeGreaterThan(0)
+    // b 列 desc 生效：交换两行（a 保持相等）结果严格取反（反交换性精确断言）
+    expect(compareRows({ a: 1, b: 2 }, { a: 1, b: 5 }, multi, tm)).toBe(
+      -compareRows({ a: 1, b: 5 }, { a: 1, b: 2 }, multi, tm),
+    )
+    expect(compareRows({ a: 1, b: 2 }, { a: 1, b: 5 }, multi, tm)).not.toBe(0)
+    // a 列优先：a 不相等时 b 不参与（a 决定符号）
     expect(compareRows({ a: 1, b: 5 }, { a: 2, b: 1 }, multi, tm)).toBeLessThan(0)
   })
 })

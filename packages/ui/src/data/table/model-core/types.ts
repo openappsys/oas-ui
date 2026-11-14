@@ -1,8 +1,8 @@
 /**
- * table 行模型数据层类型（headless 子路径 `@oas-ui/ui/data/table/model`）。
+ * table 行模型数据层类型（实现本体；公开面经 `../model/index.ts` re-export）。
  *
- * 本文件是数据层的公开类型契约：与组件 `oas-table.ts` 内的同名/同形定义保持
- * 单一口径（组件侧从本模块 import 并 re-export，不再各自维护第二份）。
+ * 本文件是数据层的类型契约单一来源：组件 `oas-table.ts` 从本目录 import 并
+ * re-export（SortState），不再各自维护第二份。
  * 全部类型零 DOM 依赖（无 HTMLElement / template 等），可在 node / worker / SSR 直接使用。
  */
 
