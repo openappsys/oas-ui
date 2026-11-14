@@ -776,9 +776,7 @@
         "rawBytes": 2464,
         "gzipBytes": 999,
         "brotliBytes": 880,
-        "fileList": [
-          "packages/ui/dist/data/table/view/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/table/view/index.js"]
       },
       "tableRange": {
         "entry": "data/table/range",
@@ -831,9 +829,7 @@
         "rawBytes": 3434,
         "gzipBytes": 1266,
         "brotliBytes": 1126,
-        "fileList": [
-          "packages/ui/dist/data/table/pivot/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/table/pivot/index.js"]
       },
       "tableAudit": {
         "entry": "data/table/audit",
@@ -842,9 +838,7 @@
         "rawBytes": 907,
         "gzipBytes": 490,
         "brotliBytes": 412,
-        "fileList": [
-          "packages/ui/dist/data/table/audit/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/table/audit/index.js"]
       },
       "tableImport": {
         "entry": "data/table/import",
@@ -853,10 +847,7 @@
         "rawBytes": 3366,
         "gzipBytes": 1532,
         "brotliBytes": 1382,
-        "fileList": [
-          "packages/ui/dist/data/table/import/index.js",
-          "packages/ui/dist/data/table/advanced/clipboard.js"
-        ]
+        "fileList": ["packages/ui/dist/data/table/import/index.js", "packages/ui/dist/data/table/advanced/clipboard.js"]
       },
       "tableValueFormat": {
         "entry": "data/table/value-format",
@@ -865,10 +856,7 @@
         "rawBytes": 4263,
         "gzipBytes": 1876,
         "brotliBytes": 1666,
-        "fileList": [
-          "packages/ui/dist/data/table/value-format/index.js",
-          "packages/ui/dist/shared/dev-warn.js"
-        ]
+        "fileList": ["packages/ui/dist/data/table/value-format/index.js", "packages/ui/dist/shared/dev-warn.js"]
       },
       "tableQuery": {
         "entry": "data/table/query",
@@ -877,9 +865,7 @@
         "rawBytes": 4940,
         "gzipBytes": 1807,
         "brotliBytes": 1619,
-        "fileList": [
-          "packages/ui/dist/data/table/query/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/table/query/index.js"]
       },
       "tableModel": {
         "entry": "data/table/model",
@@ -932,10 +918,7 @@
         "rawBytes": 2673,
         "gzipBytes": 1100,
         "brotliBytes": 975,
-        "fileList": [
-          "packages/ui/dist/data/gantt/export/index.js",
-          "packages/ui/dist/data/gantt/export/csv.js"
-        ]
+        "fileList": ["packages/ui/dist/data/gantt/export/index.js", "packages/ui/dist/data/gantt/export/csv.js"]
       },
       "ganttEvm": {
         "entry": "data/gantt/evm",
@@ -944,9 +927,7 @@
         "rawBytes": 3171,
         "gzipBytes": 1349,
         "brotliBytes": 1219,
-        "fileList": [
-          "packages/ui/dist/data/gantt/evm/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/gantt/evm/index.js"]
       },
       "ganttAlap": {
         "entry": "data/gantt/alap",
@@ -955,9 +936,7 @@
         "rawBytes": 4253,
         "gzipBytes": 1647,
         "brotliBytes": 1520,
-        "fileList": [
-          "packages/ui/dist/data/gantt/alap/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/gantt/alap/index.js"]
       },
       "ganttRecurring": {
         "entry": "data/gantt/recurring",
@@ -966,9 +945,7 @@
         "rawBytes": 3606,
         "gzipBytes": 1577,
         "brotliBytes": 1404,
-        "fileList": [
-          "packages/ui/dist/data/gantt/recurring/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/gantt/recurring/index.js"]
       },
       "resourceCost": {
         "entry": "data/resource/cost",
@@ -977,9 +954,7 @@
         "rawBytes": 2033,
         "gzipBytes": 929,
         "brotliBytes": 832,
-        "fileList": [
-          "packages/ui/dist/data/resource/cost/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/resource/cost/index.js"]
       },
       "resourcePool": {
         "entry": "data/resource/pool",
@@ -988,9 +963,7 @@
         "rawBytes": 1481,
         "gzipBytes": 622,
         "brotliBytes": 531,
-        "fileList": [
-          "packages/ui/dist/data/resource/pool/index.js"
-        ]
+        "fileList": ["packages/ui/dist/data/resource/pool/index.js"]
       },
       "resourceLoad": {
         "entry": "data/resource/load",
@@ -999,10 +972,7 @@
         "rawBytes": 4481,
         "gzipBytes": 1810,
         "brotliBytes": 1641,
-        "fileList": [
-          "packages/ui/dist/data/resource/load/index.js",
-          "packages/ui/dist/shared/resource-load.js"
-        ]
+        "fileList": ["packages/ui/dist/data/resource/load/index.js", "packages/ui/dist/shared/resource-load.js"]
       },
       "resourceLevel": {
         "entry": "data/resource/level",
