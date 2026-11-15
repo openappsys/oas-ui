@@ -13,6 +13,12 @@
 | **批 E：CSS 抽取** | 内联样式分层拆分，零视觉变化 | 📋 待开发 |
 | **批 F：server 导出全量 + 列序持久化** | 经宿主取数导出 / 列序允许（行顺序仍禁用） | 📋 待开发 |
 
+## 未发布（gantt 任务网格面板批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **gantt 任务网格面板** | `task-columns` 声明式多列（与 oas-table `columns` 契约同构）+ `checkable` 复选列（全选/半选三态，selection/oas-check 对齐 table）+ 列头行；行高与横条同源（单滚动/虚拟窗口，零同步胶水）；RTL/暗色/DSD/forced-colors 沿用；`show-effort` 保留为快捷糖；演进口径写死（排序/过滤将来复用 table/model，禁第二套行模型）；工单排产形态 demo（zh/en）+ e2e 三引擎 | 🚧 进行中 |
+
 ## 未发布（table 双形态批）
 
 | 范围 | 内容 | 状态 |
