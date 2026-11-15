@@ -84,10 +84,10 @@ export interface ServerRowsCache {
   delete(key: string): void
   /** 清空缓存条目与在途登记（destroy / purge 落点） */
   clear(): void
-  /** 同键在途 Promise（无则 undefined）——在途合并的复用对象 */
-  inflight(key: string): Promise<ServerCacheValue> | undefined
+  /** 同键在途 Promise（无则 undefined）——在途合并的复用对象（值形状由消费方归一） */
+  inflight(key: string): Promise<unknown> | undefined
   /** 登记在途：settle 后自动解除（引用比对）；返回原 Promise（不改变取数链） */
-  track(key: string, promise: Promise<ServerCacheValue>): Promise<ServerCacheValue>
+  track(key: string, promise: Promise<unknown>): Promise<unknown>
   /** 显式解除在途登记（abort 路径：被 abort 的在途不可复用，不等 settle）；幂等 */
   untrack(key: string): void
 }
@@ -99,7 +99,7 @@ export function createServerRowsCache(options?: { ttlMs?: number }): ServerRowsC
   const ttlMs =
     options?.ttlMs != null && Number.isFinite(options.ttlMs) && options.ttlMs > 0 ? options.ttlMs : DEFAULT_TTL_MS
   const entries = new Map<string, ServerCacheEntry>()
-  const inflight = new Map<string, Promise<ServerCacheValue>>()
+  const inflight = new Map<string, Promise<unknown>>()
 
   return {
     ttlMs,
