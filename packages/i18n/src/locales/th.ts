@@ -183,6 +183,8 @@ export const th: LocaleMessages = {
   'gantt.newTask': 'งานใหม่',
   'gantt.effort': 'ปริมาณงาน',
   'gantt.effortValue': 'ปริมาณงาน {value} วัน',
+  'gantt.selectAll': 'เลือกทั้งหมด',
+  'gantt.selectAllLoaded': 'มีผลเฉพาะแถวที่โหลดแล้ว',
   'gantt.resourceLoad': 'ภาระทรัพยากร',
   'gantt.resourceLoadAria': 'ภาระทรัพยากร: {count} ทรัพยากร, จุดสูงสุด {name} {percent}%',
   'gantt.resourceLoadEmpty': 'ไม่มีข้อมูลภาระทรัพยากร',

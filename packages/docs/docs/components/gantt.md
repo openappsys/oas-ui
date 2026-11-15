@@ -365,6 +365,26 @@ const rows = computeVariance(el.tasks)
 
 `show-effort`（默认关）开启后，左侧行标签区从单列变两列（名称 | 工时）：`GanttTask.effort`（单位天，可为小数，**纯展示数据**，不参与排程/依赖计算）在行尾右对齐显示；缺失/非有限显示空。列头文案走 i18n（`gantt.effort`），列宽走 `--oas-gantt-effort-width`（默认 56px，表头与行共用）。关闭时不出任何节点，既有单列形态不变。
 
+## 任务网格面板（task-columns / checkable）
+
+<DemoBlock title="工单排产形态：复选列 + 工单/工序名称 + 产品明细 + 数量列，列头行三态全选">
+  <oas-gantt id="gantt-grid-demo" checkable range-start="2026-03-01" range-end="2026-03-31" style="--oas-gantt-list-width: 440px"
+    task-columns='[{"key":"name","title":"工单 / 工序","width":150},{"key":"product","title":"产品明细","width":130},{"key":"qty","title":"数量","width":56,"align":"right"}]'
+    tasks='[{"id":"wo1","name":"WO-2601 轴承座","start":"2026-03-02","end":"2026-03-13","type":"summary","product":"FZ-40 轴承座","children":[{"id":"op1","name":"粗车","start":"2026-03-02","end":"2026-03-06","progress":60,"product":"FZ-40 ×20","qty":20},{"id":"op2","name":"精铣","start":"2026-03-06","end":"2026-03-13","progress":10,"product":"FZ-40 ×20","qty":20,"dependencies":[{"id":"op1"}]}]},{"id":"wo2","name":"WO-2602 齿轮坯","start":"2026-03-09","end":"2026-03-20","type":"summary","product":"CL-18 齿轮坯","children":[{"id":"op3","name":"锻造","start":"2026-03-09","end":"2026-03-12","progress":30,"product":"CL-18 ×36","qty":36},{"id":"op4","name":"正火","start":"2026-03-12","end":"2026-03-16","product":"CL-18 ×36","qty":36,"dependencies":[{"id":"op3"}]},{"id":"op5","name":"滚齿","start":"2026-03-16","end":"2026-03-20","product":"CL-18 ×36","qty":36,"dependencies":[{"id":"op4"}]}]}]'></oas-gantt>
+  <div id="gantt-grid-out" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)">未选中任何行（勾选行复选、列头全选或点行选择）</div>
+</DemoBlock>
+
+`task-columns`（JSON 数组，opt-in 默认关）把行标签区从「单列名称」升级为声明式多列网格（列头行 + 复选列）：
+
+- **列契约**：`[{ key, title?, width?, align? }]`。`key` 指向 `GanttTask` 任意字段（含自定义字段透传，任务名也走 `{"key":"name"}` 声明进网格）；`title` 缺省用 key；`width` 为 px（缺省按剩余宽度均分，flex:1）；`align` 取 `left`（默认）/ `center` / `right`（right 以 inline-end 落地，RTL 自动镜像）。取值纯展示：`undefined`/`null` 显示空串、数字转字符串、对象显示 `JSON.stringify`。
+- **列头行**：`role="row"` + 单元格 `role="columnheader"`，列宽/对齐模板与行单元格逐列一致；行沿用现有 `role="treeitem"` 树语义（层级缩进改由首列内容承载，列框不随层级漂移）。
+- **宽度约束**：声明列宽总和（含拖拽手柄列、复选列与列间距）超过标签区宽度时，右侧列被裁剪（v1 不提供横向滚动）——调大 `--oas-gantt-list-width`（默认 220px）或收窄列宽。
+- **复选列 `checkable`**（布尔，默认关）：网格最左 32px 复选列（`--oas-gantt-check-width`），列头三态全选/半选/全不选（`role="checkbox"` + `aria-checked`，可读名走 i18n `gantt.selectAll`）；行复选与 `selection` property **双向同步**——勾选写选中集合并派发 `oas-selection-change`（与点击行/框选同一契约，不新增事件名）。统计与全选作用域 = 当前**可见行**（折叠子行不计入、不改写其选中态）；windowed 下为已装载切片（devWarn 一次）；`disabled` 行沿用既有行选择口径可勾选（复选框不加禁用视觉，与行点选一致）。
+- **优先级**：与 `template[slot="row"]` 同开时**模板优先**（`task-columns` 被忽略并 devWarn 一次）；与 `show-effort` 同开时**网格优先**（effort 列不再单独渲染，要保留就在声明里写 `{"key":"effort"}`）。网格形态下，单列形态的行尾装饰（偏差徽标 / creatable「＋」/ 泳道负荷缩略）一并让位，保证列对齐不被挤位。
+- **容错**：非法 JSON（或零有效列声明）devWarn 一次并回落单列形态；`[]` 视作显式清空，静默回落；`checkable="false"` 显式关闭（防宿主布尔绑定意外开启）。
+- **windowed 边界**：全选只作用于当前已装载切片（列头 title 说明 + devWarn 一次）；全量勾选请宿主按 `total` 自行写 `selection`。
+- **parts**：`task-grid`（行内容器）/ `task-grid-cell`（单元格）/ `task-grid-head`（表头容器）/ `check-cell`（复选格）。
+
 ## 状态线与计划进度刻度（show-status-line / status-date）
 
 <DemoBlock title="show-status-line 开启：时间轴 status-date 竖线 + 条内计划进度刻度（里程碑二值）">
@@ -664,6 +684,16 @@ onMounted(async () => {
   if (scaleSwitch && ganttScale) {
     scaleSwitch.addEventListener('oas-change', (e) => {
       ganttScale.setAttribute('scale', e.detail.value)
+    })
+  }
+
+  // 任务网格面板：复选列 / 行选择回显（oas-selection-change 与既有框选同一契约）
+  const gridDemo = document.getElementById('gantt-grid-demo')
+  const gridOut = document.getElementById('gantt-grid-out')
+  if (gridDemo && gridOut) {
+    gridDemo.addEventListener('oas-selection-change', (e) => {
+      const ids = e.detail.ids ?? []
+      gridOut.textContent = ids.length > 0 ? `已选 ${ids.length} 行：${ids.join('、')}` : '未选中任何行（勾选行复选、列头全选或点行选择）'
     })
   }
 
@@ -1060,6 +1090,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | --- | --- | --- | --- |
 | `auto-schedule` | 依赖联动排程（布尔，默认关）：日期变更（拖拽/键盘/updateTask/updateTasks）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟不提前、保持工期），跳过 disabled 与摘要行，成环安全；派发 oas-reschedule | `string` | — |
 | `baseline-id` | 多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一） | `string` | — |
+| `checkable` | 复选列（布尔，默认关；配合 task-columns）：网格最左 32px 复选列（token --oas-gantt-check-width，part check-cell），列头三态全选/半选/全不选（role=checkbox + aria-checked，可读名 i18n gantt.selectAll）；行复选与 selection property 双向同步——勾选写选中集合并派发 oas-selection-change（与点行/框选同一契约，不新增事件名）。windowed 模式下全选只作用于当前已装载切片（列头 title 说明 + devWarn 一次）。单独开启（无 task-columns）不生效 | `string` | — |
 | `creatable` | 行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮 | `boolean` | — |
 | `dates-readonly` | 禁改期/拉伸（进度仍可拖） | `boolean` | — |
 | `expanded` | 已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回 | `string` | — |
@@ -1091,6 +1122,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `snap` | 拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度） | `string` | — |
 | `status-date` | 状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值） | `string` | — |
 | `stripe` | 行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹 | `string` | — |
+| `task-columns` | 任务网格面板（JSON 数组，默认关）：行标签区声明式多列 [{ key, title?, width?, align? }]——key 指向 GanttTask 任意字段（含自定义字段透传，任务名经 {"key":"name"} 进网格）；title 缺省用 key；width 为 px（缺省按剩余宽度均分 flex:1）；align 取 left（默认）/center/right（right 以 inline-end 落地，RTL 自动镜像）。取值纯展示：undefined/null 空串、数字转字符串、对象 JSON.stringify。与 template[slot="row"] 同开时模板优先（task-columns 忽略并 devWarn 一次）；与 show-effort 同开时网格优先（effort 列不单独渲染，保留须声明 {"key":"effort"}）。非法 JSON / 零有效列 devWarn 一次并回落单列形态；[] 显式清空静默回落。缺省（本属性与 checkable 都没有）单列形态逐节点不变 | `string` | — |
 | `tasks` | 甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, baselines?（[{ id, start, end?, progress? }] 多基线，与单 baseline 并存时优先）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate?, effort?（工时估算，天，可小数，纯展示不参与排程） }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:"milestone" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换 | `GanttTask[]` | `[]` |
 | `total` | windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式） | `string` | — |
 | `weekends` | 周末列高亮（默认开；day/hour 档生效；false 关闭） | `string` | — |
@@ -1171,6 +1203,7 @@ expanded.forEach((t) => ganttEl.addTask(t)) // 喂回组件前按需自行合并
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | 基线条颜色（默认半透明次要文字色） | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
 | `--oas-gantt-baseline-progress-color` | — | `var(--oas-color-text-secondary-strong)` |
+| `--oas-gantt-check-width` | 复选列宽（task-columns + checkable 任务网格，默认 32px；表头复选格与行复选格共用） | `32px` |
 | `--oas-gantt-conflict-color` | 违约（负总时差）高亮色（默认 --oas-color-danger） | `var(--oas-color-danger-text)` |
 | `--oas-gantt-critical-color` | 关键路径高亮色（默认 --oas-color-danger） | `var(--oas-color-danger)` |
 | `--oas-gantt-deadline-color` | 截止日标记颜色（默认 --oas-color-danger） | `var(--oas-color-danger)` |

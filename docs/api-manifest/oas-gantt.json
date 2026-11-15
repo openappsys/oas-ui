@@ -195,6 +195,18 @@
       "observed": true
     },
     {
+      "name": "task-columns",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "checkable",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "show-resource-load",
       "type": "string",
       "default": "",
@@ -485,6 +497,10 @@
     {
       "name": "--oas-gantt-conflict-color",
       "default": "var(--oas-color-danger-text)"
+    },
+    {
+      "name": "--oas-gantt-check-width",
+      "default": "32px"
     },
     {
       "name": "--oas-gantt-weekend-bg",

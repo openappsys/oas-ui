@@ -364,6 +364,26 @@ const rows = computeVariance(el.tasks)
 
 With `show-effort` (off by default) the left label area switches from a single column to two (name | effort): `GanttTask.effort` (in days, may be fractional, **display-only data** — never participates in scheduling/dependency math) renders right-aligned at the end of each row; missing/non-finite renders empty. The header text comes from i18n (`gantt.effort`), the column width from `--oas-gantt-effort-width` (default 56px, shared by header and rows). Off state renders no nodes and leaves the existing single-column form untouched.
 
+## Task Grid Panel (task-columns / checkable)
+
+<DemoBlock title="Work-order scheduling form: check column + order/operation names + product detail + qty, tri-state select-all in the header row">
+  <oas-gantt id="gantt-grid-demo" checkable range-start="2026-03-01" range-end="2026-03-31" style="--oas-gantt-list-width: 440px"
+    task-columns='[{"key":"name","title":"Order / Operation","width":150},{"key":"product","title":"Product detail","width":130},{"key":"qty","title":"Qty","width":56,"align":"right"}]'
+    tasks='[{"id":"wo1","name":"WO-2601 Bearing seat","start":"2026-03-02","end":"2026-03-13","type":"summary","product":"FZ-40 bearing seat","children":[{"id":"op1","name":"Rough turning","start":"2026-03-02","end":"2026-03-06","progress":60,"product":"FZ-40 ×20","qty":20},{"id":"op2","name":"Finish milling","start":"2026-03-06","end":"2026-03-13","progress":10,"product":"FZ-40 ×20","qty":20,"dependencies":[{"id":"op1"}]}]},{"id":"wo2","name":"WO-2602 Gear blank","start":"2026-03-09","end":"2026-03-20","type":"summary","product":"CL-18 gear blank","children":[{"id":"op3","name":"Forging","start":"2026-03-09","end":"2026-03-12","progress":30,"product":"CL-18 ×36","qty":36},{"id":"op4","name":"Normalizing","start":"2026-03-12","end":"2026-03-16","product":"CL-18 ×36","qty":36,"dependencies":[{"id":"op3"}]},{"id":"op5","name":"Gear hobbing","start":"2026-03-16","end":"2026-03-20","product":"CL-18 ×36","qty":36,"dependencies":[{"id":"op4"}]}]}]'></oas-gantt>
+  <div id="gantt-grid-out" style="color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);margin-top:var(--oas-space-2)">No rows selected (tick a row checkbox, select all in the header, or click a row)</div>
+</DemoBlock>
+
+`task-columns` (JSON array, off by default) upgrades the label area from a single name column into a declarative multi-column grid (header row + optional check column):
+
+- **Column contract**: `[{ key, title?, width?, align? }]`. `key` points at any `GanttTask` field (custom passthrough fields included; the task name joins the grid via `{"key":"name"}`); `title` falls back to the key; `width` is px (unset columns share the remaining space via flex:1); `align` is `left` (default) / `center` / `right` (right maps to inline-end, mirrored in RTL). Cell values are display-only: `undefined`/`null` render empty, numbers become strings, objects render as `JSON.stringify`.
+- **Header row**: `role="row"` + `role="columnheader"` cells, sharing the exact width/align template with row cells; rows keep the existing `role="treeitem"` tree semantics (hierarchical indent moves into the first column's content, so the column frame no longer drifts with depth).
+- **Width constraint**: when the declared widths (plus the drag-handle column, check column and gaps) exceed the label-area width, right-hand columns are clipped (v1 has no horizontal scroll) — raise `--oas-gantt-list-width` (default 220px) or narrow the columns.
+- **Check column `checkable`** (boolean, off by default): a 32px check column on the far left (`--oas-gantt-check-width`), with a tri-state select-all/indeterminate/none checkbox in the header (`role="checkbox"` + `aria-checked`, accessible name from i18n `gantt.selectAll`); row checkboxes **two-way sync** with the `selection` property — ticking writes the selection set and dispatches `oas-selection-change` (same contract as row click / marquee, no new event name). Counting and select-all scope = **currently visible rows** (children under a collapsed parent are not counted and their checked state is left untouched); `disabled` rows follow the existing row-selection stance and remain checkable (no disabled visual on the checkbox, consistent with row click).
+- **Priority**: with `template[slot="row"]` present the **template wins** (`task-columns` is ignored + one devWarn); with `show-effort` on the **grid wins** (the effort column is no longer rendered separately — keep it by declaring `{"key":"effort"}`). In grid form, single-column trailing decorations (variance badge / creatable "＋" / swimlane load strip) yield as well, so column alignment is never squeezed.
+- **Fault tolerance**: invalid JSON (or zero valid column entries) devWarns once and falls back to the single-column form; `[]` counts as an explicit clear and falls back silently; `checkable="false"` turns the column off explicitly (guards against accidental boolean bindings).
+- **windowed boundary**: select-all only affects the currently loaded slice (explained in the header title + one devWarn); for full-coverage selection, write `selection` yourself based on `total`.
+- **Parts**: `task-grid` (row content container) / `task-grid-cell` (cell) / `task-grid-head` (header container) / `check-cell` (check cell).
+
 ## Status Line & Planned-Progress Ticks (show-status-line / status-date)
 
 <DemoBlock title="show-status-line on: a vertical line at status-date on the timeline + planned-progress ticks inside bars (milestones are binary)">
@@ -663,6 +683,16 @@ onMounted(async () => {
   if (scaleSwitch && ganttScale) {
     scaleSwitch.addEventListener('oas-change', (e) => {
       ganttScale.setAttribute('scale', e.detail.value)
+    })
+  }
+
+  // Task grid panel: check column / row selection echo (oas-selection-change, same contract as marquee)
+  const gridDemo = document.getElementById('gantt-grid-demo')
+  const gridOut = document.getElementById('gantt-grid-out')
+  if (gridDemo && gridOut) {
+    gridDemo.addEventListener('oas-selection-change', (e) => {
+      const ids = e.detail.ids ?? []
+      gridOut.textContent = ids.length > 0 ? `${ids.length} row(s) selected: ${ids.join(', ')}` : 'No rows selected (tick a row checkbox, select all in the header, or click a row)'
     })
   }
 
@@ -1068,6 +1098,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | --- | --- | --- | --- |
 | `auto-schedule` | Dependency auto-scheduling (boolean, off by default): after a date change (drag/keyboard/updateTask/updateTasks) or a dependency add/update, successors are pushed minimally (later only, duration preserved) along FS/SS/FF/SF; skips disabled and summary rows; cycle-safe. Dispatches oas-reschedule | `string` | — |
 | `baseline-id` | Multi-baseline selector (with GanttTask.baselines): picks which baseline is rendered/measured; defaults to baselines[0]; an unknown id falls back to the first baseline and devWarns once. The single baseline field is equivalent to [{ id: 'default', ... }] (normalized in the sanitize layer) | `string` | — |
+| `checkable` | Check column (boolean, off by default; with task-columns): a 32px check column on the far left of the grid (token --oas-gantt-check-width, part check-cell), tri-state select-all/indeterminate/none in the header (role=checkbox + aria-checked, accessible name from i18n gantt.selectAll); row checkboxes two-way sync with the selection property — ticking writes the selection set and dispatches oas-selection-change (same contract as row click / marquee, no new event name). In windowed mode select-all only affects the currently loaded slice (header title explains + one devWarn). No effect without task-columns | `string` | — |
 | `creatable` | Inline creation (boolean, off by default): when enabled, a trailing "+" appears per row (adds a subtask on summary rows, a sibling after on leaf rows) and double-clicking empty space creates a task at the clicked date; the new task enters inline rename. No button on readonly or per-task-disabled rows | `boolean` | — |
 | `dates-readonly` | No rescheduling/resizing (progress still draggable) | `boolean` | — |
 | `expanded` | Expanded set (JSON array, controlled): defaults to fully expanded when absent; explicit [] collapses all; written back on toggle | `string` | — |
@@ -1099,6 +1130,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `snap` | Snap drags to the current scale unit (on by default; false shifts by pixel ratio and keeps time precision) | `string` | — |
 | `status-date` | Status date ('YYYY-MM-DD', hour scale may carry a time): the reference date for show-status-line; invalid/missing falls back to today (server-side today under SSR — pass it explicitly when snapshot determinism matters) | `string` | — |
 | `stripe` | Row zebra striping (boolean, off by default): tints rows by the **absolute row index** parity (stable under virtualization/windowing, no DOM-order flicker); color via `--oas-gantt-row-stripe-bg` (default `--oas-color-bg-hover`); selection/weekend backgrounds override the stripe | `string` | — |
+| `task-columns` | Task grid panel (JSON array, off by default): declarative multi-column label area [{ key, title?, width?, align? }] — key points at any GanttTask field (custom passthrough included; the task name joins via {"key":"name"}); title falls back to the key; width is px (unset columns share remaining space via flex:1); align is left (default)/center/right (right maps to inline-end, mirrored in RTL). Cell values are display-only: undefined/null empty, numbers stringified, objects JSON.stringify. With template[slot="row"] present the template wins (task-columns ignored + one devWarn); with show-effort on the grid wins (effort not rendered separately — declare {"key":"effort"} to keep it). Invalid JSON / zero valid entries devWarn once and fall back to the single-column form; [] is an explicit silent clear. Default (neither this nor checkable) keeps the single-column form node-for-node unchanged | `string` | — |
 | `tasks` | Gantt tasks (JSON): [{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline? (start/end?/progress?), baselines? ([{ id, start, end?, progress? }] multiple baselines; wins over the single baseline when both are present), resources?, deadline?, deadlines?, constraint? ('asap'\|'snet'\|'mso'\|'fnlt'), constraintDate?, effort? (effort estimate in days, fractional allowed, display-only — never feeds scheduling) }] — flat parent pointers are the primary contract; nested children are flattened automatically; explicit type:"milestone" takes precedence (rendered as milestone even with end, which is ignored) but a task with children is always a summary; no end also infers milestone; start/end are swapped automatically when start is after end | `GanttTask[]` | `[]` |
 | `total` | Full row (task) count in windowed mode; 0 or invalid disables windowed (falls back to local mode) | `string` | — |
 | `weekends` | Weekend column highlights (on by default; applies on day/hour tiers; false to disable) | `string` | — |
@@ -1179,6 +1211,7 @@ Enabled by default: hovering a name row in the left column highlights the matchi
 | `--oas-gantt-bar-progress-bg` | — | `var(--oas-gantt-bar-color, var(--oas-color-primary))` |
 | `--oas-gantt-baseline-color` | Baseline bar color (default translucent secondary text) | `color-mix(in srgb, var(--oas-color-text-secondary-strong) 55%, transparent)` |
 | `--oas-gantt-baseline-progress-color` | — | `var(--oas-color-text-secondary-strong)` |
+| `--oas-gantt-check-width` | Check column width (task-columns + checkable task grid, default 32px; shared by the header and row check cells) | `32px` |
 | `--oas-gantt-conflict-color` | Conflict (negative-float) highlight color (default --oas-color-danger) | `var(--oas-color-danger-text)` |
 | `--oas-gantt-critical-color` | Critical-path highlight color (default --oas-color-danger) | `var(--oas-color-danger)` |
 | `--oas-gantt-deadline-color` | Deadline marker color (default --oas-color-danger) | `var(--oas-color-danger)` |

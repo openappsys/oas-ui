@@ -2991,3 +2991,83 @@ test('gantt 泳道内嵌负荷：lane 摘要行缩略条 + 超配格 + 成员行
   await expect(el.locator('.side-body .row-name[data-key="rl1"] .lane-load'), '成员行不渲染缩略条').toHaveCount(0)
   await expect(el.locator('.side-body .row-name[data-key="rl4"] .lane-load'), '未分配任务行不渲染缩略条').toHaveCount(0)
 })
+
+// 任务网格面板（task-columns / checkable）：工单排产 demo 真实链路固化——
+// 列头三列与行逐列左缘一致、复选/列头三态、全选写 selection 并刷新页面反馈、console 零 error、暗色可渲染。
+test('gantt 任务网格面板：列头三列 + 复选三态 + 列头全选写 selection + 反馈刷新（工单排产 demo）', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  await page.goto('/components/gantt.html', { waitUntil: 'domcontentloaded' })
+  await waitGantt(page, 'gantt-grid-demo')
+
+  const state = await page.evaluate(() => {
+    const g = document.getElementById('gantt-grid-demo') as HTMLElement & { shadowRoot: ShadowRoot }
+    const root = g.shadowRoot
+    const head = root.querySelector('.side-head')!
+    const rows = [...root.querySelectorAll('.row-name')]
+    return {
+      headers: [...head.querySelectorAll('.head-col')].map((h) => h.textContent!.trim()),
+      rows: rows.length,
+      checkCells: rows.filter((r) => !!r.querySelector('.check-cell .gantt-check')).length,
+      headState: head.querySelector('.head-check .gantt-check')!.getAttribute('aria-checked'),
+      colLeftsHead: [...head.querySelectorAll('.head-col')].map((c) => Math.round(c.getBoundingClientRect().left)),
+      colLeftsRow: [...rows[0]!.querySelectorAll('.task-cell')].map((c) => Math.round(c.getBoundingClientRect().left)),
+    }
+  })
+  expect(state.headers, '列头文案来自 task-columns 声明').toEqual(['工单 / 工序', '产品明细', '数量'])
+  expect(state.checkCells, '每行都有复选格').toBe(state.rows)
+  expect(state.headState, '初始无选中：列头三态 false').toBe('false')
+  expect(state.colLeftsRow, '表头与行逐列左缘一致（列对齐契约）').toEqual(state.colLeftsHead)
+
+  // 真点第一行复选 → mixed + 页面反馈文本
+  await page.evaluate(() => {
+    const root = (document.getElementById('gantt-grid-demo') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    ;(root.querySelector('.row-name .check-cell .gantt-check') as HTMLButtonElement).click()
+  })
+  await expect(page.locator('#gantt-grid-out'), '行勾选刷新宿主反馈').toContainText('已选 1 行')
+  expect(
+    await page.evaluate(() => {
+      const root = (document.getElementById('gantt-grid-demo') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+      return root.querySelector('.head-check .gantt-check')!.getAttribute('aria-checked')
+    }),
+    '部分选中：列头 mixed',
+  ).toBe('mixed')
+
+  // 列头全选 → selection 全量写回 + 三态 true
+  await page.evaluate(() => {
+    const root = (document.getElementById('gantt-grid-demo') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    ;(root.querySelector('.head-check .gantt-check') as HTMLButtonElement).click()
+  })
+  const all = await page.evaluate(() => {
+    const g = document.getElementById('gantt-grid-demo') as HTMLElement & {
+      shadowRoot: ShadowRoot
+      selection: string[]
+    }
+    return {
+      sel: g.selection.length,
+      head: g.shadowRoot.querySelector('.head-check .gantt-check')!.getAttribute('aria-checked'),
+    }
+  })
+  expect(all.sel, '列头全选写入全部 7 行').toBe(7)
+  expect(all.head, '全选后列头三态 true').toBe('true')
+
+  // 暗色：网格与复选格仍可见（token 通道）
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  const darkOk = await page.evaluate(() => {
+    const root = (document.getElementById('gantt-grid-demo') as HTMLElement & { shadowRoot: ShadowRoot }).shadowRoot
+    const check = root.querySelector('.row-name .check-cell .gantt-check') as HTMLElement
+    const cell = root.querySelector('.row-name .task-cell') as HTMLElement
+    return {
+      checkVisible: check.getBoundingClientRect().width > 0,
+      cellVisible: cell.getBoundingClientRect().width > 0,
+      cellColor: getComputedStyle(cell).color,
+    }
+  })
+  expect(darkOk.checkVisible, '暗色下复选格可见').toBe(true)
+  expect(darkOk.cellVisible, '暗色下网格单元格可见').toBe(true)
+  expect(darkOk.cellColor, '暗色单元格走 token 颜色（非空）').not.toBe('')
+  expect(errors, 'console 零 error').toEqual([])
+})

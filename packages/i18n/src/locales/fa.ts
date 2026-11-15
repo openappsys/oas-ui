@@ -227,6 +227,8 @@ export const fa: LocaleMessages = {
   'gantt.newTask': 'وظیفه جدید',
   'gantt.effort': 'حجم کار',
   'gantt.effortValue': 'حجم کار {value} روز',
+  'gantt.selectAll': 'انتخاب همه',
+  'gantt.selectAllLoaded': 'فقط بر ردیف‌های بارگذاری‌شده اعمال می‌شود',
   'gantt.resourceLoad': 'بار منابع',
   'gantt.resourceLoadAria': 'بار منابع: {count} منبع، اوج {name} با {percent}%',
   'gantt.resourceLoadEmpty': 'داده‌ای برای بار منابع نیست',

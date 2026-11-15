@@ -229,6 +229,8 @@ export const zhHant: LocaleMessages = {
   'gantt.newTask': '新任務',
   'gantt.effort': '工時',
   'gantt.effortValue': '工時 {value} 天',
+  'gantt.selectAll': '全選',
+  'gantt.selectAllLoaded': '僅作用於已載入的列',
   'gantt.resourceLoad': '資源負載',
   'gantt.resourceLoadAria': '資源負載：{count} 個資源，峰值最高 {name} {percent}%',
   'gantt.resourceLoadEmpty': '暫無資源負載資料',

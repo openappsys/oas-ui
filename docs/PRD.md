@@ -43,13 +43,14 @@
 
 ### 功能定义
 
-`oas-gantt` 行标签区从「单列名称」升级为声明式**任务网格面板**（甘特组件的通行形态：左侧多列任务网格 + 右侧时间轴，单滚动容器承载）：`task-columns`（JSON 数组，契约与 oas-table `columns` 同构——`{key, title?, width?, align?}`，key 指向 GanttTask 任意字段含自定义字段）+ 可选复选框列 `checkable` + 列头行。选中集合写入既有 `selection` property 并派发 `oas-check`（契约对齐 oas-table）。缺省无 `task-columns` 时现有单列形态完全不变（向后兼容）。
+`oas-gantt` 行标签区从「单列名称」升级为声明式**任务网格面板**（甘特组件的通行形态：左侧多列任务网格 + 右侧时间轴，单滚动容器承载）：`task-columns`（JSON 数组，契约与 oas-table `columns` 同构——`{key, title?, width?, align?}`，key 指向 GanttTask 任意字段含自定义字段）+ 可选复选框列 `checkable` + 列头行。选中集合写入既有 `selection` property 并**复用既有 `oas-selection-change` 事件**（与点行/框选同一契约，不新增事件名）。缺省无 `task-columns` 时现有单列形态完全不变（向后兼容）。
 
 ### 详细需求
 
-- **列模型**：缺省 title 走 key + i18n 兜底；width 显式或按剩余空间均分；`show-effort` 保留为快捷糖（等价追加 effort 列），`task-columns` 显式声明 effort 时以声明为准。
+- **列模型**：缺省 title 走 key + i18n 兜底；width 显式或按剩余空间均分；`show-effort` 与 `task-columns` 同开时**网格优先**（effort 列不再单独渲染；如需保留由声明里写 `{"key":"effort"}`）。
 - **行高同源**：网格列与横条同处一行 DOM——单一滚动容器/单一虚拟窗口/零同步胶水（内建对宿主组合的决定性优势）；windowed 行窗口与虚拟化既有口径沿用。
 - **复选列**：表头全选/半选三态；行复选与横条行同一 hit 区域；`checkable` 仅多选（radio 单选档记候选，本期不做）。
+- **已知限制（v1）**：复选框视觉 14px（与既有折叠钮同口径，触屏热区偏小）；复选焦点在虚拟滚动重建时不恢复（行名焦点已恢复）。
 - **横断面**：RTL 镜像 / 暗色 token / DSD 收口 / forced-colors 兜底；列宽体系走 `--oas-gantt-label-width` 扩展出的多列分配 token。
 - **演进路径**（写死口径防第二套行模型）：将来任务网格要排序/过滤时，**第一选择复用 `@oas-ui/ui/data/table/model` 管道**，禁止在 gantt 内建第二套行模型。
 - **demo**：工单排产形态复刻（复选 + 工单名称 + 产品明细 + 日轴横条），zh/en 同构、文案原创。

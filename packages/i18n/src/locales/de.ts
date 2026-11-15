@@ -227,6 +227,8 @@ export const de: LocaleMessages = {
   'gantt.newTask': 'Neue Aufgabe',
   'gantt.effort': 'Aufwand',
   'gantt.effortValue': 'Aufwand {value} T',
+  'gantt.selectAll': 'Alle auswählen',
+  'gantt.selectAllLoaded': 'Gilt nur für geladene Zeilen',
   'gantt.resourceLoad': 'Ressourcenauslastung',
   'gantt.resourceLoadAria': 'Ressourcenauslastung: {count} Ressourcen, Spitzenwert {name} bei {percent} %',
   'gantt.resourceLoadEmpty': 'Keine Ressourcenauslastungsdaten',

@@ -227,6 +227,8 @@ export const ar: LocaleMessages = {
   'gantt.newTask': 'مهمة جديدة',
   'gantt.effort': 'الجهد',
   'gantt.effortValue': 'الجهد {value} يوم',
+  'gantt.selectAll': 'تحديد الكل',
+  'gantt.selectAllLoaded': 'ينطبق على الصفوف المحمّلة فقط',
   'gantt.resourceLoad': 'تحميل الموارد',
   'gantt.resourceLoadAria': 'تحميل الموارد: {count} موارد، الذروة {name} {percent}%',
   'gantt.resourceLoadEmpty': 'لا توجد بيانات تحميل موارد',

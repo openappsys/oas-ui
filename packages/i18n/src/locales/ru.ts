@@ -227,6 +227,8 @@ export const ru: LocaleMessages = {
   'gantt.newTask': 'Новая задача',
   'gantt.effort': 'Трудоёмкость',
   'gantt.effortValue': 'Трудоёмкость {value} д',
+  'gantt.selectAll': 'Выбрать все',
+  'gantt.selectAllLoaded': 'Применяется только к загруженным строкам',
   'gantt.resourceLoad': 'Загрузка ресурсов',
   'gantt.resourceLoadAria': 'Загрузка ресурсов: {count} ресурсов, пик {name} — {percent} %',
   'gantt.resourceLoadEmpty': 'Нет данных о загрузке ресурсов',

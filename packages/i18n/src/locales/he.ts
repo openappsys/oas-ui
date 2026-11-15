@@ -227,6 +227,8 @@ export const he: LocaleMessages = {
   'gantt.newTask': 'משימה חדשה',
   'gantt.effort': 'מאמץ',
   'gantt.effortValue': 'מאמץ {value} ימים',
+  'gantt.selectAll': 'בחר הכל',
+  'gantt.selectAllLoaded': 'חל על שורות שנטענו בלבד',
   'gantt.resourceLoad': 'עומס משאבים',
   'gantt.resourceLoadAria': 'עומס משאבים: {count} משאבים, שיא {name} ב-{percent}%',
   'gantt.resourceLoadEmpty': 'אין נתוני עומס משאבים',

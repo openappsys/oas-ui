@@ -15,6 +15,7 @@ import type {
   GanttRow,
   GanttScale,
   GanttTask,
+  GanttTaskColumn,
   TG,
 } from './gantt-types.js'
 
@@ -208,6 +209,89 @@ export function laneLoadCells(
     out.push({ pct: Math.round(best), over: best > 100 })
   }
   return out
+}
+
+// ===== 任务网格面板（task-columns / checkable）：纯解析与取值 =====
+
+/**
+ * task-columns 属性解析（字符串 JSON / 数组双通道归一；纯函数零副作用）：
+ * - 合法：逐条清洗为规范列（title 缺省用 key、width 须为正有限数、align 白名单外回落 left）；
+ * - 条目级容错：非对象 / key 非非空字符串的条目丢弃，剩余条目照常输出；
+ * - 非法整体（JSON 解析失败 / 非数组 / 非空数组但零有效条目）：ok=false——调用方 devWarn 一次
+ *   并回落单列形态；`[]` 是合法输入（ok=true 零列），调用方静默回落（显式清空不算误用）。
+ */
+export interface ParsedTaskColumns {
+  columns: GanttTaskColumn[]
+  /** false = 输入存在但完全不可用（宿主应告警并回落单列形态） */
+  ok: boolean
+}
+
+const TASK_COL_ALIGNS = new Set(['left', 'center', 'right'])
+
+export function parseTaskColumns(input: unknown): ParsedTaskColumns {
+  let list: unknown[]
+  if (Array.isArray(input)) {
+    list = input
+  } else if (typeof input === 'string') {
+    if (input.trim() === '') return { columns: [], ok: true }
+    try {
+      const parsed: unknown = JSON.parse(input)
+      if (!Array.isArray(parsed)) return { columns: [], ok: false }
+      list = parsed
+    } catch {
+      return { columns: [], ok: false }
+    }
+  } else {
+    return { columns: [], ok: false }
+  }
+  const columns: GanttTaskColumn[] = []
+  for (const item of list) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) continue
+    const raw = item as Record<string, unknown>
+    const key = typeof raw.key === 'string' ? raw.key.trim() : ''
+    if (!key) continue
+    const col: GanttTaskColumn = { key, align: 'left' }
+    const title = raw.title
+    if (typeof title === 'string' && title.trim() !== '') col.title = title
+    else col.title = key
+    const width = raw.width
+    if (typeof width === 'number' && Number.isFinite(width) && width > 0) col.width = width
+    if (typeof raw.align === 'string' && TASK_COL_ALIGNS.has(raw.align))
+      col.align = raw.align as GanttTaskColumn['align']
+    columns.push(col)
+  }
+  if (columns.length === 0) return { columns: [], ok: list.length === 0 }
+  return { columns, ok: true }
+}
+
+/**
+ * 网格单元格取值展示（纯展示）：undefined/null → 空串；数字 → 字符串（非有限回落空串，
+ * 与 effort 单元格口径一致）；对象/数组 → JSON.stringify；其余 String()。
+ */
+export function taskCellText(value: unknown): string {
+  if (value === undefined || value === null) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : ''
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value) ?? ''
+    } catch {
+      // 循环引用等 stringify 失败：展示层不抛错，回落空串
+      return ''
+    }
+  }
+  return String(value)
+}
+
+/**
+ * 复选列头三态（纯函数）：0 / 部分 / 全选 → 'false' / 'mixed' / 'true'（aria-checked 口径）。
+ * total ≤ 0（无行 / 切片未装载）恒 false——空集不出现「全选已勾」的假态。
+ */
+export function checkStateFor(selectedCount: number, total: number): 'true' | 'false' | 'mixed' {
+  if (total <= 0 || selectedCount <= 0) return 'false'
+  if (selectedCount >= total) return 'true'
+  return 'mixed'
 }
 
 // ===== 选中态写入（行名 / 任务条） =====

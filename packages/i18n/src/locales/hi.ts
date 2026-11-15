@@ -227,6 +227,8 @@ export const hi: LocaleMessages = {
   'gantt.newTask': 'नया कार्य',
   'gantt.effort': 'प्रयास',
   'gantt.effortValue': 'प्रयास {value} दिन',
+  'gantt.selectAll': 'सभी चुनें',
+  'gantt.selectAllLoaded': 'केवल लोड की गई पंक्तियों पर लागू',
   'gantt.resourceLoad': 'संसाधन लोड',
   'gantt.resourceLoadAria': 'संसाधन लोड: {count} संसाधन, शिखर {name} {percent}%',
   'gantt.resourceLoadEmpty': 'संसाधन लोड डेटा नहीं है',
