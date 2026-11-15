@@ -1070,7 +1070,7 @@ export class OASTableBase extends OASElement {
   private infiniteLateAppendWarned = false
   private infiniteDuplicateAppendWarned = false
   /** 批 G：max-loaded-rows 非法值的一次性可诊断提示 flag（实例级去重） */
-  private maxLoadedRowsWarned = false
+  private maxBufferRowsWarned = false
   /** 打印媒体查询（connectedCallback 捕获；null = 环境不支持 / 已断开） */
   private printMql: MediaQueryList | null = null
   /** 当前是否处于 print 媒体（打印/打印预览）：窗口外行不在 DOM、CSS 无法唤回，此态下行/列窗口恒全量 */
@@ -5527,12 +5527,12 @@ export class OASTableBase extends OASElement {
    * 批 G：缓冲上界（max-loaded-rows 属性）——合法正整数 N 生效，缺省/非法无上界（现状）。
    * 属性在场但非法时一次性 devWarn（可诊断），按无上界处理。
    */
-  private maxLoadedRows(): number | null {
+  private maxBufferRows(): number | null {
     const raw = this.getAttribute('max-loaded-rows')
     if (raw === null) return null
     const n = parseMaxLoadedRows(raw)
-    if (n === null && !this.maxLoadedRowsWarned) {
-      this.maxLoadedRowsWarned = true
+    if (n === null && !this.maxBufferRowsWarned) {
+      this.maxBufferRowsWarned = true
       devWarn(MAX_LOADED_ROWS_INVALID_HINT)
     }
     return n
@@ -5546,7 +5546,7 @@ export class OASTableBase extends OASElement {
    * 与淘汰无关（见 infiniteLoadedCount 注释）。
    */
   private trimInfiniteBuffer(anchor: boolean): void {
-    const max = this.maxLoadedRows()
+    const max = this.maxBufferRows()
     if (max === null) return
     const overflow = this.infiniteRows.length - max
     if (overflow <= 0) return
