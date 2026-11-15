@@ -3002,7 +3002,8 @@ export class OASTableBase extends OASElement {
     const virtual = this.isVirtual()
     // 横向虚拟（column-virtual）：列窗口同步 + 不兼容形态降级判定。
     // 窗口在本轮渲染前刷新到最新（scroll 事件驱动 syncColumnWindow 后经此消费）。
-    // 暂不兼容：合计行（summary 的跨列合计格与列窗口错位）——降级为普通渲染。
+    // 暂不兼容：合计行（summary 的跨列合计格与列窗口错位）、server 分组生效中
+    // （组行按列形态与占位归并几何错位，判定在 columnVirtualOn 内）——降级为普通渲染。
     let colVirtual = false
     if (this.columnVirtualOn() && !this.windowedOn() && summaryConfigs.length === 0) {
       const segs = this.splitColSegments(this.effectiveColumns())
@@ -4850,6 +4851,11 @@ export class OASTableBase extends OASElement {
    *   ——固定列 sticky 与宿主 ::part(cell)/td[data-col] 选择器可命中），尾部展开列补
    *   占位格（组行无展开交互）。修复此前 labelSpan = columnCount() - leaves.length 把
    *   尾部展开列计入 label 跨度导致的整行右移一列、聚合值落到展开列下方。
+   * labelSpan=0 退化（首个叶子即聚合列且无 checkable/rowDrag）：无独立 label 空间——
+   * 不渲染 label 格（Math.max(1,0) 强凑 colSpan=1 会让 ΣcolSpan 比总列数多 1，行宽
+   * 不闭合），label 内容并入首个聚合格（聚合格从第 0 列开始，行宽闭合；折叠交互/
+   * 组标签可见性不回退；该退化格不写列对齐——右对齐会把折叠钮挤到格尾，label 主
+   * 功能优先）。
    * depth 缩进：层级分组（server 组行 depth>0）label 格按树形同款公式缩进（逻辑属性
    * padding-inline-start，RTL 正确）；depth=0（本地分组恒 0）不写内联 padding——既有视觉零漂移。
    * 计数节点：groupCount 非有限数（协议缺省 / NaN / 负数在数据层已归一）不创建——文档
@@ -4885,8 +4891,9 @@ export class OASTableBase extends OASElement {
     // ——缺值格子留空）；client 本地分组不生效（组行恒全宽，零漂移）
     const hasAgg = this.serverGroupBy() !== '' && leaves.some((c) => c.aggregate)
     const td = document.createElement('td')
-    const indent = (): void => {
-      if (flat.depth > 0) td.style.paddingInlineStart = `${16 + flat.depth * this.indentSizePx()}px`
+    // indent 参数化：label 内容可能并入首个聚合格（labelSpan=0 退化，见下），缩进目标随承载格走
+    const indent = (target: HTMLElement): void => {
+      if (flat.depth > 0) target.style.paddingInlineStart = `${16 + flat.depth * this.indentSizePx()}px`
     }
     if (hasAgg) {
       // 按列形态：label 跨度 = 前导附加列（行拖拽/勾选，在数据列之前）+ 首个 aggregate
@@ -4899,22 +4906,40 @@ export class OASTableBase extends OASElement {
         if (leaves[i]!.aggregate) break
         labelSpan++
       }
-      td.colSpan = Math.max(1, labelSpan)
-      indent()
-      td.append(btn, label)
-      if (count) td.append(count)
-      tr.appendChild(td)
+      // labelSpan=0 退化防御（首个叶子即聚合列且无 checkable/rowDrag）：无独立 label 空间
+      // ——不渲染 label 格（此前 Math.max(1, 0) 强凑 colSpan=1 会让 ΣcolSpan 比总列数多 1，
+      // 行宽不闭合），label 内容（折叠钮 + 组标签 + 计数 + depth 缩进）并入首个聚合格：
+      // 聚合格从第 0 列开始保证 ΣcolSpan 闭合，折叠交互/组标签可见性不回退
+      const mergedLabel = labelSpan === 0
+      if (!mergedLabel) {
+        td.colSpan = labelSpan
+        indent(td)
+        td.append(btn, label)
+        if (count) td.append(count)
+        tr.appendChild(td)
+      }
+      let labelPending = mergedLabel
       for (; i < leaves.length; i++) {
         const col = leaves[i]!
         const cell = document.createElement('td')
         // 与数据行同口径：data-col + part=cell（固定列 sticky / 宿主选择器命中）
         cell.setAttribute('data-col', col.key)
         cell.setAttribute('part', 'cell')
+        const merged = labelPending
+        if (merged) {
+          labelPending = false
+          indent(cell)
+          cell.append(btn, label)
+          if (count) cell.append(count)
+        }
         const v = col.aggregate ? groupAggregateValue(flat.aggregates, col) : null
         if (v !== null) {
-          cell.textContent = v
+          // append 而非 textContent：退化承载格已有子节点，textContent 会覆盖
+          cell.append(v)
           const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
-          if (align) cell.className = `align-${align}`
+          // 退化承载格不写列对齐：右对齐会把折叠钮/组标签挤到格尾（label 不可读）——
+          // 数值对齐惯例让位于该退化格的 label 主功能（罕见配置，文档标注）
+          if (align && !merged) cell.className = `align-${align}`
         }
         tr.appendChild(cell)
       }
@@ -4928,7 +4953,7 @@ export class OASTableBase extends OASElement {
     }
     // 全宽形态（既有视觉零漂移）
     td.colSpan = this.columnCount()
-    indent()
+    indent(td)
     td.append(btn, label)
     if (count) td.append(count)
     tr.appendChild(td)
@@ -6398,7 +6423,12 @@ export class OASTableBase extends OASElement {
     this.runUpdateAndNotify()
   }
 
-  /** column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / 固定列布局不符 → 告警一次并降级为普通渲染） */
+  /**
+   * column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / server
+   * 分组生效中 → 告警一次并降级为普通渲染）。降级方向定稿：降 column-virtual 保 server 分组
+   * ——分组是数据语义（宿主协议结果），列虚拟是渲染性能优化；组行按列形态的跨列结构与列
+   * 窗口占位归并冲突（数据行 td 序列经 columnWindowSequence() 归并后与组行逐格渲染几何错位）。
+   */
   private columnVirtualOn(): boolean {
     if (!this.hasAttr('column-virtual')) return false
     if (this.headerDepth() > 1) {
@@ -6412,6 +6442,13 @@ export class OASTableBase extends OASElement {
       this.warnColVirtualOnce(
         'span-method',
         'span-method 与 column-virtual 不兼容（列窗口会破坏跨列合并）：已降级为普通渲染',
+      )
+      return false
+    }
+    if (this.serverGroupBy() !== '') {
+      this.warnColVirtualOnce(
+        'server-group',
+        'server 分组与 column-virtual 不兼容（组行跨列结构与列窗口占位冲突）：已降级为普通列渲染',
       )
       return false
     }

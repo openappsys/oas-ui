@@ -327,4 +327,94 @@ describe('OASTable server 分组协议（批 B）', () => {
     ;(groups[0]!.querySelector('button.toggle') as HTMLButtonElement).click()
     expect(dataRowsOf(el).length).toBe(1)
   })
+
+  // ==== 收尾小修：server 分组 × column-virtual 守卫（F1）+ labelSpan=0 退化（F3） ====
+
+  /** 32 列宽表（name + amount 聚合列 + 30 附加列）：happy-dom 视口下窗口裁剪成立，不降级时数据行走占位归并 */
+  const wideGroupCols = (): string =>
+    JSON.stringify([
+      { key: 'name', title: '名称' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+      ...Array.from({ length: 30 }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '80px' })),
+    ])
+
+  it('server 分组 × column-virtual：列虚拟降级为普通渲染（devWarn 一次 + 重渲染不重复）——组行/数据行格子几何闭合', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const rows = JSON.stringify([
+        { kind: 'group', groupKey: '研发', groupCount: 1, aggregates: { amount: 120 } },
+        { key: 'a', name: '张三', amount: 70 },
+      ])
+      const { el } = mountGroup(
+        { 'row-model': 'server', total: '40', 'group-by': 'dept', 'column-virtual': '' },
+        rows,
+        wideGroupCols(),
+      )
+      // 降级生效：数据行不再走列窗口（无占位归并格）
+      const placeholders = el.shadowRoot!.querySelectorAll('td.col-virtual-placeholder')
+      expect(placeholders.length, 'server 分组生效时 column-virtual 应降级（无占位格）').toBe(0)
+      // 几何闭合：组行格子数与 colSpan 求和都等于数据行 td 数（全列渲染，同构）
+      const gtds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      const dataTdCount = dataRowsOf(el)[0]!.querySelectorAll('td').length
+      expect(dataTdCount, '数据行全列渲染（32 列）').toBe(32)
+      expect(gtds.length, '组行逐格数与数据行一致').toBe(dataTdCount)
+      expect(gtds.reduce((n, t) => n + t.colSpan, 0)).toBe(dataTdCount)
+      // 聚合值列位正确（amount 在第 2 格，label 格覆盖 name 叶子）
+      expect(gtds[0]!.textContent).toContain('研发')
+      expect(gtds[1]!.getAttribute('data-col')).toBe('amount')
+      expect(gtds[1]!.textContent).toBe('120')
+      // devWarn 恰一次 + 同实例重渲染（数据回填触发 update）不重复
+      const warns = (): number => warn.mock.calls.filter((c) => String(c[0]).includes('column-virtual')).length
+      expect(warns()).toBe(1)
+      el.setAttribute(
+        'data',
+        JSON.stringify([
+          { kind: 'group', groupKey: '销售', groupCount: 1, aggregates: { amount: 5 } },
+          { key: 'b', name: '李四', amount: 5 },
+        ]),
+      )
+      expect(warns(), '同实例重渲染不重复告警').toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('对照：非 server 分组（client 本地分组）× column-virtual 不降级——列窗口照常生效（守卫条件精确命中 server 分组）', () => {
+    const data = JSON.stringify([{ key: 'a', name: '张三', dept: '研发', amount: 70 }])
+    const { el } = mountReq({ 'group-by': 'dept', 'column-virtual': '' }, data, wideGroupCols())
+    // column-virtual 生效：数据行占位归并格在场（窗口裁剪）
+    const placeholders = el.shadowRoot!.querySelectorAll('td.col-virtual-placeholder')
+    expect(placeholders.length, 'client 分组不受 server 守卫影响，列窗口照常').toBeGreaterThan(0)
+    // 本地分组组行恒全宽（既有行为零漂移）
+    const gtds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(gtds.length).toBe(1)
+    expect(gtds[0]!.colSpan).toBe(32)
+  })
+
+  it('labelSpan=0 退化（首个叶子即聚合列且无勾选/拖拽）：不渲染 label 格——聚合格从第 0 列起，ΣcolSpan 闭合且折叠交互不回退', () => {
+    const cols = JSON.stringify([
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+      { key: 'name', title: '名称' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+      { key: 'a', name: '张三', amount: 70 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    // 行宽闭合：此前 Math.max(1, 0) 强凑 colSpan=1 会多出 1 列（不闭合）
+    expect(tds.reduce((n, t) => n + t.colSpan, 0)).toBe(2)
+    // 聚合格从第 0 列起：首格即聚合列（无独立 label 格）
+    expect(tds.length).toBe(2)
+    expect(tds[0]!.getAttribute('data-col')).toBe('amount')
+    expect(tds[0]!.colSpan).toBe(1)
+    // 折叠交互与组信息不回退：折叠钮/组标签/计数并入首格
+    expect(tds[0]!.querySelector('button.toggle')).not.toBeNull()
+    expect(tds[0]!.textContent).toContain('研发')
+    expect(tds[0]!.querySelector('.group-count')!.textContent).toBe('2')
+    // 聚合值同格在场（aria-expanded 折叠语义保留）
+    expect(tds[0]!.textContent).toContain('120')
+    expect(tds[0]!.querySelector('button.toggle')!.getAttribute('aria-expanded')).toBe('true')
+  })
 })
