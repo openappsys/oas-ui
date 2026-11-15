@@ -647,9 +647,30 @@ const source = createServerSource(table, {
     return { rows: res.list, total: res.total }
   },
 })
-// source.refresh()：强刷当前页（reason='refresh'，绕过同值去重）
-// source.destroy()：解绑监听并中止在途（不动 row-model / total 属性）
+// source.refresh()：强刷当前页（reason='refresh'，绕过同值去重）；refresh({ purge: true })：清空全部缓存后强制重取
+// source.destroy()：解绑监听并中止在途 + 清空 helper 缓存（不动 row-model / total 属性）
 ```
+
+数据层缓存（helper 内建，不影响组件协议）：**默认启用**——同一查询（区间 / 排序 / 过滤 / 游标全同，与触发原因无关）在 TTL 内翻页往返**直接回填缓存、不再调用 `fetchRows`**。`cache: false` 完全关闭（关闭档行为与无缓存实现逐值一致）；`{ ttlMs }` 毫秒级可配（默认 `300000` = 5 分钟）；`{ staleWhileRevalidate: true }` 开启后台刷新——过期命中先回填陈旧值（用户立即看到旧数据而非 loading）、后台重取成功后回填更新（两阶段可见）。同键请求在途时自动合并（复用同一取数，不重复 fetch）；`fetchRows` 失败或被中止不写缓存（失败页翻回即重试）；`refresh()` 无参绕过缓存强制重取（结果更新缓存），`refresh({ purge: true })` 清空**全部**缓存后强制重取（数据已被外部修改时用）；`destroy()` 清缓存与在途登记：
+
+```ts
+// 默认档：TTL 5 分钟，翻页往返命中缓存不重调 fetchRows
+const source = createServerSource(table, { fetchRows, total: 1000 })
+
+// 全量配置示例
+const source = createServerSource(table, {
+  fetchRows,
+  total: 1000,
+  cache: {
+    ttlMs: 60_000, // 条目有效期（ms，默认 300000）
+    staleWhileRevalidate: true, // 过期命中：先回填陈旧值 + 后台重取（默认 false = 过期即重新取数）
+  },
+})
+// source.refresh()          → 当前页强制重取（绕过缓存读，结果写回缓存）
+// source.refresh({ purge: true }) → 清空全部缓存 + 强制重取（各键往返全重取）
+```
+
+缓存语义速查：键 = 完整查询（`start` / `end` / `sortModel` / `filterValues` / `cursor`，与请求原因无关——`init` / `sort` / `filter` / `paginate` 同属查询态，翻页往返命中同一条目；排序组序敏感、过滤键序不敏感、值类型敏感）；命中（未过期）直接回填（`data` / `total` 属性写与成功路径同一通道，requestId 校验语义保持）；命中（已过期）默认重新取数，SWR 开启时走两阶段；同键在途复用同一 Promise。宿主数据在服务端被外部修改后，请用 `refresh({ purge: true })`（单页强刷用 `refresh()`）；需要「每次都真取」的场景（非幂等 fetcher / 实时性敏感）请 `cache: false`。
 
 超时与取消：组件不内置请求超时——超时是数据层（宿主 fetcher）的职责。在 `fetchRows` 内组合中止信号再交给宿主 fetch：`AbortSignal.any([signal, AbortSignal.timeout(8000)])`（helper 的 `signal` + 8s 超时取先到者；`AbortSignal.any`/`AbortSignal.timeout` 基线 2024 年，各引擎 2023-08 ~ 2024-04 陆续支持——旧环境可 `typeof AbortSignal.any === 'function'` 检测，降级为手动 AbortController + setTimeout 组合或宿主侧超时）——超时即 reject，与其它失败走同一路径：自动经 helper 桥接错误条 + 可重试，无需自建超时反馈：
 
@@ -733,7 +754,7 @@ fetchRows: async ({ signal, ...rest }) => {
 | windowed（服务端行窗口） | 十万行级**滚动**场景：宿主只喂可视窗口切片，免翻页 | 宿主（组件跳过本地执行并 devWarn） | `createWindowedSource` 内建（中止过期在途 + 覆盖判定） | helper 派发 `oas-window-error`，组件无内建错误条 | 滚动虚拟化场景首选 |
 | 宿主自管事件监听 | 深度定制取数链路（自建缓存/合并/SSE 推送），或上述形态覆盖不了的组合 | 宿主完全自管 | 宿主自建 | 宿主自建 | 自由度最大、成本最高 |
 
-互斥与前提规则：`row-model="server"` 与 `windowed` 同开时 **windowed 优先**（server 被忽略）+ 一次性 devWarn；`infinite` 与 `pagination` 同开时 **pagination 优先**（既有分页语义）、与 `windowed` 同开时 **windowed 优先**、与 `row-model="server"` 同开时 **infinite 优先**（协议走 cursor/load-more，`total` 前提放宽），均一次性 devWarn；server 生效前提 = `total` 属性在场（缺失回落 client + 一次性 devWarn），**infinite 的 `total` 可选**（未知总数场景以宿主空块信号声明到底）；「逐段混用（只排当前页）」是错误语义，组件不提供该配置——排序/过滤要么全在服务端（server / infinite），要么全在本地/宿主。
+互斥与前提规则：`row-model="server"` 与 `windowed` 同开时 **windowed 优先**（server 被忽略）+ 一次性 devWarn；`infinite` 与 `pagination` 同开时 **pagination 优先**（既有分页语义）、与 `windowed` 同开时 **windowed 优先**、与 `row-model="server"` 同开时 **infinite 优先**（协议走 cursor/load-more，`total` 前提放宽），均一次性 devWarn；server 生效前提 = `total` 属性在场（缺失回落 client + 一次性 devWarn），**infinite 的 `total` 可选**（未知总数场景以宿主空块信号声明到底）；「逐段混用（只排当前页）」是错误语义，组件不提供该配置——排序/过滤要么全在服务端（server / infinite），要么全在本地/宿主。缓存维度：`createServerSource` 内建查询级缓存（TTL 内同查询直接回填，默认 5 分钟可配 / SWR / purge / 在途合并，见上方「数据层缓存」）——**需要每次都真取服务端的场景（非幂等 fetcher、实时性敏感）请 `cache: false` 关闭**；「宿主自管事件监听」路径的缓存由宿主完全自建。
 
 回填时序注意：「宿主自管事件监听」路径在事件监听内回填请**异步写属性**——监听回调中同步写 `data` 会因渲染管线重入导致 DOM 落后一帧；`createServerSource` helper 已内置异步回填，无此限制。
 

@@ -647,9 +647,30 @@ const source = createServerSource(table, {
     return { rows: res.list, total: res.total }
   },
 })
-// source.refresh(): force-refetch the current page (reason='refresh', bypassing same-value dedup)
-// source.destroy(): unbind listeners and abort in-flight work (does not touch row-model / total attributes)
+// source.refresh(): force-refetch the current page (reason='refresh', bypassing same-value dedup); refresh({ purge: true }): purge all cache entries, then force-refetch
+// source.destroy(): unbind listeners, abort in-flight work, and clear the helper cache (does not touch row-model / total attributes)
 ```
+
+Data-layer caching (built into the helper, no component protocol changes): **enabled by default** — the same query (same range / sort / filter / cursor, regardless of what triggered it) refills from cache within its TTL on page round-trips **without calling `fetchRows` again**. `cache: false` disables it entirely (the disabled path behaves exactly like the pre-cache implementation); `{ ttlMs }` is configurable in milliseconds (default `300000` = 5 minutes); `{ staleWhileRevalidate: true }` enables background revalidation — an expired hit first refills the stale value (users see old data immediately instead of a loading state), then a background refetch updates the refill when it succeeds (two visible phases). Concurrent same-key requests are merged automatically (one fetch reused, no duplicates); a failed or aborted `fetchRows` writes no cache (returning to a failed page retries it); `refresh()` with no argument bypasses the cache and force-refetches (the result updates the cache), while `refresh({ purge: true })` purges **all** cache entries before force-refetching (use when the data was modified externally); `destroy()` clears the cache and in-flight registry:
+
+```ts
+// Default: 5-minute TTL; page round-trips hit the cache without calling fetchRows
+const source = createServerSource(table, { fetchRows, total: 1000 })
+
+// Full configuration example
+const source = createServerSource(table, {
+  fetchRows,
+  total: 1000,
+  cache: {
+    ttlMs: 60_000, // entry lifetime in ms (default 300000)
+    staleWhileRevalidate: true, // expired hit: refill the stale value + refetch in the background (default false = expired means refetch)
+  },
+})
+// source.refresh()          → force-refetch the current page (bypasses cache reads, result written back to cache)
+// source.refresh({ purge: true }) → purge all cache + force-refetch (every key refetches on return)
+```
+
+Cache semantics at a glance: key = the full query (`start` / `end` / `sortModel` / `filterValues` / `cursor`, independent of the request reason — `init` / `sort` / `filter` / `paginate` are all query states, so page round-trips hit the same entry; sort order is array-sensitive, filter key order is insensitive, value types are sensitive); an unexpired hit refills directly (the `data` / `total` attribute writes use the same channel as the success path, requestId guard semantics preserved); an expired hit refetches by default, or goes through the two phases when SWR is on; same-key in-flight requests reuse one Promise. After host data is modified externally on the server, use `refresh({ purge: true })` (single-page refetch: `refresh()`); for scenarios that must always hit the server (non-idempotent fetchers, latency-sensitive data), pass `cache: false`.
 
 Timeout and cancellation: the component has no built-in request timeout — timeouts are the data layer's (host fetcher's) responsibility. Compose abort signals inside `fetchRows` before handing them to your fetch: `AbortSignal.any([signal, AbortSignal.timeout(8000)])` (the helper's `signal` + an 8s timeout, whichever fires first; `AbortSignal.any`/`AbortSignal.timeout` baseline is 2024 — engines shipped them progressively between 2023-08 and 2024-04. On older environments, feature-detect with `typeof AbortSignal.any === 'function'` and fall back to a manual `AbortController` + `setTimeout` combination or a host-side timeout). A timeout rejects like any other failure and takes the same path: the helper bridges it to the error bar + retry automatically — no custom timeout UI needed:
 
@@ -733,7 +754,7 @@ Pick one of the five approaches by "who holds the full data and who owns sorting
 | windowed (server-side row window) | 100k+ row **scrolling** scenarios: host supplies only the visible-window slice, no paging | Host (component skips local execution and devWarns) | `createWindowedSource` built-in (aborts stale in-flight + coverage checks) | Helper emits `oas-window-error`; no built-in error bar | First choice for scroll virtualization |
 | Host-managed event listening | Deeply customized fetching (own cache/merge/SSE push), or combinations the above do not cover | Host fully owns | Host-built | Host-built | Most freedom, most cost |
 
-Mutual exclusion and premise rules: when `row-model="server"` and `windowed` are both set, **windowed wins** (server is ignored) with a one-time devWarn; `infinite` combined with `pagination` — **pagination wins** (existing paging semantics); with `windowed` — **windowed wins**; with `row-model="server"` — **infinite wins** (protocol switches to cursor/load-more with the relaxed `total` premise), each with a one-time devWarn; server activation requires the `total` attribute (falls back to client + one-time devWarn when missing), while **`total` is optional for infinite** (unknown-total scenes declare end-of-data via the host's empty-chunk signal); "partial mixing (sort only the current page)" is wrong semantics and the component provides no such configuration — sorting/filtering lives either entirely on the server (server / infinite) or entirely locally/host-side.
+Mutual exclusion and premise rules: when `row-model="server"` and `windowed` are both set, **windowed wins** (server is ignored) with a one-time devWarn; `infinite` combined with `pagination` — **pagination wins** (existing paging semantics); with `windowed` — **windowed wins**; with `row-model="server"` — **infinite wins** (protocol switches to cursor/load-more with the relaxed `total` premise), each with a one-time devWarn; server activation requires the `total` attribute (falls back to client + one-time devWarn when missing), while **`total` is optional for infinite** (unknown-total scenes declare end-of-data via the host's empty-chunk signal); "partial mixing (sort only the current page)" is wrong semantics and the component provides no such configuration — sorting/filtering lives either entirely on the server (server / infinite) or entirely locally/host-side. Caching dimension: `createServerSource` ships a query-level cache (same query refills directly within its TTL; default 5 minutes, configurable, with SWR / purge / in-flight merging — see "Data-layer caching" above) — **for scenarios that must always hit the server (non-idempotent fetchers, latency-sensitive data) pass `cache: false`**; on the "Host-managed event listening" path the cache is entirely host-built.
 
 Refill-timing note: on the "Host-managed event listening" path, refill **asynchronously** inside event listeners — writing `data` synchronously in the listener callback lags the DOM by one frame due to render-pipeline reentry; the `createServerSource` helper refills asynchronously out of the box and has no such restriction.
 
