@@ -63,7 +63,7 @@ describe('同源接线静态守卫（model-core 白名单 + oas-table 薄壳）'
   it('① model-core/** 全部 import 仅同目录相对导入（数据层零反向依赖/零外部依赖）', () => {
     const files = readdirSync(MODEL_CORE_DIR).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
     // 文件数精确断言：新文件进入 model-core 时红灯提醒维护者过一遍本守卫
-    expect(files.length, '扫描面与 model-core 实际文件数一致').toBe(8)
+    expect(files.length, '扫描面与 model-core 实际文件数一致').toBe(9)
     const bad: string[] = []
     for (const f of files) {
       const src = readFileSync(join(MODEL_CORE_DIR, f), 'utf8')

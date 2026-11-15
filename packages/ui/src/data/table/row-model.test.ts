@@ -18,12 +18,14 @@ const state = (
     pageSize: number
     sortModel: Array<{ key: string; order: string }>
     filterValues: Record<string, string | number>
+    groupBy: string
   }> = {},
 ) => ({
   current: 1,
   pageSize: 10,
   sortModel: [],
   filterValues: {},
+  groupBy: '',
   ...over,
 })
 
@@ -111,6 +113,28 @@ describe('rowsRequestPlan（请求原因推导）', () => {
       rowsRequestPlan(state({ current: 2 }), state({ current: 1, sortModel: [{ key: 'a', order: 'asc' }] })).reason,
     ).toBe('sort')
   })
+
+  it('分组键变化 → group + 重置页码（新分组口径首页）', () => {
+    expect(rowsRequestPlan(state({ groupBy: '' }), state({ groupBy: 'dept' }))).toEqual({
+      reason: 'group',
+      resetPage: true,
+    })
+    expect(rowsRequestPlan(state({ groupBy: 'dept' }), state({ groupBy: 'city' })).reason).toBe('group')
+    // 取消分组同样是查询条件变更
+    expect(rowsRequestPlan(state({ groupBy: 'dept' }), state({ groupBy: '' }))).toEqual({
+      reason: 'group',
+      resetPage: true,
+    })
+    // 同值（含双方缺省）→ 不派发
+    expect(rowsRequestPlan(state({ groupBy: 'dept' }), state({ groupBy: 'dept' })).reason).toBeNull()
+    expect(rowsRequestPlan(state(), state()).reason).toBeNull()
+  })
+
+  it('排序与分组同时变化 → 原因取排序（优先级 sort > filter > group）', () => {
+    expect(
+      rowsRequestPlan(state({ groupBy: 'a' }), state({ groupBy: 'b', sortModel: [{ key: 'x', order: 'asc' }] })).reason,
+    ).toBe('sort')
+  })
 })
 
 describe('rowsRequestSignature（同值去重键）', () => {
@@ -121,6 +145,7 @@ describe('rowsRequestSignature（同值去重键）', () => {
     expect(rowsRequestSignature(state({ pageSize: 20 }))).not.toBe(a)
     expect(rowsRequestSignature(state({ sortModel: [{ key: 'a', order: 'asc' }] }))).not.toBe(a)
     expect(rowsRequestSignature(state({ filterValues: { a: 1 } }))).not.toBe(a)
+    expect(rowsRequestSignature(state({ groupBy: 'dept' }))).not.toBe(a)
   })
 })
 
@@ -128,6 +153,10 @@ describe('RowsRequestReason 枚举扩展（infinite 批）', () => {
   it("'load-more' 属合法 reason（编译期 + 运行时字面量）", () => {
     const reason: RowsRequestReason = 'load-more'
     expect(reason).toBe('load-more')
+  })
+  it("'group' 属合法 reason（server 分组批：分组键变更的驱动源）", () => {
+    const reason: RowsRequestReason = 'group'
+    expect(reason).toBe('group')
   })
 })
 

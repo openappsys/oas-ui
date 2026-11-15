@@ -10,8 +10,8 @@
  * - 失败通道见 oas-table.ts 的 reportRowsError（requestId === 在途序号才生效）。
  */
 
-/** 请求原因：init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷 / load-more=infinite 触底追加下一块 */
-export type RowsRequestReason = 'init' | 'paginate' | 'sort' | 'filter' | 'refresh' | 'load-more'
+/** 请求原因：init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / group=分组键变更（server 分组协议）/ refresh=refreshRows 强刷 / load-more=infinite 触底追加下一块 */
+export type RowsRequestReason = 'init' | 'paginate' | 'sort' | 'filter' | 'group' | 'refresh' | 'load-more'
 
 /** `oas-rows-request` detail */
 export interface RowsRequestDetail {
@@ -30,6 +30,8 @@ export interface RowsRequestDetail {
   totalKnown: boolean
   /** 无限滚动游标：上次 appendRows(options.cursor) 记录的值原样回传（首次进入/排序过滤重置后 = undefined）——cursor 分页取下一块的定位依据 */
   cursor?: string
+  /** server 分组协议：当前分组键（group-by 属性值）——仅 row-model="server" 形态且 group-by 在场时携带；宿主据此返回分组行 */
+  groupBy?: string
 }
 
 /** 请求状态快照（同值去重键与原因推导的输入） */
@@ -38,6 +40,8 @@ export interface RowsRequestState {
   pageSize: number
   sortModel: Array<{ key: string; order: string }>
   filterValues: Record<string, string | number>
+  /** server 分组键（server 形态 + group-by 在场时非空；infinite/windowed/client 缺省空串） */
+  groupBy?: string
 }
 
 /** 排序组签名（数组序敏感：multi-sort 语义按序依次排序） */
@@ -52,9 +56,11 @@ const filterSig = (filterValues: Record<string, string | number>): string =>
     .map((k) => `${k}=${filterValues[k]}`)
     .join(',')
 
-/** 请求签名（同值去重键）：current+pageSize+排序组+过滤组 */
+/** 请求签名（同值去重键）：current+pageSize+排序组+过滤组+分组键 */
 export function rowsRequestSignature(s: RowsRequestState): string {
-  return [String(s.current), String(s.pageSize), sortSig(s.sortModel), filterSig(s.filterValues)].join('\u0003')
+  return [String(s.current), String(s.pageSize), sortSig(s.sortModel), filterSig(s.filterValues), s.groupBy ?? ''].join(
+    '\u0003',
+  )
 }
 
 export interface RowsRequestPlan {
@@ -69,7 +75,7 @@ export interface RowsRequestPlan {
 
 /**
  * 请求原因推导：与上次请求状态逐组比较。
- * 优先级 sort > filter > paginate（页码重置随 sort/filter 发生时，原因取驱动源）；
+ * 优先级 sort > filter > group > paginate（页码重置随 sort/filter/group 发生时，原因取驱动源）；
  * 页大小变更归入 paginate 且须重置页码（新口径首页）；仅 current 变化为纯翻页不重置。
  */
 export function rowsRequestPlan(last: RowsRequestState | null, next: RowsRequestState): RowsRequestPlan {
@@ -77,6 +83,7 @@ export function rowsRequestPlan(last: RowsRequestState | null, next: RowsRequest
   if (rowsRequestSignature(last) === rowsRequestSignature(next)) return { reason: null, resetPage: false }
   if (sortSig(last.sortModel) !== sortSig(next.sortModel)) return { reason: 'sort', resetPage: true }
   if (filterSig(last.filterValues) !== filterSig(next.filterValues)) return { reason: 'filter', resetPage: true }
+  if ((last.groupBy ?? '') !== (next.groupBy ?? '')) return { reason: 'group', resetPage: true }
   // 走到这里只剩分页组变化：页大小变化重置页码，纯翻页不重置
   return { reason: 'paginate', resetPage: last.pageSize !== next.pageSize }
 }

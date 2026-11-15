@@ -70,6 +70,8 @@ export interface FlatRow {
   groupLabel?: string
   /** group 类型行：组内数据行计数 */
   groupCount?: number
+  /** group 类型行：组内聚合值（列 key → 宿主计算好的值；server 分组协议透传，组件不做本地聚合） */
+  aggregates?: Record<string, number | string>
 }
 
 /**

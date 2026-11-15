@@ -38,6 +38,8 @@
  * ```
  */
 import { buildFlat } from './group.js'
+import { groupAggregateValue, partitionServerGroupRows } from './server-group.js'
+import type { ServerGroupRowInput, PartitionServerGroupResult } from './server-group.js'
 import {
   computeDisplayRoots,
   normalizeCurrent,
@@ -77,6 +79,9 @@ export {
   codePointCompare,
   columnTypeMap,
   flattenLeaves,
+  // server 分组协议（宿主分组行分区与按列聚合取值）
+  partitionServerGroupRows,
+  groupAggregateValue,
   // 属性归一化（壳层读属性 → 纯函数输入的共用口径）
   normalizePageSize,
   normalizeCurrent,
@@ -93,6 +98,8 @@ export type {
   PageInput,
   RowModelInput,
   RowModelResult,
+  ServerGroupRowInput,
+  PartitionServerGroupResult,
   SortAttrs,
   SortDirection,
   SortState,

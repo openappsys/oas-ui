@@ -14,6 +14,10 @@ const NO_COLLAPSED_GROUPS: ReadonlySet<string> = new Set()
  * 可见行列表：树形数据按 expanded（父行 key）过滤；可展开行的内容行紧随数据行。
  * 父行有 children 时优先展示子树（不叠加 expand 内容行）。
  * 分组模式下跟踪当前组折叠态（collapsedGroups：折叠组只保留分节头行，组内行全部隐藏）。
+ *
+ * 层级分组（server 分组协议的组行可带 depth）：折叠某组 = 折叠其整棵子树——该组行之后
+ * depth 更深的组行与其组内行一并隐藏，直到下一个不深于折叠组的组行。本地分组组行
+ * depth 恒 0，此时本算法与「折叠组只保留分节头行」的既有语义逐字节等价（零漂移）。
  */
 export function visibleFlat(
   flat: FlatRow[],
@@ -22,14 +26,20 @@ export function visibleFlat(
   collapsedGroups: ReadonlySet<string> = NO_COLLAPSED_GROUPS,
 ): FlatRow[] {
   const out: FlatRow[] = []
-  let groupCollapsed = false
+  // 最近折叠组的 depth（Infinity = 当前无折叠）：其子树（更深的组行与组内行）全部隐藏
+  let collapsedDepth = Infinity
   for (const f of flat) {
     if (f.kind === 'group') {
-      groupCollapsed = collapsedGroups.has(f.groupKey ?? '')
+      const d = f.depth ?? 0
+      // 深于折叠组的组行处于折叠子树内 → 一并隐藏（层级语义）；不深于 → 脱离折叠子树，可见
+      if (d > collapsedDepth) continue
       out.push(f)
+      collapsedDepth = collapsedGroups.has(f.groupKey ?? '') ? d : Infinity
       continue
     }
-    if (groupCollapsed) continue
+    // 数据/expand 行：处于折叠组子树内 → 隐藏（组归属按数组相邻性——最近的未隐藏组行；
+    // 单层分组折叠组 depth=0 时组内行全隐藏，与既有语义等价）
+    if (collapsedDepth !== Infinity) continue
     if (f.parent !== undefined && !expanded.has(f.parent)) continue
     out.push(f)
     const row = f.row
