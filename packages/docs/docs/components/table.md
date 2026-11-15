@@ -321,6 +321,22 @@ table.addEventListener('oas-edit', (e) => {
 
 `column-virtual` 开启横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 `colSpan` 归并（宽度由 `colgroup` 求和，`table-layout: fixed` 强制启用）——60 列宽表 DOM 里只有十几列。可与 `height` 行虚拟双开；固定列须两端布局且恒渲染。约束（告警降级）：多级表头 / span-method / 合计行 / server 分组生效中不兼容（server 分组是数据语义优先保留——组行按列形态与列窗口占位归并几何冲突，降级方向为关闭列虚拟）；建议全列显式 `width`（未设宽按预估 100px）。注意：横向滚动触发列窗口变化时整表重渲染，进行中的编辑会被静默取消。
 
+## 渲染组织（时间切片）
+
+<DemoBlock title="render-chunk：2000 行分批渲染">
+  <div style="width: 100%">
+    <oas-table id="table-chunk" render-chunk="200" row-key="id" columns='[{"key":"id","title":"ID","width":"80px"},{"key":"name","title":"姓名","width":"140px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+`render-chunk="N"`（N 为合法正整数）开启**分批渲染**（时间切片）：首帧同步渲染前 N 行让表格立即可见，其余行经 `requestAnimationFrame` 逐帧追加（每帧 N 行）直至完整。缺省 / `0` / 非法值保持现有**全量同步渲染**，行为零漂移。
+
+**适用场景**：超大表格的**首帧可用性**——非虚拟表格（不设 `height`）一次同步渲染几千行会长时间阻塞首帧，分批渲染把长任务切成多帧，首屏先出前 N 行。
+
+**与虚拟滚动的区别**：`height` 虚拟滚动是**空间**切片（DOM 只保留可视窗口行，行数再多 DOM 体积也恒定，代价是滚动容器限高、行高定高）；`render-chunk` 是**时间**切片（最终全量行进 DOM，不限高、行高自然）。两者解决不同问题、互为互补档位；同开时以虚拟滚动为准（告警一次并忽略 `render-chunk`）。
+
+**交互保证**：追加只在尾部进行——滚动位置、选择、行内编辑不受分批影响；分批期间变更选择 / 展开，后续批次按当时的值落位（已渲染行走行级补丁）；数据更新（排序 / 过滤 / 翻页 / 换数据）会取消未完成的分批代次并重新开始；`aria-rowcount` 首帧即写全量行数，读屏播报与最终一致。分组 / 树形行随展示序列切段渲染，结构渲染（structural-render）逐行回调与全量渲染同口径；合计行、infinite 底部状态行与 merge 列归并在末帧落位（分批中段不做跨行合并，末帧一次归并与全量渲染同结果）。
+
 ## 多行单元格
 
 非虚拟表格（不设 `height`）里，长文本单元格按列宽自然换行、行高随之撑高——这是受支持行为。换行只在**列宽受限**时发生：默认 auto table-layout 下表格会先分走容器的超额宽度，容器足够宽时长文本可能一行放下；需要按列宽约束换行时给列显式设 `width`。
@@ -1273,6 +1289,20 @@ onMounted(() => {
       position: positions[i % positions.length],
     }))
     virtual.setAttribute('data', JSON.stringify(rows))
+  }
+
+  // 分批渲染（时间切片）demo：2000 行，首帧 200 行，其余逐帧追加
+  const chunk = document.querySelector('#table-chunk')
+  if (chunk) {
+    const chunkCities = ['北京', '上海', '深圳', '杭州', '广州']
+    const rows = Array.from({ length: 2000 }, (_, i) => ({
+      id: i + 1,
+      name: `用户 ${i + 1}`,
+      age: 20 + (i % 30),
+      city: chunkCities[i % chunkCities.length],
+      email: `user${i + 1}@example.com`,
+    }))
+    chunk.setAttribute('data', JSON.stringify(rows))
   }
 
   // 分页联动 demo：按每页 5 条切片写入 data
@@ -2800,6 +2830,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `multi-sort` | 多列排序（JSON 数组：[{ key, order }]，按数组序依次排序） | `string` | — |
 | `page-size` | 每页条数（内置分页，默认 10） | `string` | `10` |
 | `pagination` | 内置分页开关（页脚分页条；宿主自管分页时不设） | `boolean` | — |
+| `render-chunk` | 分批渲染（时间切片）：每帧最多渲染 N 行——首帧前 N 行同步落位，其余行经 rAF 逐帧追加直至完整；缺省/0/非法 = 全量同步渲染（零行为漂移）；虚拟滚动（height）下不适用（同开告警一次并忽略） | `string` | — |
 | `row-auto-height` | 逐行动态行高（布尔，默认关，虚拟滚动生效）：行随内容自动撑高——RO 逐行测量、未测行按 row-height 预估（滚动条长度先估计后收敛），高度修正按（行身份, 行内偏移）锚定视口不跳。需 import `@oas-ui/ui/data/table/auto-height` 注册能力；列 `wrap: true` 参与多行测量。windowed 下为混合模型：切片内实测、切片外预估 | `boolean` | — |
 | `row-draggable` | 行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次 | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |

@@ -321,6 +321,22 @@ Setting `height` enables virtual scrolling (with a fixed `row-height`): only row
 
 `column-virtual` enables horizontal virtualization (column windowing): only visible-window columns render; off-window columns collapse into `colSpan` placeholder cells (widths summed via `colgroup`; `table-layout: fixed` is enforced) — a 60-column table keeps only a dozen or so in the DOM. It can be combined with `height` row virtualization; fixed columns must use two-end layout and always render. Constraints (warns and degrades): grouped header / span-method / summary rows / an active server grouping are incompatible (server grouping is data semantics and wins — the per-column group-row layout conflicts geometrically with column-window placeholders, so column virtualization is what gets dropped); explicit `width` on every column is recommended (unset widths fall back to an estimated 100px). Note: horizontal scrolling that shifts the column window re-renders the whole table and silently cancels any in-progress edit.
 
+## Render Organization (Time Slicing)
+
+<DemoBlock title="render-chunk: chunked rendering of 2,000 rows">
+  <div style="width: 100%">
+    <oas-table id="table-chunk" render-chunk="200" row-key="id" columns='[{"key":"id","title":"ID","width":"80px"},{"key":"name","title":"Name","width":"140px"},{"key":"age","title":"Age","width":"80px"},{"key":"city","title":"City","width":"100px"},{"key":"email","title":"Email","width":"220px"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+`render-chunk="N"` (N a positive integer) enables **chunked rendering** (time slicing): the first N rows render synchronously so the table is visible immediately, and the remaining rows are appended per `requestAnimationFrame` frame (N rows per frame) until complete. Unset / `0` / invalid values keep the existing **full synchronous rendering** with zero behavior drift.
+
+**When to use it**: **first-paint availability** for very large tables — a non-virtual table (no `height`) rendering thousands of rows in one synchronous pass blocks the first frame for a long time; chunked rendering splits the long task across frames and the first screen shows the first N rows right away.
+
+**Difference from virtual scroll**: the `height` virtual scroll is a **space** slice (only visible-window rows stay in the DOM, so the DOM stays constant no matter how many rows, at the cost of a capped scroll container and fixed row heights); `render-chunk` is a **time** slice (all rows end up in the DOM, no height cap, natural row heights). They solve different problems and complement each other; when combined, virtual scroll wins (`render-chunk` is ignored with a one-time warning).
+
+**Interaction guarantees**: appends only happen at the tail — scroll position, selection, and inline editing are unaffected; changing selection or expansion mid-chunking takes effect for later batches (already-rendered rows are patched at row level); a data update (sort / filter / page change / new data) cancels the unfinished chunk generation and starts over; `aria-rowcount` is written in full on the first frame so screen readers announce the final row count from the start. Grouped/tree rows are chunked along the display sequence, structural-render callbacks fire per row as in full rendering; the summary row, the infinite footer row, and merge-column spans settle on the final frame (no cross-row merging mid-chunk — the final one-shot merge matches full rendering).
+
 ## Multi-line Cells
 
 In non-virtual tables (no `height`), long cell text wraps naturally within the column width and the row grows taller — this is supported behavior. Wrapping only happens when the **column width is constrained**: under the default auto table layout the table first claims the container's surplus width, so long text may fit on one line when the container is wide enough; set an explicit `width` on the column to constrain wrapping by column width.
@@ -1280,6 +1296,20 @@ onMounted(() => {
       position: positions[i % positions.length],
     }))
     virtual.setAttribute('data', JSON.stringify(rows))
+  }
+
+  // Chunked rendering (time slicing) demo: 2,000 rows, 200 on the first frame, rest appended per frame
+  const chunk = document.querySelector('#table-chunk')
+  if (chunk) {
+    const chunkCities = ['Beijing', 'Shanghai', 'Shenzhen', 'Hangzhou', 'Guangzhou']
+    const rows = Array.from({ length: 2000 }, (_, i) => ({
+      id: i + 1,
+      name: `User ${i + 1}`,
+      age: 20 + (i % 30),
+      city: chunkCities[i % chunkCities.length],
+      email: `user${i + 1}@example.com`,
+    }))
+    chunk.setAttribute('data', JSON.stringify(rows))
   }
 
   // Pagination demo: slice 5 rows per page into data
@@ -2818,6 +2848,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `multi-sort` | Multi-column sort (JSON array: [{ key, order }], applied in array order) | `string` | — |
 | `page-size` | Rows per page (built-in pagination, default 10) | `string` | `10` |
 | `pagination` | Built-in pagination switch (footer pager; leave unset when the host paginates) | `boolean` | — |
+| `render-chunk` | Chunked rendering (time slicing): at most N rows rendered per frame — the first N rows render synchronously, the rest are appended per animation frame until complete; unset/0/invalid = full synchronous rendering (zero behavior drift); not applicable under virtual scroll (height) — warns once and is ignored when combined | `string` | — |
 | `row-auto-height` | Auto row height (boolean, off by default, virtual scrolling only): rows grow with their content — ResizeObserver measures each row, unmeasured rows use the row-height estimate (scrollbar length converges as measurements arrive), and height corrections anchor by (row identity, in-row offset) so the viewport never jumps. Requires importing `@oas-ui/ui/data/table/auto-height` to register the capability; a `wrap: true` column participates in multi-line measurement. Under windowed it uses a mixed model: measured inside the loaded slice, estimated outside | `boolean` | — |
 | `row-draggable` | Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling | `boolean` | — |
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |

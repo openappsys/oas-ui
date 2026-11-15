@@ -276,6 +276,12 @@
     {
       "name": "aria-label",
       "observed": true
+    },
+    {
+      "name": "render-chunk",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [

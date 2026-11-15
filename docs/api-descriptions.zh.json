@@ -3343,7 +3343,8 @@
       "visual-start": "可选视觉协议（须与 visual-total 同时提供才生效，仅 windowed）：当前切片 data[0] 的视觉行号，0 ≤ visual-start ≤ visual-total。支持切片前已有展开行的宿主场景——生效后渲染 flow 从 visual-start × 行高起、按视觉行号铺位；绝对数据行号（data-row-index / 事件 rowIndex / ARIA / displaySnapshot）不受影响。缺失 / 非法 / 只有其一时 devWarn 一次并整体回落当前窗口模型",
       "row-auto-height": "逐行动态行高（布尔，默认关，虚拟滚动生效）：行随内容自动撑高——RO 逐行测量、未测行按 row-height 预估（滚动条长度先估计后收敛），高度修正按（行身份, 行内偏移）锚定视口不跳。需 import `@oas-ui/ui/data/table/auto-height` 注册能力；列 `wrap: true` 参与多行测量。windowed 下为混合模型：切片内实测、切片外预估",
       "row-model": "行模型：`client`（缺省，本地全量：过滤/排序/分页切片组件内执行）/ `server`（服务端行模型：需与 total 外部分页形态配合，data 为当前页切片，本地过滤/排序整体跳过，翻页/排序/过滤/分组键变更经 oas-rows-request 向宿主取数；排序/过滤/页大小/分组键变更自动重置 current=1；请求在途内建 loading，失败经 reportRowsError 显示错误条；group-by 同开进入宿主分组协议——请求 detail 携带 groupBy，宿主返回分组行按序渲染）。与 windowed 同开时 windowed 优先（互斥告警）；与 infinite 同开时 infinite 优先（协议走 cursor/load-more，total 前提放宽）；缺 total 回落 client 并告警",
-      "infinite": "无限滚动 + cursor 分页（服务端取数形态）：滚动接近底部自动经 oas-rows-request（reason=load-more，detail.cursor 回传游标）请求下一块，宿主经 appendRows 回填（空数组 = 到底信号）；与 pagination 同开 pagination 优先、与 windowed 同开 windowed 优先（均互斥告警一次）；total 可选（未知总数场景 totalKnown=false，到底以宿主空块信号为准）；能力闸门与 row-model=\"server\" 同口径（导出/打印仅已装载数据、合计 scope=all 禁用、分组/行列拖拽/merge 禁用）"
+      "infinite": "无限滚动 + cursor 分页（服务端取数形态）：滚动接近底部自动经 oas-rows-request（reason=load-more，detail.cursor 回传游标）请求下一块，宿主经 appendRows 回填（空数组 = 到底信号）；与 pagination 同开 pagination 优先、与 windowed 同开 windowed 优先（均互斥告警一次）；total 可选（未知总数场景 totalKnown=false，到底以宿主空块信号为准）；能力闸门与 row-model=\"server\" 同口径（导出/打印仅已装载数据、合计 scope=all 禁用、分组/行列拖拽/merge 禁用）",
+      "render-chunk": "分批渲染（时间切片）：每帧最多渲染 N 行——首帧前 N 行同步落位，其余行经 rAF 逐帧追加直至完整；缺省/0/非法 = 全量同步渲染（零行为漂移）；虚拟滚动（height）下不适用（同开告警一次并忽略）"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",
