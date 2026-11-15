@@ -10,24 +10,26 @@
  * - 失败通道见 oas-table.ts 的 reportRowsError（requestId === 在途序号才生效）。
  */
 
-/** 请求原因：init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷 */
-export type RowsRequestReason = 'init' | 'paginate' | 'sort' | 'filter' | 'refresh'
+/** 请求原因：init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷 / load-more=infinite 触底追加下一块 */
+export type RowsRequestReason = 'init' | 'paginate' | 'sort' | 'filter' | 'refresh' | 'load-more'
 
 /** `oas-rows-request` detail */
 export interface RowsRequestDetail {
   /** 组件内单调递增请求序号（请求序号守卫的权威依据） */
   requestId: number
-  /** 当前页期望区间起点（含）= (current-1)*pageSize */
+  /** 当前页期望区间起点（含）= (current-1)*pageSize；infinite 形态为已装载行数（区间语义不适用，见 cursor） */
   start: number
-  /** 当前页期望区间终点（不含）= current*pageSize */
+  /** 当前页期望区间终点（不含）= current*pageSize；infinite 形态与 start 同值（无固定终点） */
   end: number
   /** 排序模型（沿用 sort-key/sort-order 词汇；multi-sort 在场时按序组装多键） */
   sortModel: Array<{ key: string; order: string }>
   /** 过滤值（filter-values 属性对象形状原样） */
   filterValues: Record<string, string | number>
   reason: RowsRequestReason
-  /** 总数已知性声明（v1 恒 true：server 生效前提即 total 在场；未知总数场景预留） */
+  /** 总数已知性声明：server 生效形态恒 true（生效前提即 total 在场）；infinite 形态随 total 属性在场性（未知总数场景 false） */
   totalKnown: boolean
+  /** 无限滚动游标：上次 appendRows(options.cursor) 记录的值原样回传（首次进入/排序过滤重置后 = undefined）——cursor 分页取下一块的定位依据 */
+  cursor?: string
 }
 
 /** 请求状态快照（同值去重键与原因推导的输入） */
@@ -77,4 +79,60 @@ export function rowsRequestPlan(last: RowsRequestState | null, next: RowsRequest
   if (filterSig(last.filterValues) !== filterSig(next.filterValues)) return { reason: 'filter', resetPage: true }
   // 走到这里只剩分页组变化：页大小变化重置页码，纯翻页不重置
   return { reason: 'paginate', resetPage: last.pageSize !== next.pageSize }
+}
+
+// ==================== infinite（无限滚动 + cursor 分页）纯判定 ====================
+//
+// 组件接线在 oas-table.ts（syncInfiniteRows / appendRows / 滚动触底触发）；本节只放
+// 可独立单测的判定：触底阈值、append 去重（同 requestId 幂等）与到底（hasMore）判定。
+
+/** 触底探针：滚动基础设施（wrap 元素）可得的三个量 */
+export interface InfiniteScrollProbe {
+  scrollTop: number
+  clientHeight: number
+  scrollHeight: number
+}
+
+/**
+ * 触底判定（infinite 滚动触发阈值）：距底部不足 max(200px, 可视区高度 × 1.5) 即视为「接近底部」。
+ * 两个判据取更宽松者——小视口（clientHeight 小）时 200px 绝对值更早触发预取；
+ * 大视口（长列表虚拟高度）时 1.5 倍提前量保证追加块在滚到底之前就在途。
+ * 边界含等号（距底恰好等于阈值仍触发——快照时点的滞后宁可多请求一次，不可漏触发）。
+ */
+export function infiniteNearBottom(probe: InfiniteScrollProbe): boolean {
+  const distance = probe.scrollHeight - probe.scrollTop - probe.clientHeight
+  return distance <= Math.max(200, probe.clientHeight * 1.5)
+}
+
+/**
+ * append 去重（同 requestId 重复 append 幂等）：requestId 已被消费且属真实请求序号（>= 1）。
+ * requestId >= 1 的下界豁免「从未派发过请求」的预填/手动通道（rowsRequestId 初始 0）——
+ * 该通道无请求身份，宿主连续多批 append 属合法用法，不误伤；双监听把同一响应回填两次的
+ * 场景（真实请求序号已消费后再次 append）才判重复。
+ */
+export function isDuplicateAppend(consumedRequestId: number, requestId: number): boolean {
+  return requestId >= 1 && consumedRequestId === requestId
+}
+
+/** infinite 到底（hasMore）判定的输入 */
+export interface InfiniteHasMoreInput {
+  /** 宿主「到底」信号：appendRows 回传空数组（rows.length === 0）置位 */
+  hostEnded: boolean
+  /** total 属性在场（已知总数） */
+  totalKnown: boolean
+  /** 已知总数（totalKnown=false 时不参与判定） */
+  total: number
+  /** 已装载行数 */
+  loaded: number
+}
+
+/**
+ * 到底（hasMore）判定：宿主空块信号优先（权威——total 已知但服务端提前截流时以信号为准）；
+ * totalKnown 时已装载满 total 亦到底（装满即无下一块）；total 未知且无信号 → 有更多
+ * （继续在滚动触底时请求，直到宿主回写空块）。
+ */
+export function infiniteHasMore(a: InfiniteHasMoreInput): boolean {
+  if (a.hostEnded) return false
+  if (a.totalKnown && a.loaded >= a.total) return false
+  return true
 }

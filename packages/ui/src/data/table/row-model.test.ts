@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { rowsRequestPlan, rowsRequestSignature } from './row-model.js'
+import {
+  infiniteHasMore,
+  infiniteNearBottom,
+  isDuplicateAppend,
+  rowsRequestPlan,
+  rowsRequestSignature,
+  type RowsRequestReason,
+} from './row-model.js'
 
 /**
  * row-model.ts 纯函数单测：请求原因推导（含页码重置规则）与同值去重签名。
@@ -114,5 +121,95 @@ describe('rowsRequestSignature（同值去重键）', () => {
     expect(rowsRequestSignature(state({ pageSize: 20 }))).not.toBe(a)
     expect(rowsRequestSignature(state({ sortModel: [{ key: 'a', order: 'asc' }] }))).not.toBe(a)
     expect(rowsRequestSignature(state({ filterValues: { a: 1 } }))).not.toBe(a)
+  })
+})
+
+describe('RowsRequestReason 枚举扩展（infinite 批）', () => {
+  it("'load-more' 属合法 reason（编译期 + 运行时字面量）", () => {
+    const reason: RowsRequestReason = 'load-more'
+    expect(reason).toBe('load-more')
+  })
+})
+
+describe('infiniteNearBottom（触底判定）', () => {
+  const probe = (over: Partial<{ scrollTop: number; clientHeight: number; scrollHeight: number }> = {}) => ({
+    scrollTop: 0,
+    clientHeight: 0,
+    scrollHeight: 0,
+    ...over,
+  })
+
+  it('距底 0（已在底部）→ true', () => {
+    expect(infiniteNearBottom(probe({ scrollTop: 300, clientHeight: 300, scrollHeight: 600 }))).toBe(true)
+  })
+
+  it('距底 < 200px（clientHeight=0 场景退化为绝对阈值）→ true', () => {
+    // happy-dom/早期布局 clientHeight 可能为 0：阈值回落 200px 绝对值
+    expect(infiniteNearBottom(probe({ scrollTop: 850, clientHeight: 0, scrollHeight: 1000 }))).toBe(true)
+    expect(infiniteNearBottom(probe({ scrollTop: 801, clientHeight: 0, scrollHeight: 1000 }))).toBe(true)
+  })
+
+  it('距底恰好等于阈值（边界 <=）→ true', () => {
+    // 距底 200 = max(200, 0) → true（含边界）
+    expect(infiniteNearBottom(probe({ scrollTop: 800, clientHeight: 0, scrollHeight: 1000 }))).toBe(true)
+  })
+
+  it('距底 > 阈值 → false', () => {
+    expect(infiniteNearBottom(probe({ scrollTop: 500, clientHeight: 0, scrollHeight: 1000 }))).toBe(false)
+  })
+
+  it('可视区高度 1.5 倍阈值生效（大于 200px 绝对值时取更宽松者）', () => {
+    // clientHeight=1000 → 阈值 1500；距底 1000 → true（1.5 倍提前量比 200px 宽松）
+    expect(infiniteNearBottom(probe({ scrollTop: 0, clientHeight: 1000, scrollHeight: 2000 }))).toBe(true)
+    // 距底 1500（恰好边界）→ true
+    expect(infiniteNearBottom(probe({ scrollTop: 500, clientHeight: 1000, scrollHeight: 3000 }))).toBe(true)
+    // 距底 1501 → false
+    expect(infiniteNearBottom(probe({ scrollTop: 499, clientHeight: 1000, scrollHeight: 3000 }))).toBe(false)
+    // 距底 3000（远超 1.5 倍阈值）→ false
+    expect(infiniteNearBottom(probe({ scrollTop: 0, clientHeight: 1000, scrollHeight: 4000 }))).toBe(false)
+  })
+
+  it('距底 200px 判据与 1.5 倍判据取 max（两者都满足其一即可）', () => {
+    // clientHeight=100，距底 300：> 200 但 < 150 → 不对，max(200, 150)=200，300 > 200 → false
+    expect(infiniteNearBottom(probe({ scrollTop: 0, clientHeight: 100, scrollHeight: 400 }))).toBe(false)
+    // clientHeight=100，距底 200：<= 200 → true
+    expect(infiniteNearBottom(probe({ scrollTop: 100, clientHeight: 100, scrollHeight: 400 }))).toBe(true)
+  })
+})
+
+describe('isDuplicateAppend（append 去重）', () => {
+  it('requestId 已消费且为真实请求（>=1）→ true（双监听重复回填幂等）', () => {
+    expect(isDuplicateAppend(2, 2)).toBe(true)
+    expect(isDuplicateAppend(1, 1)).toBe(true)
+  })
+
+  it('requestId 未消费（新请求的首次回填）→ false', () => {
+    expect(isDuplicateAppend(1, 2)).toBe(false)
+    expect(isDuplicateAppend(-1, 1)).toBe(false)
+  })
+
+  it('requestId=0（从未派发请求的预填/手动通道）→ 恒 false（不误伤连续多批 append）', () => {
+    expect(isDuplicateAppend(0, 0)).toBe(false)
+    expect(isDuplicateAppend(2, 0)).toBe(false)
+  })
+})
+
+describe('infiniteHasMore（到底判定）', () => {
+  it('宿主空块信号（hostEnded）优先 → false（即使 totalKnown 且未装满）', () => {
+    expect(infiniteHasMore({ hostEnded: true, totalKnown: true, total: 100, loaded: 10 })).toBe(false)
+    expect(infiniteHasMore({ hostEnded: true, totalKnown: false, total: 0, loaded: 10 })).toBe(false)
+  })
+
+  it('totalKnown 且已装载满 total → false（装满即到底）', () => {
+    expect(infiniteHasMore({ hostEnded: false, totalKnown: true, total: 30, loaded: 30 })).toBe(false)
+    expect(infiniteHasMore({ hostEnded: false, totalKnown: true, total: 30, loaded: 35 })).toBe(false)
+  })
+
+  it('totalKnown 且未装满 → true', () => {
+    expect(infiniteHasMore({ hostEnded: false, totalKnown: true, total: 30, loaded: 10 })).toBe(true)
+  })
+
+  it('total 未知（totalKnown=false）且未收到空块信号 → true（依赖宿主回写到底）', () => {
+    expect(infiniteHasMore({ hostEnded: false, totalKnown: false, total: 0, loaded: 10 })).toBe(true)
   })
 })
