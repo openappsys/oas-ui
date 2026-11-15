@@ -16,21 +16,21 @@
 - **oas-signature（data 族，签名板）**：canvas 笔迹捕获（pointer 事件/touch-action none/DPR 倍率/token 实色解析/主题 observer 重绘/resize 保留笔迹）；`value`（dataURL 双通道可受控）/`pen-size`/`pen-color`/`height`/`disabled`/`readonly`/`clearable`；`oas-change`（笔画结束派发，幂等）+ `clear()`/`toDataURL()`；多指 pointerId 过滤、单点不成笔（防误触假签名）；aria-live 状态播报；forced-colors 限制文档注明；SSR 客户端专属（NOT_SSR 登记）。
 
 - **导航形态组合 guide 页补齐其余 5 个形态（zh/en 同构、文案各自原创命名、全 live demo）**：浮岛顶栏（`oas-app-bar` `position="floating"` + `elevated` 通栏伸展，舞台以宿主级 `position: absolute` 复位 fixed——圆角/投影/留边保留且不破坏 dropdown 浮层视口坐标定位；DemoBlock body 是 flex-wrap 容器，shell 必须显式 `width: 100%` 否则 fit-content 压窄触发 actions 溢出收纳死锁——ResizeObserver 只监听宿主宽度不会自愈）、经典浅色顶栏（默认 static 全宽贴边 + 宿主补底部分隔线，与浮岛版只差属性）、展开侧栏 272px（header 搜索 + 徽标菜单 + footer 试用卡与偏好区 + 折叠/展开往返 + Dark mode `oas-switch` 切容器 `data-theme` 作用域）、slim 图标轨 68px（`collapsed` + `expand-on-hover` 悬停临时展开 + `::part(foot)` 页脚头像透出）、暗色企业版 272px（容器 `data-theme="dark"` 切 token 作用域——皮肤画廊同款机制，零硬编码色值）；页面占位句改为形态锚点导航。对比度配套修复（demo 侧变量覆写，不动组件源码）：sidebar 徽标 `--oas-sidebar-badge-*` 按主题分支（light 加深主色+白字 / dark 亮主色+深字，站点暗色主题下混黑中灰蓝+深字仅 ~3.0 的漏网分支已补）、侧栏底色换 `--oas-color-bg` + 分隔线（缺省 bg-hover 上 secondary 文字实测 4.39）、footer 偏好行文字改 primary。qa-regression 追加 6 条 e2e（zh 5 形态 + en 页采样：形态契约 floating 圆角/投影/通栏留边、static 全宽/无圆角/分隔线、272px、64px 折叠（width 过渡用 poll）、68px 轨道、暗色 `--oas-color-bg` 换值 + 侧栏暗底；交互：受控菜单/铃铛已读/下拉浮层/折叠展开/开关可逆/悬停展开回落；console 零报错）；a11y 对比度基线补录 navigation-patterns 双语页（kbd ⌘ abbr 与 input 的无法评分节点为组件级已知现象，kbd.html/input.html 组件页基线同款）与此前批次遗漏的 8 个新页条目；文档站侧栏「指南」组（zh/en）加 `collapsed: false` 可折叠。
-- **SSR Firefox DSD 批**：`@oas-ui/ssr/polyfill` 子路径（原创实现：setHTMLUnsafe 特性探测避开 Chromium 告警坑、递归嵌套 DSD、幂等、import 即自动执行）+ 双 fixture Firefox 严格验证（Nuxt chunk 序 + Next head 经典脚本注入——App Router 实测 layout 注入不可行、自托管 server 改写文档响应是唯一确定性路径；三用例：head 顺序严格断言/原生 DSD 透明水合/运行期注入+polyfill 幂等）+ ssr.md 浏览器支持矩阵（立项前提「Firefox 不支持 DSD」经三引擎矩阵实测证伪——原生 DSD 只在文档解析期生效、片段解析任何引擎都不挂载，polyfill 的真实定位是运行期注入伴侣）。
+- **SSR Firefox DSD 批**：**`@oas-ui/ssr/polyfill` 新公开子路径**（packages/ssr/package.json exports 登记；原创实现：setHTMLUnsafe 特性探测避开 Chromium 告警坑、递归嵌套 DSD、幂等、import 即自动执行）+ 双 fixture Firefox 严格验证（Nuxt chunk 序 + Next head 经典脚本注入——App Router 实测 layout 注入不可行、自托管 server 改写文档响应是唯一确定性路径；三用例：head 顺序严格断言/原生 DSD 透明水合/运行期注入+polyfill 幂等）+ ssr.md 浏览器支持矩阵（立项前提「Firefox 不支持 DSD」经三引擎矩阵实测证伪——原生 DSD 只在文档解析期生效、片段解析任何引擎都不挂载，polyfill 的真实定位是运行期注入伴侣）。
 - **SSR 运行时边界口径**：核实 `@oas-ui/ssr` 发布产物自身零 `node:` 内置模块依赖（唯一 `process.env.NODE_ENV` 读取，Edge Runtime 均有 polyfill），ssr.md 白名单与边界节补 Edge Runtime 边界条——运行时依赖 happy-dom 无 browser/edge 构建、静态引入约 14 个 Node 内置模块，Edge 部署属集成级工作（先 spike 打包验证路径），诚实标注 Node 为一等支持运行时。
 - **SSR 生产化口径（缓存与高并发宿主侧配方）**：交叉复审定案——库不内置缓存与进程架构（主流渲染库同款边界：渲染器保持无状态纯函数，片段缓存/CDN/worker 池归宿主）；ssr.md zh/en 补「缓存与高并发」节：确定性可缓存的事实与缓存键组成（含快照版本失效）、时间相关组件不缓存清单（relative-time/countdown/calendar/date-picker/gantt/scheduler）、高 QPS 用 worker 池/多副本扩展的配方与实测基准（消息行 ~1.4ms、千行 table ~139ms 单机单次）。T5（Edge）/T6（库级缓存）/T8（库内置 worker 池）三候立项项据此销项/变形。
 - **导航形态组合 guide 页（zh/en）**：跨组件导航配方集首版——双轨分裂侧栏 live demo（左轨 `collapsed` 68px 工作区头像轨 + 右面板 272px 分组导航 + 存储进度卡，受控联动真实可点）；明确「双轨是组合形态、库不提供单件」的口径；qa-regression e2e 固化（宽度契约/受控写回/页脚透出/铃铛已读/console 零报错）。
-- **oas-mdca 消费反馈批（T8-T12）**：menubar 动作项选择后自动收起（桌面惯例；checkbox/radio 保持展开可连续勾选；item 级 keep-open 例外；受控 open 契约保住）+ `shortcuts-in-editable` 可编辑焦点 shortcut 放行总开关；tree `height="fill"` 容器自适应（内建 RO 三防：padding 扣减/防写回循环/防重入，根治 oas-mdca 实踩的 +8px/s 反馈循环）+ 懒加载展开态所有权警告 + 首屏 oas-expand 持久化示例（API 可发现性修复）。
+- **`oas-gantt` 任务网格面板批（`task-columns` 声明式多列 + `checkable` 复选列 + 列头行）**：`task-columns`（JSON 数组，与 oas-table `columns` 契约同构——`{key, title?, width?, align?}`，key 指向 GanttTask 任意字段含自定义字段，缺省 title 用 key，width 定宽或剩余均分，非法输入 devWarn 一次回落单列）+ `checkable` 复选列（新 CSS 变量 `--oas-gantt-check-width` 缺省 32px；列头全选/半选三态；行复选与既有 `selection` property / `oas-selection-change` 双向同步，不新增事件名；windowed 下全选作用于已装载切片并同步 title 与读屏名）；行高与横条同源（单滚动容器/单虚拟窗口，零同步胶水）；表头 `grid → row → columnheader` 合法链（axe 零违规）；`template[slot=row]` 优先（表头同步回落单列）；`show-effort` 与 `task-columns` 同开时网格优先（保留 effort 列需显式声明 `{"key":"effort"}`）；缺省无 `task-columns` 单列形态零漂移；RTL 逻辑属性/暗色 token/forced-colors 横断面沿用；演进口径写死（排序/过滤将来复用 table/model 管道，禁第二套行模型）；工单排产形态 demo（zh/en）+ e2e 三引擎；i18n ×16（`gantt.selectAll` / `gantt.selectAllLoaded`）；gantt 链 74.4 KB / 预算 80（超预警线 72，归因全为真实特性）。单测 29 新增。
 
 ### 增强
 
-- **oas-kanban**：`collapsible`（在场 opt-in，默认关零变化）——列头折叠钮/窄条（列名+卡片数）/点击展开 + `oas-collapse-change`；列底 `summary` 合计行（缺席不渲染）；i18n ×16。
+- **oas-kanban**：`collapsible`（在场 opt-in，默认关零变化）——列头折叠钮/窄条（列名+卡片数）/点击展开 + `oas-collapse-change`；`collapsed-columns` 受控属性补交付（JSON key 数组，折叠集合受控通道 + echo 回写短路——同值回写不重建板体、键盘焦点保持）；列底 `summary` 合计行（缺席不渲染）；i18n ×16。
 - **oas-list / oas-sidebar**：键盘重排——焦点条目 Alt+↑/↓ 逐条移动（焦点跟随防失焦）+ `oas-reorder`（detail `{ index, from, to, key? }`）+ `oas-change` 新序；`aria-keyshortcuts` 声明；新增条目 `disabled`（墙口径：键盘/拖拽同口径不可移动、不作为落点）。
 - **oas-comment**：内置输入行（Enter 提交/Shift+Enter 换行/IME 防护，`oas-submit` detail `{ text }`，`inputtable="false"` 关闭，数据驱动写回）；resolve 态（`resolved` 弱色划线 token 化、`resolvable` 触发钮、`oas-resolve` 受控派发）；i18n ×16。
 - **oas-upload**：`capture` 属性透传 file input（`user`/`environment`/在场=`user`/`"false"` 不输出），移动端直调相机。
 - **oas-code**：高亮语言扩充 bash/shell、python、sql、diff、markdown、yaml（别名 sh/md/py/yml 归一；既有正则架构内扩展，零第三方库）。
 - **oas-countdown**：后台标签记账语义验证固化（时间戳记账不漂移，fake timers 单测 ×3 + 文档注明；零实现改动）。
-- **oas-equation**：`editable` 编辑实时预览（textarea 编辑态、200ms 节流预览、Esc 取消恢复原值、渲染失败回退源码 + 一次性 devWarn、value 双通道）；i18n ×16。
+- **oas-equation**：`editable` 编辑实时预览（textarea 编辑态、200ms 节流预览、Esc 取消恢复原值、渲染失败回退源码 + 一次性 devWarn、value 双通道）；编辑态进出派发 `oas-editing`（detail `{ editing }`），提交/取消派发 `oas-change` / `oas-cancel`（detail `{ value }`）；i18n ×16。
 - **oas-scheduler**：新属性 `conflict-check`（在场 opt-in）——同日同时段重叠检测（半开区间纯函数，与车道布局同构）+ `.event.conflict` 视觉标记（danger token）+ `oas-event-conflict` 幂等事件（detail `{ id, conflicts: string[] }`，先写签名再派发，消解发空数组）；时刻块补键盘路径（←/→ 整天改期 RTL 镜像、Alt+←/→ 缩放 end ±15min、aria-keyshortcuts）；i18n `scheduler.conflict` ×16。
 - **oas-chart**：新图型 `horizontal-bar`（数值轴底部、分类标签左缘、RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 默认边界不变）+ property `tooltipFormatter` 开启 shadow 单例浮层（`part="tooltip"`，反色 token，computePosition 定位）+ `oas-chart-tooltip` 事件宿主可 `preventDefault()` 接管；forced-colors 浮层兜底；i18n `chart.horizontal-bar` ×16。
 - **`@oas-ui/theme` 新语义 token `--oas-color-danger-soft`（light / dark / high-contrast 三档，danger 12% 混合底）**：`oas-table` 编辑校验失败单元格底色与 server 失败条底色改引该 token（替代组件内联 `color-mix` 兜底表达式）——宿主覆写一处生效，主题分支不再漂移。
@@ -40,6 +40,15 @@
 
 - **`oas-table` 编辑校验警示条文字色**：`.edit-error` 文字改用 danger 实底反色 token `--oas-color-text-on-danger`（警示条为 danger 实底，原文字色压实底 light 约 1.03:1、dark 约 1.00:1 不可读）——与失败重试按钮 hover 反色同一体系，light / dark 双档对比度达标，暗色随 token 自适应。
 - **`oas-table` server 分组收尾小修（再审缺口/边界）**：① `column-virtual` × server 分组同开守卫——此前组行恒按全量叶子逐格渲染而数据行走列窗口占位归并，组合时组行/数据行格子几何错位（聚合值落错列）；现 `column-virtual` 判定加入「server 分组生效中」不兼容项（devWarn 一次），降级方向为关列虚拟保分组（分组是数据语义、列虚拟是性能优化），无 server 分组时列虚拟行为不变。② 组行 `labelSpan=0` 退化防御——首个叶子即聚合列且无 checkable/rowDrag 时无独立 label 空间，此前 `Math.max(1, 0)` 强凑 colSpan=1 使行宽比总列数多 1（ΣcolSpan 不闭合）；现该退化场景不渲染独立 label 格，label 内容（折叠钮/组标签/计数/depth 缩进）并入首个聚合格，行宽闭合且折叠交互不回退。③ 文档：server 分组限制说明补「固定列（sticky）在组行聚合格上未接线（横滚时组行吸附与数据行不同步），属后续增量」；聚合格 `part` 口径精确化（数据行格子仅在 rowClass 钩子在场时才有 part，组行聚合格恒写——属无副作用附加）；zh/en 同步。
+- **`oas-message-scroller` 滚动条预留三件套（scrollbar-gutter 支撑 + padding 单口径 + JS 探测分流）**：视口 `scrollbar-gutter: stable`——滚动条不再遮盖 end 行头像/气泡；预留改 padding 单口径（修 Firefox 悬浮滚动条压内容）；JS 探测分流——经典滚动条零白缝、悬浮滚动条防遮挡。
+- **`oas-message-row` 多内容子元素相贴**：content 容器补纵向 gap——多段气泡 / thinking 块+气泡不再相贴。
+- **SSR 渲染确定性（`oas-segmented` uid name 不再进快照）**：radioName 的模块级自增 uid 回落此前经 `buildItem` / `syncSelection` 写进 SSR 快照——同属性两次 `renderToString` 输出不同（`oas-seg-1` vs `oas-seg-2`），违反渲染器「同一进程多次调用幂等」承诺（radio-group 早有 SSR 闸门，segmented 漏网）；对齐先例加 SSR 闸门——SSR 段跳过、水合后补写真实 name 恢复互斥；确定性门禁样本补带 options 的 segmented 触发面（防同类缺陷再逃红 Gate）。客户端行为零变化。
+- **`oas-table` 编辑中点击关联 label 不再外点提交**：编辑态下点击关联 label（`label.control` / `htmlFor`）此前被外点提交逻辑误判——编辑被提交、未提交输入丢失、焦点丢失；现 label 关联豁免 + 焦点转发（点击 label 聚焦编辑器内部控件）；单测 + qa-regression e2e 固化。
+- **遗留清理小修三件**：`oas-kanban` 折叠钮 `aria-label` 带列名（读屏可读）；`oas-chips-input` 全角分隔符（，/；/、）纳入粘贴拆分与成 chip 触发；`oas-equation` 移除 editable 时补派退出事件。
+
+### 工程
+
+- **`oas-table` 内联样式抽取为 `style/` 模块（批 E）**：组件内联 STYLE 抽取为 style/base 基础段 + style/features 特性段两模块（逐字节等价、零视觉变化）——纯内部重构，公开面零变化。
 
 所有显著变更记录于此。
 
