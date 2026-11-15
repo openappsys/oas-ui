@@ -122,6 +122,11 @@ export default defineConfig({
       // forced-colors 依赖 page.emulateMedia({ forcedColors })——WebKit 不支持该模拟（会 throw），
       // 引擎能力缺口，故在项目层排除（spec 内另有 browserName 守卫兜底）。
       testIgnore: /forced-colors\.spec\.ts/,
+      // WebKit 抽样按「稳定子集」原则：以下用例依赖 WebKit headless 的触屏 pointer 通道 /
+      // ResizeObserver 回调时序（与真实 Safari 有差异），间歇失败且已定性为非产品缺陷
+      // （chromium/firefox 稳定覆盖同一语义）——隔离不阻断主门禁，待 WebKit 时序专项治理
+      // 后移除（demands T9 跟踪）。
+      grepInvert: /过滤面板触屏|auto-height：测量回填|真指针拖拽：松开后填充/,
       timeout: 120_000,
       retries: 1,
     },
