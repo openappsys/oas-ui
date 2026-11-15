@@ -1790,6 +1790,10 @@ export class OASTableBase extends OASElement {
       'fill-handle',
       // 宿主 aria-label：命名内部 table（无 caption 机制，宿主命名是唯一通道；见 syncHostAriaLabel）
       'aria-label',
+      // 分批渲染（时间切片）：合法正整数 N 时每帧最多渲染 N 行——首帧前 N 行同步落位，
+      // 其余行经 rAF 逐帧追加直至完整。缺省/0/非法 = 现有全量同步渲染（零行为漂移）；
+      // 虚拟滚动（height）下不适用（虚拟即窗口渲染）——同开告警一次并忽略
+      'render-chunk',
     ]
   }
 
@@ -2009,6 +2013,12 @@ export class OASTableBase extends OASElement {
   private consumedInfiniteRequestId = -1
   /** 触底检测的 rAF 句柄（滚动高频事件的节流；与 scrollRaf 渲染帧独立） */
   private infiniteLoadMoreRaf = 0
+  /** render-chunk 分批渲染的 rAF 句柄（0 = 无在途分批帧） */
+  private renderChunkRaf = 0
+  /** 分批渲染代次：新一轮全量渲染 / 断连时 +1——陈旧 rAF 帧比对代次自我作废（rAF 句柄取消之外的双保险） */
+  private renderChunkGen = 0
+  /** render-chunk × 虚拟滚动（height）同开的一次性告警 flag（虚拟即窗口渲染，分批不适用——忽略并告警） */
+  private renderChunkVirtualWarned = false
   /** infinite × pagination 互斥告警去重（实例级一次） */
   private infinitePaginationWarned = false
   /** infinite × windowed 互斥告警去重（实例级一次） */
@@ -2616,6 +2626,10 @@ export class OASTableBase extends OASElement {
       // infinite 触底检测的 rAF 同批清理（断连后不再派发 load-more）
       if (this.infiniteLoadMoreRaf) cancelAnimationFrame(this.infiniteLoadMoreRaf)
       this.infiniteLoadMoreRaf = 0
+      // 分批渲染（render-chunk）的 rAF 同批清理：断连后不再追加行；代次 bump 使漏网陈旧帧自我作废
+      if (this.renderChunkRaf) cancelAnimationFrame(this.renderChunkRaf)
+      this.renderChunkRaf = 0
+      this.renderChunkGen++
       this.closeFilterPanel()
       this.destroyCellTooltip()
     })
@@ -2908,6 +2922,9 @@ export class OASTableBase extends OASElement {
       return
     }
     this.forceFullRender = false
+    // 新一轮全量渲染：作废在途分批渲染代次（rAF 句柄取消 + 代次 bump 双保险）——
+    // tbody 即将被稳定清空，陈旧分批帧不得再往旧 tbody 追加行
+    this.cancelRenderChunk()
     // 单元格溢出提示浮层：重渲染（滚动/数据变化/排序等）时先隐藏（无孤儿浮层）
     this.hideCellTooltip()
     // 外部重渲染（data/sort/selected 等变化）时先静默取消进行中的编辑（委托 edit 能力），
@@ -2927,6 +2944,11 @@ export class OASTableBase extends OASElement {
     this.renderToolbar()
     // D15 行拖拽与虚拟滚动不兼容：虚拟模式仅渲染窗口行，静默降级并 dev 告警一次
     if (this.hasAttr('row-draggable') && this.isVirtual()) warnRowDragVirtual()
+    // render-chunk 与虚拟滚动同开：虚拟即窗口渲染，分批不适用——告警一次并忽略
+    if (this.isVirtual() && this.renderChunkSize() > 0 && !this.renderChunkVirtualWarned) {
+      this.renderChunkVirtualWarned = true
+      devWarn('[oas-table] render-chunk 与 height（虚拟滚动）同开：虚拟滚动本身即窗口渲染，render-chunk 已忽略')
+    }
 
     const rowKey = this.getAttr('row-key', 'key')
     const selected = this.getAttr('selected', '').split(',').filter(Boolean)
@@ -2998,6 +3020,11 @@ export class OASTableBase extends OASElement {
       }
     }
 
+    // 合计行装配数据：条件与下方消费点同口径（同步渲染与分批渲染末帧共用一份，防孪生条件漂移）
+    const summaryRowData =
+      summaryConfigs.length > 0 && summaryFlat.length > 0 && summaryValues
+        ? { configs: summaryConfigs, values: summaryValues }
+        : null
     const layout = this.computeLayout()
     const virtual = this.isVirtual()
     // 横向虚拟（column-virtual）：列窗口同步 + 不兼容形态降级判定。
@@ -3293,51 +3320,59 @@ export class OASTableBase extends OASElement {
     } else {
       // span-method 占用表按渲染轮重置（显式 span 的跨行/跨列覆盖关系仅本轮有效）
       this._spanCovered.clear()
-      const rowInfos: { tr: HTMLTableRowElement; kind: string }[] = []
-      // windowed：事件 rowIndex / 条纹等按绝对行号（windowStart 起），与虚拟窗口渲染同口径
-      let dataIndex = this.windowedOn() ? this._winMode.windowStart : 0
-      for (let i = 0; i < display.length; i++) {
-        const f = display[i]!
-        const tr =
-          f.kind === 'expand'
-            ? this.buildExpandRow(f)
-            : f.kind === 'group'
-              ? this.buildGroupRow(f)
-              : this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
-        if (f.kind === 'data') {
-          const idx = dataIndex
-          dataIndex++
-          rowInfos.push({ tr, kind: f.kind })
-          body.appendChild(tr)
-          // 数据行结构槽：行挂入 tbody 后调用（宿主钩子里 parentElement 可用）
-          this.structuralBodyRow(tr, f.row, idx)
-        } else {
-          rowInfos.push({ tr, kind: f.kind })
-          body.appendChild(tr)
+      const chunk = this.renderChunkSize()
+      if (chunk > 0 && typeof requestAnimationFrame === 'function') {
+        // 分批渲染（时间切片）：首帧 chunk 行同步落位，其余行经 rAF 逐帧追加直至完整。
+        // 合计行 / infinite 底部状态行 / merge 列归并随末帧落位（merge 需要完整连续行序列）。
+        // 环境无 rAF（SSR 快照类场景）时不分批，一轮铺完——与全量同步渲染同结果。
+        this.renderChunkedBody(body, display, rowKey, layout, chunk, summaryRowData)
+        if (this.renderChunkRaf !== 0) {
+          // 分批进行中：首帧语义立即落位——垫高移除 + grid/aria/sticky（aria-rowcount 首帧
+          // 即写全量，读屏行数与最终一致）+ 焦点/滚动恢复 + 渲染状态落定（分批期间 selected
+          // 变化仍走行级补丁快路径）；合计/底部行与 merge 归并待末帧。
+          body.style.minHeight = ''
+          this.applyGridSemantics()
+          this.applyRowAriaSemantics()
+          this.applyStickyRows()
+          this.restoreWindowedFocusAnchor(this.autoSyncUpdate)
+          if (this.wrap) this.restoreScrollPosition(seqAtSave, st, this.wrap.scrollLeft)
+          this.settleRenderState()
+          return
         }
-      }
-      // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并；windowed/server 行模型
-      // 与 infinite 已装载数据同样跳过——跨界 rowspan 语义不确定，见 WINDOWED_SPAN_HINT /
-      // SERVER_SPAN_HINT / INFINITE_SPAN_HINT）
-      if (this.rowsGatedOn()) {
-        if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
-          if (this.infiniteOn()) {
-            if (!this.infiniteSpanWarned) {
-              this.infiniteSpanWarned = true
-              devWarn(INFINITE_SPAN_HINT)
-            }
-          } else if (!this.serverSpanWarned) {
-            this.serverSpanWarned = true
-            devWarn(SERVER_SPAN_HINT)
+        // display 行数 ≤ chunk：一轮铺完（merge 归并已落位），落入下方统一尾程
+      } else {
+        const rowInfos: { tr: HTMLTableRowElement; kind: string }[] = []
+        // windowed：事件 rowIndex / 条纹等按绝对行号（windowStart 起），与虚拟窗口渲染同口径
+        let dataIndex = this.windowedOn() ? this._winMode.windowStart : 0
+        for (let i = 0; i < display.length; i++) {
+          const f = display[i]!
+          const tr =
+            f.kind === 'expand'
+              ? this.buildExpandRow(f)
+              : f.kind === 'group'
+                ? this.buildGroupRow(f)
+                : this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
+          if (f.kind === 'data') {
+            const idx = dataIndex
+            dataIndex++
+            rowInfos.push({ tr, kind: f.kind })
+            body.appendChild(tr)
+            // 数据行结构槽：行挂入 tbody 后调用（宿主钩子里 parentElement 可用）
+            this.structuralBodyRow(tr, f.row, idx)
+          } else {
+            rowInfos.push({ tr, kind: f.kind })
+            body.appendChild(tr)
           }
         }
-      } else if (!this.windowedOn()) {
-        this.applyRowMerge(rowInfos)
+        // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并；windowed/server 行模型
+        // 与 infinite 已装载数据同样跳过——跨界 rowspan 语义不确定，见 WINDOWED_SPAN_HINT /
+        // SERVER_SPAN_HINT / INFINITE_SPAN_HINT）
+        this.applyMergePostProcess(rowInfos)
       }
     }
 
-    if (summaryConfigs.length > 0 && summaryFlat.length > 0 && summaryValues) {
-      body.appendChild(this.buildSummaryRow(summaryConfigs, summaryValues, layout))
+    if (summaryRowData) {
+      body.appendChild(this.buildSummaryRow(summaryRowData.configs, summaryRowData.values, layout))
     }
     // infinite 底部状态行（在途 loading /「已到底」提示）：追加在已装载行（及合计行）之后
     this.appendInfiniteFooterRow(body, this.columnCount())
@@ -3780,6 +3815,130 @@ export class OASTableBase extends OASElement {
   /** 合并单元格：对 merge 列后处理连续相同显示值的行，首行 rowspan 覆盖、后续行删除该列 td。
       仅合并连续 data 行（expand 内容行插入则断开分组）。按 data-col 属性按 key 查询 td，
       对其它列已删除的 td 免疫（不依赖列位置索引，避免跨列删除导致的索引漂移）。 */
+  /**
+   * render-chunk 生效判定：合法正整数行数返回该值，否则 0（= 缺省全量同步渲染，零行为漂移）。
+   * 缺席 / 空串 / 0 / 负数 / 非数字一律回落全量；正小数向下取整。
+   */
+  private renderChunkSize(): number {
+    const raw = this.getAttr('render-chunk', '').trim()
+    if (raw === '') return 0
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n <= 0) return 0
+    return Math.floor(n)
+  }
+
+  /** 作废在途分批渲染（新一轮全量渲染 / 断连时调用）：rAF 句柄取消 + 代次 bump 双保险 */
+  private cancelRenderChunk(): void {
+    this.renderChunkGen++
+    if (this.renderChunkRaf) {
+      cancelAnimationFrame(this.renderChunkRaf)
+      this.renderChunkRaf = 0
+    }
+  }
+
+  /**
+   * merge 列 / span-method 的后处理：全量同步渲染与分批渲染（末帧）共用同口径——
+   * gated 形态（windowed/server/infinite 已装载）只告警跳过（跨界 rowspan 语义不确定），
+   * 本地全量渲染对 merge 列连续相同值归并（applyRowMerge 需完整连续行序列，
+   * 分批渲染只在末帧、全部行入列后调用一次）。
+   */
+  private applyMergePostProcess(rowInfos: { tr: HTMLTableRowElement; kind: string }[]): void {
+    if (this.rowsGatedOn()) {
+      if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
+        if (this.infiniteOn()) {
+          if (!this.infiniteSpanWarned) {
+            this.infiniteSpanWarned = true
+            devWarn(INFINITE_SPAN_HINT)
+          }
+        } else if (!this.serverSpanWarned) {
+          this.serverSpanWarned = true
+          devWarn(SERVER_SPAN_HINT)
+        }
+      }
+    } else if (!this.windowedOn()) {
+      this.applyRowMerge(rowInfos)
+    }
+  }
+
+  /**
+   * 分批渲染（render-chunk 时间切片）：首帧同步渲染前 chunk 行，剩余行经 rAF 每帧追加 chunk 行
+   * 直至完整。追加只在尾部——滚动位置 / 选择 / 行内编辑不受分批影响；新一轮全量渲染（update
+   * 进入时已 cancelRenderChunk）或断连时旧代次作废（句柄取消 + 代次比对，陈旧帧不再追加）。
+   * 分组 / 树形 / 展开行随 display 行序列切段（结构槽逐行调用，与全量渲染同口径）。
+   * 每批按当时的 selected / expanded 属性快照构建行——分批期间变更选择 / 展开，后续批次按
+   * 新值落位（已渲染行走行级补丁快路径，二者不打架）。merge 列归并随末帧一次性后处理
+   * （applyMergePostProcess 需要完整连续行序列）；合计行 / infinite 底部状态行亦随末帧落位。
+   * 一轮铺完（display 行数 ≤ chunk）时不排 rAF：merge 归并在内部落位（行序列已完整），
+   * 合计 / 底部行交调用方统一尾程——与全量同步渲染逐字节一致。
+   */
+  private renderChunkedBody(
+    body: HTMLElement,
+    display: FlatRow[],
+    rowKey: string,
+    layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+    chunk: number,
+    summaryRow: { configs: SummaryConfig[]; values: Map<string, string> } | null,
+  ): void {
+    const gen = this.renderChunkGen
+    const rowInfos: { tr: HTMLTableRowElement; kind: string }[] = []
+    // windowed：事件 rowIndex / 条纹等按绝对行号（windowStart 起），与全量同步路径同口径
+    let dataIndex = this.windowedOn() ? this._winMode.windowStart : 0
+    let cursor = 0
+    const renderBatch = (): boolean => {
+      // 每批读取当时的 selected / expanded 快照：分批期间的变更对后续批次即时生效
+      const selectedNow = this.getAttr('selected', '').split(',').filter(Boolean)
+      const expandedNow = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
+      const end = Math.min(cursor + chunk, display.length)
+      for (let i = cursor; i < end; i++) {
+        const f = display[i]!
+        const tr =
+          f.kind === 'expand'
+            ? this.buildExpandRow(f)
+            : f.kind === 'group'
+              ? this.buildGroupRow(f)
+              : this.buildRow(f, i, rowKey, selectedNow, expandedNow, layout, dataIndex)
+        if (f.kind === 'data') {
+          const idx = dataIndex
+          dataIndex++
+          rowInfos.push({ tr, kind: f.kind })
+          body.appendChild(tr)
+          // 数据行结构槽：行挂入 tbody 后调用（宿主钩子里 parentElement 可用；与全量渲染同口径）
+          this.structuralBodyRow(tr, f.row, idx)
+        } else {
+          rowInfos.push({ tr, kind: f.kind })
+          body.appendChild(tr)
+        }
+      }
+      cursor = end
+      return cursor >= display.length
+    }
+    const finish = (): void => {
+      // merge 列归并末帧一次性后处理（gated/windowed 告警口径同全量路径）；
+      // 合计行 / infinite 底部状态行追加在全部数据行之后（与全量渲染同序）。
+      // 仅异步末帧走此出口——一轮铺完（display ≤ chunk）由调用方的统一尾程落位，防双份。
+      this.applyMergePostProcess(rowInfos)
+      if (summaryRow) body.appendChild(this.buildSummaryRow(summaryRow.configs, summaryRow.values, layout))
+      this.appendInfiniteFooterRow(body, this.columnCount())
+    }
+    if (renderBatch()) {
+      // 一轮铺完：只落位 merge 归并（行序列已完整），合计/底部行交调用方统一尾程（防双份）
+      this.applyMergePostProcess(rowInfos)
+      return
+    }
+    const step = (): void => {
+      if (gen !== this.renderChunkGen) return // 代次作废（新一轮渲染 / 断连）：陈旧帧不再追加
+      this.renderChunkRaf = 0
+      const done = renderBatch()
+      // 新追加行的 grid / aria / sticky 语义逐帧落位（aria-rowcount 首帧已写全量，此处补行序号）
+      this.applyGridSemantics()
+      this.applyRowAriaSemantics()
+      this.applyStickyRows()
+      if (done) finish()
+      else this.renderChunkRaf = requestAnimationFrame(step)
+    }
+    this.renderChunkRaf = requestAnimationFrame(step)
+  }
+
   private applyRowMerge(rows: { tr: HTMLTableRowElement; kind: string }[]): void {
     for (const col of this.effectiveColumns()) {
       if (!col.merge) continue
