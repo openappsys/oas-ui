@@ -839,9 +839,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'tableAdvanced',
     get: () => componentMeasures.tableAdvanced.gzipBytes,
-    limit: 9.5 * 1024, // 9.5 KB（2026-11-14 重定档：重复创建守卫引入共享 dev-warn 后实测 9259 B 触前档 9 KB）
+    limit: 11 * 1024, // 11 KB（2026-11-15 重定档：批 C 数据层缓存重构后实测 10342 B，余量约 8.9%）
     basis:
-      '首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B。2026-10-31 复核重定档：逐文件复读 8 个模块（formula 2317 / windowed 1996 / pivot 1097 / query 851 / conditional 565 / history 490 / clipboard 363 / index 332），无可无行为变化清除的冗余（最大可清项 evaluateFormula 仅 19 B 且属公开导出，geometrySummary 的 try/catch 25 B 属已声明防御路径）；2.2% 余量已无预警意义，按实测上浮 15% 重定档 9 KB（利用率 86.9%）。2026-11-14 重定档 9.5 KB：createServerSource 重复创建守卫引入共享 dev-warn（236 B，统一告警通道，dev 提示、生产静默）——宿主同时使用 table 主链时 dev-warn 已被包含，advanced 侧真实增量为 0；再次扩展前必须先做包体评估或瘦身',
+      '首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B。2026-10-31 复核重定档：逐文件复读 8 个模块（formula 2317 / windowed 1996 / pivot 1097 / query 851 / conditional 565 / history 490 / clipboard 363 / index 332），无可无行为变化清除的冗余（最大可清项 evaluateFormula 仅 19 B 且属公开导出，geometrySummary 的 try/catch 25 B 属已声明防御路径）；2.2% 余量已无预警意义，按实测上浮 15% 重定档 9 KB（利用率 86.9%）。2026-11-14 重定档 9.5 KB：createServerSource 重复创建守卫引入共享 dev-warn（236 B，统一告警通道，dev 提示、生产静默）——宿主同时使用 table 主链时 dev-warn 已被包含，advanced 侧真实增量为 0；再次扩展前必须先做包体评估或瘦身。2026-11-15 批 C 数据层缓存重构定档 11 KB：server-rows-cache 签名/TTL/在途合并纯逻辑 596 B + 缓存接线（fresh/陈旧/复用/正常四路 + SWR 背景控制器 + purge/destroy）487 B——缓存功能集固有体量，无行为变化瘦身空间（评估 60-120 B 不足）；动态拆分规避计量已否决（属规避且默认启用语义下首屏时序复杂化）',
   },
   {
     name: '@oas-ui/ui/data/table/format 链 gzip',
