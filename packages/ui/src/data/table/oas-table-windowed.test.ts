@@ -1278,12 +1278,12 @@ describe('windowed × 树形懒加载（hasChildren 契约）', () => {
     const toggles = el.shadowRoot!.querySelectorAll('button.toggle')
     expect(toggles.length, '仅 hasChildren 行有展开钮').toBe(1)
     expect(toggles[0]!.getAttribute('aria-expanded')).toBe('false')
-    // depth 缩进：首列 paddingLeft = 16 + depth × indent-size(24)；depth 0 的普通行不设内联 padding（CSS 档位默认）
+    // depth 缩进：首列 paddingInlineStart = 16 + depth × indent-size(24)；depth 0 的普通行不设内联 padding（CSS 档位默认）
     const firstTds = [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr td:first-child')]
-    expect(firstTds[0]!.style.paddingLeft, 'depth0 有子孙 → 16px').toBe('16px')
-    expect(firstTds[1]!.style.paddingLeft, 'depth1').toBe('40px')
-    expect(firstTds[2]!.style.paddingLeft, 'depth2').toBe('64px')
-    expect(firstTds[3]!.style.paddingLeft, 'depth0 无子孙 → 不设内联').toBe('')
+    expect(firstTds[0]!.style.paddingInlineStart, 'depth0 有子孙 → 16px').toBe('16px')
+    expect(firstTds[1]!.style.paddingInlineStart, 'depth1').toBe('40px')
+    expect(firstTds[2]!.style.paddingInlineStart, 'depth2').toBe('64px')
+    expect(firstTds[3]!.style.paddingInlineStart, 'depth0 无子孙 → 不设内联').toBe('')
   })
 
   it('T2 点击展开钮：只派发 oas-expand，不改 expanded 属性、不本地展开（宿主控制）', () => {

@@ -544,12 +544,14 @@ test('table server 分组：混合行渲染 + 聚合值按列 + 折叠本地过�
 
   const root = page.locator('#table-server-group')
 
-  // ② 混合行渲染：组行 label/count + 数据行宿主顺序；聚合值在对应列可见
+  // ② 混合行渲染：组行 label/count + 数据行宿主顺序；聚合值在对应列可见 + 数值列右对齐
   await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toContainText('研发组')
   await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toContainText('3')
   const devTds = root.locator('tbody tr.group-header[data-group="研发"] td')
   await expect(devTds).toHaveCount(2)
   await expect(devTds.nth(1)).toHaveText('60')
+  await expect(devTds.nth(1)).toHaveAttribute('data-col', 'amount')
+  await expect(devTds.nth(1)).toHaveClass(/align-right/)
   await expect(root.locator('tbody tr[part="row"]').first()).toContainText('张三')
   await expect(root.locator('tbody tr[part="row"]')).toHaveCount(5)
 
@@ -589,7 +591,7 @@ test('table server 分组：混合行渲染 + 聚合值按列 + 折叠本地过�
         rows.push({ kind: 'data', key: `g${g}-${i}`, name: `${g}-${i}号`, amount: i, dept: `组${g}` })
       }
     }
-    el.setAttribute('total', String(rows.length))
+    el.setAttribute('total', String(rows.filter((r) => r.kind !== 'group').length))
     el.setAttribute('data', JSON.stringify(rows))
   })
   // 初始窗口：首组行渲染 + 顶层组行无内联缩进（既有视觉零漂移）
@@ -597,7 +599,7 @@ test('table server 分组：混合行渲染 + 聚合值按列 + 折叠本地过�
   const flatIndent = await root
     .locator('tbody tr.group-header[data-group="组0"] td')
     .first()
-    .evaluate((td) => (td as HTMLElement).style.paddingLeft)
+    .evaluate((td) => (td as HTMLElement).style.paddingInlineStart)
   expect(flatIndent, '顶层组行无内联缩进（既有视觉零漂移）').toBe('')
   // 滚动到底 → 窗口切片：末组行（depth=1 子组）缩进与末数据行渲染（虚拟窗口重建路径的 kind 分派）
   await root.locator('.table-scroll').evaluate((wrap) => {
@@ -607,8 +609,8 @@ test('table server 分组：混合行渲染 + 聚合值按列 + 折叠本地过�
   const subIndent = await root
     .locator('tbody tr.group-header[data-group="组15"] td')
     .first()
-    .evaluate((td) => (td as HTMLElement).style.paddingLeft)
-  expect(subIndent, '层级组行 depth 缩进（树形同款公式）').toBe('40px')
+    .evaluate((td) => (td as HTMLElement).style.paddingInlineStart)
+  expect(subIndent, '层级组行 depth 缩进（树形同款公式，逻辑属性 padding-inline-start）').toBe('40px')
   await expect(root.locator('tbody tr[part="row"]').last()).toContainText('15-1号')
 
   // ⑤ 滚动后折叠末组：窗口内本地过滤生效（不重取——滚动场景折叠语义不变）
@@ -617,20 +619,132 @@ test('table server 分组：混合行渲染 + 聚合值按列 + 折叠本地过�
   await expect(root.locator('tbody tr[part="row"]').last()).not.toContainText('15-1号')
   expect((await stateOf(page, 'table-server-group')).reqs.length).toBe(reqsBeforeScroll)
 
-  // ⑦ dark 主题：组行背景走 token（--oas-color-bg-hover），聚合值文字可读（非刺眼硬编码色）
+  // ⑦ dark 主题：组行底色/文字 = token 实际解析值（收紧断言：此前只断「非透明/≠底色」，
+  // 与注释「= token 值」不符——现以探针元素解析同款 token 逐值比对）
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
-  const groupBg = await root
-    .locator('tbody tr.group-header[data-group="组15"] td')
-    .first()
-    .evaluate((td) => getComputedStyle(td).backgroundColor)
-  expect(groupBg, 'dark 组行背景 = token 值（非透明/非硬编码刺眼色）').not.toBe('rgba(0, 0, 0, 0)')
-  const groupText = await root
-    .locator('tbody tr.group-header[data-group="组15"] td')
-    .first()
-    .evaluate((td) => getComputedStyle(td).color)
-  expect(groupText, 'dark 组行文字非与背景同值（可读）').not.toBe(groupBg)
+  const tokenColors = await page.evaluate(() => {
+    const probe = (styleDecl: string): string => {
+      const d = document.createElement('div')
+      d.style.cssText = styleDecl
+      document.body.appendChild(d)
+      const v = getComputedStyle(d).backgroundColor
+      d.remove()
+      return v
+    }
+    return {
+      bgHover: probe('background: var(--oas-color-bg-hover)'),
+      textPrimary: probe('background: var(--oas-color-text-primary)'),
+    }
+  })
+  const darkGroupCell = root.locator('tbody tr.group-header[data-group="组15"] td').first()
+  const groupBg = await darkGroupCell.evaluate((td) => getComputedStyle(td).backgroundColor)
+  expect(groupBg, 'dark 组行背景 = --oas-color-bg-hover 实际解析值').toBe(tokenColors.bgHover)
+  const groupText = await darkGroupCell.evaluate((td) => getComputedStyle(td).color)
+  expect(groupText, 'dark 组行文字 = --oas-color-text-primary 实际解析值（非刺眼硬编码色）').toBe(
+    tokenColors.textPrimary,
+  )
+  expect(groupText, 'dark 组行文字与背景不同值（可读）').not.toBe(groupBg)
   await page.evaluate(() => document.documentElement.removeAttribute('data-theme'))
 
   // ⑧ console 零告警
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+})
+
+/**
+ * 交叉审修复批回归（R1/R5）：按列聚合 × 可展开行的列位几何 + total 数据行口径。
+ * R1：label 跨度只计前导附加列 + 首个聚合列之前的叶子列，尾部展开列逐格补占位——
+ * 聚合格与数据行同列位、不与展开列重叠（此前 labelSpan 把尾部展开列计入导致整行右移
+ * 一列、金额列被 label 覆盖、聚合值落到展开箭头列下方）。
+ * R5：`total` 只计数据行（组行是装饰行不计入）——分页页数按数据行算（fixture 示范 +
+ * 页数断言双锁定）。
+ */
+test('table server 分组修复批：按列聚合 × 可展开行列位几何 + total 数据行口径（分页页数）+ console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-group-fix'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    // total 只计数据行（4 数据行；组行是装饰行不计入——错误示范 rows.length=6 会算出 3 页）
+    el.setAttribute('total', '4')
+    el.setAttribute('pagination', '')
+    el.setAttribute('page-size', '2')
+    el.setAttribute('group-by', 'dept')
+    el.setAttribute('data', '[]')
+    const state = { reqs: [] as Array<{ requestId: number; reason: string }> }
+    ;(window as any)['__srvState_table-server-group-fix'] = state
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      state.reqs.push({ requestId: d.requestId, reason: d.reason })
+      setTimeout(() => {
+        const rows = [
+          { kind: 'group', groupKey: '研发', groupLabel: '研发组', groupCount: 2, aggregates: { amount: 130 } },
+          { kind: 'data', key: 'a1', name: '张三', amount: 70, dept: '研发', expand: '<p>张三明细</p>' },
+          { kind: 'data', key: 'a2', name: '李四', amount: 60, dept: '研发' },
+          { kind: 'group', groupKey: '销售', groupLabel: '销售组', groupCount: 2 },
+          { kind: 'data', key: 'b1', name: '王五', amount: 40, dept: '销售' },
+          { kind: 'data', key: 'b2', name: '赵六', amount: 30, dept: '销售' },
+        ]
+        el.setAttribute('data', JSON.stringify(rows))
+      }, 0)
+    })
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+  })
+  const root = page.locator('#table-server-group-fix')
+  await page.waitForFunction(() => (window as any)['__srvState_table-server-group-fix'].reqs.length >= 1, null, {
+    timeout: 15000,
+  })
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toContainText('研发组')
+
+  // ① R1 格子序列：label 格（colSpan=1，无附加列 + name 叶子）+ amount 聚合格 + 尾部展开占位格
+  const devTds = root.locator('tbody tr.group-header[data-group="研发"] td')
+  await expect(devTds).toHaveCount(3)
+  await expect(devTds.nth(1)).toHaveAttribute('data-col', 'amount')
+  await expect(devTds.nth(1)).toHaveAttribute('part', 'cell')
+  await expect(devTds.nth(1)).toHaveText('130')
+  await expect(devTds.nth(1)).toHaveClass(/align-right/)
+  // 无 aggregates 的组行同形（表级形态统一）：聚合格留空、尾部占位格在位
+  const salesTds = root.locator('tbody tr.group-header[data-group="销售"] td')
+  await expect(salesTds).toHaveCount(3)
+  await expect(salesTds.nth(1)).toHaveAttribute('data-col', 'amount')
+  await expect(salesTds.nth(1)).toHaveText('')
+
+  // ② R1 几何：聚合格与数据行 amount 列同列位；不与尾部展开列重叠
+  const aggBox = await devTds.nth(1).evaluate((td) => {
+    const r = (td as HTMLElement).getBoundingClientRect()
+    return { x: r.x, right: r.right }
+  })
+  const dataAmountBox = await root.locator('tbody tr[data-key="a1"] td[data-col="amount"]').evaluate((td) => {
+    const r = (td as HTMLElement).getBoundingClientRect()
+    return { x: r.x, right: r.right }
+  })
+  expect(Math.abs(aggBox.x - dataAmountBox.x), '聚合格与数据行 amount 列同列位（不再右移一列）').toBeLessThan(2)
+  const expandBox = await root.locator('tbody tr[data-key="a1"] td.expand-toggle-cell').evaluate((td) => {
+    const r = (td as HTMLElement).getBoundingClientRect()
+    return { x: r.x }
+  })
+  expect(aggBox.right, '聚合格右缘不越过尾部展开列左缘（不与展开箭头列重叠）').toBeLessThanOrEqual(expandBox.x + 1)
+
+  // ③ R5 分页页数按数据行算：total=4 数据行 / pageSize 2 → 2 页（若误把组行计入 total=6 → 3 页）
+  const pageButtons = await root.locator('.pagination oas-pagination').evaluate((p) => {
+    const sr = (p as HTMLElement).shadowRoot
+    return sr ? [...sr.querySelectorAll<HTMLElement>('[part="page"]')].map((b) => b.textContent!.trim()) : []
+  })
+  expect(pageButtons, '分页页数按数据行算（组行不计入 total 口径）').toEqual(['1', '2'])
+
+  // ④ console 零告警
   expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
 })

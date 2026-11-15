@@ -74,7 +74,29 @@ describe('partitionServerGroupRows（混合行分区）', () => {
     expect(r.flat.map((f) => f.depth)).toEqual([0, 2, 0, 0, 0, 1])
   })
 
-  it('groupKey 校验：缺失 / 非字符串 / 空串 → 行剔除 + invalidGroupRows 计数（数据不丢）', () => {
+  it('depth 钳制：病态大值（1e6）钳到上限 20（防超大缩进 padding）', () => {
+    const rows: Row[] = [
+      { kind: 'group', groupKey: 'a', depth: 1e6 },
+      { kind: 'group', groupKey: 'b', depth: 20 },
+      { kind: 'group', groupKey: 'c', depth: 21 },
+    ]
+    const r = partitionServerGroupRows(rows)
+    expect(r.flat.map((f) => f.depth)).toEqual([20, 20, 20])
+  })
+
+  it('groupCount 归一化：NaN / 负数 / 非数值 → 未提供（组件侧缺省不显示计数）', () => {
+    const rows: Row[] = [
+      { kind: 'group', groupKey: 'a', groupCount: Number.NaN },
+      { kind: 'group', groupKey: 'b', groupCount: -3 },
+      { kind: 'group', groupKey: 'c', groupCount: '12' },
+      { kind: 'group', groupKey: 'd', groupCount: 0 },
+      { kind: 'group', groupKey: 'e', groupCount: 5 },
+    ]
+    const r = partitionServerGroupRows(rows)
+    expect(r.flat.map((f) => f.groupCount)).toEqual([undefined, undefined, undefined, 0, 5])
+  })
+
+  it('groupKey 校验：缺失 / 非字符串 / 空串的 kind:"group" 行降级按数据行渲染（数据不丢，不再剔除）+ 计数', () => {
     const rows: Row[] = [
       { kind: 'group', groupCount: 1 }, // 缺 groupKey
       { kind: 'group', groupKey: 42 }, // 非字符串
@@ -84,8 +106,14 @@ describe('partitionServerGroupRows（混合行分区）', () => {
     ]
     const r = partitionServerGroupRows(rows)
     expect(r.invalidGroupRows).toBe(3)
-    expect(r.flat.map((f) => f.kind)).toEqual(['data', 'group'])
-    expect(r.dataRows).toEqual([{ key: 'a', name: '张三' }])
+    // 契约加固：无效组行降级为数据行渲染（旧行为剔除丢行），kind 为协议保留字段由壳层 devWarn 提示
+    expect(r.flat.map((f) => f.kind)).toEqual(['data', 'data', 'data', 'data', 'group'])
+    expect(r.dataRows).toEqual([
+      { kind: 'group', groupCount: 1 },
+      { kind: 'group', groupKey: 42 },
+      { kind: 'group', groupKey: '' },
+      { key: 'a', name: '张三' },
+    ])
   })
 
   it('aggregates 非对象（数组 / 字符串 / null）→ 视为未提供', () => {
@@ -134,6 +162,22 @@ describe('groupAggregateValue（按列 aggregate 取值）', () => {
 
   it('aggregates 未提供 → null', () => {
     expect(groupAggregateValue(undefined, col({ key: 'amount', aggregate: true }))).toBeNull()
+  })
+
+  it('聚合值非数值/字符串（对象/数组/函数/布尔）→ null 降级空（不渲染 [object Object]）', () => {
+    const bad = (v: unknown): Record<string, number | string> => ({ a: v }) as Record<string, number | string>
+    expect(groupAggregateValue(bad({ total: 1 }), col({ key: 'a', aggregate: true }))).toBeNull()
+    expect(groupAggregateValue(bad([1, 2]), col({ key: 'a', aggregate: true }))).toBeNull()
+    expect(
+      groupAggregateValue(
+        bad((): number => 1),
+        col({ key: 'a', aggregate: true }),
+      ),
+    ).toBeNull()
+    expect(groupAggregateValue(bad(true), col({ key: 'a', aggregate: true }))).toBeNull()
+    // 数值/字符串照常字符串化（含 0 / 空串）
+    expect(groupAggregateValue({ a: 0 }, col({ key: 'a', aggregate: true }))).toBe('0')
+    expect(groupAggregateValue({ a: '' }, col({ key: 'a', aggregate: true }))).toBe('')
   })
 })
 
@@ -184,5 +228,53 @@ describe('visibleFlat 层级分组折叠（server 分组行 depth 语义）', ()
     expect(vis2.map((f) => f.row.key ?? f.groupKey)).toEqual(['研发', 'a', 'b', '销售'])
     // 全不折叠
     expect(visibleFlat(flat, new Set(), 'key').length).toBe(5)
+  })
+
+  /**
+   * 差分固化（交叉审采纳项）：visibleFlat 的层级子树语义在 depth 恒 0 时必须与批前
+   * 「折叠组只保留分节头行」参照实现零差异——随机 200 组混合 flat 差分 0 差异
+   * （规模缩小避免慢测；固定种子 LCG 保证失败可复现）。
+   */
+  describe('visibleFlat depth=0 差分固化（层级子树语义 ≡ 批前单层折叠参照实现）', () => {
+    /** 参照实现 = 批前本地分组折叠语义内联：数据行属最近的组行，组折叠即隐藏其后续行 */
+    const referenceDepth0Collapse = (flat: FlatRow[], collapsed: ReadonlySet<string>): FlatRow[] => {
+      const out: FlatRow[] = []
+      let groupHidden = false
+      for (const f of flat) {
+        if (f.kind === 'group') {
+          groupHidden = collapsed.has(f.groupKey ?? '')
+          out.push(f)
+          continue
+        }
+        if (!groupHidden) out.push(f)
+      }
+      return out
+    }
+
+    it('随机 200 组 depth=0 混合 flat：visibleFlat 与参照实现零差异', () => {
+      let seed = 20260915
+      const rnd = (): number => {
+        seed = (seed * 1664525 + 1013904223) >>> 0
+        return seed / 4294967296
+      }
+      for (let t = 0; t < 200; t++) {
+        const flat: FlatRow[] = []
+        const keys: string[] = []
+        const n = 1 + Math.floor(rnd() * 12)
+        for (let i = 0; i < n; i++) {
+          if (rnd() < 0.35) {
+            const gk = `g${Math.floor(rnd() * 5)}`
+            flat.push({ row: {}, depth: 0, kind: 'group', groupKey: gk, groupLabel: gk })
+            keys.push(gk)
+          } else {
+            flat.push({ row: { key: `r${t}-${i}` }, depth: 0, kind: 'data' })
+          }
+        }
+        const collapsed = new Set(keys.filter(() => rnd() < 0.5))
+        const actual = visibleFlat(flat, new Set(), 'key', collapsed).map((f) => f.row.key ?? `#${f.groupKey}`)
+        const expected = referenceDepth0Collapse(flat, collapsed).map((f) => f.row.key ?? `#${f.groupKey}`)
+        expect(actual, `case ${t} 差分（collapsed=${[...collapsed].join(',')}）`).toEqual(expected)
+      }
+    })
   })
 })

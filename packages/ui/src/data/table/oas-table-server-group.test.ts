@@ -131,9 +131,103 @@ describe('OASTable server 分组协议（批 B）', () => {
     const tds = [...groups[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
     expect(tds.length).toBe(2)
     expect(tds[1]!.textContent).toBe('120')
+    // 聚合格 data-col + part 与数据行同口径（固定列 sticky / 宿主选择器可命中）
+    expect(tds[1]!.getAttribute('data-col')).toBe('amount')
+    expect(tds[1]!.getAttribute('part')).toBe('cell')
+    // 数值列右对齐（列对齐惯例）
+    expect(tds[1]!.className).toContain('align-right')
     // 未提供聚合键的组行：对应格子留空（不渲染 undefined/NaN）
     const tds2 = [...groups[1]!.querySelectorAll('td')] as HTMLTableCellElement[]
     expect(tds2[1]!.textContent).toBe('')
+  })
+
+  it('按列聚合 × 可展开行（R1 回归）：label 跨度不计尾部展开列，格子序列与总列数闭合（不右移一列）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+      { key: 'a', name: '张三', amount: 70, expand: '<p>明细</p>' },
+      { key: 'b', name: '李四', amount: 50 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    // 格子序列：label 格（无附加列 + name 叶子 → colSpan=1）+ amount 聚合格 + 尾部展开列占位格
+    expect(tds.length).toBe(3)
+    expect(tds[0]!.colSpan).toBe(1)
+    expect(tds[0]!.textContent).toContain('研发')
+    expect(tds[1]!.getAttribute('data-col')).toBe('amount')
+    expect(tds[1]!.textContent).toBe('120')
+    expect(tds[2]!.className).toBe('expand-toggle-cell')
+    // colSpan 求和 = 总列数（2 叶子 + 1 尾部展开列）——组行格子几何与数据行同构
+    expect(tds.reduce((n, t) => n + t.colSpan, 0)).toBe(3)
+    // 对照数据行：同名聚合列 data-col 存在（列位对齐前提）
+    const dataAmountTd = dataRowsOf(el)[0]!.querySelector('td[data-col="amount"]')
+    expect(dataAmountTd?.getAttribute('data-col')).toBe('amount')
+  })
+
+  it('按列聚合 × 勾选列（前导附加列计入 label 跨度）：colSpan 求和仍与总列数闭合', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 1, aggregates: { amount: 70 } },
+      { key: 'a', name: '张三', amount: 70 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept', checkable: '' }, rows, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    // label 格 = 前导勾选列(1) + name 叶子(1) → colSpan=2；其后 amount 聚合格；总列数 = 2 叶子 + 1 勾选 = 3
+    expect(tds.length).toBe(2)
+    expect(tds[0]!.colSpan).toBe(2)
+    expect(tds[1]!.getAttribute('data-col')).toBe('amount')
+    expect(tds.reduce((n, t) => n + t.colSpan, 0)).toBe(3)
+  })
+
+  it('groupCount 缺省不显示计数（R2 回归）+ 表级按列形态统一（M2：无 aggregates 的组行聚合格留空）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+      { key: 'a', name: '张三', amount: 70 },
+      { kind: 'group', groupKey: '销售' }, // 无 groupCount / 无 aggregates
+      { key: 'b', name: '李四', amount: 50 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows, cols)
+    const groups = groupRowsOf(el)
+    // R2：缺省 groupCount 不创建计数节点（文档承诺「缺省不显示计数」，不渲染 0）
+    expect(groups[0]!.querySelector('.group-count')!.textContent).toBe('2')
+    expect(groups[1]!.querySelector('.group-count')).toBeNull()
+    // M2：表级形态统一——两组行同形（label colSpan 一致，不再全宽/按列并排）
+    const l0 = groups[0]!.querySelector('td') as HTMLTableCellElement
+    const l1 = groups[1]!.querySelector('td') as HTMLTableCellElement
+    expect(l0.colSpan).toBe(1)
+    expect(l1.colSpan).toBe(1)
+    const tds1 = [...groups[1]!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds1[1]!.getAttribute('data-col')).toBe('amount')
+    expect(tds1[1]!.textContent).toBe('')
+  })
+
+  it('client 本地分组 + aggregate 列：组行恒全宽形态（表级判定不含 client，零漂移）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+    ])
+    const data = JSON.stringify([
+      { key: 'a', name: '张三', dept: '研发', amount: 70 },
+      { key: 'b', name: '李四', dept: '研发', amount: 50 },
+    ])
+    const { el } = mountReq({ 'group-by': 'dept' }, data, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds.length).toBe(1)
+    expect(tds[0]!.colSpan).toBe(2)
+    expect(group.querySelector('.group-count')!.textContent).toBe('2')
   })
 
   it('折叠/展开：点组行折叠钮组内行本地隐藏（不重取）；再点恢复', () => {
@@ -168,9 +262,9 @@ describe('OASTable server 分组协议（批 B）', () => {
     const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows)
     const groups = groupRowsOf(el)
     expect(groups.length).toBe(3)
-    // 子组行 depth 缩进（16 + 1 * 24 = 40px 内联 padding）
+    // 子组行 depth 缩进（16 + 1 * 24 = 40px 内联 padding；逻辑属性 padding-inline-start，RTL 正确）
     const subLabel = groups[1]!.querySelector('td') as HTMLTableCellElement
-    expect(subLabel.style.paddingLeft).toBe('40px')
+    expect(subLabel.style.paddingInlineStart).toBe('40px')
     // 折叠 A → A/1 组行与其数据一并隐藏（子树语义）；A 自身保留分节头行，B 不受影响
     ;(groups[0]!.querySelector('button.toggle') as HTMLButtonElement).click()
     const remain = groupRowsOf(el).map((g) => g.getAttribute('data-group'))
@@ -179,7 +273,7 @@ describe('OASTable server 分组协议（批 B）', () => {
     expect(dataRowsOf(el)[0]!.textContent).toContain('B-数据')
   })
 
-  it('无效组行（groupKey 缺失/空串）降级：剔除 + devWarn 一次 + 组内数据行不丢', () => {
+  it('无效组行（kind:"group" 但 groupKey 缺失/空串）契约加固：按数据行渲染（数据不丢）+ devWarn 一次', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const rows = JSON.stringify([
       { kind: 'group', groupCount: 1 }, // 缺 groupKey
@@ -191,23 +285,31 @@ describe('OASTable server 分组协议（批 B）', () => {
     const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows)
     expect(groupRowsOf(el).length).toBe(1)
     expect(groupRowsOf(el)[0]!.getAttribute('data-group')).toBe('研发')
-    expect(dataRowsOf(el).length).toBe(2)
+    // 降级渲染：两条无效组行按数据行渲染（旧行为剔除丢行），组内数据行不丢
+    expect(dataRowsOf(el).length).toBe(4)
     expect(
-      warn.mock.calls.some((c) => String(c[0]).includes('groupKey')),
-      '无效组行应有一次性 devWarn 指明 groupKey 校验',
+      warn.mock.calls.some((c) => String(c[0]).includes('groupKey') && String(c[0]).includes('保留字段')),
+      '应有一次性 devWarn 指明 kind 保留字段契约',
     ).toBe(true)
     warn.mockRestore()
   })
 
-  it('infinite + group-by：分组禁用保留（devWarn 一次 + 请求 detail 不带 groupBy）', () => {
+  it('infinite + group-by：分组禁用保留（devWarn 一次 + 请求 detail 不带 groupBy；同实例重渲染不重复告警）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const { reqs } = mountReq({ infinite: '', 'group-by': 'dept' })
-    expect(reqs.length).toBe(1)
-    expect(reqs[0]!.groupBy).toBeUndefined()
-    expect(warn.mock.calls.some((c) => String(c[0]).includes('infinite'))).toBe(true)
-    // 同实例再渲染不重复告警
-    document.body.innerHTML = ''
-    warn.mockRestore()
+    try {
+      const { el, reqs } = mountReq({ infinite: '', 'group-by': 'dept' })
+      expect(reqs.length).toBe(1)
+      expect(reqs[0]!.groupBy).toBeUndefined()
+      const countWarns = (): number => warn.mock.calls.filter((c) => String(c[0]).includes('infinite')).length
+      expect(countWarns()).toBeGreaterThanOrEqual(1)
+      const afterMount = countWarns()
+      // 同实例再渲染（属性写触发 update）不重复告警——实例级去重（M7：把承诺变成真断言）
+      el.setAttribute('data', JSON.stringify([{ key: 'a', name: '张三' }]))
+      el.setAttribute('data', JSON.stringify([{ key: 'b', name: '李四' }]))
+      expect(countWarns()).toBe(afterMount)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('client 本地分组零漂移：无 row-model 时 group-by 本地分组照常（组行/计数/折叠）', () => {

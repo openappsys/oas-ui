@@ -993,7 +993,7 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     expect(rows(el)[2]!.textContent).toContain('李四')
     // 子行首格按层级缩进（16 + depth*24 = 40px）
     const firstCell = rows(el)[1]!.querySelector('td') as HTMLElement
-    expect(firstCell.style.paddingLeft).toBe('40px')
+    expect(firstCell.style.paddingInlineStart).toBe('40px')
 
     // 再次点击收起
     const toggles2 = el.shadowRoot!.querySelectorAll('td button.toggle')
@@ -1028,7 +1028,7 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     // 再展开研发部 → 张三 出现（depth 2，缩进 16 + 48 = 64px）
     expect(rows(el).length).toBe(3)
     const cell = rows(el)[2]!.querySelector('td') as HTMLElement
-    expect(cell.style.paddingLeft).toBe('64px')
+    expect(cell.style.paddingInlineStart).toBe('64px')
   })
 })
 
@@ -3193,17 +3193,17 @@ describe('OASTable P2 批（table-layout / hover / filter-icon / indent-size / r
       expect(OASTable.observedAttributes).toContain('indent-size')
       const el = mount({ data: TREE_DATA, expanded: 'p1' })
       const childTd = rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement
-      expect(childTd.style.paddingLeft).toBe('40px')
+      expect(childTd.style.paddingInlineStart).toBe('40px')
     })
 
     it('indent-size=32：depth1 → 16+32=48px；非法值回落 24', () => {
       const el = mount({ data: TREE_DATA, expanded: 'p1', 'indent-size': '32' })
-      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('48px')
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingInlineStart).toBe('48px')
       // 重渲染重建 td：断言前重查询
       el.setAttribute('indent-size', 'abc')
-      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('40px')
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingInlineStart).toBe('40px')
       el.setAttribute('indent-size', '-5')
-      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('40px')
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingInlineStart).toBe('40px')
     })
 
     it('property 写入 indentSize 后树表展开不抛（内部方法改名防实例遮蔽）', () => {
@@ -3211,7 +3211,7 @@ describe('OASTable P2 批（table-layout / hover / filter-icon / indent-size / r
       const rec = el as unknown as Record<string, unknown>
       rec.indentSize = 999
       expect(() => el.setAttribute('expanded', 'p1')).not.toThrow()
-      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingLeft).toBe('40px')
+      expect((rows(el)[1]!.querySelector('td[data-col="name"]') as HTMLElement).style.paddingInlineStart).toBe('40px')
     })
   })
 

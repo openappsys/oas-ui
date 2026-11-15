@@ -5787,8 +5787,12 @@ test('table wintree：懒展开宿主闭环（expand 事件 → 回填子孙 →
   await engToggle.click()
   await expect(engToggle, '宿主回写 expanded 后翻转').toHaveAttribute('aria-expanded', 'true')
   await expectRows(5)
-  const childIndent = await t.locator('tr[data-key="平台组"] td:first-child').evaluate((td) => td.style.paddingLeft)
-  const rootIndent = await t.locator('tr[data-key="研发部"] td:first-child').evaluate((td) => td.style.paddingLeft)
+  const childIndent = await t
+    .locator('tr[data-key="平台组"] td:first-child')
+    .evaluate((td) => td.style.paddingInlineStart)
+  const rootIndent = await t
+    .locator('tr[data-key="研发部"] td:first-child')
+    .evaluate((td) => td.style.paddingInlineStart)
   expect(Number.parseInt(childIndent), 'depth1 缩进 > depth0').toBeGreaterThan(Number.parseInt(rootIndent))
   const idx = await t
     .locator('tbody tr[data-key]')
