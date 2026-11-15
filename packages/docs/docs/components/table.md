@@ -611,7 +611,7 @@ table.addEventListener('oas-expand', async (e) => {
 
 ## 服务端行模型（row-model="server"）
 
-> 排序/过滤责任移交服务端的取数模式（企业数据集 10 万+ 行场景）：`data` 为宿主回填的当前页切片，本地过滤/排序变换**整体跳过**（全有或全无——「只排当前页」是错误语义，组件不提供逐段混用配置）。**生效前提 = `total` 属性在场**（外部分页形态），前提不满足时回落 client 行为并 devWarn 一次；与 `windowed` 同开时 **windowed 优先**（`row-model` 被忽略）并 devWarn 一次——两协议互斥，请二选一。
+> 排序/过滤责任移交服务端的取数模式（企业数据集 10 万+ 行场景）：`data` 为宿主回填的当前页切片，本地过滤/排序变换**整体跳过**（全有或全无——「只排当前页」是错误语义，组件不提供逐段混用配置）。**生效前提 = `total` 属性在场**（外部分页形态），前提不满足时回落 client 行为并 devWarn 一次；与 `windowed` 同开时 **windowed 优先**（`row-model` 被忽略）并 devWarn 一次——两协议互斥，请二选一。`group-by` 在场时进入**服务端分组协议**（见下文「服务端分组」）：分组/聚合责任同样移交宿主，组件按宿主返回的分组行渲染。
 
 ### 模式配方（最小可用）
 
@@ -661,7 +661,45 @@ fetchRows: async ({ signal, ...rest }) => {
 }
 ```
 
-请求触发时机：挂载首载、翻页/改页大小、排序变更、过滤变更、`refreshRows()`（`reason` 分别为 `init` / `paginate` / `sort` / `filter` / `refresh`；排序/过滤/页大小变更自动重置 `current=1` 再请求——用户看到新口径首页，而非「新排序的第 N 页」）。请求在途时组件内建 loading 行；`fetchRows` 失败时 helper 经 `reportRowsError` 桥接内建失败通道——**保留旧数据 + 派发 `oas-rows-error` + 显示错误条**（`role="alert"`，重试按钮调 `refreshRows()`），宿主无需自建失败反馈。组件无内建请求超时：宿主 fetch 永不 settle 时 loading 保持——请在 fetcher 侧用 signal + 超时组合（见上方「超时与取消」）。helper 回填为异步写属性，无「监听回调同步写 `data` 落后一帧」的限制（详见下方决策表后的回填时序注意）。协议细节（requestId 去重、同值不重发、竞态规则）见下方 API 表的 `row-model` / `oas-rows-request` / `reportRowsError` 条目。
+请求触发时机：挂载首载、翻页/改页大小、排序变更、过滤变更、分组键变更、`refreshRows()`（`reason` 分别为 `init` / `paginate` / `sort` / `filter` / `group` / `refresh`；排序/过滤/页大小/分组键变更自动重置 `current=1` 再请求——用户看到新口径首页，而非「新排序的第 N 页」）。请求在途时组件内建 loading 行；`fetchRows` 失败时 helper 经 `reportRowsError` 桥接内建失败通道——**保留旧数据 + 派发 `oas-rows-error` + 显示错误条**（`role="alert"`，重试按钮调 `refreshRows()`），宿主无需自建失败反馈。组件无内建请求超时：宿主 fetch 永不 settle 时 loading 保持——请在 fetcher 侧用 signal + 超时组合（见上方「超时与取消」）。helper 回填为异步写属性，无「监听回调同步写 `data` 落后一帧」的限制（详见下方决策表后的回填时序注意）。协议细节（requestId 去重、同值不重发、竞态规则）见下方 API 表的 `row-model` / `oas-rows-request` / `reportRowsError` 条目。
+
+### 服务端分组（group-by + 宿主分组行协议）
+
+`row-model="server"` 形态下 `group-by` 在场 = **宿主分组**：组件不在本地分组/排序分组（宿主返回什么顺序就渲染什么顺序，含层级顺序），分组与聚合责任全在服务端。组合矩阵：server 形态**支持**；`infinite` 同开时分组仍禁用（devWarn 一次 + 请求不携带 `groupBy`——对已装载数据分组是错误结果）；`windowed` 既有禁用不变；client 形态本地分组零变化（见「分组视图」）。
+
+组件侧义务：请求 detail 增加 `groupBy`（当前分组键；无 `group-by` 的请求不携带该键），分组键变更派 `reason='group'` 请求并重置页码。宿主侧义务：按 `detail.groupBy` 返回**混合行数组**（`data` 属性回填），行分两类、按返回顺序渲染：
+
+- **分组行**：`{ kind: 'group', groupKey, groupLabel?, groupCount?, depth?, aggregates? }`
+  - `groupKey`（**必填，非空字符串**）：组键 = 折叠状态标识（无效组行剔除降级平铺渲染 + devWarn 一次，组内数据行不受影响）
+  - `groupLabel`：分节头展示文案（缺省回落 `groupKey`）
+  - `groupCount`：组内行计数（缺省不显示计数）
+  - `depth`：层级深度（层级分组场景；缺省 0，组行按树形同款公式缩进）
+  - `aggregates`：组内聚合值（**列 key → 宿主计算好的数值/字符串**；组件不本地聚合、不二次格式化）
+- **数据行**：既有普通行（无 `kind` 或 `kind: 'data'`）；树形 `children` 不在此协议内——需要子行展开请由宿主自行展平后按扁平行序返回
+
+组件按数组顺序渲染：分组行复用既有分节头视觉（折叠箭头 + 文案 + 计数），`depth>0` 时按层级缩进；折叠在**已装载行内本地过滤**（点击箭头只重渲染、不触发重取——组内行隐藏到下一组行，层级分组下折叠顶层组连同子组行一并隐藏）；`aggregates` 在列定义 `aggregate: true` 的列渲染（组行按列布局：文案格覆盖首个聚合列之前，聚合列逐格显示宿主值、无值留空，列对齐沿用列 `align` / 数值类型右对齐惯例）。折叠状态标识为 `groupKey`，数据/翻页回填后保留。
+
+```html
+<oas-table
+  id="server-group-table"
+  row-model="server"
+  total="0"
+  pagination
+  group-by="dept"
+  columns='[{"key":"name","title":"名称"},{"key":"amount","title":"金额","aggregate":true,"type":"number"}]'
+></oas-table>
+<script>
+  document.getElementById('server-group-table').addEventListener('oas-rows-request', async (e) => {
+    const { requestId, groupBy, start, end } = e.detail
+    const res = await api.listGrouped({ groupBy, start, end }) // 服务端分组 + 聚合
+    // 回填混合行：组行 + 组内数据行，顺序由服务端决定（组件按序渲染）
+    e.target.setAttribute('total', String(res.total))
+    e.target.setAttribute('data', JSON.stringify(res.rows))
+  })
+</script>
+```
+
+限制说明：聚合口径 = 服务端当前返回切片的组内聚合（跨页组的全组聚合由服务端按 `groupBy` 查询自行决定——分页与分组叠加时，每个分组行只覆盖其数据行所在页的切片）；导出/打印仍按当前页切片（含组内数据行，组行不入导出）。
 
 ### 服务端数据方案选用决策表
 
@@ -670,7 +708,7 @@ fetchRows: async ({ signal, ...rest }) => {
 | 方案 | 适用场景 | 谁管排序/过滤 | 竞态守卫 | 错误反馈 | 推荐度 |
 | --- | --- | --- | --- | --- | --- |
 | 外部分页 `total`（宿主自管取数） | 纯分页浏览，排序/过滤在前端完成或不需要 | 宿主（监听 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 自行处理） | 宿主自建（序号/快照） | 宿主自建 | 轻量：服务端只做切片时够用 |
-| `row-model="server"` | 排序/过滤在服务端的企业数据集，需要内建 loading / 错误条 / 重试 | 服务端（本地变换整体跳过，请求携带 sortModel / filterValues） | 内建（requestId 单调递增 + helper 回写校验） | 内建（错误条 + `oas-rows-error` + 重试按钮） | 服务端排序/过滤分页场景首选 |
+| `row-model="server"` | 排序/过滤在服务端的企业数据集，需要内建 loading / 错误条 / 重试；`group-by` 同开进入服务端分组协议（宿主返回分组行） | 服务端（本地变换整体跳过，请求携带 sortModel / filterValues / groupBy） | 内建（requestId 单调递增 + helper 回写校验） | 内建（错误条 + `oas-rows-error` + 重试按钮） | 服务端排序/过滤分页场景首选 |
 | `infinite`（无限滚动 + cursor 分页） | 无翻页浏览的长列表（动态流/日志/结果流），滚动加载下一块；排序/过滤在服务端，总数可未知 | 服务端（请求携带 sortModel / filterValues / cursor；排序/过滤变更重置装载重新请求首块） | 内建（requestId 单调递增 + `appendRows` 的 requestId 守卫） | 内建（错误条 + `oas-rows-error` + 重试按钮，与 server 同通道） | 无翻页滚动加载场景首选（配方见下） |
 | windowed（服务端行窗口） | 十万行级**滚动**场景：宿主只喂可视窗口切片，免翻页 | 宿主（组件跳过本地执行并 devWarn） | `createWindowedSource` 内建（中止过期在途 + 覆盖判定） | helper 派发 `oas-window-error`，组件无内建错误条 | 滚动虚拟化场景首选 |
 | 宿主自管事件监听 | 深度定制取数链路（自建缓存/合并/SSE 推送），或上述形态覆盖不了的组合 | 宿主完全自管 | 宿主自建 | 宿主自建 | 自由度最大、成本最高 |
@@ -687,7 +725,7 @@ fetchRows: async ({ signal, ...rest }) => {
 | --- | --- | --- |
 | 导出 / 打印 | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出） | 同口径（windowed 输出已装载切片、server 输出当前页切片——切片口径不同，机制同型） |
 | 合计 `summary-scope="all"` | 禁用 + devWarn（全量口径未知）；`scope="page"` 页内合计照常 | windowed 下合计同为交宿主（本地跳过 + devWarn） |
-| 分组 `group-by` | 禁用 + devWarn（v1 只做平铺数据） | windowed 同为交宿主（本地跳过 + devWarn） |
+| 分组 `group-by` | 宿主分组协议（请求 `detail.groupBy` + 宿主返回分组行按序渲染；本地分组不执行，折叠在当前页行内本地过滤）——见「服务端分组」小节 | windowed 同为交宿主（本地跳过 + devWarn） |
 | 行拖拽 | 禁用 + devWarn（行序语义服务端未定） | windowed 虚拟形态同样不可用（虚拟窗口行序不稳定，虚拟不兼容守卫） |
 | 列拖拽 / `setColumnOrder` | 写回拦截 + devWarn（列序语义服务端未定）；列设置面板移动按钮同步禁用 | windowed 无此闸门（列序是显示层语义，切片内成立） |
 | merge / span-method | 禁用 + devWarn | **同口径**（两边都跳过本地合并——占位行/切片边界与跨行合并相互腐蚀） |
@@ -1995,6 +2033,8 @@ document.getElementById('table-import-paste').addEventListener('click', async ()
 
 `group-by="字段key"` 按该字段值分节渲染：分节头行 = 折叠箭头 + 字段值 + 组内计数，点击箭头折叠 / 展开该组（默认全展开，`aria-expanded` 同步）。组间顺序按字段值首次出现序、排序作用于组内行；分组字段值缺失 / 为空的行归入「（空）」组（文案走 i18n）。分节头作为扁平行的一种参与行虚拟滚动，整行 `colSpan` 全宽（与 `column-virtual` / 固定列正交）；折叠状态在数据 / 属性变化时保留。与 merge 列 / `span-method` / `row-draggable` 同用时不兼容（告警一次并降级为普通渲染）。与 `pagination` 同用时为**页内分组**口径（组内计数 = 当前页计数，跨页组在每页各自成组）。
 
+数据在服务端（`row-model="server"`）时，本地分组不可用（对当前页切片分组是错误结果）——`group-by` 在场会进入**服务端分组协议**（请求携带分组键、宿主返回分组行，组件按宿主顺序渲染），配方与协议字段见「服务端分组」小节；`infinite` 形态下 `group-by` 禁用（告警一次）。
+
 <DemoBlock title="按部门分组（组内可排序，点击箭头折叠/展开）">
   <div style="width: 100%">
     <oas-table group-by="dept" row-key="name" columns='[{"key":"dept","title":"部门"},{"key":"name","title":"姓名","sortable":true},{"key":"city","title":"城市"},{"key":"role","title":"职位"}]' data='[{"dept":"前端","name":"张三","city":"北京","role":"前端工程师"},{"dept":"后端","name":"李四","city":"上海","role":"后端工程师"},{"dept":"前端","name":"王五","city":"深圳","role":"前端工程师"},{"dept":"后端","name":"赵六","city":"杭州","role":"架构师"},{"dept":"设计","name":"陈七","city":"广州","role":"UI 设计师"},{"dept":"前端","name":"周八","city":"成都","role":"前端负责人"},{"dept":"","name":"孙九","city":"武汉","role":"测试工程师"}]'></oas-table>
@@ -2669,7 +2709,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |
 | `column-keys` | 受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组） | `string[] \| string` | `[]` |
 | `column-virtual` | 横向虚拟滚动（列窗口化）：非固定列只渲染可视窗口列，窗口外列以占位格 colSpan 归并（宽度由 colgroup 求和）。约束：建议全列显式 width；多级表头 / span-method / 合计行不兼容（告警降级）；固定列须两端布局 | `boolean` | — |
-| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, validate?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]` | `TableColumn[] \| string` | `[]` |
+| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, aggregate?, editable?, editor?, validate?, editOptions?, editComponent?, actions?, type?, currency?, options? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）；`type` 声明字段类型（number/currency/select/multi-select/date/checkbox/link/progress/rate）作用于默认展示渲染与默认编辑器，`currency` 为 currency 列货币符号（缺省 ¥），`options` 为 select/multi-select 选项 `[{ value, label, color? }]`；`aggregate` 为 server 分组聚合列（组行 aggregates 中该列 key 的宿主聚合值渲染在组行对应列） | `TableColumn[] \| string` | `[]` |
 | `current` | 当前页码（内置分页，受控） | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
@@ -2682,7 +2722,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `fill-handle` | 拖拽填充柄开关（缺省开启，`"false"` 关闭）：区域选择激活区右下角菱形角标，拖拽实时预览扩展区、松开提交填充（单值复制 / 数值首差序列 / 日期按日步进 / 其余循环平铺，走 oas-range-write kind=fill 单事务）。读取与消费在 range 能力（data/table/range），未 import 该能力时本属性无任何效果 | — | — |
 | `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值标量） | `string` | — |
 | `grid-navigation` | 键盘网格导航：role=grid，数据区单停靠点 + 方向键在单元格间漫游（Home/End/PageUp-Down，Enter/Space 激活格内控件） | `boolean` | — |
-| `group-by` | 分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method / row-draggable 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽） | `string` | — |
+| `group-by` | 分组视图：按字段值分节渲染（分节头 = 字段值 + 组内计数 + 折叠箭头，点击折叠/展开该组，默认全展开）；组间按字段值首次出现序、组内排序生效；空值行归入「（空）」组；与 merge 列 / span-method / row-draggable 同用时告警一次并降级为普通渲染；可与 column-virtual / 虚拟滚动并用（分节头整行 colSpan 全宽）。row-model="server" 形态下为宿主分组协议：请求 detail 携带 groupBy、宿主返回分组行（kind='group'）按序渲染，本地分组不执行；infinite 形态下禁用（告警一次） | `string` | — |
 | `header-align` | 表头对齐：`follow`（跟随列，默认）/ `left` / `center` / `right` / `default`（浏览器默认 UA 居中）；列级 `headerAlign` / `<oas-table-column header-align>` 优先 | `string` | `follow` |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `hover` | 行 hover 底色开关（仅视觉，不影响选中行为），`"false"` 关闭 | — | — |
@@ -2697,7 +2737,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `row-draggable` | 行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次 | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
-| `row-model` | 行模型：`client`（缺省，本地全量：过滤/排序/分页切片组件内执行）/ `server`（服务端行模型：需与 total 外部分页形态配合，data 为当前页切片，本地过滤/排序整体跳过，翻页/排序/过滤经 oas-rows-request 向宿主取数；排序/过滤/页大小变更自动重置 current=1；请求在途内建 loading，失败经 reportRowsError 显示错误条）。与 windowed 同开时 windowed 优先（互斥告警）；与 infinite 同开时 infinite 优先（协议走 cursor/load-more，total 前提放宽）；缺 total 回落 client 并告警 | `string` | — |
+| `row-model` | 行模型：`client`（缺省，本地全量：过滤/排序/分页切片组件内执行）/ `server`（服务端行模型：需与 total 外部分页形态配合，data 为当前页切片，本地过滤/排序整体跳过，翻页/排序/过滤/分组键变更经 oas-rows-request 向宿主取数；排序/过滤/页大小/分组键变更自动重置 current=1；请求在途内建 loading，失败经 reportRowsError 显示错误条；group-by 同开进入宿主分组协议——请求 detail 携带 groupBy，宿主返回分组行按序渲染）。与 windowed 同开时 windowed 优先（互斥告警）；与 infinite 同开时 infinite 优先（协议走 cursor/load-more，total 前提放宽）；缺 total 回落 client 并告警 | `string` | — |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
 | `show-header` | 表头显隐（默认 true）；`false` 时不渲染表头行，列配置仍作用于数据行对齐 | `string` | `true` |
 | `size` | 密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交 | `string` | `medium` |
@@ -2755,7 +2795,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `oas-row-dblclick` | 双击数据行派发，`detail: { row, rowIndex }` |
 | `oas-row-reorder` | 行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data） |
 | `oas-rows-error` | 服务端取数失败（宿主经 reportRowsError 通知；server 行模型与 infinite 形态共用），`detail: { requestId, reason, error }`；组件同时显示内建错误条（role=alert，重试按钮调 refreshRows） |
-| `oas-rows-request` | 服务端取数请求（server 行模型与 infinite 形态共用；reason：init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷 / load-more=infinite 触底追加下一块），`detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown, cursor? }`（server：start/end 为当前页半开区间 `(current-1)*pageSize ~ current*pageSize`、totalKnown 恒 true；infinite：start/end 为已装载行数（区间语义不适用）、totalKnown 随 total 属性在场性、cursor 为上次 appendRows 记录的游标（首次 = 缺省）；requestId 组件内单调递增，宿主据此丢弃晚到旧响应；同值属性写不重发，data 写是回填不是新请求） |
+| `oas-rows-request` | 服务端取数请求（server 行模型与 infinite 形态共用；reason：init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / group=分组键变更 / refresh=refreshRows 强刷 / load-more=infinite 触底追加下一块），`detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown, cursor?, groupBy? }`（server：start/end 为当前页半开区间 `(current-1)*pageSize ~ current*pageSize`、totalKnown 恒 true、group-by 在场时 groupBy 携带当前分组键（宿主据此返回分组行）；infinite：start/end 为已装载行数（区间语义不适用）、totalKnown 随 total 属性在场性、cursor 为上次 appendRows 记录的游标（首次 = 缺省）；requestId 组件内单调递增，宿主据此丢弃晚到旧响应；同值属性写不重发，data 写是回填不是新请求） |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
 | `oas-window-request` | windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason, visualStart?, visualEnd }（start/end 半开区间、绝对数据行下标，永远是数据坐标；reason 为 init / scroll / resize / data）。切片内含展开行或视觉协议生效时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行），并附带 visualStart / visualEnd（当前可视窗口的视觉坐标，供宿主视觉取数；不是切片 visual-start）。同一期望区间（含视觉字段）不重复派发 |
