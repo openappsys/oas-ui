@@ -6,12 +6,12 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **批 A：无限滚动 + cursor 分页** | `infinite` 属性（scroll 底部自动 `load-more`）+ `appendRows()` 追加通道 + cursor 字段 + 底部 loading/到底态 + 闸门 | 🚧 进行中 |
-| **批 B：服务端分组/聚合** | server 行模型下 `groupBy` 协议 + 服务端聚合值 | 📋 待开发 |
-| **批 C：数据层缓存** | helper TTL/去重/后台刷新/purge | 📋 待开发 |
-| **批 D：渲染组织** | 分批渲染/时间切片（worker 后续） | 🚧 进行中 |
-| **批 E：CSS 抽取** | 内联样式分层拆分，零视觉变化 | 📋 待开发 |
-| **批 F：server 导出全量 + 列序持久化** | 经宿主取数导出 / 列序允许（行顺序仍禁用） | 📋 待开发 |
+| **批 A：无限滚动 + cursor 分页** | `infinite` 属性（scroll 底部自动 `load-more`）+ `appendRows()` 追加通道 + cursor 字段 + 底部 loading/到底态 + 闸门 | ✅ 已完成（未发布） |
+| **批 B：服务端分组/聚合** | server 行模型下 `groupBy` 协议 + 服务端聚合值 + 混合行渲染 + 层级折叠 | ✅ 已完成（未发布） |
+| **批 C：数据层缓存** | helper TTL/去重/后台刷新/purge/LRU 上界 + groupBy/cursor 键维度 | ✅ 已完成（未发布） |
+| **批 D：渲染组织** | `render-chunk` 时间切片（首帧 N 行 + rAF 逐帧追加 + 代次守卫） | ✅ 已完成（未发布） |
+| **批 E：CSS 抽取** | 内联样式分层拆分（style/base + features），逐字节等价、零视觉变化 | ✅ 已完成（未发布） |
+| **批 F：server 导出全量 + 列序持久化** | `exportRows()` 全量导出（宿主取数）+ 列序放行（行序仍禁用） | ✅ 已完成（未发布） |
 
 ## 未发布（gantt 任务网格面板批）
 
