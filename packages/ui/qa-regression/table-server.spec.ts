@@ -480,3 +480,157 @@ test('table server helper：竞态丢弃——慢响应晚到不覆盖快响应�
   // ⑦ console 零告警
   expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
 })
+
+/**
+ * server 分组协议（批 B）真实浏览器回归：混合行渲染、聚合值列对齐、折叠本地过滤
+ * （不重取）、虚拟滚动窗口切片下组行照常、dark 主题组行可读、console 零告警。
+ */
+test('table server 分组：混合行渲染 + 聚合值按列 + 折叠本地过滤 + 滚动窗口组行 + dark 可读 + console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  // 注入 server 分组 fixture：mock 宿主回填混合行（组行 kind:'group' + 数据行，两组，
+  // aggregates 由「宿主」计算）；收集请求以断言 detail.groupBy 与折叠不重取
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-group'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '5')
+    el.setAttribute('group-by', 'dept')
+    el.setAttribute('data', '[]')
+    const state = {
+      reqs: [] as Array<{ requestId: number; reason: string; groupBy?: string }>,
+    }
+    ;(window as any)['__srvState_table-server-group'] = state
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      state.reqs.push({ requestId: d.requestId, reason: d.reason, groupBy: d.groupBy })
+      // mock 宿主异步回填（不在派发同步栈内嵌套写属性——与真实 fetch 时序对齐）：
+      // 组行 + 组内数据行按宿主顺序（含层级：第二组带 depth=1 子组）
+      setTimeout(() => {
+        const rows = [
+          { kind: 'group', groupKey: '研发', groupLabel: '研发组', groupCount: 3, aggregates: { amount: 60 } },
+          { kind: 'data', key: 'a1', name: '张三', amount: 20, dept: '研发' },
+          { kind: 'data', key: 'a2', name: '李四', amount: 25, dept: '研发' },
+          { kind: 'data', key: 'a3', name: '王五', amount: 15, dept: '研发' },
+          { kind: 'group', groupKey: '销售', groupLabel: '销售组', groupCount: 2, aggregates: { amount: 100 } },
+          { kind: 'data', key: 'b1', name: '赵六', amount: 60, dept: '销售' },
+          { kind: 'data', key: 'b2', name: '钱七', amount: 40, dept: '销售' },
+        ]
+        el.setAttribute('data', JSON.stringify(rows))
+      }, 0)
+    })
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+  })
+
+  // ① init 请求 detail 携带 groupBy（协议落地面）
+  await page.waitForFunction(() => (window as any)['__srvState_table-server-group'].reqs.length >= 1, null, {
+    timeout: 15000,
+  })
+  let state = await stateOf(page, 'table-server-group')
+  expect(state.reqs[0]).toMatchObject({ requestId: 1, reason: 'init', groupBy: 'dept' })
+
+  const root = page.locator('#table-server-group')
+
+  // ② 混合行渲染：组行 label/count + 数据行宿主顺序；聚合值在对应列可见
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toContainText('研发组')
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toContainText('3')
+  const devTds = root.locator('tbody tr.group-header[data-group="研发"] td')
+  await expect(devTds).toHaveCount(2)
+  await expect(devTds.nth(1)).toHaveText('60')
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('张三')
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(5)
+
+  // ③ 折叠：点研发组折叠钮 → 组内 3 行本地隐藏（销售组不受影响），零新请求（本地过滤不重取）
+  const reqsBefore = (await stateOf(page, 'table-server-group')).reqs.length
+  await root.locator('tbody tr.group-header[data-group="研发"] button.toggle').click()
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(2)
+  await expect(root.locator('tbody tr.group-header')).toHaveCount(2)
+  expect((await stateOf(page, 'table-server-group')).reqs.length, '折叠在已装载行内本地过滤，不触发重取').toBe(
+    reqsBefore,
+  )
+  // aria-expanded 同步 + 再展开恢复
+  await expect(root.locator('tbody tr.group-header[data-group="研发"] button.toggle')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  )
+  await root.locator('tbody tr.group-header[data-group="研发"] button.toggle').click()
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(5)
+  expect((await stateOf(page, 'table-server-group')).reqs.length).toBe(reqsBefore)
+
+  // ④ 虚拟滚动：height 开启虚拟窗口 + 大量混合行（16 组 × 组行+数据行 > 视口；末组为
+  // depth=1 子组供缩进断言），窗口切片中的组行照常渲染（buildVirtualRow 分派）
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-server-group')!
+    el.setAttribute('height', '260')
+    const rows: Array<Record<string, unknown>> = []
+    for (let g = 0; g < 16; g++) {
+      rows.push({
+        kind: 'group',
+        groupKey: `组${g}`,
+        groupLabel: `组${g}`,
+        groupCount: 2,
+        aggregates: { amount: g },
+        ...(g === 15 ? { depth: 1 } : {}),
+      })
+      for (let i = 0; i < 2; i++) {
+        rows.push({ kind: 'data', key: `g${g}-${i}`, name: `${g}-${i}号`, amount: i, dept: `组${g}` })
+      }
+    }
+    el.setAttribute('total', String(rows.length))
+    el.setAttribute('data', JSON.stringify(rows))
+  })
+  // 初始窗口：首组行渲染 + 顶层组行无内联缩进（既有视觉零漂移）
+  await expect(root.locator('tbody tr.group-header[data-group="组0"]')).toContainText('组0', { timeout: 15000 })
+  const flatIndent = await root
+    .locator('tbody tr.group-header[data-group="组0"] td')
+    .first()
+    .evaluate((td) => (td as HTMLElement).style.paddingLeft)
+  expect(flatIndent, '顶层组行无内联缩进（既有视觉零漂移）').toBe('')
+  // 滚动到底 → 窗口切片：末组行（depth=1 子组）缩进与末数据行渲染（虚拟窗口重建路径的 kind 分派）
+  await root.locator('.table-scroll').evaluate((wrap) => {
+    wrap.scrollTop = wrap.scrollHeight
+  })
+  await expect(root.locator('tbody tr.group-header[data-group="组15"]')).toContainText('组15', { timeout: 15000 })
+  const subIndent = await root
+    .locator('tbody tr.group-header[data-group="组15"] td')
+    .first()
+    .evaluate((td) => (td as HTMLElement).style.paddingLeft)
+  expect(subIndent, '层级组行 depth 缩进（树形同款公式）').toBe('40px')
+  await expect(root.locator('tbody tr[part="row"]').last()).toContainText('15-1号')
+
+  // ⑤ 滚动后折叠末组：窗口内本地过滤生效（不重取——滚动场景折叠语义不变）
+  const reqsBeforeScroll = (await stateOf(page, 'table-server-group')).reqs.length
+  await root.locator('tbody tr.group-header[data-group="组15"] button.toggle').click()
+  await expect(root.locator('tbody tr[part="row"]').last()).not.toContainText('15-1号')
+  expect((await stateOf(page, 'table-server-group')).reqs.length).toBe(reqsBeforeScroll)
+
+  // ⑦ dark 主题：组行背景走 token（--oas-color-bg-hover），聚合值文字可读（非刺眼硬编码色）
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  const groupBg = await root
+    .locator('tbody tr.group-header[data-group="组15"] td')
+    .first()
+    .evaluate((td) => getComputedStyle(td).backgroundColor)
+  expect(groupBg, 'dark 组行背景 = token 值（非透明/非硬编码刺眼色）').not.toBe('rgba(0, 0, 0, 0)')
+  const groupText = await root
+    .locator('tbody tr.group-header[data-group="组15"] td')
+    .first()
+    .evaluate((td) => getComputedStyle(td).color)
+  expect(groupText, 'dark 组行文字非与背景同值（可读）').not.toBe(groupBg)
+  await page.evaluate(() => document.documentElement.removeAttribute('data-theme'))
+
+  // ⑧ console 零告警
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+})
