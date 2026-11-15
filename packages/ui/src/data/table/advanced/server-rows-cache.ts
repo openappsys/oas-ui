@@ -1,0 +1,146 @@
+/**
+ * server 数据源缓存核心（批 C S1）：纯逻辑，零 DOM 依赖。
+ *
+ * 职责只有三块（与 createServerSource 的集成在 server-rows.ts）：
+ * - `serverCacheKey`：缓存键 = 完整查询签名——区间 / 排序组 / 过滤组 / 游标序列化
+ *   （稳定序）。reason 不参与键：init / sort / filter / paginate 同属查询态，同一查询
+ *   无论因何种原因触发都命中同一条目（「翻页往返命中」的机制）；排序组数组序敏感
+ *   （multi-sort 按序依次排序），过滤组按键排序后签名（宿主以不同键序写 filter-values
+ *   属语义同值——对齐组件 rowsRequestSignature 的 filterSig 心智），序列化走
+ *   JSON.stringify 保留值类型（数字 1 与字符串 "1" 是不同过滤条件，join 拼接会混同）。
+ * - TTL 条目：写入时刻 + ttl 判过期；`get` 只认有效期内条目（过期即视为未命中——
+ *   默认重新取数语义），`peek` 不判过期（stale-while-revalidate 陈旧回填的唯一输入）。
+ *   含等号过期（now = storedAt + ttl 即过期）：快照时点的滞后宁可多请求一次，不回填
+ *   已过门槛的数据。
+ * - 在途登记：同键在途 Promise 登记表——helper 用它做「同键请求在途时复用同一
+ *   Promise」的去重。settle（fulfilled / rejected）后自动解除；显式 `untrack` 供
+ *   abort 路径立即解除（被 abort 的在途不可复用）；settle 解除按引用比对（同键覆盖
+ *   登记后旧 Promise 迟到 settle 不误删新登记）。
+ *
+ * 缓存层只在 helper 内，不影响组件协议；条目缓存 rows 引用（不深拷贝——回填通道
+ * JSON 序列化时才落字符串，条目 value 与 fetchRows 返回同源，无别名写风险面）。
+ */
+
+/** 缓存键的输入 = 完整查询（与组件请求签名同一查询态口径，不含 reason / requestId） */
+export interface ServerCacheQuery {
+  /** 当前页期望区间起点（含） */
+  start: number
+  /** 当前页期望区间终点（不含） */
+  end: number
+  /** 排序模型（数组序敏感：multi-sort 按序依次排序） */
+  sortModel: Array<{ key: string; order: string }>
+  /** 过滤值（键序不敏感：键排序后签名） */
+  filterValues: Record<string, string | number>
+  /** 无限滚动游标（缺省 = 首块/无游标查询） */
+  cursor?: string
+}
+
+/** 取数结果归一形状（裸数组由 helper 归一为 { rows } 后入缓存） */
+export interface ServerCacheValue {
+  rows: unknown[]
+  total?: number
+}
+
+/** 缓存条目：取数结果 + 写入时刻（TTL 判龄依据） */
+export interface ServerCacheEntry extends ServerCacheValue {
+  /** 写入时刻（Date.now()） */
+  storedAt: number
+}
+
+/** 过滤组签名输入的稳定键序版本（键排序 → 序列化序稳定） */
+const stableFilter = (filterValues: Record<string, string | number>): Record<string, string | number> => {
+  const out: Record<string, string | number> = {}
+  for (const key of Object.keys(filterValues).sort()) {
+    const value = filterValues[key]
+    if (value !== undefined) out[key] = value
+  }
+  return out
+}
+
+/**
+ * 缓存键 = 完整查询签名。JSON.stringify 序列化（键序已稳定：固定字段序 + 过滤键排序），
+ * 值类型保留；cursor 缺省（undefined）时该键被省略——「无游标」与「游标 undefined」同键。
+ */
+export function serverCacheKey(query: ServerCacheQuery): string {
+  return JSON.stringify({
+    start: query.start,
+    end: query.end,
+    sort: query.sortModel,
+    filter: stableFilter(query.filterValues),
+    cursor: query.cursor,
+  })
+}
+
+export interface ServerRowsCache {
+  /** 生效 TTL（ms）——默认 300000（5 分钟） */
+  readonly ttlMs: number
+  /** 有效期内命中返回条目；过期 / 缺失返回 undefined（默认重新取数语义） */
+  get(key: string): ServerCacheEntry | undefined
+  /** 不判过期（stale-while-revalidate 陈旧回填输入） */
+  peek(key: string): ServerCacheEntry | undefined
+  /** 写入（同键覆盖，按当前时刻重新计龄） */
+  set(key: string, value: ServerCacheValue): void
+  /** 删单键 */
+  delete(key: string): void
+  /** 清空缓存条目与在途登记（destroy / purge 落点） */
+  clear(): void
+  /** 同键在途 Promise（无则 undefined）——在途合并的复用对象 */
+  inflight(key: string): Promise<ServerCacheValue> | undefined
+  /** 登记在途：settle 后自动解除（引用比对）；返回原 Promise（不改变取数链） */
+  track(key: string, promise: Promise<ServerCacheValue>): Promise<ServerCacheValue>
+  /** 显式解除在途登记（abort 路径：被 abort 的在途不可复用，不等 settle）；幂等 */
+  untrack(key: string): void
+}
+
+/** TTL 默认 5 分钟：数据层缓存的通行值（ms 级可配） */
+const DEFAULT_TTL_MS = 300_000
+
+export function createServerRowsCache(options?: { ttlMs?: number }): ServerRowsCache {
+  const ttlMs =
+    options?.ttlMs != null && Number.isFinite(options.ttlMs) && options.ttlMs > 0 ? options.ttlMs : DEFAULT_TTL_MS
+  const entries = new Map<string, ServerCacheEntry>()
+  const inflight = new Map<string, Promise<ServerCacheValue>>()
+
+  return {
+    ttlMs,
+    get(key) {
+      const entry = entries.get(key)
+      if (!entry) return undefined
+      // 含等号过期：now = storedAt + ttl 即过期（宁可多请求一次，不回填已过门槛的数据）
+      if (Date.now() - entry.storedAt >= ttlMs) return undefined
+      return entry
+    },
+    peek(key) {
+      return entries.get(key)
+    },
+    set(key, value) {
+      entries.set(key, { rows: value.rows, total: value.total, storedAt: Date.now() })
+    },
+    delete(key) {
+      entries.delete(key)
+    },
+    clear() {
+      entries.clear()
+      inflight.clear()
+    },
+    inflight(key) {
+      return inflight.get(key)
+    },
+    track(key, promise) {
+      inflight.set(key, promise)
+      // settle 即解除（引用比对：同键覆盖登记后旧 Promise 迟到 settle 不误删新登记）
+      void promise.then(
+        () => {
+          if (inflight.get(key) === promise) inflight.delete(key)
+        },
+        () => {
+          if (inflight.get(key) === promise) inflight.delete(key)
+        },
+      )
+      return promise
+    },
+    untrack(key) {
+      inflight.delete(key)
+    },
+  }
+}
