@@ -364,11 +364,6 @@
       "description": "更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化）。"
     },
     {
-      "name": "columnReorderGate",
-      "signature": "columnReorderGate(): boolean",
-      "description": "列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型 / infinite 生效时为 true——"
-    },
-    {
       "name": "setColumnWidth",
       "signature": "setColumnWidth(key: string, width: number): void",
       "description": "更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存"
@@ -376,7 +371,12 @@
     {
       "name": "exportMatrix",
       "signature": "exportMatrix(): { headers: string[]; rows: string[][] }",
-      "description": "导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。"
+      "description": "导出矩阵：表头（列 title / headerTemplate 文本）+ 数据行。"
+    },
+    {
+      "name": "exportRows",
+      "signature": "exportRows(rows: Array<Record<string, unknown>>, options: { format?: 'csv' | 'excel' | 'clipboard'; filename?: string }): string",
+      "description": "导出宿主传入的数据集（批 F：server / infinite 模式导出全量通道）："
     },
     {
       "name": "exportData",

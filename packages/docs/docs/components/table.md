@@ -785,11 +785,11 @@ fetchRows: async ({ signal, ...rest }) => {
 
 | 能力 | server 模式语义 | 与 windowed 对照 |
 | --- | --- | --- |
-| 导出 / 打印 | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出） | 同口径（windowed 输出已装载切片、server 输出当前页切片——切片口径不同，机制同型） |
+| 导出 / 打印 | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出）；**导出全量**经宿主取数后调 `exportRows`（见「导出 CSV / Excel」节配方） | 同口径（windowed 输出已装载切片、server 输出当前页切片——切片口径不同，机制同型） |
 | 合计 `summary-scope="all"` | 禁用 + devWarn（全量口径未知）；`scope="page"` 页内合计照常 | windowed 下合计同为交宿主（本地跳过 + devWarn） |
 | 分组 `group-by` | 宿主分组协议（请求 `detail.groupBy` + 宿主返回分组行按序渲染；本地分组不执行，折叠在当前页行内本地过滤）——见「服务端分组」小节 | windowed 同为交宿主（本地跳过 + devWarn） |
-| 行拖拽 | 禁用 + devWarn（行序语义服务端未定） | windowed 虚拟形态同样不可用（虚拟窗口行序不稳定，虚拟不兼容守卫） |
-| 列拖拽 / `setColumnOrder` | 写回拦截 + devWarn（列序语义服务端未定）；列设置面板移动按钮同步禁用 | windowed 无此闸门（列序是显示层语义，切片内成立） |
+| 行拖拽 | 禁用 + devWarn（行序语义服务端持有） | windowed 虚拟形态同样不可用（虚拟窗口行序不稳定，虚拟不兼容守卫） |
+| 列拖拽 / `setColumnOrder` | **支持（展示态）**：写回 column-keys + 派发 oas-column-order，与 client 同语义（列序是显示层语义，与服务端行序无关——批 F 契约）；列设置面板移动按钮照常可用 | windowed 同口径（本就无此闸门） |
 | merge / span-method | 禁用 + devWarn | **同口径**（两边都跳过本地合并——占位行/切片边界与跨行合并相互腐蚀） |
 | 填充柄 / 区域选择 | 页内相对行号语义（`data-row-index` 为页内 0 起序）；只写当前已装载行、不静默扩行 | 同口径（windowed 同为只写已装载行、不静默扩行） |
 | 过滤面板候选值 | 来自当前页数据（页内语义，面板照常打开） | 不同口径：windowed 下面板不打开（宿主监听 `oas-filter-change` 自行实现全量过滤） |
@@ -800,7 +800,7 @@ fetchRows: async ({ signal, ...rest }) => {
 
 ### 边界：列序与编辑持久化
 
-- **列序持久化**：server 下 `setColumnOrder()` 写回被拦截（能力闸门）——**宿主初始化恢复持久化列序的程序化调用同样被拦**；列设置面板的移动按钮同步禁用（`columnReorderGate()` 与写回拦截同一判定源）。需要列序持久化请由宿主自管（如随请求参数传递列序）或关闭 row-model。
+- **列序持久化**：server / infinite 下列序**一律放行**（批 F 契约：列序是展示态，与服务端行序无关）——`setColumnOrder()` 写回 column-keys 并派发 `oas-column-order`，列设置面板的移动按钮照常可用；宿主初始化恢复持久化列序的程序化调用同样生效。推荐配方：监听 `oas-column-order` 存储列序 → 初始化时程序化 `setColumnOrder(savedKeys)` 恢复。
 - **页内编辑**：编辑仅本地生效，翻页回填新切片后草稿即丢失——v1 不提供服务端编辑回写契约；需要持久化编辑请在 `oas-edit` 监听中自行提交服务端，且不要依赖跨页草稿。
 
 ## 无限滚动（infinite + cursor 分页）
@@ -2025,6 +2025,21 @@ onMounted(() => {
 
 `exportable` 在表格顶部显示导出工具栏（默认 CSV；`export-format="excel"` 切 Excel，`"csv,excel"` 两个按钮都出）。导出范围 = 表头 + **当前可见数据行**（过滤 / 排序 / 分页切片后的当前页；虚拟滚动取完整展示集合）：`actions` 列不导出（勾选列/行展开列/拖拽手柄列也不在导出矩阵内——它们不是数据列）、`serialNumber` 列导出序号、select 编辑器导出选项 label。CSV 按 RFC 4180 转义并带 UTF-8 BOM；Excel 走 SpreadsheetML（`.xls`）。`export-file-name` 配文件名（默认 `export`）。也可编程式调用 `table.exportData('csv' | 'excel')`——按钮与方法都派发 `oas-export`（detail `{ format, fileName, rowCount }`）。
 
+### server / infinite 模式导出全量（exportRows 配方）
+
+服务端取数形态（`row-model="server"` / `infinite`）下，导出按钮与 `exportData()` 仍只导出**已装载数据**（server = 当前页切片，infinite = 已装载缓冲）——组件只持有这些数据，跨块内容客户端无从渲染（devWarn 提示一次）。需要**导出全量**时，由宿主取回全量数据后调用 `exportRows(rows, options?)`：
+
+- 行集 = 传入的 `rows`（行序 = 数组序），列取**当前有效列**（与页面导出口径一致：列序跟随当前列顺序、`actions` 列剔除、`serialNumber` 列按传入集内行序编号）；
+- `options.format` 缺省 `'csv'`；`'excel'` 走 SpreadsheetML 下载；`'clipboard'` 生成 TSV 写系统剪贴板（剪贴板不可用时静默降级——仍返回文本由宿主自行处理）；`options.filename` 配文件名（csv / excel 通道）；
+- 与 `exportData()` 互不干扰：`exportRows` 不经「仅已装载」闸门（数据由宿主负责取全），两者都派发 `oas-export`。
+
+```ts
+// 宿主在需要导出全量时（如自己的「导出全量」按钮点击）自取全量数据：
+const allRows = await fetchAllRows({ sortModel, filterValues }) // 宿主取数（可复用 oas-rows-request 的查询条件）
+table.exportRows(allRows) // 全量 CSV 下载
+table.exportRows(allRows, { format: 'clipboard' }) // 全量 TSV 写剪贴板
+```
+
 <DemoBlock title="导出 CSV / Excel（点击真实下载）">
   <div style="width: 100%">
     <oas-table id="table-export" exportable export-format="csv,excel" export-file-name="员工表" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"note","title":"备注"}]' data='[{"name":"张三","age":30,"city":"北京","note":"前端，5 年"},{"name":"李四","age":25,"city":"上海","note":"说 \"你好\""},{"name":"王五","age":35,"city":"深圳","note":"后端"},{"name":"赵六","age":28,"city":"杭州","note":"设计"}]' row-key="name"></oas-table>
@@ -2824,7 +2839,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `hover` | 行 hover 底色开关（仅视觉，不影响选中行为），`"false"` 关闭 | — | — |
 | `indent-size` | 树形数据每级缩进量（px） | `string` | `24` |
-| `infinite` | 无限滚动 + cursor 分页（服务端取数形态）：滚动接近底部自动经 oas-rows-request（reason=load-more，detail.cursor 回传游标）请求下一块，宿主经 appendRows 回填（空数组 = 到底信号）；与 pagination 同开 pagination 优先、与 windowed 同开 windowed 优先（均互斥告警一次）；total 可选（未知总数场景 totalKnown=false，到底以宿主空块信号为准）；能力闸门与 row-model="server" 同口径（导出/打印仅已装载数据、合计 scope=all 禁用、分组/行列拖拽/merge 禁用） | `boolean` | — |
+| `infinite` | 无限滚动 + cursor 分页（服务端取数形态）：滚动接近底部自动经 oas-rows-request（reason=load-more，detail.cursor 回传游标）请求下一块，宿主经 appendRows 回填（空数组 = 到底信号）；与 pagination 同开 pagination 优先、与 windowed 同开 windowed 优先（均互斥告警一次）；total 可选（未知总数场景 totalKnown=false，到底以宿主空块信号为准）；能力闸门与 row-model="server" 同口径（导出/打印仅已装载数据、合计 scope=all 禁用、分组/行拖拽/merge 禁用（列序批 F 起无闸门——列序是展示态，与服务端装载序无关）） | `boolean` | — |
 | `loading` | 加载态：数据区显示加载占位行（表头保留） | `boolean` | — |
 | `max-height` | 表体限高滚动 + 表头吸顶（虚拟 height 同设时优先） | `string` | — |
 | `multi-sort` | 多列排序（JSON 数组：[{ key, order }]，按数组序依次排序） | `string` | — |
@@ -2864,10 +2879,10 @@ document.querySelector('table')!.appendChild(tbody)
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
 | `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义） |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此， |
-| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | `setColumnOrder(keys: string[])`：更新列显示顺序（写回 column-keys 并重渲染，派发 oas-column-order，宿主可做持久化）。server 行模型下不生效（顺序语义由服务端持有——能力闸门）：写回被拦截并告警一次，列设置面板的移动按钮同步禁用；宿主初始化恢复持久化列序（程序化调用）同样被拦 |
-| `columnReorderGate` | `columnReorderGate(): boolean` | `columnReorderGate(): boolean`：列重排能力闸门（TableColumnSettingsHost 契约）——server 行模型或 infinite 生效时返回 true，列设置面板的移动按钮同步禁用（与 setColumnOrder 写回拦截同一判定源，按钮不可用与程序化拦截不脱节）；契约可选，宿主不实现按 false 回落 |
+| `setColumnOrder` | `setColumnOrder(keys: string[]): void` | `setColumnOrder(keys: string[])`：更新列显示顺序（写回 column-keys 并重渲染，派发 oas-column-order，宿主可做持久化——如监听事件存储、初始化时程序化调用恢复）。批 F 契约：列序是展示态（与服务端行序无关），server 行模型 / infinite 下一律放行，与 client 同语义（无闸门、无告警）；仅行拖拽（行顺序）在服务端取数形态下保持禁用 |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
-| `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
+| `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 数据行。 |
+| `exportRows` | `exportRows(rows: Array<Record<string, unknown>>, options: { format?: 'csv' \| 'excel' \| 'clipboard'; filename?: string }): string` | `exportRows(rows, options?): string`：导出宿主传入的数据集（批 F：server / infinite 模式导出全量通道——宿主经 oas-rows-request 自行取回全量数据后调用，与导出当前展示集的 exportData 互不干扰）。列取当前有效列（与页面导出口径一致），行序 = 传入数组序；options.format 缺省 'csv'（'excel' 走 SpreadsheetML 下载，'clipboard' 生成 TSV 写系统剪贴板——剪贴板不可用时静默降级、仍返回文本由宿主自行处理）；options.filename 配文件名（csv / excel 通道，缺省取 export-file-name / export）；派发 oas-export（clipboard 通道 fileName 为空串） |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
 | `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
 | `appendRows` | `appendRows(rows: Array<Record<string, unknown>>, options?: { cursor?: string; total?: number; requestId?: number }): void` | `appendRows(rows, options?: { cursor?, total?, requestId? })`：追加已装载行（与 `data` 属性的替换语义区分——`data` 写 = 重置装载缓冲）；`cursor` 记录为当前游标并在下次 load-more 请求 detail.cursor 原样回传；`total` 提供时同步 total 属性与 aria-rowcount；**空数组 = 「没有更多」到底信号**（停止触底触发并显示「已到底」提示行）；`requestId` 透传时组件做序号守卫（晚到旧响应静默丢弃 + 同序号重复回填幂等忽略，各一次性提示）；仅 infinite 生效形态可用，其余形态调用静默忽略并一次性提示 |
