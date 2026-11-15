@@ -985,16 +985,17 @@ test('form-associated：表格行内编辑点击关联 label 不退出编辑（�
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
     return !!table.shadowRoot!.querySelector('oas-input.cell-editor-component')
   })
-  // 编辑器前插入关联 label，登记提交事件标记
+  // 关联 label 插到表格工具栏（同 shadowRoot、编辑器之外——避免被绝对定位的编辑器盖住导致真实点击落点错误）
   await page.evaluate(() => {
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
     const editor = table.shadowRoot!.querySelector('oas-input.cell-editor-component') as HTMLElement
+    const toolbar = table.shadowRoot!.querySelector('.table-toolbar') as HTMLElement
     editor.id = 'qa-inline-editor-label-reg'
     const label = document.createElement('label')
     label.id = 'qa-inline-label-reg'
     label.htmlFor = editor.id
     label.textContent = '回归标签'
-    editor.before(label)
+    toolbar.appendChild(label)
     ;(window as unknown as { __qaEditFired: boolean }).__qaEditFired = false
     table.addEventListener('oas-edit', () => ((window as unknown as { __qaEditFired: boolean }).__qaEditFired = true))
   })
