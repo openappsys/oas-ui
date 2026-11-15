@@ -385,6 +385,25 @@ describe('OASTable server 行模型 a4：oas-rows-request 请求协议', () => {
     expect(reqs.length).toBe(4)
   })
 
+  it('挂载带 current="3"（server 形态）→ init 按真实页码派发（start=20）→ data 回填零续发 → 翻页语义不受影响', () => {
+    // server 形态守护对照：current 是真实语义，请求状态签名按 raw current 记录/比对
+    //（与 infinite 形态的归一化口径区分——修复只动 infinite 分支，server 语义零漂移）。
+    const { el, reqs } = mountReq({ 'row-model': 'server', total: '100', current: '3' })
+    expect(reqs.length).toBe(1)
+    expect(reqs[0]!.reason).toBe('init')
+    expect(reqs[0]!.start).toBe(20)
+    expect(reqs[0]!.end).toBe(30)
+    // data 回填零续发（回填是响应不是新请求）
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    expect(reqs.length).toBe(1)
+    // 正常翻页不受影响：current 3→4 派 paginate（start=30）
+    el.setAttribute('current', '4')
+    expect(reqs.length).toBe(2)
+    expect(reqs[1]!.reason).toBe('paginate')
+    expect(reqs[1]!.start).toBe(30)
+    expect(reqs[1]!.end).toBe(40)
+  })
+
   it('client 模式一切场景零请求（翻页/排序/过滤均不派）', () => {
     const { el, reqs } = mountReq({ total: '100' })
     expect(reqs.length).toBe(0)

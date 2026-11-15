@@ -374,3 +374,40 @@ test('table infinite × 虚拟滚动（height）可叠加：触底 load-more 照
 
   expect(issues, `console 告警：\n${issues.join('\n')}`).toEqual([])
 })
+
+test('table infinite：挂载带 current="3" 仅 1 次 init，回填与属性写零续发（记录/比对签名同口径，防无界请求循环）+ console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await serveBuiltUi(page)
+  await gotoTablePage(page)
+  await mountInfiniteFixture(page, 'table-inf-current3', {
+    total: 60,
+    chunk: 30,
+    attrs: { current: '3' },
+  })
+
+  // 挂载恰一次 init（infinite 下 current 不适用、不参与请求签名——文档契约）
+  await page.waitForFunction(() => (window as any)['__infState_table-inf-current3'].reqs.length >= 1, null, {
+    timeout: 5000,
+  })
+  // 宿主回填完成（appendRows → update → 签名比对是循环的真实触发链）
+  await page.waitForFunction(() => (window as any)['__infState_table-inf-current3'].appended.length >= 1, null, {
+    timeout: 5000,
+  })
+  // 多轮属性写给潜在续发现形机会：每次属性写都触发 update，修复前（记录侧存 raw
+  // current=3、比对侧归一化 current=1）每轮 update 都推得 paginate 续发 → reqs 无界增长
+  await page.evaluate(() => {
+    const el = document.querySelector('#table-inf-current3')!
+    el.setAttribute('striped', '')
+    el.setAttribute('total', '60')
+    el.setAttribute('current', '5')
+  })
+  const state = await stateOf(page, 'table-inf-current3')
+  expect(state.reqs).toHaveLength(1)
+  // totalKnown=false：挂载时 total 属性未在场（fixture 经 appendRows options.total 才同步）
+  // ——未知总数场景 totalKnown 随 total 属性在场性的放宽契约
+  expect(state.reqs[0]).toMatchObject({ reason: 'init', start: 0, totalKnown: false })
+
+  expect(issues, `console 告警：\n${issues.join('\n')}`).toEqual([])
+})

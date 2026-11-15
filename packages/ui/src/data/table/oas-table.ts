@@ -6013,18 +6013,26 @@ export class OASTableBase extends OASElement {
    * 清除。本方法不做同值去重——去重判定在 syncServerRows / syncInfiniteRows；refreshRows
    * 绕过路径直接调本方法。
    *
+   * 去重快照与读取侧必须同口径（否则签名永不匹配 → 每次 update 都推得请求 → 宿主回填
+   * 触发 update → 再派发 → 无界请求循环）：server 形态存 raw state（syncServerRows 以
+   * rowsRequestState() 比对）；infinite 形态存归一化 state（current=1，与 syncInfiniteRows
+   * 的 infiniteRequestState() 同构）——current 概念在 infinite 下不适用（不写入、不参与
+   * 签名是文档契约），挂载带 current="3" 时若存 raw 则两侧口径漂移、每轮回填都续发 paginate。
+   * 刷新读侧口径的路径（syncInfiniteRows / probeInfiniteLoadMore / refreshRows）全部经本
+   * 方法写快照，口径单点收敛于此。
+   *
    * detail 按形态分流：
    * - server：start/end = 当前页半开区间，totalKnown 恒 true（生效前提即 total 在场）；
    * - infinite：start/end = 已装载行数（区间语义不适用，无固定终点），totalKnown 随 total
    *   属性在场性（未知总数场景 false），detail.cursor 回传组件记录的游标（无游标时省略键）。
    */
   private dispatchRowsRequest(reason: RowsRequestReason): void {
-    const state = this.rowsRequestState()
+    const infinite = this.infiniteOn()
+    const state = infinite ? this.infiniteRequestState() : this.rowsRequestState()
     this.rowsRequestId++
     this.lastRowsRequestState = state
     this.serverLoading = true
     this.serverError = false
-    const infinite = this.infiniteOn()
     const start = infinite ? this.infiniteRows.length : (state.current - 1) * state.pageSize
     const detail: RowsRequestDetail = {
       requestId: this.rowsRequestId,

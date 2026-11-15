@@ -588,6 +588,41 @@ describe('OASTable infinite：排序/过滤/页大小变更重置装载', () => 
     el.setAttribute('current', '3')
     expect(rec.requests.length).toBe(before)
   })
+
+  it('挂载带 current="3" → 仅 1 次 init，宿主回填与普通属性写零续发（记录/比对签名同口径，防无界请求循环）', () => {
+    // 循环机理：dispatchRowsRequest 记录侧若存 raw current=3，而 syncInfiniteRows 比对侧
+    // 用 infiniteRequestState()（current 恒 1），两侧签名永不匹配 → 每次 update（含宿主
+    // appendRows 回填触发的 runUpdateAndNotify）都推得 paginate → 派发 → 回填 → 再派发
+    // → 无界请求循环。修复后记录侧同样归一化，挂载快照只派 1 次 init。
+    const { el, rec } = mountInfinite({ current: '3' })
+    expect(rec.requests.length).toBe(1)
+    expect(rec.requests[0]!.reason).toBe('init')
+    // detail 区间语义与 current 无关：start/end = 已装载行数（挂载时为 0）
+    expect(rec.requests[0]!.start).toBe(0)
+    expect(rec.requests[0]!.end).toBe(0)
+    // 宿主回填（真实循环的续发触发源）后零派发
+    el.appendRows([{ name: '甲', age: 1 }])
+    expect(rec.requests.length).toBe(1)
+    // 后续普通属性写（不进请求签名键）同样零派发
+    el.setAttribute('total', '100')
+    el.setAttribute('striped', '')
+    expect(rec.requests.length).toBe(1)
+  })
+
+  it('挂载带 current="3" + sort/filter 后归一化签名仍生效（非 current 组变更照常派发，current 组变更静默）', () => {
+    // 归一化只抹平 current 组：排序/过滤/页大小组变更的派发语义不受影响
+    const { el, rec } = mountInfinite({ current: '3' })
+    expect(rec.requests.length).toBe(1)
+    el.setAttribute('sort-key', 'name')
+    el.setAttribute('sort-order', 'asc')
+    expect(rec.requests.length).toBe(2)
+    expect(rec.requests[1]!.reason).toBe('sort')
+    // 排序态下的 current 属性写（同值组）仍静默——归一化后签名含 current=1 两侧一致
+    el.setAttribute('current', '5')
+    expect(rec.requests.length).toBe(2)
+    el.appendRows([{ name: '甲', age: 1 }])
+    expect(rec.requests.length).toBe(2)
+  })
 })
 
 describe('OASTable infinite：底部状态行渲染', () => {

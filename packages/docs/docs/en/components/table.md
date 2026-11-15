@@ -744,6 +744,8 @@ A11y: `aria-rowcount` uses the known total (omitted when unknown — screen read
 
 **Composable with virtual scroll (`height`)**: the loaded buffer goes through the existing virtualized window slicing as a whole (recommended for large datasets; bottom detection uses the scroll container geometry — same threshold for virtual and non-virtual).
 
+Known limitation: the loaded buffer grows linearly with scrolling (virtualization bounds the DOM, not the data buffer) — for very long sessions the host converges it via the end-of-data signal / `refreshRows()`. infinite and windowed are mutually exclusive (windowed wins with a one-time warning), so scenes needing a windowed data buffer should adopt the windowed shape directly.
+
 Fill handle / range selection / filter panel / history / editing all operate with **loaded-row-relative semantics** under infinite (`data-row-index` is the 0-based load order) — same shape as server mode's in-page semantics; see the gates table above.
 
 ## Column filter
