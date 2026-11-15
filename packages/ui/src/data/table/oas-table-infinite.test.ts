@@ -35,6 +35,11 @@ function mount(attrs: Record<string, string>): { el: OASTable; rec: RequestRecor
   el.setAttribute('columns', COLUMNS)
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   document.body.appendChild(el)
+  // 默认 mock「远离底部」几何（appendChild 之后——wrap 在首渲染时创建）：happy-dom 无布局
+  // （clientHeight/scrollHeight 恒 0），而 0,0,0 恰落在触底阈值内（distance 0 ≤ 200），会让
+  // appendRows 末尾的主动续触发在无布局环境下意外派发 load-more。默认远离底部使各用例的
+  // 请求断言只反映其显式 mock 的几何；触底用例经 scrollWrap/mockWrapGeometry 覆盖。
+  mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 5000, scrollTop: 0 })
   return { el, rec }
 }
 
@@ -58,11 +63,20 @@ const flushRaf = async (): Promise<void> => {
 
 /** 模拟滚动容器几何与滚动事件（happy-dom 无布局——defineProperty 覆盖只读度量） */
 function scrollWrap(el: OASTable, geometry: { clientHeight: number; scrollHeight: number; scrollTop: number }): void {
+  mockWrapGeometry(el, geometry)
+  const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+  wrap.dispatchEvent(new Event('scroll'))
+}
+
+/** 仅 mock 几何、不派 scroll 事件（appendRows 自动续派用例的精确触发源控制） */
+function mockWrapGeometry(
+  el: OASTable,
+  geometry: { clientHeight: number; scrollHeight: number; scrollTop?: number },
+): void {
   const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
   Object.defineProperty(wrap, 'clientHeight', { value: geometry.clientHeight, configurable: true })
   Object.defineProperty(wrap, 'scrollHeight', { value: geometry.scrollHeight, configurable: true })
-  wrap.scrollTop = geometry.scrollTop
-  wrap.dispatchEvent(new Event('scroll'))
+  if (geometry.scrollTop !== undefined) wrap.scrollTop = geometry.scrollTop
 }
 
 describe('OASTable infinite：模式判定与互斥', () => {
@@ -392,6 +406,98 @@ describe('OASTable infinite：滚动触底触发', () => {
     expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-busy')).toBe('true')
     el.appendRows([{ name: '甲', age: 1 }])
     expect(el.shadowRoot!.querySelector('table')!.hasAttribute('aria-busy')).toBe(false)
+  })
+
+  it('appendRows 后视口仍在触底阈值内 → 自动续派下一块（不依赖再次滚动）', () => {
+    const { el, rec } = mountInfinite()
+    // 显式 mock 近底几何且不派 scroll 事件：唯一触发源 = appendRows 末尾的主动续触发
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    el.appendRows([{ name: '甲', age: 1 }])
+    return flushRaf().then(() => {
+      const loadMore = rec.requests.filter((r) => r.reason === 'load-more')
+      expect(loadMore.length).toBe(1)
+      expect(loadMore[0]!.start).toBe(1) // 已装载 1 行
+    })
+  })
+
+  it('appendRows 后已离开触底阈值 → 不自动续派', () => {
+    const { el, rec } = mountInfinite()
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 5000, scrollTop: 0 })
+    el.appendRows([{ name: '甲', age: 1 }])
+    return flushRaf().then(() => {
+      expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+    })
+  })
+
+  it('appendRows 到底信号（空块回填）后不自动续派', () => {
+    const { el, rec } = mountInfinite()
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    el.appendRows([{ name: '甲', age: 1 }])
+    el.appendRows([]) // 到底信号：hasMore 翻转
+    return flushRaf().then(() => {
+      expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+      expect(el.shadowRoot!.querySelectorAll('[part="no-more-row"]').length).toBe(1)
+    })
+  })
+
+  it('appendRows 装载满 total（totalKnown）后不自动续派', () => {
+    const { el, rec } = mountInfinite({ total: '2' })
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    el.appendRows([
+      { name: '甲', age: 1 },
+      { name: '乙', age: 2 },
+    ])
+    return flushRaf().then(() => {
+      expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+    })
+  })
+
+  it('appendRows 自动续派受在途守卫约束：rAF 排队期间已有新请求在途则不重发', () => {
+    const { el, rec } = mountInfinite()
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    el.appendRows([{ name: '甲', age: 1 }]) // 清在途 + 排自动续派 rAF
+    // rAF 执行前 refreshRows 同步派发（serverLoading 置位）：自动续派回调时点复核在途 → 不重发
+    el.refreshRows()
+    return flushRaf().then(() => {
+      const reasons = rec.requests.map((r) => r.reason)
+      expect(reasons).toEqual(['init', 'refresh']) // 无 load-more 插入
+    })
+  })
+
+  it('用户手势（wheel）清除回波吞位：布防后的真实滚动不被吞（触底检测照常触发）', async () => {
+    const { el, rec } = mountInfinite()
+    el.appendRows([{ name: '甲', age: 1 }])
+    await flushRaf() // 先排掉 appendRows 自动续派的 rAF（此刻几何远离底部 → 不派）
+    expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+    // 白盒布防：happy-dom 无布局，restoreScrollPosition 的「真实位移才布防」条件无法自然
+    // 达成——直接模拟 appendRows 渲染链路布防吞位后的实例状态（swallowScrollSeq = 当代次）
+    ;(el as any).armScrollSwallow()
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    // 用户手势先到（wheel 已挂 cancelScrollIntent）：吞位只应吞「无用户意图的程序写入回波」
+    wrap.dispatchEvent(new Event('wheel'))
+    // 手势后的真实滚动：不得被吞位吞掉——触底检测照常触发
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 唯一触发源 = 手势后的 scroll 拍（近底几何 + 非在途 + hasMore）
+    expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(1)
+  })
+
+  it('无用户手势时回波吞位照常生效且只吞一拍（吞位守卫机制不回退）', async () => {
+    const { el, rec } = mountInfinite()
+    el.appendRows([{ name: '甲', age: 1 }])
+    await flushRaf() // 先排掉 appendRows 自动续派的 rAF（此刻几何远离底部 → 不派）
+    ;(el as any).armScrollSwallow()
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 吞掉的一拍：无 load-more（程序写入回波守卫语义保留）
+    expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+    // 第二拍（吞位已消耗）恢复正常——守卫是一次性的，不吞后续真实滚动
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(1)
   })
 })
 

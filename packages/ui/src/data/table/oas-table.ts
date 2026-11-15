@@ -6173,6 +6173,14 @@ export class OASTableBase extends OASElement {
     // 非属性通道状态变化（装载缓冲追加/到底信号）→ 强制全量渲染（增量快路径不感知内部缓冲）
     this.markRenderDirty()
     this.runUpdateAndNotify()
+    // 追加后视口仍在触底阈值内 → 主动续派下一块（复用 probeInfiniteLoadMore 的 rAF 节流与
+    // 全套派发前置守卫：infinite 生效 / 非在途 / hasMore / 近底复核）。通行做法：块高
+    // 小于「视口 + 阈值」时追加完成视口仍在底部附近，等用户再滚才会触发——渲染链路布防的
+    // 回波吞位会把下一次真实滚动吞掉一拍，表现为「连续滚到底卡一次」；追加后主动续触发
+    // 让视口持续在阈值内时自动续加载，直到离开阈值或宿主回空块（到底信号 hasMore 翻转，
+    // probe 内守卫天然不派）。此刻 runUpdateAndNotify 已完成全量渲染，scrollHeight 是追加
+    // 后的真实值，rAF 回调读到的几何即新布局态。
+    this.probeInfiniteLoadMore()
   }
 
   /**
@@ -6507,9 +6515,17 @@ export class OASTableBase extends OASElement {
     this.swallowScrollSeq = this.scrollWriteSeq
   }
 
-  /** 用户手势（滚轮 / 触摸 / 按下滚动条）取消意图守卫：用户滚动永远优先于组件写入 */
+  /** 用户手势（滚轮 / 触摸 / 按下滚动条）取消意图守卫与回波吞位：用户滚动永远优先于组件写入 */
   private cancelScrollIntent = (): void => {
     this.scrollIntent = null
+    // 同步清回波吞位：吞位是异步回波守卫，只应吞「无用户意图的程序写入回波」（渲染链路
+    // 写回 scrollTop 引发的下一个 scroll 事件）。用户手势到来 = 真实输入已开始，其后的
+    // scroll 事件是用户的真实滚动，吞掉会丢一拍——tbody 不按新位重建、infinite 触底检测
+    // 被跳过（连续滚到底「卡一次」的根因）。清吞位后若程序写入回波仍到来，按普通滚动处理：
+    // 虚拟窗口按当前位幂等重建（同位无视觉变化）、probeInfiniteLoadMore 按浏览器报告位
+    // 判定（手势后的报告位即用户真实位）——无锚定竞争副作用（意图守卫已被本手势摘除，
+    // 回波不会被再次写回拦截）。
+    this.swallowScrollSeq = -1
   }
 
   /** 键盘滚动（Arrow/Page/Home/End）取消意图守卫：焦点在滚动容器/单元格时按键滚动优先于组件写入。

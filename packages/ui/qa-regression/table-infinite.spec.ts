@@ -124,6 +124,18 @@ async function scrollInfiniteTable(page: Page, id: string, top: number): Promise
   )
 }
 
+/**
+ * 真实滚轮手势滚动到底（wheel 事件 → cancelScrollIntent 手势豁免路径）：指针悬停表格区域，
+ * 连续多格滚轮向下——「连续滚到底不离开」的真实用户动作。不用 scrollTop 直设：程序化设值
+ * 非用户手势，不在吞位豁免面（零行为漂移红线），会引入时序竞态。
+ */
+async function wheelToBottom(page: Page, id: string): Promise<void> {
+  const box = await page.locator(`#${id}`).boundingBox()
+  if (!box) throw new Error(`#${id} 无几何（不可见）`)
+  await page.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height / 2, 100))
+  for (let i = 0; i < 25; i++) await page.mouse.wheel(0, 120) // 25 格 × 120px ≫ 全量内容高，必达底
+}
+
 const noMoreRow = (page: Page, id: string) => page.locator(`#${id} [part="no-more-row"]`)
 
 /** 等 N 个真实渲染帧（触底检测走 requestAnimationFrame——确定性等待，不用固定 sleep） */
@@ -245,6 +257,76 @@ test('table infinite：滚动触底 load-more → 追加 → 到底态 → 排�
   )
 
   // console 零告警（error / [oas-] warning / pageerror）
+  expect(issues, `console 告警：\n${issues.join('\n')}`).toEqual([])
+})
+
+test('table infinite：连续滚到底不离开仍持续加载（滚轮手势不被回波吞位卡死）+ console 零告警', async ({ page }) => {
+  const issues = collectConsoleIssues(page)
+  await serveBuiltUi(page)
+  await gotoTablePage(page)
+  // 块 10 行（≈360px）< 触底阈值 max(200, 400×1.5)=600：每块追加后视口仍在阈值内，
+  // 覆盖「块高小于视口+阈值时连续触底」的真实用户路径（盲区：此前只有「先离开再回」）
+  const totalRows = 90
+  const chunkSize = 10
+  await mountInfiniteFixture(page, 'table-inf-continuous', { total: totalRows, chunk: chunkSize })
+
+  await page.waitForFunction(() => (window as any)['__infState_table-inf-continuous'].appended.length >= 1, null, {
+    timeout: 5000,
+  })
+
+  // 循环：每轮真实滚轮手势滚到底（不离开底部、不制造「离开再回」机会），直到到底态。
+  // 修复前：追加渲染链路布防回波吞位 → 手势后的真实 scroll 拍被吞 → 触底检测不执行 →
+  // 连续滚动卡死（无前进判据永不满足 → waitForFunction 超时即红）；修复后手势清除吞位 +
+  // 追加后视口仍在阈值内即主动续派。
+  const noMore = page.locator('#table-inf-continuous [part="no-more-row"]')
+  for (let round = 0; round < 12; round++) {
+    if ((await noMore.count()) > 0) break
+    const before = await stateOf(page, 'table-inf-continuous')
+    await wheelToBottom(page, 'table-inf-continuous')
+    // 前进判据：请求序列增长（每次 load-more 派发即入列）或到底行出现（装满 total 渲染）
+    await page.waitForFunction(
+      ({ appended, reqs }) => {
+        const s = (window as any)['__infState_table-inf-continuous']
+        const ended =
+          document.querySelector('#table-inf-continuous')!.shadowRoot!.querySelector('[part="no-more-row"]') != null
+        return s.appended.length > appended || s.reqs.length > reqs || ended
+      },
+      { appended: before.appended.length, reqs: before.reqs.length },
+      { timeout: 5000 },
+    )
+  }
+
+  // 终态断言：期望序列由 fixture 参数现算（total/chunk 数据驱动，与布局无关）：
+  // init + load-more×(total/chunk - 1)——第 8 次回填后装载满 total，hasMore 翻转 →
+  // 不再发第 9 次请求，组件自渲染「已到底」行（空块请求仅 total 未知场景）
+  const state = await stateOf(page, 'table-inf-continuous')
+  const reasons = state.reqs.map((r: any) => r.reason)
+  expect(reasons[0], '首请求为 init').toBe('init')
+  const expectLoadMoreCount = totalRows / chunkSize - 1
+  const expectCursors = Array.from({ length: expectLoadMoreCount }, (_, i) => String((i + 1) * chunkSize))
+  const expectStarts = Array.from({ length: expectLoadMoreCount }, (_, i) => (i + 1) * chunkSize)
+  const loadMores = state.reqs.filter((r: any) => r.reason === 'load-more')
+  expect(loadMores.length, 'load-more 次数 = 数据块数（装满 total 即到底，不发空块请求）').toBe(expectLoadMoreCount)
+  expect(
+    loadMores.map((r: any) => r.cursor),
+    'cursor 逐块递进',
+  ).toEqual(expectCursors)
+  expect(loadMores.map((r: any) => r.start)).toEqual(expectStarts)
+  // 全部行渲染
+  await page.waitForFunction(
+    ({ rows }) =>
+      document.querySelector('#table-inf-continuous')!.shadowRoot!.querySelectorAll('[part="row"]').length === rows,
+    { rows: totalRows },
+    { timeout: 5000 },
+  )
+  // 到底行出现且非空
+  expect(await noMore.textContent()).not.toBe('')
+  // 到底后滚轮手势不再派发（hasMore 守卫；确定性帧等待——不用固定 sleep）
+  const reqsAtEnd = (await stateOf(page, 'table-inf-continuous')).reqs.length
+  await wheelToBottom(page, 'table-inf-continuous')
+  await runScrollFrames(page)
+  expect((await stateOf(page, 'table-inf-continuous')).reqs.length, '到底后滚动不再派发').toBe(reqsAtEnd)
+
   expect(issues, `console 告警：\n${issues.join('\n')}`).toEqual([])
 })
 
