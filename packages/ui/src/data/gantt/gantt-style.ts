@@ -292,6 +292,144 @@ svg.links .link-hit:focus-visible + .link {
   color: var(--oas-color-text-secondary-strong);
   white-space: nowrap;
 }
+/* ===== 任务网格面板（task-columns / checkable，opt-in 默认关）：行标签区声明式多列 =====
+   列模板由 JS 内联写入（width px + flex:none / .col-flex 均分 + data-align），表头与行共用
+   同一份声明，逐列对齐；RTL 走逻辑属性（padding-inline / text-align:start/end），暗色只用 token */
+.side-head.has-grid {
+  display: flex;
+  align-items: stretch;
+  padding-inline: var(--oas-space-2);
+  box-sizing: border-box;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary-strong);
+}
+/* 行首重排手柄的表头镜像占位（非 windowed）：等宽保证列头与行网格左缘对齐
+   （.row-drag 盒 = min-width 24px + padding-inline 2px×2 = 28px，占位与逐字一致） */
+.side-head.has-grid .head-drag-slot {
+  flex: none;
+  width: 28px;
+}
+.side-head.has-grid .head-check {
+  flex: none;
+  width: var(--oas-gantt-check-width, 32px);
+  display: inline-flex;
+  align-items: center;
+}
+/* 列头行容器（role="row"）：与行内 .task-grid 同构（flex + 同 gap），列单元格同模板对齐 */
+.side-head.has-grid .head-cols {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  /* 与行侧同口径：定宽列总和超面板时裁剪，防表头溢出叠到时间轴背景上 */
+  overflow: hidden;
+}
+.side-head.has-grid .head-col {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  /* 定宽列 width 已含本内边距（border-box）：左右各留一口气，防右对齐文字贴边被裁 */
+  box-sizing: border-box;
+  padding-inline: var(--oas-space-1);
+}
+.side-head.has-grid .head-col[data-align='center'] {
+  text-align: center;
+}
+.side-head.has-grid .head-col[data-align='right'] {
+  text-align: end;
+}
+/* 行内网格容器（part="task-grid"）：接替 .name 成为行内容器（flex 子项，吸收缩进差异） */
+.row-name .task-grid {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+}
+/* 复选格（checkable）：定宽最左，勾选框居中 */
+.row-name .check-cell {
+  flex: none;
+  width: var(--oas-gantt-check-width, 32px);
+  display: inline-flex;
+  align-items: center;
+}
+/* 网格单元格（part="task-grid-cell"）：声明列内容；首列另带内联层级缩进（树形承载）。
+   定宽列由 JS 写 width+flex:none；未声明宽度走 .col-flex 均分（flex:1 1 0） */
+.row-name .task-cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  color: var(--oas-color-text-primary);
+  /* 定宽列 width 已含本内边距（border-box）：左右各留一口气，防右对齐文字贴边被裁 */
+  box-sizing: border-box;
+  padding-inline: var(--oas-space-1);
+}
+.row-name .task-cell.col-flex,
+.side-head.has-grid .head-col.col-flex {
+  flex: 1 1 0;
+}
+.row-name .task-cell[data-align='center'] {
+  text-align: center;
+}
+.row-name .task-cell[data-align='right'] {
+  text-align: end;
+}
+/* 勾选框（行复选 + 列头全选共用；role="checkbox" 原生 button，Space/Enter 可操作）：
+   三态 aria-checked 驱动视觉——true 实底 + 白勾、mixed 实底 + 横线、false 空框；
+   颜色全走 token（primary / border），暗色随 token 自动切换 */
+.gantt-check {
+  appearance: none;
+  position: relative;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  box-sizing: border-box;
+  border: 1px solid var(--oas-color-border-strong, var(--oas-color-border));
+  border-radius: var(--oas-radius-xs);
+  background: var(--oas-color-bg);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.gantt-check:hover {
+  border-color: var(--oas-color-primary);
+}
+.gantt-check:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: 1px;
+}
+.gantt-check[aria-checked='true'],
+.gantt-check[aria-checked='mixed'] {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+}
+.gantt-check[aria-checked='true']::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 1px;
+  inset-inline-start: 4px;
+  width: 3px;
+  height: 7px;
+  border-inline-end: 2px solid var(--oas-color-bg);
+  border-block-end: 2px solid var(--oas-color-bg);
+  transform: rotate(45deg);
+}
+.gantt-check[aria-checked='mixed']::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 5px;
+  inset-inline-start: 3px;
+  width: 6px;
+  height: 2px;
+  background: var(--oas-color-bg);
+}
 .toggle {
   appearance: none;
   border: none;

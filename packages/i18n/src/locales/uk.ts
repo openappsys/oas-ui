@@ -228,6 +228,8 @@ export const uk: LocaleMessages = {
   'gantt.newTask': 'Нова задача',
   'gantt.effort': 'Обсяг робіт',
   'gantt.effortValue': 'Обсяг робіт {value} д',
+  'gantt.selectAll': 'Вибрати всі',
+  'gantt.selectAllLoaded': 'Застосовується лише до завантажених рядків',
   'gantt.resourceLoad': 'Завантаження ресурсів',
   'gantt.resourceLoadAria': 'Завантаження ресурсів: {count} ресурсів, пік {name} — {percent} %',
   'gantt.resourceLoadEmpty': 'Немає даних про завантаження ресурсів',

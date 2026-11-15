@@ -74,6 +74,8 @@ export const dataMessages: Partial<LocaleMessages> = {
   'gantt.newTask': '新任务',
   'gantt.effort': '工时',
   'gantt.effortValue': '工时 {value} 天',
+  'gantt.selectAll': '全选',
+  'gantt.selectAllLoaded': '仅作用于已装载行',
   'gantt.resourceLoad': '资源负荷',
   'gantt.resourceLoadAria': '资源负荷：{count} 个资源，峰值最高 {name} {percent}%',
   'gantt.resourceLoadEmpty': '暂无资源负荷数据',

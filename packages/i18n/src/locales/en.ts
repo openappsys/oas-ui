@@ -191,6 +191,8 @@ export const en: LocaleMessages = {
   'gantt.newTask': 'New task',
   'gantt.effort': 'Effort',
   'gantt.effortValue': 'Effort {value}d',
+  'gantt.selectAll': 'Select all',
+  'gantt.selectAllLoaded': 'Applies to loaded rows only',
   'gantt.resourceLoad': 'Resource load',
   'gantt.resourceLoadAria': 'Resource load: {count} resources, peak {name} at {percent}%',
   'gantt.resourceLoadEmpty': 'No resource load data',

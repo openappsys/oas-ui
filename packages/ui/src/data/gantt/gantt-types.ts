@@ -118,6 +118,22 @@ export interface GanttDependency {
   lag?: number
 }
 
+/**
+ * 任务网格列声明（task-columns 属性元素契约）：行标签区声明式多列网格的每列定义。
+ * key 指向 GanttTask 任意字段（含自定义字段透传）；title 缺省用 key；width 为 px
+ * （缺省按剩余宽度均分，flex:1）；align 缺省 left（right 以 inline-end 落地，RTL 自动镜像）。
+ */
+export interface GanttTaskColumn {
+  /** 列 key：指向 GanttTask 字段名 */
+  key: string
+  /** 列头文案；缺省用 key */
+  title?: string
+  /** 列宽 px；缺省按剩余宽度均分 */
+  width?: number
+  /** 对齐：left（默认）/ center / right */
+  align?: 'left' | 'center' | 'right'
+}
+
 /** 时间刻度档 */
 export type GanttScale = 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'
 

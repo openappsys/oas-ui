@@ -228,6 +228,8 @@ export const fr: LocaleMessages = {
   'gantt.newTask': 'Nouvelle tâche',
   'gantt.effort': 'Charge',
   'gantt.effortValue': 'Charge {value} j',
+  'gantt.selectAll': 'Tout sélectionner',
+  'gantt.selectAllLoaded': 'S’applique uniquement aux lignes chargées',
   'gantt.resourceLoad': 'Charge des ressources',
   'gantt.resourceLoadAria': 'Charge des ressources : {count} ressources, pic {name} à {percent} %',
   'gantt.resourceLoadEmpty': 'Aucune donnée de charge des ressources',

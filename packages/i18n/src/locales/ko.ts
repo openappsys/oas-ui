@@ -228,6 +228,8 @@ export const ko: LocaleMessages = {
   'gantt.newTask': '새 작업',
   'gantt.effort': '공수',
   'gantt.effortValue': '공수 {value}일',
+  'gantt.selectAll': '모두 선택',
+  'gantt.selectAllLoaded': '로드된 행만 대상',
   'gantt.resourceLoad': '리소스 부하',
   'gantt.resourceLoadAria': '리소스 부하: {count}개 리소스, 최고 {name} {percent}%',
   'gantt.resourceLoadEmpty': '리소스 부하 데이터가 없습니다',

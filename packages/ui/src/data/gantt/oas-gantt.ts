@@ -79,6 +79,7 @@ import type {
   GanttTaskAddDetail,
   GanttTaskChangeDetail,
   GanttTaskClickDetail,
+  GanttTaskColumn,
   GanttTaskRenderDetail,
   GanttTasksChangeDetail,
   TG,
@@ -115,6 +116,7 @@ import {
 import {
   addUnits,
   canReparent,
+  checkStateFor,
   childStructure,
   constraintOf,
   criticalPathIds,
@@ -136,11 +138,13 @@ import {
   loadUnit,
   majorLabel,
   minorLabel,
+  parseTaskColumns,
   plannedRatio,
   poolResourceText,
   shiftByDuration,
   shiftWindows,
   startMsOfTask,
+  taskCellText,
   taskSnapshot,
   upPoint,
   writeBarSelectionState,
@@ -185,6 +189,7 @@ export type {
   GanttTaskAddDetail,
   GanttTaskChangeDetail,
   GanttTaskClickDetail,
+  GanttTaskColumn,
   GanttTaskRenderDetail,
   GanttTasksChangeDetail,
 } from './gantt-types.js'
@@ -230,6 +235,10 @@ export class OASGantt extends OASElement {
       'show-status-line',
       'status-date',
       'baseline-id',
+      // 任务网格面板（opt-in，默认关）：task-columns 声明式多列 + checkable 复选列 + 列头行；
+      // 两者都缺省时行标签区保持既有单列形态（逐节点不变）
+      'task-columns',
+      'checkable',
       // 资源负荷面板（opt-in，默认关）：图表下方按时间轴对齐的负荷桶条（>100% 走 danger 通道）
       'show-resource-load',
       // windowed（服务端行窗口模式）+ 宿主托管时间范围（契约见 shared/window-data.ts）
@@ -305,6 +314,14 @@ export class OASGantt extends OASElement {
   private warnedLevelMode = false
   /** 资源并发超限（>2 任务同资源同时段）devWarn（实例级一次，不逐资源/逐 update 刷屏） */
   private warnedPoolOverCapacity = false
+  /** task-columns 非法输入 devWarn（实例级一次，不逐 update 刷屏） */
+  private warnedTaskColumns = false
+  /** task-columns 与 template[slot="row"] 冲突 devWarn（实例级一次） */
+  private warnedGridTemplate = false
+  /** windowed + checkable 全选只作用于已装载切片 devWarn（实例级一次） */
+  private warnedCheckWindowed = false
+  /** task-columns 解析缓存（key = 属性原文；滚动帧 renderSideRows 逐次读取，不缓存会反复 JSON.parse） */
+  private taskColumnsCache: { raw: string; columns: GanttTaskColumn[] } | null = null
   /** show-float 开启时的总浮时/自由浮时（ms，仅叶子/里程碑；摘要不参与 CPM） */
   private totalFloatMs = new Map<string, number>()
   private freeFloatMs = new Map<string, number>()
@@ -921,6 +938,54 @@ export class OASGantt extends OASElement {
   /** 工时列开关（opt-in 缺省关；显式 "false" 视作关，同 stripe） */
   private effortOn(): boolean {
     return this.hasAttr('show-effort') && this.getAttr('show-effort', '') !== 'false'
+  }
+
+  /** 复选列开关（checkable，opt-in 缺省关；显式 "false" 视作关，同 stripe 防布尔绑定意外开启） */
+  private checkableOn(): boolean {
+    return this.hasAttr('checkable') && this.getAttr('checkable', '') !== 'false'
+  }
+
+  /**
+   * 任务网格列（task-columns 属性解析，原文缓存）：空属性 / 空数组 → []（回落单列形态）；
+   * 非法 JSON / 零有效列声明 → devWarn 一次（实例级）并回落 []。解析在属性变化时重跑
+   * （原文相同即命中缓存——renderSideRows 滚动帧逐次读取，不缓存会反复 JSON.parse）。
+   */
+  private taskGridColumns(): GanttTaskColumn[] {
+    const raw = this.getAttr('task-columns', '')
+    if (!raw.trim()) return []
+    const cached = this.taskColumnsCache
+    if (cached && cached.raw === raw) return cached.columns
+    const parsed = parseTaskColumns(raw)
+    if (!parsed.ok && !this.warnedTaskColumns) {
+      this.warnedTaskColumns = true
+      devWarn(
+        '[oas-gantt] task-columns 解析失败（非法 JSON 或无有效列声明，条目须为 { key, title?, width?, align? } 且 key 非空），已回落单列形态',
+      )
+    }
+    this.taskColumnsCache = { raw, columns: parsed.columns }
+    return parsed.columns
+  }
+
+  /**
+   * 网格形态生效判定（表头与行共用同一谓词，防两套形态打架）：
+   * 有有效列声明且**无** `template[slot="row"]` 时生效；模板在场时模板优先——
+   * 行侧回落模板单列，表头侧也必须同步回落单列形态（否则表头网格列 + 行模板错位）。
+   * devWarn 实例级去重。
+   */
+  private taskGridActive(): GanttTaskColumn[] {
+    const cols = this.taskGridColumns()
+    if (cols.length === 0) return cols
+    const rowTpl = this.querySelector('template[slot="row"]')
+    if (rowTpl instanceof HTMLTemplateElement) {
+      if (!this.warnedGridTemplate) {
+        this.warnedGridTemplate = true
+        devWarn(
+          '[oas-gantt] task-columns 与 template[slot="row"] 同时存在：模板优先，task-columns 已忽略（两套行内容渲染不并存）',
+        )
+      }
+      return []
+    }
+    return cols
   }
 
   /** 资源池开关（opt-in 缺省关；显式 "false" 视作关，同 stripe）：池驱动资源展示 + 跨任务超配检测 */
@@ -2533,27 +2598,119 @@ export class OASGantt extends OASElement {
   }
 
   /**
-   * 工时列表头（show-effort opt-in）：开启时表头变两列（名称占位 | 工时），列头 i18n
-   * `gantt.effort`（locale 切换经 update() 即时刷新）；关闭时表头清空——既有空表头形态逐节点不变。
-   * 与行内 .effort 单元格共用列模板（--oas-gantt-effort-width），右缘对齐。
+   * 行标签表头。三形态互斥（按优先级）：
+   * 1. task-columns 有有效列 → 网格列头行（part="task-grid-head"，role="row" +
+   *    columnheader 单元格；checkable 时左侧复选列头三态全选）。列宽/对齐模板与行单元格
+   *    逐列一致（同一份 columns 驱动），windowed 下行无重排手柄 → 表头也去掉镜像占位。
+   * 2. show-effort opt-in → 两列（名称占位 | 工时），列头 i18n `gantt.effort`（locale 切换
+   *    经 update() 即时刷新）；与行内 .effort 单元格共用列模板（--oas-gantt-effort-width）。
+   * 3. 缺省 → 表头清空——既有空表头形态逐节点不变。
    */
   private renderSideHead(): void {
     const head = this.shadow.querySelector<HTMLElement>('.side-head')
     if (!head) return
     head.innerHTML = ''
-    if (!this.effortOn()) {
-      head.classList.remove('has-effort')
+    const cols = this.taskGridActive()
+    if (cols.length === 0) {
+      // 既有形态（空表头 / effort 两列）：类与 part 恢复缺省，零漂移
+      head.classList.remove('has-grid')
+      head.removeAttribute('role')
+      head.setAttribute('part', 'side-head')
+      if (!this.effortOn()) {
+        head.classList.remove('has-effort')
+        return
+      }
+      head.classList.add('has-effort')
+      const name = document.createElement('span')
+      name.className = 'head-name'
+      name.setAttribute('aria-hidden', 'true')
+      head.appendChild(name)
+      const effort = document.createElement('span')
+      effort.className = 'head-effort'
+      effort.textContent = this.t('gantt.effort')
+      head.appendChild(effort)
       return
     }
-    head.classList.add('has-effort')
-    const name = document.createElement('span')
-    name.className = 'head-name'
-    name.setAttribute('aria-hidden', 'true')
-    head.appendChild(name)
-    const effort = document.createElement('span')
-    effort.className = 'head-effort'
-    effort.textContent = this.t('gantt.effort')
-    head.appendChild(effort)
+    // 网格列头行
+    head.classList.remove('has-effort')
+    head.classList.add('has-grid')
+    // ARIA 结构：grid → row → columnheader。grid 的直接子级只能是 row，
+    // 因此拖拽占位/复选格全部收进唯一的行容器（row 内非 columnheader 的装饰/复选格合法）。
+    head.setAttribute('role', 'grid')
+    // part 只留在内层行容器（task-grid-head 指向列头行，避免同一 part 名两处可选）
+    head.setAttribute('part', 'side-head')
+    const rowEl = document.createElement('div')
+    rowEl.className = 'head-cols'
+    rowEl.setAttribute('role', 'row')
+    rowEl.setAttribute('part', 'task-grid-head')
+    // 行首重排手柄占位镜像（非 windowed 才有 .row-drag）：等宽占位保证列头与行网格左缘对齐
+    if (!this._winMode.windowed) {
+      const spacer = document.createElement('span')
+      spacer.className = 'head-drag-slot'
+      spacer.setAttribute('aria-hidden', 'true')
+      rowEl.appendChild(spacer)
+    }
+    // 复选列头（checkable）：三态全选（aria-label 走 i18n gantt.selectAll）；
+    // windowed 下全选只作用于已装载切片 → devWarn 一次 + title 改为切片口径说明
+    if (this.checkableOn()) {
+      if (this._winMode.windowed && !this.warnedCheckWindowed) {
+        this.warnedCheckWindowed = true
+        devWarn(
+          '[oas-gantt] windowed + checkable：列头全选只作用于当前已装载切片（组件不持有全量数据）；全量勾选请宿主按 total 自行写 selection',
+        )
+      }
+      const wrap = document.createElement('span')
+      wrap.className = 'head-check'
+      wrap.setAttribute('part', 'check-cell')
+      // 复选列也是列：row 的子级只允许 columnheader/gridcell——
+      // 复选按钮必须包在 columnheader 内（直接裸露 role=checkbox 会触发 aria-required-children）
+      wrap.setAttribute('role', 'columnheader')
+      const check = document.createElement('button')
+      check.type = 'button'
+      check.className = 'gantt-check'
+      check.setAttribute('role', 'checkbox')
+      let picked = 0
+      for (const r of this.rows) if (this.selected.has(r.task.id)) picked++
+      check.setAttribute('aria-checked', checkStateFor(picked, this.rows.length))
+      // 读屏名称随作用域同步：windowed 下全选只作用于已装载切片
+      check.setAttribute('aria-label', this.t(this._winMode.windowed ? 'gantt.selectAllLoaded' : 'gantt.selectAll'))
+      check.title = this.t(this._winMode.windowed ? 'gantt.selectAllLoaded' : 'gantt.selectAll')
+      check.addEventListener('click', () => this.onHeadCheckClick())
+      wrap.appendChild(check)
+      rowEl.appendChild(wrap)
+    }
+    for (const col of cols) {
+      const cell = document.createElement('span')
+      cell.className = 'head-col'
+      cell.setAttribute('role', 'columnheader')
+      cell.textContent = col.title ?? col.key
+      this.applyGridColStyle(cell, col)
+      rowEl.appendChild(cell)
+    }
+    head.appendChild(rowEl)
+  }
+
+  /** 网格列模板写入（表头列与行单元格共用同一份规则，保证逐列对齐） */
+  private applyGridColStyle(cell: HTMLElement, col: GanttTaskColumn): void {
+    if (typeof col.width === 'number') {
+      cell.style.width = `${col.width}px`
+      cell.style.flex = 'none'
+    } else {
+      cell.classList.add('col-flex')
+    }
+    if (col.align && col.align !== 'left') cell.setAttribute('data-align', col.align)
+  }
+
+  /** 列头全选/取消（作用于当前已装载行 this.rows；windowed 下即已装载切片）。零行零变化零事件 */
+  private onHeadCheckClick(): void {
+    if (this.rows.length === 0) return
+    const allOn = this.rows.every((r) => this.selected.has(r.task.id))
+    for (const r of this.rows) {
+      if (allOn) this.selected.delete(r.task.id)
+      else this.selected.add(r.task.id)
+    }
+    this.syncSelection()
+    this.emitSelectionChange()
   }
 
   /** 左列名称树（窗口行） */
@@ -2569,6 +2726,10 @@ export class OASGantt extends OASElement {
     const rowH = this.rowHeightPx()
     const expanded = this.currentExpandedSet()
     const rowTpl = this.querySelector('template[slot="row"]')
+    // 任务网格列（task-columns）。模板优先：template[slot="row"] 在场时网格整体让位
+    // （两套渲染通道不打架）+ devWarn 一次（实例级去重）——判定在 taskGridActive()，表头共用同一谓词。
+    const gridCols = this.taskGridActive()
+    const gridOn = gridCols.length > 0
     const prevActive = this.activeRowId
     const inWindow = this.rows.slice(this.winStart, this.winEnd).some((r) => r.task.id === prevActive)
     const activeId = inWindow ? prevActive : (this.rows[this.winStart]?.task.id ?? null)
@@ -2594,7 +2755,9 @@ export class OASGantt extends OASElement {
         el.removeAttribute('aria-rowindex')
       }
       el.style.top = `${this.absRowTop(i)}px`
-      el.style.setProperty('--indent', `${8 + row.depth * 16}px`)
+      // 网格形态：行内缩进改由首列单元格承载（padding-inline-start = 层级缩进），行内边距取
+      // 常量——列模板不随层级漂移，表头与行逐列对齐；单列形态缩进公式不变（零漂移）
+      el.style.setProperty('--indent', gridOn ? 'var(--oas-space-2)' : `${8 + row.depth * 16}px`)
       el.setAttribute('part', 'row-name')
       // 行斑马纹（stripe 属性）：绝对行号奇数行行名同步底色（与时间轴条纹同口径）
       if (this.stripeOn() && this.isStripeRow(i)) el.setAttribute('data-stripe', '')
@@ -2619,9 +2782,9 @@ export class OASGantt extends OASElement {
         drag.textContent = '⋮⋮'
         el.appendChild(drag)
       }
-      if (row.hasChildren) {
-        const expandedNow = expanded.has(row.task.id)
-        el.setAttribute('aria-expanded', String(expandedNow))
+      const expandedNow = row.hasChildren ? expanded.has(row.task.id) : false
+      if (row.hasChildren) el.setAttribute('aria-expanded', String(expandedNow))
+      const makeToggle = (): HTMLButtonElement => {
         const toggle = document.createElement('button')
         toggle.type = 'button'
         toggle.className = 'toggle'
@@ -2632,81 +2795,92 @@ export class OASGantt extends OASElement {
           e.stopPropagation()
           this.toggleExpand(row.task.id)
         })
-        el.appendChild(toggle)
+        return toggle
       }
-      const name = document.createElement('span')
-      name.className = 'name'
-      if (rowTpl instanceof HTMLTemplateElement) {
-        // 行名列自定义模板：宿主可渲染「负责人」等任意列/控件（[data-task-name] 自动填任务名）
-        name.appendChild(cloneSlotContent(rowTpl))
-        name.querySelectorAll<HTMLElement>('[data-task-name]').forEach((n) => {
-          n.textContent = row.task.name
-        })
+      if (row.hasChildren && !gridOn) {
+        // 单列形态：折叠钮在行首缩进区（网格形态移入首列单元格，见 appendTaskGrid）
+        el.appendChild(makeToggle())
+      }
+      if (gridOn) {
+        // 任务网格形态（task-columns）：行内容 = [复选列?] + 声明列；名称列不再单独渲染
+        // （任务名经 {"key":"name"} 声明进网格）。单列形态的行尾装饰（偏差徽标 / creatable「＋」
+        // / effort 列 / 泳道负荷缩略）与列模板互斥——网格形态下一并让位，保证列对齐不被挤位。
+        this.appendTaskGrid(el, row, gridCols, row.hasChildren ? makeToggle() : null)
       } else {
-        name.textContent = row.task.name
-        if (!this.hasAttr('readonly') && row.task.disabled !== true) {
-          name.addEventListener('dblclick', (e) => {
-            e.stopPropagation()
-            this.startRename(row, name)
+        const name = document.createElement('span')
+        name.className = 'name'
+        if (rowTpl instanceof HTMLTemplateElement) {
+          // 行名列自定义模板：宿主可渲染「负责人」等任意列/控件（[data-task-name] 自动填任务名）
+          name.appendChild(cloneSlotContent(rowTpl))
+          name.querySelectorAll<HTMLElement>('[data-task-name]').forEach((n) => {
+            n.textContent = row.task.name
           })
+        } else {
+          name.textContent = row.task.name
+          if (!this.hasAttr('readonly') && row.task.disabled !== true) {
+            name.addEventListener('dblclick', (e) => {
+              e.stopPropagation()
+              this.startRename(row, name)
+            })
+          }
         }
-      }
-      el.appendChild(name)
-      // 偏差徽标（show-variance）：取数走 pickBaseline（baseline-id 选择 + 单 baseline 归一）
-      const rowBaseline = this.pickBaseline(row)
-      if (this.varianceOn() && rowBaseline) {
-        const variance = computeVariance([row.task], this.baselineIdValue() || undefined)[0]
-        if (variance) {
-          const badge = document.createElement('span')
-          badge.className = 'variance'
-          badge.dataset.startDelta = String(variance.startDelta)
-          badge.dataset.endDelta = String(variance.endDelta)
-          badge.dataset.durationDelta = String(variance.durationDelta)
-          if (variance.progressDelta != null) badge.dataset.progressDelta = String(variance.progressDelta)
-          if (variance.endDelta > 0) badge.dataset.late = ''
-          else if (variance.endDelta < 0) badge.dataset.early = ''
-          badge.textContent = `Δ${variance.endDelta > 0 ? '+' : ''}${variance.endDelta}d`
-          const bEnd = rowBaseline.end ?? rowBaseline.start
-          const baseEnd = parseTaskDate(bEnd)
-          badge.title = baseEnd ? this.baselineDeltaText(row, baseEnd.getTime()) : badge.textContent
-          badge.setAttribute('aria-label', badge.title)
-          el.appendChild(badge)
+        el.appendChild(name)
+        // 偏差徽标（show-variance）：取数走 pickBaseline（baseline-id 选择 + 单 baseline 归一）
+        const rowBaseline = this.pickBaseline(row)
+        if (this.varianceOn() && rowBaseline) {
+          const variance = computeVariance([row.task], this.baselineIdValue() || undefined)[0]
+          if (variance) {
+            const badge = document.createElement('span')
+            badge.className = 'variance'
+            badge.dataset.startDelta = String(variance.startDelta)
+            badge.dataset.endDelta = String(variance.endDelta)
+            badge.dataset.durationDelta = String(variance.durationDelta)
+            if (variance.progressDelta != null) badge.dataset.progressDelta = String(variance.progressDelta)
+            if (variance.endDelta > 0) badge.dataset.late = ''
+            else if (variance.endDelta < 0) badge.dataset.early = ''
+            badge.textContent = `Δ${variance.endDelta > 0 ? '+' : ''}${variance.endDelta}d`
+            const bEnd = rowBaseline.end ?? rowBaseline.start
+            const baseEnd = parseTaskDate(bEnd)
+            badge.title = baseEnd ? this.baselineDeltaText(row, baseEnd.getTime()) : badge.textContent
+            badge.setAttribute('aria-label', badge.title)
+            el.appendChild(badge)
+          }
         }
-      }
-      // 行内新建（creatable）：只读与任务级禁用行不出按钮
-      if (this.hasAttr('creatable') && !this.hasAttr('readonly') && row.task.disabled !== true) {
-        const add = document.createElement('button')
-        add.type = 'button'
-        add.className = 'row-add'
-        add.setAttribute('aria-label', this.t(row.hasChildren ? 'gantt.addChild' : 'gantt.addTask'))
-        add.textContent = '＋'
-        add.addEventListener('click', (e) => {
-          e.stopPropagation()
-          this.onRowAdd(row)
-        })
-        el.appendChild(add)
-      }
-      // 工时单元格（show-effort opt-in）：追加为行尾最后一个节点，右缘与表头工时列对齐；
-      // effort 缺失/非法显示空（清洗层已过滤，这里双保险）；关闭时不出节点——单列形态不变。
-      // 可读名：裸数字对读屏不成话 → aria-label 走 i18n 带单位文案（gantt.effortValue，
-      // 与 resource 行头「成本 N」前缀方案对齐）；空值不加 label（不产出可读名碎片）
-      if (this.effortOn()) {
-        const effort = document.createElement('span')
-        effort.className = 'effort'
-        const text = formatEffortCell(row.task.effort)
-        effort.textContent = text
-        if (text !== '') effort.setAttribute('aria-label', this.t('gantt.effortValue', { value: text }))
-        el.appendChild(effort)
-      }
-      // 泳道内嵌负荷缩略（group-by-resource 泳道摘要行，opt-in 视图）：行尾画该资源全轴
-      // 负荷概览条（固定格数降采样，峰值保持；>100% 走 danger 通道）。纯可视化装饰层
-      // （aria-hidden + hover title），读屏语义由泳道行名与（开启时）负荷面板摘要承载；
-      // effort 列在场时插在其前（不挤工时列对齐）。windowed 切片上跳过（统计少算，devWarn 一次）。
-      const laneStrip = this.laneLoadStripFor(row)
-      if (laneStrip) {
-        const effortCell = el.querySelector<HTMLElement>(':scope > .effort')
-        if (effortCell) el.insertBefore(laneStrip, effortCell)
-        else el.appendChild(laneStrip)
+        // 行内新建（creatable）：只读与任务级禁用行不出按钮
+        if (this.hasAttr('creatable') && !this.hasAttr('readonly') && row.task.disabled !== true) {
+          const add = document.createElement('button')
+          add.type = 'button'
+          add.className = 'row-add'
+          add.setAttribute('aria-label', this.t(row.hasChildren ? 'gantt.addChild' : 'gantt.addTask'))
+          add.textContent = '＋'
+          add.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.onRowAdd(row)
+          })
+          el.appendChild(add)
+        }
+        // 工时单元格（show-effort opt-in）：追加为行尾最后一个节点，右缘与表头工时列对齐；
+        // effort 缺失/非法显示空（清洗层已过滤，这里双保险）；关闭时不出节点——单列形态不变。
+        // 可读名：裸数字对读屏不成话 → aria-label 走 i18n 带单位文案（gantt.effortValue，
+        // 与 resource 行头「成本 N」前缀方案对齐）；空值不加 label（不产出可读名碎片）
+        if (this.effortOn()) {
+          const effort = document.createElement('span')
+          effort.className = 'effort'
+          const text = formatEffortCell(row.task.effort)
+          effort.textContent = text
+          if (text !== '') effort.setAttribute('aria-label', this.t('gantt.effortValue', { value: text }))
+          el.appendChild(effort)
+        }
+        // 泳道内嵌负荷缩略（group-by-resource 泳道摘要行，opt-in 视图）：行尾画该资源全轴
+        // 负荷概览条（固定格数降采样，峰值保持；>100% 走 danger 通道）。纯可视化装饰层
+        // （aria-hidden + hover title），读屏语义由泳道行名与（开启时）负荷面板摘要承载；
+        // effort 列在场时插在其前（不挤工时列对齐）。windowed 切片上跳过（统计少算，devWarn 一次）。
+        const laneStrip = this.laneLoadStripFor(row)
+        if (laneStrip) {
+          const effortCell = el.querySelector<HTMLElement>(':scope > .effort')
+          if (effortCell) el.insertBefore(laneStrip, effortCell)
+          else el.appendChild(laneStrip)
+        }
       }
       el.addEventListener('pointerdown', (e) => this.onRowPointerDown(e as PointerEvent, row))
       el.addEventListener('keydown', (e) => this.onRowKeyDown(e as KeyboardEvent, row))
@@ -2716,6 +2890,84 @@ export class OASGantt extends OASElement {
     // 仅当原活动行仍在窗口内才补回焦点（跨窗口的键盘导航）；用户手动滚动致活动行出窗不抢焦点
     if (hadRowFocus && prevActive && prevActive === activeId) {
       container.querySelector<HTMLElement>(`.row-name[data-key="${escId(activeId)}"]`)?.focus({ preventScroll: true })
+    }
+  }
+
+  /**
+   * 任务网格行内容（task-columns 形态，renderSideRows 网格分支的建块器）：
+   * - `[复选列（checkable）?] + 声明列`：复选列 32px（--oas-gantt-check-width）最左，
+   *   role="checkbox" + aria-checked 双向同步 selection（勾选写集合 + 派 oas-selection-change，
+   *   与框选同一契约，不新增事件名）；列头三态由 syncCheckState 维护；
+   * - 首列承载树形：层级缩进（padding-inline-start = depth × 16）+ 折叠钮移入列内——
+   *   列模板（列宽/对齐）不随层级漂移，表头与行逐列对齐；
+   * - 取值走 taskCellText 纯展示（undefined/null → 空、数字 → 字符串、对象 → JSON.stringify）。
+   */
+  private appendTaskGrid(
+    el: HTMLElement,
+    row: GanttRow,
+    cols: GanttTaskColumn[],
+    toggle: HTMLButtonElement | null,
+  ): void {
+    const grid = document.createElement('span')
+    grid.className = 'task-grid'
+    grid.setAttribute('part', 'task-grid')
+    if (this.checkableOn()) {
+      const wrap = document.createElement('span')
+      wrap.className = 'check-cell'
+      wrap.setAttribute('part', 'check-cell')
+      const check = document.createElement('button')
+      check.type = 'button'
+      check.className = 'gantt-check'
+      check.setAttribute('role', 'checkbox')
+      check.dataset.key = row.task.id
+      check.setAttribute('aria-checked', this.selected.has(row.task.id) ? 'true' : 'false')
+      check.setAttribute('aria-label', row.task.name)
+      check.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const id = row.task.id
+        if (this.selected.has(id)) this.selected.delete(id)
+        else this.selected.add(id)
+        this.syncSelection()
+        this.emitSelectionChange()
+      })
+      wrap.appendChild(check)
+      grid.appendChild(wrap)
+    }
+    for (let c = 0; c < cols.length; c++) {
+      const col = cols[c]!
+      const cell = document.createElement('span')
+      cell.className = 'task-cell'
+      cell.setAttribute('part', 'task-grid-cell')
+      this.applyGridColStyle(cell, col)
+      if (c === 0) {
+        // 首列承载树形：层级缩进 + 折叠钮（列内容缩进，列框不动）
+        cell.style.setProperty('padding-inline-start', `${row.depth * 16}px`)
+        if (toggle) cell.appendChild(toggle)
+      }
+      cell.appendChild(document.createTextNode(taskCellText(row.task[col.key])))
+      grid.appendChild(cell)
+    }
+    el.appendChild(grid)
+  }
+
+  /**
+   * 复选态增量同步（syncSelection 的复选面）：行复选 aria-checked 按选中集合、
+   * 列头三态按已装载行（this.rows；windowed 下即已装载切片）全/半/无。只写变化值，
+   * 供选择变化的各条路径（property setter / 行点选 / 框选 / 复选勾选）共用。
+   */
+  private syncCheckState(): void {
+    if (!this.checkableOn()) return
+    const sel = this.selected
+    this.sideRows?.querySelectorAll<HTMLElement>('.row-name .gantt-check').forEach((el) => {
+      const v = sel.has(el.dataset.key ?? '') ? 'true' : 'false'
+      if (el.getAttribute('aria-checked') !== v) el.setAttribute('aria-checked', v)
+    })
+    const head = this.shadow.querySelector<HTMLElement>('.side-head .gantt-check')
+    if (head) {
+      let count = 0
+      for (const r of this.rows) if (sel.has(r.task.id)) count++
+      const v = checkStateFor(count, this.rows.length)
+      if (head.getAttribute('aria-checked') !== v) head.setAttribute('aria-checked', v)
     }
   }
 
@@ -3798,6 +4050,8 @@ export class OASGantt extends OASElement {
     this.barsEl?.querySelectorAll<HTMLElement>('.bar').forEach((el) => {
       this.writeBarSelectionState(el, sel.has(el.dataset.id ?? ''))
     })
+    // 复选列（checkable 形态）：行复选与列头三态随选中集合同步（缺省形态空操作）
+    this.syncCheckState()
   }
 
   private onRowClick(id: string, e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }): void {

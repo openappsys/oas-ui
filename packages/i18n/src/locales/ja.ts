@@ -228,6 +228,8 @@ export const ja: LocaleMessages = {
   'gantt.newTask': '新しいタスク',
   'gantt.effort': '工数',
   'gantt.effortValue': '工数 {value} 日',
+  'gantt.selectAll': 'すべて選択',
+  'gantt.selectAllLoaded': '読み込み済みの行のみ対象',
   'gantt.resourceLoad': 'リソース負荷',
   'gantt.resourceLoadAria': 'リソース負荷：{count} リソース、ピークは {name} {percent}%',
   'gantt.resourceLoadEmpty': 'リソース負荷データはありません',

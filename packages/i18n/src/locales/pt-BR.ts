@@ -228,6 +228,8 @@ export const ptBR: LocaleMessages = {
   'gantt.newTask': 'Nova tarefa',
   'gantt.effort': 'Esforço',
   'gantt.effortValue': 'Esforço {value} d',
+  'gantt.selectAll': 'Selecionar tudo',
+  'gantt.selectAllLoaded': 'Aplica-se apenas às linhas carregadas',
   'gantt.resourceLoad': 'Carga de recursos',
   'gantt.resourceLoadAria': 'Carga de recursos: {count} recursos, pico {name} a {percent} %',
   'gantt.resourceLoadEmpty': 'Sem dados de carga de recursos',
