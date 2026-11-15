@@ -670,14 +670,16 @@ Under the `row-model="server"` form, `group-by` present means **host-side groupi
 Component obligation: request detail gains `groupBy` (the current group key; requests without `group-by` omit the key), and a group-key change emits a `reason='group'` request with the page reset. Host obligation: return a **mixed-row array** per `detail.groupBy` (refilled via the `data` attribute); rows come in two kinds and render in return order:
 
 - **Group row**: `{ kind: 'group', groupKey, groupLabel?, groupCount?, depth?, aggregates? }`
-  - `groupKey` (**required, non-empty string**): the group key = collapse-state identity (invalid group rows are dropped with a downgrade to flat rendering + devWarn once; data rows are unaffected)
+  - `groupKey` (**required, non-empty string**): the group key = collapse-state identity (a `kind:'group'` row with an invalid `groupKey` **renders as a data row** — no data dropped, no silent removal; devWarn once)
   - `groupLabel`: section-header text (falls back to `groupKey` when absent)
-  - `groupCount`: row count within the group (no count shown when absent)
+  - `groupCount`: row count within the group (**no count shown when absent**; NaN/negative treated as absent)
   - `depth`: hierarchy depth (hierarchical grouping; defaults to 0, group rows indent with the same formula as tree rows)
-  - `aggregates`: within-group aggregates (**column key → host-computed number/string**; the component neither aggregates locally nor re-formats)
+  - `aggregates`: within-group aggregates (**column key → host-computed number/string**; the component neither aggregates locally nor re-formats; invalid values such as objects/arrays render as empty cells)
 - **Data row**: the existing plain row (no `kind`, or `kind: 'data'`); tree `children` are not part of this protocol — flatten them host-side and return a flat row order if child expansion is needed
 
-The component renders in array order: group rows reuse the existing section-header visual (collapse arrow + label + count), indenting by `depth>0`; collapsing filters **locally within loaded rows** (clicking the arrow only re-renders, no refetch — rows of the collapsed group hide up to the next group row, and under hierarchical grouping collapsing a top group hides its sub-group rows too); `aggregates` render in columns with `aggregate: true` (group rows lay out per column: the label cell covers everything before the first aggregate column, aggregate cells render the host value per column and stay empty when absent, alignment follows the column `align` / numeric right-align convention). The collapse identity is `groupKey`, preserved across data/page refills.
+> **`kind` is a reserved field while the protocol is active**: the component uses the inline `kind` field to tell group rows from data rows — if your row data already carries a business field named `kind`, rename it to avoid accidentally triggering the group-row protocol (conflict behavior: a `kind:'group'` row with an invalid `groupKey` renders as a data row and warns once).
+
+The component renders in array order: group rows reuse the existing section-header visual (collapse arrow + label + count), indenting by `depth>0`; collapsing filters **locally within loaded rows** (clicking the arrow only re-renders, no refetch — rows of the collapsed group hide up to the next group row, and under hierarchical grouping collapsing a top group hides its sub-group rows too); `aggregates` render in columns with `aggregate: true` (group rows lay out per column: the label cell covers everything before the first aggregate column, aggregate cells render the host value per column and stay empty when absent, alignment follows the column `align` / numeric right-align convention; **the per-column form is a table-level decision** — once any column declares `aggregate`, all group rows in the table share the same form, and group rows without `aggregates` leave the aggregate cells empty). The collapse identity is `groupKey`, preserved across data/page refills. `total` counts **data rows only** (group rows are decoration rows and are not counted — pagination page counts and page numbers derive from data rows).
 
 ```html
 <oas-table
@@ -693,11 +695,29 @@ The component renders in array order: group rows reuse the existing section-head
     const { requestId, groupBy, start, end } = e.detail
     const res = await api.listGrouped({ groupBy, start, end }) // server-side grouping + aggregation
     // Refill mixed rows: group rows + in-group data rows, order decided by the server (the component renders in order)
+    // total counts data rows only (group rows are decoration rows — pagination derives from data rows)
     e.target.setAttribute('total', String(res.total))
     e.target.setAttribute('data', JSON.stringify(res.rows))
   })
 </script>
 ```
+
+<DemoBlock title="Server-side grouping live demo: host returns mixed rows (group + data rows), per-column aggregates + collapse filters locally without refetching">
+  <div style="width: 100%">
+    <oas-table
+      id="table-server-group-live"
+      row-model="server"
+      total="5"
+      pagination
+      page-size="10"
+      group-by="dept"
+      columns='[{"key":"name","title":"Name"},{"key":"amount","title":"Amount","aggregate":true,"type":"number"}]'
+    ></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      The host returns mixed rows (group rows carry `groupCount` / `aggregates`, aggregate values pre-computed by the "server"; total = 5 counts data rows only). Click a group row's arrow to collapse/expand: in-group rows hide/restore locally, **no refetch**.
+    </p>
+  </div>
+</DemoBlock>
 
 Scope note: aggregates reflect the in-group aggregation of the slice the server returns for the current page (when pagination and grouping combine, each group row covers only the slice of the page its data rows live in — whole-group aggregation across pages is the server's call under the `groupBy` query). Export/print still operate on the current-page slice (in-group data rows only; group rows are not exported).
 
@@ -1063,6 +1083,28 @@ onMounted(() => {
       if (!d.expanded) t.scrollToRow(d.key) // collapse-only anchoring (expand leaves the viewport alone)
     })
   })
+})
+
+// Server-side grouping live demo: mock host refills mixed rows per detail.groupBy (group rows +
+// in-group data rows, order = server authority). The init request of a statically upgraded tag fires
+// before this script runs (the listener is not wired yet) — same "first-screen fallback" as the
+// createServerSource helper: refill the first round manually after wiring.
+onMounted(() => {
+  const t = document.getElementById('table-server-group-live')
+  if (!t) return
+  const mixedRows = [
+    { kind: 'group', groupKey: '研发', groupLabel: '研发部', groupCount: 3, aggregates: { amount: 128 } },
+    { key: 'a1', name: '张三', amount: 52, dept: '研发' },
+    { key: 'a2', name: '李四', amount: 47, dept: '研发' },
+    { key: 'a3', name: '王五', amount: 29, dept: '研发' },
+    { kind: 'group', groupKey: '销售', groupLabel: '销售部', groupCount: 2, aggregates: { amount: 85 } },
+    { key: 'b1', name: '赵六', amount: 50, dept: '销售' },
+    { key: 'b2', name: '钱七', amount: 35, dept: '销售' },
+  ]
+  // Asynchronous refill (no attribute writes inside the dispatch stack — aligned with real fetch timing)
+  const fill = () => setTimeout(() => t.setAttribute('data', JSON.stringify(mixedRows)), 0)
+  t.addEventListener('oas-rows-request', fill)
+  fill() // first-screen fallback
 })
 
 // audit demo: commits recorded; the feedback line queries getCellHistory

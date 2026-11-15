@@ -19,7 +19,7 @@
 - 底部 loading 行与「已到底」态；A11y：`aria-rowcount` 用已知 total（未知时省略）+ `aria-busy`；能力闸门（导出/合计/分组仅已装载数据，告警或禁用与 server 模式同口径）
 
 **批 B：服务端分组/聚合**
-- `row-model="server"` 下允许分组：`group-by` 生效时请求 detail 增加 `groupBy`，宿主返回含分组行的结果（或组件按服务端给出的分组行渲染——协议按服务端分块/分组的通行心智设计）；聚合值由宿主提供（`groupAggregates`），不再本地计算
+- `row-model="server"` 下允许分组：`group-by` 生效时请求 detail 增加 `groupBy`，宿主返回含分组行的结果（或组件按服务端给出的分组行渲染——协议按服务端分块/分组的通行心智设计）；聚合值由宿主提供（组行行内字段 `aggregates`，以列 key 为键），不再本地计算；列级 `aggregate: true` 指定该列显示组行聚合（组行按列布局，无值的聚合格留空）
 - 与 client 分组、windowed、infinite 的互斥/组合矩阵写清
 
 **批 C：数据层缓存（helper 层）**

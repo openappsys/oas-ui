@@ -743,7 +743,7 @@ const BUDGETS = [
     get: () => componentMeasures.tableEdit.gzipBytes,
     limit: 120 * 1024, // 120 KB（2026-11-15 重定档：实测 106.0——前预警线 94.5 被日常增量反复顶穿失去意义，一并恢复）
     basis:
-      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0（行高批/结构渲染批/print 感知各贡献一部分，归因在案），原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）',
+      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0，原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）。首档→现档主要增量来源（已归因汇总，均为 oas-table 本体随链进入 edit 链的合理增长）：行高批（多行单元格三件套 + 虚拟截断/wrap 三态）、结构渲染批（structural-render 七槽壳接线）、print 感知（打印媒体口径）、无限滚动 + cursor 批 A 接线（appendRows/装载缓冲/load-more 协议）、server 分组批接线（groupBy/组行双形态渲染）',
   },
   {
     // table/auto-height：注册型 L3（row-auto-height 逐行动态行高）。首档 2026-11-04：

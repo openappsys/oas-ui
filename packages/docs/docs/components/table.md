@@ -670,14 +670,16 @@ fetchRows: async ({ signal, ...rest }) => {
 组件侧义务：请求 detail 增加 `groupBy`（当前分组键；无 `group-by` 的请求不携带该键），分组键变更派 `reason='group'` 请求并重置页码。宿主侧义务：按 `detail.groupBy` 返回**混合行数组**（`data` 属性回填），行分两类、按返回顺序渲染：
 
 - **分组行**：`{ kind: 'group', groupKey, groupLabel?, groupCount?, depth?, aggregates? }`
-  - `groupKey`（**必填，非空字符串**）：组键 = 折叠状态标识（无效组行剔除降级平铺渲染 + devWarn 一次，组内数据行不受影响）
+  - `groupKey`（**必填，非空字符串**）：组键 = 折叠状态标识（`kind:'group'` 但 `groupKey` 无效的行**按数据行渲染**——数据不丢不剔除，devWarn 一次提示）
   - `groupLabel`：分节头展示文案（缺省回落 `groupKey`）
-  - `groupCount`：组内行计数（缺省不显示计数）
+  - `groupCount`：组内行计数（**缺省不显示计数**；NaN/负数按缺省处理）
   - `depth`：层级深度（层级分组场景；缺省 0，组行按树形同款公式缩进）
-  - `aggregates`：组内聚合值（**列 key → 宿主计算好的数值/字符串**；组件不本地聚合、不二次格式化）
+  - `aggregates`：组内聚合值（**列 key → 宿主计算好的数值/字符串**；组件不本地聚合、不二次格式化；对象/数组等非法值留空不渲染）
 - **数据行**：既有普通行（无 `kind` 或 `kind: 'data'`）；树形 `children` 不在此协议内——需要子行展开请由宿主自行展平后按扁平行序返回
 
-组件按数组顺序渲染：分组行复用既有分节头视觉（折叠箭头 + 文案 + 计数），`depth>0` 时按层级缩进；折叠在**已装载行内本地过滤**（点击箭头只重渲染、不触发重取——组内行隐藏到下一组行，层级分组下折叠顶层组连同子组行一并隐藏）；`aggregates` 在列定义 `aggregate: true` 的列渲染（组行按列布局：文案格覆盖首个聚合列之前，聚合列逐格显示宿主值、无值留空，列对齐沿用列 `align` / 数值类型右对齐惯例）。折叠状态标识为 `groupKey`，数据/翻页回填后保留。
+> **`kind` 为协议保留字段**：协议激活时组件以行内 `kind` 字段区分组行/数据行——宿主行数据若已有 `kind` 业务字段，建议改用其他列名，避免误触发分组行协议（冲突行为：`kind:'group'` 但 `groupKey` 无效的行按数据行渲染并告警一次）。
+
+组件按数组顺序渲染：分组行复用既有分节头视觉（折叠箭头 + 文案 + 计数），`depth>0` 时按层级缩进；折叠在**已装载行内本地过滤**（点击箭头只重渲染、不触发重取——组内行隐藏到下一组行，层级分组下折叠顶层组连同子组行一并隐藏）；`aggregates` 在列定义 `aggregate: true` 的列渲染（组行按列布局：文案格覆盖首个聚合列之前，聚合列逐格显示宿主值、无值留空，列对齐沿用列 `align` / 数值类型右对齐惯例；**按列形态为表级判定**——列定义存在 `aggregate` 列时同表组行形态统一，组行无 `aggregates` 时聚合格留空）。折叠状态标识为 `groupKey`，数据/翻页回填后保留。`total` 只计**数据行**（组行是装饰行，不计入——分页页数/页码等外部分页口径均按数据行推导）。
 
 ```html
 <oas-table
@@ -693,11 +695,29 @@ fetchRows: async ({ signal, ...rest }) => {
     const { requestId, groupBy, start, end } = e.detail
     const res = await api.listGrouped({ groupBy, start, end }) // 服务端分组 + 聚合
     // 回填混合行：组行 + 组内数据行，顺序由服务端决定（组件按序渲染）
+    // total 只计数据行（组行是装饰行，不计入——分页页数按数据行算）
     e.target.setAttribute('total', String(res.total))
     e.target.setAttribute('data', JSON.stringify(res.rows))
   })
 </script>
 ```
+
+<DemoBlock title="服务端分组 live demo：宿主返回混合行（组行 + 数据行），按列聚合 + 折叠本地过滤不重取">
+  <div style="width: 100%">
+    <oas-table
+      id="table-server-group-live"
+      row-model="server"
+      total="5"
+      pagination
+      page-size="10"
+      group-by="dept"
+      columns='[{"key":"name","title":"名称"},{"key":"amount","title":"金额","aggregate":true,"type":"number"}]'
+    ></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
+      宿主返回混合行（组行带 `groupCount` / `aggregates`，聚合值由「服务端」算好；total = 5 只计数据行）。点组行箭头折叠/展开：组内行本地隐藏/恢复，**不触发重新请求**。
+    </p>
+  </div>
+</DemoBlock>
 
 限制说明：聚合口径 = 服务端当前返回切片的组内聚合（跨页组的全组聚合由服务端按 `groupBy` 查询自行决定——分页与分组叠加时，每个分组行只覆盖其数据行所在页的切片）；导出/打印仍按当前页切片（含组内数据行，组行不入导出）。
 
@@ -1060,6 +1080,27 @@ onMounted(() => {
       if (!d.expanded) t.scrollToRow(d.key) // 仅收起锚定（展开不扰动视口）
     })
   })
+})
+
+// 服务端分组 live demo：mock 宿主按 detail.groupBy 回填混合行（组行 + 组内数据行，
+// 顺序 = 服务端权威）。静态标签升级瞬间的 init 请求早于本脚本（监听未就绪会丢）——
+// 与 createServerSource helper 同款「首屏兜底」：接线后手动补一次首轮回填。
+onMounted(() => {
+  const t = document.getElementById('table-server-group-live')
+  if (!t) return
+  const mixedRows = [
+    { kind: 'group', groupKey: '研发', groupLabel: '研发部', groupCount: 3, aggregates: { amount: 128 } },
+    { key: 'a1', name: '张三', amount: 52, dept: '研发' },
+    { key: 'a2', name: '李四', amount: 47, dept: '研发' },
+    { key: 'a3', name: '王五', amount: 29, dept: '研发' },
+    { kind: 'group', groupKey: '销售', groupLabel: '销售部', groupCount: 2, aggregates: { amount: 85 } },
+    { key: 'b1', name: '赵六', amount: 50, dept: '销售' },
+    { key: 'b2', name: '钱七', amount: 35, dept: '销售' },
+  ]
+  // 异步回填（不在派发同步栈内写属性——与真实 fetch 时序对齐，避免渲染管线重入）
+  const fill = () => setTimeout(() => t.setAttribute('data', JSON.stringify(mixedRows)), 0)
+  t.addEventListener('oas-rows-request', fill)
+  fill() // 首屏兜底
 })
 
 // audit demo：编辑提交 → 审计记录器查询旧值→新值回显
