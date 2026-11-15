@@ -382,9 +382,13 @@ describe('OASTable server 分组协议（批 B）', () => {
   it('对照：非 server 分组（client 本地分组）× column-virtual 不降级——列窗口照常生效（守卫条件精确命中 server 分组）', () => {
     const data = JSON.stringify([{ key: 'a', name: '张三', dept: '研发', amount: 70 }])
     const { el } = mountReq({ 'group-by': 'dept', 'column-virtual': '' }, data, wideGroupCols())
-    // column-virtual 生效：数据行占位归并格在场（窗口裁剪）
-    const placeholders = el.shadowRoot!.querySelectorAll('td.col-virtual-placeholder')
-    expect(placeholders.length, 'client 分组不受 server 守卫影响，列窗口照常').toBeGreaterThan(0)
+    // column-virtual 生效：初始 scrollLeft=0 无左占位，窗口裁剪只留右侧归并格（恰好 1 个）
+    const placeholders = el.shadowRoot!.querySelectorAll<HTMLTableCellElement>('td.col-virtual-placeholder')
+    expect(placeholders.length, 'client 分组不受 server 守卫影响，列窗口照常（初始仅右侧归并一格）').toBe(1)
+    // 几何守恒：窗口列逐格渲染（首格 name）+ 占位归并 = 全列 32
+    const rowTds = dataRowsOf(el)[0]!.querySelectorAll('td[data-col]')
+    expect(rowTds[0]!.getAttribute('data-col'), '窗口从首列 name 起').toBe('name')
+    expect(rowTds.length + placeholders[0]!.colSpan, '窗口列 + 占位归并列数守恒（= 全列 32）').toBe(32)
     // 本地分组组行恒全宽（既有行为零漂移）
     const gtds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
     expect(gtds.length).toBe(1)
@@ -409,8 +413,10 @@ describe('OASTable server 分组协议（批 B）', () => {
     expect(tds.length).toBe(2)
     expect(tds[0]!.getAttribute('data-col')).toBe('amount')
     expect(tds[0]!.colSpan).toBe(1)
-    // 折叠交互与组信息不回退：折叠钮/组标签/计数并入首格
-    expect(tds[0]!.querySelector('button.toggle')).not.toBeNull()
+    // 折叠交互与组信息不回退：折叠钮/组标签/计数并入首格（初始展开态类名 + button 语义）
+    const toggle = tds[0]!.querySelector<HTMLButtonElement>('button.toggle')
+    expect(toggle?.className, '折叠钮初始展开态类名精确（toggle open）').toBe('toggle open')
+    expect(toggle?.type).toBe('button')
     expect(tds[0]!.textContent).toContain('研发')
     expect(tds[0]!.querySelector('.group-count')!.textContent).toBe('2')
     // 聚合值同格在场（aria-expanded 折叠语义保留）
