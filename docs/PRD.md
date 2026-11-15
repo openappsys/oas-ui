@@ -14,24 +14,30 @@
 ### 详细需求（按实施批次）
 
 **批 A：无限滚动 + cursor 分页**
+
 - `infinite` 布尔属性（与 `pagination` / `windowed` 互斥，互斥告警一次）：滚动接近底部自动请求下一块（`oas-rows-request` 的 reason 增加 `'load-more'`；detail 增加 `cursor?: string`——上次响应游标，宿主回填时提供）
 - `appendRows(rows, options?: { cursor?: string; total?: number })` 公开方法：追加装载行（区别于 `data` 属性的替换语义），组件内维护已装载行与游标；`total`/`cursor` 可选（未知总数场景渲染不依赖总数）
 - 底部 loading 行与「已到底」态；A11y：`aria-rowcount` 用已知 total（未知时省略）+ `aria-busy`；能力闸门（导出/合计/分组仅已装载数据，告警或禁用与 server 模式同口径）
 
 **批 B：服务端分组/聚合**
+
 - `row-model="server"` 下允许分组：`group-by` 生效时请求 detail 增加 `groupBy`，宿主返回含分组行的结果（或组件按服务端给出的分组行渲染——协议按服务端分块/分组的通行心智设计）；聚合值由宿主提供（组行行内字段 `aggregates`，以列 key 为键），不再本地计算；列级 `aggregate: true` 指定该列显示组行聚合（组行按列布局，无值的聚合格留空）
 - 与 client 分组、windowed、infinite 的互斥/组合矩阵写清
 
 **批 C：数据层缓存（helper 层）**
+
 - `createServerSource` 增加缓存：键 = 完整查询（页码/排序/过滤/分组/游标），TTL 可配（默认合理值，`0` = 不缓存）、条目上界 LRU 淘汰、`refresh({ purge })` 清缓存、去重（同键在途合并）、后台刷新（stale-while-revalidate）选项；缓存层在 helper 内，不影响组件协议；helper 仅服务「服务端分页/分组」形态（与 infinite 组合不适用——整页覆盖回填与追加语义冲突）
 
 **批 D：渲染组织 / worker 渲染**
+
 - 超大表格（非虚拟或虚拟下主线程压力）的渲染组织：paintCell/行构建可下沉 worker 或分批调度（chunked rendering），保持现有行为零漂移；先做「分批渲染/时间切片」，worker 作为后续增量
 
 **批 E：CSS 抽取**
+
 - 组件内联 STYLE 模板按层拆分（base/table/features），构建期合并；零视觉变化、构建产物体积不增
 
 **批 F：server 模式导出全量 + 列序持久化契约**
+
 - server 模式导出：提供「导出全部（经宿主取数）」（`export-all` 请求协议或回调）；列序持久化：server 模式下允许 `setColumnOrder`（列序属展示态，服务端行序无关），仅行顺序操作保持禁用
 
 ### 验收
@@ -4134,7 +4140,9 @@ group 子钮此前为宿主自填 light DOM（`slot="action"`），组件用 `::
 
 ## v2.6.3：conversation prompt-input 提示词输入
 
-- **范围**：新增 oas-prompt-input（conversation 族）：多行自增高、Enter 提交 / Shift+Enter 换行、submit-on-enter、clear-on-submit、loading 发送/停止态、disabled/eadonly/maxlength/ows、suggestions 建议项、prefix/ctions/ooter 插槽。
+- **范围**：新增 oas-prompt-input（conversation 族）：多行自增高、Enter 提交 / Shift+Enter 换行、submit-on-enter、clear-on-submit、loading 发送/停止态、disabled/
+eadonly/maxlength/
+ows、suggestions 建议项、prefix/ctions/ooter 插槽。
 - **事件/方法**：oas-submit（{ value }）、oas-stop、oas-suggestion-select（{ value, label }）；submit() / stop() / ocusInput()。
 - **兼容**：新增组件，不影响既有会话族；不依赖外部数据源。
 - **验收**：单测覆盖提交/换行/禁用/loading/建议/双通道值；e2e 覆盖真实输入、建议回填与停止；a11y 页面纳入自动收集；文档 zh/en、API/SSR 白名单与 CHANGELOG 同步。
