@@ -23,15 +23,19 @@
  *
  * 数据层缓存（批 C，层在 helper 内、不影响组件协议）：默认启用（TTL 5 分钟、不启用
  * 后台刷新；`cache: false` 完全关闭——关闭档与既有行为逐值一致）。缓存键 = 完整查询
- * 签名（start / end / sortModel / filterValues / cursor，与 reason 无关——init /
- * sort / filter / paginate 同属查询态，翻页往返命中同一条目）。命中（未过期）直接
+ * 签名（start / end / sortModel / filterValues / groupBy / cursor，与 reason 无关——init /
+ * sort / filter / paginate / group 同属查询态，翻页往返命中同一条目）。命中（未过期）直接
  * 回填不调 fetchRows；命中（已过期）默认重新取数，`staleWhileRevalidate: true` 时先
  * 回填陈旧值再后台重取（成功后回填更新，两阶段可见）；同键请求在途时复用同一 Promise
  * （不重复 fetch）。`refresh()` 无 purge：绕过缓存强制重取并更新缓存；
- * `refresh({ purge: true })` 清空全部缓存后强制重取。fetchRows 失败 / reject 或被
- * abort 不写缓存（abort 的同键在途登记即时移除——被中止的在途不可复用）；destroy()
- * 清缓存与在途登记并中止全部取数（含 SWR 背景在途）。缓存命中回填与成功路径同一
- * 通道（data / total 属性写），requestId 校验语义保持（命中回填仍按当前 requestId）。
+ * `refresh({ purge: true })` 清空全部缓存后强制重取，并递增实例 epoch——purge 时刻在途的
+ * 取数（含 SWR 背景）settle 时被 epoch 拦截，不污染 purge 后的缓存。写缓存守卫分两层：
+ * 缓存写按 epoch（发起时快照，不校验 requestId——SWR 后台结果无论用户翻到哪页都修好
+ * 缓存）；回填（写 data / total）仍校验 requestId 最新（后台结果顶不掉用户当前页展示）。
+ * fetchRows 失败 / reject 或被 abort 不写缓存（abort 的同键在途登记即时移除——被中止的
+ * 在途不可复用）；destroy() 递增 epoch、清缓存与在途登记并中止全部取数（含 SWR 背景
+ * 在途）。缓存命中回填与成功路径同一通道（data / total 属性写），requestId 校验语义
+ * 保持（命中回填仍按当前 requestId）。
  */
 import { devWarn } from '../../../shared/dev-warn.js'
 import type { RowsRequestReason } from '../row-model.js'
@@ -53,8 +57,12 @@ export interface ServerRowsRequest {
   sortModel: Array<{ key: string; order: string }>
   /** 过滤值（filter-values 属性对象形状原样） */
   filterValues: Record<string, string | number>
-  /** 请求原因：init=首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷 */
+  /** 请求原因：init=首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / group=分组键变更 / refresh=refreshRows 强刷 */
   reason: RowsRequestReason
+  /** 分组键（服务端分组形态：detail.groupBy 原样透传；无 group-by 的请求不携带此键） */
+  groupBy?: string
+  /** 无限滚动游标（detail.cursor 原样透传；仅携带 cursor 的请求有此键——缓存键同维度） */
+  cursor?: string
   /** 中止通道：同表新请求派发或 destroy 时上一笔在途被 abort——fetcher 应尽早响应（只给 fetcher 用，不进事件 detail） */
   signal: AbortSignal
 }
@@ -65,12 +73,13 @@ export interface ServerSourceOptions {
   /** 挂载前写入 total（可省略）——server 行模型生效前提（组件 total 属性在场判定） */
   total?: number
   /**
-   * 缓存配置；缺省启用默认缓存（TTL 5 分钟、不启用后台刷新）；`false` 完全关闭
-   * （关闭档行为与无缓存实现逐值一致）。缓存键 = 完整查询签名（区间 / 排序 / 过滤 /
-   * 游标，与 reason 无关）；`ttlMs` 毫秒级（默认 300000）；`staleWhileRevalidate`
-   * 开启后过期命中先回填陈旧值再后台重取。
+   * 缓存配置；缺省启用默认缓存（TTL 5 分钟、条目上界 200、不启用后台刷新）；`false` 完全
+   * 关闭（关闭档行为与无缓存实现逐值一致）。缓存键 = 完整查询签名（区间 / 排序 / 过滤 /
+   * 分组 / 游标，与 reason 无关）；`ttlMs` 毫秒级（默认 300000，`0` = 不缓存，负数 / NaN
+   * 提示一次并回退默认）；`maxEntries` 条目上界（默认 200，LRU：命中重排、超界淘汰最旧）；
+   * `staleWhileRevalidate` 开启后过期命中先回填陈旧值再后台重取。
    */
-  cache?: false | { ttlMs?: number; staleWhileRevalidate?: boolean }
+  cache?: false | { ttlMs?: number; staleWhileRevalidate?: boolean; maxEntries?: number }
 }
 
 export interface ServerSource {
@@ -98,12 +107,12 @@ type ServerRowsHost = HTMLElement & {
  */
 const serverSourceRegistry = new WeakMap<HTMLElement, true>()
 
-/** 缓存配置归一：false → null（关闭档）；缺省/对象 → SWR 标志 + 缓存实例（TTL 在 store 内取默认） */
+/** 缓存配置归一：false → null（关闭档）；缺省/对象 → SWR 标志 + 缓存实例（TTL / 上界在 store 内取默认） */
 const normalizeCache = (cache: ServerSourceOptions['cache']): { swr: boolean; store: ServerRowsCache } | null => {
   if (cache === false) return null
-  const ttlMs = cache && typeof cache === 'object' ? cache.ttlMs : undefined
-  const swr = cache != null && typeof cache === 'object' && cache.staleWhileRevalidate === true
-  return { swr, store: createServerRowsCache(ttlMs != null ? { ttlMs } : undefined) }
+  const settings = cache != null && typeof cache === 'object' ? cache : undefined
+  const swr = settings?.staleWhileRevalidate === true
+  return { swr, store: createServerRowsCache({ ttlMs: settings?.ttlMs, maxEntries: settings?.maxEntries }) }
 }
 
 /**
@@ -131,9 +140,15 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
   let destroyed = false
   /** 组件最新在途请求序号（事件 detail 权威记录；-1 = 尚未见过任何请求） */
   let latestRequestId = -1
+  /**
+   * 缓存代际（purge / destroy 递增）：写缓存的守卫维度。发起取数时快照，settle 时
+   * `epoch === fetchEpoch` 才写缓存——SWR 后台结果不校验 requestId（无论用户翻到哪页
+   * 都该修好缓存），但 purge / destroy 之后在途结果不得污染新一代缓存。
+   */
+  let epoch = 0
   /** 当前在途取数的 abort 通道（新请求派发 / destroy 时中止上一笔）；key 记录该笔的缓存键（abort 时同步解除在途登记） */
   let controller: { ac: AbortController; key: string | null } | null = null
-  /** SWR 背景重取的中止通道（不占 controller 槽——翻页不中止它，destroy 统一中止） */
+  /** SWR 背景重取的中止通道（不占 controller 槽——翻页不中止它，destroy 统一中止；settle 后即除名防泄漏） */
   const backgroundControllers = new Set<AbortController>()
   const cache = normalizeCache(options.cache)
 
@@ -176,8 +191,10 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
 
   /**
    * 统一取数执行：fetchRows 同步 throw 与 Promise rejection 走同一失败路径；
-   * settle 后按 requestId / signal 校验——通过则写缓存（若开启）并回填。
-   * `background`（SWR 后台重取）成功只更新缓存 + requestId 仍最新时回填；失败静默。
+   * settle 后写缓存与回填分层校验——缓存写按 epoch（不校验 requestId：SWR 后台结果
+   * 无论用户翻到哪页都修好缓存；signal 已中止 / purge·destroy 换代则不写）；回填仍按
+   * requestId 最新（晚到旧响应不顶掉用户当前页展示）。`background`（SWR 后台重取）
+   * 成功只写缓存 + requestId 仍最新时回填；失败静默。
    *
    * 时序纪律：回填链保持与「await fetchRows 后同步回填」同深（1 级微任务）——在途登记
    * 直接 track 原始 promise（复用者拿到未归一结果，apply 内归一），不在回填链上额外
@@ -192,10 +209,14 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
       sortModel: Array<{ key: string; order: string }>
       filterValues: Record<string, string | number>
       reason: RowsRequestReason
+      groupBy?: string
+      cursor?: string
     },
-    signal: AbortSignal,
+    ac: AbortController,
     background: boolean,
   ): void => {
+    const signal = ac.signal
+    const fetchEpoch = epoch
     let promise: Promise<unknown>
     try {
       promise = Promise.resolve(options.fetchRows({ requestId, ...q, signal }))
@@ -207,11 +228,17 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
     void (async () => {
       try {
         const result = await promise
-        if (destroyed || signal.aborted || requestId !== latestRequestId) return
+        // 缓存写按 epoch：翻页（requestId 变陈旧）不拦截后台结果修缓存；abort 的取数
+        // 不写（结果可能不完整）；purge / destroy 换代后不写（不污染新一代缓存）
+        if (destroyed || signal.aborted || epoch !== fetchEpoch) return
         if (cache && key) cache.store.set(key, (Array.isArray(result) ? { rows: result } : result) as ServerCacheValue)
+        // 回填按 requestId（apply 内守卫）：晚到旧响应不顶掉用户当前页展示
         apply(requestId, result)
       } catch (error) {
         fail(requestId, q.reason, error, background)
+      } finally {
+        // 背景控制器用毕即除名（防 Set 泄漏；前台 controller 槽随 abortPrevious 轮换，无此问题）
+        if (background) backgroundControllers.delete(ac)
       }
     })()
   }
@@ -226,6 +253,7 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
           sortModel: Array<{ key: string; order: string }>
           filterValues: Record<string, string | number>
           reason: RowsRequestReason
+          groupBy?: string
           cursor?: string
         }>
       | undefined
@@ -238,12 +266,28 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
     const filterValues = detail.filterValues ?? {}
     const reason = detail.reason ?? 'init'
     const cursor = typeof detail.cursor === 'string' ? detail.cursor : undefined
-    const q = { start, end, sortModel, filterValues, reason }
+    const groupBy = typeof detail.groupBy === 'string' ? detail.groupBy : undefined
+    // fetcher 入参 = detail 查询态原样（batch B/A 契约补齐：groupBy / cursor 原样透传；
+    // 缺省不带键——「无分组 / 无游标」与「值为 undefined」在 fetcher 侧形状一致）
+    const q: {
+      start: number
+      end: number
+      sortModel: Array<{ key: string; order: string }>
+      filterValues: Record<string, string | number>
+      reason: RowsRequestReason
+      groupBy?: string
+      cursor?: string
+    } = { start, end, sortModel, filterValues, reason }
+    if (groupBy !== undefined) q.groupBy = groupBy
+    if (cursor !== undefined) q.cursor = cursor
     // 缓存键 = 完整查询签名（与 reason 无关）；refresh 强刷绕过读（缓存与在途合并）
-    const key = cache ? serverCacheKey({ start, end, sortModel, filterValues, cursor }) : null
+    const key = cache ? serverCacheKey({ start, end, sortModel, filterValues, groupBy, cursor }) : null
     const bypass = reason === 'refresh'
 
     if (cache && key && !bypass) {
+      // 陈旧读取先于 fresh get：get 命中过期即删条目（条目上界卫生），SWR 陈旧回填必须在
+      // 删除前取到——顺序颠倒会让 SWR 永远拿不到陈旧值
+      const stale = cache.store.peek(key)
       // fresh 命中：直接回填（微任务异步化），不调 fetchRows（中止上一笔在途——本回填不依赖它）
       const fresh = cache.store.get(key)
       if (fresh) {
@@ -252,7 +296,6 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
         return
       }
       const pending = cache.store.inflight(key)
-      const stale = cache.store.peek(key)
       // 陈旧命中 + SWR：先回填陈旧值（微任务异步化），后台重取（同键在途则不再发起——复用既有一笔）
       if (stale && cache.swr) {
         abortPrevious()
@@ -260,7 +303,7 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
         if (!pending) {
           const ac = new AbortController()
           backgroundControllers.add(ac)
-          startFetch(key, requestId, q, ac.signal, true)
+          startFetch(key, requestId, q, ac, true)
         } else {
           // 同键后台在途：本次请求的回填更新挂靠在途 settle（requestId 守卫兜底竞态——
           // 后台发起时的 requestId 可能已被本次之前的翻页顶掉，settle 时靠本守卫回填）
@@ -282,11 +325,11 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
       }
     }
     // 未命中 / 关闭缓存 / refresh 绕过：正常取数（先中止上一笔在途再以新通道取数；
-    // fetcher 收到的 signal 是真正的取消通知，晚到兜底由 requestId 守卫承担）
+    // fetcher 收到的 signal 是真正的取消通知，晚到兜底由 requestId / epoch 守卫承担）
     abortPrevious()
     const ac = new AbortController()
     controller = { ac, key }
-    startFetch(key, requestId, q, ac.signal, false)
+    startFetch(key, requestId, q, ac, false)
   }
 
   // 监听先挂：setAttribute 触发的同步 init 请求能被接住（组件先记后派，同 windowed 先例）
@@ -311,13 +354,20 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
   return {
     refresh(refreshOptions) {
       // 强刷走组件公开通道：reason='refresh' 绕过同值去重，经 onRequest 走同一取数循环；
-      // purge 语义在 helper：清空全部缓存后强制重取（组件侧 purge 参数收下不分支，透传保持契约）
+      // purge 语义在 helper：清空全部缓存后强制重取，并递增实例 epoch——purge 时刻在途的
+      // 取数（含 SWR 背景）settle 时被 epoch 拦截，不把 purge 前的旧值写回新一代缓存
+      // （组件侧 purge 参数收下不分支，透传保持契约）
       if (destroyed) return
-      if (refreshOptions?.purge) cache?.store.clear()
+      if (refreshOptions?.purge) {
+        epoch++
+        cache?.store.clear()
+      }
       ;(table as ServerRowsHost).refreshRows(refreshOptions)
     },
     destroy() {
       destroyed = true
+      // epoch 递增：destroy 后迟到 settle 一并被代际守卫拦下（destroyed 主守卫的双保险）
+      epoch++
       abortPrevious()
       for (const ac of backgroundControllers) ac.abort()
       backgroundControllers.clear()

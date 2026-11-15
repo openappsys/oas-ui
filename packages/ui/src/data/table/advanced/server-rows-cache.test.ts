@@ -80,18 +80,36 @@ describe('serverCacheKey（缓存键 = 完整查询签名）', () => {
     )
   })
 
-  it('键不含 reason：init/sort/filter/paginate 同属查询态——键函数入参形状本身没有 reason 字段', () => {
-    // 键函数的入参类型只收区间/排序/过滤/游标四组查询态；同一查询无论因何种 reason
-    // 触发（首载、翻回、排序往返）都映射到同一缓存键——这正是「翻页往返命中」的机制。
-    const q = baseQuery({ start: 10, end: 20, sortModel: [{ key: 'id', order: 'desc' }], filterValues: { a: 1 } })
+  it('分组键参与键：同区间/排序/过滤不同 groupBy 是不同查询（服务端分组形态各自缓存）', () => {
+    const reference = serverCacheKey(baseQuery())
+    expect(serverCacheKey(baseQuery({ groupBy: 'dept' })), '有分组 ≠ 无分组').not.toBe(reference)
+    expect(serverCacheKey(baseQuery({ groupBy: 'dept' }))).not.toBe(serverCacheKey(baseQuery({ groupBy: 'city' })))
+    // 缺省与显式 undefined 同键（与 cursor 同口径：JSON.stringify 省略 undefined 键）
+    expect(serverCacheKey(baseQuery())).toBe(serverCacheKey(baseQuery({ groupBy: undefined })))
+  })
+
+  it('键不含 reason：键形状只含查询六组态（reason 无关性的端到端效果——init/sort/filter/paginate 往返同键命中——由 server-rows.test.ts「翻页往返命中」集成用例固化）', () => {
+    // 键函数的入参类型只收区间/排序/过滤/分组/游标五组查询态，没有 reason 字段——
+    // 同一查询无论因何种 reason 触发都映射到同一缓存键，这正是「翻页往返命中」的机制。
+    const q = baseQuery({
+      start: 10,
+      end: 20,
+      sortModel: [{ key: 'id', order: 'desc' }],
+      filterValues: { a: 1 },
+      groupBy: 'dept',
+      cursor: 'c1',
+    })
     const key = serverCacheKey(q)
-    expect(key).toBe(serverCacheKey(q))
-    // 键形状断言：查询四组态齐备（防键悄悄漏字段——漏了任何一组态都会让不同查询混同）
+    // 键形状断言：查询各组态齐备（防键悄悄漏字段——漏了任何一组态都会让不同查询混同）
     expect(key).toContain('"start":10')
     expect(key).toContain('"end":20')
     expect(key).toContain('"id"')
     expect(key).toContain('"desc"')
     expect(key).toContain('"a":1')
+    expect(key).toContain('"dept"')
+    expect(key).toContain('"c1"')
+    // 序列化形状不携带 reason 词汇（机制性证据，配合上方类型面无 reason 入参）
+    expect(key).not.toContain('reason')
   })
 })
 
@@ -150,6 +168,90 @@ describe('createServerRowsCache（TTL 条目）', () => {
     vi.setSystemTime(2000)
     expect(cache.peek('k')).toEqual({ rows: ['旧'], total: 7, storedAt: 0 })
     expect(cache.peek('missing')).toBeUndefined()
+  })
+
+  it('过期 get 即删条目：后续 peek 不再命中（过期条目不滞留内存、不占 LRU 名额）', () => {
+    const cache = createServerRowsCache({ ttlMs: 1000 })
+    cache.set('k', { rows: ['旧'] })
+    vi.setSystemTime(2000)
+    expect(cache.get('k'), '过期按未命中处理').toBeUndefined()
+    expect(cache.peek('k'), 'get 已删除过期条目：peek 不再命中').toBeUndefined()
+  })
+
+  it('未过期 get 不删条目（只做 LRU 命中重排），peek 照常命中', () => {
+    const cache = createServerRowsCache({ ttlMs: 1000 })
+    cache.set('k', { rows: [1] })
+    vi.setSystemTime(500)
+    expect(cache.get('k')).toBeDefined()
+    expect(cache.peek('k')).toBeDefined()
+  })
+
+  it('条目上界：默认 200 条，写入第 201 条淘汰最旧', () => {
+    const cache = createServerRowsCache()
+    expect(cache.maxEntries).toBe(200)
+    for (let i = 0; i <= 200; i++) cache.set(`k${i}`, { rows: [i] })
+    expect(cache.peek('k0'), '第 201 条写入挤掉最旧 k0').toBeUndefined()
+    expect(cache.peek('k1')).toBeDefined()
+    expect(cache.peek('k200')).toBeDefined()
+  })
+
+  it('maxEntries 可配：超出即淘汰写入序最旧', () => {
+    const cache = createServerRowsCache({ maxEntries: 3 })
+    cache.set('a', { rows: [1] })
+    cache.set('b', { rows: [2] })
+    cache.set('c', { rows: [3] })
+    cache.set('d', { rows: [4] })
+    expect(cache.peek('a')).toBeUndefined()
+    expect(cache.peek('b')).toBeDefined()
+    expect(cache.peek('d')).toBeDefined()
+  })
+
+  it('LRU 命中重排：get 命中的键移到写入序末尾，超界淘汰「最久未命中」而非「最早写入」', () => {
+    const cache = createServerRowsCache({ maxEntries: 3 })
+    cache.set('a', { rows: [1] })
+    cache.set('b', { rows: [2] })
+    cache.set('c', { rows: [3] })
+    cache.get('a') // 命中重排：a 移到末尾（在 LRU 意义上比 b、c 新）
+    cache.set('d', { rows: [4] }) // 挤掉最旧 = b（非 a）
+    expect(cache.peek('a'), '命中过的 a 不被淘汰').toBeDefined()
+    expect(cache.peek('b'), '最久未命中的 b 被淘汰').toBeUndefined()
+    expect(cache.peek('c')).toBeDefined()
+    expect(cache.peek('d')).toBeDefined()
+  })
+
+  it('重写同键同样移到写入序末尾（set = 最新）', () => {
+    const cache = createServerRowsCache({ maxEntries: 3 })
+    cache.set('a', { rows: [1] })
+    cache.set('b', { rows: [2] })
+    cache.set('c', { rows: [3] })
+    cache.set('a', { rows: [9] }) // 重写 a：移到末尾
+    cache.set('d', { rows: [4] }) // 挤掉最旧 = b
+    expect(cache.peek('a')).toBeDefined()
+    expect(cache.peek('b')).toBeUndefined()
+    expect(cache.peek('c')).toBeDefined()
+    expect(cache.peek('d')).toBeDefined()
+  })
+
+  it('maxEntries 非法（0/负数/NaN）回退默认 200', () => {
+    expect(createServerRowsCache({ maxEntries: 0 }).maxEntries).toBe(200)
+    expect(createServerRowsCache({ maxEntries: -5 }).maxEntries).toBe(200)
+    expect(createServerRowsCache({ maxEntries: Number.NaN }).maxEntries).toBe(200)
+  })
+
+  it('ttlMs: 0 = 不缓存（含等号过期判定 now - storedAt >= 0 恒真 → 读侧等价 miss）', () => {
+    const cache = createServerRowsCache({ ttlMs: 0 })
+    expect(cache.ttlMs).toBe(0)
+    cache.set('k', { rows: [1] })
+    expect(cache.get('k'), 'ttl 0 即写入即过期').toBeUndefined()
+  })
+
+  it('ttlMs 负数 / NaN：一次性 devWarn + 回退默认 5 分钟（静默吞配置错误会让「以为配了 TTL」实际没配）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(createServerRowsCache({ ttlMs: -100 }).ttlMs).toBe(300_000)
+    expect(createServerRowsCache({ ttlMs: Number.NaN }).ttlMs).toBe(300_000)
+    expect(warn, '每次非法配置各提示一次').toHaveBeenCalledTimes(2)
+    expect(String(warn.mock.calls[0]![0])).toContain('ttlMs')
+    warn.mockRestore()
   })
 
   it('同键重写按新 storedAt 重新计龄（翻页往返刷新陈旧条目的机制）', () => {

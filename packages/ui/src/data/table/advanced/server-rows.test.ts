@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
 import { OASTable } from '../index.js'
@@ -342,24 +342,38 @@ describe('createServerSource', () => {
 })
 
 /**
- * 数据层缓存（批 C S2）：createServerSource 集成行为。
+ * 数据层缓存（批 C S2 + 交叉审修复批）：createServerSource 集成行为。
  *
- * 语义定稿：缓存键 = 完整查询签名（start/end/sortModel/filterValues/cursor，与 reason
- * 无关）；命中（未过期）直接回填不调 fetchRows；过期默认重取（SWR 开启时先回填陈旧值
+ * 语义定稿：缓存键 = 完整查询签名（start/end/sortModel/filterValues/groupBy/cursor，与
+ * reason 无关）；命中（未过期）直接回填不调 fetchRows；过期默认重取（SWR 开启时先回填陈旧值
  * 再后台重取）；同键在途复用同一 Promise；refresh() 无 purge 绕过读并更新缓存；
- * refresh({ purge: true }) 清空全部缓存后强制重取；失败 / abort 不写缓存；destroy
- * 清缓存与在途登记。默认启用缓存（TTL 5 分钟、无后台刷新）——cache: false 完全关闭
- * （既有行为零漂移的对照档）。
+ * refresh({ purge: true }) 清空全部缓存后强制重取（epoch 递增拦截 purge 时刻在途结果回写）；
+ * 失败 / abort 不写缓存；后台 settle 写缓存按 epoch（不校验 requestId——翻页不拦截后台修缓存）、
+ * 回填仍按 requestId；destroy 清缓存与在途登记。默认启用缓存（TTL 5 分钟、无后台刷新）——
+ * cache: false 完全关闭（既有行为零漂移的对照档）。
  *
- * TTL 推进用真实时钟 + 小 ttl（25ms）配真等待（组件链路含 setTimeout 回填，fake
- * timers 会牵连组件时序）；TTL 判定边界已在 server-rows-cache.test.ts 用 fake
- * timers 精确固化，此处只测集成行为。
+ * TTL 推进用 fake Date（`vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime`）：
+ * 只 mock Date、不动 setTimeout / 微任务——组件链路（queueMicrotask 回填、vi.waitFor 真实轮询）
+ * 零牵连，过期判定完全确定（无真实时钟抖动）。TTL 集成档用 ttl 1000ms 大余量：vi.waitFor
+ * 每次 poll 会 advanceTimersByTime(50)（vitest 行为），大 TTL 保证「写入 → 命中」窗口不被
+ * 轮询推进侵蚀。TTL 判定边界（含等号过期 / ttl 0 / 非法值）已在 server-rows-cache.test.ts
+ * 用全量 fake timers 精确固化，此处只测集成行为。
  */
 describe('createServerSource 数据层缓存（批 C）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
+    // 只 fake Date：TTL 读取 Date.now 可精确推进；setTimeout / 微任务保持真实（组件链路零牵连）
+    vi.useFakeTimers({ toFake: ['Date'] })
   })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** 推进 mock 系统时钟（fake Date-only）：TTL 判定所读的 Date.now 前移 ms */
+  const advanceTtl = (ms: number): void => {
+    vi.setSystemTime(Date.now() + ms)
+  }
 
   /** 按调用序生成可区分内容的 fetchRows（第 n 次调用返回「v{n}」前缀行），便于断言两阶段回填 */
   const versionedFetchRows = (): {
@@ -418,11 +432,11 @@ describe('createServerSource 数据层缓存（批 C）', () => {
   it('TTL 过期后命中退化为重新取数（默认无 SWR：过期即未命中）', async () => {
     const el = mount()
     const { fetchRows } = versionedFetchRows()
-    const source = createServerSource(el, { fetchRows, total: 100, cache: { ttlMs: 25 } })
+    const source = createServerSource(el, { fetchRows, total: 100, cache: { ttlMs: 1000 } })
     await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
     el.setAttribute('current', '2')
     await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
-    await new Promise((resolve) => setTimeout(resolve, 30))
+    advanceTtl(1100)
     el.setAttribute('current', '1')
     await vi.waitFor(() => expect(fetchRows, '过期条目按未命中处理：重新取数').toHaveBeenCalledTimes(3))
     expect((el.data[0] as { name: string }).name).toBe('v3行0')
@@ -436,13 +450,13 @@ describe('createServerSource 数据层缓存（批 C）', () => {
     const source = createServerSource(el, {
       fetchRows,
       total: 100,
-      cache: { ttlMs: 25, staleWhileRevalidate: true },
+      cache: { ttlMs: 1000, staleWhileRevalidate: true },
     })
     await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
     await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('v1行0'))
     el.setAttribute('current', '2')
     await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('v2行10'))
-    await new Promise((resolve) => setTimeout(resolve, 30))
+    advanceTtl(1100)
     el.setAttribute('current', '1')
     // 阶段一：陈旧值立即回填（用户立即看到旧数据而非 loading），后台重取已发起（hold 在途）
     await vi.waitFor(() => expect(fetchRows, '陈旧命中仍发起后台重取').toHaveBeenCalledTimes(3))
@@ -465,20 +479,23 @@ describe('createServerSource 数据层缓存（批 C）', () => {
     const source = createServerSource(el, {
       fetchRows,
       total: 100,
-      cache: { ttlMs: 25, staleWhileRevalidate: true },
+      cache: { ttlMs: 1000, staleWhileRevalidate: true },
     })
     await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
     el.setAttribute('current', '2')
     await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
-    await new Promise((resolve) => setTimeout(resolve, 30))
+    advanceTtl(1100)
     el.setAttribute('current', '1') // SWR：陈旧回填 + 后台重取（hold，在途）
     await vi.waitFor(() => expect(resolvers).toHaveLength(1))
     el.setAttribute('current', '2') // 翻走：页2 条目与页1 同批写入、此刻同样已过期 → 页2 也 SWR 后台重取
     await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(4))
-    el.setAttribute('current', '1') // 翻回页1：陈旧命中 + 同键在途 → 复用，不再发起
+    el.setAttribute('current', '1') // 翻回页1：同键在途 → 复用，不再发起
     expect(fetchRows, '同键在途复用：不重复 fetch').toHaveBeenCalledTimes(4)
+    // R2 起过期 get 即删条目：首次 SWR 访问（get）已删页1 条目，本轮复用窗口内无陈旧可再
+    // 回填——data 保持上一渲染内容（页2 后台 settle 已回填的 v4），直到在途后台 settle 后
+    // 按复用等待者的 requestId 回填新值（修复前此窗口曾重新回填陈旧值，属 R2 删除语义下的既定收敛）
     await Promise.resolve()
-    expect((el.data[0] as { name: string }).name, '复用时先陈旧回填').toBe('v1行0')
+    expect((el.data[0] as { name: string }).name, '复用窗口内无陈旧可回填：保持上一渲染内容').toBe('v4行10')
     // 后台重取 settle：复用等待者按自身 requestId 校验后回填新值
     resolvers[0]!({
       rows: Array.from({ length: 10 }, (_, i) => ({ name: `后台行${i}` })),
@@ -607,12 +624,12 @@ describe('createServerSource 数据层缓存（批 C）', () => {
     const source = createServerSource(el, {
       fetchRows: wrappedFetch,
       total: 100,
-      cache: { ttlMs: 25, staleWhileRevalidate: true },
+      cache: { ttlMs: 1000, staleWhileRevalidate: true },
     })
     await vi.waitFor(() => expect(signals).toHaveLength(1))
     el.setAttribute('current', '2')
     await vi.waitFor(() => expect(signals).toHaveLength(2))
-    await new Promise((resolve) => setTimeout(resolve, 30))
+    advanceTtl(1100)
     el.setAttribute('current', '1') // SWR：陈旧回填 + 后台重取（hold）
     await vi.waitFor(() => expect(resolvers).toHaveLength(1))
     expect(signals[2]!.aborted, '背景在途未 destroy 前不中止').toBe(false)
@@ -627,5 +644,118 @@ describe('createServerSource 数据层缓存（批 C）', () => {
     source2.refresh()
     await vi.waitFor(() => expect((el.data[0] as { name: string }).name, '重建后重新取数（旧缓存已清）').toBe('v4行0'))
     source2.destroy()
+  })
+
+  it('groupBy 进缓存键 + fetcher 透传（批 B 契约补齐）：同区间不同分组各自取数，回切命中原分组缓存', async () => {
+    const el = mount()
+    el.setAttribute('group-by', 'dept')
+    let calls = 0
+    const seenGroupBy: Array<string | undefined> = []
+    const fetchRows = vi.fn((req: ServerRowsRequest) => {
+      calls++
+      seenGroupBy.push(req.groupBy)
+      return Promise.resolve({ rows: [{ name: `${req.groupBy}组v${calls}` }], total: 100 })
+    })
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    expect(seenGroupBy[0], 'detail.groupBy 原样透传 fetcher').toBe('dept')
+    // 切分组：groupBy 进键 → 不同键 → 重新取数（不会拿 dept 缓存顶 city 的页）
+    el.setAttribute('group-by', 'city')
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
+    expect(seenGroupBy[1]).toBe('city')
+    await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('city组v2'))
+    // 回切 dept：同键（区间/排序/过滤全同，仅 groupBy 回到 dept）命中缓存，调用计数不增
+    el.setAttribute('group-by', 'dept')
+    await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('dept组v1'), { timeout: 1000 })
+    expect(fetchRows, '分组回切命中 groupBy 键维度的缓存条目').toHaveBeenCalledTimes(2)
+    source.destroy()
+  })
+
+  it('cursor 透传 fetcher（键里已有 cursor——键维度名副其实）：detail.cursor 原样进入请求入参', async () => {
+    const el = mount()
+    const seen: Array<{ cursor?: string; hasGroupBy: boolean }> = []
+    const fetchRows = vi.fn((req: ServerRowsRequest) => {
+      seen.push({ cursor: req.cursor, hasGroupBy: 'groupBy' in req })
+      return Promise.resolve({ rows: [], total: 100 })
+    })
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    // 普通分页请求：detail 无 cursor / 无 group-by → fetcher 入参不带这两键（缺省形状一致）
+    expect(seen[0]).toEqual({ cursor: undefined, hasGroupBy: false })
+    // cursor 仅 infinite 形态派发；helper 的契约是「detail 字段原样透传 fetcher」——
+    // 以合成事件锁定透传面（组件侧 detail.cursor 契约由 oas-table-server-rows / infinite 用例冻结）
+    el.dispatchEvent(
+      new CustomEvent('oas-rows-request', {
+        detail: {
+          requestId: 2,
+          start: 40,
+          end: 60,
+          sortModel: [],
+          filterValues: {},
+          reason: 'load-more',
+          cursor: 'cur-9',
+        },
+      }),
+    )
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
+    expect(seen[1]!.cursor, 'detail.cursor 原样透传').toBe('cur-9')
+    source.destroy()
+  })
+
+  it('SWR 后台 settle 写缓存按 epoch（不校验 requestId）：后台期间翻页 → 回翻命中后台新值（fetchRows 不增）', async () => {
+    const el = mount()
+    const { fetchRows, holdAt, resolvers } = versionedFetchRows()
+    holdAt(3) // 第 3 次调用 = 页1 的 SWR 后台重取：hold 制造「后台在途 × 用户翻页」竞态窗口
+    const source = createServerSource(el, {
+      fetchRows,
+      total: 100,
+      cache: { ttlMs: 1000, staleWhileRevalidate: true },
+    })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
+    advanceTtl(1100) // 页1 / 页2 同批写入缓存，一并过期
+    el.setAttribute('current', '1') // 页1 过期 → SWR：陈旧回填 + 后台重取（第 3 次，hold）
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    el.setAttribute('current', '2') // 后台在途期间翻去页2（页2 同批过期 → SWR 后台第 4 次，正常 resolve）
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(4))
+    // 后台（页1，第 3 次）此刻才 settle：其 requestId 早已被翻页顶掉——修复前 settle 被
+    // requestId 拦截「连缓存都不写」；修复后缓存写按 epoch（purge / destroy 才递增），翻页不拦截
+    resolvers[0]!({ rows: Array.from({ length: 10 }, (_, i) => ({ name: `后台新${i}` })), total: 100 })
+    await new Promise((resolve) => setTimeout(resolve, 0)) // 后台 settle 微任务链落定（缓存写入完成）
+    el.setAttribute('current', '1') // 回翻页1：命中后台写好的缓存（不重新取数）
+    await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('后台新0'), { timeout: 1000 })
+    expect(fetchRows, '后台结果已修好缓存：回翻命中不再取数').toHaveBeenCalledTimes(4)
+    source.destroy()
+  })
+
+  it('purge 递增 epoch：purge 时刻在途的后台结果 settle 不污染 purge 后缓存（回翻拿到 purge 后取数）', async () => {
+    const el = mount()
+    const { fetchRows, holdAt, resolvers } = versionedFetchRows()
+    holdAt(3) // SWR 后台重取 hold
+    const source = createServerSource(el, {
+      fetchRows,
+      total: 100,
+      cache: { ttlMs: 1000, staleWhileRevalidate: true },
+    })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(2))
+    advanceTtl(1100)
+    el.setAttribute('current', '1') // SWR：陈旧回填 + 后台重取（第 3 次，hold 在途）
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    // purge：清空全部缓存 + epoch++ → refreshRows 强刷当前页（页1，第 4 次，正常 resolve）
+    source.refresh({ purge: true })
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(4))
+    // purge 前的后台（第 3 次）此刻才 settle：epoch 已递增——缓存写被拦，purge 前旧值不复活
+    resolvers[0]!({ rows: Array.from({ length: 10 }, (_, i) => ({ name: `purge前${i}` })), total: 100 })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    // 翻去页2（缓存已 purge → 重新取数 第 5 次）再翻回页1：命中 refresh 写入的页1 缓存（第 4 次的值）
+    el.setAttribute('current', '2')
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(5))
+    el.setAttribute('current', '1')
+    await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('v4行0'), { timeout: 1000 })
+    expect(fetchRows, '页1 缓存 = purge 后 refresh 的取数，未被在途后台污染（命中不重取）').toHaveBeenCalledTimes(5)
+    source.destroy()
   })
 })
