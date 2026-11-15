@@ -183,6 +183,7 @@ export const de: LocaleMessages = {
   'table.groupEmpty': '(leer)',
   'table.loadFailed': 'Laden fehlgeschlagen',
   'table.retry': 'Erneut versuchen',
+  'table.noMoreData': 'Keine weiteren Daten',
   // list (Liste)
   'list.empty': 'Keine Daten',
   // scheduler（日程调度）

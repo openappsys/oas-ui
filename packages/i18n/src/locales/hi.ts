@@ -183,6 +183,7 @@ export const hi: LocaleMessages = {
   'table.groupEmpty': '(खाली)',
   'table.loadFailed': 'लोड करने में विफल',
   'table.retry': 'पुनः प्रयास',
+  'table.noMoreData': 'कोई और डेटा नहीं',
   // list (लिस्ट)
   'list.empty': 'कोई डेटा नहीं',
   // scheduler (शेड्यूलर)

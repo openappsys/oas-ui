@@ -183,6 +183,7 @@ export const ko: LocaleMessages = {
   'table.groupEmpty': '(비어 있음)',
   'table.loadFailed': '불러오기 실패',
   'table.retry': '다시 시도',
+  'table.noMoreData': '더 이상 데이터가 없습니다',
   // list（리스트）
   'list.empty': '데이터 없음',
   // scheduler（日程调度）

@@ -142,6 +142,7 @@ export const th: LocaleMessages = {
   'table.groupEmpty': '(ว่าง)',
   'table.loadFailed': 'โหลดไม่สำเร็จ',
   'table.retry': 'ลองอีกครั้ง',
+  'table.noMoreData': 'ไม่มีข้อมูลเพิ่มเติมแล้ว',
   'list.empty': 'ไม่มีข้อมูล',
   'scheduler.prev': 'ก่อนหน้า',
   'scheduler.next': 'ถัดไป',

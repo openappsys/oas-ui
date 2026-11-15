@@ -183,6 +183,7 @@ export const he: LocaleMessages = {
   'table.groupEmpty': '(ריק)',
   'table.loadFailed': 'טעינה נכשלה',
   'table.retry': 'נסה שוב',
+  'table.noMoreData': 'אין עוד נתונים',
   // list (רשימה)
   'list.empty': 'אין נתונים',
   // scheduler（日程调度）

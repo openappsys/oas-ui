@@ -185,6 +185,7 @@ export const zhHant: LocaleMessages = {
   'table.groupEmpty': '（空）',
   'table.loadFailed': '載入失敗',
   'table.retry': '重試',
+  'table.noMoreData': '沒有更多資料了',
   // list（列表）
   'list.empty': '暫無資料',
   // scheduler（日程排程）

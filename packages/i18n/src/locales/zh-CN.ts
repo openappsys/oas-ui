@@ -183,6 +183,7 @@ export const zhCN = {
   'table.groupEmpty': '（空）',
   'table.loadFailed': '加载失败',
   'table.retry': '重试',
+  'table.noMoreData': '没有更多数据了',
   // list（列表）
   'list.empty': '暂无数据',
   // scheduler（日程调度）

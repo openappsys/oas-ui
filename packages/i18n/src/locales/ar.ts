@@ -183,6 +183,7 @@ export const ar: LocaleMessages = {
   'table.groupEmpty': '(فارغ)',
   'table.loadFailed': 'فشل التحميل',
   'table.retry': 'إعادة المحاولة',
+  'table.noMoreData': 'لا توجد بيانات أخرى',
   // list (قائمة)
   'list.empty': 'لا توجد بيانات',
   // scheduler（日程调度）

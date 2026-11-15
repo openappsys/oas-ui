@@ -183,6 +183,7 @@ export const ru: LocaleMessages = {
   'table.groupEmpty': '(пусто)',
   'table.loadFailed': 'Не удалось загрузить',
   'table.retry': 'Повторить',
+  'table.noMoreData': 'Нет больше данных',
   // list (список)
   'list.empty': 'Нет данных',
   // scheduler（日程调度）

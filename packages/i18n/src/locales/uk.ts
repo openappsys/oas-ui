@@ -183,6 +183,7 @@ export const uk: LocaleMessages = {
   'table.groupEmpty': '(порожньо)',
   'table.loadFailed': 'Не вдалося завантажити',
   'table.retry': 'Повторити',
+  'table.noMoreData': 'Більше немає даних',
   // list (список)
   'list.empty': 'Немає даних',
   // scheduler (розклад подій)

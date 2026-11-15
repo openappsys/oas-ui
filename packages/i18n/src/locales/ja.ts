@@ -183,6 +183,7 @@ export const ja: LocaleMessages = {
   'table.groupEmpty': '（空）',
   'table.loadFailed': '読み込みに失敗しました',
   'table.retry': '再試行',
+  'table.noMoreData': 'データはこれ以上ありません',
   // list（リスト）
   'list.empty': 'データなし',
   // scheduler（日程调度）

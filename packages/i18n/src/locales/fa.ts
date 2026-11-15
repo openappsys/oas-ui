@@ -183,6 +183,7 @@ export const fa: LocaleMessages = {
   'table.groupEmpty': '(خالی)',
   'table.loadFailed': 'بارگذاری ناموفق بود',
   'table.retry': 'تلاش دوباره',
+  'table.noMoreData': 'داده دیگری وجود ندارد',
   // list (فهرست)
   'list.empty': 'داده‌ای وجود ندارد',
   // scheduler (تقویم برنامه)

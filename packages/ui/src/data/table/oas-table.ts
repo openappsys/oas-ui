@@ -32,7 +32,16 @@ import { cloneSlotContent } from '../../shared/slot-template.js'
 // 行键计算（数据层工具，row-key 缺失时按行对象缓存 JSON.stringify 回退，见模块注释）
 import { rowKeyValue } from './model-core/row-key.js'
 // server 行模型（row-model="server"）请求协议：类型 + 纯函数（原因推导 / 同值去重签名）
-import { rowsRequestPlan, rowsRequestSignature, type RowsRequestReason, type RowsRequestState } from './row-model.js'
+import {
+  infiniteHasMore,
+  infiniteNearBottom,
+  isDuplicateAppend,
+  rowsRequestPlan,
+  rowsRequestSignature,
+  type RowsRequestDetail,
+  type RowsRequestReason,
+  type RowsRequestState,
+} from './row-model.js'
 // 行模型数据层（headless 纯函数，`@oas-ui/ui/data/table/model` 公开面与组件同源消费
 // 的实现本体 `model-core/`——resourceLoad/level 同款「入口壳 + 实现分离」口径）：
 // 过滤/排序/分页切片/分组展平/可见集全部变换段 + 行模型类型（SortState/FlatRow）
@@ -586,6 +595,77 @@ const SERVER_DUPLICATE_FAILURE_HINT =
 const SERVER_SPAN_HINT =
   '[oas-table] server 行模型下 merge 列 / span-method 不生效（当前页切片跨界合并语义不确定，与 windowed 同口径跳过本地合并）'
 
+/**
+ * ==================== infinite（无限滚动 + cursor 分页）能力闸门总表 ====================
+ *
+ * infinite 是「服务端取数」形态（与 row-model="server" 同族，游标分页变体）：滚动触底时经
+ * `oas-rows-request`（reason='load-more'）向宿主要下一块，宿主经 appendRows 回填。能力闸门
+ * 与 server 模式同口径逐项声明（判定源 rowsGatedOn = serverOn || infiniteOn，互斥形态各告警一次）：
+ *
+ * | 能力              | infinite 模式语义                                              | 生效点 |
+ * |-------------------|----------------------------------------------------------------|--------|
+ * | 导出              | 仅已装载数据 + devWarn 一次                                     | exportData |
+ * | 打印              | 仅已装载数据 + devWarn 一次                                     | update × printModeOn |
+ * | 合计 scope=all    | 禁用 + devWarn（全量口径未知）；scope=page 对已装载数据合计照常   | buildSummaryConfigs |
+ * | 分组 group-by     | 禁用 + devWarn（已装载数据上分组是错误结果）                     | groupByEffective |
+ * | 行拖拽            | 禁用 + devWarn（装载顺序语义由服务端游标持有）                   | rowDragEnabled |
+ * | 列拖拽            | 禁用 + devWarn（与 server 同口径；列序持久化等批 F 契约）         | setColumnOrder |
+ * | merge/span-method | 禁用 + devWarn（已装载缓冲跨界合并语义不确定，同 server 口径）    | update / buildRow useSpan |
+ * | 填充柄/区域选择   | 已装载行相对行号语义（data-row-index 为装载序 0 起）——文档声明    | range 能力 |
+ * | 过滤面板候选值    | 来自已装载数据（面板照常打开）——文档声明                         | openFilterPanel |
+ * | 历史（撤销）      | 仅记录本地操作，重置装载（排序/过滤/refresh）即失效——文档声明    | range/edit 能力内部 |
+ * | 编辑              | 已装载行编辑仅本地、重置装载回填即丢失——文档声明                 | edit 能力 |
+ * | 虚拟滚动 × infinite | 可叠加（无闸门）：已装载缓冲整体走既有虚拟化窗口切片            | 渲染层 |
+ */
+
+/** infinite 与 pagination 同开的互斥告警文案（实例级去重一次）：分页是既有取数语义，pagination 优先 */
+const INFINITE_PAGINATION_HINT =
+  '[oas-table] infinite 与 pagination 同开：pagination 优先，infinite 已忽略（两取数协议互斥，请二选一）'
+
+/** infinite 与 windowed 同开的互斥告警文案（实例级去重一次）：windowed 优先（既有互斥先例） */
+const INFINITE_WINDOWED_HINT =
+  '[oas-table] infinite 与 windowed 同开：windowed 优先，infinite 已忽略（两协议互斥，请二选一）'
+
+/** infinite 能力闸门：导出仅已装载数据的告警文案（实例级去重一次） */
+const INFINITE_EXPORT_HINT =
+  '[oas-table] infinite 模式下导出仅包含已装载数据（未装载行组件无从渲染）：需要全量导出请由宿主在服务端生成'
+
+/** infinite 能力闸门：打印仅已装载数据的告警文案（实例级去重一次；与 server 打印守卫同口径） */
+const INFINITE_PRINT_HINT =
+  '[oas-table] infinite 模式下打印仅输出已装载数据（未装载行客户端无从渲染）：需要全量打印请由宿主在服务端生成打印视图'
+
+/** infinite 能力闸门：合计 summary-scope=all 禁用的告警文案（实例级去重一次） */
+const INFINITE_SUMMARY_ALL_HINT =
+  '[oas-table] infinite 模式下 summary-scope="all" 不生效（全量口径未知，对已装载数据聚合会得到错误的「全量合计」）：已装载数据合计可用 summary-scope="page"'
+
+/** infinite 能力闸门：分组禁用的告警文案（实例级去重一次） */
+const INFINITE_GROUP_HINT =
+  '[oas-table] infinite 模式下 group-by 不生效（分组视图是本地全量语义，对已装载数据分组是错误结果）：请关闭 group-by'
+
+/** infinite 能力闸门：行拖拽禁用的告警文案（实例级去重一次） */
+const INFINITE_ROW_DRAG_HINT =
+  '[oas-table] infinite 模式下 row-draggable 不生效（行顺序语义由服务端游标持有，本地重排无法回写）：请关闭 row-draggable'
+
+/** infinite 能力闸门：列拖拽禁用的告警文案（实例级去重一次；与 server 列拖拽同口径） */
+const INFINITE_COLUMN_DRAG_HINT =
+  '[oas-table] infinite 模式下列拖拽重排不生效（列序持久化契约未定，与 server 行模型同口径）：列序持久化请由宿主自行管理或关闭 infinite'
+
+/** infinite 能力闸门：merge 列 / span-method 跳过的告警文案（实例级去重一次；与 server 同口径） */
+const INFINITE_SPAN_HINT =
+  '[oas-table] infinite 模式下 merge 列 / span-method 不生效（已装载缓冲跨界合并语义不确定，与 server 行模型同口径跳过本地合并）'
+
+/** infinite：非生效形态调用 appendRows 的可诊断提示（实例级去重一次；静默 no-op 不阻断） */
+const INFINITE_APPEND_INACTIVE_HINT =
+  '[oas-table] appendRows 仅在 infinite 模式生效（当前未开启或与 pagination/windowed 互斥未生效）：本次调用已忽略'
+
+/** infinite：appendRows 携带晚到 requestId（与当前在途序号不符）被静默丢弃的可诊断提示（实例级去重一次） */
+const INFINITE_LATE_APPEND_HINT =
+  '[oas-table] appendRows 的 requestId 与当前在途请求序号不符，已按晚到旧响应静默丢弃（请核对 oas-rows-request detail.requestId 后回传同一序号）'
+
+/** infinite：appendRows 同 requestId 重复回填被幂等忽略的可诊断提示（实例级去重一次） */
+const INFINITE_DUPLICATE_APPEND_HINT =
+  '[oas-table] appendRows 的 requestId 已消费过，重复回填按幂等静默丢弃（每个 requestId 只应回填一次；确需重试请走 refreshRows 触发新请求）'
+
 /** server 行模型失败条图标（原创内联 SVG：感叹圆环，danger 语义随 currentColor 着色） */
 const ROWS_ERROR_ICON =
   '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.8v3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11.2" r="0.9" fill="currentColor"/></svg>'
@@ -855,6 +935,12 @@ tr.spacer td {
   color: var(--oas-color-text-secondary);
 }
 .loading {
+  padding: var(--oas-space-6);
+  text-align: center;
+  color: var(--oas-color-text-secondary);
+}
+/* infinite「已到底」静态提示行：与空态/loading 同视觉层级（次要文字色、居中） */
+.no-more {
   padding: var(--oas-space-6);
   text-align: center;
   color: var(--oas-color-text-secondary);
@@ -1656,6 +1742,12 @@ export class OASTableBase extends OASElement {
       // 排序/过滤条件返回当前页切片），翻页/排序/过滤经 oas-rows-request 与宿主交换。
       // 生效前提见 serverOn()；与 windowed 同开时 windowed 优先（互斥告警一次）
       'row-model',
+      // 无限滚动 + cursor 分页（服务端取数形态，与 row-model 取值正交）：滚动触底经
+      // oas-rows-request（reason='load-more'，detail.cursor 回传游标）向宿主要下一块，
+      // 宿主经 appendRows 回填（空数组 = 到底信号）。与 pagination 同开 pagination 优先、
+      // 与 windowed 同开 windowed 优先（均互斥告警一次）；total 可选（未知总数场景
+      // totalKnown=false，到底以宿主空块信号为准）。生效判定与能力闸门见 infiniteOn() / rowsGatedOn()
+      'infinite',
       // 可选视觉协议（须同时有效才启用）：visual-total=全量视觉行数（数据行 + 行内嵌展开内容行，
       // ≥ 数据 total）；visual-start=当前 data[0] 的视觉行号。生效后渲染 flow 从 visual-start×行高起、
       // 渲染 count=visual-total，展开由宿主完全控制（本地 toggle 只发 oas-expand）
@@ -1891,6 +1983,35 @@ export class OASTableBase extends OASElement {
   private reportedRowsRequestId = -1
   /** 同序号重复失败上报的一次性可诊断提示 flag（实例级去重） */
   private serverDuplicateFailureWarned = false
+  // ==================== infinite（无限滚动 + cursor 分页）状态 ====================
+  /** 已装载行缓冲（渲染数据源）：data 属性写 = 替换（重置缓冲）；appendRows = 追加 */
+  private infiniteRows: Array<Record<string, unknown>> = []
+  /** 组件内记录的游标：appendRows(options.cursor) 原样记录，load-more 请求 detail.cursor 回传（undefined = 尚无游标） */
+  private infiniteCursor: string | undefined = undefined
+  /** 宿主「到底」信号：appendRows 回传空数组（rows.length === 0）置位，重置装载（排序/过滤/refresh/data 替换）清位 */
+  private infiniteHostEnded = false
+  /** data 属性写（替换语义）待同步标志：渲染路径把 _data 同步进缓冲（ACC 时点 _data 可能尚未解析完） */
+  private infiniteBufferStale = true
+  /** 已消费的请求序号（appendRows 携带 requestId 的幂等登记；-1 = 尚无登记） */
+  private consumedInfiniteRequestId = -1
+  /** 触底检测的 rAF 句柄（滚动高频事件的节流；与 scrollRaf 渲染帧独立） */
+  private infiniteLoadMoreRaf = 0
+  /** infinite × pagination 互斥告警去重（实例级一次） */
+  private infinitePaginationWarned = false
+  /** infinite × windowed 互斥告警去重（实例级一次） */
+  private infiniteWindowedWarned = false
+  /** infinite 能力闸门告警去重（导出/打印/合计/分组/行拖拽/列拖拽/merge-span，各实例级一次） */
+  private infiniteExportWarned = false
+  private infinitePrintWarned = false
+  private infiniteSummaryWarned = false
+  private infiniteGroupWarned = false
+  private infiniteRowDragWarned = false
+  private infiniteColumnDragWarned = false
+  private infiniteSpanWarned = false
+  /** infinite 非生效形态 appendRows / 晚到 / 重复回填的一次性可诊断提示 flag（实例级去重） */
+  private infiniteAppendInactiveWarned = false
+  private infiniteLateAppendWarned = false
+  private infiniteDuplicateAppendWarned = false
   /** 打印媒体查询（connectedCallback 捕获；null = 环境不支持 / 已断开） */
   private printMql: MediaQueryList | null = null
   /** 当前是否处于 print 媒体（打印/打印预览）：窗口外行不在 DOM、CSS 无法唤回，此态下行/列窗口恒全量 */
@@ -2191,22 +2312,37 @@ export class OASTableBase extends OASElement {
     if (name === 'data' && oldValue === newValue && oldValue !== null && this.hasRendered) {
       this.markRenderDirty()
     }
-    // server 行模型：宿主响应回填通道（data/total 属性写）→ 清在途 loading 与失败条。
+    // server 行模型 / infinite：宿主响应回填通道（data/total 属性写）→ 清在途 loading 与失败条。
     // 属性写无请求身份——本方法只负责「有响应到达」这一事实，晚到丢弃职责在宿主侧
-    //（helper 经 requestId 校验后才回写；裸宿主自行比对事件 requestId）。
-    // 复位/清态分流按「生效形态迁移」判定（serverFormActive 为属性即时读数——不能用
-    // serverRowsActive()：其 windowed 判定读 parse 缓存 _winMode，本写刚引发的属性变化
-    // 不在缓存里，ACC 时点是陈旧的）：
+    //（helper 经 requestId 校验后才回写；裸宿主自行比对事件 requestId，或经 appendRows
+    // 的 options.requestId 透传由组件幂等收敛）。
+    // 复位/清态分流按「生效形态迁移」判定（serverFormActive / infiniteFormActive 均为属性
+    // 即时读数——不能用 serverRowsActive()：其 windowed 判定读 parse 缓存 _winMode，本写刚
+    // 引发的属性变化不在缓存里，ACC 时点是陈旧的）：
     // - 保持生效形态（含同值写——CE 同值写同样触发本回调，oldValue === newValue）：不清态
     //   不复位。曾把同值 row-model 写误判为形态切换清掉请求状态签名 → 同值去重失效 →
     //   每次同值写重派一个 init 请求；错误条也曾被同值 row-model 写静默清掉。
-    // - 从生效形态离开（row-model 切走 / total 移除 / windowed 互斥接管）：三态复位
-    //   （在途 loading、失败条、请求状态签名），回切时以 init 重新发起。
+    // - 从生效形态离开（row-model 切走 / total 移除 / windowed 互斥接管 / infinite 关闭或
+    //   被 pagination 互斥接管）：三态复位（在途 loading、失败条、请求状态签名）+ infinite
+    //   装载缓冲复位，回切时以 init 重新发起。
     //   触发集含 windowed：server 在途加 windowed 曾无人清 serverLoading（loading 骨架
     //   残留）；移除 windowed 回 server 曾因去重签名未复位吞掉重入 init（永久旧切片）。
-    if (this.hasRendered && (name === 'data' || name === 'total' || name === 'row-model' || name === 'windowed')) {
-      const formActive = this.serverFormActive()
+    //   触发集含 infinite/pagination：infinite 生效性随两者在场性翻转（互斥接管/退出），
+    //   残留缓冲会让 client 渲染出旧装载行、去重签名残留会吞掉回切后的 init。
+    if (
+      this.hasRendered &&
+      (name === 'data' ||
+        name === 'total' ||
+        name === 'row-model' ||
+        name === 'windowed' ||
+        name === 'infinite' ||
+        name === 'pagination')
+    ) {
+      const formActive = this.serverFormActive() || this.infiniteFormActive()
       if (formActive && (name === 'data' || name === 'total')) {
+        // infinite 生效形态下 data 写 = 替换语义（重置装载缓冲）——置待同步标志，渲染路径
+        // 在 computeDisplayRoots 的 infinite 分支把 _data 同步进缓冲（ACC 时点不直接读 _data）
+        if (name === 'data' && this.infiniteFormActive()) this.infiniteBufferStale = true
         if (this.serverLoading || this.serverError) {
           this.serverLoading = false
           this.serverError = false
@@ -2222,14 +2358,21 @@ export class OASTableBase extends OASElement {
         // 吞掉（请求在途 + 宿主同值写 total + reportRowsError 同号 → 零派发、错误条不亮）；
         // 定策裁决：「超时兜底回填 + 迟到失败」场景错误条让用户知道数据可能不可靠（可重试），
         // 比静默更符合失败反馈语义——同号重复上报的幂等收敛仍由失败侧登记承担。
-      } else if (!formActive && (this.serverLoading || this.serverError || this.lastRowsRequestState !== null)) {
-        // 从生效形态离开：三态复位（在途 loading、失败条、请求状态签名）——残留会让 client
-        // 渲染出 server 的 loading 行/错误条；请求状态不清则切回 server 时同值去重吞掉
-        // 本应重新发起的 init 请求。lastRowsRequestState 仅在此处清零（成功回填不清——
-        // 回填是响应，不动同值去重签名）。
+      } else if (
+        !formActive &&
+        (this.serverLoading || this.serverError || this.lastRowsRequestState !== null || this.infiniteRows.length > 0)
+      ) {
+        // 从生效形态离开：三态复位（在途 loading、失败条、请求状态签名）+ infinite 装载
+        // 缓冲复位——残留会让 client 渲染出 server/infinite 的 loading 行/错误条/旧装载行；
+        // 请求状态不清则切回时同值去重吞掉本应重新发起的 init 请求。lastRowsRequestState
+        // 仅在此处清零（成功回填不清——回填是响应，不动同值去重签名）。
         this.serverLoading = false
         this.serverError = false
         this.lastRowsRequestState = null
+        this.infiniteRows = []
+        this.infiniteCursor = undefined
+        this.infiniteHostEnded = false
+        this.infiniteBufferStale = false
         this.markRenderDirty()
       }
     }
@@ -2457,6 +2600,9 @@ export class OASTableBase extends OASElement {
       this.shadow.querySelector('.rows-error-retry')?.removeEventListener('click', this.onRowsErrorRetryClick)
       if (this.scrollRaf) cancelAnimationFrame(this.scrollRaf)
       this.scrollRaf = 0
+      // infinite 触底检测的 rAF 同批清理（断连后不再派发 load-more）
+      if (this.infiniteLoadMoreRaf) cancelAnimationFrame(this.infiniteLoadMoreRaf)
+      this.infiniteLoadMoreRaf = 0
       this.closeFilterPanel()
       this.destroyCellTooltip()
     })
@@ -2506,6 +2652,7 @@ export class OASTableBase extends OASElement {
       this.t('table.cancel'),
       this.t('table.loadFailed'),
       this.t('table.retry'),
+      this.t('table.noMoreData'),
       tableText(this, 'table.exportCsv', 'Export CSV'),
       tableText(this, 'table.exportExcel', 'Export Excel'),
       tableText(this, 'table.rowDragHandle', 'Drag to reorder'),
@@ -2545,11 +2692,12 @@ export class OASTableBase extends OASElement {
   private flatCacheSignature(groupBy: string): string {
     const colSig = this._columns.map((c) => `${c.key}:${c.type ?? ''}`).join(',')
     return [
-      // 行模型标志位（client 'F' / windowed 'W' / server 'S'）：模式切换（row-model 写回）
-      // 在 total 等其余键值不变时也必须使行集缓存失效——server 与 client 的行集语义不同
-      //（本地过滤/排序跳过与否），跨模式命中旧缓存会渲染错误的行集/行序（实测：server 回填
-      // 切片切 client 后仍显示 server 原样序，本地排序不生效）
-      this.windowedOn() ? 'W' : this.serverRowsActive() ? 'S' : 'F',
+      // 行模型标志位（client 'F' / windowed 'W' / server 'S' / infinite 'I'）：模式切换
+      //（row-model / infinite 写回）在 total 等其余键值不变时也必须使行集缓存失效——各形态
+      // 的行集语义不同（本地过滤/排序跳过与否、数据源是 data 还是装载缓冲），跨模式命中
+      // 旧缓存会渲染错误的行集/行序（实测：server 回填切片切 client 后仍显示 server 原样序，
+      // 本地排序不生效）
+      this.windowedOn() ? 'W' : this.infiniteActive() ? 'I' : this.serverRowsActive() ? 'S' : 'F',
       this.getAttr('data', ''),
       this.getAttr('sort-key', ''),
       this.getAttr('sort-order', ''),
@@ -2875,10 +3023,15 @@ export class OASTableBase extends OASElement {
     if (virtual && !this.windowedOn() && (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge))) {
       this.warnVirtualSpanOnce()
     }
-    // server 行模型 × print 守卫（与 windowed 同口径）：打印输出仅当前页切片——显式提示一次
-    if (this.printModeOn() && this.serverOn() && !this.serverPrintWarned) {
-      this.serverPrintWarned = true
-      devWarn(SERVER_PRINT_HINT)
+    // server 行模型 / infinite × print 守卫（与 windowed 同口径）：打印输出仅已装载数据——显式提示一次
+    if (this.printModeOn() && this.rowsGatedOn() && !this.serverPrintWarned && !this.infinitePrintWarned) {
+      if (this.infiniteOn()) {
+        this.infinitePrintWarned = true
+        devWarn(INFINITE_PRINT_HINT)
+      } else {
+        this.serverPrintWarned = true
+        devWarn(SERVER_PRINT_HINT)
+      }
     }
     // row-auto-height：能力未注册 → 显式提示（opt-in 请求不静默忽略）
     this.warnAutoHeightConfigOnce()
@@ -2888,6 +3041,9 @@ export class OASTableBase extends OASElement {
     // setAttribute('current','1') 会同步驱动一次嵌套 update，由嵌套这次以新口径派发请求——
     // 若在此调用点之前新增任何早退 return，嵌套重入链断裂，server 请求会被静默丢弃（改动需复核）
     this.syncServerRows()
+    // infinite：请求接线（init/sort/filter/paginate 重置装载；与 serverOn 互斥——两判定
+    // 各自早退，同一调用点双接线不双派）
+    this.syncInfiniteRows()
     // server 行模型失败条同步：必须在 syncServerRows 之后——同一次更新内新派发的请求会
     // 清掉 serverError（翻页/排序/过滤新请求在途），挪序前错误条要等下一次渲染才隐藏
     //（实测：失败态翻页短暂「错误条 + loading 行」共存一帧）。所有渲染出口都覆盖：
@@ -3039,7 +3195,9 @@ export class OASTableBase extends OASElement {
       this.runStructuralSlot('headerRow', () => this.structuralCap?.headerRow?.({ el: tr, api: this.structuralApi() }))
     }
 
-    if (this.hasAttr('loading') || this.serverLoading) {
+    // infinite 已装载行在途追加：全表 loading 让位给底部状态行（首载/装载为空时仍走全表 loading）
+    const infiniteFooterLoading = this.infiniteOn() && this.serverLoading && this.infiniteRows.length > 0
+    if (this.hasAttr('loading') || (this.serverLoading && !infiniteFooterLoading)) {
       // 稳定清空的垫高在早退出口必须移除——否则空态/loading 下方残留旧表高的大块空白
       body.style.minHeight = ''
       const loadingTr = document.createElement('tr')
@@ -3120,10 +3278,16 @@ export class OASTableBase extends OASElement {
         }
       }
       // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并；windowed/server 行模型
-      // 切片同样跳过——跨界 rowspan 语义不确定，见 WINDOWED_SPAN_HINT / SERVER_SPAN_HINT）
-      if (this.serverOn()) {
+      // 与 infinite 已装载数据同样跳过——跨界 rowspan 语义不确定，见 WINDOWED_SPAN_HINT /
+      // SERVER_SPAN_HINT / INFINITE_SPAN_HINT）
+      if (this.rowsGatedOn()) {
         if (this._spanMethod !== null || this.effectiveColumns().some((c) => c.merge)) {
-          if (!this.serverSpanWarned) {
+          if (this.infiniteOn()) {
+            if (!this.infiniteSpanWarned) {
+              this.infiniteSpanWarned = true
+              devWarn(INFINITE_SPAN_HINT)
+            }
+          } else if (!this.serverSpanWarned) {
             this.serverSpanWarned = true
             devWarn(SERVER_SPAN_HINT)
           }
@@ -3136,6 +3300,8 @@ export class OASTableBase extends OASElement {
     if (summaryConfigs.length > 0 && summaryFlat.length > 0 && summaryValues) {
       body.appendChild(this.buildSummaryRow(summaryConfigs, summaryValues, layout))
     }
+    // infinite 底部状态行（在途 loading /「已到底」提示）：追加在已装载行（及合计行）之后
+    this.appendInfiniteFooterRow(body, this.columnCount())
     // 稳定清空的垫高完成使命（渲染已铺满），移除以免干扰后续布局
     body.style.minHeight = ''
     // D9 网格导航语义与 tabindex（须在行渲染后应用：editable 单元格的 tabindex=0 在此收归 -1，
@@ -3190,6 +3356,25 @@ export class OASTableBase extends OASElement {
     const serverRows = this.getAttr('row-model', '') === 'server' ? this.serverOn() : false
     // windowed：data 即宿主切好的绝对行窗口切片——本地过滤/排序/分页切片一律不执行
     if (this.windowedOn()) return this.computeDisplayRootsWindowed()
+    // infinite：渲染数据 = 已装载缓冲（宿主经 data 替换写 / appendRows 追加维护）——
+    // 本地过滤/排序/分页切片整体跳过（取数责任在宿主游标链，与 server 同为「全有或全无」）。
+    // data 替换写（ACC 置 bufferStale）在此同步进缓冲：重置缓冲后 cursor/到底信号一并清位。
+    if (this.infiniteOn()) {
+      if (this.infiniteBufferStale) {
+        this.infiniteRows = [...this._data]
+        this.infiniteCursor = undefined
+        this.infiniteHostEnded = false
+        this.infiniteBufferStale = false
+      }
+      return {
+        roots: this.infiniteRows,
+        fullRoots: this.infiniteRows,
+        current: 1,
+        pageSize: Math.max(1, this.infiniteRows.length),
+        total: this.infiniteRows.length,
+        paginationOn: false,
+      }
+    }
     const result = computeDisplayRootsModel({
       data: this._data,
       columns: this._columns,
@@ -3400,7 +3585,8 @@ export class OASTableBase extends OASElement {
     const effCols = this.effectiveColumns()
     // 受控合并（span-method）仅在非虚拟、非 windowed 模式生效：
     // 虚拟模式受定高限制；windowed 下切片边界会与占位行相互腐蚀（见 WINDOWED_SPAN_HINT）
-    const useSpan = !this.isVirtual() && !this.windowedOn() && !this.serverOn() && this._spanMethod !== null
+    const useSpan =
+      !this.isVirtual() && !this.windowedOn() && !this.serverOn() && !this.infiniteOn() && this._spanMethod !== null
     // 列序列：column-virtual 时 = [左占位 colSpan][窗口列…][右占位 colSpan]（占位项 col=null）；
     // 非 column-virtual = 全列（span 1），行为与旧版完全一致
     const colSeq = this.columnWindowSequence()
@@ -3619,6 +3805,46 @@ export class OASTableBase extends OASElement {
 
   /** 虚拟滚动：占位行 + 可见窗口行（数据/展开内容/分节头行均参与窗口）。
       `dataOrdinal` 为展示集的数据行序前缀（签名缓存复用，I6：滚动帧不再逐帧重扫） */
+  /**
+   * infinite 底部状态行：追加在已装载行之后（tbody 末尾）——
+   * - 在途（serverLoading）：loading 行（复用全表 loading 的视觉结构与 `part="loading-row"`
+   *   与结构槽 `loading`，宿主接管协议一致）；
+   * - 「已到底」（hasMore=false 且已装载 > 0）：静态提示行（i18n `table.noMoreData`，
+   *   `part="no-more-row"`，宿主可经 part 定制样式）。
+   * 非生效形态 / 未装载行时不渲染任何节点（首载全表 loading、空态由既有分支承担）。
+   */
+  private appendInfiniteFooterRow(body: HTMLElement, colSpan: number): void {
+    if (!this.infiniteOn() || this.infiniteRows.length === 0) return
+    if (this.serverLoading) {
+      const loadingTr = document.createElement('tr')
+      loadingTr.setAttribute('part', 'loading-row')
+      const loadingTd = document.createElement('td')
+      loadingTd.colSpan = colSpan
+      loadingTd.className = 'loading'
+      const spin = document.createElement('span')
+      spin.className = 'spin'
+      const loadingText = this.t('table.loading')
+      loadingTd.append(spin, document.createTextNode(loadingText))
+      loadingTr.appendChild(loadingTd)
+      body.appendChild(loadingTr)
+      // loading 行结构槽：与全表 loading 行同一槽位（宿主接管协议一致；未注册零调用）
+      this.runStructuralSlot('loading', () =>
+        this.structuralCap?.loading?.({ el: loadingTr, text: loadingText, api: this.structuralApi() }),
+      )
+      return
+    }
+    if (!this.infiniteHasMoreNow()) {
+      const tr = document.createElement('tr')
+      tr.setAttribute('part', 'no-more-row')
+      const td = document.createElement('td')
+      td.colSpan = colSpan
+      td.className = 'no-more'
+      td.textContent = this.t('table.noMoreData')
+      tr.appendChild(td)
+      body.appendChild(tr)
+    }
+  }
+
   private renderVirtualBody(
     body: HTMLElement,
     display: FlatRow[],
@@ -3703,6 +3929,9 @@ export class OASTableBase extends OASElement {
     bottomTd.style.height = `${this.rowTopOffset(display.length) - this.rowTopOffset(win.end)}px`
     bottomSpacer.appendChild(bottomTd)
     body.appendChild(bottomSpacer)
+    // infinite 底部状态行：虚拟窗口切片后追加（在途 loading /「已到底」提示；
+    // infinite 与 windowed 互斥——本函数只会在 infinite 或 client 形态被调用）
+    this.appendInfiniteFooterRow(body, colSpan)
     // 动态行高：tbody 重建完成通知能力（重新观测渲染行——滚动帧整帧重建，观察须随帧刷新）
     if (stampDisplayIdx && this.autoHeightCap?.afterRender) this.autoHeightCap.afterRender(body)
   }
@@ -4046,10 +4275,16 @@ export class OASTableBase extends OASElement {
   }
 
   /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化）。
-   *  server 行模型下禁用（顺序语义由服务端持有——能力闸门）：拦截写回 + devWarn 一次 */
+   *  server 行模型 / infinite 下禁用（顺序语义由服务端持有——能力闸门，与 server 同口径）：
+   *  拦截写回 + devWarn 一次 */
   setColumnOrder(keys: string[]): void {
-    if (this.serverOn()) {
-      if (!this.serverColumnDragWarned) {
+    if (this.rowsGatedOn()) {
+      if (this.infiniteOn()) {
+        if (!this.infiniteColumnDragWarned) {
+          this.infiniteColumnDragWarned = true
+          devWarn(INFINITE_COLUMN_DRAG_HINT)
+        }
+      } else if (!this.serverColumnDragWarned) {
         this.serverColumnDragWarned = true
         devWarn(SERVER_COLUMN_DRAG_HINT)
       }
@@ -4063,13 +4298,13 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * 列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型生效时为 true——
-   * 列设置面板的触屏移动按钮据此禁用（与 setColumnOrder 写回拦截同一判定源
-   * serverRowsActive，按钮不可用与程序化拦截不脱节）。注意：宿主初始化恢复持久化
-   * 列序（程序化 setColumnOrder）同样被拦——现状保持，收尾批文档写明。
+   * 列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型 / infinite 生效时为 true——
+   * 列设置面板的触屏移动按钮据此禁用（与 setColumnOrder 写回拦截同一判定源，按钮不可用
+   * 与程序化拦截不脱节）。注意：宿主初始化恢复持久化列序（程序化 setColumnOrder）同样被拦
+   * ——现状保持，收尾批文档写明。
    */
   columnReorderGate(): boolean {
-    return this.serverRowsActive()
+    return this.serverRowsActive() || this.infiniteActive()
   }
 
   /** 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 */
@@ -4604,13 +4839,18 @@ export class OASTableBase extends OASElement {
       return ''
     }
     // server 行模型：分组禁用（v1 服务端只做平铺数据；配置在场告警一次）
-    if (this.serverOn()) {
+    // infinite 同口径：对已装载数据分组是错误结果（分组视图是本地全量语义）
+    if (this.rowsGatedOn()) {
       if (this.getAttr('group-by', '')) {
-        if (!this.serverGroupWarned) {
+        if (this.infiniteOn()) {
+          if (!this.infiniteGroupWarned) {
+            this.infiniteGroupWarned = true
+            devWarn(INFINITE_GROUP_HINT)
+          }
+        } else if (!this.serverGroupWarned) {
           this.serverGroupWarned = true
           devWarn(SERVER_GROUP_HINT)
         }
-        return ''
       }
       return ''
     }
@@ -4727,11 +4967,16 @@ export class OASTableBase extends OASElement {
       }
       return []
     }
-    // server 行模型：scope=all 的全量合计是对当前页切片的错误聚合 → 禁用（告警一次）；
-    // scope=page 是页内小计的显式声明（对切片聚合恰好正确），照常生效
-    if (this.serverOn() && this.getAttr('summary-scope', 'all') !== 'page') {
+    // server 行模型 / infinite：scope=all 的全量合计是对切片/已装载数据的错误聚合 → 禁用
+    // （告警一次）；scope=page 是切片内小计的显式声明（对当前数据聚合恰好正确），照常生效
+    if (this.rowsGatedOn() && this.getAttr('summary-scope', 'all') !== 'page') {
       if (this.getAttr('summary', '') || this.effectiveColumns().some((c) => isSummaryType(c.summary))) {
-        if (!this.serverSummaryWarned) {
+        if (this.infiniteOn()) {
+          if (!this.infiniteSummaryWarned) {
+            this.infiniteSummaryWarned = true
+            devWarn(INFINITE_SUMMARY_ALL_HINT)
+          }
+        } else if (!this.serverSummaryWarned) {
           this.serverSummaryWarned = true
           devWarn(SERVER_SUMMARY_ALL_HINT)
         }
@@ -4883,10 +5128,17 @@ export class OASTableBase extends OASElement {
    * 即使未开启 `exportable`（无工具栏）也可编程式调用。
    */
   exportData(format: ExportFormat = this.exportFormats()[0]!, options: { fileName?: string } = {}): string {
-    // server 行模型：导出仅当前页切片（不阻断——显式 devWarn 一次，防静默部分导出）
-    if (this.serverOn() && !this.serverExportWarned) {
-      this.serverExportWarned = true
-      devWarn(SERVER_EXPORT_PAGE_HINT)
+    // server 行模型 / infinite：导出仅已装载数据（不阻断——显式 devWarn 一次，防静默部分导出）
+    if (this.rowsGatedOn()) {
+      if (this.infiniteOn()) {
+        if (!this.infiniteExportWarned) {
+          this.infiniteExportWarned = true
+          devWarn(INFINITE_EXPORT_HINT)
+        }
+      } else if (!this.serverExportWarned) {
+        this.serverExportWarned = true
+        devWarn(SERVER_EXPORT_PAGE_HINT)
+      }
     }
     const { headers, rows } = this.exportMatrix()
     const fileName = `${sanitizeFileName(options.fileName ?? this.generateExportFileName())}.${EXPORT_EXT[format]}`
@@ -4933,10 +5185,15 @@ export class OASTableBase extends OASElement {
   // ==================== D15 行拖拽排序（row-draggable） ====================
 
   /** 行拖拽是否生效（虚拟滚动下禁用：窗口行序无稳定 from/to 语义；
-   *  server 行模型禁用：顺序语义由服务端持有，本地重排无法回写全量序——告警一次） */
+   *  server 行模型 / infinite 禁用：装载顺序语义由服务端持有，本地重排无法回写全量序——告警一次） */
   private rowDragEnabled(): boolean {
-    if (this.hasAttr('row-draggable') && this.serverOn()) {
-      if (!this.serverRowDragWarned) {
+    if (this.hasAttr('row-draggable') && this.rowsGatedOn()) {
+      if (this.infiniteOn()) {
+        if (!this.infiniteRowDragWarned) {
+          this.infiniteRowDragWarned = true
+          devWarn(INFINITE_ROW_DRAG_HINT)
+        }
+      } else if (!this.serverRowDragWarned) {
         this.serverRowDragWarned = true
         devWarn(SERVER_ROW_DRAG_HINT)
       }
@@ -5154,6 +5411,21 @@ export class OASTableBase extends OASElement {
   private applyRowAriaSemantics(): void {
     const table = this.shadow.querySelector('table') as HTMLTableElement | null
     if (!table) return
+    // infinite：rowcount 用已知 total（未知时省略不写——读屏不作总数播报，避免误导）；
+    // 在途装载 aria-busy 同步（读屏感知追加进行中）；rowindex = 装载序 + 1（装载顺序即绝对顺序）
+    if (this.infiniteOn()) {
+      const total = this.externalTotal()
+      if (total !== null) table.setAttribute('aria-rowcount', String(total))
+      else table.removeAttribute('aria-rowcount')
+      if (this.serverLoading) table.setAttribute('aria-busy', 'true')
+      else table.removeAttribute('aria-busy')
+      for (const tr of this.dragRows()) {
+        const abs = this.absRowIndexOf(tr)
+        if (abs >= 0) tr.setAttribute('aria-rowindex', String(abs + 1))
+        else tr.removeAttribute('aria-rowindex')
+      }
+      return
+    }
     const serverOn = this.serverRowsActive()
     const serverOffset = serverOn
       ? (Math.max(1, Number(this.getAttr('current', '1')) || 1) - 1) *
@@ -5556,7 +5828,12 @@ export class OASTableBase extends OASElement {
    *（告警 flag 每实例仅一次，被高频判定提前消耗会让真正的告警场景失声）。
    */
   private serverRowsActive(): boolean {
-    return this.getAttr('row-model', '') === 'server' && !this.windowedOn() && this.externalTotal() !== null
+    return (
+      this.getAttr('row-model', '') === 'server' &&
+      !this.windowedOn() &&
+      !this.infiniteActive() &&
+      this.externalTotal() !== null
+    )
   }
 
   /**
@@ -5565,9 +5842,12 @@ export class OASTableBase extends OASElement {
    * parse 缓存 _winMode，本写刚引发的 windowed 增删不在缓存里（ACC 时点缓存陈旧），
    * 会把「windowed 接管/退出」误判成形态未变。生效口径同 readWindowedMode：windowed 在场
    * 且 total > 0 才接管（total=0 / 非法 → windowed 不生效，server 不让位）。
+   * infinite 生效时让位（同 serverOn()）：infinite 是同族取数形态且 total 前提放宽，
+   * row-model="server" + infinite 同开时协议走 infinite。
    */
   private serverFormActive(): boolean {
     if (this.getAttr('row-model', '') !== 'server') return false
+    if (this.infiniteFormActive()) return false
     const total = this.externalTotal()
     if (total === null) return false
     if (this.hasAttr('windowed') && total > 0) return false
@@ -5594,6 +5874,8 @@ export class OASTableBase extends OASElement {
       if (!this.isConnected) return
       if (this.serverPremiseWarned) return
       if (this.getAttr('row-model', '') !== 'server') return
+      // infinite 生效时 total 前提放宽（未知总数场景 totalKnown=false）：不落「缺 total」误报
+      if (this.infiniteActive()) return
       if (this.windowedOn()) return
       if (this.externalTotal() !== null) return
       this.serverPremiseWarned = true
@@ -5611,6 +5893,10 @@ export class OASTableBase extends OASElement {
    */
   private serverOn(): boolean {
     if (this.getAttr('row-model', '') !== 'server') return false
+    // infinite 生效时让位：infinite 自身即「服务端取数」形态（游标分页变体）且 total 前提
+    // 放宽——row-model="server" + infinite 同开时协议走 infinite（cursor/load-more），
+    // server 的区间分页协议不参与（闸门矩阵由 rowsGatedOn 统一覆盖，见 infiniteOn()）
+    if (this.infiniteActive()) return false
     if (this.windowedOn()) {
       if (!this.serverWindowedWarned) {
         this.serverWindowedWarned = true
@@ -5626,13 +5912,88 @@ export class OASTableBase extends OASElement {
     return true
   }
 
+  // ==================== infinite（无限滚动 + cursor 分页）判定组 ====================
+
   /**
-   * 渲染管线的排序输入（update 全量 / 滚动帧共用）：windowed 与 server 行模型不执行
-   * 本地排序（排序职责在服务端，data 已按当前排序条件就绪），恒空数组——
-   * 排序状态本身（sort-key/sort-order/multi-sort）仍是受控属性，表头指示器照常显示。
+   * infinite 生效的即时纯判定（无告警、无副作用，高频路径安全）：`infinite` 属性在场
+   * 且不与 pagination / windowed 冲突。与 pagination 同开 pagination 优先（既有分页语义）；
+   * 与 windowed 同开 windowed 优先（既有互斥先例）——互斥结论与 infiniteOn() 一致，
+   * 供 serverOn / serverRowsActive / applyRowAriaSemantics 等让位点复用（不烧一次性告警 flag）。
+   * windowed 生效性读 parse 缓存（_winMode）——ACC 即时时点请改用 infiniteFormActive()。
+   */
+  private infiniteActive(): boolean {
+    return this.hasAttr('infinite') && !this.hasAttr('pagination') && !this.windowedOn()
+  }
+
+  /**
+   * infinite 生效形态的即时判定（attributeChangedCallback 专用）：与 infiniteActive() 同口径，
+   * 但 windowed 生效性改用属性即时读数（windowed 在场且 total > 0 才接管——ACC 时点
+   * parse 缓存陈旧，本写刚引发的 windowed 增删不在缓存里）。infinite 生效时 total 可选
+   * （未知总数场景合法），故 total 不参与本判定。
+   */
+  private infiniteFormActive(): boolean {
+    return (
+      this.hasAttr('infinite') &&
+      !this.hasAttr('pagination') &&
+      !(this.hasAttr('windowed') && (this.externalTotal() ?? 0) > 0)
+    )
+  }
+
+  /**
+   * infinite 是否生效（判定点内联互斥告警，同 serverOn 先例）：
+   * - `infinite` 属性在场且无冲突形态才生效；total 不是前提（未知总数场景 totalKnown=false，
+   *   到底以宿主 appendRows 空块信号为准）；
+   * - 与 pagination 同开 → pagination 优先（返回 false）+ 互斥 devWarn 一次；
+   * - 与 windowed 同开 → windowed 优先（返回 false）+ 互斥 devWarn 一次。
+   * 告警为实例级去重一次（devWarn 属 dev-only 通道，不可作运行时契约依赖）。
+   */
+  private infiniteOn(): boolean {
+    if (!this.hasAttr('infinite')) return false
+    if (this.hasAttr('pagination')) {
+      if (!this.infinitePaginationWarned) {
+        this.infinitePaginationWarned = true
+        devWarn(INFINITE_PAGINATION_HINT)
+      }
+      return false
+    }
+    if (this.windowedOn()) {
+      if (!this.infiniteWindowedWarned) {
+        this.infiniteWindowedWarned = true
+        devWarn(INFINITE_WINDOWED_HINT)
+      }
+      return false
+    }
+    return true
+  }
+
+  /**
+   * 外部取数形态（server 行模型或 infinite）——能力闸门的统一判定源。两形态互斥
+   * （infinite 生效时 serverOn() 让位返回 false），生效结论唯一；闸门点据此逐项声明
+   * （导出/打印/合计/分组/行列拖拽/merge，文案按 infiniteOn() 分流）。
+   */
+  private rowsGatedOn(): boolean {
+    return this.serverOn() || this.infiniteOn()
+  }
+
+  /** infinite 到底（hasMore）判定：宿主空块信号优先；totalKnown 时已装载满 total 亦到底（纯函数复用） */
+  private infiniteHasMoreNow(): boolean {
+    const total = this.externalTotal()
+    return infiniteHasMore({
+      hostEnded: this.infiniteHostEnded,
+      totalKnown: total !== null,
+      total: total ?? 0,
+      loaded: this.infiniteRows.length,
+    })
+  }
+
+  /**
+   * 渲染管线的排序输入（update 全量 / 滚动帧共用）：windowed、server 行模型与 infinite
+   * 不执行本地排序（排序职责在服务端/宿主，已装载数据已按当前排序条件就绪），恒空数组——
+   * 排序状态本身（sort-key/sort-order/multi-sort）仍是受控属性，表头指示器照常显示
+   * （infinite 下排序变更另触发重置装载 + 首块重请求，见 syncInfiniteRows）。
    */
   private renderSorts(): SortState[] {
-    return this.windowedOn() || this.serverOn() ? [] : this.resolveSorts()
+    return this.windowedOn() || this.serverOn() || this.infiniteOn() ? [] : this.resolveSorts()
   }
 
   /** server 行模型：当前请求状态快照（分页 + 排序 + 过滤，同值去重与原因推导的输入） */
@@ -5647,9 +6008,15 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * 派发 `oas-rows-request`（server 行模型唯一出口）：先记后派（监听器同步回填时去重
-   * 状态已就位，同 windowed 先例），requestId 递增、在途 loading 置位、旧失败条清除。
-   * 本方法不做同值去重——去重判定在 syncServerRows；refreshRows 绕过路径直接调本方法。
+   * 派发 `oas-rows-request`（server 行模型与 infinite 的唯一出口）：先记后派（监听器同步
+   * 回填时去重状态已就位，同 windowed 先例），requestId 递增、在途 loading 置位、旧失败条
+   * 清除。本方法不做同值去重——去重判定在 syncServerRows / syncInfiniteRows；refreshRows
+   * 绕过路径直接调本方法。
+   *
+   * detail 按形态分流：
+   * - server：start/end = 当前页半开区间，totalKnown 恒 true（生效前提即 total 在场）；
+   * - infinite：start/end = 已装载行数（区间语义不适用，无固定终点），totalKnown 随 total
+   *   属性在场性（未知总数场景 false），detail.cursor 回传组件记录的游标（无游标时省略键）。
    */
   private dispatchRowsRequest(reason: RowsRequestReason): void {
     const state = this.rowsRequestState()
@@ -5657,16 +6024,19 @@ export class OASTableBase extends OASElement {
     this.lastRowsRequestState = state
     this.serverLoading = true
     this.serverError = false
-    const start = (state.current - 1) * state.pageSize
-    this.emit('rows-request', {
+    const infinite = this.infiniteOn()
+    const start = infinite ? this.infiniteRows.length : (state.current - 1) * state.pageSize
+    const detail: RowsRequestDetail = {
       requestId: this.rowsRequestId,
       start,
-      end: start + state.pageSize,
+      end: infinite ? start : start + state.pageSize,
       sortModel: state.sortModel,
       filterValues: state.filterValues,
       reason,
-      totalKnown: true,
-    })
+      totalKnown: infinite ? this.externalTotal() !== null : true,
+    }
+    if (infinite && this.infiniteCursor !== undefined) detail.cursor = this.infiniteCursor
+    this.emit('rows-request', detail)
   }
 
   /**
@@ -5686,6 +6056,123 @@ export class OASTableBase extends OASElement {
       return
     }
     this.dispatchRowsRequest(plan.reason)
+  }
+
+  /**
+   * infinite 装载缓冲重置：清已装载行、游标与「到底」信号（hasMore 回到「有更多」）。
+   * 排序/过滤/页大小变更（syncInfiniteRows 的 resetPage 分支）、refreshRows 与 data 属性
+   * 替换写（渲染路径 bufferStale 同步）共用。rowsRequestId 不复位（单调递增不复位是
+   * 宿主晚到守卫的不变量）；consumedInfiniteRequestId 不清——已消费序号的幂等登记
+   * 依赖单调性天然不会与新请求撞号。
+   */
+  private resetInfiniteBuffer(): void {
+    this.infiniteRows = []
+    this.infiniteCursor = undefined
+    this.infiniteHostEnded = false
+  }
+
+  /** infinite 的请求状态快照：与 server 同构，current 恒 1（infinite 无页码概念——current 属性写入不参与签名，不触发请求） */
+  private infiniteRequestState(): RowsRequestState {
+    return { ...this.rowsRequestState(), current: 1 }
+  }
+
+  /**
+   * infinite 请求接线（update 渲染路径统一入口）：与 syncServerRows 同一原因推导纯函数
+   * （init 首载 / paginate=页大小变更 / sort / filter，全同值静默）。排序/过滤/页大小变更
+   * 先重置装载缓冲（清 cursor/已装载/到底信号）再派首块请求；首次进入（lastRowsRequestState
+   * 为 null）派 init 不重置（缓冲可能含宿主预填 data——init 响应由宿主决定是否覆盖）。
+   * current 概念在 infinite 下不适用（不写入、不重置）；data 属性写不进状态签名——
+   * 回填/替换是响应不是新请求（防请求循环）。
+   */
+  private syncInfiniteRows(): void {
+    if (!this.infiniteOn()) return
+    const state = this.infiniteRequestState()
+    const plan = rowsRequestPlan(this.lastRowsRequestState, state)
+    if (plan.reason === null) return
+    if (plan.resetPage) this.resetInfiniteBuffer()
+    this.dispatchRowsRequest(plan.reason)
+  }
+
+  /**
+   * 滚动触底触发（infinite 专属）：滚动位置接近底部（距底不足 max(200px, 视口高 × 1.5)）
+   * 且非在途（serverLoading 守卫）、且 hasMore（totalKnown 时装载满 total 短路；未知总数
+   * 时以宿主空块信号为准）→ 派发 reason='load-more' 请求下一块。rAF 节流（滚动高频事件），
+   * 独立于 scrollRaf 渲染帧句柄；派发后 loading 置位即在途守卫生效，重复触底不重发。
+   */
+  private probeInfiniteLoadMore(): void {
+    if (!this.infiniteOn() || this.serverLoading || !this.infiniteHasMoreNow()) return
+    if (!this.wrap) return
+    if (this.infiniteLoadMoreRaf) return
+    this.infiniteLoadMoreRaf = requestAnimationFrame(() => {
+      this.infiniteLoadMoreRaf = 0
+      const w = this.wrap
+      // 回调时点状态复核（派发前置守卫全部重查——rAF 与状态写入间无同步保证）
+      if (!w || !this.infiniteOn() || this.serverLoading || !this.infiniteHasMoreNow()) return
+      if (!infiniteNearBottom({ scrollTop: w.scrollTop, clientHeight: w.clientHeight, scrollHeight: w.scrollHeight }))
+        return
+      this.dispatchRowsRequest('load-more')
+      // 非属性通道状态变化（loading 置位）→ 强制全量渲染，底部 loading 行立即可见
+      this.markRenderDirty()
+      this.runUpdateAndNotify()
+    })
+  }
+
+  /**
+   * 追加已装载行（infinite 公开回填通道；与 `data` 属性的替换语义区分）：
+   * - `rows` 追加进装载缓冲（保持宿主给定的块内顺序）；**空数组 = 「没有更多」到底信号**
+   *   （total 未知场景宿主以此声明数据耗尽，组件记录后停止触底触发并显示「已到底」提示行）；
+   * - `options.cursor` 记录为当前游标，下次 load-more 请求经 detail.cursor 原样回传；
+   * - `options.total` 提供时同步 total 属性（aria-rowcount / hasMore 判定随之更新）；
+   * - `options.requestId` 可选透传（宿主从 oas-rows-request detail 取）：提供时组件做
+   *   序号守卫——与当前在途序号不符按晚到旧响应静默丢弃（devWarn 一次）；同序号重复
+   *   回填按幂等静默忽略（devWarn 一次）。不提供时为自由通道（无请求身份，不做晚到/
+   *   重复判定——预填/手动补充场景合法，请求序号校验由宿主自行承担）。
+   * 非 infinite 生效形态调用：静默 no-op + 实例级一次性 devWarn（可诊断）。
+   */
+  appendRows(
+    rows: Array<Record<string, unknown>>,
+    options?: { cursor?: string; total?: number; requestId?: number },
+  ): void {
+    if (!this.infiniteOn()) {
+      if (!this.infiniteAppendInactiveWarned) {
+        this.infiniteAppendInactiveWarned = true
+        devWarn(INFINITE_APPEND_INACTIVE_HINT)
+      }
+      return
+    }
+    const requestId = options?.requestId
+    if (typeof requestId === 'number') {
+      if (requestId !== this.rowsRequestId) {
+        if (!this.infiniteLateAppendWarned) {
+          this.infiniteLateAppendWarned = true
+          devWarn(INFINITE_LATE_APPEND_HINT)
+        }
+        return
+      }
+      if (isDuplicateAppend(this.consumedInfiniteRequestId, requestId)) {
+        if (!this.infiniteDuplicateAppendWarned) {
+          this.infiniteDuplicateAppendWarned = true
+          devWarn(INFINITE_DUPLICATE_APPEND_HINT)
+        }
+        return
+      }
+      // 消费登记（仅带 requestId 的通道登记——自由通道无请求身份，不做幂等语义）
+      this.consumedInfiniteRequestId = requestId
+    }
+    const list = Array.isArray(rows) ? rows : []
+    if (list.length > 0) this.infiniteRows.push(...list)
+    else this.infiniteHostEnded = true
+    // 回填即响应到达：清在途 loading 与失败条（server 形态经 ACC 属性写清态，本方法通道
+    // 自清——loading 行/错误条随本轮 markRenderDirty 的全量渲染立即收敛）
+    this.serverLoading = false
+    this.serverError = false
+    if (typeof options?.cursor === 'string') this.infiniteCursor = options.cursor
+    if (options?.total != null && this.getAttribute('total') !== String(options.total)) {
+      this.setAttribute('total', String(options.total))
+    }
+    // 非属性通道状态变化（装载缓冲追加/到底信号）→ 强制全量渲染（增量快路径不感知内部缓冲）
+    this.markRenderDirty()
+    this.runUpdateAndNotify()
   }
 
   /**
@@ -5723,8 +6210,9 @@ export class OASTableBase extends OASElement {
   reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void {
     // serverRowsActive() 读 parse 缓存（_winMode）——成立前提是属性写经
     // attributeChangedCallback 同步驱动 update，宿主在事件监听/promise 回调上报时缓存已新；
-    // 勿挪进 ACC 类同步路径（本写刚引发的 windowed 增删不在缓存里，ACC 时点是陈旧的）
-    if (!this.serverRowsActive()) return
+    // 勿挪进 ACC 类同步路径（本写刚引发的 windowed 增删不在缓存里，ACC 时点是陈旧的）。
+    // infinite 生效形态同样接受失败上报（同族取数形态共用失败通道；infiniteActive 为纯判定）
+    if (!this.serverRowsActive() && !this.infiniteActive()) return
     if (detail?.requestId !== this.rowsRequestId) {
       if (!this.serverLateFailureWarned) {
         this.serverLateFailureWarned = true
@@ -5749,14 +6237,21 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * 强制重发当前状态请求（server 行模型）：reason='refresh'，绕过同值去重签名。
-   * `{ purge: true }` 预留清缓存语义——v1 无缓存，等价 refresh（参数仅收下不分支）。
-   * client 模式 no-op（无取数协议可刷）。
+   * 强制重发当前状态请求（server 行模型与 infinite）：reason='refresh'，绕过同值去重签名。
+   * `{ purge: true }` 预留清缓存语义——组件侧无缓存（缓存层在 helper，批 C），等价 refresh
+   * （参数仅收下不分支）。infinite 形态下 refresh = 重置装载缓冲（清 cursor/已装载/到底
+   * 信号，hasMore 复位）+ 重发首块请求。client 模式 no-op（无取数协议可刷）。
    */
   refreshRows(options?: { purge?: boolean }): void {
-    void options // v1 无缓存：purge 等价 refresh（参数收下不分支，前向兼容预留）
-    if (!this.serverOn()) return
-    this.dispatchRowsRequest('refresh')
+    void options // 无组件内缓存：purge 等价 refresh（参数收下不分支，前向兼容预留）
+    if (this.serverOn()) {
+      this.dispatchRowsRequest('refresh')
+    } else if (this.infiniteOn()) {
+      this.resetInfiniteBuffer()
+      this.dispatchRowsRequest('refresh')
+    } else {
+      return
+    }
     // 非属性通道状态变化（loading 置位）→ 强制全量渲染，loading 行立即可见
     this.markRenderDirty()
     this.runUpdateAndNotify()
@@ -6071,6 +6566,9 @@ export class OASTableBase extends OASElement {
     }
     // 同帧竞态：浏览器内部位移（焦点 reveal / 锚定）落回旧位置时让位于主动写入
     this.guardScrollIntent()
+    // infinite 触底检测：必须在既有分支之前——非虚拟（无 height）infinite 不走后续
+    // rAF 渲染路径，此处的独立检测是滚动触发的唯一入口；生效/在途/hasMore 守卫见方法内
+    this.probeInfiniteLoadMore()
     // 滚动即隐藏溢出提示浮层（锚定格可能滚出视口，无孤儿浮层）
     this.hideCellTooltip()
     // 横向虚拟（column-virtual）：非行虚拟时也要按 scrollLeft 重算列窗口。
