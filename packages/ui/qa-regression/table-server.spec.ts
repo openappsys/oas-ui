@@ -938,3 +938,313 @@ test('table server helper 缓存 × 分组：group-by 切换重取新分组 + �
   // ④ console 零告警
   expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
 })
+
+/**
+ * 兼容批（server 分组 × column-virtual 取代降级方案）：组行参与列窗口——
+ * 初始窗口组行逐格与数据行同构（ΣcolSpan 闭合、聚合值列位对齐）；横向滚动窗口切换后
+ * 组行 label 按 current 可见集重算（不跨窗口错位、不吞占位格、聚合列滚出窗口即不渲染）；
+ * 滚动态折叠本地过滤可用；dark 组行 token 可读；console 零告警（无降级 devWarn）。
+ */
+test('table server 分组 × column-virtual：组行参与列窗口（滚动重算/逐格同构/折叠可用）+ dark 可读 + console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  // 注入 32 列宽表 + server 分组 + column-virtual 组合 fixture（mock 宿主回填混合行）
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-group-colvirtual'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+        ...Array.from({ length: 30 }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '80px' })),
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '5')
+    el.setAttribute('group-by', 'dept')
+    el.setAttribute('column-virtual', '')
+    el.setAttribute('data', '[]')
+    const state = {
+      reqs: [] as Array<{ requestId: number; reason: string; groupBy?: string }>,
+    }
+    ;(window as any)['__srvState_table-server-group-colvirtual'] = state
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      state.reqs.push({ requestId: d.requestId, reason: d.reason, groupBy: d.groupBy })
+      // mock 宿主异步回填（对齐真实 fetch 时序）：组行 + 组内数据行按宿主顺序
+      setTimeout(() => {
+        el.setAttribute(
+          'data',
+          JSON.stringify([
+            { kind: 'group', groupKey: '研发', groupLabel: '研发组', groupCount: 2, aggregates: { amount: 90 } },
+            { kind: 'data', key: 'a1', name: '张三', amount: 50, dept: '研发' },
+            { kind: 'data', key: 'a2', name: '李四', amount: 40, dept: '研发' },
+            { kind: 'group', groupKey: '销售', groupLabel: '销售组', groupCount: 1, aggregates: { amount: 60 } },
+            { kind: 'data', key: 'b1', name: '王五', amount: 60, dept: '销售' },
+          ]),
+        )
+      }, 0)
+    })
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;width:520px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+  })
+
+  // ① init 请求 detail 携带 groupBy（协议落地面，组合下取数口径不变）
+  await page.waitForFunction(() => (window as any)['__srvState_table-server-group-colvirtual'].reqs.length >= 1, null, {
+    timeout: 15000,
+  })
+  const state = await stateOf(page, 'table-server-group-colvirtual')
+  expect(state.reqs[0]).toMatchObject({ requestId: 1, reason: 'init', groupBy: 'dept' })
+
+  const root = page.locator('#table-server-group-colvirtual')
+  /** 组行/数据行的 td colSpan 序列（格几何同构断言用） */
+  const spansOf = (selector: string): Promise<number[]> =>
+    page.evaluate(
+      ({ selector }) => {
+        const el = document.querySelector('#table-server-group-colvirtual')!
+        const tr = el.shadowRoot!.querySelector(selector)!
+        return [...tr.querySelectorAll('td')].map((td) => (td as HTMLTableCellElement).colSpan)
+      },
+      { selector },
+    )
+
+  // ② 初始窗口（scrollLeft=0）：组行 label 独立承载格 + 聚合值与数据行同列位；逐格与数据行同构
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toContainText('研发组', { timeout: 15000 })
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toContainText('2')
+  const amountTd = root.locator('tbody tr.group-header[data-group="研发"] td[data-col="amount"]')
+  await expect(amountTd).toHaveText('90')
+  await expect(amountTd).toHaveClass(/align-right/)
+  const dataSpansInit = await spansOf('tbody tr[part="row"]')
+  const groupSpansInit = await spansOf('tbody tr.group-header[data-group="研发"]')
+  expect(
+    dataSpansInit.reduce((a, b) => a + b, 0),
+    '数据行 ΣcolSpan = 全列 32（窗口列 + 占位归并）',
+  ).toBe(32)
+  expect(groupSpansInit, '组行逐格 colSpan 序列与数据行同构（首格 label 承载 name 列）').toEqual(dataSpansInit)
+  // 表头窗口与表体窗口一致（横向虚拟既有口径在组合下不破）
+  const headKeysInit = await page.evaluate(() => {
+    const el = document.querySelector('#table-server-group-colvirtual')!
+    return [...el.shadowRoot!.querySelectorAll('thead th[data-key]')].map((th) => th.getAttribute('data-key'))
+  })
+  const dataKeysInit = await page.evaluate(() => {
+    const el = document.querySelector('#table-server-group-colvirtual')!
+    const row = el.shadowRoot!.querySelector('tbody tr[part="row"]')!
+    return [...row.querySelectorAll('td[data-col]')].map((td) => td.getAttribute('data-col'))
+  })
+  expect(headKeysInit, '表头窗口列与表体窗口列一一对应').toEqual(dataKeysInit)
+
+  // ③ 横向滚动窗口切换：组行 label 重算——聚合列滚出窗口不再渲染、label 并入首个真实列格
+  await root.locator('.table-scroll').evaluate((wrap) => {
+    wrap.scrollLeft = 2000
+    wrap.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#table-server-group-colvirtual')!
+      const first = el.shadowRoot!.querySelector('tbody tr[part="row"] td')!
+      return first.getAttribute('data-col') !== 'name'
+    },
+    null,
+    { timeout: 10000 },
+  )
+  const amountGone = await page.evaluate(() => {
+    const el = document.querySelector('#table-server-group-colvirtual')!
+    return el.shadowRoot!.querySelectorAll('tbody tr.group-header[data-group="研发"] td[data-col="amount"]').length
+  })
+  expect(amountGone, '聚合列滚出窗口后组行无其聚合格（窗口外不渲染）').toBe(0)
+  const carrierInfo = await page.evaluate(() => {
+    const el = document.querySelector('#table-server-group-colvirtual')!
+    const g = el.shadowRoot!.querySelector('tbody tr.group-header[data-group="研发"]')!
+    const carrier = [...g.querySelectorAll('td')].find((td) => (td.textContent ?? '').includes('研发组'))!
+    return {
+      hasCol: carrier.hasAttribute('data-col'),
+      isPlaceholder: carrier.classList.contains('col-virtual-placeholder'),
+    }
+  })
+  expect(carrierInfo.hasCol, '窗口前移后 label 并入首个可见真实列格').toBe(true)
+  expect(carrierInfo.isPlaceholder, 'label 不落入占位格（不覆盖窗口外区域）').toBe(false)
+  const dataSpansScrolled = await spansOf('tbody tr[part="row"]')
+  const groupSpansScrolled = await spansOf('tbody tr.group-header[data-group="研发"]')
+  expect(groupSpansScrolled, '窗口切换后组行逐格 colSpan 序列仍与数据行同构').toEqual(dataSpansScrolled)
+  expect(
+    groupSpansScrolled.reduce((a, b) => a + b, 0),
+    '窗口切换后组行 ΣcolSpan 恒闭合',
+  ).toBe(32)
+
+  // ④ 滚动态折叠：组行折叠钮可用——组内行本地隐藏 + aria-expanded 同步 + 零新请求
+  const reqsBeforeFold = (await stateOf(page, 'table-server-group-colvirtual')).reqs.length
+  await root.locator('tbody tr.group-header[data-group="研发"] button.toggle').click()
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(1)
+  // 滚动态可见列为 c 系窗口列（fixture 数据行只有 name/amount/dept 字段）——按行键断言存活行
+  await expect(root.locator('tbody tr[part="row"]').first()).toHaveAttribute('data-key', 'b1')
+  await expect(root.locator('tbody tr.group-header[data-group="研发"] button.toggle')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  )
+  expect((await stateOf(page, 'table-server-group-colvirtual')).reqs.length, '折叠本地过滤不重取').toBe(reqsBeforeFold)
+  await root.locator('tbody tr.group-header[data-group="研发"] button.toggle').click()
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(3)
+
+  // ⑤ dark 主题：组行底色/文字 = token 实际解析值（与既有 dark 断言同口径）
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  const tokenColors = await page.evaluate(() => {
+    const probe = (styleDecl: string): string => {
+      const d = document.createElement('div')
+      d.style.cssText = styleDecl
+      document.body.appendChild(d)
+      const v = getComputedStyle(d).backgroundColor
+      d.remove()
+      return v
+    }
+    return {
+      bgHover: probe('background: var(--oas-color-bg-hover)'),
+      textPrimary: probe('background: var(--oas-color-text-primary)'),
+    }
+  })
+  const darkGroupCell = root.locator('tbody tr.group-header[data-group="研发"] td').first()
+  const groupBg = await darkGroupCell.evaluate((td) => getComputedStyle(td).backgroundColor)
+  expect(groupBg, 'dark 组行背景 = --oas-color-bg-hover 实际解析值').toBe(tokenColors.bgHover)
+  const groupText = await darkGroupCell.evaluate((td) => getComputedStyle(td).color)
+  expect(groupText, 'dark 组行文字 = --oas-color-text-primary 实际解析值').toBe(tokenColors.textPrimary)
+  expect(groupText, 'dark 组行文字与背景不同值（可读）').not.toBe(groupBg)
+  await page.evaluate(() => document.documentElement.removeAttribute('data-theme'))
+
+  // ⑥ console 零告警（组合兼容——无降级 devWarn）
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+})
+
+test('table server 分组空值组（批 H）：宿主返回空值组行 → 「（空）」组头渲染 + 聚合照常 + 折叠可用 + console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  // 注入 server 分组 fixture：组行 groupKey 空串 / null / 缺失 = 合法空值组（无 devWarn 预期）
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-empty-group'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '40')
+    el.setAttribute('group-by', 'dept')
+    el.setAttribute('data', '[]')
+    el.addEventListener('oas-rows-request', () => {
+      // mock 宿主异步回填（对齐真实 fetch 时序）：空值组（''/null/缺失）+ 正常组
+      setTimeout(() => {
+        el.setAttribute(
+          'data',
+          JSON.stringify([
+            { kind: 'group', groupKey: '', groupCount: 1, aggregates: { amount: 30 } }, // 空串 = 空值组
+            { kind: 'data', key: 'a', name: '张三', amount: 30, dept: '' },
+            { kind: 'group', groupKey: null, groupCount: 1 }, // null = 空值组
+            { key: 'b', name: '李四', amount: null },
+            { kind: 'group', groupCount: 1 }, // 缺失 = 空值组
+            { key: 'c', name: '王五', amount: 50 },
+            { kind: 'group', groupKey: '研发', groupCount: 1 },
+            { key: 'd', name: '赵六', amount: 60, dept: '研发' },
+          ]),
+        )
+      }, 0)
+    })
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;width:480px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+  })
+
+  const root = page.locator('#table-server-empty-group')
+  // ① 空值组渲染：三种空值形态的分节头均渲染「（空）」文案（键归一 ''），数据行全在（不剔除）
+  const emptyHeaders = root.locator('tbody tr.group-header[data-group=""]')
+  await expect(emptyHeaders).toHaveCount(3, { timeout: 15000 })
+  for (let i = 0; i < 3; i++) await expect(emptyHeaders.nth(i)).toContainText('（空）')
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toHaveCount(1)
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(4)
+  // ② 聚合照常：空串组的宿主 aggregates 渲染在聚合列
+  await expect(emptyHeaders.nth(0).locator('td[data-col="amount"]')).toHaveText('30')
+  // ③ 折叠可用（普通组对照——空值组键共享折叠态已由单测固化）：折叠「研发」→ 赵六隐藏，空值组行不受影响
+  await root.locator('tbody tr.group-header[data-group="研发"] button.toggle').click()
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(3)
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('张三')
+  await root.locator('tbody tr.group-header[data-group="研发"] button.toggle').click()
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(4)
+  // ④ console 零告警（空值组是合法协议表达——不触发 groupKey 保留字段提示）
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+})
+
+test('table server 全表合计（批 I）：summary-scope="all" + summary-values 宿主合计值 → 合计行按宿主值渲染（列布局一致/无值列留空）+ console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  // 注入 server fixture：当前页切片 2 行（本地聚合 = 3），宿主全量合计 9999
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-summary-values'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄', type: 'number' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '100')
+    el.setAttribute('summary', JSON.stringify([{ key: 'age', type: 'sum', label: '全量合计' }]))
+    el.setAttribute('summary-values', JSON.stringify({ age: 9999 }))
+    el.setAttribute('data', '[]')
+    el.addEventListener('oas-rows-request', () => {
+      setTimeout(() => {
+        el.setAttribute(
+          'data',
+          JSON.stringify([
+            { name: '甲', age: 1 },
+            { name: '乙', age: 2 },
+          ]),
+        )
+      }, 0)
+    })
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;width:480px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+  })
+
+  const root = page.locator('#table-server-summary-values')
+  // ① 合计行渲染（scope=all 不再禁用），值取宿主全量口径（9999，非切片本地聚合 3）
+  const summaryRow = root.locator('tbody tr.summary')
+  await expect(summaryRow).toHaveCount(1, { timeout: 15000 })
+  const summaryCells = await page.evaluate(() => {
+    const el = document.querySelector('#table-server-summary-values')!
+    const tds = [...el.shadowRoot!.querySelectorAll('tbody tr.summary td')]
+    return tds.map((td) => td.textContent ?? '')
+  })
+  expect(summaryCells.length, '合计行列布局与数据列一一对应（name / age 两列）').toBe(2)
+  expect(summaryCells[0]).toContain('全量合计')
+  expect(summaryCells[1]).toBe('9999')
+  // ② 宿主改写 summary-values → 合计行随属性更新（受控通道）
+  await page.evaluate(() => {
+    document
+      .querySelector('#table-server-summary-values')!
+      .setAttribute('summary-values', JSON.stringify({ age: 1234 }))
+  })
+  await expect(summaryRow).toContainText('1234')
+  // ③ 移除 summary-values → 回到现状（scope=all 禁用，合计行消失）
+  await page.evaluate(() => document.querySelector('#table-server-summary-values')!.removeAttribute('summary-values'))
+  await expect(root.locator('tbody tr.summary')).toHaveCount(0)
+  // ④ console 零 error（summary-values 合法时无告警；移除后的禁用提示是预期 devWarn——只收集 error 级）
+  const errorsOnly = issues.filter((i) => i.startsWith('error') || i.startsWith('pageerror'))
+  expect(errorsOnly, `console 零 error（实得 ${JSON.stringify(errorsOnly)}）`).toEqual([])
+})

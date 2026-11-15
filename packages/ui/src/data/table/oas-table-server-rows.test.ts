@@ -989,6 +989,202 @@ describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
   })
 })
 
+describe('OASTable server 行模型批 I：全表合计行（summary-values）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** server 挂载 + 首载回填（与 a8 同口径） */
+  function mountServer(attrs: Record<string, string>, data = '[]'): OASTable {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      attrs.columns ??
+        JSON.stringify([
+          { key: 'name', title: '名称' },
+          { key: 'age', title: '年龄', type: 'number' },
+        ]),
+    )
+    el.setAttribute('data', data)
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    el.setAttribute('data', data)
+    return el
+  }
+
+  const summaryRowOf = (el: OASTable): HTMLElement | null => el.shadowRoot!.querySelector('tbody tr.summary')
+
+  it('summary-scope="all" + summary-values（宿主全量合计）→ 合计行按宿主值渲染（无 devWarn），列布局与本地合计行一致', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // 当前页切片只有 1 行 age=1——宿主给出的全量合计 999 证明未被本地聚合覆盖
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        summary: JSON.stringify([{ key: 'age', type: 'sum', label: '合计' }]),
+        'summary-values': JSON.stringify({ age: 999 }),
+      },
+      JSON.stringify([{ name: '甲', age: 1 }]),
+    )
+    const tr = summaryRowOf(el)
+    // 强断言：宿主提供 summary-values 时合计行渲染（scope=all 不再禁用）——className 精确等于 'summary'
+    expect(tr?.className, '宿主提供 summary-values 时合计行渲染（scope=all 不再禁用）').toBe('summary')
+    // 合计行逐列落位（与本地合计行同一 buildSummaryRow 通道）：列序 name / age
+    const tds = [...tr!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds.length).toBe(2)
+    // 标签在首个无配置列（name），合计值取宿主口径（999），不是当前页切片本地聚合（1）
+    expect(tds[0]!.textContent).toContain('合计')
+    expect(tds[1]!.textContent).toBe('999')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('summary-values 无值列留空（列布局不塌）：只提供部分列键时其余配置列渲染空串', () => {
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        summary: JSON.stringify([
+          { key: 'age', type: 'sum' },
+          { key: 'name', type: 'count' },
+        ]),
+        'summary-values': JSON.stringify({ age: 42 }),
+      },
+      JSON.stringify([{ name: '甲', age: 1 }]),
+    )
+    const tds = [...summaryRowOf(el)!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds.length).toBe(2)
+    expect(tds[0]!.textContent, '无值的 name 列（count 配置）留空').toBe('')
+    expect(tds[1]!.textContent).toBe('42')
+  })
+
+  it('summary-values 未提供时行为 = 现状：scope=all 禁用 + devWarn 一次（合计行不渲染）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        summary: JSON.stringify([{ key: 'age', type: 'sum' }]),
+      },
+      JSON.stringify([{ name: '甲', age: 1 }]),
+    )
+    expect(summaryRowOf(el)).toBeNull()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('summary-scope')
+    warn.mockRestore()
+  })
+
+  it('summary-values 非法 JSON → 视同未提供（scope=all 禁用 + devWarn，不抛错）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        summary: JSON.stringify([{ key: 'age', type: 'sum' }]),
+        'summary-values': '{oops',
+      },
+      JSON.stringify([{ name: '甲', age: 1 }]),
+    )
+    expect(summaryRowOf(el)).toBeNull()
+    // 两次提示：summary-values 非法（可诊断）+ scope=all 禁用（现状语义保留）
+    expect(warn).toHaveBeenCalledTimes(2)
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('summary-values'))).toBe(true)
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('summary-scope'))).toBe(true)
+    warn.mockRestore()
+  })
+
+  it('summary-values 非对象 JSON（数组/标量）→ 视同未提供', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    for (const bad of ['[1,2]', '42', '"str"', 'null']) {
+      document.body.innerHTML = ''
+      const el = mountServer(
+        {
+          'row-model': 'server',
+          total: '100',
+          summary: JSON.stringify([{ key: 'age', type: 'sum' }]),
+          'summary-values': bad,
+        },
+        JSON.stringify([{ name: '甲', age: 1 }]),
+      )
+      expect(summaryRowOf(el), `summary-values=${bad} 不渲染合计行`).toBeNull()
+    }
+    warn.mockRestore()
+  })
+
+  it('scope=page 不受影响：summary-values 在场时页内合计仍走本地聚合（页内切片口径）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '100',
+        'summary-scope': 'page',
+        summary: JSON.stringify([{ key: 'age', type: 'sum' }]),
+        'summary-values': JSON.stringify({ age: 999 }),
+      },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    const tds = [...summaryRowOf(el)!.querySelectorAll('td')] as HTMLTableCellElement[]
+    // page 口径 = 当前页切片本地聚合（3），宿主全量值不覆盖页内小计语义
+    expect(tds[1]!.textContent).toBe('3')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('client 形态零漂移：summary-values 属性在场不影响本地全量合计（本地聚合权威）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mountServer(
+      {
+        summary: JSON.stringify([{ key: 'age', type: 'sum' }]),
+        'summary-values': JSON.stringify({ age: 999 }),
+      },
+      JSON.stringify([
+        { name: '甲', age: 1 },
+        { name: '乙', age: 2 },
+      ]),
+    )
+    const tds = [...summaryRowOf(el)!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds[1]!.textContent).toBe('3')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('与分页/分组不冲突：server 分组协议下 summary-values 合计行照常渲染', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 1, aggregates: { amount: 70 } },
+      { key: 'a', name: '张三', amount: 70 },
+    ])
+    const el = mountServer(
+      {
+        'row-model': 'server',
+        total: '40',
+        'group-by': 'dept',
+        columns: cols,
+        summary: JSON.stringify([{ key: 'amount', type: 'sum' }]),
+        'summary-values': JSON.stringify({ amount: 7000 }),
+      },
+      rows,
+    )
+    const tds = [...summaryRowOf(el)!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds[1]!.textContent).toBe('7000')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})
+
 describe('OASTable server 行模型修复批（交叉审回归）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

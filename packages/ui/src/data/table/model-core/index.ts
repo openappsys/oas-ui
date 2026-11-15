@@ -39,7 +39,7 @@
  */
 import { buildFlat } from './group.js'
 import { groupAggregateValue, partitionServerGroupRows } from './server-group.js'
-import type { ServerGroupRowInput, PartitionServerGroupResult } from './server-group.js'
+import type { ServerGroupRowInput, PartitionServerGroupOptions, PartitionServerGroupResult } from './server-group.js'
 import {
   computeDisplayRoots,
   normalizeCurrent,
@@ -99,6 +99,7 @@ export type {
   RowModelInput,
   RowModelResult,
   ServerGroupRowInput,
+  PartitionServerGroupOptions,
   PartitionServerGroupResult,
   SortAttrs,
   SortDirection,

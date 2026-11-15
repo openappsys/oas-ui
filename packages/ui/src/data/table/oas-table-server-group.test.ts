@@ -273,20 +273,77 @@ describe('OASTable server 分组协议（批 B）', () => {
     expect(dataRowsOf(el)[0]!.textContent).toContain('B-数据')
   })
 
-  it('无效组行（kind:"group" 但 groupKey 缺失/空串）契约加固：按数据行渲染（数据不丢）+ devWarn 一次', () => {
+  it('空值组（批 H）：groupKey 空串 / null / 缺失的 kind:"group" 行 = 合法空值组——渲染「（空）」组头（无告警）+ 聚合照常', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+    ])
     const rows = JSON.stringify([
-      { kind: 'group', groupCount: 1 }, // 缺 groupKey
-      { kind: 'group', groupKey: '' }, // 空串
+      { kind: 'group', groupKey: '', groupCount: 1, aggregates: { amount: 30 } }, // 空串 = 空值组
+      { kind: 'data', key: 'a', name: '张三', amount: 30 },
+      { kind: 'group', groupKey: null, groupCount: 1 }, // null = 空值组
+      { key: 'b', name: '李四', amount: null },
+      { kind: 'group', groupCount: 1 }, // 缺失（undefined）= 空值组
+      { key: 'c', name: '王五', amount: 50 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows, cols)
+    const groups = groupRowsOf(el)
+    // 三个空值组行渲染为三个空值组分节头（键均归一 ''——与本地分组一致，同键共享折叠态）
+    expect(groups.length).toBe(3)
+    for (const g of groups) {
+      expect(g.getAttribute('data-group')).toBe('')
+      expect(g.textContent).toContain('（空）')
+    }
+    // 空值组不降级不剔除：数据行全在（张三/李四/王五）
+    expect(dataRowsOf(el).length).toBe(3)
+    // 聚合照常：空串组的 aggregates 渲染在聚合列
+    const tds = [...groups[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds[1]!.getAttribute('data-col')).toBe('amount')
+    expect(tds[1]!.textContent).toBe('30')
+    // 空值组合法 → 零 devWarn
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('空值组折叠可用：折叠空值组只隐藏其组内行（普通组行与其组内行不受影响），再展开恢复', () => {
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: null, groupCount: 1 }, // null = 空值组
       { kind: 'data', key: 'a', name: '张三' },
       { kind: 'group', groupKey: '研发', groupCount: 1 },
       { kind: 'data', key: 'b', name: '李四' },
     ])
     const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows)
-    expect(groupRowsOf(el).length).toBe(1)
-    expect(groupRowsOf(el)[0]!.getAttribute('data-group')).toBe('研发')
-    // 降级渲染：两条无效组行按数据行渲染（旧行为剔除丢行），组内数据行不丢
-    expect(dataRowsOf(el).length).toBe(4)
+    const groups = groupRowsOf(el)
+    expect(groups.length).toBe(2)
+    expect(groups[0]!.getAttribute('data-group')).toBe('')
+    expect(groups[0]!.textContent).toContain('（空）')
+    // 折叠空值组：张三隐藏；研发组行与李四不受影响
+    ;(groups[0]!.querySelector('button.toggle') as HTMLButtonElement).click()
+    expect(dataRowsOf(el).map((r) => r.textContent)).toEqual([expect.stringContaining('李四')])
+    expect(groupRowsOf(el).map((g) => g.getAttribute('data-group'))).toEqual(['', '研发'])
+    // 再展开恢复
+    ;(groupRowsOf(el)[0]!.querySelector('button.toggle') as HTMLButtonElement).click()
+    expect(dataRowsOf(el).length).toBe(2)
+  })
+
+  it('无效组行（kind:"group" 但 groupKey 数值/布尔等非字符串非空值）契约加固：按数据行渲染（数据不丢）+ devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: 42 }, // 数值 = 无效键
+      { kind: 'group', groupCount: 1 }, // 缺失 = 空值组（批 H，合法）
+      { kind: 'data', key: 'a', name: '张三' },
+      { kind: 'group', groupKey: '研发', groupCount: 1 },
+      { kind: 'data', key: 'b', name: '李四' },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows)
+    // 数值键组行降级为数据行；缺失键 = 空值组（组行形态保留）
+    expect(groupRowsOf(el).length).toBe(2)
+    expect(groupRowsOf(el)[0]!.getAttribute('data-group')).toBe('')
+    expect(groupRowsOf(el)[0]!.textContent).toContain('（空）')
+    expect(groupRowsOf(el)[1]!.getAttribute('data-group')).toBe('研发')
+    // 降级渲染：数值键组行按数据行渲染（数据不丢），空值组下数据行不丢
+    expect(dataRowsOf(el).length).toBe(3)
     expect(
       warn.mock.calls.some((c) => String(c[0]).includes('groupKey') && String(c[0]).includes('保留字段')),
       '应有一次性 devWarn 指明 kind 保留字段契约',
@@ -328,9 +385,9 @@ describe('OASTable server 分组协议（批 B）', () => {
     expect(dataRowsOf(el).length).toBe(1)
   })
 
-  // ==== 收尾小修：server 分组 × column-virtual 守卫（F1）+ labelSpan=0 退化（F3） ====
+  // ==== 兼容批：server 分组 × column-virtual 组行参与列窗口（取代原降级方案 F1）+ labelSpan=0 退化（F3） ====
 
-  /** 32 列宽表（name + amount 聚合列 + 30 附加列）：happy-dom 视口下窗口裁剪成立，不降级时数据行走占位归并 */
+  /** 32 列宽表（name + amount 聚合列 + 30 附加列）：happy-dom 视口下窗口裁剪成立，数据行/组行都走占位归并 */
   const wideGroupCols = (): string =>
     JSON.stringify([
       { key: 'name', title: '名称' },
@@ -338,48 +395,184 @@ describe('OASTable server 分组协议（批 B）', () => {
       ...Array.from({ length: 30 }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '80px' })),
     ])
 
-  it('server 分组 × column-virtual：列虚拟降级为普通渲染（devWarn 一次 + 重渲染不重复）——组行/数据行格子几何闭合', () => {
+  const wrapOf = (el: OASTable): HTMLElement => el.shadowRoot!.querySelector('.table-scroll')!
+
+  const scrollX = async (el: OASTable, left: number): Promise<void> => {
+    const w = wrapOf(el)
+    // 轮询至窗口反映新滚动位（scroll 经 rAF 节流，满载 worker 下固定 sleep 不可靠——
+    // 以数据行首格 data-col 变化作窗口切换信号）
+    const before = dataRowsOf(el)[0]?.querySelector('td')?.getAttribute('data-col')
+    w.scrollLeft = left
+    w.dispatchEvent(new Event('scroll'))
+    for (let i = 0; i < 50; i++) {
+      await new Promise((r) => setTimeout(r, 20))
+      const now = dataRowsOf(el)[0]?.querySelector('td')?.getAttribute('data-col')
+      if (now !== before) return
+    }
+  }
+
+  /** 行 ΣcolSpan（格几何闭合口径：组行与数据行同构） */
+  const spanSum = (tr: HTMLElement): number =>
+    [...tr.querySelectorAll('td')].reduce((n, t) => n + (t as HTMLTableCellElement).colSpan, 0)
+
+  const virtualWarns = (warn: ReturnType<typeof vi.spyOn>): number =>
+    warn.mock.calls.filter((c: unknown[]) => String(c[0]).includes('column-virtual')).length
+
+  const wideGroupMount = (rows: string, attrs: Record<string, string> = {}) =>
+    mountGroup(
+      { 'row-model': 'server', total: '40', 'group-by': 'dept', 'column-virtual': '', ...attrs },
+      rows,
+      wideGroupCols(),
+    )
+
+  it('server 分组 × column-virtual：组行参与列窗口（逐格与数据行同构、ΣcolSpan 闭合、零降级 devWarn）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const rows = JSON.stringify([
+        { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+        { key: 'a', name: '张三', amount: 70 },
+        { key: 'b', name: '李四', amount: 50 },
+      ])
+      const { el } = wideGroupMount(rows)
+      // 列虚拟在 server 分组下生效（降级才无占位格）：数据行走占位归并
+      const dataTds = [...dataRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      expect(
+        dataTds.some((t) => t.classList.contains('col-virtual-placeholder')),
+        'server 分组下列虚拟不降级（数据行有窗口外占位格）',
+      ).toBe(true)
+      // 组行逐格与数据行同构：格数一致、逐格 colSpan 相等（首格 = label 承载 name 列）
+      const gTds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      expect(gTds.length, '组行格数与数据行一致（窗口列逐格 + 占位归并）').toBe(dataTds.length)
+      gTds.forEach((t, i) => expect(t.colSpan, `组行第 ${i} 格 colSpan 与数据行同位格一致`).toBe(dataTds[i]!.colSpan))
+      // 几何闭合：组行/数据行 ΣcolSpan 都 = 全列 32
+      expect(spanSum(groupRowsOf(el)[0]!)).toBe(32)
+      expect(spanSum(dataRowsOf(el)[0]!)).toBe(32)
+      // label 格：初始窗口从 name 起 → label 覆盖首列（colSpan=1），聚合值在其后同位格
+      expect(gTds[0]!.textContent).toContain('研发')
+      expect(gTds[0]!.querySelector('.group-count')!.textContent).toBe('2')
+      expect(gTds[1]!.getAttribute('data-col')).toBe('amount')
+      expect(gTds[1]!.textContent).toBe('120')
+      // 占位格与数据行同源（class 口径一致、span 一致）
+      const gPh = gTds.filter((t) => t.classList.contains('col-virtual-placeholder'))
+      const dPh = dataTds.filter((t) => t.classList.contains('col-virtual-placeholder'))
+      expect(gPh.length).toBe(dPh.length)
+      gPh.forEach((t, i) => expect(t.colSpan, '组行占位格 span 与数据行同源').toBe(dPh[i]!.colSpan))
+      // 兼容（非降级）：零 column-virtual 告警 + 同实例重渲染（数据回填）仍零告警
+      expect(virtualWarns(warn), 'server 分组与列虚拟兼容，无降级告警').toBe(0)
+      el.setAttribute(
+        'data',
+        JSON.stringify([
+          { kind: 'group', groupKey: '销售', groupCount: 1, aggregates: { amount: 5 } },
+          { key: 'c', name: '王五', amount: 5 },
+        ]),
+      )
+      expect(virtualWarns(warn), '同实例重渲染不重复告警（兼容路径无告警）').toBe(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('server 分组 × column-virtual：横向滚动窗口切换 → 组行 label 跨度按窗口重算（不跨窗口错位）、ΣcolSpan 恒闭合、折叠钮可用', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const rows = JSON.stringify([
+        { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+        { key: 'a', name: '张三', amount: 70 },
+        { key: 'b', name: '李四', amount: 50 },
+      ])
+      const { el } = wideGroupMount(rows)
+      // 滚动窗口：首个聚合列（amount）滚出窗口 → 组行不再渲染其聚合格；数据行窗口首列不再是 name
+      await scrollX(el, 2000)
+      const dataTds = [...dataRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      const gTds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      expect(dataTds[0]!.getAttribute('data-col'), '数据行窗口首列已前移（首格为占位或窗口列）').not.toBe('name')
+      expect(
+        gTds.some((t) => t.getAttribute('data-col') === 'amount'),
+        '聚合列滚出窗口后组行无其聚合格',
+      ).toBe(false)
+      // label 退化并入首个真实列格——不并入占位格（label 不覆盖窗口外区域）
+      const carrier = gTds.find((t) => (t.textContent ?? '').includes('研发'))!
+      expect(carrier.hasAttribute('data-col'), '窗口前移后 label 并入首个可见列格').toBe(true)
+      expect(carrier.classList.contains('col-virtual-placeholder')).toBe(false)
+      // 逐格同构 + 闭合仍成立（窗口切换后组行几何与数据行同步重算）
+      expect(gTds.length).toBe(dataTds.length)
+      gTds.forEach((t, i) => expect(t.colSpan).toBe(dataTds[i]!.colSpan))
+      expect(spanSum(groupRowsOf(el)[0]!), '窗口切换后组行 ΣcolSpan 恒闭合').toBe(32)
+      expect(spanSum(dataRowsOf(el)[0]!)).toBe(32)
+      // 折叠钮在窗口化组行可用：点击 → 组内行本地隐藏 + aria-expanded 同步（不重取）
+      const toggle = groupRowsOf(el)[0]!.querySelector('button.toggle') as HTMLButtonElement
+      expect(toggle.getAttribute('aria-expanded')).toBe('true')
+      toggle.click()
+      expect(dataRowsOf(el).length, '折叠在窗口化组行照常（组内 2 行隐藏）').toBe(0)
+      expect(groupRowsOf(el)[0]!.querySelector('button.toggle')!.getAttribute('aria-expanded')).toBe('false')
+      ;(groupRowsOf(el)[0]!.querySelector('button.toggle') as HTMLButtonElement).click()
+      expect(dataRowsOf(el).length).toBe(2)
+      // 滚回 0：label 恢复独立承载格（重算双向，随窗口 current 可见集走）
+      await scrollX(el, 0)
+      const gTds0 = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      expect(gTds0[0]!.colSpan).toBe(1)
+      expect(gTds0[0]!.textContent).toContain('研发')
+      expect(gTds0[1]!.getAttribute('data-col')).toBe('amount')
+      expect(gTds0[1]!.textContent).toBe('120')
+      // 全程零 column-virtual 告警
+      expect(virtualWarns(warn)).toBe(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('server 分组 × column-virtual × 勾选列：label 跨度计入前导勾选列，ΣcolSpan 与数据行闭合（= 33）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       const rows = JSON.stringify([
         { kind: 'group', groupKey: '研发', groupCount: 1, aggregates: { amount: 120 } },
         { key: 'a', name: '张三', amount: 70 },
       ])
-      const { el } = mountGroup(
-        { 'row-model': 'server', total: '40', 'group-by': 'dept', 'column-virtual': '' },
-        rows,
-        wideGroupCols(),
-      )
-      // 降级生效：数据行不再走列窗口（无占位归并格）
-      const placeholders = el.shadowRoot!.querySelectorAll('td.col-virtual-placeholder')
-      expect(placeholders.length, 'server 分组生效时 column-virtual 应降级（无占位格）').toBe(0)
-      // 几何闭合：组行格子数与 colSpan 求和都等于数据行 td 数（全列渲染，同构）
-      const gtds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
-      const dataTdCount = dataRowsOf(el)[0]!.querySelectorAll('td').length
-      expect(dataTdCount, '数据行全列渲染（32 列）').toBe(32)
-      expect(gtds.length, '组行逐格数与数据行一致').toBe(dataTdCount)
-      expect(gtds.reduce((n, t) => n + t.colSpan, 0)).toBe(dataTdCount)
-      // 聚合值列位正确（amount 在第 2 格，label 格覆盖 name 叶子）
-      expect(gtds[0]!.textContent).toContain('研发')
-      expect(gtds[1]!.getAttribute('data-col')).toBe('amount')
-      expect(gtds[1]!.textContent).toBe('120')
-      // devWarn 恰一次 + 同实例重渲染（数据回填触发 update）不重复
-      const warns = (): number => warn.mock.calls.filter((c) => String(c[0]).includes('column-virtual')).length
-      expect(warns()).toBe(1)
-      el.setAttribute(
-        'data',
-        JSON.stringify([
-          { kind: 'group', groupKey: '销售', groupCount: 1, aggregates: { amount: 5 } },
-          { key: 'b', name: '李四', amount: 5 },
-        ]),
-      )
-      expect(warns(), '同实例重渲染不重复告警').toBe(1)
+      const { el } = wideGroupMount(rows, { checkable: '' })
+      // 数据行：勾选格 + 窗口列 + 占位归并；组行：label 格（勾选 + name = colSpan 2）+ 窗口列 + 占位
+      const gTds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      expect(gTds[0]!.colSpan, 'label 跨度 = 前导勾选列 + name 叶子').toBe(2)
+      expect(gTds[0]!.textContent).toContain('研发')
+      expect(gTds[1]!.getAttribute('data-col')).toBe('amount')
+      // 闭合：组行 ΣcolSpan = 勾选(1) + 全列(32) = 数据行同口径
+      expect(spanSum(groupRowsOf(el)[0]!)).toBe(33)
+      expect(spanSum(dataRowsOf(el)[0]!)).toBe(33)
+      expect(virtualWarns(warn)).toBe(0)
     } finally {
       warn.mockRestore()
     }
   })
 
-  it('对照：非 server 分组（client 本地分组）× column-virtual 不降级——列窗口照常生效（守卫条件精确命中 server 分组）', () => {
+  it('labelSpan=0 退化 × column-virtual（首个叶子即聚合列）：窗口内外 label 均并入首个真实列格，ΣcolSpan 闭合', async () => {
+    const cols = JSON.stringify([
+      { key: 'amount', title: '金额', aggregate: true, type: 'number' },
+      { key: 'name', title: '名称' },
+      ...Array.from({ length: 30 }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '80px' })),
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+      { key: 'a', name: '张三', amount: 70 },
+    ])
+    const { el } = wideGroupMount(rows)
+    el.setAttribute('columns', cols)
+    // 初始窗口：首列即聚合列 → 无独立 label 格，label 并入 amount 格（与既有退化同口径）
+    const gTds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(gTds[0]!.getAttribute('data-col')).toBe('amount')
+    expect(gTds[0]!.textContent).toContain('研发')
+    expect(gTds[0]!.textContent).toContain('120')
+    // 折叠交互与组信息不回退：折叠钮并入首格（aria-expanded 语义在场）
+    expect(gTds[0]!.querySelector('button.toggle')!.getAttribute('aria-expanded')).toBe('true')
+    expect(spanSum(groupRowsOf(el)[0]!)).toBe(32)
+    // 滚动后：label 仍并入首个真实列格（不落入占位格）
+    await scrollX(el, 2000)
+    const gTds2 = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+    const carrier = gTds2.find((t) => (t.textContent ?? '').includes('研发'))!
+    expect(carrier.hasAttribute('data-col')).toBe(true)
+    expect(carrier.classList.contains('col-virtual-placeholder')).toBe(false)
+    expect(spanSum(groupRowsOf(el)[0]!)).toBe(32)
+  })
+
+  it('对照：非 server 分组（client 本地分组）× column-virtual 行为零漂移——列窗口照常生效，组行恒全宽形态不变', () => {
     const data = JSON.stringify([{ key: 'a', name: '张三', dept: '研发', amount: 70 }])
     const { el } = mountReq({ 'group-by': 'dept', 'column-virtual': '' }, data, wideGroupCols())
     // column-virtual 生效：初始 scrollLeft=0 无左占位，窗口裁剪只留右侧归并格（恰好 1 个）

@@ -168,6 +168,10 @@
       "observed": true
     },
     {
+      "name": "max-loaded-rows",
+      "observed": true
+    },
+    {
       "name": "visual-total",
       "type": "string",
       "default": "",
@@ -189,6 +193,10 @@
       "name": "summary-scope",
       "type": "string",
       "default": "all",
+      "observed": true
+    },
+    {
+      "name": "summary-values",
       "observed": true
     },
     {

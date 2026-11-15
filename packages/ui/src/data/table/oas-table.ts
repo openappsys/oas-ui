@@ -37,6 +37,7 @@ import {
   infiniteHasMore,
   infiniteNearBottom,
   isDuplicateAppend,
+  parseMaxLoadedRows,
   rowsRequestPlan,
   rowsRequestSignature,
   type RowsRequestDetail,
@@ -552,7 +553,7 @@ const SERVER_WINDOWED_HINT =
  * |-------------------|---------------------------------------------------------------------|--------|
  * | 导出              | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出）；全量导出经宿主取数后调 exportRows | exportData / exportRows |
  * | 打印              | 仅当前页切片 + devWarn 一次（不阻断）                                | update × printModeOn |
- * | 合计 scope=all    | 禁用 + devWarn（全量口径未知；scope=page 页内合计照常）               | buildSummaryConfigs |
+ * | 合计 scope=all    | 禁用 + devWarn（全量口径未知；批 I 起宿主提供 summary-values 时放行——按宿主全量合计渲染；scope=page 页内合计照常） | buildSummaryConfigs |
  * | 分组 group-by     | 宿主分组协议（批 B）：请求 detail.groupBy + 宿主返回分组行（kind='group'）按序渲染；本地分组变换不执行；折叠在当前页行内本地过滤 | groupByEffective / serverGroupBy / flatWithCache |
  * | 行拖拽            | 禁用 + devWarn（行序语义服务端持有）                                  | rowDragEnabled |
  * | 列拖拽            | 支持（批 F 契约：列序是展示态，与服务端行序无关）——写回 column-keys + 派 oas-column-order，与 client 同语义 | setColumnOrder（无闸门） |
@@ -577,12 +578,13 @@ const SERVER_SUMMARY_ALL_HINT =
   '[oas-table] server 行模型下 summary-scope="all" 不生效（全量口径未知，对当前页切片聚合会得到错误的「全量合计」）：页内合计可用 summary-scope="page"'
 
 /**
- * server 分组协议：无效组行（kind:'group' 但 groupKey 缺失/非字符串/空串）降级为数据行的
- * 告警文案（实例级去重一次）。降级不丢数据（旧行为剔除会静默丢行）；同时提示 kind 为
- * 协议保留字段——宿主数据若以 kind 承载业务字段建议改列名。
+ * server 分组协议：无效组行（kind:'group' 但 groupKey 非字符串且非空值——数值/布尔/对象等；
+ * 空串/null/undefined 是合法空值组，不告警）降级为数据行的告警文案（实例级去重一次）。
+ * 降级不丢数据（旧行为剔除会静默丢行）；同时提示 kind 为协议保留字段——宿主数据若以 kind
+ * 承载业务字段建议改列名。
  */
 const SERVER_GROUP_INVALID_HINT =
-  '[oas-table] server 分组协议：部分行 kind="group" 但缺少有效 groupKey（须为非空字符串），已按数据行渲染（数据不丢）。kind 为分组协议保留字段——宿主数据若以 kind 承载业务字段，建议改用其他列名'
+  '[oas-table] server 分组协议：部分行 kind="group" 但 groupKey 非法（须为字符串，空串 / null / undefined 为空值组属合法），已按数据行渲染（数据不丢）。kind 为分组协议保留字段——宿主数据若以 kind 承载业务字段，建议改用其他列名'
 
 /** server 行模型能力闸门：行拖拽禁用的告警文案（实例级去重一次） */
 const SERVER_ROW_DRAG_HINT =
@@ -616,7 +618,7 @@ const SERVER_SPAN_HINT =
  * |-------------------|----------------------------------------------------------------|--------|
  * | 导出              | 仅已装载数据 + devWarn 一次；全量导出经宿主取数后调 exportRows       | exportData / exportRows |
  * | 打印              | 仅已装载数据 + devWarn 一次                                     | update × printModeOn |
- * | 合计 scope=all    | 禁用 + devWarn（全量口径未知）；scope=page 对已装载数据合计照常   | buildSummaryConfigs |
+ * | 合计 scope=all    | 禁用 + devWarn（全量口径未知；批 I 起宿主提供 summary-values 时放行）；scope=page 对已装载数据合计照常 | buildSummaryConfigs |
  * | 分组 group-by     | 禁用 + devWarn（已装载数据上分组是错误结果；server 分组协议仅限 row-model="server" 形态） | groupByEffective |
  * | 行拖拽            | 禁用 + devWarn（装载顺序语义由服务端游标持有）                   | rowDragEnabled |
  * | 列拖拽            | 支持（批 F 契约：列序是展示态）——与 client 同语义，无闸门        | setColumnOrder（无闸门） |
@@ -671,6 +673,14 @@ const INFINITE_LATE_APPEND_HINT =
 /** infinite：appendRows 同 requestId 重复回填被幂等忽略的可诊断提示（实例级去重一次） */
 const INFINITE_DUPLICATE_APPEND_HINT =
   '[oas-table] appendRows 的 requestId 已消费过，重复回填按幂等静默丢弃（每个 requestId 只应回填一次；确需重试请走 refreshRows 触发新请求）'
+
+/** infinite：max-loaded-rows 非法（非正整数）的一次性可诊断提示文案（按无上界处理，现状行为） */
+const MAX_LOADED_ROWS_INVALID_HINT =
+  '[oas-table] max-loaded-rows 须为正整数（已装载缓冲的行数上界），当前值无法解析——已忽略（缓冲无上界，缺省行为）'
+
+/** server / infinite 能力闸门：summary-values 非法（非 JSON 对象）的一次性可诊断提示文案 */
+const SUMMARY_VALUES_INVALID_HINT =
+  '[oas-table] summary-values 须为 JSON 对象（列 key → 合计值，数值/字符串），当前值无法解析——已按未提供处理：server / infinite 形态下 summary-scope="all" 仍禁用（页内合计可用 summary-scope="page"，或提供合法 summary-values 渲染宿主全量合计）'
 
 /** server 行模型失败条图标（原创内联 SVG：感叹圆环，danger 语义随 currentColor 着色） */
 const ROWS_ERROR_ICON =
@@ -773,6 +783,10 @@ export class OASTableBase extends OASElement {
       // 与 windowed 同开 windowed 优先（均互斥告警一次）；total 可选（未知总数场景
       // totalKnown=false，到底以宿主空块信号为准）。生效判定与能力闸门见 infiniteOn() / rowsGatedOn()
       'infinite',
+      // infinite 缓冲上界（批 G，可选）：合法正整数 N = 已装载缓冲的行数上界——追加超界时
+      // 淘汰最旧行（保留最近 N 行），滚动锚定相应回拉；缺省/非法 = 无上界（现状行为，
+      // 非法值一次性 devWarn）。detail.start/hasMore 用累计装载数（淘汰不影响游标链与到底判定）
+      'max-loaded-rows',
       // 可选视觉协议（须同时有效才启用）：visual-total=全量视觉行数（数据行 + 行内嵌展开内容行，
       // ≥ 数据 total）；visual-start=当前 data[0] 的视觉行号。生效后渲染 flow 从 visual-start×行高起、
       // 渲染 count=visual-total，展开由宿主完全控制（本地 toggle 只发 oas-expand）
@@ -780,6 +794,10 @@ export class OASTableBase extends OASElement {
       'visual-start',
       'filter-values',
       'summary-scope',
+      // server / infinite 形态的全表合计值（批 I，JSON 对象：列 key → 宿主计算好的合计值）——
+      // summary-scope="all" 在场且本属性提供合法对象时，合计行按宿主值渲染（不再禁用）；
+      // 未提供/非法时行为 = 现状（scope=all 禁用 + devWarn 一次）。client 形态忽略本属性
+      'summary-values',
       'show-header',
       'table-layout',
       'hover',
@@ -988,6 +1006,8 @@ export class OASTableBase extends OASElement {
   private serverExportWarned = false
   private serverPrintWarned = false
   private serverSummaryWarned = false
+  /** 批 I：summary-values 非法 JSON 的一次性可诊断提示 flag（实例级去重） */
+  private summaryValuesInvalidWarned = false
   /** server 分组协议：无效组行（groupKey 校验失败）剔除降级的告警去重（实例级一次） */
   private serverGroupInvalidWarned = false
   private serverRowDragWarned = false
@@ -1015,6 +1035,9 @@ export class OASTableBase extends OASElement {
   // ==================== infinite（无限滚动 + cursor 分页）状态 ====================
   /** 已装载行缓冲（渲染数据源）：data 属性写 = 替换（重置缓冲）；appendRows = 追加 */
   private infiniteRows: Array<Record<string, unknown>> = []
+  /** 累计装载行数（批 G）：自上次重置起宿主经 appendRows/data 替换交付的总行数——淘汰只缩缓冲
+   *  不减计数：detail.start（游标链定位）与 hasMore 判定（装满 total）以累计口径参与，淘汰不影响 */
+  private infiniteLoadedCount = 0
   /** 组件内记录的游标：appendRows(options.cursor) 原样记录，load-more 请求 detail.cursor 回传（undefined = 尚无游标） */
   private infiniteCursor: string | undefined = undefined
   /** 宿主「到底」信号：appendRows 回传空数组（rows.length === 0）置位，重置装载（排序/过滤/refresh/data 替换）清位 */
@@ -1046,6 +1069,8 @@ export class OASTableBase extends OASElement {
   private infiniteAppendInactiveWarned = false
   private infiniteLateAppendWarned = false
   private infiniteDuplicateAppendWarned = false
+  /** 批 G：max-loaded-rows 非法值的一次性可诊断提示 flag（实例级去重） */
+  private maxLoadedRowsWarned = false
   /** 打印媒体查询（connectedCallback 捕获；null = 环境不支持 / 已断开） */
   private printMql: MediaQueryList | null = null
   /** 当前是否处于 print 媒体（打印/打印预览）：窗口外行不在 DOM、CSS 无法唤回，此态下行/列窗口恒全量 */
@@ -1404,6 +1429,7 @@ export class OASTableBase extends OASElement {
         this.serverError = false
         this.lastRowsRequestState = null
         this.infiniteRows = []
+        this.infiniteLoadedCount = 0
         this.infiniteCursor = undefined
         this.infiniteHostEnded = false
         this.infiniteBufferStale = false
@@ -1782,13 +1808,16 @@ export class OASTableBase extends OASElement {
 
   /**
    * server 分组分区的壳层薄壳：调数据层 partitionServerGroupRows（单一真相源），
-   * 无效组行（kind:'group' 但 groupKey 校验失败，已降级按数据行渲染）一次性 devWarn
+   * 空值组文案（i18n `table.groupEmpty`，与本地分组同一份）注入数据层；无效组行
+   * （kind:'group' 但 groupKey 非字符串且非空值，已降级按数据行渲染）一次性 devWarn
    * （变换本体不做 DOM/告警副作用）。
    */
   private buildServerGroupFlat(roots: Array<Record<string, unknown>>): FlatRow[] {
     // 仅内部诊断：热路径计数（与本地分组 flatBuilds 同口径）
     tableRenderDiagnostics.flatBuilds++
-    const r = partitionServerGroupRows(roots)
+    const r = partitionServerGroupRows(roots, {
+      emptyGroupLabel: tableText(this, 'table.groupEmpty', '(empty)'),
+    })
     if (r.invalidGroupRows > 0 && !this.serverGroupInvalidWarned) {
       this.serverGroupInvalidWarned = true
       devWarn(`${SERVER_GROUP_INVALID_HINT}（${r.invalidGroupRows} 行）`)
@@ -1989,10 +2018,15 @@ export class OASTableBase extends OASElement {
     // 合计范围：all（默认）= 分页切片前的完整筛选结果总计；page = 当前页小计（原行为）。
     // 非法值回落默认 all（与表意一致）。
     const summaryScopePage = this.getAttr('summary-scope', 'all') === 'page'
+    // 批 I：server / infinite 形态 scope=all 且宿主提供 summary-values → 宿主全量合计值权威，
+    // 跳过本地全量扁平化与聚合（对切片/已装载数据聚合是错误结果——这正是原禁用闸门的理由）
+    const hostSummaryAll = !summaryScopePage && this.rowsGatedOn() ? this.parseSummaryValues() : null
     // scope=all 的全量 flat 缓存：data/筛选/排序未变时复用，避免选中/翻页/hover 等非数据变化的渲染
     // 重复对全量集合做 walk+sort（虚拟滚动大数据量下这是可见开销）。
     let summaryFlat: FlatRow[]
-    if (this.windowedOn()) {
+    if (hostSummaryAll) {
+      summaryFlat = []
+    } else if (this.windowedOn()) {
       // windowed：合计已禁用（buildSummaryConfigs 返回空）——不做全量扁平化与缓存
       summaryFlat = []
     } else if (summaryScopePage) {
@@ -2016,32 +2050,38 @@ export class OASTableBase extends OASElement {
     }
     // 汇总值缓存：数据/筛选/分组/分页切片未变（flat 来源键一致）且聚合配置未变时复用 computeSummary
     // 结果——选择不参与 sum/avg/count 聚合，仅切换 selected 不重算（scope=all/page 同理）。
+    // 批 I：宿主 summary-values 通道不经聚合缓存——宿主值属性变化经渲染签名天然失效，直接装配。
     const configsSig = summaryConfigs.map((c) => `${c.key}:${c.type}:${c.label ?? ''}`).join(',')
     let summaryValues: Map<string, string> | null = null
-    if (summaryConfigs.length > 0 && summaryFlat.length > 0) {
-      const flatSourceKey = summaryScopePage
-        ? this.flatCacheSignature(groupBy)
-        : `${this.getAttr('data', '')}\u0001${this.getAttr('filter-values', '')}\u0001${this.propChannelVersion}`
-      const valuesKey = `${summaryScopePage ? 'page' : 'all'}\u0001${flatSourceKey}\u0001${configsSig}`
-      if (this.summaryValuesCache && this.summaryValuesCache.key === valuesKey) {
-        summaryValues = this.summaryValuesCache.values
+    if (summaryConfigs.length > 0 && (hostSummaryAll || summaryFlat.length > 0)) {
+      if (hostSummaryAll) {
+        summaryValues = new Map(Object.entries(hostSummaryAll).map(([k, v]) => [k, String(v)]))
       } else {
-        summaryValues = this.computeSummary(summaryConfigs, summaryFlat)
-        this.summaryValuesCache = { key: valuesKey, values: summaryValues }
+        const flatSourceKey = summaryScopePage
+          ? this.flatCacheSignature(groupBy)
+          : `${this.getAttr('data', '')}\u0001${this.getAttr('filter-values', '')}\u0001${this.propChannelVersion}`
+        const valuesKey = `${summaryScopePage ? 'page' : 'all'}\u0001${flatSourceKey}\u0001${configsSig}`
+        if (this.summaryValuesCache && this.summaryValuesCache.key === valuesKey) {
+          summaryValues = this.summaryValuesCache.values
+        } else {
+          summaryValues = this.computeSummary(summaryConfigs, summaryFlat)
+          this.summaryValuesCache = { key: valuesKey, values: summaryValues }
+        }
       }
     }
 
-    // 合计行装配数据：条件与下方消费点同口径（同步渲染与分批渲染末帧共用一份，防孪生条件漂移）
+    // 合计行装配数据：条件与下方消费点同口径（同步渲染与分批渲染末帧共用一份，防孪生条件漂移）。
+    // 批 I：宿主合计值通道不要求 summaryFlat 非空（宿主值权威，数据行为空也可渲染合计行）。
     const summaryRowData =
-      summaryConfigs.length > 0 && summaryFlat.length > 0 && summaryValues
+      summaryConfigs.length > 0 && summaryValues && (hostSummaryAll || summaryFlat.length > 0)
         ? { configs: summaryConfigs, values: summaryValues }
         : null
     const layout = this.computeLayout()
     const virtual = this.isVirtual()
     // 横向虚拟（column-virtual）：列窗口同步 + 不兼容形态降级判定。
     // 窗口在本轮渲染前刷新到最新（scroll 事件驱动 syncColumnWindow 后经此消费）。
-    // 暂不兼容：合计行（summary 的跨列合计格与列窗口错位）、server 分组生效中
-    // （组行按列形态与占位归并几何错位，判定在 columnVirtualOn 内）——降级为普通渲染。
+    // 暂不兼容：合计行（summary 的跨列合计格与列窗口错位）——降级为普通渲染；
+    // server 分组与列虚拟兼容（组行走同一窗口序列，见 buildGroupRow）。
     let colVirtual = false
     if (this.columnVirtualOn() && !this.windowedOn() && summaryConfigs.length === 0) {
       const segs = this.splitColSegments(this.effectiveColumns())
@@ -2447,9 +2487,12 @@ export class OASTableBase extends OASElement {
     if (this.infiniteOn()) {
       if (this.infiniteBufferStale) {
         this.infiniteRows = [...this._data]
+        // data 替换 = 重新装载：累计计数随缓冲重置（上界裁剪按新缓冲内容执行）
+        this.infiniteLoadedCount = this.infiniteRows.length
         this.infiniteCursor = undefined
         this.infiniteHostEnded = false
         this.infiniteBufferStale = false
+        this.trimInfiniteBuffer(false)
       }
       return {
         roots: this.infiniteRows,
@@ -4048,16 +4091,26 @@ export class OASTableBase extends OASElement {
       // 配置列之前的叶子列；其后叶子列逐格渲染（聚合列有值渲染值、无值留空格——组行
       // 格子结构在同一表内稳定，不随数据值漂移），尾部展开列补占位格
       const leadingAux = (this.rowDragEnabled() ? 1 : 0) + (this.hasAttr('checkable') ? 1 : 0)
+      const firstAgg = leaves.findIndex((c) => c.aggregate)
+      // 组行与数据行同源消费列窗口序列（column-virtual 生效时序列为 [固定段][占位][窗口列]
+      // [占位][固定段]；非列虚拟/print 全列展开时 = 全列 span=1，与既有逐列渲染逐字节等价）。
+      // label 只吸收序列前段「当前可见且位于首个聚合列之前」的连续列——遇占位格即停
+      // （label 不覆盖窗口外区域），窗口滚动切换时随 current 可见集重算，不跨窗口错位；
+      // ΣcolSpan 恒 = 前导附加列 + 全列（与数据行同构闭合）
+      const seq = this.columnWindowSequence()
+      const leafIndex = new Map(leaves.map((c, idx) => [c, idx]))
       let labelSpan = leadingAux
       let i = 0
-      for (; i < leaves.length; i++) {
-        if (leaves[i]!.aggregate) break
+      for (; i < seq.length; i++) {
+        const col = seq[i]!.col
+        if (!col) break // 窗口外占位格：label 止于窗口边界
+        if ((leafIndex.get(col) ?? 0) >= firstAgg) break
         labelSpan++
       }
-      // labelSpan=0 退化防御（首个叶子即聚合列且无 checkable/rowDrag）：无独立 label 空间
+      // labelSpan=0 退化防御（首个可见列即聚合列且无 checkable/rowDrag）：无独立 label 空间
       // ——不渲染 label 格（此前 Math.max(1, 0) 强凑 colSpan=1 会让 ΣcolSpan 比总列数多 1，
-      // 行宽不闭合），label 内容（折叠钮 + 组标签 + 计数 + depth 缩进）并入首个聚合格：
-      // 聚合格从第 0 列开始保证 ΣcolSpan 闭合，折叠交互/组标签可见性不回退
+      // 行宽不闭合），label 内容（折叠钮 + 组标签 + 计数 + depth 缩进）并入其后首个真实列格：
+      // 行宽闭合、折叠交互/组标签可见性不回退；占位格不承载 label（窗口外区域不可见）
       const mergedLabel = labelSpan === 0
       if (!mergedLabel) {
         td.colSpan = labelSpan
@@ -4067,29 +4120,46 @@ export class OASTableBase extends OASElement {
         tr.appendChild(td)
       }
       let labelPending = mergedLabel
-      for (; i < leaves.length; i++) {
-        const col = leaves[i]!
+      for (; i < seq.length; i++) {
+        const item = seq[i]!
         const cell = document.createElement('td')
-        // 与数据行同口径：data-col + part=cell（固定列 sticky / 宿主选择器命中）
-        cell.setAttribute('data-col', col.key)
-        cell.setAttribute('part', 'cell')
-        const merged = labelPending
-        if (merged) {
-          labelPending = false
-          indent(cell)
-          cell.append(btn, label)
-          if (count) cell.append(count)
-        }
-        const v = col.aggregate ? groupAggregateValue(flat.aggregates, col) : null
-        if (v !== null) {
-          // append 而非 textContent：退化承载格已有子节点，textContent 会覆盖
-          cell.append(v)
-          const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
-          // 退化承载格不写列对齐：右对齐会把折叠钮/组标签挤到格尾（label 不可读）——
-          // 数值对齐惯例让位于该退化格的 label 主功能（罕见配置，文档标注）
-          if (align && !merged) cell.className = `align-${align}`
+        if (!item.col) {
+          // 横向虚拟窗口外占位格：与数据行同源（colSpan 归并 + 同类名），不承载 label/聚合值
+          cell.colSpan = item.span
+          cell.className = 'col-virtual-placeholder'
+        } else {
+          const col = item.col
+          // 与数据行同口径：data-col + part=cell（固定列 sticky / 宿主选择器命中）
+          cell.setAttribute('data-col', col.key)
+          cell.setAttribute('part', 'cell')
+          const merged = labelPending
+          if (merged) {
+            labelPending = false
+            indent(cell)
+            cell.append(btn, label)
+            if (count) cell.append(count)
+          }
+          const v = col.aggregate ? groupAggregateValue(flat.aggregates, col) : null
+          if (v !== null) {
+            // append 而非 textContent：退化承载格已有子节点，textContent 会覆盖
+            cell.append(v)
+            const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
+            // 退化承载格不写列对齐：右对齐会把折叠钮/组标签挤到格尾（label 不可读）——
+            // 数值对齐惯例让位于该退化格的 label 主功能（罕见配置，文档标注）
+            if (align && !merged) cell.className = `align-${align}`
+          }
         }
         tr.appendChild(cell)
+      }
+      if (labelPending) {
+        // 极端几何兜底（窗口内零真实列、序列只剩占位格——数据行同样只剩占位格）：
+        // label 落到首个占位格保证组信息不丢；正常窗口（≥1 可见列）不会走到这里
+        const firstCell = tr.querySelector('td')
+        if (firstCell) {
+          indent(firstCell)
+          firstCell.append(btn, label)
+          if (count) firstCell.append(count)
+        }
       }
       if (this._expandable) {
         // 尾部展开列占位格（类名与数据行同款——格结构/边框对齐）
@@ -4260,19 +4330,23 @@ export class OASTableBase extends OASElement {
       return []
     }
     // server 行模型 / infinite：scope=all 的全量合计是对切片/已装载数据的错误聚合 → 禁用
-    // （告警一次）；scope=page 是切片内小计的显式声明（对当前数据聚合恰好正确），照常生效
+    // （告警一次）；scope=page 是切片内小计的显式声明（对当前数据聚合恰好正确），照常生效。
+    // 批 I：宿主经 summary-values 提供全量合计值（宿主口径权威）→ 禁用闸门放行，合计行按
+    // 宿主值渲染（列布局与本地合计行一致、无值列留空）；未提供/非法时行为 = 现状（禁用）。
     if (this.rowsGatedOn() && this.getAttr('summary-scope', 'all') !== 'page') {
       if (this.getAttr('summary', '') || this.effectiveColumns().some((c) => isSummaryType(c.summary))) {
-        if (this.infiniteOn()) {
-          if (!this.infiniteSummaryWarned) {
-            this.infiniteSummaryWarned = true
-            devWarn(INFINITE_SUMMARY_ALL_HINT)
+        if (this.parseSummaryValues() === null) {
+          if (this.infiniteOn()) {
+            if (!this.infiniteSummaryWarned) {
+              this.infiniteSummaryWarned = true
+              devWarn(INFINITE_SUMMARY_ALL_HINT)
+            }
+          } else if (!this.serverSummaryWarned) {
+            this.serverSummaryWarned = true
+            devWarn(SERVER_SUMMARY_ALL_HINT)
           }
-        } else if (!this.serverSummaryWarned) {
-          this.serverSummaryWarned = true
-          devWarn(SERVER_SUMMARY_ALL_HINT)
+          return []
         }
-        return []
       }
     }
     const configs: SummaryConfig[] = []
@@ -4301,6 +4375,37 @@ export class OASTableBase extends OASElement {
       }
     }
     return configs
+  }
+
+  /**
+   * 解析 summary-values 属性（批 I，server / infinite 形态的全表合计值）：JSON 对象
+   * （列 key → 宿主计算好的合计值，数值/字符串原样字符串化；其他形态的值忽略降级）。
+   * 缺席 → null；非法（非 JSON / 非对象）→ null + 一次性 devWarn（视同未提供——
+   * scope=all 保持现状禁用）。client 形态不消费本属性（本地聚合权威，零漂移）。
+   */
+  private parseSummaryValues(): Record<string, number | string> | null {
+    const raw = this.getAttribute('summary-values')
+    if (raw === null) return null
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      parsed = undefined
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      if (!this.summaryValuesInvalidWarned) {
+        this.summaryValuesInvalidWarned = true
+        devWarn(SUMMARY_VALUES_INVALID_HINT)
+      }
+      return null
+    }
+    const out: Record<string, number | string> = {}
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'number' && Number.isFinite(v)) out[k] = v
+      else if (typeof v === 'string') out[k] = v
+      // 布尔/对象/数组/null 等形态忽略（合计格留空——不渲染 [object Object] 事故值）
+    }
+    return out
   }
 
   /** 按类型计算各列聚合值（对完整扁平行计算，树形含隐藏子行，结果不随展开状态漂移） */
@@ -5308,14 +5413,14 @@ export class OASTableBase extends OASElement {
     return this.serverOn() || this.infiniteOn()
   }
 
-  /** infinite 到底（hasMore）判定：宿主空块信号优先；totalKnown 时已装载满 total 亦到底（纯函数复用） */
+  /** infinite 到底（hasMore）判定：宿主空块信号优先；totalKnown 时按累计装载数装满 total 亦到底（淘汰不影响——纯函数复用） */
   private infiniteHasMoreNow(): boolean {
     const total = this.externalTotal()
     return infiniteHasMore({
       hostEnded: this.infiniteHostEnded,
       totalKnown: total !== null,
       total: total ?? 0,
-      loaded: this.infiniteRows.length,
+      loaded: this.infiniteLoadedCount,
     })
   }
 
@@ -5357,7 +5462,8 @@ export class OASTableBase extends OASElement {
    * detail 按形态分流：
    * - server：start/end = 当前页半开区间，totalKnown 恒 true（生效前提即 total 在场）；
    *   group-by 在场时 detail.groupBy 携带当前分组键（宿主分组协议——宿主返回分组行）；
-   * - infinite：start/end = 已装载行数（区间语义不适用，无固定终点），totalKnown 随 total
+   * - infinite：start/end = 累计已装载行数（区间语义不适用，无固定终点；批 G 起淘汰只缩
+   *   缓冲不减计数——游标链连续不受 max-loaded-rows 影响），totalKnown 随 total
    *   属性在场性（未知总数场景 false），detail.cursor 回传组件记录的游标（无游标时省略键）。
    */
   private dispatchRowsRequest(reason: RowsRequestReason): void {
@@ -5367,7 +5473,7 @@ export class OASTableBase extends OASElement {
     this.lastRowsRequestState = state
     this.serverLoading = true
     this.serverError = false
-    const start = infinite ? this.infiniteRows.length : (state.current - 1) * state.pageSize
+    const start = infinite ? this.infiniteLoadedCount : (state.current - 1) * state.pageSize
     const detail: RowsRequestDetail = {
       requestId: this.rowsRequestId,
       start,
@@ -5412,8 +5518,42 @@ export class OASTableBase extends OASElement {
    */
   private resetInfiniteBuffer(): void {
     this.infiniteRows = []
+    this.infiniteLoadedCount = 0
     this.infiniteCursor = undefined
     this.infiniteHostEnded = false
+  }
+
+  /**
+   * 批 G：缓冲上界（max-loaded-rows 属性）——合法正整数 N 生效，缺省/非法无上界（现状）。
+   * 属性在场但非法时一次性 devWarn（可诊断），按无上界处理。
+   */
+  private maxLoadedRows(): number | null {
+    const raw = this.getAttribute('max-loaded-rows')
+    if (raw === null) return null
+    const n = parseMaxLoadedRows(raw)
+    if (n === null && !this.maxLoadedRowsWarned) {
+      this.maxLoadedRowsWarned = true
+      devWarn(MAX_LOADED_ROWS_INVALID_HINT)
+    }
+    return n
+  }
+
+  /**
+   * 批 G：缓冲上界裁剪——缓冲超长时淘汰最旧行（保留最近 N 行），渲染窗口随缓冲收敛。
+   * `anchor` 为真时同步回拉滚动位（淘汰把内容上移，视口回拉淘汰行数 × 行高——当前视口
+   * 行不跳；不足一行高钳到 0 不为负）——data 替换的渲染路径不做锚定（内容整体重置，
+   * 锚定由后续追加承担）。累计装载数不减：detail.start / hasMore 的游标链与到底判定
+   * 与淘汰无关（见 infiniteLoadedCount 注释）。
+   */
+  private trimInfiniteBuffer(anchor: boolean): void {
+    const max = this.maxLoadedRows()
+    if (max === null) return
+    const overflow = this.infiniteRows.length - max
+    if (overflow <= 0) return
+    // 回拉量须在 splice 之前取（行偏移按淘汰前索引计，动态行高走能力前缀和同口径）
+    const shift = anchor && this.wrap ? Math.min(this.wrap.scrollTop, this.rowTopOffset(overflow)) : 0
+    this.infiniteRows.splice(0, overflow)
+    if (shift > 0) this.writeScrollPosition(this.wrap!.scrollTop - shift)
   }
 
   /** infinite 的请求状态快照：与 server 同构，current 恒 1（infinite 无页码概念——current 属性写入不参与签名，不触发请求） */
@@ -5505,8 +5645,12 @@ export class OASTableBase extends OASElement {
       this.consumedInfiniteRequestId = requestId
     }
     const list = Array.isArray(rows) ? rows : []
-    if (list.length > 0) this.infiniteRows.push(...list)
-    else this.infiniteHostEnded = true
+    if (list.length > 0) {
+      this.infiniteRows.push(...list)
+      this.infiniteLoadedCount += list.length
+      // 批 G：上界在场时淘汰最旧行（保留最近 N 行）+ 滚动锚定——渲染窗口与已装载集合收敛
+      this.trimInfiniteBuffer(true)
+    } else this.infiniteHostEnded = true
     // 回填即响应到达：清在途 loading 与失败条（server 形态经 ACC 属性写清态，本方法通道
     // 自清——loading 行/错误条随本轮 markRenderDirty 的全量渲染立即收敛）
     this.serverLoading = false
@@ -5611,10 +5755,10 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method / server
-   * 分组生效中 → 告警一次并降级为普通渲染）。降级方向定稿：降 column-virtual 保 server 分组
-   * ——分组是数据语义（宿主协议结果），列虚拟是渲染性能优化；组行按列形态的跨列结构与列
-   * 窗口占位归并冲突（数据行 td 序列经 columnWindowSequence() 归并后与组行逐格渲染几何错位）。
+   * column-virtual 声明生效判定：属性在场 + 无不兼容形态（多级表头 / span-method →
+   * 告警一次并降级为普通渲染）。server 分组不在降级清单：组行与数据行同源消费
+   * columnWindowSequence()（label 跨度按窗口内当前可见列重算、占位格不承载 label），
+   * 几何逐格闭合——分组与列虚拟双生效（见 buildGroupRow 的窗口化组行口径）。
    */
   private columnVirtualOn(): boolean {
     if (!this.hasAttr('column-virtual')) return false
@@ -5629,13 +5773,6 @@ export class OASTableBase extends OASElement {
       this.warnColVirtualOnce(
         'span-method',
         'span-method 与 column-virtual 不兼容（列窗口会破坏跨列合并）：已降级为普通渲染',
-      )
-      return false
-    }
-    if (this.serverGroupBy() !== '') {
-      this.warnColVirtualOnce(
-        'server-group',
-        'server 分组与 column-virtual 不兼容（组行跨列结构与列窗口占位冲突）：已降级为普通列渲染',
       )
       return false
     }

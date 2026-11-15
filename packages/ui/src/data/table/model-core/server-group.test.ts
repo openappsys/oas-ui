@@ -96,23 +96,48 @@ describe('partitionServerGroupRows（混合行分区）', () => {
     expect(r.flat.map((f) => f.groupCount)).toEqual([undefined, undefined, undefined, 0, 5])
   })
 
-  it('groupKey 校验：缺失 / 非字符串 / 空串的 kind:"group" 行降级按数据行渲染（数据不丢，不再剔除）+ 计数', () => {
+  it('groupKey 空值组（批 H）：空串 / null / undefined 的 kind:"group" 行 = 合法空值组（groupKey 归一为空串，文案走空值组 label），不再降级/剔除', () => {
     const rows: Row[] = [
-      { kind: 'group', groupCount: 1 }, // 缺 groupKey
-      { kind: 'group', groupKey: 42 }, // 非字符串
       { kind: 'group', groupKey: '' }, // 空串
+      { kind: 'group', groupKey: null }, // null
+      { kind: 'group', groupCount: 1 }, // 缺失（undefined）
+      { kind: 'group', groupKey: '', groupCount: 2, aggregates: { amount: 9 } }, // 空值组聚合照常
       { key: 'a', name: '张三' },
-      { kind: 'group', groupKey: '研发' }, // 有效
+      { kind: 'group', groupKey: '研发' }, // 正常组对照
+    ]
+    const r = partitionServerGroupRows(rows)
+    expect(r.invalidGroupRows).toBe(0)
+    // 空值组合法：组行形态保留（kind='group'、groupKey 归一 ''），聚合照常
+    expect(r.flat.map((f) => f.kind)).toEqual(['group', 'group', 'group', 'group', 'data', 'group'])
+    expect(r.flat.slice(0, 4).map((f) => f.groupKey)).toEqual(['', '', '', ''])
+    expect(r.flat[0]!.groupLabel).toBe('(empty)') // 缺省空值组文案
+    expect(r.flat[3]!.groupCount).toBe(2)
+    expect(r.flat[3]!.aggregates).toEqual({ amount: 9 })
+    // 空值组不进 dataRows（组行是装饰行，非数据行）
+    expect(r.dataRows).toEqual([{ key: 'a', name: '张三' }])
+  })
+
+  it('空值组文案注入：emptyGroupLabel 选项覆盖缺省 "(empty)"（i18n 由壳层注入，与本地分组同文案）', () => {
+    const rows: Row[] = [{ kind: 'group', groupKey: null }]
+    expect(partitionServerGroupRows(rows).flat[0]!.groupLabel).toBe('(empty)')
+    expect(partitionServerGroupRows(rows, { emptyGroupLabel: '（空）' }).flat[0]!.groupLabel).toBe('（空）')
+  })
+
+  it('groupKey 非空值且非字符串（数值/布尔/对象）= 无效键：降级按数据行渲染（数据不丢，不再剔除）+ 计数', () => {
+    const rows: Row[] = [
+      { kind: 'group', groupKey: 42 }, // 数值
+      { kind: 'group', groupKey: true }, // 布尔
+      { kind: 'group', groupKey: { nested: 1 } }, // 对象
+      { kind: 'group', groupKey: '研发' }, // 有效对照
     ]
     const r = partitionServerGroupRows(rows)
     expect(r.invalidGroupRows).toBe(3)
     // 契约加固：无效组行降级为数据行渲染（旧行为剔除丢行），kind 为协议保留字段由壳层 devWarn 提示
-    expect(r.flat.map((f) => f.kind)).toEqual(['data', 'data', 'data', 'data', 'group'])
+    expect(r.flat.map((f) => f.kind)).toEqual(['data', 'data', 'data', 'group'])
     expect(r.dataRows).toEqual([
-      { kind: 'group', groupCount: 1 },
       { kind: 'group', groupKey: 42 },
-      { kind: 'group', groupKey: '' },
-      { key: 'a', name: '张三' },
+      { kind: 'group', groupKey: true },
+      { kind: 'group', groupKey: { nested: 1 } },
     ])
   })
 

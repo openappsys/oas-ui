@@ -3,13 +3,15 @@ import {
   infiniteHasMore,
   infiniteNearBottom,
   isDuplicateAppend,
+  parseMaxLoadedRows,
   rowsRequestPlan,
   rowsRequestSignature,
   type RowsRequestReason,
 } from './row-model.js'
 
 /**
- * row-model.ts 纯函数单测：请求原因推导（含页码重置规则）与同值去重签名。
+ * row-model.ts 纯函数单测：请求原因推导（含页码重置规则）、同值去重签名与
+ * infinite 判定（触底 / append 去重 / 到底 / 批 G 缓冲上界解析）。
  */
 
 const state = (
@@ -240,5 +242,23 @@ describe('infiniteHasMore（到底判定）', () => {
 
   it('total 未知（totalKnown=false）且未收到空块信号 → true（依赖宿主回写到底）', () => {
     expect(infiniteHasMore({ hostEnded: false, totalKnown: false, total: 0, loaded: 10 })).toBe(true)
+  })
+})
+
+describe('parseMaxLoadedRows（批 G：infinite 缓冲上界解析）', () => {
+  it('合法正整数（含前导空白）→ 上界值', () => {
+    expect(parseMaxLoadedRows('1')).toBe(1)
+    expect(parseMaxLoadedRows('50')).toBe(50)
+    expect(parseMaxLoadedRows(' 200 ')).toBe(200)
+  })
+
+  it('非法值（非数 / 小数 / 零 / 负数 / 空串 / Infinity）→ null（无上界，现状行为）', () => {
+    expect(parseMaxLoadedRows('')).toBeNull()
+    expect(parseMaxLoadedRows('abc')).toBeNull()
+    expect(parseMaxLoadedRows('1.5')).toBeNull()
+    expect(parseMaxLoadedRows('0')).toBeNull()
+    expect(parseMaxLoadedRows('-10')).toBeNull()
+    expect(parseMaxLoadedRows('Infinity')).toBeNull()
+    expect(parseMaxLoadedRows('NaN')).toBeNull()
   })
 })

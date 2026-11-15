@@ -68,6 +68,7 @@ export type {
   RowModelInput,
   RowModelResult,
   ServerGroupRowInput,
+  PartitionServerGroupOptions,
   PartitionServerGroupResult,
   SortAttrs,
   SortDirection,

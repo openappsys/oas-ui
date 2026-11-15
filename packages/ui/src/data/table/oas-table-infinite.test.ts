@@ -725,6 +725,36 @@ describe('OASTable infinite：能力闸门矩阵（与 server 同口径逐项声
     expect(summaryText).toContain('3') // 1+2
   })
 
+  it('合计 scope=all + summary-values（批 I）：宿主提供全量合计 → 合计行渲染（无 devWarn），取宿主值而非已装载聚合', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el } = mountInfinite({
+      summary: '[{"key":"age","type":"sum"}]',
+      'summary-values': '{"age":888}',
+    })
+    el.appendRows([
+      { name: '甲', age: 1 },
+      { name: '乙', age: 2 },
+    ])
+    const tr = el.shadowRoot!.querySelector('tbody tr.summary')
+    // 强断言：宿主提供 summary-values 时合计行渲染（scope=all 不再禁用）——className 精确等于 'summary'
+    expect(tr?.className, 'infinite 下宿主提供 summary-values 时合计行渲染').toBe('summary')
+    // 宿主全量口径 888（非已装载聚合 3）——逐列落位（列序 name / age）
+    const tds = [...tr!.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds[1]!.textContent).toBe('888')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('合计 scope=all + summary-values 未提供：行为 = 现状（禁用 + devWarn 一次）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el } = mountInfinite({ summary: '[{"key":"age","type":"sum"}]' })
+    el.appendRows([{ name: '甲', age: 1 }])
+    expect(el.shadowRoot!.querySelector('tbody tr.summary')).toBeNull()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('summary-scope')
+    warn.mockRestore()
+  })
+
   it('group-by 禁用 + devWarn 一次（不渲染分节头）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { el } = mountInfinite({ 'group-by': 'dept' })
@@ -782,5 +812,173 @@ describe('OASTable infinite：能力闸门矩阵（与 server 同口径逐项声
     const tds = [...el.shadowRoot!.querySelectorAll('tbody td')]
     expect(tds.filter((td) => td.getAttribute('rowspan')).length).toBe(0)
     warn.mockRestore()
+  })
+})
+
+describe('OASTable infinite：批 G 缓冲上界与淘汰（max-loaded-rows）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('缺省无上界（现状）：多块追加超过任何假想上界也不淘汰、零告警', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el } = mountInfinite()
+    for (let i = 1; i <= 5; i++) el.appendRows([{ name: `行${i}`, age: i }])
+    expect(rowsOf(el).length).toBe(5)
+    expect(rowsOf(el)[0]!.textContent).toContain('行1')
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('上界在场：追加超界淘汰最旧块——缓冲收敛到最近 N 行，渲染窗口不丢当前视口', () => {
+    const { el } = mountInfinite({ 'max-loaded-rows': '3' })
+    el.appendRows([{ name: '行1', age: 1 }])
+    el.appendRows([{ name: '行2', age: 2 }])
+    el.appendRows([{ name: '行3', age: 3 }])
+    expect(rowsOf(el).length).toBe(3)
+    // 第 4 行追加触发淘汰：最旧的行1出局，保留最近 3 行
+    el.appendRows([{ name: '行4', age: 4 }])
+    const texts = rowsOf(el).map((r) => r.textContent ?? '')
+    expect(texts.length).toBe(3)
+    expect(texts[0]).toContain('行2')
+    expect(texts[2]).toContain('行4')
+    expect(texts.join('|')).not.toContain('行1')
+  })
+
+  it('一块内一次追加超过上界：保留该块最近 N 行（一次淘汰到位）', () => {
+    const { el } = mountInfinite({ 'max-loaded-rows': '2' })
+    el.appendRows([
+      { name: '行1', age: 1 },
+      { name: '行2', age: 2 },
+      { name: '行3', age: 3 },
+      { name: '行4', age: 4 },
+    ])
+    const texts = rowsOf(el).map((r) => r.textContent ?? '')
+    expect(texts).toEqual([expect.stringContaining('行3'), expect.stringContaining('行4')])
+  })
+
+  it('detail.start 用累计装载数（淘汰后仍连续）——游标链不受缓冲长度影响', () => {
+    const { el, rec } = mountInfinite({ 'max-loaded-rows': '3' })
+    for (let i = 1; i <= 5; i++) el.appendRows([{ name: `行${i}`, age: i }], { cursor: `c${i}` })
+    // 缓冲只剩 3 行，但宿主已累计交付 5 行——下一块从第 5 行后起取
+    expect(rowsOf(el).length).toBe(3)
+    scrollWrap(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    return flushRaf().then(() => {
+      const loadMore = rec.requests.find((r) => r.reason === 'load-more')
+      expect(loadMore).toBeDefined()
+      expect(loadMore!.start).toBe(5)
+      expect(loadMore!.cursor).toBe('c5')
+    })
+  })
+
+  it('hasMore 与淘汰交互：totalKnown 时按累计装载数判定（淘汰不影响到底判定）', () => {
+    const { el, rec } = mountInfinite({ 'max-loaded-rows': '3', total: '5' })
+    for (let i = 1; i <= 5; i++) el.appendRows([{ name: `行${i}`, age: i }])
+    // 累计 5 行装满 total=5 → 到底（缓冲只剩最近 3 行也不续派）
+    scrollWrap(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    return flushRaf().then(() => {
+      expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+      // 「已到底」提示行照常渲染（当前视口不丢）
+      expect(el.shadowRoot!.querySelectorAll('[part="no-more-row"]').length).toBe(1)
+    })
+  })
+
+  it('到底信号不受淘汰影响：空块信号置位后缓冲淘汰不复活 hasMore', () => {
+    const { el, rec } = mountInfinite({ 'max-loaded-rows': '2' })
+    el.appendRows([{ name: '行1', age: 1 }])
+    el.appendRows([{ name: '行2', age: 2 }])
+    el.appendRows([]) // 到底信号
+    el.appendRows([{ name: '行3', age: 3 }]) // 淘汰行1，缓冲 2 行
+    expect(rowsOf(el).length).toBe(2)
+    scrollWrap(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    return flushRaf().then(() => {
+      expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+      expect(el.shadowRoot!.querySelectorAll('[part="no-more-row"]').length).toBe(1)
+    })
+  })
+
+  it('淘汰触发滚动锚定：视口回拉淘汰行数的行高（当前视口行不跳）；不足一行高时钳到 0', () => {
+    const { el } = mountInfinite({ 'max-loaded-rows': '3' })
+    el.appendRows([{ name: '行1', age: 1 }])
+    el.appendRows([{ name: '行2', age: 2 }])
+    el.appendRows([{ name: '行3', age: 3 }])
+    // 视口停在行2 顶（scrollTop = 1 行高 = 40px）；追加行4 淘汰行1（1 行 = 40px）
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 5000, scrollTop: 40 })
+    el.appendRows([{ name: '行4', age: 4 }])
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    expect(wrap.scrollTop).toBe(0) // 40 - 40：原行2 内容留在视口顶
+    // 钳制：scrollTop 不足淘汰行高时钳到 0（不为负）
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 5000, scrollTop: 10 })
+    el.appendRows([{ name: '行5', age: 5 }]) // 淘汰行2（1 行）
+    expect(wrap.scrollTop).toBe(0)
+    const texts = rowsOf(el).map((r) => r.textContent ?? '')
+    expect(texts).toEqual([
+      expect.stringContaining('行3'),
+      expect.stringContaining('行4'),
+      expect.stringContaining('行5'),
+    ])
+  })
+
+  it('data 属性写 = 替换语义：装载计数重置 + 超上界按最近 N 行裁剪', () => {
+    const { el, rec } = mountInfinite({ 'max-loaded-rows': '2' })
+    el.appendRows([{ name: '行1', age: 1 }])
+    el.appendRows([{ name: '行2', age: 2 }])
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '新1', age: 1 },
+        { name: '新2', age: 2 },
+        { name: '新3', age: 3 },
+      ]),
+    )
+    const texts = rowsOf(el).map((r) => r.textContent ?? '')
+    expect(texts).toEqual([expect.stringContaining('新2'), expect.stringContaining('新3')])
+    // 装载计数随替换重置为 data 交付的总行数（3；淘汰的 新1 仍计入——与 appendRows 累计口径一致）
+    scrollWrap(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    return flushRaf().then(() => {
+      const loadMore = rec.requests.find((r) => r.reason === 'load-more')
+      expect(loadMore).toBeDefined()
+      expect(loadMore!.start).toBe(3)
+    })
+  })
+
+  it('非法值（非正整数）→ 一次性 devWarn + 无上界（现状行为）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el } = mountInfinite({ 'max-loaded-rows': 'abc' })
+    for (let i = 1; i <= 4; i++) el.appendRows([{ name: `行${i}`, age: i }])
+    expect(rowsOf(el).length).toBe(4) // 未淘汰
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('max-loaded-rows')
+    warn.mockRestore()
+  })
+
+  it('非 infinite 形态：max-loaded-rows 在场零效果零告警（client 渲染不受影响）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { el, rec } = mount({ 'max-loaded-rows': '2', data: JSON.stringify([{ name: '甲', age: 1 }]) })
+    expect(rowsOf(el).length).toBe(1)
+    expect(rec.requests.length).toBe(0)
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('排序变更重置装载：缓冲与累计计数一并清零（上界状态不残留）', () => {
+    const { el, rec } = mountInfinite({ 'max-loaded-rows': '2' })
+    for (let i = 1; i <= 4; i++) el.appendRows([{ name: `行${i}`, age: i }])
+    el.setAttribute('sort-key', 'name')
+    el.setAttribute('sort-order', 'asc')
+    expect(rowsOf(el).length).toBe(0) // 缓冲已重置
+    el.appendRows([{ name: '新行', age: 9 }])
+    scrollWrap(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    return flushRaf().then(() => {
+      const loadMore = rec.requests.find((r) => r.reason === 'load-more')
+      expect(loadMore).toBeDefined()
+      expect(loadMore!.start).toBe(1) // 重置后从 1 起（非 5）
+    })
   })
 })

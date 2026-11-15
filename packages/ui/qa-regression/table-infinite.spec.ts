@@ -411,3 +411,89 @@ test('table infinite：挂载带 current="3" 仅 1 次 init，回填与属性写
 
   expect(issues, `console 告警：\n${issues.join('\n')}`).toEqual([])
 })
+
+test('table infinite：批 G 缓冲上界（max-loaded-rows）——长列表滚动超界后缓冲有界、视口不丢、游标链连续 + console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await serveBuiltUi(page)
+  await gotoTablePage(page)
+  // total=120、每块 30 行、缓冲上界 40：装完全量后缓冲应收敛到最近 40 行（淘汰最旧 80 行）
+  await mountInfiniteFixture(page, 'table-inf-maxloaded', {
+    total: 120,
+    chunk: 30,
+    attrs: { 'max-loaded-rows': '40' },
+  })
+
+  // ① 首块 30 行装载（上界 40 内，无淘汰）
+  await page.waitForFunction(
+    () => document.querySelector('#table-inf-maxloaded')!.shadowRoot!.querySelectorAll('[part="row"]').length === 30,
+    null,
+    { timeout: 5000 },
+  )
+  const bufferInfo0 = await page.evaluate(() => {
+    const el = document.querySelector('#table-inf-maxloaded') as any
+    return { buffer: el.infiniteRows.length, loaded: el.infiniteLoadedCount }
+  })
+  expect(bufferInfo0).toEqual({ buffer: 30, loaded: 30 })
+
+  // ② 真实滚轮滚到底：load-more 链装完 120 行（4 块）——缓冲收敛到上界 40，累计装载 120
+  await wheelToBottom(page, 'table-inf-maxloaded')
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#table-inf-maxloaded') as any
+      return el.infiniteLoadedCount === 120
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await expect(noMoreRow(page, 'table-inf-maxloaded')).toHaveCount(1)
+  const bufferInfo1 = await page.evaluate(() => {
+    const el = document.querySelector('#table-inf-maxloaded') as any
+    return {
+      buffer: el.infiniteRows.length,
+      loaded: el.infiniteLoadedCount,
+      first: el.infiniteRows[0].name,
+      last: el.infiniteRows[el.infiniteRows.length - 1].name,
+    }
+  })
+  // 缓冲有界：最近 40 行（行80 ~ 行119），淘汰最旧 80 行
+  expect(bufferInfo1.buffer, '缓冲收敛到上界 40（内存有界）').toBe(40)
+  expect(bufferInfo1.loaded, '累计装载数不受淘汰影响').toBe(120)
+  expect(bufferInfo1.first).toBe('行80')
+  expect(bufferInfo1.last).toBe('行119')
+
+  // ③ 游标链连续：load-more 请求的 start 序列 = 30/60/90（累计口径，非缓冲长度）
+  const stateMax = await stateOf(page, 'table-inf-maxloaded')
+  const loadMoreStarts = stateMax.reqs
+    .filter((r: { reason: string; start: number }) => r.reason === 'load-more')
+    .map((r: { start: number }) => r.start)
+  expect(loadMoreStarts).toEqual([30, 60, 90])
+
+  // ④ 渲染不丢当前视口：视口在底部 → DOM 末行 = 行119；滚动位在合法范围内、回滚正常
+  const renderedNames = await page.evaluate(() => {
+    const el = document.querySelector('#table-inf-maxloaded')!
+    return [...el.shadowRoot!.querySelectorAll('[part="row"]')].map((r) => r.textContent ?? '')
+  })
+  expect(renderedNames[renderedNames.length - 1]).toContain('行119')
+  const scrollPos = await page.evaluate(() => {
+    const wrap = document
+      .querySelector('#table-inf-maxloaded')!
+      .shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    return { top: wrap.scrollTop, max: wrap.scrollHeight - wrap.clientHeight }
+  })
+  // 滚动位合法（淘汰 + 锚定后）：top ∈ [0, max]——锚定保留「用户正在看的行」（视口内容不跳，
+  // 视口停在哪取决于锚定前的浏览位，不承诺停在底部；底部可见性由上方「DOM 末行 = 行119」断言承担）
+  expect(scrollPos.top).toBeGreaterThanOrEqual(0)
+  expect(scrollPos.max - scrollPos.top).toBeGreaterThanOrEqual(0)
+  await scrollInfiniteTable(page, 'table-inf-maxloaded', 0)
+  await runScrollFrames(page)
+  const topName = await page.evaluate(() => {
+    const el = document.querySelector('#table-inf-maxloaded')!
+    const first = el.shadowRoot!.querySelector('[part="row"]')
+    return first ? (first.textContent ?? '') : ''
+  })
+  expect(topName).toContain('行80') // 缓冲首行（最旧保留行）正常渲染，滚动链路无损
+
+  expect(issues, `console 告警：\n${issues.join('\n')}`).toEqual([])
+})

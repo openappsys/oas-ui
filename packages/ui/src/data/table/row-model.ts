@@ -17,7 +17,7 @@ export type RowsRequestReason = 'init' | 'paginate' | 'sort' | 'filter' | 'group
 export interface RowsRequestDetail {
   /** 组件内单调递增请求序号（请求序号守卫的权威依据） */
   requestId: number
-  /** 当前页期望区间起点（含）= (current-1)*pageSize；infinite 形态为已装载行数（区间语义不适用，见 cursor） */
+  /** 当前页期望区间起点（含）= (current-1)*pageSize；infinite 形态为累计已装载行数（区间语义不适用，见 cursor；批 G 起淘汰只缩缓冲不减计数——start 不受上界影响） */
   start: number
   /** 当前页期望区间终点（不含）= current*pageSize；infinite 形态与 start 同值（无固定终点） */
   end: number
@@ -142,4 +142,15 @@ export function infiniteHasMore(a: InfiniteHasMoreInput): boolean {
   if (a.hostEnded) return false
   if (a.totalKnown && a.loaded >= a.total) return false
   return true
+}
+
+/**
+ * 解析 max-loaded-rows 属性值（批 G：infinite 缓冲上界）：
+ * 合法正整数（整数、≥1，容忍首尾空白）→ 上界行数；其余（空串 / 非数 / 小数 /
+ * 零 / 负数 / Infinity / NaN）→ null（无上界——缺省行为，现状）。
+ * 属性在场但解析为 null 时组件壳层一次性 devWarn（可诊断），解析本函数保持纯。
+ */
+export function parseMaxLoadedRows(raw: string): number | null {
+  const n = Number(raw.trim())
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 1 ? n : null
 }
