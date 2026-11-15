@@ -574,9 +574,13 @@ const SERVER_PRINT_HINT =
 const SERVER_SUMMARY_ALL_HINT =
   '[oas-table] server 行模型下 summary-scope="all" 不生效（全量口径未知，对当前页切片聚合会得到错误的「全量合计」）：页内合计可用 summary-scope="page"'
 
-/** server 分组协议：无效组行（groupKey 缺失/非字符串/空串）剔除降级的告警文案（实例级去重一次） */
+/**
+ * server 分组协议：无效组行（kind:'group' 但 groupKey 缺失/非字符串/空串）降级为数据行的
+ * 告警文案（实例级去重一次）。降级不丢数据（旧行为剔除会静默丢行）；同时提示 kind 为
+ * 协议保留字段——宿主数据若以 kind 承载业务字段建议改列名。
+ */
 const SERVER_GROUP_INVALID_HINT =
-  '[oas-table] server 分组协议：部分分组行缺少有效 groupKey（须为非空字符串），已剔除降级平铺渲染（组内数据行不受影响）'
+  '[oas-table] server 分组协议：部分行 kind="group" 但缺少有效 groupKey（须为非空字符串），已按数据行渲染（数据不丢）。kind 为分组协议保留字段——宿主数据若以 kind 承载业务字段，建议改用其他列名'
 
 /** server 行模型能力闸门：行拖拽禁用的告警文案（实例级去重一次） */
 const SERVER_ROW_DRAG_HINT =
@@ -2753,7 +2757,8 @@ export class OASTableBase extends OASElement {
 
   /**
    * server 分组分区的壳层薄壳：调数据层 partitionServerGroupRows（单一真相源），
-   * 无效组行（groupKey 校验失败）一次性 devWarn（变换本体不做 DOM/告警副作用）。
+   * 无效组行（kind:'group' 但 groupKey 校验失败，已降级按数据行渲染）一次性 devWarn
+   * （变换本体不做 DOM/告警副作用）。
    */
   private buildServerGroupFlat(roots: Array<Record<string, unknown>>): FlatRow[] {
     // 仅内部诊断：热路径计数（与本地分组 flatBuilds 同口径）
@@ -3661,9 +3666,10 @@ export class OASTableBase extends OASElement {
       if (align) td.className = `align-${align}`
       td.setAttribute('data-col', col.key)
       if (colIdx === 0) {
-        // 树形：按层级缩进（indent-size 属性控制每级 px，缺省 24=现状；非法/负值回落默认）
+        // 树形：按层级缩进（indent-size 属性控制每级 px，缺省 24=现状；非法/负值回落默认；
+        // 逻辑属性 padding-inline-start，RTL 书写方向正确镜像）
         if (hasChildren || flat.depth > 0) {
-          td.style.paddingLeft = `${16 + flat.depth * this.indentSizePx()}px`
+          td.style.paddingInlineStart = `${16 + flat.depth * this.indentSizePx()}px`
         }
         // 树形：父行展开/收起按钮
         if (hasChildren) {
@@ -4836,11 +4842,18 @@ export class OASTableBase extends OASElement {
   /**
    * 渲染分节头行。两种形态：
    * - 全宽形态（既有）：整行 colSpan 全宽，折叠箭头 + 字段值 + 组内计数（本地分组恒走此形态）；
-   * - 按列形态（server 分组协议）：组行携带 aggregates 且列定义 aggregate 在场时，组行按
-   *   叶子列逐格渲染——label 格覆盖首个聚合列之前的列，聚合列渲染宿主提供的聚合值
-   *   （列对齐沿用列 align / 数值类型右对齐惯例），其余列空格。
-   * depth 缩进：层级分组（server 组行 depth>0）label 格按树形同款公式缩进；
-   * depth=0（本地分组恒 0）不写内联 padding——既有视觉零漂移。
+   * - 按列形态（server 分组协议）：**表级判定**——server 分组生效且列定义存在 aggregate
+   *   配置列时，组行一律按叶子列逐格渲染（同表组行形态统一，不随单行 aggregates 有无
+   *   漂移；组行无 aggregates 时聚合格留空）。格子几何与数据行同构：label 格覆盖
+   *   「前导附加列（行拖拽手柄 + 勾选列，渲染在数据列之前）+ 首个聚合列之前的叶子列」，
+   *   其后叶子列逐格渲染（聚合列显示宿主值、无值留空，data-col + part 与数据行同口径
+   *   ——固定列 sticky 与宿主 ::part(cell)/td[data-col] 选择器可命中），尾部展开列补
+   *   占位格（组行无展开交互）。修复此前 labelSpan = columnCount() - leaves.length 把
+   *   尾部展开列计入 label 跨度导致的整行右移一列、聚合值落到展开列下方。
+   * depth 缩进：层级分组（server 组行 depth>0）label 格按树形同款公式缩进（逻辑属性
+   * padding-inline-start，RTL 正确）；depth=0（本地分组恒 0）不写内联 padding——既有视觉零漂移。
+   * 计数节点：groupCount 非有限数（协议缺省 / NaN / 负数在数据层已归一）不创建——文档
+   * 承诺「缺省不显示计数」；本地分组组行恒有值，零漂移。
    */
   private buildGroupRow(flat: FlatRow): HTMLTableRowElement {
     const tr = document.createElement('tr')
@@ -4861,21 +4874,26 @@ export class OASTableBase extends OASElement {
     })
     const label = document.createElement('span')
     label.textContent = flat.groupLabel ?? ''
-    const count = document.createElement('span')
-    count.className = 'group-count'
-    count.textContent = String(flat.groupCount ?? 0)
+    let count: HTMLSpanElement | null = null
+    if (typeof flat.groupCount === 'number' && Number.isFinite(flat.groupCount)) {
+      count = document.createElement('span')
+      count.className = 'group-count'
+      count.textContent = String(flat.groupCount)
+    }
     const leaves = this.flattenLeaves(this.effectiveColumns())
-    // 按列形态判定：组行携带 aggregates 且列定义有 aggregate 配置（值可缺——缺值格子留空）
-    const hasAgg = flat.aggregates != null && leaves.some((c) => c.aggregate)
+    // 按列形态判定（表级）：server 分组协议在场 + 列定义存在 aggregate 配置列（值可缺
+    // ——缺值格子留空）；client 本地分组不生效（组行恒全宽，零漂移）
+    const hasAgg = this.serverGroupBy() !== '' && leaves.some((c) => c.aggregate)
     const td = document.createElement('td')
     const indent = (): void => {
-      if (flat.depth > 0) td.style.paddingLeft = `${16 + flat.depth * this.indentSizePx()}px`
+      if (flat.depth > 0) td.style.paddingInlineStart = `${16 + flat.depth * this.indentSizePx()}px`
     }
     if (hasAgg) {
-      // 按列形态：label 格覆盖首个 aggregate 配置列之前的叶子列（附加列 = 行拖拽/勾选/
-      // 展开尾列一并计入 label 格覆盖，组行无对应交互格）；聚合列自首个配置列起逐格渲染
-      //（有值渲染值、无值留空格——组行格子结构在同一表内稳定，不随数据值漂移）
-      let labelSpan = this.columnCount() - leaves.length
+      // 按列形态：label 跨度 = 前导附加列（行拖拽/勾选，在数据列之前）+ 首个 aggregate
+      // 配置列之前的叶子列；其后叶子列逐格渲染（聚合列有值渲染值、无值留空格——组行
+      // 格子结构在同一表内稳定，不随数据值漂移），尾部展开列补占位格
+      const leadingAux = (this.rowDragEnabled() ? 1 : 0) + (this.hasAttr('checkable') ? 1 : 0)
+      let labelSpan = leadingAux
       let i = 0
       for (; i < leaves.length; i++) {
         if (leaves[i]!.aggregate) break
@@ -4883,25 +4901,36 @@ export class OASTableBase extends OASElement {
       }
       td.colSpan = Math.max(1, labelSpan)
       indent()
-      td.append(btn, label, count)
+      td.append(btn, label)
+      if (count) td.append(count)
       tr.appendChild(td)
       for (; i < leaves.length; i++) {
         const col = leaves[i]!
-        const aggTd = document.createElement('td')
+        const cell = document.createElement('td')
+        // 与数据行同口径：data-col + part=cell（固定列 sticky / 宿主选择器命中）
+        cell.setAttribute('data-col', col.key)
+        cell.setAttribute('part', 'cell')
         const v = col.aggregate ? groupAggregateValue(flat.aggregates, col) : null
         if (v !== null) {
-          aggTd.textContent = v
+          cell.textContent = v
           const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
-          if (align) aggTd.className = `align-${align}`
+          if (align) cell.className = `align-${align}`
         }
-        tr.appendChild(aggTd)
+        tr.appendChild(cell)
+      }
+      if (this._expandable) {
+        // 尾部展开列占位格（类名与数据行同款——格结构/边框对齐）
+        const tail = document.createElement('td')
+        tail.className = 'expand-toggle-cell'
+        tr.appendChild(tail)
       }
       return tr
     }
     // 全宽形态（既有视觉零漂移）
     td.colSpan = this.columnCount()
     indent()
-    td.append(btn, label, count)
+    td.append(btn, label)
+    if (count) td.append(count)
     tr.appendChild(td)
     return tr
   }

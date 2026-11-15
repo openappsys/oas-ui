@@ -56,7 +56,10 @@ export interface DataColumn {
 export interface FlatRow {
   /** 行数据本体（group 类型行为空对象占位） */
   row: Record<string, unknown>
-  /** 树形深度（0 起；group 行恒 0） */
+  /**
+   * 树形深度（0 起；本地分组/树形子行按展开层级递增。server 分组协议的组行取宿主
+   * depth 值（缺省 0、钳制上限 20），本地分组组行恒 0）
+   */
   depth: number
   /** 树形父行键（顶层行无此字段；可见性过滤按它查 expanded 集合） */
   parent?: string
