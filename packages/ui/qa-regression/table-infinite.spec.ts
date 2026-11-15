@@ -126,6 +126,22 @@ async function scrollInfiniteTable(page: Page, id: string, top: number): Promise
 
 const noMoreRow = (page: Page, id: string) => page.locator(`#${id} [part="no-more-row"]`)
 
+/** 等 N 个真实渲染帧（触底检测走 requestAnimationFrame——确定性等待，不用固定 sleep） */
+async function runScrollFrames(page: Page, frames = 4): Promise<void> {
+  await page.evaluate(
+    (frames) =>
+      new Promise<void>((resolve) => {
+        let n = 0
+        const tick = (): void => {
+          if (++n >= frames) resolve()
+          else requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+      }),
+    frames,
+  )
+}
+
 test('table infinite：滚动触底 load-more → 追加 → 到底态 → 排序重置 + A11y + console 零告警', async ({ page }) => {
   const issues = collectConsoleIssues(page)
   await serveBuiltUi(page)
@@ -157,9 +173,9 @@ test('table infinite：滚动触底 load-more → 追加 → 到底态 → 排�
     ),
   ).toBe('60')
 
-  // ② 滚到中上部（距底 > 阈值）：不触发 load-more
+  // ② 滚到中上部（距底 > 阈值）：不触发 load-more（等触底检测 rAF 窗口走完）
   await scrollInfiniteTable(page, 'table-inf-e2e', 80)
-  await page.waitForTimeout(150)
+  await runScrollFrames(page)
   let state = await stateOf(page, 'table-inf-e2e')
   expect(state.reqs.filter((r: any) => r.reason === 'load-more').length, '未接近底部不触发').toBe(0)
 
@@ -202,7 +218,7 @@ test('table infinite：滚动触底 load-more → 追加 → 到底态 → 排�
   )
   const reqsAfterEnd = (await stateOf(page, 'table-inf-e2e')).reqs.length
   await scrollInfiniteTable(page, 'table-inf-e2e', 100000)
-  await page.waitForTimeout(150)
+  await runScrollFrames(page)
   expect((await stateOf(page, 'table-inf-e2e')).reqs.length, '到底后滚动不再派发').toBe(reqsAfterEnd)
   expect(await noMoreRow(page, 'table-inf-e2e').textContent()).not.toBe('')
 

@@ -84,8 +84,8 @@ describe('OASTable infinite：模式判定与互斥', () => {
     expect(rec.requests[0]!.end).toBe(0)
     expect(rec.requests[0]!.totalKnown).toBe(false)
     expect(rec.requests[0]!.cursor).toBeUndefined()
-    // 首载（装载 0 + 在途）：全表 loading 行
-    expect(el.shadowRoot!.querySelector('[part="loading-row"]')).not.toBeNull()
+    // 首载（装载 0 + 在途）：全表 loading 行（存在且唯一）
+    expect(el.shadowRoot!.querySelectorAll('[part="loading-row"]').length).toBe(1)
     // 行模型标志位进 flat 缓存键：infinite 形态渲染不残留 client 分页语义
     expect(el.hasAttribute('pagination')).toBe(false)
   })
@@ -108,7 +108,7 @@ describe('OASTable infinite：模式判定与互斥', () => {
     expect(String(warn.mock.calls[0]![0])).toContain('pagination')
     expect(rec.requests.length).toBe(0)
     // pagination 优先 = 既有分页语义完整保留（total 外部形态下分页器照常渲染）
-    expect(el.shadowRoot!.querySelector('.pagination')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('.pagination').length).toBe(1)
     // 同实例再渲染不重复告警
     el.setAttribute('data', JSON.stringify([{ name: '乙', age: 2 }]))
     expect(warn).toHaveBeenCalledTimes(1)
@@ -209,7 +209,8 @@ describe('OASTable infinite：appendRows 追加通道', () => {
     const { el, rec } = mountInfinite()
     el.appendRows([{ name: '甲', age: 1 }], { cursor: 'c1' })
     el.appendRows([], { cursor: 'c2' }) // 到底
-    expect(el.shadowRoot!.querySelector('[part="no-more-row"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="no-more-row"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelector('[part="no-more-row"]')!.textContent).toContain('没有更多')
     // data 替换：缓冲重置为 data 内容、到底态消失
     el.setAttribute('data', JSON.stringify([{ name: '新甲', age: 9 }]))
     expect(rowsOf(el).length).toBe(1)
@@ -272,8 +273,8 @@ describe('OASTable infinite：appendRows 追加通道', () => {
     const { el, rec } = mountInfinite()
     el.appendRows([{ name: '甲', age: 1 }])
     el.appendRows([])
-    expect(el.shadowRoot!.querySelector('[part="no-more-row"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="no-more-row"]')!.textContent).not.toBe('')
+    expect(el.shadowRoot!.querySelectorAll('[part="no-more-row"]').length).toBe(1)
+    expect(el.shadowRoot!.querySelector('[part="no-more-row"]')!.textContent).toContain('没有更多')
     // 到底后滚动触底不再派发
     scrollWrap(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
     return flushRaf().then(() => {
@@ -316,8 +317,8 @@ describe('OASTable infinite：appendRows 追加通道', () => {
     el.addEventListener('oas-rows-error', (e) => errors.push((e as CustomEvent).detail))
     el.reportRowsError({ requestId: id, reason: 'network' })
     expect(errors.length).toBe(1)
-    expect(el.shadowRoot!.querySelector('.rows-error')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('.rows-error')!.hasAttribute('hidden')).toBe(false)
+    expect(el.shadowRoot!.querySelector('.rows-error')!.textContent).toContain('加载失败')
     expect(el.shadowRoot!.querySelector('table')!.hasAttribute('aria-busy')).toBe(false)
   })
 
@@ -381,7 +382,8 @@ describe('OASTable infinite：滚动触底触发', () => {
     return flushRaf().then(() => {
       expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
       // 装满 total 也渲染「已到底」提示行
-      expect(el.shadowRoot!.querySelector('[part="no-more-row"]')).not.toBeNull()
+      expect(el.shadowRoot!.querySelectorAll('[part="no-more-row"]').length).toBe(1)
+      expect(el.shadowRoot!.querySelector('[part="no-more-row"]')!.textContent).toContain('没有更多')
     })
   })
 
@@ -485,8 +487,9 @@ describe('OASTable infinite：底部状态行渲染', () => {
       expect(loadingIdx).toBe(all.length - 1) // 追加在最后
       // 数据行仍在（不全表 loading）
       expect(rowsOf(el).length).toBe(1)
-      // loading 行带结构化内容（spin + 文案）
-      expect(all[loadingIdx]!.querySelector('.spin')).not.toBeNull()
+      // loading 行带结构化内容（spin 元素 + 文案）
+      expect(all[loadingIdx]!.querySelectorAll('.spin').length).toBe(1)
+      expect(all[loadingIdx]!.textContent).toContain('加载中')
     })
   })
 
@@ -505,10 +508,10 @@ describe('OASTable infinite：底部状态行渲染', () => {
 
   it('未装载行时不渲染任何底部状态节点（首载全表 loading / 空态由既有分支承担）', () => {
     const { el } = mountInfinite()
-    expect(el.shadowRoot!.querySelector('[part="loading-row"]')).not.toBeNull() // 全表 loading
+    expect(el.shadowRoot!.querySelectorAll('[part="loading-row"]').length).toBe(1) // 全表 loading
     el.appendRows([]) // 空块：到底 + 未装载 → 空态文案
     expect(el.shadowRoot!.querySelector('[part="no-more-row"]')).toBeNull()
-    expect(el.shadowRoot!.querySelector('td.empty')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('td.empty')!.textContent).toContain('暂无数据')
   })
 })
 
