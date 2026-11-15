@@ -483,6 +483,25 @@ describe('OASTable infinite：滚动触底触发', () => {
     expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(1)
   })
 
+  it('用户手势（键盘）清除回波吞位：布防后的原生键盘滚动不被吞（触底检测照常触发）', async () => {
+    const { el, rec } = mountInfinite()
+    el.appendRows([{ name: '甲', age: 1 }])
+    await flushRaf() // 先排掉 appendRows 自动续派的 rAF（此刻几何远离底部 → 不派）
+    expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(0)
+    // 白盒布防：同 wheel 用例——happy-dom 无布局，直接模拟渲染链路布防吞位后的实例状态
+    ;(el as any).armScrollSwallow()
+    mockWrapGeometry(el, { clientHeight: 100, scrollHeight: 1000, scrollTop: 900 })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    // 键盘滚动意图先到（keydown 已挂 cancelScrollIntentOnKey，同源豁免：键盘滚动同为
+    // 真实用户输入）——焦点在滚动容器时的原生键盘滚动其后 scroll 是用户真实滚动
+    wrap.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    // 键盘滚动后的真实滚动：不得被吞位吞掉——触底检测照常触发
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // 唯一触发源 = 键盘滚动后的 scroll 拍（近底几何 + 非在途 + hasMore）
+    expect(rec.requests.filter((r) => r.reason === 'load-more').length).toBe(1)
+  })
+
   it('无用户手势时回波吞位照常生效且只吞一拍（吞位守卫机制不回退）', async () => {
     const { el, rec } = mountInfinite()
     el.appendRows([{ name: '甲', age: 1 }])

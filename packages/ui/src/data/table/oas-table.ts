@@ -6515,7 +6515,8 @@ export class OASTableBase extends OASElement {
     this.swallowScrollSeq = this.scrollWriteSeq
   }
 
-  /** 用户手势（滚轮 / 触摸 / 按下滚动条）取消意图守卫与回波吞位：用户滚动永远优先于组件写入 */
+  /** 用户手势（滚轮 / 触摸 / 按下滚动条）取消意图守卫与回波吞位：用户滚动永远优先于组件写入。
+      键盘滚动路径（cancelScrollIntentOnKey）同款清理吞位——键盘滚动同为真实用户输入（同源豁免）。 */
   private cancelScrollIntent = (): void => {
     this.scrollIntent = null
     // 同步清回波吞位：吞位是异步回波守卫，只应吞「无用户意图的程序写入回波」（渲染链路
@@ -6528,12 +6529,15 @@ export class OASTableBase extends OASElement {
     this.swallowScrollSeq = -1
   }
 
-  /** 键盘滚动（Arrow/Page/Home/End）取消意图守卫：焦点在滚动容器/单元格时按键滚动优先于组件写入。
+  /** 键盘滚动（Arrow/Page/Home/End）取消意图守卫与回波吞位：焦点在滚动容器/单元格时按键滚动优先于组件写入。
+      键盘滚动同为真实用户输入，与 pointer 手势同源豁免（清理语义同 cancelScrollIntent）——焦点在
+      滚动容器时的原生键盘滚动（无导航写入布防）其后 scroll 事件是用户真实滚动，吞掉会丢一拍。
       注册在网格导航之前——导航自身的写入随后布新的意图，不会被本监听反向清掉。 */
   private cancelScrollIntentOnKey = (e: KeyboardEvent): void => {
     const k = e.key
     if (k.startsWith('Arrow') || k === 'PageUp' || k === 'PageDown' || k === 'Home' || k === 'End') {
       this.scrollIntent = null
+      this.swallowScrollSeq = -1
     }
   }
 
