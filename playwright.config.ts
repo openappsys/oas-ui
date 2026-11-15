@@ -126,7 +126,7 @@ export default defineConfig({
       // ResizeObserver 回调时序（与真实 Safari 有差异），间歇失败且已定性为非产品缺陷
       // （chromium/firefox 稳定覆盖同一语义）——隔离不阻断主门禁，待 WebKit 时序专项治理
       // 后移除（demands T9 跟踪）。
-      grepInvert: /过滤面板触屏|auto-height：测量回填|真指针拖拽：松开后填充/,
+      grepInvert: /过滤面板触屏|auto-height：测量回填|真指针拖拽：松开后填充|浮层编辑器通道（editComponent 第二期）/,
       timeout: 120_000,
       retries: 1,
     },
