@@ -1001,7 +1001,8 @@ test('form-associated：表格行内编辑点击关联 label 不退出编辑（�
   // 真实鼠标点击 label（pointerdown/mousedown/click 全序列 + 浏览器默认动作）。
   // 预滚动到视口中部：demo 块紧贴页首时最小滚动会让 label 落在固定导航栏下方被拦截
   await page.evaluate(() => {
-    document.getElementById('qa-inline-label-reg')!.scrollIntoView({ block: 'center' })
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    table.shadowRoot!.getElementById('qa-inline-label-reg')!.scrollIntoView({ block: 'center' })
   })
   await page.locator('#qa-inline-label-reg').click()
   const result = await page.evaluate(() => {
