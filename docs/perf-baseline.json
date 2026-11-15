@@ -1,21 +1,21 @@
 {
   "size": {
-    "generatedAt": "2026-11-15",
+    "generatedAt": "2026-11-16",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 44747152,
+        "distTotalBytes": 44887760,
         "browserJs": {
-          "files": 509,
-          "rawBytes": 11283448,
-          "gzipBytes": 2716435,
-          "brotliBytes": 2118410
+          "files": 512,
+          "rawBytes": 11297445,
+          "gzipBytes": 2720371,
+          "brotliBytes": 2121898
         },
         "fullEntry": {
-          "files": 526,
-          "rawBytes": 4000944,
-          "gzipBytes": 1089931,
-          "brotliBytes": 936433,
+          "files": 529,
+          "rawBytes": 4006467,
+          "gzipBytes": 1091853,
+          "brotliBytes": 938120,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -186,6 +186,9 @@
             "packages/ui/dist/data/table/model-core/row-key.js",
             "packages/ui/dist/data/table/oas-table-interactive.js",
             "packages/ui/dist/data/table/oas-table.js",
+            "packages/ui/dist/data/table/style/index.js",
+            "packages/ui/dist/data/table/style/features.js",
+            "packages/ui/dist/data/table/style/base.js",
             "packages/ui/dist/shared/window-data.js",
             "packages/ui/dist/data/table/model-core/server-group.js",
             "packages/ui/dist/data/table/model-core/visible.js",
@@ -547,9 +550,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3312249,
-          "gzipBytes": 728851,
-          "brotliBytes": 500346
+          "rawBytes": 3316490,
+          "gzipBytes": 729856,
+          "brotliBytes": 501267
         }
       },
       "@oas-ui/theme": {
@@ -611,10 +614,10 @@
       "table": {
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
-        "files": 40,
-        "rawBytes": 263912,
-        "gzipBytes": 78927,
-        "brotliBytes": 65957,
+        "files": 43,
+        "rawBytes": 266941,
+        "gzipBytes": 80427,
+        "brotliBytes": 67267,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/ui/dist/navigation/pagination/index.js",
@@ -637,6 +640,9 @@
           "packages/ui/dist/data/table/oas-table-column-settings.js",
           "packages/ui/dist/data/table/oas-table.js",
           "packages/icons/dist/icons/download.js",
+          "packages/ui/dist/data/table/style/index.js",
+          "packages/ui/dist/data/table/style/features.js",
+          "packages/ui/dist/data/table/style/base.js",
           "packages/ui/dist/shared/window-data.js",
           "packages/ui/dist/data/table/model-core/server-group.js",
           "packages/ui/dist/data/table/model-core/visible.js",
@@ -661,10 +667,10 @@
       "tableEdit": {
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
-        "files": 57,
-        "rawBytes": 372126,
-        "gzipBytes": 109508,
-        "brotliBytes": 92130,
+        "files": 60,
+        "rawBytes": 377868,
+        "gzipBytes": 111486,
+        "brotliBytes": 93871,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -712,6 +718,9 @@
           "packages/ui/dist/data/table/oas-table-interactive.js",
           "packages/ui/dist/data/table/oas-table.js",
           "packages/icons/dist/icons/download.js",
+          "packages/ui/dist/data/table/style/index.js",
+          "packages/ui/dist/data/table/style/features.js",
+          "packages/ui/dist/data/table/style/base.js",
           "packages/ui/dist/shared/window-data.js",
           "packages/ui/dist/data/table/model-core/server-group.js",
           "packages/ui/dist/data/table/model-core/visible.js",
@@ -875,9 +884,9 @@
         "entry": "data/table/model",
         "spec": "@oas-ui/ui/data/table/model",
         "files": 9,
-        "rawBytes": 10269,
-        "gzipBytes": 5174,
-        "brotliBytes": 4516,
+        "rawBytes": 10361,
+        "gzipBytes": 5150,
+        "brotliBytes": 4494,
         "fileList": [
           "packages/ui/dist/data/table/model/index.js",
           "packages/ui/dist/data/table/model-core/index.js",
@@ -1099,7 +1108,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 728851,
+        "actualBytes": 729856,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -1109,7 +1118,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1089931,
+        "actualBytes": 1091853,
         "limitBytes": 1208320,
         "warnAtBytes": 1087488,
         "pass": true,
@@ -1131,18 +1140,18 @@
         "name": "@oas-ui/ui/data/table 链 gzip",
         "kind": "absolute",
         "componentId": "table",
-        "actualBytes": 78927,
-        "limitBytes": 89088,
-        "warnAtBytes": 80179,
+        "actualBytes": 80427,
+        "limitBytes": 90112,
+        "warnAtBytes": 81101,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）；2026-11-15 渲染组织批后实测 77.1 KB（前档 76.1，+1.0 KB：render-chunk 分批渲染接线——首帧 chunk + rAF 追加 + 代次守卫），顶穿前预警线 76.5，按实测上浮约 12% 重定档 87 KB（预警线恢复有效）"
+        "basis": "实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）；2026-11-15 渲染组织批后实测 77.1 KB（前档 76.1，+1.0 KB：render-chunk 分批渲染接线——首帧 chunk + rAF 追加 + 代次守卫），顶穿前预警线 76.5，按实测上浮约 12% 重定档 87 KB（预警线恢复有效）；2026-11-16 缺口补齐续批 G/H/I + 列虚拟×server 分组兼容后实测 78.6 KB（前档 77.9，+1.5 KB：缓冲上界淘汰/空值组/宿主合计行 + 组行列窗口兼容），按实测上浮约 12% 重定档 88 KB（预警线恢复有效）"
       },
       {
         "name": "@oas-ui/ui/data/table/model 链 gzip",
         "kind": "absolute",
         "componentId": "tableModel",
-        "actualBytes": 5174,
+        "actualBytes": 5150,
         "limitBytes": 6144,
         "warnAtBytes": 5530,
         "pass": true,
@@ -1153,11 +1162,11 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 109508,
+        "actualBytes": 111486,
         "limitBytes": 122880,
         "warnAtBytes": 110592,
         "pass": true,
-        "warn": false,
+        "warn": true,
         "basis": "实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0，原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）。首档→现档主要增量来源（已归因汇总，均为 oas-table 本体随链进入 edit 链的合理增长）：行高批（多行单元格三件套 + 虚拟截断/wrap 三态）、结构渲染批（structural-render 七槽壳接线）、print 感知（打印媒体口径）、无限滚动 + cursor 批 A 接线（appendRows/装载缓冲/load-more 协议）、server 分组批接线（groupBy/组行双形态渲染）"
       },
       {
