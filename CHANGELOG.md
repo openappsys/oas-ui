@@ -1,5 +1,17 @@
 # Changelog
 
+## [未发布]
+
+### 新增
+
+- **`oas-table` infinite 缓冲上界与淘汰（`max-loaded-rows`）**：`infinite` 形态新增缓冲上界配置——合法正整数 N = 已装载缓冲的行数上界，缺省/非法无上界（现状行为，非法值一次性 devWarn）。上界在场时 `appendRows` 追加超界**淘汰最旧行**（保留最近 N 行，渲染窗口随缓冲收敛），滚动位按淘汰行数 × 行高自动回拉（不足钳 0 不为负——当前视口行不跳）。淘汰只缩缓冲不减计数：`detail.start`（游标链定位）与「装满 total 即到底」判定按**累计装载数**参与——宿主游标与空块到底信号不受上界影响；`data` 属性替换写重置缓冲与计数并按上界裁剪（预填超界场景）。TDD：单测（纯函数解析口径、淘汰保留最近 N、滚动锚定双向、累计 start 连续、hasMore/到底信号与淘汰正交、data 替换重置、非法值提示、非 infinite 零效果）+ qa-regression e2e（真实浏览器滚完整链：缓冲收敛上界/累计 120、start 序列 30/60/90、视口末行=行119、滚动链无损、console 零告警）；zh/en 文档（infinite 节缓冲上界段 + 既有「无上界」已知限制改写）+ API 表同步。
+- **`oas-table` server 分组空值组表达（批 H）**：宿主分组行的 `groupKey` 空串 / `null` / `undefined` = **合法空值组**——组行形态保留（键归一为空串），渲染走既有「（空）」组文案（`table.groupEmpty` i18n，与本地分组同一份），聚合照常，不再剔除/降级为数据行；空值组键参与折叠态标识（同键共享语义与本地分组一致）。无效键收窄为「非字符串且非空值」（数值/布尔/对象）——仍降级按数据行 + 一次性 devWarn（数据不丢）；缺 `kind` / `kind:'data'` 的数据行与无效 `kind` 值行为不变。TDD：单测（数据层分区三形态空值组/文案注入/非字符串降级计数、组件层「（空）」组头 + 聚合渲染 + 折叠可用 + 零告警 + 无效键降级提示）+ qa-regression e2e（真实浏览器：三形态空值组渲染、聚合列值、折叠对照、console 零告警）；zh/en 文档（服务端分组协议 groupKey 字段说明 + kind 保留字段提示）+ API 描述同步。
+- **`oas-table` server 全表合计行（`summary-values`，批 I）**：`summary-scope="all"` 在 `row-model="server"` / `infinite` 形态**不再禁用**——宿主经 `summary-values` 属性（JSON 对象：列 key → 宿主计算好的合计值，数值/字符串）提供全量合计时，合计行按宿主值渲染（与本地合计行同一渲染通道：列布局一致、无值列留空、非法形态的值忽略）；未提供/非法 JSON 行为 = 现状（scope=all 禁用 + 一次性提示，非法值另一次性可诊断提示）。`scope="page"` 页内小计不受影响（仍走本地聚合）；client 形态忽略该属性（本地聚合权威，零漂移）；i18n 不新增 key（复用合计行现有文案）。TDD：单测（宿主值渲染/无值列留空/未提供=现状/非法 JSON/非对象 JSON/scope=page 不受影响/client 零漂移/与分组协议不冲突 + infinite 同口径）+ qa-regression e2e（真实浏览器：合计行按宿主值渲染、受控改写更新、移除回现状、console 零 error）；zh/en 文档（合计范围节批 I 提示 + 能力闸门表改写）+ API 表同步。
+
+### 修复
+
+- **`oas-table` server 分组 × `column-virtual` 兼容（取代降级方案）**：此前该组合被判定为不兼容——列虚拟降级为普通渲染 + devWarn 一次（组行按列形态逐格渲染与数据行列窗口占位归并几何错位、聚合值落错列）；现组行与数据行**同源消费列窗口序列**（`columnWindowSequence` 输出）：label 格跨度按窗口内「前导附加列 + 首个聚合列前当前可见列」重算——遇占位格即止（label 不覆盖窗口外区域），横向滚动窗口切换时随 current 可见集重算、不跨窗口错位，ΣcolSpan 恒与数据行同构闭合；聚合列滚出窗口即不渲染、滚入恢复；首个可见列即聚合列时 label 并入首个真实列格（不占位格），折叠/展开交互不回退；`columnVirtualOn()` 移除 server 分组降级项（组合下零 devWarn）。零漂移面：client 本地分组 × column-virtual 组行恒全宽形态不变；server 无分组时列虚拟路径逐字节不变；数据行/表头路径零改动。TDD：单测（初始窗口逐格同构/ΣcolSpan 闭合、滚动窗口切换 label 重算双向、聚合列离场/入场、滚动态折叠可用、勾选前导列计入 label 跨度、labelSpan=0 退化 × 窗口、零降级告警）+ qa-regression e2e（真实浏览器 32 列宽表 + server 分组 + 横向滚动窗口切换 → 组行/数据行 colSpan 序列一致、聚合值正确、dark token 可读、console 零告警）；zh/en 文档（组合矩阵降级→兼容 + 窗口重算口径）+ api-descriptions 同步。
+
 ## [2.6.8] - 2026-11-15
 
 ### 新增
