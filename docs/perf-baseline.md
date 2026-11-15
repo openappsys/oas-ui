@@ -25,7 +25,7 @@
 | 包 | 文件数 | raw | gzip | brotli |
 | --- | --- | --- | --- | --- |
 | @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 42.63 MB | — | — |
-| @oas-ui/ui（浏览器可加载 JS） | 509 | 11011.2 KB | 2650.7 KB | — |
+| @oas-ui/ui（浏览器可加载 JS） | 509 | 11011.9 KB | 2651.0 KB | — |
 | @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 526 | 3904.5 KB | 1063.8 KB | — |
 | @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3232.4 KB | 711.2 KB | 488.2 KB |
 | @oas-ui/theme（index.css） | 1 | 8.1 KB | 1.9 KB | — |
@@ -44,7 +44,7 @@
 | table | `@oas-ui/ui/data/table` | 40 | 255.1 KB | 76.5 KB |
 | tableEdit | `@oas-ui/ui/data/table/edit` | 57 | 360.7 KB | 106.3 KB |
 | tableStructuralRender | `@oas-ui/ui/data/table/structural-render` | 2 | 1.4 KB | 0.7 KB |
-| tableAdvanced | `@oas-ui/ui/data/table/advanced` | 11 | 25.0 KB | 10.3 KB |
+| tableAdvanced | `@oas-ui/ui/data/table/advanced` | 11 | 25.7 KB | 10.7 KB |
 | tableFormat | `@oas-ui/ui/data/table/format` | 5 | 11.6 KB | 4.6 KB |
 | tableView | `@oas-ui/ui/data/table/view` | 1 | 2.4 KB | 1.0 KB |
 | tableRange | `@oas-ui/ui/data/table/range` | 7 | 45.8 KB | 13.4 KB |
@@ -154,7 +154,7 @@
 | @oas-ui/theme glass-fluid.js gzip | 8.1 KB | 9.5 KB（绝对值） | 实测 gzip 8.0 KB（B 档 + 修复批：注册表 + 注入样式表并入运行时——ui 包相应减少同量玻璃规则体；高光层改「surface 背景之上、文字之下」，补 .box 基态/命中成对、isolation:isolate、z-index:-1、禁用守卫（含链接形态 aria-disabled，且同时 background/box-shadow:none）、实心按钮 hover 高光 + 按压边缘内描边（:where 归零特异性）、全根观察 + 帧内 prune 防泄漏）。2026-10-31 复核：把派生式生成器烘焙成静态字面量实测只省 108 B（不值得牺牲「派生防漂移」），无操作三元 7 B、HIT_SELECTORS 函数包装 0 B —— 无冗余可清；前档 8.5 KB 时利用率 95.1%、×1.10 档会让实测距预警线只差 16 B，故按实测上浮 17.5% 重定档 9.5 KB（利用率 85.1%，预警线恢复有效）。再次加功能前先做包体评估。前档 4.5 / 4 KB 首次定档于 2026-10-07（3.6 / 2.97 KB 实测）（指针镜面高光运行时：监听/命中/坐标/rAF/守卫/清理） |
 | @oas-ui/theme glass.css gzip | 3.4 KB | 6.0 KB（绝对值） | 本次实测 gzip 3516 B（2026-10-29；玻璃静态层新增 switch 轨道加深 token 后复核：surface 半透明 token + 折光边 + 阴影 + switch mix；独立可选，不进 union），保留 6 KB 上限 |
 | @oas-ui/theme skins.css gzip | 0.9 KB | 2.0 KB（绝对值） | 实测 gzip 约 0.91 KB（皮肤层变量族：预设色板皮肤档；独立可选，不进 union），上浮定档 2 KB |
-| @oas-ui/ui/data/table/advanced 链 gzip | 10.3 KB | 11.0 KB（绝对值） | 首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B。2026-10-31 复核重定档：逐文件复读 8 个模块（formula 2317 / windowed 1996 / pivot 1097 / query 851 / conditional 565 / history 490 / clipboard 363 / index 332），无可无行为变化清除的冗余（最大可清项 evaluateFormula 仅 19 B 且属公开导出，geometrySummary 的 try/catch 25 B 属已声明防御路径）；2.2% 余量已无预警意义，按实测上浮 15% 重定档 9 KB（利用率 86.9%）。2026-11-14 重定档 9.5 KB：createServerSource 重复创建守卫引入共享 dev-warn（236 B，统一告警通道，dev 提示、生产静默）——宿主同时使用 table 主链时 dev-warn 已被包含，advanced 侧真实增量为 0；再次扩展前必须先做包体评估或瘦身。2026-11-15 批 C 数据层缓存重构定档 11 KB：server-rows-cache 签名/TTL/在途合并纯逻辑 596 B + 缓存接线（fresh/陈旧/复用/正常四路 + SWR 背景控制器 + purge/destroy）487 B——缓存功能集固有体量，无行为变化瘦身空间（评估 60-120 B 不足）；动态拆分规避计量已否决（属规避且默认启用语义下首屏时序复杂化） |
+| @oas-ui/ui/data/table/advanced 链 gzip | 10.7 KB | 12.0 KB（绝对值） | 首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B。2026-10-31 复核重定档：逐文件复读 8 个模块（formula 2317 / windowed 1996 / pivot 1097 / query 851 / conditional 565 / history 490 / clipboard 363 / index 332），无可无行为变化清除的冗余（最大可清项 evaluateFormula 仅 19 B 且属公开导出，geometrySummary 的 try/catch 25 B 属已声明防御路径）；2.2% 余量已无预警意义，按实测上浮 15% 重定档 9 KB（利用率 86.9%）。2026-11-14 重定档 9.5 KB：createServerSource 重复创建守卫引入共享 dev-warn（236 B，统一告警通道，dev 提示、生产静默）——宿主同时使用 table 主链时 dev-warn 已被包含，advanced 侧真实增量为 0；再次扩展前必须先做包体评估或瘦身。2026-11-15 批 C 数据层缓存重构定档 11 KB：server-rows-cache 签名/TTL/在途合并纯逻辑 596 B + 缓存接线（fresh/陈旧/复用/正常四路 + SWR 背景控制器 + purge/destroy）487 B——缓存功能集固有体量，无行为变化瘦身空间（评估 60-120 B 不足）；动态拆分规避计量已否决（属规避且默认启用语义下首屏时序复杂化）；定档时误按 10342 B 记实测（缓存批交割时点实测 10585 B，原预警线 10138 已被顶穿、WARN 失焦）。2026-11-15 同批修复批（交叉审 R1-R3 + ttlMs 0/非法值守卫：分组键维度 + epoch 写缓存分层 + LRU 上界/过期即删，较 10585 B +377 B）后复核实测 10962 B，按实测上浮约 12% 重定档 12 KB（12288 B，利用率 89.2%，预警线 11059 恢复有效） |
 | @oas-ui/ui/data/table/format 链 gzip | 4.6 KB | 6.0 KB（绝对值） | 实测 gzip 4.7 KB（条件格式 capability + 规则引擎，无表单控件；不进入 table 默认链），上浮约 27% 定档 6 KB |
 | @oas-ui/ui/data/table/view 链 gzip | 1.0 KB | 1.5 KB（绝对值） | 实测 gzip 1.0 KB（完整视图快照 + 可配置 key 的持久化适配器，无 table 运行时依赖），上浮定档 1.5 KB |
 | @oas-ui/ui/data/table/range 链 gzip | 13.4 KB | 15.0 KB（绝对值） | 实测 gzip 12181 B（range/index 9715 = 选区控制器本体，未内联 table 运行时；window-data 840 / interactive 626 / clipboard 363 / capability 340 / row-key 297），其中 662 B 为本链未使用的导出（window-data 534 / clipboard 128），真实消费者构建经 tree-shaking 不携带，故真实量级约 11.5 KB。2026-10-31 复核：唯一可去重项是 findRowPath 与 indexRowPaths 的双实现（69 B），低于瘦身阈值；旧宿主视图签名回退（30 B）无测试覆盖但属 getDisplaySnapshot? 兼容契约，保留。按实测上浮 13.5% 重定档 13.5 KB（利用率 88.1%） |
