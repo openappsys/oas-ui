@@ -431,7 +431,8 @@ describe('createServerSource 数据层缓存（批 C）', () => {
 
   it('SWR 两阶段：过期命中先回填陈旧值（不重调前台）+ 后台重取成功后 data 更新为新值', async () => {
     const el = mount()
-    const { fetchRows } = versionedFetchRows()
+    const { fetchRows, holdAt, resolvers } = versionedFetchRows()
+    holdAt(3) // 第 3 次调用 = SWR 后台重取：hold 住让两阶段可分（阶段一断言时后台未 settle）
     const source = createServerSource(el, {
       fetchRows,
       total: 100,
@@ -443,10 +444,15 @@ describe('createServerSource 数据层缓存（批 C）', () => {
     await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('v2行10'))
     await new Promise((resolve) => setTimeout(resolve, 30))
     el.setAttribute('current', '1')
-    // 阶段一：陈旧值立即回填（用户看到旧数据而非 loading），后台重取已发起（调用数 +1）
-    expect((el.data[0] as { name: string }).name, 'SWR 先回填陈旧值').toBe('v1行0')
+    // 阶段一：陈旧值立即回填（用户立即看到旧数据而非 loading），后台重取已发起（hold 在途）
     await vi.waitFor(() => expect(fetchRows, '陈旧命中仍发起后台重取').toHaveBeenCalledTimes(3))
-    // 阶段二：后台重取成功后 data 更新为新值（两阶段可见）
+    await Promise.resolve()
+    expect((el.data[0] as { name: string }).name, 'SWR 先回填陈旧值（后台未 settle，停在旧数据）').toBe('v1行0')
+    // 阶段二：后台重取 settle → data 更新为新值（两阶段可见）
+    resolvers[0]!({
+      rows: Array.from({ length: 10 }, (_, i) => ({ name: `v3行${i}` })),
+      total: 100,
+    })
     await vi.waitFor(() => expect((el.data[0] as { name: string }).name).toBe('v3行0'))
     expect(fetchRows, 'SWR 全程恰 3 次取数（init + 页2 + 后台），无重复').toHaveBeenCalledTimes(3)
     source.destroy()
@@ -471,6 +477,7 @@ describe('createServerSource 数据层缓存（批 C）', () => {
     await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(4))
     el.setAttribute('current', '1') // 翻回页1：陈旧命中 + 同键在途 → 复用，不再发起
     expect(fetchRows, '同键在途复用：不重复 fetch').toHaveBeenCalledTimes(4)
+    await Promise.resolve()
     expect((el.data[0] as { name: string }).name, '复用时先陈旧回填').toBe('v1行0')
     // 后台重取 settle：复用等待者按自身 requestId 校验后回填新值
     resolvers[0]!({

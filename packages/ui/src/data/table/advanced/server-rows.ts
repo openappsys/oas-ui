@@ -148,6 +148,17 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
     }
   }
 
+  /**
+   * 缓存命中回填（同步路径专用）：推迟到微任务写属性。缓存命中发生在 onRequest 同步栈内，
+   * 而 onRequest 由组件 update 管线中途派发（setAttribute('current') 的同步调用栈）——此刻
+   * 同步写 `data` 会重入 attributeChangedCallback（渲染管线重入 → DOM 落后一帧，见「回填
+   * 时序注意」；正常取数路径 await fetchRows 天然异步免疫，命中路径必须同样异步化）。
+   * requestId 守卫在 apply 内，微任务执行时若 latest 已变则安全丢弃。
+   */
+  const applyAsync = (requestId: number, result: unknown): void => {
+    queueMicrotask(() => apply(requestId, result))
+  }
+
   /** 中止上一笔在途：controller 槽（正常取数）+ 同步解除其键的在途登记（被中止的在途不可复用） */
   const abortPrevious = (): void => {
     if (!controller) return
@@ -233,19 +244,19 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
     const bypass = reason === 'refresh'
 
     if (cache && key && !bypass) {
-      // fresh 命中：直接回填，不调 fetchRows（中止上一笔在途——本回填不依赖它）
+      // fresh 命中：直接回填（微任务异步化），不调 fetchRows（中止上一笔在途——本回填不依赖它）
       const fresh = cache.store.get(key)
       if (fresh) {
         abortPrevious()
-        apply(requestId, fresh)
+        applyAsync(requestId, fresh)
         return
       }
       const pending = cache.store.inflight(key)
       const stale = cache.store.peek(key)
-      // 陈旧命中 + SWR：先回填陈旧值，后台重取（同键在途则不再发起——复用既有一笔）
+      // 陈旧命中 + SWR：先回填陈旧值（微任务异步化），后台重取（同键在途则不再发起——复用既有一笔）
       if (stale && cache.swr) {
         abortPrevious()
-        apply(requestId, stale)
+        applyAsync(requestId, stale)
         if (!pending) {
           const ac = new AbortController()
           backgroundControllers.add(ac)

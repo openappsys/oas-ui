@@ -748,3 +748,96 @@ test('table server 分组修复批：按列聚合 × 可展开行列位几何 + 
   // ④ console 零告警
   expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
 })
+
+/**
+ * 数据层缓存（批 C S4）真实浏览器回归：createServerSource 默认缓存下翻页往返命中
+ * 不重调 fetchRows（调用计数不增 + 渲染层回填的是缓存内容——代次标记区分）、
+ * refresh({ purge: true }) 清空全部缓存后各键全重取、console 零告警。
+ *
+ * helper 用例走真实构建产物（serveBuiltUi 路由映射 dist + 动态 import，同上方
+ * 竞态用例）；fetchRows 每次调用给行名加代次前缀（第 n 次 → 「行n-下标」），
+ * 「渲染行代次 = 历史调用代次」即「内容来自缓存」的可观测证据。
+ */
+test('table server helper 缓存：翻页往返命中不重调 fetchRows + purge 清空重取 + console 零告警', async ({ page }) => {
+  const issues = collectConsoleIssues(page)
+  await serveBuiltUi(page)
+  await gotoTablePage(page)
+
+  await page.evaluate(async () => {
+    const moduleUrl = '/__qa_ui__/data/table/advanced/server-rows.js'
+    const { createServerSource } = (await import(moduleUrl)) as {
+      createServerSource: (
+        table: HTMLElement,
+        options: Record<string, unknown>,
+      ) => { refresh(options?: { purge?: boolean }): void; destroy(): void }
+    }
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-cache'
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称', sortable: true }]))
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+    const state = { fetches: 0 }
+    ;(window as any)['__srvState_table-server-cache'] = state
+    let count = 0
+    const source = createServerSource(el, {
+      total: 40,
+      fetchRows: (req: { start: number; end: number }) => {
+        count++
+        state.fetches = count
+        const gen = count
+        return new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                rows: Array.from({ length: req.end - req.start }, (_, i) => ({
+                  id: `r${req.start + i}`,
+                  name: `行${gen}-${req.start + i}`,
+                })),
+                total: 40,
+              }),
+            20,
+          ),
+        )
+      },
+    })
+    ;(window as any)['__srvSource_table-server-cache'] = source
+  })
+
+  const root = page.locator('#table-server-cache')
+  const stateOf = () => page.evaluate(() => (window as any)['__srvState_table-server-cache'].fetches as number)
+
+  // ① init（第 1 次取数）→ 首屏渲染代次 1 内容
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('行1-0', { timeout: 15000 })
+  expect(await stateOf(), 'init 恰 1 次取数').toBe(1)
+
+  // ② 翻页 2（第 2 次取数）→ 页 2 内容渲染
+  await page.evaluate(() => document.querySelector('#table-server-cache')!.setAttribute('current', '2'))
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('行2-10', { timeout: 15000 })
+  expect(await stateOf()).toBe(2)
+
+  // ③ 翻回页 1：同键命中缓存——不调 fetchRows（计数不增）且渲染层回填的是缓存内容（代次 1）
+  await page.evaluate(() => document.querySelector('#table-server-cache')!.setAttribute('current', '1'))
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('行1-0', { timeout: 15000 })
+  expect(await stateOf(), '翻页往返命中缓存：fetchRows 调用计数不增').toBe(2)
+
+  // ④ refresh({ purge: true })：清空全部缓存 + 强制重取当前页（页 1）→ 计数 +1、内容换新代次（第 3 次）
+  await page.evaluate(() => (window as any)['__srvSource_table-server-cache'].refresh({ purge: true }))
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('行3-0', { timeout: 15000 })
+  expect(await stateOf(), 'purge 后当前页重新取数').toBe(3)
+
+  // ⑤ purge 后翻页 2：页 2 缓存已随 purge 清空 → 重新取数（第 4 次、代次 4）
+  await page.evaluate(() => document.querySelector('#table-server-cache')!.setAttribute('current', '2'))
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('行4-10', { timeout: 15000 })
+  expect(await stateOf(), 'purge 后各键缓存已清：翻页重新取数').toBe(4)
+
+  // ⑥ purge 的强刷自身取数（第 3 次）已重新写入页1 缓存：翻回页1 命中不重取——
+  // 「purge 清全部」由 ⑤（页2 重取）覆盖，此处固化 purge 后缓存链路完好（purge 不是禁用缓存）
+  await page.evaluate(() => document.querySelector('#table-server-cache')!.setAttribute('current', '1'))
+  await expect(root.locator('tbody tr[part="row"]').first()).toContainText('行3-0', { timeout: 15000 })
+  expect(await stateOf(), 'purge 强刷写入的缓存正常命中（purge 后缓存仍在工作）').toBe(4)
+
+  // ⑦ console 零告警
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+})
