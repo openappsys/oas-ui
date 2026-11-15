@@ -323,9 +323,9 @@ table.addEventListener('oas-edit', (e) => {
 
 ## 渲染组织（时间切片）
 
-<DemoBlock title="render-chunk：2000 行分批渲染">
+<DemoBlock title="render-chunk：400 行分批渲染">
   <div style="width: 100%">
-    <oas-table id="table-chunk" render-chunk="200" row-key="id" columns='[{"key":"id","title":"ID","width":"80px"},{"key":"name","title":"姓名","width":"140px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"}]'></oas-table>
+    <oas-table id="table-chunk" render-chunk="100" row-key="id" columns='[{"key":"id","title":"ID","width":"80px"},{"key":"name","title":"姓名","width":"140px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"}]'></oas-table>
   </div>
 </DemoBlock>
 
@@ -1291,11 +1291,11 @@ onMounted(() => {
     virtual.setAttribute('data', JSON.stringify(rows))
   }
 
-  // 分批渲染（时间切片）demo：2000 行，首帧 200 行，其余逐帧追加
+  // 分批渲染（时间切片）demo：400 行，首帧 100 行，其余逐帧追加
   const chunk = document.querySelector('#table-chunk')
   if (chunk) {
     const chunkCities = ['北京', '上海', '深圳', '杭州', '广州']
-    const rows = Array.from({ length: 2000 }, (_, i) => ({
+    const rows = Array.from({ length: 400 }, (_, i) => ({
       id: i + 1,
       name: `用户 ${i + 1}`,
       age: 20 + (i % 30),

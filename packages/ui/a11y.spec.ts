@@ -554,6 +554,8 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
       // 关动画：动态 demo（自动播放/轮播/加载）在动画中途测得的文字/背景会漂移，先固定到静止态
       await p.emulateMedia({ reducedMotion: 'reduce' })
       const name = basename(page)
+      // table 页含 400 行分批渲染 demo（静止后仍是大 DOM）：axe 扫描在并行负载下可能超出默认 60s，留足余量
+      if (name === 'table.html') test.setTimeout(180_000)
       // 定时追加型 demo：goto 前 hook、静止后冻结（保证 axe 扫描对象确定性，见 TIMER_FROZEN_PAGES 注释）
       if (TIMER_FROZEN_PAGES.has(name)) await hookTimers(p)
       await p.goto(page, { waitUntil: 'networkidle' })

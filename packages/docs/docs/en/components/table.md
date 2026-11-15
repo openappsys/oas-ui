@@ -325,7 +325,7 @@ Setting `height` enables virtual scrolling (with a fixed `row-height`): only row
 
 <DemoBlock title="render-chunk: chunked rendering of 2,000 rows">
   <div style="width: 100%">
-    <oas-table id="table-chunk" render-chunk="200" row-key="id" columns='[{"key":"id","title":"ID","width":"80px"},{"key":"name","title":"Name","width":"140px"},{"key":"age","title":"Age","width":"80px"},{"key":"city","title":"City","width":"100px"},{"key":"email","title":"Email","width":"220px"}]'></oas-table>
+    <oas-table id="table-chunk" render-chunk="100" row-key="id" columns='[{"key":"id","title":"ID","width":"80px"},{"key":"name","title":"Name","width":"140px"},{"key":"age","title":"Age","width":"80px"},{"key":"city","title":"City","width":"100px"},{"key":"email","title":"Email","width":"220px"}]'></oas-table>
   </div>
 </DemoBlock>
 
@@ -1298,11 +1298,11 @@ onMounted(() => {
     virtual.setAttribute('data', JSON.stringify(rows))
   }
 
-  // Chunked rendering (time slicing) demo: 2,000 rows, 200 on the first frame, rest appended per frame
+  // Chunked rendering (time slicing) demo: 400 rows, 100 on the first frame, rest appended per frame
   const chunk = document.querySelector('#table-chunk')
   if (chunk) {
     const chunkCities = ['Beijing', 'Shanghai', 'Shenzhen', 'Hangzhou', 'Guangzhou']
-    const rows = Array.from({ length: 2000 }, (_, i) => ({
+    const rows = Array.from({ length: 400 }, (_, i) => ({
       id: i + 1,
       name: `User ${i + 1}`,
       age: 20 + (i % 30),
