@@ -841,3 +841,100 @@ test('table server helper 缓存：翻页往返命中不重调 fetchRows + purge
   // ⑦ console 零告警
   expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
 })
+
+/**
+ * 缓存键分组维度（批 C 修复批 R1）：createServerSource 的缓存键含 `groupBy`——
+ * 同区间/排序/过滤不同分组各自取数（不会拿 A 分组缓存顶 B 分组的页），回切原分组命中
+ * 缓存不重调 fetchRows；fetchRows 收到 detail.groupBy 透传（批 B 契约在 helper 侧补齐）。
+ * 走真实构建产物（同上方 helper 用例）；每次取数内容带代次标记，渲染层代次即可区分
+ * 「缓存命中」与「重新取数」。
+ */
+test('table server helper 缓存 × 分组：group-by 切换重取新分组 + 回切命中原分组缓存 + groupBy 透传 + console 零告警', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await serveBuiltUi(page)
+  await gotoTablePage(page)
+
+  await page.evaluate(async () => {
+    const moduleUrl = '/__qa_ui__/data/table/advanced/server-rows.js'
+    const { createServerSource } = (await import(moduleUrl)) as {
+      createServerSource: (table: HTMLElement, options: Record<string, unknown>) => { destroy(): void }
+    }
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-cache-group'
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    // row-model / total 由 helper 创建时写入（其监听先挂、激活 init 即被接住——
+    // 预写 data 会挡首载兜底刷新，故不设；group-by 先设好让 init 请求即携带分组键）
+    el.setAttribute('group-by', 'dept')
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;background:#fff;padding:4px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+    const state = {
+      fetches: 0,
+      /** fetchRows 收到的 groupBy 序列（透传断言输入） */
+      groupBys: [] as Array<string | undefined>,
+    }
+    ;(window as any)['__srvState_table-server-cache-group'] = state
+    let count = 0
+    const source = createServerSource(el, {
+      total: 6,
+      fetchRows: (req: { groupBy?: string }) => {
+        count++
+        state.fetches = count
+        state.groupBys.push(req.groupBy)
+        const gen = count
+        const label = req.groupBy === 'city' ? '销售' : '研发'
+        return new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                rows: [
+                  { kind: 'group', groupKey: `${req.groupBy}-g`, groupLabel: `${label}组·代次${gen}`, groupCount: 2 },
+                  { kind: 'data', key: `${req.groupBy}-a`, name: `${label}-${gen}-甲` },
+                  { kind: 'data', key: `${req.groupBy}-b`, name: `${label}-${gen}-乙` },
+                ],
+                total: 6,
+              }),
+            20,
+          ),
+        )
+      },
+    })
+    ;(window as any)['__srvSource_table-server-cache-group'] = source
+  })
+
+  const root = page.locator('#table-server-cache-group')
+  const stateOf = () =>
+    page.evaluate(
+      () =>
+        (window as any)['__srvState_table-server-cache-group'] as {
+          fetches: number
+          groupBys: Array<string | undefined>
+        },
+    )
+
+  // ① init：fetchRows 收到 groupBy='dept'（透传），渲染 dept 分组（代次 1）
+  await expect(root.locator('tbody tr.group-header').first()).toContainText('研发组·代次1', { timeout: 15000 })
+  let state = await stateOf()
+  expect(state.fetches, 'init 恰 1 次取数').toBe(1)
+  expect(state.groupBys[0], 'detail.groupBy 原样透传 fetcher').toBe('dept')
+
+  // ② 切分组 dept → city：groupBy 进缓存键 → 不同键 → 重新取数（代次 2），渲染 city 分组
+  await page.evaluate(() => document.querySelector('#table-server-cache-group')!.setAttribute('group-by', 'city'))
+  await expect(root.locator('tbody tr.group-header').first()).toContainText('销售组·代次2', { timeout: 15000 })
+  state = await stateOf()
+  expect(state.fetches, '不同分组是新查询：重新取数（不会拿 dept 缓存顶 city 页）').toBe(2)
+  expect(state.groupBys[1]).toBe('city')
+
+  // ③ 回切 city → dept：同键（区间/排序/过滤全同，groupBy 回到 dept）命中缓存——
+  // 不调 fetchRows（计数不增）且渲染的是 dept 的首次取数内容（代次 1）
+  await page.evaluate(() => document.querySelector('#table-server-cache-group')!.setAttribute('group-by', 'dept'))
+  await expect(root.locator('tbody tr.group-header').first()).toContainText('研发组·代次1', { timeout: 15000 })
+  state = await stateOf()
+  expect(state.fetches, '分组回切命中 groupBy 键维度的缓存条目').toBe(2)
+
+  // ④ console 零告警
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+})
