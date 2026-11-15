@@ -338,4 +338,31 @@ describe('multi-select 编辑器升级（oas-select multiple 替代逗号分隔 
     expect(cancelled).toBe(1)
     expect(JSON.parse(el.getAttribute('data')!)[0].tags).toEqual(['a'])
   })
+
+  it('浮层编辑器：点击关联 label（htmlFor 命中）不退出编辑，焦点转发到触发器', async () => {
+    const el = mount()
+    let edited = 0
+    el.addEventListener('oas-edit', () => edited++)
+    const td = enterEdit(el, 'dept')
+    const comp = td.querySelector<HTMLElement>('oas-select.cell-editor-component')!
+    comp.id = 'qa-overlay-label-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'qa-overlay-label-target'
+    label.textContent = '部门标签'
+    comp.before(label)
+    label.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }))
+    label.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(td.querySelector<HTMLElement>('oas-select.cell-editor-component')?.tagName, 'label 点击不拆浮层编辑器').toBe(
+      'OAS-SELECT',
+    )
+    expect(td.getAttribute('data-editing'), '浮层通道保持编辑态').toBe('true')
+    expect(edited, 'label 点击不触发提交').toBe(0)
+    expect(comp.shadowRoot!.activeElement, '焦点转发到浮层触发器').toBe(triggerOf(comp))
+    // 等豁免窗口过期（0ms 短生命周期标记），此后失焦恢复外点提交语义（值未变 → 静默退出编辑）
+    await new Promise((r) => setTimeout(r, 0))
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    comp.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true }))
+    expect(td.querySelector('oas-select.cell-editor-component'), '豁免窗口过后失焦照常走提交链退出').toBeNull()
+    expect(td.getAttribute('data-editing'), '编辑态已退出').toBeNull()
+  })
 })

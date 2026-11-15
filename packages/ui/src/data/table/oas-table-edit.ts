@@ -93,6 +93,12 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   private editState: EditState | null = null
   /** click 委托绑定的稳定 <table> 节点（重连幂等） */
   private delegatedTable: HTMLTableElement | null = null
+  /** 编辑期间挂到表格 shadowRoot 的关联 label 守卫是否在场（幂等拆挂开关） */
+  private labelGuardsActive = false
+  /** 关联 label 按下的短生命周期失焦豁免标记：mousedown 默认动作先于 click 到达，
+   *  一旦漏网（焦点被打到 body），handleEditorBlur 见标记即豁免本次提交 */
+  private labelPressGuard = false
+  private labelPressGuardTimer: ReturnType<typeof setTimeout> | null = null
   /** 手工双击判定的上一击签名（行 key + 列 key + 时间戳） */
   private lastCellClick: { key: string; col: string; time: number } | null = null
 
@@ -112,6 +118,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     this.delegatedTable = null
     this.lastCellClick = null
     this.teardownOverlayGuards()
+    this.teardownLabelGuards()
     this.editState = null
   }
 
@@ -355,6 +362,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     // 滚动重建路径 settleEdit 静默拆掉刚打开的编辑器——双击进编辑 30ms 内即被拆除，实测复现）
     editor.focus({ preventScroll: true })
     if (editor instanceof HTMLInputElement) editor.select()
+    // 关联 label 守卫（shadowRoot 级 capture）：编辑期间点击指向编辑器的 label 是
+    // 控件的关联激活区域（a11y 通行语义），不得按「外部点击」提交/拆除编辑
+    this.setupLabelGuards()
     // 浮层编辑器：进入编辑自动展开面板 + 挂 document 级守卫（Esc 双层级 / 失焦抑制）
     if (kind === 'overlay') {
       this.openOverlayEditor(editor as HTMLElement)
@@ -564,6 +574,7 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   private exitEdit(st: EditState): void {
     // 先置 null：清 td 会移除聚焦的 input 触发 blur，若 editState 未清空，blur→handleEditorBlur→submitEdit 会把值误提交
     this.teardownOverlayGuards()
+    this.teardownLabelGuards()
     this.editState = null
     const col = this.hostEl.effectiveColumns().find((c) => c.key === st.colKey)
     if (col) {
@@ -582,6 +593,12 @@ export class TableEditController implements ReactiveController, TableEditCapabil
 
   private handleEditorBlur(e: FocusEvent): void {
     if (!this.editState) return
+    // 关联 label 按下引发的漏网失焦豁免（mousedown 默认动作先于 click 到达的兜底路径）：
+    // 短生命周期标记，消费一次即失效，绝不吞后续真实外点失焦
+    if (this.labelPressGuard) {
+      this.labelPressGuard = false
+      return
+    }
     const related = e.relatedTarget as Node | null
     // 焦点移至组件内部（操作列保存/取消按钮）时交给按钮 click，避免双重提交
     if (related && this.hostEl.shadowRoot?.contains(related)) return
@@ -849,6 +866,131 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const st = this.editState
     if (!st || st.editor !== 'overlay') return
     this.pointerInEditor = !!st.componentEl && e.composedPath().includes(st.componentEl)
+  }
+
+  // ==================== 关联 label 守卫（a11y：label 是控件的关联激活区域） ====================
+  //
+  // 缺陷史：编辑期间点击指向编辑器的 label（form-associated 场景常见——label 与编辑器
+  // 同处一个 shadow root，for 命中编辑器 id）会被失焦提交链误判为「外部点击」：label 自身
+  // 不可聚焦，按下（mousedown）的默认动作把焦点从编辑器打到 body → 编辑器失焦
+  // （relatedTarget 为 null）→ 提交/拆除编辑、焦点丢失、用户输入丢失。
+  // 修复：编辑期间在表格 shadowRoot 上挂 capture 监听（退出编辑/宿主断开时拆除）——
+  // 按下阶段 cancel 默认动作（阻断焦点转移）+ 立短生命周期豁免标记兜漏网失焦；
+  // 点击阶段 cancel 默认激活（焦点由我们显式转发，避免跨 shadow 焦点乱飘）+
+  // stopPropagation（label 自身 click 冒泡到表格会触发行点击重渲染 → settleEdit 静默拆编辑器）
+  // + 把焦点转发进编辑器内部控件。未关联当前编辑器的 label 与无 label 点击路径语义不变。
+
+  /** label 豁免/转发判定的编辑器目标元素：组件与浮层通道为编辑器宿主，原生通道为 td 内 input/select */
+  private editorLabelTarget(st: EditState): HTMLElement | null {
+    if (st.componentEl) return st.componentEl
+    return st.td.querySelector<HTMLElement>('input.cell-editor, select.cell-editor')
+  }
+
+  /**
+   * 判定 label 是否关联当前编辑器。主口径 label.control——form-associated 自定义元素在
+   * Chromium 的 FACE 语义下 label.control 指向组件宿主；原生 input/select 与 label 同处
+   * 一个 tree scope 时同样命中。兜底 htmlFor 与编辑器 id 匹配（无 control 实现的环境
+   * 如 happy-dom，及 label 与编辑器同处一个 shadow root 的原生关联）。
+   */
+  private labelMatchesEditor(label: HTMLLabelElement, st: EditState): boolean {
+    const target = this.editorLabelTarget(st)
+    if (!target) return false
+    const control = (label as HTMLLabelElement & { control?: Element | null }).control
+    if (control === target) return true
+    const forId = label.getAttribute('for')
+    return forId !== null && forId !== '' && forId === target.id
+  }
+
+  /** 路径上第一个关联当前编辑器的 label（无则 null） */
+  private findAssociatedLabel(e: Event, st: EditState): HTMLLabelElement | null {
+    for (const node of e.composedPath()) {
+      if (node instanceof HTMLLabelElement && this.labelMatchesEditor(node, st)) return node
+    }
+    return null
+  }
+
+  /** 编辑期间挂关联 label 守卫（shadowRoot 级 capture），重复进入先拆旧（幂等） */
+  private setupLabelGuards(): void {
+    this.teardownLabelGuards()
+    const root = this.hostEl.shadowRoot
+    if (!root) return
+    this.labelGuardsActive = true
+    root.addEventListener('pointerdown', this.onLabelPress, true)
+    root.addEventListener('mousedown', this.onLabelPress, true)
+    root.addEventListener('click', this.onLabelClick, true)
+  }
+
+  /** 拆关联 label 守卫（退出编辑/静默取消/宿主断开三路都必须到达，否则 shadowRoot 监听泄漏） */
+  private teardownLabelGuards(): void {
+    if (!this.labelGuardsActive) return
+    this.labelGuardsActive = false
+    const root = this.hostEl.shadowRoot
+    if (root) {
+      root.removeEventListener('pointerdown', this.onLabelPress, true)
+      root.removeEventListener('mousedown', this.onLabelPress, true)
+      root.removeEventListener('click', this.onLabelClick, true)
+    }
+    if (this.labelPressGuardTimer !== null) {
+      clearTimeout(this.labelPressGuardTimer)
+      this.labelPressGuardTimer = null
+    }
+    this.labelPressGuard = false
+  }
+
+  /**
+   * shadowRoot pointerdown/mousedown capture：命中关联 label 时取消默认动作——
+   * 按下阶段默认动作会把焦点从编辑器打到 body（label 自身不可聚焦），该失焦先于 click
+   * 到达并触发失焦提交；同时立短生命周期豁免标记兜住绕过 cancel 的漏网失焦。
+   */
+  private onLabelPress = (e: Event): void => {
+    const st = this.editState
+    if (!st) return
+    if (!this.findAssociatedLabel(e, st)) return
+    e.preventDefault()
+    this.labelPressGuard = true
+    if (this.labelPressGuardTimer !== null) clearTimeout(this.labelPressGuardTimer)
+    // 0ms 到期：默认动作引发的失焦同步到达（同一次事件任务内），任务结束标记即失效——
+    // 绝不跨任务残留，之后真实外点失焦的提交语义零漂移
+    this.labelPressGuardTimer = setTimeout(() => {
+      this.labelPressGuard = false
+      this.labelPressGuardTimer = null
+    }, 0)
+  }
+
+  /**
+   * shadowRoot click capture：关联 label 的激活语义等价于点击编辑器本身——preventDefault
+   * 拦掉浏览器原生激活（含 happy-dom 等环境的「label 点击转发控件」默认行为），焦点由我们
+   * 显式转发；stopPropagation 拦掉 label 自身 click 冒泡到表格委托（行点击重渲染会静默拆编辑器）。
+   */
+  private onLabelClick = (e: Event): void => {
+    const st = this.editState
+    if (!st) return
+    if (!this.findAssociatedLabel(e, st)) return
+    e.preventDefault()
+    e.stopPropagation()
+    this.focusEditorFromLabel(st)
+  }
+
+  /**
+   * label 点击后的焦点转发：组件/浮层通道优先走组件自覆写的 focus()（库内 form 组件统一
+   * 委托内部控件：input → shadow 内真实 input、select → .trigger）；无覆写的宿主自定义 WC
+   * 穿透 shadow 找首个可输入控件；都没有才聚焦宿主本身。原生通道直接聚焦 td 内编辑器。
+   * preventScroll 同 enterEdit（防聚焦滚动微扰触发滚动重建拆编辑）。
+   */
+  private focusEditorFromLabel(st: EditState): void {
+    if (st.editor === 'component' || st.editor === 'overlay') {
+      const el = st.componentEl
+      if (!el) return
+      if (el.focus !== HTMLElement.prototype.focus) {
+        el.focus({ preventScroll: true })
+        return
+      }
+      const inner = el.shadowRoot?.querySelector<HTMLElement>('input, textarea, select')
+      if (inner) inner.focus({ preventScroll: true })
+      else el.focus({ preventScroll: true })
+      return
+    }
+    st.td.querySelector<HTMLElement>('input.cell-editor, select.cell-editor')?.focus({ preventScroll: true })
   }
 
   /**

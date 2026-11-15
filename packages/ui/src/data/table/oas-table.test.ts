@@ -1538,6 +1538,142 @@ describe('OASTable 行内编辑（inline editing）', () => {
   })
 })
 
+// 关联 label 点击豁免（a11y 通行语义：label 是控件的关联激活区域，点击等价于点击控件本身）。
+// 缺陷史：label 不可聚焦，mousedown 默认动作把焦点从编辑器打到 body → 编辑器失焦（relatedTarget
+// 为 null）被失焦提交链误判为「外部点击」→ 编辑被提交/拆除、用户输入丢失。修复后：编辑期间
+// shadowRoot 级捕获监听命中关联 label 时取消默认动作 + 转发焦点进编辑器，并以短生命周期标记
+// 豁免漏网失焦；未关联 label 与无 label 的点击路径语义零漂移。
+const LABEL_EDIT_COLUMNS = JSON.stringify([
+  { key: 'name', title: '姓名', editable: true, editComponent: 'oas-input' },
+  { key: 'memo', title: '备注', editable: true },
+])
+
+function mountLabelTable(): OASTable {
+  const el = new OASTable()
+  el.setAttribute('editable', '')
+  el.setAttribute('row-key', 'name')
+  el.setAttribute('columns', LABEL_EDIT_COLUMNS)
+  el.setAttribute('data', JSON.stringify([{ name: '张三', memo: '初稿' }]))
+  document.body.appendChild(el)
+  return el
+}
+
+describe('OASTable 行内编辑：关联 label 点击豁免', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('组件编辑器（editComponent）：点击关联 label（htmlFor 命中）不退出编辑、焦点转发进 shadow 内控件、数据未提交', () => {
+    const el = mountLabelTable()
+    let edited = 0
+    el.addEventListener('oas-edit', () => edited++)
+    const td = cells(el).find((c) => c.getAttribute('data-col') === 'name')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const editor = td.querySelector<HTMLElement>('oas-input.cell-editor-component')!
+    editor.id = 'qa-label-editor-target'
+    const inner = editor.shadowRoot!.querySelector<HTMLInputElement>('input')!
+    const label = document.createElement('label')
+    label.htmlFor = 'qa-label-editor-target'
+    label.textContent = '姓名标签'
+    editor.before(label)
+    // 真实点击序列：pointerdown/mousedown（默认动作会把焦点打到 body——旧实现此刻失焦提交拆编辑器）+ click
+    label.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }))
+    label.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }))
+    label.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(td.querySelector<HTMLElement>('oas-input.cell-editor-component')?.tagName, 'label 点击不拆编辑器').toBe(
+      'OAS-INPUT',
+    )
+    expect(td.getAttribute('data-editing'), '单元格保持编辑态').toBe('true')
+    expect(edited, 'label 点击不触发提交').toBe(0)
+    expect(editor.shadowRoot!.activeElement, '焦点转发进 shadow 内真实 input').toBe(inner)
+    // 豁免窗口内漏网的一次失焦同样不提交（mousedown 默认动作先于 click 到达的兜底路径）
+    editor.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true }))
+    expect(td.getAttribute('data-editing'), '豁免窗口内的漏网失焦不提交').toBe('true')
+    expect(edited).toBe(0)
+    // 豁免窗口过后真实失焦恢复提交语义（短生命周期，零行为漂移）
+    inner.value = '张四'
+    editor.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true }))
+    expect(edited, '豁免窗口过后失焦照常提交').toBe(1)
+    expect(JSON.parse(el.getAttribute('data')!)[0].name).toBe('张四')
+  })
+
+  it('原生 input 编辑器：htmlFor 命中（编辑器有 id 时）同样豁免并把焦点还给 td 内编辑器', async () => {
+    const el = mountLabelTable()
+    let edited = 0
+    el.addEventListener('oas-edit', () => edited++)
+    const td = cells(el).find((c) => c.getAttribute('data-col') === 'memo')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.id = 'qa-label-native-target'
+    const label = document.createElement('label')
+    label.htmlFor = 'qa-label-native-target'
+    label.textContent = '备注标签'
+    input.before(label)
+    label.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }))
+    label.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(td.querySelector<HTMLInputElement>('input.cell-editor')?.value, '原生通道 label 点击不拆编辑器').toBe('初稿')
+    expect(edited).toBe(0)
+    expect(el.shadowRoot!.activeElement, '焦点还给 td 内原生编辑器').toBe(input)
+    // 豁免窗口内漏网失焦同样被豁免
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    expect(td.getAttribute('data-editing'), '豁免窗口内的漏网失焦不提交').toBe('true')
+    expect(edited).toBe(0)
+    // 等豁免窗口过期（0ms 短生命周期标记），此后失焦恢复提交语义
+    await new Promise((r) => setTimeout(r, 0))
+    input.value = '定稿'
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    expect(edited, '豁免窗口过后失焦照常提交').toBe(1)
+    expect(JSON.parse(el.getAttribute('data')!)[0].memo).toBe('定稿')
+  })
+
+  it('对照：label 未关联当前编辑器（htmlFor 不匹配）的按下不设豁免，真实失焦照常提交', async () => {
+    const el = mountLabelTable()
+    let edited = 0
+    el.addEventListener('oas-edit', () => edited++)
+    const td = cells(el).find((c) => c.getAttribute('data-col') === 'memo')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = '定稿'
+    const label = document.createElement('label')
+    label.htmlFor = 'qa-unrelated-target'
+    label.textContent = '无关标签'
+    input.before(label)
+    // 仅按下：不命中关联判定 → 不立豁免标记（真实浏览器里此刻 mousedown 默认动作已把焦点打到
+    // body，等价于紧随的失焦；happy-dom 不模拟该默认动作，手工派发失焦验证提交语义未被豁免污染）
+    label.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }))
+    await new Promise((r) => setTimeout(r, 0))
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    expect(edited, '未关联 label 不设豁免，失焦照常提交').toBe(1)
+    expect(JSON.parse(el.getAttribute('data')!)[0].memo).toBe('定稿')
+    expect(td.querySelector('input.cell-editor'), '提交后编辑器退出').toBeNull()
+  })
+
+  it('对照：未关联 label 的点击行为与既有「表内点击」路径一致（行点击重渲染静默退出，不提交）', () => {
+    const el = mountLabelTable()
+    let edited = 0
+    el.addEventListener('oas-edit', () => edited++)
+    const td = cells(el).find((c) => c.getAttribute('data-col') === 'memo')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = '定稿'
+    const label = document.createElement('label')
+    label.htmlFor = 'qa-unrelated-target'
+    label.textContent = '无关标签'
+    input.before(label)
+    // 点击冒泡到表格委托 → 行点击 → 重渲染静默取消编辑：与点击表内其他区域同路径（既有语义，零漂移）
+    label.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(td.querySelector('input.cell-editor'), '行点击路径静默退出编辑').toBeNull()
+    expect(edited, '静默退出不派发提交').toBe(0)
+    expect(JSON.parse(el.getAttribute('data')!)[0].memo).toBe('初稿')
+  })
+})
+
 const STICKY_COLUMNS = JSON.stringify([
   { key: 'id', title: 'ID', fixed: 'left', width: '60px' },
   { key: 'name', title: '姓名' },

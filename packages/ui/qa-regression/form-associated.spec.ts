@@ -968,6 +968,57 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
   expect(result.afterRemove, '表格行内编辑：label 移除后不得残留外部名').not.toBe('行内姓名（已改名）')
 })
 
+// 缺陷回归：编辑期间点击指向编辑器的关联 label 被失焦提交链误判为「外部点击」——
+// label 不可聚焦，按下默认动作把焦点打到 body → 编辑器失焦提交被拆、用户输入丢失。
+// 真实鼠标点击（mousedown 默认动作路径）覆盖 happy-dom 单测模拟不到的浏览器默认行为。
+test('form-associated：表格行内编辑点击关联 label 不退出编辑（真实鼠标按下路径，编辑保留 + 焦点进内部控件）', async ({
+  page,
+}) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit-component')
+  await page.evaluate(() => {
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    const td = table.shadowRoot.querySelector('td.editable-cell') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+  })
+  await page.waitForFunction(() => {
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    return !!table.shadowRoot!.querySelector('oas-input.cell-editor-component')
+  })
+  // 编辑器前插入关联 label，登记提交事件标记
+  await page.evaluate(() => {
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    const editor = table.shadowRoot!.querySelector('oas-input.cell-editor-component') as HTMLElement
+    editor.id = 'qa-inline-editor-label-reg'
+    const label = document.createElement('label')
+    label.id = 'qa-inline-label-reg'
+    label.htmlFor = editor.id
+    label.textContent = '回归标签'
+    editor.before(label)
+    ;(window as unknown as { __qaEditFired: boolean }).__qaEditFired = false
+    table.addEventListener('oas-edit', () => ((window as unknown as { __qaEditFired: boolean }).__qaEditFired = true))
+  })
+  // 真实鼠标点击 label（pointerdown/mousedown/click 全序列 + 浏览器默认动作）
+  await page.locator('#qa-inline-label-reg').click()
+  const result = await page.evaluate(() => {
+    const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
+    const editor = table.shadowRoot!.querySelector('oas-input.cell-editor-component') as
+      | (HTMLElement & { shadowRoot: ShadowRoot })
+      | null
+    const td = table.shadowRoot!.querySelector('td[data-editing="true"]')
+    return {
+      editorKept: !!editor,
+      editing: !!td,
+      focused: editor ? editor.shadowRoot.activeElement === editor.shadowRoot.querySelector('input') : false,
+      editFired: (window as unknown as { __qaEditFired: boolean }).__qaEditFired,
+    }
+  })
+  expect(result.editorKept, '点击关联 label 编辑器不被拆除').toBe(true)
+  expect(result.editing, '单元格保持编辑态').toBe(true)
+  expect(result.focused, '焦点转发进编辑器内部控件').toBe(true)
+  expect(result.editFired, 'label 点击不触发提交').toBe(false)
+})
+
 test('form-associated：upload 文件 FormData 与 label 点击激活文件选择', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-upload')
