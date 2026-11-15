@@ -665,22 +665,23 @@ fetchRows: async ({ signal, ...rest }) => {
 
 ### 服务端数据方案选用决策表
 
-四套方案按「谁持有全量、谁管排序/过滤」选择，不要逐段混用：
+五套方案按「谁持有全量、谁管排序/过滤」选择，不要逐段混用：
 
 | 方案 | 适用场景 | 谁管排序/过滤 | 竞态守卫 | 错误反馈 | 推荐度 |
 | --- | --- | --- | --- | --- | --- |
 | 外部分页 `total`（宿主自管取数） | 纯分页浏览，排序/过滤在前端完成或不需要 | 宿主（监听 `oas-sort-change` / `oas-filter-change` / `oas-page-change` 自行处理） | 宿主自建（序号/快照） | 宿主自建 | 轻量：服务端只做切片时够用 |
-| `row-model="server"` | 排序/过滤在服务端的企业数据集，需要内建 loading / 错误条 / 重试 | 服务端（本地变换整体跳过，请求携带 sortModel / filterValues） | 内建（requestId 单调递增 + helper 回写校验） | 内建（错误条 + `oas-rows-error` + 重试按钮） | 服务端排序/过滤场景首选 |
+| `row-model="server"` | 排序/过滤在服务端的企业数据集，需要内建 loading / 错误条 / 重试 | 服务端（本地变换整体跳过，请求携带 sortModel / filterValues） | 内建（requestId 单调递增 + helper 回写校验） | 内建（错误条 + `oas-rows-error` + 重试按钮） | 服务端排序/过滤分页场景首选 |
+| `infinite`（无限滚动 + cursor 分页） | 无翻页浏览的长列表（动态流/日志/结果流），滚动加载下一块；排序/过滤在服务端，总数可未知 | 服务端（请求携带 sortModel / filterValues / cursor；排序/过滤变更重置装载重新请求首块） | 内建（requestId 单调递增 + `appendRows` 的 requestId 守卫） | 内建（错误条 + `oas-rows-error` + 重试按钮，与 server 同通道） | 无翻页滚动加载场景首选（配方见下） |
 | windowed（服务端行窗口） | 十万行级**滚动**场景：宿主只喂可视窗口切片，免翻页 | 宿主（组件跳过本地执行并 devWarn） | `createWindowedSource` 内建（中止过期在途 + 覆盖判定） | helper 派发 `oas-window-error`，组件无内建错误条 | 滚动虚拟化场景首选 |
 | 宿主自管事件监听 | 深度定制取数链路（自建缓存/合并/SSE 推送），或上述形态覆盖不了的组合 | 宿主完全自管 | 宿主自建 | 宿主自建 | 自由度最大、成本最高 |
 
-互斥与前提规则：`row-model="server"` 与 `windowed` 同开时 **windowed 优先**（server 被忽略）+ 一次性 devWarn；server 生效前提 = `total` 属性在场（缺失回落 client + 一次性 devWarn）；「逐段混用（只排当前页）」是错误语义，组件不提供该配置——排序/过滤要么全在服务端（server 模式），要么全在本地/宿主。
+互斥与前提规则：`row-model="server"` 与 `windowed` 同开时 **windowed 优先**（server 被忽略）+ 一次性 devWarn；`infinite` 与 `pagination` 同开时 **pagination 优先**（既有分页语义）、与 `windowed` 同开时 **windowed 优先**、与 `row-model="server"` 同开时 **infinite 优先**（协议走 cursor/load-more，`total` 前提放宽），均一次性 devWarn；server 生效前提 = `total` 属性在场（缺失回落 client + 一次性 devWarn），**infinite 的 `total` 可选**（未知总数场景以宿主空块信号声明到底）；「逐段混用（只排当前页）」是错误语义，组件不提供该配置——排序/过滤要么全在服务端（server / infinite），要么全在本地/宿主。
 
 回填时序注意：「宿主自管事件监听」路径在事件监听内回填请**异步写属性**——监听回调中同步写 `data` 会因渲染管线重入导致 DOM 落后一帧；`createServerSource` helper 已内置异步回填，无此限制。
 
-### 能力闸门（server 模式逐项声明）
+### 能力闸门（server 模式与 infinite 同口径逐项声明）
 
-「跨全量」能力在当前页切片上执行会得到错误结果——server 模式逐项声明如下（均 devWarn 一次；与 windowed 同型判定，重合项标注同口径）：
+「跨全量」能力在当前页切片上执行会得到错误结果——server 模式逐项声明如下（均 devWarn 一次；与 windowed 同型判定，重合项标注同口径）。`infinite` 形态**同口径**：切片口径 = 已装载数据（下表「当前页切片」对 infinite 即「已装载缓冲」）：
 
 | 能力 | server 模式语义 | 与 windowed 对照 |
 | --- | --- | --- |
@@ -701,6 +702,50 @@ fetchRows: async ({ signal, ...rest }) => {
 
 - **列序持久化**：server 下 `setColumnOrder()` 写回被拦截（能力闸门）——**宿主初始化恢复持久化列序的程序化调用同样被拦**；列设置面板的移动按钮同步禁用（`columnReorderGate()` 与写回拦截同一判定源）。需要列序持久化请由宿主自管（如随请求参数传递列序）或关闭 row-model。
 - **页内编辑**：编辑仅本地生效，翻页回填新切片后草稿即丢失——v1 不提供服务端编辑回写契约；需要持久化编辑请在 `oas-edit` 监听中自行提交服务端，且不要依赖跨页草稿。
+
+## 无限滚动（infinite + cursor 分页）
+
+> 服务端取数形态（与 `row-model="server"` 同族，游标分页变体）：滚动接近底部自动请求下一块并**追加**渲染，无翻页器。`total` **可选**——未知总数场景（服务端无法给出总数）组件以 `totalKnown=false` 运行，「到底」以宿主回传的空块信号为准。能力闸门与 server 模式同口径（见上方闸门表）；与 `row-model="server"` 同开时 infinite 优先（协议走 cursor/load-more）。
+
+组件侧两件：`infinite`（开启）+ 可选 `total`（已知总数时提供——`aria-rowcount` 与「装满即到底」判定随之生效）。宿主侧监听 `oas-rows-request` 取下一块、经 `appendRows` 回填：
+
+```html
+<oas-table id="table" infinite columns='...' row-key="id"></oas-table>
+<script type="module">
+  const table = document.getElementById('table')
+  let cursor // 组件在 detail.cursor 回传上次 appendRows 记录的游标
+  table.addEventListener('oas-rows-request', async (e) => {
+    const { requestId, cursor: prev, sortModel, filterValues, reason } = e.detail
+    const res = await fetchNextChunk({ cursor: prev, sortModel, filterValues, reason }) // 宿主取数
+    table.appendRows(res.rows, { requestId, cursor: res.nextCursor, total: res.total }) // total 可选
+    // res.rows 为空数组 = 「没有更多」——组件记录后停止触底触发并显示「已到底」提示行
+  })
+</script>
+```
+
+请求协议（与 server 模式共用 `oas-rows-request`）：
+
+- `reason` 枚举：`init`（挂载首载）/ `sort` / `filter` / `paginate`（infinite 下仅页大小变更触发）/ `refresh`（`refreshRows()` 强刷）/ **`load-more`**（滚动触底追加下一块）。排序/过滤/页大小变更自动**重置装载缓冲**（清已装载行与游标）再请求首块——用户看到新口径首块；`current` 概念在 infinite 下不适用（不写入、不参与请求签名，`current` 属性写不触发请求）。
+- `detail.cursor`：组件记录的游标（上次 `appendRows` 的 `options.cursor`），原样回传——宿主据此定位下一块；首次进入/重置后缺省（undefined）。
+- `detail.start` / `detail.end`：已装载行数（区间语义不适用，两值相同）；`detail.totalKnown`：随 `total` 属性在场性（未知总数场景 false）。
+- 触发阈值：滚动位置距底部不足 `max(200px, 视口高 × 1.5)`；请求在途不重复触发；`totalKnown` 时已装载满 total 视为到底（不再触发）。
+
+回填通道 `appendRows(rows, options?: { cursor?, total?, requestId? })`（与 `data` 属性的**替换**语义区分）：
+
+- `rows` 追加进装载缓冲（保持块内顺序）；**空数组 = 「没有更多」**——组件记录到底信号，停止触底触发并渲染「已到底」提示行（`part="no-more-row"`）；
+- `options.cursor` 记录为当前游标（下次 load-more 经 `detail.cursor` 原样回传）；`options.total` 提供时同步 `total` 属性与 `aria-rowcount`；
+- `options.requestId`（从事件 `detail.requestId` 取）提供时组件做序号守卫：与在途序号不符按晚到旧响应静默丢弃、同序号重复回填按幂等忽略（各一次性 devWarn）——双监听/晚到竞态由组件兜底；不传时为自由通道（预填/手动补充，序号校验由宿主自行承担）；
+- `data` 属性写 = **重置装载缓冲**（替换语义：清已装载行、游标与到底信号——预填/SSR 场景首块由宿主负责）；`refreshRows({ purge: true })` = 重置装载 + 重发首块（`reason='refresh'`，到底信号一并复位）。
+
+在途视觉：已装载 > 0 时 loading 行**追加在已装载行之后**（复用 `part="loading-row"` 与 `loading` 结构槽，接管协议与全表 loading 一致）；首载/装载为空时走全表 loading 行。「已到底」态：`hasMore=false` 且已装载 > 0 时渲染静态提示行（`part="no-more-row"`，文案随 locale）。
+
+失败通道与 server 模式共用：`reportRowsError`（同序号校验）→ 保留旧数据 + `oas-rows-error` + 内建错误条（`role="alert"`，重试按钮调 `refreshRows()`）。
+
+A11y：`aria-rowcount` 用已知 total（未知时省略不写——读屏不作总数播报）；在途装载 `aria-busy` 同步；行 `aria-rowindex` = 装载序 + 1。
+
+**与虚拟滚动（`height`）可叠加**：已装载缓冲整体走既有虚拟化窗口切片（大数据量推荐组合；触底检测基于滚动容器几何，虚拟与非虚拟同阈值）。
+
+填充柄 / 区域选择 / 过滤面板 / 历史 / 编辑在 infinite 下均为**已装载行相对语义**（`data-row-index` 为装载序 0 起序）——与 server 模式页内语义同型，详见上方能力闸门表。
 
 ## 列过滤
 
@@ -2640,6 +2685,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `hover` | 行 hover 底色开关（仅视觉，不影响选中行为），`"false"` 关闭 | — | — |
 | `indent-size` | 树形数据每级缩进量（px） | `string` | `24` |
+| `infinite` | 无限滚动 + cursor 分页（服务端取数形态）：滚动接近底部自动经 oas-rows-request（reason=load-more，detail.cursor 回传游标）请求下一块，宿主经 appendRows 回填（空数组 = 到底信号）；与 pagination 同开 pagination 优先、与 windowed 同开 windowed 优先（均互斥告警一次）；total 可选（未知总数场景 totalKnown=false，到底以宿主空块信号为准）；能力闸门与 row-model="server" 同口径（导出/打印仅已装载数据、合计 scope=all 禁用、分组/行列拖拽/merge 禁用） | `boolean` | — |
 | `loading` | 加载态：数据区显示加载占位行（表头保留） | `boolean` | — |
 | `max-height` | 表体限高滚动 + 表头吸顶（虚拟 height 同设时优先） | `string` | — |
 | `multi-sort` | 多列排序（JSON 数组：[{ key, order }]，按数组序依次排序） | `string` | — |
@@ -2649,7 +2695,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `row-draggable` | 行拖拽排序：渲染拖拽手柄列，拖放派发 oas-row-reorder；虚拟滚动（height）下禁用并告警一次 | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
-| `row-model` | 行模型：`client`（缺省，本地全量：过滤/排序/分页切片组件内执行）/ `server`（服务端行模型：需与 total 外部分页形态配合，data 为当前页切片，本地过滤/排序整体跳过，翻页/排序/过滤经 oas-rows-request 向宿主取数；排序/过滤/页大小变更自动重置 current=1；请求在途内建 loading，失败经 reportRowsError 显示错误条）。与 windowed 同开时 windowed 优先（互斥告警）；缺 total 回落 client 并告警 | `string` | — |
+| `row-model` | 行模型：`client`（缺省，本地全量：过滤/排序/分页切片组件内执行）/ `server`（服务端行模型：需与 total 外部分页形态配合，data 为当前页切片，本地过滤/排序整体跳过，翻页/排序/过滤经 oas-rows-request 向宿主取数；排序/过滤/页大小变更自动重置 current=1；请求在途内建 loading，失败经 reportRowsError 显示错误条）。与 windowed 同开时 windowed 优先（互斥告警）；与 infinite 同开时 infinite 优先（协议走 cursor/load-more，total 前提放宽）；缺 total 回落 client 并告警 | `string` | — |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
 | `show-header` | 表头显隐（默认 true）；`false` 时不渲染表头行，列配置仍作用于数据行对齐 | `string` | `true` |
 | `size` | 密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交 | `string` | `medium` |
@@ -2679,13 +2725,14 @@ document.querySelector('table')!.appendChild(tbody)
 | `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义） |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | 派发编辑结果事件（提交/取消/校验拒绝；detail 由 edit 能力组好）。事件名以字面量书写在此， |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | `setColumnOrder(keys: string[])`：更新列显示顺序（写回 column-keys 并重渲染，派发 oas-column-order，宿主可做持久化）。server 行模型下不生效（顺序语义由服务端持有——能力闸门）：写回被拦截并告警一次，列设置面板的移动按钮同步禁用；宿主初始化恢复持久化列序（程序化调用）同样被拦 |
-| `columnReorderGate` | `columnReorderGate(): boolean` | `columnReorderGate(): boolean`：列重排能力闸门（TableColumnSettingsHost 契约）——server 行模型生效时返回 true，列设置面板的移动按钮同步禁用（与 setColumnOrder 写回拦截同一判定源，按钮不可用与程序化拦截不脱节）；契约可选，宿主不实现按 false 回落 |
+| `columnReorderGate` | `columnReorderGate(): boolean` | `columnReorderGate(): boolean`：列重排能力闸门（TableColumnSettingsHost 契约）——server 行模型或 infinite 生效时返回 true，列设置面板的移动按钮同步禁用（与 setColumnOrder 写回拦截同一判定源，按钮不可用与程序化拦截不脱节）；契约可选，宿主不实现按 false 回落 |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。 |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | 导出并触发下载：生成内容 → Blob 下载 → 派发 `oas-export` |
 | `requestAutoHeightSync` | `requestAutoHeightSync(): void` | auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。 |
+| `appendRows` | `appendRows(rows: Array<Record<string, unknown>>, options?: { cursor?: string; total?: number; requestId?: number }): void` | `appendRows(rows, options?: { cursor?, total?, requestId? })`：追加已装载行（与 `data` 属性的替换语义区分——`data` 写 = 重置装载缓冲）；`cursor` 记录为当前游标并在下次 load-more 请求 detail.cursor 原样回传；`total` 提供时同步 total 属性与 aria-rowcount；**空数组 = 「没有更多」到底信号**（停止触底触发并显示「已到底」提示行）；`requestId` 透传时组件做序号守卫（晚到旧响应静默丢弃 + 同序号重复回填幂等忽略，各一次性提示）；仅 infinite 生效形态可用，其余形态调用静默忽略并一次性提示 |
 | `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`：宿主失败通知通道——requestId === 当前请求序号才生效（派 oas-rows-error + 清 loading + 显示错误条）；每个 requestId 只应上报一次失败，同序号重复上报按幂等静默丢弃（一次性提示）；晚到旧失败静默丢弃并一次性提示序号守卫 |
-| `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`：强制重发当前状态请求（reason='refresh'，绕过同值去重）；`purge: true` 预留清缓存语义，v1 无缓存等价 refresh；client 模式 no-op |
+| `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`：强制重发当前状态请求（reason=refresh，绕过同值去重）；`purge: true` 预留清缓存语义，组件侧无缓存等价 refresh；infinite 形态下 refresh = 重置装载缓冲（清 cursor/已装载/到底信号）+ 重发首块；client 模式 no-op |
 
 #### 事件
 
@@ -2705,8 +2752,8 @@ document.querySelector('table')!.appendChild(tbody)
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-row-dblclick` | 双击数据行派发，`detail: { row, rowIndex }` |
 | `oas-row-reorder` | 行拖拽/Alt+↑↓ 重排，`detail: { from, to, row }`（to 为移除被拖行后的插入位；组件不改 data） |
-| `oas-rows-error` | server 行模型取数失败（宿主经 reportRowsError 通知），`detail: { requestId, reason, error }`；组件同时显示内建错误条（role=alert，重试按钮调 refreshRows） |
-| `oas-rows-request` | server 行模型取数请求（init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷），`detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown }`（start/end 为当前页半开区间 `(current-1)*pageSize ~ current*pageSize`；requestId 组件内单调递增，宿主据此丢弃晚到旧响应；同值属性写不重发，data 写是回填不是新请求） |
+| `oas-rows-error` | 服务端取数失败（宿主经 reportRowsError 通知；server 行模型与 infinite 形态共用），`detail: { requestId, reason, error }`；组件同时显示内建错误条（role=alert，重试按钮调 refreshRows） |
+| `oas-rows-request` | 服务端取数请求（server 行模型与 infinite 形态共用；reason：init=挂载首载 / paginate=翻页或页大小变更 / sort=排序变更 / filter=过滤变更 / refresh=refreshRows 强刷 / load-more=infinite 触底追加下一块），`detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown, cursor? }`（server：start/end 为当前页半开区间 `(current-1)*pageSize ~ current*pageSize`、totalKnown 恒 true；infinite：start/end 为已装载行数（区间语义不适用）、totalKnown 随 total 属性在场性、cursor 为上次 appendRows 记录的游标（首次 = 缺省）；requestId 组件内单调递增，宿主据此丢弃晚到旧响应；同值属性写不重发，data 写是回填不是新请求） |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
 | `oas-window-request` | windowed 模式下期望的行窗口未被已装载区间覆盖时派发，detail: { start, end, reason, visualStart?, visualEnd }（start/end 半开区间、绝对数据行下标，永远是数据坐标；reason 为 init / scroll / resize / data）。切片内含展开行或视觉协议生效时，期望区间按视觉槽位映射覆盖真实可见数据行（含展开属主行），并附带 visualStart / visualEnd（当前可视窗口的视觉坐标，供宿主视觉取数；不是切片 visual-start）。同一期望区间（含视觉字段）不重复派发 |

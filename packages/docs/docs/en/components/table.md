@@ -665,22 +665,23 @@ Request triggers: mount first load, page change / page-size change, sort change,
 
 ### Server data approach decision table
 
-Pick one of the four approaches by "who holds the full data and who owns sorting/filtering"; do not mix them per-segment:
+Pick one of the five approaches by "who holds the full data and who owns sorting/filtering"; do not mix them per-segment:
 
 | Approach | Best for | Who owns sort/filter | Race guard | Error feedback | Recommendation |
 | --- | --- | --- | --- | --- | --- |
 | External pagination `total` (host-managed fetching) | Pure paged browsing; sorting/filtering done on the client or not needed | Host (listens to `oas-sort-change` / `oas-filter-change` / `oas-page-change` and handles them) | Host-built (sequence/snapshot) | Host-built | Lightweight: enough when the server only slices |
-| `row-model="server"` | Enterprise datasets with server-side sorting/filtering that want built-in loading / error bar / retry | Server (local transforms skipped entirely; requests carry sortModel / filterValues) | Built-in (monotonic requestId + helper write-back validation) | Built-in (error bar + `oas-rows-error` + retry button) | First choice for server-side sort/filter |
+| `row-model="server"` | Enterprise datasets with server-side sorting/filtering that want built-in loading / error bar / retry | Server (local transforms skipped entirely; requests carry sortModel / filterValues) | Built-in (monotonic requestId + helper write-back validation) | Built-in (error bar + `oas-rows-error` + retry button) | First choice for server-side sort/filter paging |
+| `infinite` (infinite scroll + cursor pagination) | Long lists browsed without paging (feeds / logs / result streams), loading the next chunk on scroll; sorting/filtering on the server, total known or unknown | Server (requests carry sortModel / filterValues / cursor; sort/filter changes reset the loaded buffer and refetch the first chunk) | Built-in (monotonic requestId + `appendRows` requestId guarding) | Built-in (error bar + `oas-rows-error` + retry button, shared with server) | First choice for scroll-to-load scenarios (recipe below) |
 | windowed (server-side row window) | 100k+ row **scrolling** scenarios: host supplies only the visible-window slice, no paging | Host (component skips local execution and devWarns) | `createWindowedSource` built-in (aborts stale in-flight + coverage checks) | Helper emits `oas-window-error`; no built-in error bar | First choice for scroll virtualization |
 | Host-managed event listening | Deeply customized fetching (own cache/merge/SSE push), or combinations the above do not cover | Host fully owns | Host-built | Host-built | Most freedom, most cost |
 
-Mutual exclusion and premise rules: when `row-model="server"` and `windowed` are both set, **windowed wins** (server is ignored) with a one-time devWarn; server activation requires the `total` attribute (falls back to client + one-time devWarn when missing); "partial mixing (sort only the current page)" is wrong semantics and the component provides no such configuration — sorting/filtering lives either entirely on the server (server mode) or entirely locally/host-side.
+Mutual exclusion and premise rules: when `row-model="server"` and `windowed` are both set, **windowed wins** (server is ignored) with a one-time devWarn; `infinite` combined with `pagination` — **pagination wins** (existing paging semantics); with `windowed` — **windowed wins**; with `row-model="server"` — **infinite wins** (protocol switches to cursor/load-more with the relaxed `total` premise), each with a one-time devWarn; server activation requires the `total` attribute (falls back to client + one-time devWarn when missing), while **`total` is optional for infinite** (unknown-total scenes declare end-of-data via the host's empty-chunk signal); "partial mixing (sort only the current page)" is wrong semantics and the component provides no such configuration — sorting/filtering lives either entirely on the server (server / infinite) or entirely locally/host-side.
 
 Refill-timing note: on the "Host-managed event listening" path, refill **asynchronously** inside event listeners — writing `data` synchronously in the listener callback lags the DOM by one frame due to render-pipeline reentry; the `createServerSource` helper refills asynchronously out of the box and has no such restriction.
 
-### Capability gates (declared per feature under server mode)
+### Capability gates (declared per feature under server mode and infinite)
 
-"Cross-full-data" capabilities produce wrong results when executed on the current-page slice — server mode declares them one by one (each devWarns once; judged in the same shape as windowed, with overlapping items marked accordingly):
+"Cross-full-data" capabilities produce wrong results when executed on the current-page slice — server mode declares them one by one (each devWarns once; judged in the same shape as windowed, with overlapping items marked accordingly). The `infinite` form is **the same mechanism**: its slice scope is the loaded rows (below, "current-page slice" reads as "loaded buffer" for infinite):
 
 | Capability | Server-mode semantics | Compared to windowed |
 | --- | --- | --- |
@@ -701,6 +702,49 @@ Refill-timing note: on the "Host-managed event listening" path, refill **asynchr
 
 - **Column order persistence**: under server mode, `setColumnOrder()` write-backs are intercepted (capability gate) — **programmatic calls that restore persisted column order during host initialization are intercepted too**; the settings panel's move buttons are disabled in sync (`columnReorderGate()` shares the same predicate as the write-back guard). For column-order persistence, manage it on the host (e.g. send the order as a request parameter) or turn off row-model.
 - **In-page editing**: edits apply locally only and drafts are lost when a new slice is refilled after paging — v1 provides no server-side edit write-back contract; to persist edits, submit to your server in an `oas-edit` listener and do not rely on cross-page drafts.
+
+## Infinite scroll (infinite + cursor pagination)
+
+> A server-side data shape (same family as `row-model="server"`, cursor-pagination variant): scrolling near the bottom auto-fetches the next chunk and **appends** it — no pager. `total` is **optional** — when the server cannot provide a total, the component runs with `totalKnown=false` and end-of-data is declared by the host's empty-chunk signal. Capability gates mirror server mode (see the gates table above); combined with `row-model="server"`, infinite wins (protocol switches to cursor/load-more).
+
+Two pieces on the component: `infinite` (enable) + optional `total` (provide when known — `aria-rowcount` and the "loaded-full means end" check follow it). On the host side, listen to `oas-rows-request` for the next chunk and refill via `appendRows`:
+
+```html
+<oas-table id="table" infinite columns='...' row-key="id"></oas-table>
+<script type="module">
+  const table = document.getElementById('table')
+  table.addEventListener('oas-rows-request', async (e) => {
+    const { requestId, cursor: prev, sortModel, filterValues, reason } = e.detail
+    const res = await fetchNextChunk({ cursor: prev, sortModel, filterValues, reason }) // host fetching
+    table.appendRows(res.rows, { requestId, cursor: res.nextCursor, total: res.total }) // total optional
+    // An empty res.rows signals "no more data" — the component stops bottom triggers and shows the end-of-list hint
+  })
+</script>
+```
+
+Request protocol (shared with server mode via `oas-rows-request`):
+
+- `reason` enum: `init` (mount first load) / `sort` / `filter` / `paginate` (under infinite: page-size change only) / `refresh` (`refreshRows()`) / **`load-more`** (bottom-reached next chunk). Sort/filter/page-size changes automatically **reset the loaded buffer** (clearing loaded rows and the cursor) and fetch the first chunk — the user sees the first chunk under the new criteria; `current` does not apply under infinite (never written, not part of the request signature, and a `current` write triggers no request).
+- `detail.cursor`: the cursor recorded by the component (the `options.cursor` of the last `appendRows`), echoed back verbatim — the host locates the next chunk by it; absent (undefined) on first entry / after a reset.
+- `detail.start` / `detail.end`: the loaded-row count (range semantics N/A, both equal); `detail.totalKnown`: follows the presence of the `total` attribute (false in unknown-total scenes).
+- Trigger threshold: scroll position within `max(200px, viewport height × 1.5)` of the bottom; no repeat trigger while a request is in flight; with `totalKnown`, loading up to total counts as end (no more triggers).
+
+Refill channel `appendRows(rows, options?: { cursor?, total?, requestId? })` (distinct from the **replace** semantics of a `data` attribute write):
+
+- `rows` are appended into the loaded buffer (chunk order preserved); **an empty array means "no more data"** — the component records the end signal, stops bottom triggers, and renders the end-of-list hint row (`part="no-more-row"`);
+- `options.cursor` is recorded as the current cursor (echoed via `detail.cursor` on the next load-more); `options.total`, when provided, syncs the `total` attribute and `aria-rowcount`;
+- `options.requestId` (taken from the event's `detail.requestId`), when provided, enables sequence guarding: mismatches with the in-flight sequence are dropped silently as stale late responses, duplicate same-sequence refills are idempotently ignored (each with a one-time devWarn) — double-listener / late-arrival races are handled by the component; without it the call is a free channel (prefill / manual additions; sequence validation is the host's responsibility);
+- A `data` attribute write **resets the loaded buffer** (replace semantics: clears loaded rows, cursor and end signal — prefill/SSR scenes own the first chunk); `refreshRows({ purge: true })` resets the buffer and refetches the first chunk (`reason='refresh'`, clearing the end signal too).
+
+In-flight visuals: with loaded rows > 0 the loading row is **appended after the loaded rows** (reusing `part="loading-row"` and the `loading` structural slot — the takeover protocol matches the full-table loading row); first load / empty buffer uses the full-table loading row. End-of-data state: when `hasMore=false` and loaded rows > 0, a static hint row renders (`part="no-more-row"`, locale-aware text).
+
+The failure channel is shared with server mode: `reportRowsError` (same-sequence validation) → keep old data + `oas-rows-error` + built-in error bar (`role="alert"`, retry button calls `refreshRows()`).
+
+A11y: `aria-rowcount` uses the known total (omitted when unknown — screen readers do not announce a total); `aria-busy` syncs while loading; row `aria-rowindex` = load order + 1.
+
+**Composable with virtual scroll (`height`)**: the loaded buffer goes through the existing virtualized window slicing as a whole (recommended for large datasets; bottom detection uses the scroll container geometry — same threshold for virtual and non-virtual).
+
+Fill handle / range selection / filter panel / history / editing all operate with **loaded-row-relative semantics** under infinite (`data-row-index` is the 0-based load order) — same shape as server mode's in-page semantics; see the gates table above.
 
 ## Column filter
 
@@ -2658,6 +2702,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
 | `hover` | Row hover background switch (purely visual), `"false"` disables | — | — |
 | `indent-size` | Per-level indent of tree data in px | `string` | `24` |
+| `infinite` | Infinite scroll + cursor pagination (server-side data shape): scrolling near the bottom auto-fetches the next chunk via oas-rows-request (reason=load-more, detail.cursor echoes the cursor), and the host refills via appendRows (empty array = end-of-data signal); when combined with `pagination`, pagination wins; with `windowed`, windowed wins (mutual-exclusion warning each); `total` is optional (unknown-total scenes run with totalKnown=false — end-of-data relies on the host empty-chunk signal); capability gates mirror row-model="server" (export/print limited to loaded rows, summary scope=all disabled, group / row-drag / column-drag / merge disabled) | `boolean` | — |
 | `loading` | Loading state: shows placeholder rows in the data area (header retained) | `boolean` | — |
 | `max-height` | Caps the body scroll area with a sticky header (virtual `height` wins when both set) | `string` | — |
 | `multi-sort` | Multi-column sort (JSON array: [{ key, order }], applied in array order) | `string` | — |
@@ -2667,7 +2712,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `row-draggable` | Row drag sorting: renders a drag-handle column and dispatches oas-row-reorder on drop; disabled with a warning under virtual scrolling | `boolean` | — |
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
-| `row-model` | Row model: `client` (default, local full dataset: filter/sort/pagination slicing run in-component) / `server` (server row model: pairs with the `total` external-pagination shape — `data` holds the current page slice, local filter/sort are skipped entirely, page turns / sort / filter fetch via oas-rows-request; sort / filter / page-size changes auto-reset current=1; in-flight requests show built-in loading, failures surface an error bar via reportRowsError). Together with `windowed`, windowed wins (mutual-exclusion warning); without `total` it falls back to client with a warning | `string` | — |
+| `row-model` | Row model: `client` (default, local full dataset: filter/sort/pagination slicing run in-component) / `server` (server row model: pairs with the `total` external-pagination shape — `data` holds the current page slice, local filter/sort are skipped entirely, page turns / sort / filter fetch via oas-rows-request; sort / filter / page-size changes auto-reset current=1; in-flight requests show built-in loading, failures surface an error bar via reportRowsError). Together with `windowed`, windowed wins (mutual-exclusion warning); together with `infinite`, infinite wins (protocol switches to cursor/load-more with the relaxed total premise); without `total` it falls back to client with a warning | `string` | — |
 | `selected` | Set of selected row keys (comma-separated) | `string` | — |
 | `show-header` | Toggles the header (default true); with `false` no header row is rendered while column configuration still aligns data cells | `string` | `true` |
 | `size` | Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height` | `string` | `medium` |
@@ -2697,13 +2742,14 @@ document.querySelector('table')!.appendChild(tbody)
 | `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`: scroll to the given row (virtual / windowed viewports only; returns false otherwise; non-windowed virtual supports flat data only). Host-recipe anchor for windowed tree lazy-loading: call it after a total-changing refeed to restore the viewport (the anchoring scroll goes through the scroll channel and may emit a reason='scroll' oas-window-request - same semantics as scroll-driven window refills) |
 | `notifyEdit` | `notifyEdit(kind: 'edit' \| 'edit-cancel' \| 'edit-invalid', detail: TableEditDetail): void` | Dispatch the edit result event (commit/cancel; detail is assembled by the edit capability). The event name is written as a literal here |
 | `setColumnOrder` | `setColumnOrder(keys: string[]): void` | `setColumnOrder(keys: string[])`: Update the column display order (writes back column-keys and re-renders; dispatches oas-column-order so the host can persist it). Not effective under the server row model (order semantics are owned by the server): the write-back is intercepted with a one-time warning, the column panel move buttons are disabled, and programmatic calls (e.g. restoring a persisted order at init) are intercepted as well |
-| `columnReorderGate` | `columnReorderGate(): boolean` | `columnReorderGate(): boolean`: column reorder capability gate (TableColumnSettingsHost contract) — returns true while the server row model is active, disabling the settings panel's move buttons in sync (same source as the setColumnOrder write-back guard, so button availability and programmatic interception never diverge); optional contract — falls back to false when the host does not implement it |
+| `columnReorderGate` | `columnReorderGate(): boolean` | `columnReorderGate(): boolean`: column-reorder capability gate (TableColumnSettingsHost contract) — returns true when server row-model or infinite is active; the column-settings panel disables its move buttons accordingly (same source as the setColumnOrder write-block guard); contract is optional, hosts without it fall back to false |
 | `setColumnWidth` | `setColumnWidth(key: string, width: number): void` | Update the given column width (writes back the matching width in columns and re-renders; dispatches oas-column-resize). When the property column definitions contain functions, updates the in-memory definition |
 | `exportMatrix` | `exportMatrix(): { headers: string[]; rows: string[][] }` | Export matrix: headers (column title / headerTemplate text) + currently visible data rows |
 | `exportData` | `exportData(format: ExportFormat, options: { fileName?: string }): string` | Export and trigger a download: generate content → Blob download → dispatch `oas-export` |
 | `requestAutoHeightSync` | `requestAutoHeightSync(): void` | Auto-height capability callback: after measure backfill changes the prefix sums, re-anchors row identity and performs a regular update render. |
+| `appendRows` | `appendRows(rows: Array<Record<string, unknown>>, options?: { cursor?: string; total?: number; requestId?: number }): void` | `appendRows(rows, options?: { cursor?, total?, requestId? })`: append loaded rows (distinct from the replace semantics of a `data` attribute write, which resets the buffer); `cursor` is recorded and echoed back on the next load-more request via detail.cursor; `total` syncs the total attribute and aria-rowcount; **an empty array signals "no more data"** (stops bottom triggers and shows the end-of-list hint row); passing `requestId` enables sequence guarding (stale late responses dropped silently + duplicate same-id refills idempotently ignored, each with a one-time hint); only effective in infinite mode — elsewhere the call is a silent no-op with a one-time hint |
 | `reportRowsError` | `reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void` | `reportRowsError(detail: { requestId, reason?, error? })`: host-side failure notification — effective only when requestId equals the current request id (emits oas-rows-error, clears loading, shows the error bar); each requestId should report failure at most once — duplicate reports for the same id are silently dropped as duplicates (one-time hint); stale late failures are silently dropped |
-| `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`: force-refetch the current state (reason='refresh', bypassing same-value dedup); `purge: true` reserves cache-clearing semantics — v1 has no cache so it equals refresh; no-op in client mode |
+| `refreshRows` | `refreshRows(options?: { purge?: boolean }): void` | `refreshRows(options?: { purge?: boolean })`: force-refetch the current state (reason=refresh, bypassing same-value dedup); `purge: true` reserves cache-clearing semantics — no in-component cache so it equals refresh; in infinite mode refresh resets the loaded buffer (clearing cursor / loaded rows / end-of-data signal) and refetches the first chunk; no-op in client mode |
 
 #### Events
 
@@ -2723,8 +2769,8 @@ document.querySelector('table')!.appendChild(tbody)
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
 | `oas-row-dblclick` | Fired on data-row double-click, `detail: { row, rowIndex }` |
 | `oas-row-reorder` | Row reorder via drag or Alt+Arrow; `detail: { from, to, row }` (to is the insertion index after removing the dragged row; the component never mutates data) |
-| `oas-rows-error` | Server row-model fetch failure (notified by the host via reportRowsError), `detail: { requestId, reason, error }`; the component also shows its built-in error bar (role=alert; the retry button calls refreshRows) |
-| `oas-rows-request` | Server row-model fetch request (init=mount / paginate=page or page-size change / sort=sort change / filter=filter change / refresh=refreshRows), `detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown }` (start/end is the half-open current-page range `(current-1)*pageSize ~ current*pageSize`; requestId increases monotonically in-component — hosts drop stale late responses by it; same-value attribute writes do not re-emit, and a `data` write is a refill, not a new request) |
+| `oas-rows-error` | Server-side fetch failure (host notifies via reportRowsError; shared by server row-model and infinite), `detail: { requestId, reason, error }`; the component also shows a built-in error bar (role=alert; the retry button calls refreshRows) |
+| `oas-rows-request` | Server-side fetch request (shared by server row-model and infinite; reason: init=mount / paginate=page or page-size change / sort=sort change / filter=filter change / refresh=refreshRows / load-more=infinite bottom-reached next chunk), `detail: { requestId, start, end, sortModel, filterValues, reason, totalKnown, cursor? }` (server: start/end is the half-open current-page range `(current-1)*pageSize ~ current*pageSize`, totalKnown always true; infinite: start/end is the loaded-row count (range semantics N/A), totalKnown follows the presence of the total attribute, cursor echoes the cursor recorded by the last appendRows (absent on first); requestId increases monotonically in-component — hosts drop stale late responses by it; same-value attribute writes do not re-emit, and a `data` write is a refill, not a new request) |
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
 | `oas-window-request` | Emitted in windowed mode when the expected row window is not covered by the loaded range; detail: { start, end, reason, visualStart?, visualEnd } (start/end are half-open absolute DATA row indices and always stay in data coordinates; reason is init / scroll / resize / data). When the slice contains expand rows or the visual protocol is active, the expected range is mapped through the visual slots to cover the actually visible data rows (including expand owner rows), and visualStart / visualEnd carry the visible window's visual coordinates for host-side visual fetching (not the slice's visual-start). The same expected window (including visual fields) is not emitted twice |

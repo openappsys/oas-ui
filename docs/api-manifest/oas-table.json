@@ -163,6 +163,11 @@
       "observed": true
     },
     {
+      "name": "infinite",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "visual-total",
       "type": "string",
       "default": "",
@@ -355,7 +360,7 @@
     {
       "name": "columnReorderGate",
       "signature": "columnReorderGate(): boolean",
-      "description": "列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型生效时为 true——"
+      "description": "列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型 / infinite 生效时为 true——"
     },
     {
       "name": "setColumnWidth",
@@ -378,6 +383,11 @@
       "description": "auto-height 能力回调：测量回填改变前缀和后，身份锚定 + 常规 update 渲染。"
     },
     {
+      "name": "appendRows",
+      "signature": "appendRows(rows: Array<Record<string, unknown>>, options?: { cursor?: string; total?: number; requestId?: number }): void",
+      "description": "追加已装载行（infinite 公开回填通道；与 `data` 属性的替换语义区分）："
+    },
+    {
       "name": "reportRowsError",
       "signature": "reportRowsError(detail: { requestId: number; reason?: string; error?: unknown }): void",
       "description": "宿主失败通知通道（server 行模型）：requestId === 当前在途请求序号才生效——"
@@ -385,7 +395,7 @@
     {
       "name": "refreshRows",
       "signature": "refreshRows(options?: { purge?: boolean }): void",
-      "description": "强制重发当前状态请求（server 行模型）：reason='refresh'，绕过同值去重签名。"
+      "description": "强制重发当前状态请求（server 行模型与 infinite）：reason='refresh'，绕过同值去重签名。"
     }
   ],
   "events": [
@@ -443,8 +453,7 @@
       "detail": "{ from, to, row } | { from: index, to, row }"
     },
     {
-      "name": "oas-rows-request",
-      "detail": "{ requestId: this.rowsRequestId, start, end: start + state.pageSize, sortModel: state.sortModel, filterValues: state.filterValues, reason, totalKnown: true, }"
+      "name": "oas-rows-request"
     },
     {
       "name": "oas-rows-error",
