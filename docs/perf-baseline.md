@@ -24,10 +24,10 @@
 <!-- BEGIN:generated:perf-baseline:packages -->
 | 包 | 文件数 | raw | gzip | brotli |
 | --- | --- | --- | --- | --- |
-| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 42.63 MB | — | — |
-| @oas-ui/ui（浏览器可加载 JS） | 509 | 11011.9 KB | 2651.0 KB | — |
-| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 526 | 3904.5 KB | 1063.8 KB | — |
-| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3232.4 KB | 711.2 KB | 488.2 KB |
+| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 42.67 MB | — | — |
+| @oas-ui/ui（浏览器可加载 JS） | 509 | 11019.0 KB | 2652.8 KB | — |
+| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 526 | 3907.2 KB | 1064.4 KB | — |
+| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3234.6 KB | 711.8 KB | 488.6 KB |
 | @oas-ui/theme（index.css） | 1 | 8.1 KB | 1.9 KB | — |
 | @oas-ui/core | 8 | 46.0 KB | 19.0 KB | — |
 | @oas-ui/i18n | 48 | 431.8 KB | 120.9 KB | — |
@@ -41,8 +41,8 @@
 | 组件链 | 入口 | 文件数 | raw | gzip |
 | --- | --- | --- | --- | --- |
 | button | `@oas-ui/ui/basic/button` | 13 | 68.7 KB | 20.9 KB |
-| table | `@oas-ui/ui/data/table` | 40 | 255.1 KB | 76.5 KB |
-| tableEdit | `@oas-ui/ui/data/table/edit` | 57 | 360.7 KB | 106.3 KB |
+| table | `@oas-ui/ui/data/table` | 40 | 257.7 KB | 77.1 KB |
+| tableEdit | `@oas-ui/ui/data/table/edit` | 57 | 363.4 KB | 106.9 KB |
 | tableStructuralRender | `@oas-ui/ui/data/table/structural-render` | 2 | 1.4 KB | 0.7 KB |
 | tableAdvanced | `@oas-ui/ui/data/table/advanced` | 11 | 25.7 KB | 10.7 KB |
 | tableFormat | `@oas-ui/ui/data/table/format` | 5 | 11.6 KB | 4.6 KB |
@@ -138,12 +138,12 @@
 <!-- BEGIN:generated:perf-baseline:budgets -->
 | 预算项 | 实测 gzip | 预算（制式） | 依据 |
 | --- | --- | --- | --- |
-| dist/cdn.js gzip | 711.2 KB | 770.0 KB（天花板） | 天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测） |
-| @oas-ui/ui 全量入口链 gzip | 1063.8 KB | 1180.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%） |
+| dist/cdn.js gzip | 711.8 KB | 770.0 KB（天花板） | 天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测） |
+| @oas-ui/ui 全量入口链 gzip | 1064.4 KB | 1180.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%） |
 | @oas-ui/ui/basic/button 链 gzip | 20.9 KB | 30.0 KB（绝对值） | 实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）；2026-11-03 core 子路径导入批后实测 19.5 KB（内部源码改走 core 模块子路径绕开 barrel，button 值链只携带 oas-element/escape/config-context） |
-| @oas-ui/ui/data/table 链 gzip | 76.5 KB | 85.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效） |
+| @oas-ui/ui/data/table 链 gzip | 77.1 KB | 87.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）；2026-11-15 渲染组织批后实测 77.1 KB（前档 76.1，+1.0 KB：render-chunk 分批渲染接线——首帧 chunk + rAF 追加 + 代次守卫），顶穿前预警线 76.5，按实测上浮约 12% 重定档 87 KB（预警线恢复有效） |
 | @oas-ui/ui/data/table/model 链 gzip | 5.1 KB | 6.0 KB（绝对值） | helper 纯函数子路径，按需引入；首档 2026-11-14：实测 gzip 4.3 KB / 8 文件（入口壳转发 1 + 行模型管道实现 7：过滤解析/匹配 + 排序状态解析与类型感知比较器 + 分页切片三态 + 分组展平 + 可见集 + 管道入口 computeRowModel；oas-table 组件同源 import 同一份实现，组件侧消费不重复计体积），上浮约 16% 定档 5 KB；2026-11-15 server 分组批后实测 5.0 KB（前档 4.3，+0.8 KB / +1 文件：server-group.ts 分区纯函数 partitionServerGroupRows/groupAggregateValue + visible 层级折叠增强 + FlatRow.aggregates 类型），上浮约 20% 定档 6 KB |
-| @oas-ui/ui/data/table/edit 链 gzip | 106.3 KB | 120.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0，原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）。首档→现档主要增量来源（已归因汇总，均为 oas-table 本体随链进入 edit 链的合理增长）：行高批（多行单元格三件套 + 虚拟截断/wrap 三态）、结构渲染批（structural-render 七槽壳接线）、print 感知（打印媒体口径）、无限滚动 + cursor 批 A 接线（appendRows/装载缓冲/load-more 协议）、server 分组批接线（groupBy/组行双形态渲染） |
+| @oas-ui/ui/data/table/edit 链 gzip | 106.9 KB | 120.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0，原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）。首档→现档主要增量来源（已归因汇总，均为 oas-table 本体随链进入 edit 链的合理增长）：行高批（多行单元格三件套 + 虚拟截断/wrap 三态）、结构渲染批（structural-render 七槽壳接线）、print 感知（打印媒体口径）、无限滚动 + cursor 批 A 接线（appendRows/装载缓冲/load-more 协议）、server 分组批接线（groupBy/组行双形态渲染） |
 | @oas-ui/ui/data/table/auto-height 链 gzip | 2.0 KB | 2.8 KB（绝对值） | 注册型 L3（逐行动态行高：HeightCache 前缀和几何 + RO 生命周期 + 收缩轮询），按需引入；首档 2026-11-04：实测 gzip 2.0 KB / 1.8 KB brotli / 3 文件（能力注册表 + dynamic-height 几何 + 本模块；core/oas-table 为类型导入编译期擦除——table 本体消费方自带），上浮约 40% 定档 2.8 KB；核心判空钩子（row-geometry 锚定数学 + 几何接缝）随默认 table 链计亚 KB 常数 |
 | @oas-ui/ui/data/table/structural-render 链 gzip | 0.7 KB | 1.2 KB（绝对值） | 注册型 L3（结构级渲染四槽委托：headerRow/headerCell/bodyRow/bodyCell），按需引入；首档 2026-11-04：实测 gzip 649 B / 2 文件（能力注册表 + 委托控制器，零生命周期、零组件依赖——table 本体由消费方自带），上浮约 40% 取整定档 1.2 KB |
 | @oas-ui/ui/form/form 链 gzip | 19.3 KB | 29.0 KB（绝对值） | 实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量；2026-11-03 core 子路径导入批后实测 16.8 KB（绕开 barrel，余量恢复充裕，但预算上限仍按上述纪律不自行抬高） |

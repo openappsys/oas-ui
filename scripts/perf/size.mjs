@@ -717,9 +717,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'table',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 85 * 1024, // 85 KB（2026-11-15 重定档：server 分组批后实测 76.1 KB，预警线恢复有效）
+    limit: 87 * 1024, // 87 KB（2026-11-15 渲染组织批后重定档：实测 77.1 KB，预警线恢复有效）
     basis:
-      '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）',
+      '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）；2026-11-15 渲染组织批后实测 77.1 KB（前档 76.1，+1.0 KB：render-chunk 分批渲染接线——首帧 chunk + rAF 追加 + 代次守卫），顶穿前预警线 76.5，按实测上浮约 12% 重定档 87 KB（预警线恢复有效）',
   },
   {
     // table/model：helper 型 L3（headless 数据层入口壳 + model-core 实现分离）。
