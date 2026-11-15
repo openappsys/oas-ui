@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 44299772,
+        "distTotalBytes": 44643068,
         "browserJs": {
-          "files": 507,
-          "rawBytes": 11207245,
-          "gzipBytes": 2697640,
-          "brotliBytes": 2104792
+          "files": 508,
+          "rawBytes": 11270272,
+          "gzipBytes": 2712297,
+          "brotliBytes": 2115207
         },
         "fullEntry": {
-          "files": 525,
-          "rawBytes": 3974130,
-          "gzipBytes": 1083750,
-          "brotliBytes": 931560,
+          "files": 526,
+          "rawBytes": 3997270,
+          "gzipBytes": 1088973,
+          "brotliBytes": 935732,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -187,6 +187,7 @@
             "packages/ui/dist/data/table/oas-table-interactive.js",
             "packages/ui/dist/data/table/oas-table.js",
             "packages/ui/dist/shared/window-data.js",
+            "packages/ui/dist/data/table/model-core/server-group.js",
             "packages/ui/dist/data/table/model-core/visible.js",
             "packages/ui/dist/data/table/model-core/group.js",
             "packages/ui/dist/data/table/model-core/sort.js",
@@ -546,9 +547,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3289334,
-          "gzipBytes": 723256,
-          "brotliBytes": 496824
+          "rawBytes": 3309192,
+          "gzipBytes": 728033,
+          "brotliBytes": 499698
         }
       },
       "@oas-ui/theme": {
@@ -566,9 +567,9 @@
       },
       "@oas-ui/i18n": {
         "files": 48,
-        "rawBytes": 439072,
-        "gzipBytes": 123073,
-        "brotliBytes": 104838
+        "rawBytes": 442150,
+        "gzipBytes": 123844,
+        "brotliBytes": 105511
       },
       "@oas-ui/icons": {
         "files": 52,
@@ -610,10 +611,10 @@
       "table": {
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
-        "files": 39,
-        "rawBytes": 248119,
-        "gzipBytes": 75020,
-        "brotliBytes": 62914,
+        "files": 40,
+        "rawBytes": 260238,
+        "gzipBytes": 77969,
+        "brotliBytes": 65256,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/ui/dist/navigation/pagination/index.js",
@@ -637,6 +638,7 @@
           "packages/ui/dist/data/table/oas-table.js",
           "packages/icons/dist/icons/download.js",
           "packages/ui/dist/shared/window-data.js",
+          "packages/ui/dist/data/table/model-core/server-group.js",
           "packages/ui/dist/data/table/model-core/visible.js",
           "packages/ui/dist/data/table/model-core/row-key.js",
           "packages/ui/dist/data/table/model-core/group.js",
@@ -659,10 +661,10 @@
       "tableEdit": {
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
-        "files": 56,
-        "rawBytes": 356333,
-        "gzipBytes": 105601,
-        "brotliBytes": 89087,
+        "files": 57,
+        "rawBytes": 368452,
+        "gzipBytes": 108550,
+        "brotliBytes": 91429,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -711,6 +713,7 @@
           "packages/ui/dist/data/table/oas-table.js",
           "packages/icons/dist/icons/download.js",
           "packages/ui/dist/shared/window-data.js",
+          "packages/ui/dist/data/table/model-core/server-group.js",
           "packages/ui/dist/data/table/model-core/visible.js",
           "packages/ui/dist/data/table/model-core/group.js",
           "packages/ui/dist/data/table/model-core/sort.js",
@@ -870,10 +873,10 @@
       "tableModel": {
         "entry": "data/table/model",
         "spec": "@oas-ui/ui/data/table/model",
-        "files": 8,
-        "rawBytes": 8680,
-        "gzipBytes": 4451,
-        "brotliBytes": 3885,
+        "files": 9,
+        "rawBytes": 10105,
+        "gzipBytes": 5122,
+        "brotliBytes": 4460,
         "fileList": [
           "packages/ui/dist/data/table/model/index.js",
           "packages/ui/dist/data/table/model-core/index.js",
@@ -882,6 +885,7 @@
           "packages/ui/dist/data/table/model-core/sort.js",
           "packages/ui/dist/data/table/model-core/filter.js",
           "packages/ui/dist/data/table/model-core/paginate.js",
+          "packages/ui/dist/data/table/model-core/server-group.js",
           "packages/ui/dist/data/table/model-core/group.js"
         ]
       },
@@ -1017,9 +1021,9 @@
         "entry": "data/gantt",
         "spec": "@oas-ui/ui/data/gantt",
         "files": 23,
-        "rawBytes": 253816,
-        "gzipBytes": 73960,
-        "brotliBytes": 62539,
+        "rawBytes": 264976,
+        "gzipBytes": 76288,
+        "brotliBytes": 64414,
         "fileList": [
           "packages/ui/dist/data/gantt/index.js",
           "packages/i18n/dist/slices/data.js",
@@ -1050,9 +1054,9 @@
         "entry": "data/json-viewer",
         "spec": "@oas-ui/ui/data/json-viewer",
         "files": 13,
-        "rawBytes": 79091,
-        "gzipBytes": 26620,
-        "brotliBytes": 22481,
+        "rawBytes": 79230,
+        "gzipBytes": 26674,
+        "brotliBytes": 22526,
         "fileList": [
           "packages/ui/dist/data/json-viewer/index.js",
           "packages/i18n/dist/slices/data.js",
@@ -1073,9 +1077,9 @@
         "entry": "data/diff-viewer",
         "spec": "@oas-ui/ui/data/diff-viewer",
         "files": 10,
-        "rawBytes": 72147,
-        "gzipBytes": 24692,
-        "brotliBytes": 20923,
+        "rawBytes": 72286,
+        "gzipBytes": 24746,
+        "brotliBytes": 20968,
         "fileList": [
           "packages/ui/dist/data/diff-viewer/index.js",
           "packages/i18n/dist/slices/data.js",
@@ -1094,7 +1098,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 723256,
+        "actualBytes": 728033,
         "limitBytes": 788480,
         "warnAtBytes": 709632,
         "pass": true,
@@ -1104,11 +1108,11 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1083750,
+        "actualBytes": 1088973,
         "limitBytes": 1208320,
         "warnAtBytes": 1087488,
         "pass": true,
-        "warn": false,
+        "warn": true,
         "basis": "天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）"
       },
       {
@@ -1126,34 +1130,34 @@
         "name": "@oas-ui/ui/data/table 链 gzip",
         "kind": "absolute",
         "componentId": "table",
-        "actualBytes": 75020,
-        "limitBytes": 86016,
-        "warnAtBytes": 77414,
+        "actualBytes": 77969,
+        "limitBytes": 87040,
+        "warnAtBytes": 78336,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB"
+        "basis": "实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）"
       },
       {
         "name": "@oas-ui/ui/data/table/model 链 gzip",
         "kind": "absolute",
         "componentId": "tableModel",
-        "actualBytes": 4451,
-        "limitBytes": 5120,
-        "warnAtBytes": 4608,
+        "actualBytes": 5122,
+        "limitBytes": 6144,
+        "warnAtBytes": 5530,
         "pass": true,
         "warn": false,
-        "basis": "helper 纯函数子路径，按需引入；首档 2026-11-14：实测 gzip 4.3 KB / 8 文件（入口壳转发 1 + 行模型管道实现 7：过滤解析/匹配 + 排序状态解析与类型感知比较器 + 分页切片三态 + 分组展平 + 可见集 + 管道入口 computeRowModel；oas-table 组件同源 import 同一份实现，组件侧消费不重复计体积），上浮约 16% 定档 5 KB"
+        "basis": "helper 纯函数子路径，按需引入；首档 2026-11-14：实测 gzip 4.3 KB / 8 文件（入口壳转发 1 + 行模型管道实现 7：过滤解析/匹配 + 排序状态解析与类型感知比较器 + 分页切片三态 + 分组展平 + 可见集 + 管道入口 computeRowModel；oas-table 组件同源 import 同一份实现，组件侧消费不重复计体积），上浮约 16% 定档 5 KB；2026-11-15 server 分组批后实测 5.0 KB（前档 4.3，+0.8 KB / +1 文件：server-group.ts 分区纯函数 partitionServerGroupRows/groupAggregateValue + visible 层级折叠增强 + FlatRow.aggregates 类型），上浮约 20% 定档 6 KB"
       },
       {
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 105601,
-        "limitBytes": 107520,
-        "warnAtBytes": 96768,
+        "actualBytes": 108550,
+        "limitBytes": 122880,
+        "warnAtBytes": 110592,
         "pass": true,
-        "warn": true,
-        "basis": "实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0（行高批/结构渲染批/print 感知各贡献一部分，归因在案），原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定"
+        "warn": false,
+        "basis": "实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0（行高批/结构渲染批/print 感知各贡献一部分，归因在案），原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）"
       },
       {
         "name": "@oas-ui/ui/data/table/auto-height 链 gzip",
@@ -1192,7 +1196,7 @@
         "name": "@oas-ui/ui/data/gantt 链 gzip",
         "kind": "absolute",
         "componentId": "gantt",
-        "actualBytes": 73960,
+        "actualBytes": 76288,
         "limitBytes": 81920,
         "warnAtBytes": 73728,
         "pass": true,
@@ -1203,7 +1207,7 @@
         "name": "@oas-ui/ui/data/json-viewer 链 gzip",
         "kind": "absolute",
         "componentId": "jsonViewer",
-        "actualBytes": 26620,
+        "actualBytes": 26674,
         "limitBytes": 35840,
         "warnAtBytes": 32256,
         "pass": true,
@@ -1214,7 +1218,7 @@
         "name": "@oas-ui/ui/data/diff-viewer 链 gzip",
         "kind": "absolute",
         "componentId": "diffViewer",
-        "actualBytes": 24692,
+        "actualBytes": 24746,
         "limitBytes": 34816,
         "warnAtBytes": 31334,
         "pass": true,

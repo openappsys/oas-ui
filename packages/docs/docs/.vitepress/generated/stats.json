@@ -1,12 +1,12 @@
 {
   "components": 155,
-  "cdnGzipKB": 706.3,
+  "cdnGzipKB": 711,
   "locales": 16,
   "tests": 14278,
   "version": "2.6.7",
   "perf": {
-    "cdnGzipKB": 706.3,
+    "cdnGzipKB": 711,
     "buttonChainKB": 20.9,
-    "fullEntryKB": 1058.3
+    "fullEntryKB": 1063.5
   }
 }

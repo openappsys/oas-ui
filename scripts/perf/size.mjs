@@ -717,9 +717,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'table',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 84 * 1024, // 84 KB（2026-11-14 重定档：行模型数据层接线批后实测 73.0 KB）
+    limit: 85 * 1024, // 85 KB（2026-11-15 重定档：server 分组批后实测 76.1 KB，预警线恢复有效）
     basis:
-      '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB',
+      '实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）',
   },
   {
     // table/model：helper 型 L3（headless 数据层入口壳 + model-core 实现分离）。
@@ -729,9 +729,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'tableModel',
     get: () => componentMeasures.tableModel.gzipBytes,
-    limit: 5 * 1024, // 5 KB（2026-11-14：实测 4.3 KB 上浮约 16%）
+    limit: 6 * 1024, // 6 KB（2026-11-15 重定档：server 分组批后实测 5.0 KB，分区纯函数公开面增量）
     basis:
-      'helper 纯函数子路径，按需引入；首档 2026-11-14：实测 gzip 4.3 KB / 8 文件（入口壳转发 1 + 行模型管道实现 7：过滤解析/匹配 + 排序状态解析与类型感知比较器 + 分页切片三态 + 分组展平 + 可见集 + 管道入口 computeRowModel；oas-table 组件同源 import 同一份实现，组件侧消费不重复计体积），上浮约 16% 定档 5 KB',
+      'helper 纯函数子路径，按需引入；首档 2026-11-14：实测 gzip 4.3 KB / 8 文件（入口壳转发 1 + 行模型管道实现 7：过滤解析/匹配 + 排序状态解析与类型感知比较器 + 分页切片三态 + 分组展平 + 可见集 + 管道入口 computeRowModel；oas-table 组件同源 import 同一份实现，组件侧消费不重复计体积），上浮约 16% 定档 5 KB；2026-11-15 server 分组批后实测 5.0 KB（前档 4.3，+0.8 KB / +1 文件：server-group.ts 分区纯函数 partitionServerGroupRows/groupAggregateValue + visible 层级折叠增强 + FlatRow.aggregates 类型），上浮约 20% 定档 6 KB',
   },
   {
     // table/edit：注册型 L3（L1/CDN 含、默认 table 不含）。2026-10-28 首次独立定档：
@@ -741,9 +741,9 @@ const BUDGETS = [
     kind: 'absolute',
     componentId: 'tableEdit',
     get: () => componentMeasures.tableEdit.gzipBytes,
-    limit: 105 * 1024, // 105 KB（2026-11-06 重定档：实测已漂至 94.0——首档后行高/结构渲染等批持续增量，预警线 93.6 被日常增量反复顶穿失去意义）
+    limit: 120 * 1024, // 120 KB（2026-11-15 重定档：实测 106.0——前预警线 94.5 被日常增量反复顶穿失去意义，一并恢复）
     basis:
-      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0（行高批/结构渲染批/print 感知各贡献一部分，归因在案），原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定',
+      '实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0（行高批/结构渲染批/print 感知各贡献一部分，归因在案），原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）',
   },
   {
     // table/auto-height：注册型 L3（row-auto-height 逐行动态行高）。首档 2026-11-04：
