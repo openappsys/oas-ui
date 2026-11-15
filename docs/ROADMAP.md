@@ -2,63 +2,63 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
-## 未发布（table 公共能力补齐批）
+## v2.6.8（table 公共能力补齐批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **批 A：无限滚动 + cursor 分页** | `infinite` 属性（scroll 底部自动 `load-more`）+ `appendRows()` 追加通道 + cursor 字段 + 底部 loading/到底态 + 闸门 | ✅ 已完成（未发布） |
-| **批 B：服务端分组/聚合** | server 行模型下 `groupBy` 协议 + 服务端聚合值 + 混合行渲染 + 层级折叠 | ✅ 已完成（未发布） |
-| **批 C：数据层缓存** | helper TTL/去重/后台刷新/purge/LRU 上界 + groupBy/cursor 键维度 | ✅ 已完成（未发布） |
-| **批 D：渲染组织** | `render-chunk` 时间切片（首帧 N 行 + rAF 逐帧追加 + 代次守卫） | ✅ 已完成（未发布） |
-| **批 E：CSS 抽取** | 内联样式分层拆分（style/base + features），逐字节等价、零视觉变化 | ✅ 已完成（未发布） |
-| **批 F：server 导出全量 + 列序持久化** | `exportRows()` 全量导出（宿主取数）+ 列序放行（行序仍禁用） | ✅ 已完成（未发布） |
+| **批 A：无限滚动 + cursor 分页** | `infinite` 属性（scroll 底部自动 `load-more`）+ `appendRows()` 追加通道 + cursor 字段 + 底部 loading/到底态 + 闸门 | ✅ 已完成（v2.6.8） |
+| **批 B：服务端分组/聚合** | server 行模型下 `groupBy` 协议 + 服务端聚合值 + 混合行渲染 + 层级折叠 | ✅ 已完成（v2.6.8） |
+| **批 C：数据层缓存** | helper TTL/去重/后台刷新/purge/LRU 上界 + groupBy/cursor 键维度 | ✅ 已完成（v2.6.8） |
+| **批 D：渲染组织** | `render-chunk` 时间切片（首帧 N 行 + rAF 逐帧追加 + 代次守卫） | ✅ 已完成（v2.6.8） |
+| **批 E：CSS 抽取** | 内联样式分层拆分（style/base + features），逐字节等价、零视觉变化 | ✅ 已完成（v2.6.8） |
+| **批 F：server 导出全量 + 列序持久化** | `exportRows()` 全量导出（宿主取数）+ 列序放行（行序仍禁用） | ✅ 已完成（v2.6.8） |
 
-## 未发布（gantt 任务网格面板批）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **gantt 任务网格面板** | `task-columns` 声明式多列（与 oas-table `columns` 契约同构）+ `checkable` 复选列（全选/半选三态，复用既有 `oas-selection-change`，不新增事件名）+ 列头行；行高与横条同源（单滚动/虚拟窗口，零同步胶水）；RTL/暗色/DSD/forced-colors 沿用；`show-effort` 与 task-columns 同开时网格优先（保留 effort 列需显式声明）；演进口径写死（排序/过滤将来复用 table/model，禁第二套行模型）；工单排产形态 demo（zh/en）+ e2e 三引擎 | ✅ 已完成（未发布） |
-
-## 未发布（table 双形态批）
+## v2.6.8（gantt 任务网格面板批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **table 双形态（数据层公开 + 渲染扩展点完整化）** | 公共库三档用户（开箱即用 / 自定义外观 / 只要数据）：① 数据层纯函数公开（`@oas-ui/ui/data/table/model`，零 DOM 依赖行模型管道：过滤→排序→分页→分组→展平→可见集；组件内部改为同源调用，零行为漂移）② `structural-render` 四槽补空态/loading/分页器槽 + 状态接入 ctx ③ 双形态工程（两个 L3 入口、双份文档测试、主链零增量）。框架无关（SSR/worker/程序化驱动可用） | ✅ 已完成（未发布） |
+| **gantt 任务网格面板** | `task-columns` 声明式多列（与 oas-table `columns` 契约同构）+ `checkable` 复选列（全选/半选三态，复用既有 `oas-selection-change`，不新增事件名）+ 列头行；行高与横条同源（单滚动/虚拟窗口，零同步胶水）；RTL/暗色/DSD/forced-colors 沿用；`show-effort` 与 task-columns 同开时网格优先（保留 effort 列需显式声明）；演进口径写死（排序/过滤将来复用 table/model，禁第二套行模型）；工单排产形态 demo（zh/en）+ e2e 三引擎 | ✅ 已完成（v2.6.8） |
 
-## 未发布（table server 行模型批）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **table server 行模型（外部分页模式升级，缺口收窄版）** | 数据不全在前端的企业场景：排序/过滤责任移交服务端。属性 `row-model`（`client` 缺省 / `server` opt-in；生效前提 `total` 在场）+ 请求协议 `oas-rows-request`（detail `{ requestId, start, end, sortModel, filterValues, reason, totalKnown }`，requestId 权威去重、晚到回写由宿主侧校验）+ 时序规则（排序/过滤/页大小变更重置 `current=1`；失败保留旧数据 + 错误条 + `oas-rows-error`）+ `refreshRows()` 强刷入口 + 能力闸门矩阵（导出仅当前页 devWarn/合计/分组/拖拽禁用等 ~10 项逐一声明）+ 宿主侧 `createServerSource` helper（seq/abort/requestId 校验/refresh，与 windowed 宿主 helper 同族）。落点：核内单文件模块 + advanced 同族 helper；`windowed` 优先互斥守卫。文档配方区新增选用决策表与互斥规则。client 渲染签名金本位测试先行，零行为漂移 | ✅ 已完成（未发布） |
-| **table 测试债捎带** | `qa-regression/table.spec.ts` + `table-server.spec.ts` 断言质量收口：waitForTimeout 3 处改条件等待（键盘滚动落点 ×2、竞态慢响应 resolve 观测 ×1）；OS 绝对量 6 处（4 处改数据驱动现算比较，2 处请求计数按客户端协议语义登记例外）；另将 server 行模型批引入的弱断言 34 条逐条改精确契约（loading 行文案 / 分页器属性 / 编辑器实例 / 样式源规则等）；`qa:audit:check` 四维全绿 | ✅ 已完成（未发布） |
-
-## 未发布（P1/P2 组件能力批）
+## v2.6.8（table 双形态批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **kanban 列折叠与列合计** | `collapsible`（默认关零变化）：列头折叠钮/窄条显示列名+卡片数/点击展开；列底 `summary` 合计（缺席不渲染）；i18n ×16；持久化不做（宿主受控） | ✅ 已完成（未发布） |
-| **list/sidebar 键盘重排** | 焦点条目 Alt+↑/↓ 逐条移动 + `oas-reorder`/`oas-change` 新序事件；aria-keyshortcuts；disabled 跳过 | ✅ 已完成（未发布） |
-| **comment 输入与 resolve** | 内置输入行（Enter 提交/Shift+Enter 换行，`oas-submit`）；resolve 态（条目 resolved 字段→折叠样式 + 触发钮，`resolvable="false"` 关闭）；i18n ×16 | ✅ 已完成（未发布） |
-| **收件人 chips 输入（input 族）** | 粘贴拆分（;/, /换行/空白）/Enter 成 chip/Backspace 回编辑/内联校验（非法邮箱红描边 + `oas-invalid`）/`value` 双通道/`max` 超限 `oas-exceed-limit`/重复去重 | ✅ 已完成（未发布） |
-| **upload `capture`** | 透传 file input capture（user/environment/在场=user），移动端直调相机；桌面忽略 | ✅ 已完成（未发布） |
-| **code 语言扩充** | +sh/bash/python/sql/diff/markdown/yaml（既有正则架构内扩展，零第三方库）；非法 lang 回落纯文本 | ✅ 已完成（未发布） |
-| **countdown 后台记账语义** | 验证 document.hidden 漂移→时间戳记账 + visibilitychange 校正无跳变；tick/value 语义不变 | ✅ 已完成（未发布） |
-| **equation 编辑实时预览** | 焦点编辑态输入 LaTeX → 实时/失焦渲染预览；value 双通道；失败回退源码 + devWarn；Esc 取消 | ✅ 已完成（未发布） |
+| **table 双形态（数据层公开 + 渲染扩展点完整化）** | 公共库三档用户（开箱即用 / 自定义外观 / 只要数据）：① 数据层纯函数公开（`@oas-ui/ui/data/table/model`，零 DOM 依赖行模型管道：过滤→排序→分页→分组→展平→可见集；组件内部改为同源调用，零行为漂移）② `structural-render` 四槽补空态/loading/分页器槽 + 状态接入 ctx ③ 双形态工程（两个 L3 入口、双份文档测试、主链零增量）。框架无关（SSR/worker/程序化驱动可用） | ✅ 已完成（v2.6.8） |
 
-## 未发布（P0 组件能力批）
+## v2.6.8（table server 行模型批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **scheduler 冲突校验 + 时刻块键盘可达** | 新属性 `conflict-check`（opt-in）：同日同时段重叠检测（半开区间纯函数）+ `.event.conflict` 视觉标记 + `oas-event-conflict` 幂等事件（detail `{ id, conflicts }`，消解发空数组）；时刻块补键盘路径（←/→ 整天改期 RTL 镜像、Alt+←/→ 缩放 end ±15min、aria-keyshortcuts）；i18n `scheduler.conflict` ×16。拖改期/拉伸已存在不重复 | ✅ 已完成（未发布） |
-| **chart 横向条 + 自定义 tooltip（opt-in）** | `type="horizontal-bar"`（数值轴底部/分类左缘/RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 边界不破）+ property `tooltipFormatter`；开启后 shadow 单例浮层（part="tooltip"，反色 token，table cell-tooltip 模式 + computePosition）+ `oas-chart-tooltip` 事件宿主可 preventDefault 接管；i18n `chart.horizontal-bar` ×16 | ✅ 已完成（未发布） |
-| **oas-scanner 新组件（data 组）** | 相机扫码：`active` 驱动 getUserMedia + 原生 `BarcodeDetector`（不引第三方解码库）；`oas-scan`（detail `{ value, format? }`）/`oas-error`（not-supported/permission/camera）幂等；无相机/无权限自动降级手动输入（`manual` 显式开）；不进 SSR 白名单（TAG_ENTRY 登记 + docs/ssr.md 计数）；forced-colors 焦点兜底 | ✅ 已完成（未发布） |
-| **oas-signature 新组件（data 组）** | 签名板：canvas 笔迹（pointer 捕获/touch-action none/DPR 倍率/token 实色解析/resize 保留笔迹）；`value`（dataURL 双通道）/`pen-size`/`pen-color`/`height`/`disabled`/`readonly`/`clearable`；`oas-change`（笔画结束，幂等）+ `clear()`/`toDataURL()`；role=img + i18n aria-label；forced-colors 文档注明限制；不进 SSR 白名单；form-associated 二期 | ✅ 已完成（未发布） |
+| **table server 行模型（外部分页模式升级，缺口收窄版）** | 数据不全在前端的企业场景：排序/过滤责任移交服务端。属性 `row-model`（`client` 缺省 / `server` opt-in；生效前提 `total` 在场）+ 请求协议 `oas-rows-request`（detail `{ requestId, start, end, sortModel, filterValues, reason, totalKnown }`，requestId 权威去重、晚到回写由宿主侧校验）+ 时序规则（排序/过滤/页大小变更重置 `current=1`；失败保留旧数据 + 错误条 + `oas-rows-error`）+ `refreshRows()` 强刷入口 + 能力闸门矩阵（导出仅当前页 devWarn/合计/分组/拖拽禁用等 ~10 项逐一声明）+ 宿主侧 `createServerSource` helper（seq/abort/requestId 校验/refresh，与 windowed 宿主 helper 同族）。落点：核内单文件模块 + advanced 同族 helper；`windowed` 优先互斥守卫。文档配方区新增选用决策表与互斥规则。client 渲染签名金本位测试先行，零行为漂移 | ✅ 已完成（v2.6.8） |
+| **table 测试债捎带** | `qa-regression/table.spec.ts` + `table-server.spec.ts` 断言质量收口：waitForTimeout 3 处改条件等待（键盘滚动落点 ×2、竞态慢响应 resolve 观测 ×1）；OS 绝对量 6 处（4 处改数据驱动现算比较，2 处请求计数按客户端协议语义登记例外）；另将 server 行模型批引入的弱断言 34 条逐条改精确契约（loading 行文案 / 分页器属性 / 编辑器实例 / 样式源规则等）；`qa:audit:check` 四维全绿 | ✅ 已完成（v2.6.8） |
 
-## 未发布（SSR 与文档工程批）
+## v2.6.8（P1/P2 组件能力批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **SSR 与文档工程批** | `@oas-ui/ssr/polyfill` 新子路径（Firefox DSD 运行期注入伴侣，setHTMLUnsafe 特性探测 + 递归嵌套 DSD + 幂等）+ Nuxt/Next 双 fixture 跨引擎冒烟三用例；ssr.md 浏览器支持矩阵修正 + 运行时边界节（Edge 诚实口径）+ 缓存与高并发宿主配方节；导航形态组合 guide 页 ×2（zh/en，六个形态 live demo + 双轨组合口径）；遗留清理（kanban 折叠钮 aria-label 带列名、chips-input 全角分隔符、equation 退出事件） | ✅ 已完成（未发布） |
+| **kanban 列折叠与列合计** | `collapsible`（默认关零变化）：列头折叠钮/窄条显示列名+卡片数/点击展开；列底 `summary` 合计（缺席不渲染）；i18n ×16；持久化不做（宿主受控） | ✅ 已完成（v2.6.8） |
+| **list/sidebar 键盘重排** | 焦点条目 Alt+↑/↓ 逐条移动 + `oas-reorder`/`oas-change` 新序事件；aria-keyshortcuts；disabled 跳过 | ✅ 已完成（v2.6.8） |
+| **comment 输入与 resolve** | 内置输入行（Enter 提交/Shift+Enter 换行，`oas-submit`）；resolve 态（条目 resolved 字段→折叠样式 + 触发钮，`resolvable="false"` 关闭）；i18n ×16 | ✅ 已完成（v2.6.8） |
+| **收件人 chips 输入（input 族）** | 粘贴拆分（;/, /换行/空白）/Enter 成 chip/Backspace 回编辑/内联校验（非法邮箱红描边 + `oas-invalid`）/`value` 双通道/`max` 超限 `oas-exceed-limit`/重复去重 | ✅ 已完成（v2.6.8） |
+| **upload `capture`** | 透传 file input capture（user/environment/在场=user），移动端直调相机；桌面忽略 | ✅ 已完成（v2.6.8） |
+| **code 语言扩充** | +sh/bash/python/sql/diff/markdown/yaml（既有正则架构内扩展，零第三方库）；非法 lang 回落纯文本 | ✅ 已完成（v2.6.8） |
+| **countdown 后台记账语义** | 验证 document.hidden 漂移→时间戳记账 + visibilitychange 校正无跳变；tick/value 语义不变 | ✅ 已完成（v2.6.8） |
+| **equation 编辑实时预览** | 焦点编辑态输入 LaTeX → 实时/失焦渲染预览；value 双通道；失败回退源码 + devWarn；Esc 取消 | ✅ 已完成（v2.6.8） |
+
+## v2.6.8（P0 组件能力批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **scheduler 冲突校验 + 时刻块键盘可达** | 新属性 `conflict-check`（opt-in）：同日同时段重叠检测（半开区间纯函数）+ `.event.conflict` 视觉标记 + `oas-event-conflict` 幂等事件（detail `{ id, conflicts }`，消解发空数组）；时刻块补键盘路径（←/→ 整天改期 RTL 镜像、Alt+←/→ 缩放 end ±15min、aria-keyshortcuts）；i18n `scheduler.conflict` ×16。拖改期/拉伸已存在不重复 | ✅ 已完成（v2.6.8） |
+| **chart 横向条 + 自定义 tooltip（opt-in）** | `type="horizontal-bar"`（数值轴底部/分类左缘/RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 边界不破）+ property `tooltipFormatter`；开启后 shadow 单例浮层（part="tooltip"，反色 token，table cell-tooltip 模式 + computePosition）+ `oas-chart-tooltip` 事件宿主可 preventDefault 接管；i18n `chart.horizontal-bar` ×16 | ✅ 已完成（v2.6.8） |
+| **oas-scanner 新组件（data 组）** | 相机扫码：`active` 驱动 getUserMedia + 原生 `BarcodeDetector`（不引第三方解码库）；`oas-scan`（detail `{ value, format? }`）/`oas-error`（not-supported/permission/camera）幂等；无相机/无权限自动降级手动输入（`manual` 显式开）；不进 SSR 白名单（TAG_ENTRY 登记 + docs/ssr.md 计数）；forced-colors 焦点兜底 | ✅ 已完成（v2.6.8） |
+| **oas-signature 新组件（data 组）** | 签名板：canvas 笔迹（pointer 捕获/touch-action none/DPR 倍率/token 实色解析/resize 保留笔迹）；`value`（dataURL 双通道）/`pen-size`/`pen-color`/`height`/`disabled`/`readonly`/`clearable`；`oas-change`（笔画结束，幂等）+ `clear()`/`toDataURL()`；role=img + i18n aria-label；forced-colors 文档注明限制；不进 SSR 白名单；form-associated 二期 | ✅ 已完成（v2.6.8） |
+
+## v2.6.8（SSR 与文档工程批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **SSR 与文档工程批** | `@oas-ui/ssr/polyfill` 新子路径（Firefox DSD 运行期注入伴侣，setHTMLUnsafe 特性探测 + 递归嵌套 DSD + 幂等）+ Nuxt/Next 双 fixture 跨引擎冒烟三用例；ssr.md 浏览器支持矩阵修正 + 运行时边界节（Edge 诚实口径）+ 缓存与高并发宿主配方节；导航形态组合 guide 页 ×2（zh/en，六个形态 live demo + 双轨组合口径）；遗留清理（kanban 折叠钮 aria-label 带列名、chips-input 全角分隔符、equation 退出事件） | ✅ 已完成（v2.6.8） |
 
 ## v2.6.7（工具链）
 

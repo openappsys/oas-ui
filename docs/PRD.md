@@ -5,7 +5,7 @@
 
 ---
 
-## 未发布：table 公共能力补齐批（无限滚动 cursor / 服务端分组聚合 / 数据层缓存 / 渲染组织 / CSS 抽取 / 导出全量 / 列序持久化）
+## v2.6.8：table 公共能力补齐批（无限滚动 cursor / 服务端分组聚合 / 数据层缓存 / 渲染组织 / CSS 抽取 / 导出全量 / 列序持久化）
 
 ### 功能定义
 
@@ -45,7 +45,7 @@
 - 每批：TDD 单测 + 能力闸门/互斥矩阵 + 文档 zh/en + 预算档 + 全量门禁 + ≥2 轮交叉审 + 用户视角验证
 - 全批终态：能力面与公共库定位一致；无「等场景」挂账项；docs/architecture.md 能力矩阵同步
 
-## 未发布：gantt 任务网格面板批（task-columns 多列 + checkable + 列头行）
+## v2.6.8：gantt 任务网格面板批（task-columns 多列 + checkable + 列头行）
 
 ### 功能定义
 
@@ -68,7 +68,7 @@
 - `perf:size`：gantt 链增量入预算并报告（现 69.3/80）；`typecheck` / `build` / `ssr:check` 绿。
 - 收口按大范围批次规：≥2 轮 × ≥2 模型交叉审，连续 1 轮无 Critical/Important 新发现方收口。
 
-## 未发布：table 双形态批（数据层公开 headless + 渲染扩展点完整化）
+## v2.6.8：table 双形态批（数据层公开 headless + 渲染扩展点完整化）
 
 ### 功能定义
 
@@ -104,7 +104,7 @@
 - 工程：api:scan/gen 零漂移（新增公开面走 L3 子路径，不进组件 manifest）、perf:size（model 独立档 + 主链不变）、llms/文档同步
 - 收口：≥2 轮 × ≥2 模型交叉审 + 用户视角验证（文档示例真跑、扩展点真接管）
 
-## 未发布：table server 行模型批（externalTotal 模式升级：服务端排序/过滤 + 请求协议 + 竞态时序 + 能力闸门 + 宿主 helper）
+## v2.6.8：table server 行模型批（externalTotal 模式升级：服务端排序/过滤 + 请求协议 + 竞态时序 + 能力闸门 + 宿主 helper）
 
 ### 功能定义
 
@@ -168,7 +168,7 @@
 - api:scan/gen 零漂移；i18n ×16 零漏；perf:size 结构门零残留 + 主链预算核查（触预警线走审计再定档，不为省体积砍功能）；llms 索引同步；全量 e2e 三引擎
 - 收口 ≥2 轮 × ≥2 模型交叉审 + 修复批再审 + 用户视角验证门禁
 
-## 未发布：P1/P2 组件能力批（kanban 列折叠合计 / list·sidebar 键盘重排 / comment 输入与 resolve / 收件人 chips / upload capture / code 语言扩充 / countdown 语义 / equation 实时预览）
+## v2.6.8：P1/P2 组件能力批（kanban 列折叠合计 / list·sidebar 键盘重排 / comment 输入与 resolve / 收件人 chips / upload capture / code 语言扩充 / countdown 语义 / equation 实时预览）
 
 ### 功能定义
 
@@ -212,7 +212,7 @@ P1 中优先增强四项 + P2 顺手小项四件一批，来源为 everything �
 
 - 每组件 TDD 单测 + qa-regression e2e 固化（真点/真输入、dark、console 零告警）；i18n ×16 completeness 零漏；api:scan/gen 零漂移；perf:size 不破预算；收口 ≥2 轮 × ≥2 模型交叉审 + 修复批再审；用户视角验证门禁。
 
-## 未发布：P0 组件能力批（scheduler 冲突校验 / chart 横向条与 tooltip / oas-scanner / oas-signature）
+## v2.6.8：P0 组件能力批（scheduler 冲突校验 / chart 横向条与 tooltip / oas-scanner / oas-signature）
 
 ### 功能定义
 

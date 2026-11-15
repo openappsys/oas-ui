@@ -3,7 +3,7 @@
   "cdnGzipKB": 711.8,
   "locales": 16,
   "tests": 14373,
-  "version": "2.6.7",
+  "version": "2.6.8",
   "perf": {
     "cdnGzipKB": 711.8,
     "buttonChainKB": 20.9,
