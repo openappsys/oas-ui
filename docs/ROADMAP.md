@@ -17,7 +17,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **gantt 任务网格面板** | `task-columns` 声明式多列（与 oas-table `columns` 契约同构）+ `checkable` 复选列（全选/半选三态，复用既有 `oas-selection-change`，不新增事件名）+ 列头行；行高与横条同源（单滚动/虚拟窗口，零同步胶水）；RTL/暗色/DSD/forced-colors 沿用；`show-effort` 与 task-columns 同开时网格优先（保留 effort 列需显式声明）；演进口径写死（排序/过滤将来复用 table/model，禁第二套行模型）；工单排产形态 demo（zh/en）+ e2e 三引擎 | 🚧 进行中 |
+| **gantt 任务网格面板** | `task-columns` 声明式多列（与 oas-table `columns` 契约同构）+ `checkable` 复选列（全选/半选三态，复用既有 `oas-selection-change`，不新增事件名）+ 列头行；行高与横条同源（单滚动/虚拟窗口，零同步胶水）；RTL/暗色/DSD/forced-colors 沿用；`show-effort` 与 task-columns 同开时网格优先（保留 effort 列需显式声明）；演进口径写死（排序/过滤将来复用 table/model，禁第二套行模型）；工单排产形态 demo（zh/en）+ e2e 三引擎 | ✅ 已完成（未发布） |
 
 ## 未发布（table 双形态批）
 
@@ -53,6 +53,12 @@
 | **chart 横向条 + 自定义 tooltip（opt-in）** | `type="horizontal-bar"`（数值轴底部/分类左缘/RTL 不镜像）；`options.tooltip` 布尔（默认关，原生 `<title>` 边界不破）+ property `tooltipFormatter`；开启后 shadow 单例浮层（part="tooltip"，反色 token，table cell-tooltip 模式 + computePosition）+ `oas-chart-tooltip` 事件宿主可 preventDefault 接管；i18n `chart.horizontal-bar` ×16 | ✅ 已完成（未发布） |
 | **oas-scanner 新组件（data 组）** | 相机扫码：`active` 驱动 getUserMedia + 原生 `BarcodeDetector`（不引第三方解码库）；`oas-scan`（detail `{ value, format? }`）/`oas-error`（not-supported/permission/camera）幂等；无相机/无权限自动降级手动输入（`manual` 显式开）；不进 SSR 白名单（TAG_ENTRY 登记 + docs/ssr.md 计数）；forced-colors 焦点兜底 | ✅ 已完成（未发布） |
 | **oas-signature 新组件（data 组）** | 签名板：canvas 笔迹（pointer 捕获/touch-action none/DPR 倍率/token 实色解析/resize 保留笔迹）；`value`（dataURL 双通道）/`pen-size`/`pen-color`/`height`/`disabled`/`readonly`/`clearable`；`oas-change`（笔画结束，幂等）+ `clear()`/`toDataURL()`；role=img + i18n aria-label；forced-colors 文档注明限制；不进 SSR 白名单；form-associated 二期 | ✅ 已完成（未发布） |
+
+## 未发布（SSR 与文档工程批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **SSR 与文档工程批** | `@oas-ui/ssr/polyfill` 新子路径（Firefox DSD 运行期注入伴侣，setHTMLUnsafe 特性探测 + 递归嵌套 DSD + 幂等）+ Nuxt/Next 双 fixture 跨引擎冒烟三用例；ssr.md 浏览器支持矩阵修正 + 运行时边界节（Edge 诚实口径）+ 缓存与高并发宿主配方节；导航形态组合 guide 页 ×2（zh/en，六个形态 live demo + 双轨组合口径）；遗留清理（kanban 折叠钮 aria-label 带列名、chips-input 全角分隔符、equation 退出事件） | ✅ 已完成（未发布） |
 
 ## v2.6.7（工具链）
 
