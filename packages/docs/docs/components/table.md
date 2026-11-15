@@ -637,12 +637,14 @@ import { createServerSource } from '@oas-ui/ui/data/table/advanced'
 const source = createServerSource(table, {
   // 创建时先写入 total（server 激活前生效前提已在场；省略时须自行保证 total 属性在场）
   total: 1000,
-  fetchRows: async ({ requestId, start, end, sortModel, filterValues, reason, signal }) => {
+  fetchRows: async ({ requestId, start, end, sortModel, filterValues, groupBy, cursor, reason, signal }) => {
     // requestId：组件内单调递增，可透传服务端做 trace 关联
     // start / end：当前页半开区间 (current-1)*pageSize ~ current*pageSize
     // sortModel / filterValues：服务端排序/过滤条件（沿用 sort-key / filter-values 词汇）
+    // groupBy：服务端分组键（group-by 在场时携带——按它返回分组行；无分组不携带）
+    // cursor：无限滚动游标（仅携带 cursor 的请求有此键；helper 缓存不服务 infinite 形态，见下方适用面）
     // signal：同表新请求派发或 destroy 时中止——取数实现应尽早响应中止
-    const res = await api.listOrders({ start, end, sort: sortModel, filter: filterValues, signal })
+    const res = await api.listOrders({ start, end, sort: sortModel, filter: filterValues, groupBy, signal })
     // 返回 { rows, total } 时 helper 自动同步 total 属性；返回裸数组则要求 total 属性已在场
     return { rows: res.list, total: res.total }
   },
@@ -651,7 +653,7 @@ const source = createServerSource(table, {
 // source.destroy()：解绑监听并中止在途 + 清空 helper 缓存（不动 row-model / total 属性）
 ```
 
-数据层缓存（helper 内建，不影响组件协议）：**默认启用**——同一查询（区间 / 排序 / 过滤 / 游标全同，与触发原因无关）在 TTL 内翻页往返**直接回填缓存、不再调用 `fetchRows`**。`cache: false` 完全关闭（关闭档行为与无缓存实现逐值一致）；`{ ttlMs }` 毫秒级可配（默认 `300000` = 5 分钟）；`{ staleWhileRevalidate: true }` 开启后台刷新——过期命中先回填陈旧值（用户立即看到旧数据而非 loading）、后台重取成功后回填更新（两阶段可见）。同键请求在途时自动合并（复用同一取数，不重复 fetch）；`fetchRows` 失败或被中止不写缓存（失败页翻回即重试）；`refresh()` 无参绕过缓存强制重取（结果更新缓存），`refresh({ purge: true })` 清空**全部**缓存后强制重取（数据已被外部修改时用）；`destroy()` 清缓存与在途登记：
+数据层缓存（helper 内建，不影响组件协议）：**默认启用**——同一查询（区间 / 排序 / 过滤 / 分组 / 游标全同，与触发原因无关）在 TTL 内翻页往返**直接回填缓存、不再调用 `fetchRows`**。`cache: false` 完全关闭（关闭档行为与无缓存实现逐值一致）；`{ ttlMs }` 毫秒级可配（默认 `300000` = 5 分钟；`0` = 不缓存，每次都真取；负数 / NaN 属非法配置提示一次并回退默认）；`{ maxEntries }` 条目上界（默认 `200`，LRU：命中重排写入序、超界淘汰最旧、过期条目命中即删）；`{ staleWhileRevalidate: true }` 开启后台刷新——过期命中先回填陈旧值（用户立即看到旧数据而非 loading）、后台重取成功后回填更新（两阶段可见）。同键请求在途时自动合并（复用同一取数，不重复 fetch）；`fetchRows` 失败或被中止不写缓存（失败页翻回即重试）；后台重取结果**修缓存不校验 requestId**（后台期间翻页，回翻即命中后台新值），回填仍按 requestId 最新（后台结果不顶掉用户当前页展示）；`refresh()` 无参绕过缓存强制重取（结果更新缓存），`refresh({ purge: true })` 清空**全部**缓存后强制重取（purge 时刻在途的后台结果不回写——不污染 purge 后缓存），`destroy()` 清缓存与在途登记：
 
 ```ts
 // 默认档：TTL 5 分钟，翻页往返命中缓存不重调 fetchRows
@@ -662,7 +664,8 @@ const source = createServerSource(table, {
   fetchRows,
   total: 1000,
   cache: {
-    ttlMs: 60_000, // 条目有效期（ms，默认 300000）
+    ttlMs: 60_000, // 条目有效期（ms，默认 300000；0 = 不缓存）
+    maxEntries: 200, // 条目上界（LRU 淘汰，默认 200）
     staleWhileRevalidate: true, // 过期命中：先回填陈旧值 + 后台重取（默认 false = 过期即重新取数）
   },
 })
@@ -670,7 +673,9 @@ const source = createServerSource(table, {
 // source.refresh({ purge: true }) → 清空全部缓存 + 强制重取（各键往返全重取）
 ```
 
-缓存语义速查：键 = 完整查询（`start` / `end` / `sortModel` / `filterValues` / `cursor`，与请求原因无关——`init` / `sort` / `filter` / `paginate` 同属查询态，翻页往返命中同一条目；排序组序敏感、过滤键序不敏感、值类型敏感）；命中（未过期）直接回填（`data` / `total` 属性写与成功路径同一通道，requestId 校验语义保持）；命中（已过期）默认重新取数，SWR 开启时走两阶段；同键在途复用同一 Promise。宿主数据在服务端被外部修改后，请用 `refresh({ purge: true })`（单页强刷用 `refresh()`）；需要「每次都真取」的场景（非幂等 fetcher / 实时性敏感）请 `cache: false`。
+缓存语义速查：键 = 完整查询（`start` / `end` / `sortModel` / `filterValues` / `groupBy` / `cursor`，与请求原因无关——`init` / `sort` / `filter` / `paginate` / `group` 同属查询态，翻页往返与分组回切命中同一条目；排序组序敏感、过滤键序不敏感、值类型敏感）；命中（未过期）直接回填（`data` / `total` 属性写与成功路径同一通道，requestId 校验语义保持）；命中（已过期）默认重新取数，SWR 开启时走两阶段；同键在途复用同一 Promise。宿主数据在服务端被外部修改后，请用 `refresh({ purge: true })`（单页强刷用 `refresh()`）；需要「每次都真取」的场景（非幂等 fetcher / 实时性敏感）请 `cache: false`。
+
+两点提示：**适用面**——helper 仅服务「服务端分页/分组」形态，**与 `infinite` 组合不适用**（缓存的整页 `data` 覆盖回填与 `appendRows` 的追加语义冲突；infinite 形态请 `cache: false` 或宿主自管取数）。**total 回写语义**——缓存条目的 `total` 随命中一并回写，而 `total` 是页响应字段：跨页期间服务端数据变化（增删行）时，命中回填可能让页数回跳；需要强一致页数请用 `refresh({ purge: true })`。
 
 超时与取消：组件不内置请求超时——超时是数据层（宿主 fetcher）的职责。在 `fetchRows` 内组合中止信号再交给宿主 fetch：`AbortSignal.any([signal, AbortSignal.timeout(8000)])`（helper 的 `signal` + 8s 超时取先到者；`AbortSignal.any`/`AbortSignal.timeout` 基线 2024 年，各引擎 2023-08 ~ 2024-04 陆续支持——旧环境可 `typeof AbortSignal.any === 'function'` 检测，降级为手动 AbortController + setTimeout 组合或宿主侧超时）——超时即 reject，与其它失败走同一路径：自动经 helper 桥接错误条 + 可重试，无需自建超时反馈：
 

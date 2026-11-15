@@ -637,12 +637,14 @@ import { createServerSource } from '@oas-ui/ui/data/table/advanced'
 const source = createServerSource(table, {
   // Writes total up front, before server mode activates (activation premise; if omitted the host must set the attribute itself)
   total: 1000,
-  fetchRows: async ({ requestId, start, end, sortModel, filterValues, reason, signal }) => {
+  fetchRows: async ({ requestId, start, end, sortModel, filterValues, groupBy, cursor, reason, signal }) => {
     // requestId: monotonically increasing inside the component; can be forwarded to the server for trace correlation
     // start / end: current page half-open range (current-1)*pageSize ~ current*pageSize
     // sortModel / filterValues: server-side sort/filter conditions (reusing the sort-key / filter-values vocabulary)
+    // groupBy: server grouping key (present when group-by is set — return group rows for it; absent without grouping)
+    // cursor: infinite-scroll cursor (present only on requests that carry one; the helper cache does not serve infinite mode — see applicability below)
     // signal: aborted when a newer request is emitted or on destroy — respond to it early in your fetch
-    const res = await api.listOrders({ start, end, sort: sortModel, filter: filterValues, signal })
+    const res = await api.listOrders({ start, end, sort: sortModel, filter: filterValues, groupBy, signal })
     // Returning { rows, total } lets the helper sync the total attribute automatically; a bare array requires total to be present already
     return { rows: res.list, total: res.total }
   },
@@ -651,7 +653,7 @@ const source = createServerSource(table, {
 // source.destroy(): unbind listeners, abort in-flight work, and clear the helper cache (does not touch row-model / total attributes)
 ```
 
-Data-layer caching (built into the helper, no component protocol changes): **enabled by default** — the same query (same range / sort / filter / cursor, regardless of what triggered it) refills from cache within its TTL on page round-trips **without calling `fetchRows` again**. `cache: false` disables it entirely (the disabled path behaves exactly like the pre-cache implementation); `{ ttlMs }` is configurable in milliseconds (default `300000` = 5 minutes); `{ staleWhileRevalidate: true }` enables background revalidation — an expired hit first refills the stale value (users see old data immediately instead of a loading state), then a background refetch updates the refill when it succeeds (two visible phases). Concurrent same-key requests are merged automatically (one fetch reused, no duplicates); a failed or aborted `fetchRows` writes no cache (returning to a failed page retries it); `refresh()` with no argument bypasses the cache and force-refetches (the result updates the cache), while `refresh({ purge: true })` purges **all** cache entries before force-refetching (use when the data was modified externally); `destroy()` clears the cache and in-flight registry:
+Data-layer caching (built into the helper, no component protocol changes): **enabled by default** — the same query (same range / sort / filter / grouping / cursor, regardless of what triggered it) refills from cache within its TTL on page round-trips **without calling `fetchRows` again**. `cache: false` disables it entirely (the disabled path behaves exactly like the pre-cache implementation); `{ ttlMs }` is configurable in milliseconds (default `300000` = 5 minutes; `0` = no caching, always fetch; negative / NaN is invalid and warns once, falling back to the default); `{ maxEntries }` bounds the entry count (default `200`, LRU: hits reorder the write sequence, overflow evicts the oldest, expired entries are deleted on hit); `{ staleWhileRevalidate: true }` enables background revalidation — an expired hit first refills the stale value (users see old data immediately instead of a loading state), then a background refetch updates the refill when it succeeds (two visible phases). Concurrent same-key requests are merged automatically (one fetch reused, no duplicates); a failed or aborted `fetchRows` writes no cache (returning to a failed page retries it); a background refetch result **repairs the cache without checking requestId** (page away while it runs — page back and you hit the fresh value), while refills still follow the newest requestId (background results never overwrite the page you are on); `refresh()` with no argument bypasses the cache and force-refetches (the result updates the cache), while `refresh({ purge: true })` purges **all** cache entries before force-refetching (in-flight results from before the purge do not write back — they cannot pollute the post-purge cache), and `destroy()` clears the cache and in-flight registry:
 
 ```ts
 // Default: 5-minute TTL; page round-trips hit the cache without calling fetchRows
@@ -662,7 +664,8 @@ const source = createServerSource(table, {
   fetchRows,
   total: 1000,
   cache: {
-    ttlMs: 60_000, // entry lifetime in ms (default 300000)
+    ttlMs: 60_000, // entry lifetime in ms (default 300000; 0 = no caching)
+    maxEntries: 200, // entry bound (LRU eviction, default 200)
     staleWhileRevalidate: true, // expired hit: refill the stale value + refetch in the background (default false = expired means refetch)
   },
 })
@@ -670,7 +673,9 @@ const source = createServerSource(table, {
 // source.refresh({ purge: true }) → purge all cache + force-refetch (every key refetches on return)
 ```
 
-Cache semantics at a glance: key = the full query (`start` / `end` / `sortModel` / `filterValues` / `cursor`, independent of the request reason — `init` / `sort` / `filter` / `paginate` are all query states, so page round-trips hit the same entry; sort order is array-sensitive, filter key order is insensitive, value types are sensitive); an unexpired hit refills directly (the `data` / `total` attribute writes use the same channel as the success path, requestId guard semantics preserved); an expired hit refetches by default, or goes through the two phases when SWR is on; same-key in-flight requests reuse one Promise. After host data is modified externally on the server, use `refresh({ purge: true })` (single-page refetch: `refresh()`); for scenarios that must always hit the server (non-idempotent fetchers, latency-sensitive data), pass `cache: false`.
+Cache semantics at a glance: key = the full query (`start` / `end` / `sortModel` / `filterValues` / `groupBy` / `cursor`, independent of the request reason — `init` / `sort` / `filter` / `paginate` / `group` are all query states, so page round-trips and grouping round-trips hit the same entry; sort order is array-sensitive, filter key order is insensitive, value types are sensitive); an unexpired hit refills directly (the `data` / `total` attribute writes use the same channel as the success path, requestId guard semantics preserved); an expired hit refetches by default, or goes through the two phases when SWR is on; same-key in-flight requests reuse one Promise. After host data is modified externally on the server, use `refresh({ purge: true })` (single-page refetch: `refresh()`); for scenarios that must always hit the server (non-idempotent fetchers, latency-sensitive data), pass `cache: false`.
+
+Two notes: **applicability** — the helper serves the "server-side paging/grouping" forms only and **does not combine with `infinite`** (the cache's whole-page `data` overwrite refill conflicts with the append semantics of `appendRows`; for infinite mode pass `cache: false` or manage fetching yourself). **total refill semantics** — a cached entry's `total` is written back together with the hit, and `total` is a page-response field: when the server-side data changes between page views (rows added/removed), a cache hit can make the page count jump back; use `refresh({ purge: true })` when you need strongly consistent page counts.
 
 Timeout and cancellation: the component has no built-in request timeout — timeouts are the data layer's (host fetcher's) responsibility. Compose abort signals inside `fetchRows` before handing them to your fetch: `AbortSignal.any([signal, AbortSignal.timeout(8000)])` (the helper's `signal` + an 8s timeout, whichever fires first; `AbortSignal.any`/`AbortSignal.timeout` baseline is 2024 — engines shipped them progressively between 2023-08 and 2024-04. On older environments, feature-detect with `typeof AbortSignal.any === 'function'` and fall back to a manual `AbortController` + `setTimeout` combination or a host-side timeout). A timeout rejects like any other failure and takes the same path: the helper bridges it to the error bar + retry automatically — no custom timeout UI needed:
 

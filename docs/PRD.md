@@ -23,7 +23,7 @@
 - 与 client 分组、windowed、infinite 的互斥/组合矩阵写清
 
 **批 C：数据层缓存（helper 层）**
-- `createServerSource` 增加缓存：键 = 完整查询（页码/排序/过滤/游标），TTL 可配（默认合理值）、`refresh({ purge })` 清缓存、去重（同键在途合并）、后台刷新（stale-while-revalidate）选项；缓存层在 helper 内，不影响组件协议
+- `createServerSource` 增加缓存：键 = 完整查询（页码/排序/过滤/分组/游标），TTL 可配（默认合理值，`0` = 不缓存）、条目上界 LRU 淘汰、`refresh({ purge })` 清缓存、去重（同键在途合并）、后台刷新（stale-while-revalidate）选项；缓存层在 helper 内，不影响组件协议；helper 仅服务「服务端分页/分组」形态（与 infinite 组合不适用——整页覆盖回填与追加语义冲突）
 
 **批 D：渲染组织 / worker 渲染**
 - 超大表格（非虚拟或虚拟下主线程压力）的渲染组织：paintCell/行构建可下沉 worker 或分批调度（chunked rendering），保持现有行为零漂移；先做「分批渲染/时间切片」，worker 作为后续增量
