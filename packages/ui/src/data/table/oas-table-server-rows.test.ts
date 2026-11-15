@@ -6,7 +6,7 @@ import { OASTable } from './index.js'
 import './edit/index.js'
 // F13 历史闸门断言：撤销栈「翻页即失效」语义的可测面
 import { canUndo, clearHistory, enableHistory, undo } from './history/index.js'
-// R5：列设置能力宿主契约（columnReorderGate 可选化）的类型面 + 行为面断言
+// R5：列设置能力宿主契约（批 F 移除 columnReorderGate 闸门契约）的类型面 + 行为面断言
 import { TableColumnSettingsController, type TableColumnSettingsHost } from './oas-table-column-settings.js'
 
 /**
@@ -859,16 +859,16 @@ describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
     warn.mockRestore()
   })
 
-  it('列拖拽禁用：setColumnOrder 拦截写回 + devWarn 一次', () => {
+  it('列序放行（批 F 契约）：setColumnOrder 写回 column-keys + 派发 oas-column-order，零告警', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mountServer({ 'row-model': 'server', total: '100' }, JSON.stringify([{ name: '甲', age: 1 }]))
-    let fired = 0
-    el.addEventListener('oas-column-order', () => fired++)
+    let detail: unknown
+    el.addEventListener('oas-column-order', (e: Event) => (detail = (e as CustomEvent).detail))
     el.setColumnOrder(['age', 'name'])
-    expect(fired).toBe(0)
-    expect(el.hasAttribute('column-keys')).toBe(false)
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(String(warn.mock.calls[0]![0])).toContain('列拖拽')
+    // 列序是展示态（与服务端行序无关）：与 client 同语义——写回 + 事件，供宿主持久化
+    expect(el.getAttribute('column-keys')).toBe(JSON.stringify(['age', 'name']))
+    expect(detail).toEqual({ keys: ['age', 'name'] })
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 
@@ -1408,10 +1408,10 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     expect(rowsOf(client)[0]!.getAttribute('aria-rowindex')).toBe('1')
   })
 
-  /** F9 回归：server 模式列序写回被 setColumnOrder 拦截（顺序语义服务端持有），
-      但列设置面板的触屏移动按钮曾保持可点——生产构建静默零反馈死控件。
-      修复：闸门生效时按钮 disabled + aria-disabled（视觉与读屏同步不可用） */
-  it('F9：server 下触屏列移动按钮 disabled + aria-disabled（client 对照可用）', () => {
+  /** 批 F 契约回归（原 F9 闸门口径已反转）：列序是展示态，server 下行列重排放行——
+      触屏列移动按钮可用（非边界位），点击写回 column-keys + 派发 oas-column-order；
+      行拖拽仍禁用（行序语义服务端持有，见上方 row-draggable 用例）。client 对照行为不变 */
+  it('批 F：server 下列移动按钮可用且点击写回（client 对照可用）', () => {
     const el = new OASTable()
     el.setAttribute(
       'columns',
@@ -1429,18 +1429,18 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     //（expect 非空后以 `!` 收窄访问，TS 不从 expect 推断）
     const up = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.up')
     const down = el.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.down')
-    expect(up?.disabled, 'server 闸门：上移按钮在场且禁用（缺席 → undefined ≠ true 一并拦下）').toBe(true)
-    expect(up?.getAttribute('aria-disabled')).toBe('true')
-    expect(down?.disabled, 'server 闸门：下移按钮在场且禁用').toBe(true)
-    expect(down?.getAttribute('aria-disabled')).toBe('true')
-    // 点击零调用（disabled 原生拦截 + setColumnOrder 拦截双保险）：断言 column-keys 不被写回
-    // （R9 收紧：原 `getAttribute() ?? keysBefore` 两侧同为 null 恒真；改为显式 null 断言 + 零事件计数）
+    expect(up?.disabled, 'server 放行：第一列上移因边界位（idx<=0）天然禁用').toBe(true)
+    expect(up?.getAttribute('aria-disabled'), '边界禁用不写 aria-disabled（区别于闸门禁用）').toBeNull()
+    expect(down?.disabled, 'server 放行：下移按钮（非边界位）可用').toBe(false)
+    expect(down?.getAttribute('aria-disabled')).toBeNull()
+    // 点击写回：column-keys 落盘 + oas-column-order 派发（与 client 同语义）
     const orderEvents: unknown[] = []
-    el.addEventListener('oas-column-order', (e) => orderEvents.push(e))
-    expect(el.getAttribute('column-keys'), '闸门生效前提：column-keys 尚未被写回').toBeNull()
-    up!.click()
-    expect(el.getAttribute('column-keys'), '点击后 column-keys 仍不被写回').toBeNull()
-    expect(orderEvents.length, '零派发 oas-column-order').toBe(0)
+    el.addEventListener('oas-column-order', (e) => orderEvents.push((e as CustomEvent).detail))
+    expect(el.getAttribute('column-keys'), '点击前 column-keys 未写回').toBeNull()
+    down!.click()
+    expect(el.getAttribute('column-keys'), '点击后写回新列序').toBe(JSON.stringify(['age', 'name']))
+    expect(orderEvents.length, '派发 oas-column-order').toBe(1)
+    expect(orderEvents[0]).toEqual({ keys: ['age', 'name'] })
     // client 对照：按钮可用（既有行为零变化）
     document.body.innerHTML = ''
     const client = new OASTable()
@@ -1467,17 +1467,16 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
       ]),
     )
     const clientUp = client.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.up')!
-    // 第一列的 up 因边界（idx<=0）天然禁用——闸门断言用 down（第一列 idx=0，client 下可用）
+    // 第一列的 up 因边界（idx<=0）天然禁用——按钮断言用 down（第一列 idx=0，client 下可用）
     const clientDown = client.shadowRoot!.querySelector<HTMLButtonElement>('thead th[data-key="name"] .col-move.down')!
     expect(clientDown.disabled, 'client 无闸门：按钮照常可用（非边界位）').toBe(false)
     expect(clientDown.getAttribute('aria-disabled')).toBeNull()
     void clientUp
   })
 
-  /** F9 拦截面核查注记：setColumnOrder 的 server 拦截对「宿主初始化恢复持久化列序」
-      同样生效（程序化写回也被拦）——现状保持（顺序语义服务端持有，拦截不区分调用来源），
-      收尾批文档写明；此处固化拦截现状防语义漂移 */
-  it('F9：setColumnOrder 程序化写回在 server 下同样拦截（宿主恢复持久化列序场景现状注记）', () => {
+  /** 批 F 契约：宿主初始化恢复持久化列序（程序化 setColumnOrder）在 server 下同样生效——
+      列序是展示态，与服务端行序无关；此处固化放行星以防回退到拦截语义 */
+  it('批 F：server 下程序化 setColumnOrder（恢复持久化列序）生效', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = new OASTable()
     el.setAttribute(
@@ -1492,9 +1491,12 @@ describe('OASTable server 行模型修复批（交叉审回归）', () => {
     el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
     document.body.appendChild(el)
     el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    let detail: unknown
+    el.addEventListener('oas-column-order', (e: Event) => (detail = (e as CustomEvent).detail))
     el.setColumnOrder(['age', 'name'])
-    expect(el.getAttribute('column-keys'), '拦截：column-keys 不写回').toBeNull()
-    expect(warn, '能力闸门 devWarn 一次').toHaveBeenCalledTimes(1)
+    expect(el.getAttribute('column-keys'), '放行：column-keys 写回').toBe(JSON.stringify(['age', 'name']))
+    expect(detail).toEqual({ keys: ['age', 'name'] })
+    expect(warn, '列序无闸门，零告警').not.toHaveBeenCalled()
     warn.mockRestore()
   })
 
@@ -1829,10 +1831,10 @@ describe('OASTable server 行模型第二轮修复批（R 轮回归）', () => {
     warn.mockRestore()
   })
 
-  // ==================== R5：columnReorderGate 必填契约改可选 ====================
+  // ==================== R5：列重排闸门契约移除（批 F） ====================
 
-  it('R5：无 columnReorderGate 实现的第三方宿主可用 controller（闸门按 false 回落）', () => {
-    // 类型面：本对象字面量缺 columnReorderGate——契约改可选后编译通过（改前 typecheck 报缺失）
+  it('R5：第三方宿主无需实现任何列重排闸门（契约已移除，移动按钮可用性只由边界位决定）', () => {
+    // 类型面：本对象字面量不含 columnReorderGate——批 F 移除该可选契约后编译通过
     const hostStub: TableColumnSettingsHost = {
       getColumns: () => [
         { key: 'name', title: '名称' },

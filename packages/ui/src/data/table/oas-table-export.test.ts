@@ -294,3 +294,135 @@ describe('OASTable exportable 集成', () => {
     expect(el.shadowRoot!.querySelector('.table-toolbar')!.children.length).toBe(0)
   })
 })
+
+// 批 F（server 模式导出全量）：exportRows 由宿主传入全量数据集（宿主自取数），
+// 复用 CSV / Excel / 剪贴板生成与下载/复制通道导出——与「导出当前展示集」（exportData）互不干扰。
+describe('exportRows：宿主传入数据集导出（server / infinite 全量导出通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.restoreAllMocks()
+  })
+
+  // 传入 6 行全量；表格当前只装载 DATA（3 行）——导出内容必须等于传入集而非展示集
+  const FULL_ROWS = [
+    { name: '甲', age: 1, city: '北京' },
+    { name: '乙', age: 2, city: '上海' },
+    { name: '丙', age: 3, city: '广州' },
+    { name: '丁', age: 4, city: '深圳' },
+    { name: '戊', age: 5, city: '杭州' },
+    { name: '己', age: 6, city: '成都' },
+  ]
+  const FULL_CSV = `姓名,年龄,城市\r\n${FULL_ROWS.map((r) => `${r.name},${r.age},${r.city}`).join('\r\n')}`
+
+  it('缺省 format=csv：内容 = 传入 rows 全量（含行序/列序），与当前展示集解耦，并派发 oas-export', () => {
+    const el = mount() // DATA = 3 行
+    let detail: unknown
+    el.addEventListener('oas-export', (e: Event) => (detail = (e as CustomEvent).detail))
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const csv = el.exportRows(FULL_ROWS)
+    // 带 UTF-8 BOM（与 exportData 同口径）；内容 = 传入集 6 行，不混入展示集
+    expect(csv).toBe(`\uFEFF${FULL_CSV}`)
+    expect(csv).not.toContain('张三')
+    expect(detail).toEqual({ format: 'csv', fileName: 'export.csv', rowCount: 6 })
+  })
+
+  it('format=excel + filename 选项：SpreadsheetML 全量行 + 文件名净化', () => {
+    const el = mount()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    let detail: unknown
+    el.addEventListener('oas-export', (e: Event) => (detail = (e as CustomEvent).detail))
+    const xml = el.exportRows(FULL_ROWS, { format: 'excel', filename: '全量/报表' })
+    expect(xml).toContain('<Workbook')
+    // 表头 1 行 + 数据 6 行
+    expect(xml.match(/<Row>/g)!.length).toBe(7)
+    expect(detail).toEqual({ format: 'excel', fileName: '全量_报表.xls', rowCount: 6 })
+  })
+
+  it('format=clipboard：TSV 写系统剪贴板（mock 通道）+ 事件 format=clipboard + 返回文本', () => {
+    const el = mount()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    let detail: unknown
+    el.addEventListener('oas-export', (e: Event) => (detail = (e as CustomEvent).detail))
+    const tsv = el.exportRows(FULL_ROWS, { format: 'clipboard' })
+    expect(tsv.split('\n')).toEqual(['姓名\t年龄\t城市', ...FULL_ROWS.map((r) => `${r.name}\t${r.age}\t${r.city}`)])
+    expect(detail).toEqual({ format: 'clipboard', fileName: '', rowCount: 6 })
+    // 剪贴板写入在调用内发起（fire-and-forget），同步即可断言
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(writeText).toHaveBeenCalledWith(tsv)
+  })
+
+  it('列取当前有效列：setColumnOrder 重排后导出列序跟随；actions 列不导出', () => {
+    const el = new OASTable()
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('data', JSON.stringify([{ name: '张三', op: 'x' }]))
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      { key: 'age', title: '年龄' },
+      { key: 'op', title: '操作', actions: true },
+    ]
+    document.body.appendChild(el)
+    el.setColumnOrder(['age', 'name'])
+    const csv = el.exportRows([{ name: '甲', age: 1 }])
+    expect(csv.replace(/^\uFEFF/, '')).toBe('年龄,姓名\r\n1,甲')
+  })
+
+  it('serialNumber 列序号按传入集内行序（与当前展示集行号解耦）', () => {
+    const el = new OASTable()
+    el.columns = [
+      { key: 'idx', title: '#', serialNumber: true },
+      { key: 'name', title: '姓名' },
+    ]
+    document.body.appendChild(el)
+    const csv = el.exportRows([{ name: 'a' }, { name: 'b' }])
+    expect(csv.replace(/^\uFEFF/, '')).toBe('#,姓名\r\n1,a\r\n2,b')
+  })
+
+  it('server 模式：exportRows(全量) 无闸门告警；exportData 按钮路径告警口径不变（互不影响）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASTable()
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '100')
+    el.setAttribute('exportable', '')
+    document.body.appendChild(el)
+    el.setAttribute('data', JSON.stringify([{ name: '甲', age: 1 }]))
+    el.setAttribute('columns', COLUMNS)
+    const csv = el.exportRows(FULL_ROWS)
+    expect(csv).toBe(`\uFEFF${FULL_CSV}`)
+    expect(warn).not.toHaveBeenCalled()
+    // 展示集导出路径仍按闸门告警一次（不阻断）
+    el.exportData('csv')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('导出')
+    warn.mockRestore()
+  })
+
+  it('空数组：仅表头，rowCount=0，仍派发事件并触发下载', () => {
+    const el = mount()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    let detail: unknown
+    el.addEventListener('oas-export', (e: Event) => (detail = (e as CustomEvent).detail))
+    expect(el.exportRows([])).toBe('\uFEFF姓名,年龄,城市')
+    expect(detail).toEqual({ format: 'csv', fileName: 'export.csv', rowCount: 0 })
+  })
+
+  it('clipboard 通道：单元格内制表/换行压空格，不破坏 TSV 结构', () => {
+    const el = mount()
+    const tsv = el.exportRows([{ name: '多\n行', age: 1, city: 'a\tb' }], { format: 'clipboard' })
+    expect(tsv).toBe('姓名\t年龄\t城市\n多 行\t1\ta b')
+  })
+
+  it('exportRows 与 exportData 互不干扰：调用后展示集导出内容不变', () => {
+    const el = mount()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    el.exportRows(FULL_ROWS)
+    // 展示集导出仍是 DATA 3 行（金本位：exportData 路径零漂移）
+    expect(el.exportData('csv')).toBe('\uFEFF姓名,年龄,城市\r\n张三,30,北京\r\n李四,25,上海\r\n王五,35,深圳')
+  })
+})

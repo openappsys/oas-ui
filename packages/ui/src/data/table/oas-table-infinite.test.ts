@@ -749,22 +749,16 @@ describe('OASTable infinite：能力闸门矩阵（与 server 同口径逐项声
     warn.mockRestore()
   })
 
-  it('setColumnOrder 写回拦截 + devWarn 一次（列设置面板闸门同步生效）', () => {
+  it('列序放行（批 F 契约）：setColumnOrder 写回 + 派发事件，列设置面板闸门恒 false（按钮可用性只由边界位决定）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { el } = mountInfinite()
+    let detail: unknown
+    el.addEventListener('oas-column-order', (e: Event) => (detail = (e as CustomEvent).detail))
     el.setColumnOrder(['age', 'name'])
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(String(warn.mock.calls[0]![0])).toContain('列拖拽')
-    // 写回被拦截：column-keys 未写入、事件未派发
-    expect(el.getAttribute('column-keys')).toBeNull()
-    let ordered = false
-    el.addEventListener('oas-column-order', () => {
-      ordered = true
-    })
-    el.setColumnOrder(['age', 'name'])
-    expect(ordered).toBe(false)
-    // 列设置面板闸门：同判定源返回 true（按钮禁用）
-    expect(el.columnReorderGate()).toBe(true)
+    // 列序是展示态（与服务端装载序无关）：写回 + 事件，与 client 同语义
+    expect(el.getAttribute('column-keys')).toBe(JSON.stringify(['age', 'name']))
+    expect(detail).toEqual({ keys: ['age', 'name'] })
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 

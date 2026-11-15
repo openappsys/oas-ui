@@ -131,6 +131,15 @@ export function toExcelXml(
 }
 
 /**
+ * 导出矩阵序列化为 TSV（剪贴板通道）：表头 + 数据行以制表符分列、LF 分行；
+ * 单元格内制表/换行压空格（与 advanced/clipboard.ts 的 toTsv 同口径，不破坏结构）。
+ */
+export function matrixToTsv(headers: readonly string[], rows: readonly (readonly string[])[]): string {
+  const cell = (v: string): string => v.replace(/[\t\r\n]+/g, ' ')
+  return [headers, ...rows].map((line) => line.map(cell).join('\t')).join('\n')
+}
+
+/**
  * 触发浏览器下载（Blob + 临时 `<a download>`）。返回是否成功发起下载：
  * 非 DOM 环境 / Blob 不可用 / createObjectURL 不可用时返回 false（调用方据此降级，
  * 例如仅返回文本由宿主自行处理）。

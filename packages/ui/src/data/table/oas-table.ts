@@ -19,6 +19,7 @@ import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
 // D8 导出：CSV / Excel 纯序列化 + 下载通道（与渲染解耦，见 oas-table-export.ts）
 import {
   downloadText,
+  matrixToTsv,
   parseExportFormats,
   sanitizeFileName,
   toCSV,
@@ -549,12 +550,12 @@ const SERVER_WINDOWED_HINT =
  *
  * | 能力              | server 模式语义                                                     | 生效点 |
  * |-------------------|---------------------------------------------------------------------|--------|
- * | 导出              | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出）                 | exportData |
+ * | 导出              | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出）；全量导出经宿主取数后调 exportRows | exportData / exportRows |
  * | 打印              | 仅当前页切片 + devWarn 一次（不阻断）                                | update × printModeOn |
  * | 合计 scope=all    | 禁用 + devWarn（全量口径未知；scope=page 页内合计照常）               | buildSummaryConfigs |
  * | 分组 group-by     | 宿主分组协议（批 B）：请求 detail.groupBy + 宿主返回分组行（kind='group'）按序渲染；本地分组变换不执行；折叠在当前页行内本地过滤 | groupByEffective / serverGroupBy / flatWithCache |
- * | 行拖拽            | 禁用 + devWarn（顺序语义服务端未定）                                  | rowDragEnabled |
- * | 列拖拽            | 禁用 + devWarn（写回拦截）                                            | setColumnOrder |
+ * | 行拖拽            | 禁用 + devWarn（行序语义服务端持有）                                  | rowDragEnabled |
+ * | 列拖拽            | 支持（批 F 契约：列序是展示态，与服务端行序无关）——写回 column-keys + 派 oas-column-order，与 client 同语义 | setColumnOrder（无闸门） |
  * | merge/span-method | 禁用 + devWarn（与 windowed 同口径跳过本地合并）                      | update / buildRow useSpan |
  * | 填充柄/区域选择   | 页内相对行号语义（data-row-index 为页内 0 起序）——文档声明批落地      | range 能力 |
  * | 过滤面板候选值    | 来自当前页数据（页内语义，面板照常打开）——文档声明批落地              | openFilterPanel / filterOptions |
@@ -563,9 +564,9 @@ const SERVER_WINDOWED_HINT =
  * | 虚拟滚动 × server | 可叠加（无闸门）：页大小是请求单位，页内渲染走既有虚拟化（与分页 × 虚拟同口径）；不拼接跨页数据，滚动/渲染边界始终是当前页（windowed 才是像素驱动混合模型） | 渲染层 |
  */
 
-/** server 行模型能力闸门：导出仅当前页切片的告警文案（实例级去重一次） */
+/** server 行模型能力闸门：导出仅当前页切片的告警文案（实例级去重一次；全量导出走 exportRows 配方） */
 const SERVER_EXPORT_PAGE_HINT =
-  '[oas-table] server 行模型下导出仅包含当前页切片（全量数据在服务端，组件只持有当前页）：需要全量导出请由宿主在服务端生成'
+  '[oas-table] server 行模型下导出按钮仅包含当前页切片（全量数据在服务端，组件只持有当前页）：需要导出全量请由宿主取回全量数据后调 exportRows(rows)'
 
 /** server 行模型能力闸门：打印仅当前页切片的告警文案（实例级去重一次；与 windowed 打印守卫同口径） */
 const SERVER_PRINT_HINT =
@@ -586,10 +587,6 @@ const SERVER_GROUP_INVALID_HINT =
 /** server 行模型能力闸门：行拖拽禁用的告警文案（实例级去重一次） */
 const SERVER_ROW_DRAG_HINT =
   '[oas-table] server 行模型下 row-draggable 不生效（行顺序语义由服务端持有，本地重排无法回写全量序）：请关闭 row-draggable'
-
-/** server 行模型能力闸门：列拖拽禁用的告警文案（实例级去重一次） */
-const SERVER_COLUMN_DRAG_HINT =
-  '[oas-table] server 行模型下列拖拽重排不生效（顺序语义由服务端持有）：列序持久化请由宿主自行管理或关闭 row-model'
 
 /** server 行模型：晚到失败（requestId 不匹配在途序号）被静默丢弃的告警文案（实例级去重一次）。
  *  丢弃是正确行为（防旧失败覆盖新轮次），但完全无声会让宿主排查「为什么我的 reportRowsError
@@ -617,12 +614,12 @@ const SERVER_SPAN_HINT =
  *
  * | 能力              | infinite 模式语义                                              | 生效点 |
  * |-------------------|----------------------------------------------------------------|--------|
- * | 导出              | 仅已装载数据 + devWarn 一次                                     | exportData |
+ * | 导出              | 仅已装载数据 + devWarn 一次；全量导出经宿主取数后调 exportRows       | exportData / exportRows |
  * | 打印              | 仅已装载数据 + devWarn 一次                                     | update × printModeOn |
  * | 合计 scope=all    | 禁用 + devWarn（全量口径未知）；scope=page 对已装载数据合计照常   | buildSummaryConfigs |
  * | 分组 group-by     | 禁用 + devWarn（已装载数据上分组是错误结果；server 分组协议仅限 row-model="server" 形态） | groupByEffective |
  * | 行拖拽            | 禁用 + devWarn（装载顺序语义由服务端游标持有）                   | rowDragEnabled |
- * | 列拖拽            | 禁用 + devWarn（与 server 同口径；列序持久化等批 F 契约）         | setColumnOrder |
+ * | 列拖拽            | 支持（批 F 契约：列序是展示态）——与 client 同语义，无闸门        | setColumnOrder（无闸门） |
  * | merge/span-method | 禁用 + devWarn（已装载缓冲跨界合并语义不确定，同 server 口径）    | update / buildRow useSpan |
  * | 填充柄/区域选择   | 已装载行相对行号语义（data-row-index 为装载序 0 起）——文档声明    | range 能力 |
  * | 过滤面板候选值    | 来自已装载数据（面板照常打开）——文档声明                         | openFilterPanel |
@@ -639,9 +636,9 @@ const INFINITE_PAGINATION_HINT =
 const INFINITE_WINDOWED_HINT =
   '[oas-table] infinite 与 windowed 同开：windowed 优先，infinite 已忽略（两协议互斥，请二选一）'
 
-/** infinite 能力闸门：导出仅已装载数据的告警文案（实例级去重一次） */
+/** infinite 能力闸门：导出仅已装载数据的告警文案（实例级去重一次；全量导出走 exportRows 配方） */
 const INFINITE_EXPORT_HINT =
-  '[oas-table] infinite 模式下导出仅包含已装载数据（未装载行组件无从渲染）：需要全量导出请由宿主在服务端生成'
+  '[oas-table] infinite 模式下导出按钮仅包含已装载数据（未装载行组件无从渲染）：需要导出全量请由宿主取回全量数据后调 exportRows(rows)'
 
 /** infinite 能力闸门：打印仅已装载数据的告警文案（实例级去重一次；与 server 打印守卫同口径） */
 const INFINITE_PRINT_HINT =
@@ -658,10 +655,6 @@ const INFINITE_GROUP_HINT =
 /** infinite 能力闸门：行拖拽禁用的告警文案（实例级去重一次） */
 const INFINITE_ROW_DRAG_HINT =
   '[oas-table] infinite 模式下 row-draggable 不生效（行顺序语义由服务端游标持有，本地重排无法回写）：请关闭 row-draggable'
-
-/** infinite 能力闸门：列拖拽禁用的告警文案（实例级去重一次；与 server 列拖拽同口径） */
-const INFINITE_COLUMN_DRAG_HINT =
-  '[oas-table] infinite 模式下列拖拽重排不生效（列序持久化契约未定，与 server 行模型同口径）：列序持久化请由宿主自行管理或关闭 infinite'
 
 /** infinite 能力闸门：merge 列 / span-method 跳过的告警文案（实例级去重一次；与 server 同口径） */
 const INFINITE_SPAN_HINT =
@@ -991,14 +984,13 @@ export class OASTableBase extends OASElement {
   private serverPremiseWarned = false
   /** server 行模型 × windowed 同开互斥告警去重（实例级一次） */
   private serverWindowedWarned = false
-  /** server 行模型能力闸门告警去重（导出/打印/合计/分组/行拖拽/列拖拽/merge-span，各实例级一次） */
+  /** server 行模型能力闸门告警去重（导出/打印/合计/分组/行拖拽/merge-span，各实例级一次） */
   private serverExportWarned = false
   private serverPrintWarned = false
   private serverSummaryWarned = false
   /** server 分组协议：无效组行（groupKey 校验失败）剔除降级的告警去重（实例级一次） */
   private serverGroupInvalidWarned = false
   private serverRowDragWarned = false
-  private serverColumnDragWarned = false
 
   /** 晚到旧失败（requestId 不匹配）的一次性可诊断提示 flag（实例级去重） */
   private serverLateFailureWarned = false
@@ -1043,13 +1035,12 @@ export class OASTableBase extends OASElement {
   private infinitePaginationWarned = false
   /** infinite × windowed 互斥告警去重（实例级一次） */
   private infiniteWindowedWarned = false
-  /** infinite 能力闸门告警去重（导出/打印/合计/分组/行拖拽/列拖拽/merge-span，各实例级一次） */
+  /** infinite 能力闸门告警去重（导出/打印/合计/分组/行拖拽/merge-span，各实例级一次） */
   private infiniteExportWarned = false
   private infinitePrintWarned = false
   private infiniteSummaryWarned = false
   private infiniteGroupWarned = false
   private infiniteRowDragWarned = false
-  private infiniteColumnDragWarned = false
   private infiniteSpanWarned = false
   /** infinite 非生效形态 appendRows / 晚到 / 重复回填的一次性可诊断提示 flag（实例级去重） */
   private infiniteAppendInactiveWarned = false
@@ -3494,36 +3485,14 @@ export class OASTableBase extends OASElement {
   }
 
   /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化）。
-   *  server 行模型 / infinite 下禁用（顺序语义由服务端持有——能力闸门，与 server 同口径）：
-   *  拦截写回 + devWarn 一次 */
+   *  批 F 契约：列序是展示态（与服务端行序无关）——server 行模型 / infinite 下一律放行，
+   *  与 client 同语义（无闸门、无告警）；仅行拖拽（行顺序）保持禁用 */
   setColumnOrder(keys: string[]): void {
-    if (this.rowsGatedOn()) {
-      if (this.infiniteOn()) {
-        if (!this.infiniteColumnDragWarned) {
-          this.infiniteColumnDragWarned = true
-          devWarn(INFINITE_COLUMN_DRAG_HINT)
-        }
-      } else if (!this.serverColumnDragWarned) {
-        this.serverColumnDragWarned = true
-        devWarn(SERVER_COLUMN_DRAG_HINT)
-      }
-      return
-    }
     const leaves = this.flattenLeaves(this._columns)
     const valid = keys.filter((k) => leaves.some((c) => c.key === k))
     if (valid.length === 0) return
     this.setAttribute('column-keys', JSON.stringify(valid))
     this.emit('column-order', { keys: valid })
-  }
-
-  /**
-   * 列重排能力闸门（TableColumnSettingsHost 契约）：server 行模型 / infinite 生效时为 true——
-   * 列设置面板的触屏移动按钮据此禁用（与 setColumnOrder 写回拦截同一判定源，按钮不可用
-   * 与程序化拦截不脱节）。注意：宿主初始化恢复持久化列序（程序化 setColumnOrder）同样被拦
-   * ——现状保持，收尾批文档写明。
-   */
-  columnReorderGate(): boolean {
-    return this.serverRowsActive() || this.infiniteActive()
   }
 
   /** 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 */
@@ -4422,13 +4391,20 @@ export class OASTableBase extends OASElement {
   }
 
   /**
-   * 导出矩阵：表头（列 title / headerTemplate 文本）+ 当前可见数据行。
+   * 导出矩阵：表头（列 title / headerTemplate 文本）+ 数据行。
    * - 数据范围 = 当前展示的数据行（过滤 + 排序 + 分页切片后；虚拟滚动取完整展示集合）；
    * - 字段映射按列 key 取单元格展示文本（select 编辑器输出 label、serialNumber 输出行号；
    *   render 返回字符串时优先，Node/模板富内容回退原文）；
    * - `actions` 列（纯操作按钮）不导出。
    */
   exportMatrix(): { headers: string[]; rows: string[][] } {
+    return this.buildExportMatrix(this._exportRows)
+  }
+
+  /** 导出矩阵装配（exportMatrix / exportRows 共用的单一真相源）：列取当前有效列
+   *  （与页面导出口径一致：`actions` 列剔除，表头取 title / headerTemplate 文本），
+   *  行集由调用方传入；serialNumber 列输出传入集内行序（1 起） */
+  private buildExportMatrix(rows: Array<Record<string, unknown>>): { headers: string[]; rows: string[][] } {
     const cols = this.effectiveColumns().filter((c) => !c.actions)
     const headers = cols.map((c) => {
       if (c.headerTemplate) {
@@ -4439,10 +4415,42 @@ export class OASTableBase extends OASElement {
       }
       return c.title ?? ''
     })
-    const rows = this._exportRows.map((row, i) =>
-      cols.map((col) => (col.serialNumber ? String(i + 1) : this.cellText(col, row))),
-    )
-    return { headers, rows }
+    const body = rows.map((row, i) => cols.map((col) => (col.serialNumber ? String(i + 1) : this.cellText(col, row))))
+    return { headers, rows: body }
+  }
+
+  /**
+   * 导出宿主传入的数据集（批 F：server / infinite 模式导出全量通道）：
+   * 宿主经 `oas-rows-request` 自行取回全量数据后调用——列取当前有效列（与页面导出口径一致），
+   * 行集 = 传入 `rows`（行序 = 数组序），与「导出当前展示集」（exportData）互不干扰。
+   * - `format` 缺省 `'csv'`；`'excel'` 走 SpreadsheetML 下载；`'clipboard'` 生成 TSV 写系统剪贴板
+   *   （剪贴板不可用时静默降级——仍返回文本由宿主自行处理，不抛错）；
+   * - csv / excel 触发下载并派发 `oas-export`（detail `{ format, fileName, rowCount }`）；
+   *   clipboard 无文件名（detail `fileName` 为空串）；
+   * - 不经 server / infinite 的「仅已装载」闸门——数据由宿主负责取全。
+   */
+  exportRows(
+    rows: Array<Record<string, unknown>>,
+    options: { format?: 'csv' | 'excel' | 'clipboard'; filename?: string } = {},
+  ): string {
+    const format = options.format ?? 'csv'
+    const { headers, rows: body } = this.buildExportMatrix(rows)
+    if (format === 'clipboard') {
+      const content = matrixToTsv(headers, body)
+      try {
+        navigator.clipboard?.writeText(content)?.catch(() => {})
+      } catch {
+        /* 剪贴板 API 不可用（非安全上下文/未授权）：静默降级，返回文本由宿主自行处理 */
+      }
+      const fileName = ''
+      this.emit('export', { format, fileName, rowCount: rows.length })
+      return content
+    }
+    const fileName = `${sanitizeFileName(options.filename ?? this.generateExportFileName())}.${EXPORT_EXT[format]}`
+    const content = format === 'excel' ? toExcelXml(headers, body) : toCSV(headers, body, { bom: true })
+    downloadText(content, fileName, format)
+    this.emit('export', { format, fileName, rowCount: rows.length })
+    return content
   }
 
   /**
@@ -5292,7 +5300,7 @@ export class OASTableBase extends OASElement {
   /**
    * 外部取数形态（server 行模型或 infinite）——能力闸门的统一判定源。两形态互斥
    * （infinite 生效时 serverOn() 让位返回 false），生效结论唯一；闸门点据此逐项声明
-   * （导出/打印/合计/行拖拽/行列拖拽/merge，文案按 infiniteOn() 分流）。分组在两形态
+   * （导出/打印/合计/行拖拽/merge，文案按 infiniteOn() 分流；列序批 F 起无闸门）。分组在两形态
    * 分流：server 形态 = 宿主分组协议（groupByEffective 放行分组键）；infinite = 禁用
    * + devWarn（对已装载数据分组是错误结果）。
    */
