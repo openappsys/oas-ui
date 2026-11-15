@@ -52,6 +52,8 @@ import {
   computeDisplayRoots as computeDisplayRootsModel,
   buildFlat as buildFlatModel,
   visibleFlat as visibleFlatModel,
+  partitionServerGroupRows,
+  groupAggregateValue,
   normalizePageSize,
   normalizeCurrent,
   pageCountOf,
@@ -116,6 +118,12 @@ export interface TableColumn {
   validate?: (value: string, row: Record<string, unknown>) => string | boolean | undefined
   /** 合计：'sum' | 'avg' | 'count'（列级简单配置；复杂配置走表格级 summary 属性） */
   summary?: 'sum' | 'avg' | 'count'
+  /**
+   * server 分组聚合列：组行在该列渲染宿主提供的聚合值（组行 `aggregates` 以列 key 为键；
+   * 聚合由宿主计算，组件不做本地聚合）。仅 row-model="server" + group-by 的分组行
+   * 按列布局形态消费；client 本地分组与合计行不消费此字段。
+   */
+  aggregate?: boolean
   /** 行内编辑：该列可编辑（配合表格级 `editable` 属性开关） */
   editable?: boolean
   /** 编辑器类型：input（默认）/ select（配 editOptions） */
@@ -543,7 +551,7 @@ const SERVER_WINDOWED_HINT =
  * | 导出              | 仅当前页切片 + devWarn 一次（不阻断，防静默部分导出）                 | exportData |
  * | 打印              | 仅当前页切片 + devWarn 一次（不阻断）                                | update × printModeOn |
  * | 合计 scope=all    | 禁用 + devWarn（全量口径未知；scope=page 页内合计照常）               | buildSummaryConfigs |
- * | 分组 group-by     | 禁用 + devWarn（v1 服务端只做平铺数据）                               | groupByEffective |
+ * | 分组 group-by     | 宿主分组协议（批 B）：请求 detail.groupBy + 宿主返回分组行（kind='group'）按序渲染；本地分组变换不执行；折叠在当前页行内本地过滤 | groupByEffective / serverGroupBy / flatWithCache |
  * | 行拖拽            | 禁用 + devWarn（顺序语义服务端未定）                                  | rowDragEnabled |
  * | 列拖拽            | 禁用 + devWarn（写回拦截）                                            | setColumnOrder |
  * | merge/span-method | 禁用 + devWarn（与 windowed 同口径跳过本地合并）                      | update / buildRow useSpan |
@@ -566,9 +574,9 @@ const SERVER_PRINT_HINT =
 const SERVER_SUMMARY_ALL_HINT =
   '[oas-table] server 行模型下 summary-scope="all" 不生效（全量口径未知，对当前页切片聚合会得到错误的「全量合计」）：页内合计可用 summary-scope="page"'
 
-/** server 行模型能力闸门：分组禁用的告警文案（实例级去重一次） */
-const SERVER_GROUP_HINT =
-  '[oas-table] server 行模型下 group-by 不生效（v1 服务端只做平铺数据，分组视图是本地全量语义）：请由服务端返回分组结果或关闭 row-model'
+/** server 分组协议：无效组行（groupKey 缺失/非字符串/空串）剔除降级的告警文案（实例级去重一次） */
+const SERVER_GROUP_INVALID_HINT =
+  '[oas-table] server 分组协议：部分分组行缺少有效 groupKey（须为非空字符串），已剔除降级平铺渲染（组内数据行不受影响）'
 
 /** server 行模型能力闸门：行拖拽禁用的告警文案（实例级去重一次） */
 const SERVER_ROW_DRAG_HINT =
@@ -607,7 +615,7 @@ const SERVER_SPAN_HINT =
  * | 导出              | 仅已装载数据 + devWarn 一次                                     | exportData |
  * | 打印              | 仅已装载数据 + devWarn 一次                                     | update × printModeOn |
  * | 合计 scope=all    | 禁用 + devWarn（全量口径未知）；scope=page 对已装载数据合计照常   | buildSummaryConfigs |
- * | 分组 group-by     | 禁用 + devWarn（已装载数据上分组是错误结果）                     | groupByEffective |
+ * | 分组 group-by     | 禁用 + devWarn（已装载数据上分组是错误结果；server 分组协议仅限 row-model="server" 形态） | groupByEffective |
  * | 行拖拽            | 禁用 + devWarn（装载顺序语义由服务端游标持有）                   | rowDragEnabled |
  * | 列拖拽            | 禁用 + devWarn（与 server 同口径；列序持久化等批 F 契约）         | setColumnOrder |
  * | merge/span-method | 禁用 + devWarn（已装载缓冲跨界合并语义不确定，同 server 口径）    | update / buildRow useSpan |
@@ -1959,7 +1967,8 @@ export class OASTableBase extends OASElement {
   private serverExportWarned = false
   private serverPrintWarned = false
   private serverSummaryWarned = false
-  private serverGroupWarned = false
+  /** server 分组协议：无效组行（groupKey 校验失败）剔除降级的告警去重（实例级一次） */
+  private serverGroupInvalidWarned = false
   private serverRowDragWarned = false
   private serverColumnDragWarned = false
 
@@ -2705,6 +2714,9 @@ export class OASTableBase extends OASElement {
       this.getAttr('row-key', ''),
       this.getAttr('filter-values', ''),
       groupBy,
+      // server 分组键（宿主分组协议）：group-by 在场时改变 flat 构建方式（透传分区 vs 本地
+      // 分组展平），须独立于本地分组键入键（切换 group-by 时缓存失效）。非 server 分组态恒空
+      this.serverGroupBy(),
       this.getAttr('expanded', ''),
       this.hasAttr('pagination') ? '1' : '',
       this.getAttr('page-size', ''),
@@ -2728,9 +2740,30 @@ export class OASTableBase extends OASElement {
   ): FlatRow[] {
     const key = this.flatCacheSignature(groupBy)
     if (this.flatCache && this.flatCache.key === key) return this.flatCache.flat
-    const flat = this.windowedOn() ? this.buildWindowedFlat() : this.buildFlat(sorts, rowKey, roots, groupBy)
+    // server 分组协议：宿主分组行透传分区（不在组件内本地分组/排序——宿主顺序权威）；
+    // windowed 与本地分组走既有通道（零行为漂移）
+    const flat = this.windowedOn()
+      ? this.buildWindowedFlat()
+      : this.serverGroupBy()
+        ? this.buildServerGroupFlat(roots)
+        : this.buildFlat(sorts, rowKey, roots, groupBy)
     this.flatCache = { key, flat }
     return flat
+  }
+
+  /**
+   * server 分组分区的壳层薄壳：调数据层 partitionServerGroupRows（单一真相源），
+   * 无效组行（groupKey 校验失败）一次性 devWarn（变换本体不做 DOM/告警副作用）。
+   */
+  private buildServerGroupFlat(roots: Array<Record<string, unknown>>): FlatRow[] {
+    // 仅内部诊断：热路径计数（与本地分组 flatBuilds 同口径）
+    tableRenderDiagnostics.flatBuilds++
+    const r = partitionServerGroupRows(roots)
+    if (r.invalidGroupRows > 0 && !this.serverGroupInvalidWarned) {
+      this.serverGroupInvalidWarned = true
+      devWarn(`${SERVER_GROUP_INVALID_HINT}（${r.invalidGroupRows} 行）`)
+    }
+    return r.flat
   }
 
   /** 数据行序前缀扫描（不含 expand/group 行；渲染窗口 rowIndex / ARIA 口径共用一次扫描结果） */
@@ -4800,22 +4833,28 @@ export class OASTableBase extends OASElement {
     this.runUpdateAndNotify()
   }
 
-  /** 渲染分节头行（整行 colSpan 全宽，与 loading/empty 行同款；折叠箭头 + 字段值 + 组内计数） */
+  /**
+   * 渲染分节头行。两种形态：
+   * - 全宽形态（既有）：整行 colSpan 全宽，折叠箭头 + 字段值 + 组内计数（本地分组恒走此形态）；
+   * - 按列形态（server 分组协议）：组行携带 aggregates 且列定义 aggregate 在场时，组行按
+   *   叶子列逐格渲染——label 格覆盖首个聚合列之前的列，聚合列渲染宿主提供的聚合值
+   *   （列对齐沿用列 align / 数值类型右对齐惯例），其余列空格。
+   * depth 缩进：层级分组（server 组行 depth>0）label 格按树形同款公式缩进；
+   * depth=0（本地分组恒 0）不写内联 padding——既有视觉零漂移。
+   */
   private buildGroupRow(flat: FlatRow): HTMLTableRowElement {
     const tr = document.createElement('tr')
     tr.className = 'group-header'
     tr.setAttribute('part', 'group-row')
     tr.setAttribute('data-group', flat.groupKey ?? '')
     const collapsed = this.collapsedGroups.has(flat.groupKey ?? '')
-    const td = document.createElement('td')
-    td.colSpan = this.columnCount()
+    const gk = flat.groupKey ?? ''
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.className = `toggle${collapsed ? '' : ' open'}`
     btn.setAttribute('aria-label', this.t('table.expand'))
     btn.setAttribute('aria-expanded', String(!collapsed))
     btn.textContent = '›'
-    const gk = flat.groupKey ?? ''
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       this.toggleGroup(gk, !collapsed)
@@ -4825,41 +4864,80 @@ export class OASTableBase extends OASElement {
     const count = document.createElement('span')
     count.className = 'group-count'
     count.textContent = String(flat.groupCount ?? 0)
+    const leaves = this.flattenLeaves(this.effectiveColumns())
+    // 按列形态判定：组行携带 aggregates 且列定义有 aggregate 配置（值可缺——缺值格子留空）
+    const hasAgg = flat.aggregates != null && leaves.some((c) => c.aggregate)
+    const td = document.createElement('td')
+    const indent = (): void => {
+      if (flat.depth > 0) td.style.paddingLeft = `${16 + flat.depth * this.indentSizePx()}px`
+    }
+    if (hasAgg) {
+      // 按列形态：label 格覆盖首个 aggregate 配置列之前的叶子列（附加列 = 行拖拽/勾选/
+      // 展开尾列一并计入 label 格覆盖，组行无对应交互格）；聚合列自首个配置列起逐格渲染
+      //（有值渲染值、无值留空格——组行格子结构在同一表内稳定，不随数据值漂移）
+      let labelSpan = this.columnCount() - leaves.length
+      let i = 0
+      for (; i < leaves.length; i++) {
+        if (leaves[i]!.aggregate) break
+        labelSpan++
+      }
+      td.colSpan = Math.max(1, labelSpan)
+      indent()
+      td.append(btn, label, count)
+      tr.appendChild(td)
+      for (; i < leaves.length; i++) {
+        const col = leaves[i]!
+        const aggTd = document.createElement('td')
+        const v = col.aggregate ? groupAggregateValue(flat.aggregates, col) : null
+        if (v !== null) {
+          aggTd.textContent = v
+          const align = col.align ?? (col.type === 'number' || col.type === 'currency' ? 'right' : undefined)
+          if (align) aggTd.className = `align-${align}`
+        }
+        tr.appendChild(aggTd)
+      }
+      return tr
+    }
+    // 全宽形态（既有视觉零漂移）
+    td.colSpan = this.columnCount()
+    indent()
     td.append(btn, label, count)
     tr.appendChild(td)
     return tr
   }
 
-  /** group-by 生效判定：属性在场 + 无互斥形态（merge 列 / span-method / row-draggable）。
-      互斥时告警一次并返回 ''（降级普通渲染）。update 与虚拟滚动重建共用同一判定（防孪生路径漂移） */
+  /** group-by 生效判定（本地分组键）：属性在场 + 无互斥形态（merge 列 / span-method /
+      row-draggable）。互斥时告警一次并返回 ''（降级普通渲染）。update 与虚拟滚动重建共用
+      同一判定（防孪生路径漂移）。
+      server 行模型分流：group-by 在场 = 宿主分组协议（返回分组键供请求 detail 与渲染分流；
+      本地分组变换不执行——flatWithCache 按 serverGroupBy() 分流）；infinite 下分组仍禁用
+      （对已装载数据分组是错误结果，devWarn 一次）。 */
   private groupByEffective(): string {
-    // windowed：分组在部分数据上是错误结果 → 不生效（配置在场告警一次）
-    if (this.windowedOn()) {
-      if (this.getAttr('group-by', '')) this.warnWindowedOpsOnce()
-      return ''
-    }
-    // server 行模型：分组禁用（v1 服务端只做平铺数据；配置在场告警一次）
-    // infinite 同口径：对已装载数据分组是错误结果（分组视图是本地全量语义）
-    if (this.rowsGatedOn()) {
-      if (this.getAttr('group-by', '')) {
-        if (this.infiniteOn()) {
-          if (!this.infiniteGroupWarned) {
-            this.infiniteGroupWarned = true
-            devWarn(INFINITE_GROUP_HINT)
-          }
-        } else if (!this.serverGroupWarned) {
-          this.serverGroupWarned = true
-          devWarn(SERVER_GROUP_HINT)
-        }
-      }
-      return ''
-    }
-    const groupBy = this.getAttr('group-by', '')
-    if (this._groupByAttrCache !== groupBy) {
-      // 分组字段变化：清空旧组键的折叠残留（旧组键在新分组下无意义）
-      this._groupByAttrCache = groupBy
+    // 分组字段变化：清空旧组键的折叠残留（旧组键在新分组下无意义；windowed/infinite
+    // 无分组态下清理同样无害）。client 与 server 分组协议共用
+    const groupByAttr = this.getAttr('group-by', '')
+    if (this._groupByAttrCache !== groupByAttr) {
+      this._groupByAttrCache = groupByAttr
       this.collapsedGroups.clear()
     }
+    // windowed：分组在部分数据上是错误结果 → 不生效（配置在场告警一次）
+    if (this.windowedOn()) {
+      if (groupByAttr) this.warnWindowedOpsOnce()
+      return ''
+    }
+    if (this.rowsGatedOn()) {
+      if (!groupByAttr) return ''
+      if (this.infiniteOn()) {
+        if (!this.infiniteGroupWarned) {
+          this.infiniteGroupWarned = true
+          devWarn(INFINITE_GROUP_HINT)
+        }
+        return ''
+      }
+      // server 生效（rowsGatedOn 且非 infinite → serverOn）：批 B 宿主分组协议放行
+      return groupByAttr
+    }
+    const groupBy = groupByAttr
     if (!groupBy) return ''
     const hasMerge = this.flattenLeaves(this._columns).some((c) => c.merge)
     if (hasMerge || this._spanMethod) {
@@ -4886,6 +4964,18 @@ export class OASTableBase extends OASElement {
     if (this.groupWarned.has(kind)) return
     this.groupWarned.add(kind)
     devWarn(`[oas-table] ${message}`)
+  }
+
+  /**
+   * server 分组协议判定（无副作用、高频安全）：`row-model="server"` 生效且 `group-by`
+   * 在场 → 返回分组键（宿主分组模式）；否则 ''（server 无 group-by 零变化 / 非 server
+   * 形态走本地分组或禁用通道）。生效判定复用 serverRowsActive()（无告警副作用版本）。
+   * 消费点：请求状态快照（detail.groupBy + 同值签名）、flatWithCache 渲染分流、
+   * flatCacheSignature 缓存键。
+   */
+  private serverGroupBy(): string {
+    if (!this.serverRowsActive()) return ''
+    return this.getAttr('group-by', '')
   }
 
   /** windowed 跨全量本地操作告警（实例级去重一次） */
@@ -5969,7 +6059,9 @@ export class OASTableBase extends OASElement {
   /**
    * 外部取数形态（server 行模型或 infinite）——能力闸门的统一判定源。两形态互斥
    * （infinite 生效时 serverOn() 让位返回 false），生效结论唯一；闸门点据此逐项声明
-   * （导出/打印/合计/分组/行列拖拽/merge，文案按 infiniteOn() 分流）。
+   * （导出/打印/合计/行拖拽/行列拖拽/merge，文案按 infiniteOn() 分流）。分组在两形态
+   * 分流：server 形态 = 宿主分组协议（groupByEffective 放行分组键）；infinite = 禁用
+   * + devWarn（对已装载数据分组是错误结果）。
    */
   private rowsGatedOn(): boolean {
     return this.serverOn() || this.infiniteOn()
@@ -5996,7 +6088,7 @@ export class OASTableBase extends OASElement {
     return this.windowedOn() || this.serverOn() || this.infiniteOn() ? [] : this.resolveSorts()
   }
 
-  /** server 行模型：当前请求状态快照（分页 + 排序 + 过滤，同值去重与原因推导的输入） */
+  /** server 行模型：当前请求状态快照（分页 + 排序 + 过滤 + 分组键，同值去重与原因推导的输入） */
   private rowsRequestState(): RowsRequestState {
     const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
     const current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
@@ -6004,7 +6096,7 @@ export class OASTableBase extends OASElement {
     const sortModel = this.resolveSorts()
       .filter((s): s is SortState & { order: 'asc' | 'desc' } => s.order === 'asc' || s.order === 'desc')
       .map((s) => ({ key: s.key, order: s.order }))
-    return { current, pageSize, sortModel, filterValues: this.parseFilterValues() }
+    return { current, pageSize, sortModel, filterValues: this.parseFilterValues(), groupBy: this.serverGroupBy() }
   }
 
   /**
@@ -6023,6 +6115,7 @@ export class OASTableBase extends OASElement {
    *
    * detail 按形态分流：
    * - server：start/end = 当前页半开区间，totalKnown 恒 true（生效前提即 total 在场）；
+   *   group-by 在场时 detail.groupBy 携带当前分组键（宿主分组协议——宿主返回分组行）；
    * - infinite：start/end = 已装载行数（区间语义不适用，无固定终点），totalKnown 随 total
    *   属性在场性（未知总数场景 false），detail.cursor 回传组件记录的游标（无游标时省略键）。
    */
@@ -6044,6 +6137,9 @@ export class OASTableBase extends OASElement {
       totalKnown: infinite ? this.externalTotal() !== null : true,
     }
     if (infinite && this.infiniteCursor !== undefined) detail.cursor = this.infiniteCursor
+    // server 分组协议：group-by 在场时 detail 携带当前分组键（宿主据此返回分组行）；
+    // 无 group-by 时不设键（server 无分组零变化）。infinite 形态分组禁用，state.groupBy 恒空
+    if (!infinite && state.groupBy) detail.groupBy = state.groupBy
     this.emit('rows-request', detail)
   }
 

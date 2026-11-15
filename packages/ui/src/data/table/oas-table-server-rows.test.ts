@@ -828,7 +828,7 @@ describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
     expect(page.shadowRoot!.querySelector('tr.summary')!.textContent).toContain('3')
   })
 
-  it('分组禁用：group-by 在场无分节头 + devWarn 一次', () => {
+  it('server 分组协议（批 B）：group-by 在场 = 宿主分组——平铺数据零本地分组（无分节头）、无禁用告警；infinite 同开才告警', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mountServer(
       { 'row-model': 'server', total: '100', 'group-by': 'name' },
@@ -837,10 +837,12 @@ describe('OASTable server 行模型 a8：能力闸门矩阵', () => {
         { name: '甲', age: 2 },
       ]),
     )
+    // 宿主返回平铺数据（无 kind:'group' 行）→ 无分节头、数据行照常（组件不做本地分组——
+    // 本地分组会按 name=甲 分节，这里必须保持平铺，证明分组职责已移交宿主）
     expect(el.shadowRoot!.querySelector('tr.group-header')).toBeNull()
     expect(rowsOf(el).length).toBe(2)
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(String(warn.mock.calls[0]![0])).toContain('group-by')
+    // 协议放行不再是闸门：无告警
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 
