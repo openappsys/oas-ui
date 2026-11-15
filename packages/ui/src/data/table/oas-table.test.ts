@@ -4104,7 +4104,10 @@ describe('table 行键回退缓存', () => {
 
 describe('OASTable 编辑态底色 token 收口（组件私有变量）', () => {
   it('td[data-editing] 底色定义走私有变量 --_oas-cell-editing-bg（primary 8% color-mix，视觉零变化），不引用未定义全局 token', () => {
-    const src = readFileSync(join(import.meta.dirname, 'oas-table.ts'), 'utf8')
+    // 样式已抽取至 style/ 目录（base.ts 基础段 + features.ts 特性段），源文件断言覆盖两段拼接
+    const src =
+      readFileSync(join(import.meta.dirname, 'style/base.ts'), 'utf8') +
+      readFileSync(join(import.meta.dirname, 'style/features.ts'), 'utf8')
     // 定义：含 color-mix 与 --oas-color-primary，比例保持 8%（编辑中单元格底色配方原值）
     expect(src).toMatch(/--_oas-cell-editing-bg:\s*color-mix\(in srgb, var\(--oas-color-primary\) 8%, transparent\)/)
     // 引用：编辑态规则消费私有变量
