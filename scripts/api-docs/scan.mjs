@@ -105,26 +105,37 @@ function extractCssVars(source, tag) {
 }
 
 /**
- * 组件源闭包：类文件 + 其同目录相对导入的 `*-style.ts` 样式模块（样式拆分约定）。
- * 背景：组件样式可拆分到兄弟模块（命名约定 `<stem>-style.ts`，如 gantt 的
+ * 组件源闭包：类文件 + 其同目录相对导入的 `*-style.ts` 样式模块（样式拆分约定）+
+ * 样式目录模块（批 E 约定：`style/` 目录 + `index.ts` 聚合再导出 base/features 等，
+ * 如 table 的 style/index.ts——CSS 出口 var(--oas-*) 随之迁移，收割须覆盖目录内全部
+ * .ts）。背景：组件样式可拆分到兄弟模块（命名约定 `<stem>-style.ts`，如 gantt 的
  * gantt-style.ts），CSS 出口（var(--oas-*)）随之迁移——收割须覆盖样式模块；
  * 其他同目录实现模块与跨目录导入不纳入（避免改变既有组件的出口口径）。
  * 拼接顺序 = 样式模块在前、类文件在后（与「样式位于类定义之前」的既有单文件
  * 布局一致，保障 default 取首处声明与 var() 出现序稳定）。
  */
 function readComponentClosure(classFileAbs) {
-  const dir = dirname(classFileAbs)
   const seen = new Set()
   const parts = []
   const visit = (fileAbs) => {
     if (seen.has(fileAbs)) return
     seen.add(fileAbs)
     const text = readFileSync(fileAbs, 'utf8')
-    for (const m of text.matchAll(/from '\.\/([^']+\.js)'/g)) {
-      const dep = join(dir, m[1].replace(/\.js$/, '.ts'))
+    for (const m of text.matchAll(/from '(\.\/[^']+\.js)'/g)) {
+      const dep = join(dirname(fileAbs), m[1].replace(/\.js$/, '.ts'))
       if (!existsSync(dep)) continue
-      if (!basename(dep).endsWith('-style.ts')) continue
-      visit(dep)
+      if (basename(dep).endsWith('-style.ts')) {
+        visit(dep)
+        continue
+      }
+      // 样式目录聚合模块（./style/index.js）：目录内全部 .ts 纳入（相对导入按文件自身目录解析）
+      if (basename(dep) === 'index.ts' && dirname(dep) !== dirname(fileAbs)) {
+        for (const f of readdirSync(dirname(dep))
+          .filter((n) => n.endsWith('.ts'))
+          .sort()) {
+          visit(join(dirname(dep), f))
+        }
+      }
     }
     parts.push(text)
   }
