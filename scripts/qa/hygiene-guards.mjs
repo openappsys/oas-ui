@@ -66,6 +66,45 @@
  * reason；一条例外只消费一条命中（同一文件重复出现的同值声明须逐条登记），
  * 不再命中即报陈旧。只登记真实候选（命中区几何、光学对齐、负值缝线等组件自有常量），
  * 不修改产品源码清零。
+ *
+ * ## 孪生协议判定（twin-predicate）
+ *
+ * 背景：组件的属性协议判定（`hasAttr('open') && getAttr('mode', '') === 'x'` 同型）是
+ * 同一份语义契约，复制到两个函数/两个组件后容易单边漂移——改一处忘另一处，属性行为
+ * 就此分裂。守卫只负责让「同一判定被重复实现」可见，不判断该不该抽公共 helper。
+ *
+ * 口径（低误报优先，用例见同目录 hygiene-guards.test.mjs）：
+ * - 有界词法扫描（不引 TypeScript 编译器、不起子进程、不建虚拟文件系统）：源码先抹掉注释
+ *   （保留字符串内容），再标出「代码位」——字符串 / 模板静态段的内容不算代码位，结构扫描
+ *   只看代码位，所以字符串里的 `&&`、括号、`if` 不会被误判；
+ * - 提取三类条件：`if (...)` 的平衡括号内容、`return <expr>`（depth=0 遇 `;` 或换行收口，
+ *   换行前行尾是 `&&` / `||` / `?` / `,` 等未收口运算符时继续跨行）、以及其中顶层三元 `?`
+ *   之前的条件位（`return a && b ? x : y` 只取 `a && b`；`?.` / `??` 不算三元）。
+ *   只取条件位本身，不追踪变量赋值的历史；
+ * - 只认**复合布尔判定**：表达式根（剥冗余括号、允许整体 `!` 取反）必须是 `&&` / `||`，
+ *   且表达式内出现协议原子调用 `getAttr` / `hasAttr` / `getAttribute` / `hasAttribute`。
+ *   单原子守卫（`if (this.hasAttr('x'))`）、普通 `if (x)` / `if (a && b)` 不在范围；
+ * - `&&` / `||` 的直接操作数必须是布尔形态（标识符、属性访问、调用、`!`、比较或嵌套逻辑），
+ *   所以 `Number(getAttr('height', '320')) || 320`、`getAttr('value', '') || 'on'` 这类
+ *   数值/字符串兜底不算布尔判定，不命中；
+ * - 归一化只做两件事：折叠代码位空白、剥掉冗余外层括号（含整体取反包裹的括号）；字符串
+ *   内容原样保留（不改内容、不折空白）。报文本仍含原始引号与操作数顺序，`!(a && b)` 与
+ *   `a && b` 不同组——不做模糊相似度、不做大小写/等值化简，参数不同或操作数顺序不同一律不报；
+ * - 同一归一化文本出现在**不同函数**（含模块级作用域）或**不同文件**才报；同一函数内
+ *   重复不报。报告按「文件 × 判定」聚合：一条命中列出该文件全部出现行与其它文件位置，
+ *   `count` = 该文件出现次数；
+ * - 函数作用域由词法结构识别（`=> {`，或参数表 `)` 之后、允许夹一个返回类型注解的 `{`；
+ *   参数表前是 if/for/while/switch/catch/with 的 `{` 是语句块不算函数）；
+ *   不平衡括号、未闭合字符串/模板等残缺输入一律安全跳过，不抛错。测试文件不参与
+ *   （`*.test.ts` 跳过）；
+ * - 已知边界（宁可少报）：只取 `if (...)` / `return <expr>` 两个位置的判定，赋值/实参里的
+ *   三元条件位（`const x = a && b ? c : d`）不在提取范围；表达式体箭头（`() => expr`）不单独
+ *   成函数作用域，其内部条件归外层函数；类属性箭头与回调箭头一律记 `(anonymous)`。
+ *
+ * 例外：scripts/qa/twin-predicate-exceptions.json，精确到 file + predicate + count +
+ * reason；`count` 必须与当前出现次数一致——同一文件再复制一份副本（count 变化）不会被
+ * 旧例外放行，反而会重新红灯并提示更新。一条例外只消费一条命中，不再命中即报陈旧。
+ * 只登记真实候选，不修改产品源码清零。
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -847,6 +886,836 @@ export function applyMagicSpacingExceptions(violationList, exceptions) {
         exception.file === violation.file &&
         exception.property === violation.property &&
         exception.value === violation.value
+      )
+    })
+    if (index < 0) return true
+    used.add(index)
+    return false
+  })
+  const stale = exceptions.filter((_, i) => !used.has(i))
+  return { violations: remaining, stale }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 孪生协议判定（twin-predicate）                                              */
+/*                                                                           */
+/* 有界词法扫描（无编译器、无子进程、无虚拟文件系统）提取 if / return / 三元     */
+/* 条件里的复合布尔判定（协议原子 getAttr/hasAttr/getAttribute/hasAttribute +   */
+/* &&/||），归一化后相同的副本跨函数或跨文件出现即报；单原子、普通变量、         */
+/* 不同参数、数值/字符串兜底不命中。                                           */
+/* 例外 = scripts/qa/twin-predicate-exceptions.json（file + predicate +       */
+/* count + reason，一条例外消费一条命中）。                                    */
+/* -------------------------------------------------------------------------- */
+
+const RULE_TWIN = 'twin-predicate'
+const RULE_TWIN_SUGGESTION =
+  '把重复的复合协议判定抽成具名 helper / 基类方法（同一结论只写一处）；确属不同组件各自必须保留的同型判定，登记 scripts/qa/twin-predicate-exceptions.json（file + predicate + count + reason）。'
+
+/** 协议原子：OASElement 的属性读取 API 与原生 DOM 属性 API（必须是调用形态）。 */
+const PROTOCOL_ATOM_NAMES = new Set(['getAttr', 'hasAttr', 'getAttribute', 'hasAttribute'])
+
+/** 控制语句关键字：`kw (...) {` 的 `{` 是语句块，不是函数体（作用域边界判定用）。 */
+const CONTROL_KEYWORDS = new Set(['if', 'for', 'while', 'switch', 'catch', 'with'])
+
+/** 行尾是这类符号说明表达式还没收口（return 跨行延续判定用）。 */
+const CONTINUE_CHARS = new Set([
+  '&',
+  '|',
+  '?',
+  ':',
+  ',',
+  '=',
+  '+',
+  '-',
+  '*',
+  '/',
+  '%',
+  '^',
+  '<',
+  '>',
+  '!',
+  '~',
+  '(',
+  '[',
+])
+
+/** 前缀关键字形态的操作数不是布尔形态（`typeof x` / `new Foo()` 之类）。 */
+const NON_BOOLEAN_PREFIX_RE = /^(?:typeof|void|delete|new|await|yield|function|class)\b/
+
+const IDENT_STICKY = /[A-Za-z_$][\w$]*/y
+const IDENT_START_RE = /[A-Za-z_$]/
+const WORD_CHAR_RE = /[\w$]/
+
+function isSpaceChar(ch) {
+  return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f' || ch === '\v'
+}
+
+/** 读一个完整标识符（sticky 正则，不反复 slice 大字符串）。 */
+function readIdentifier(source, index, limit) {
+  IDENT_STICKY.lastIndex = index
+  const match = IDENT_STICKY.exec(source)
+  if (!match || match.index !== index) return ''
+  if (match.index + match[0].length > limit) return ''
+  return match[0]
+}
+
+/**
+ * 代码位掩码：字面量（单/双引号字符串、模板静态段）内容置 0，其余位置（含引号分隔符与
+ * 模板 `${}` 内的代码）置 1。所有结构扫描只看代码位——字符串里的 `&&`、括号、`if`
+ * 都不会被误判。未闭合字面量收在行尾 / 文件结尾：损坏输入退化为「少认」，不抛错。
+ */
+function buildCodeMask(source) {
+  const mask = new Uint8Array(source.length)
+  markCode(source, mask, 0, false)
+  return mask
+}
+
+/** 标记 `[from, ...)` 为代码位；`stopAtBrace` 时在配对 `}` 处返回其下标（模板插值用）。 */
+function markCode(source, mask, from, stopAtBrace) {
+  let i = from
+  let braceDepth = 0
+  while (i < source.length) {
+    const c = source[i]
+    if (c === "'" || c === '"') {
+      i = markQuoted(source, mask, i)
+      continue
+    }
+    if (c === '`') {
+      i = markTemplate(source, mask, i)
+      continue
+    }
+    if (c === '{') braceDepth++
+    else if (c === '}') {
+      if (braceDepth === 0 && stopAtBrace) return i
+      if (braceDepth > 0) braceDepth--
+    }
+    mask[i] = 1
+    i++
+  }
+  return i
+}
+
+/** 标记一个引号字面量（引号本身算代码位）；未闭合时收在行尾，之后按代码继续。 */
+function markQuoted(source, mask, quoteIndex) {
+  const quote = source[quoteIndex]
+  mask[quoteIndex] = 1
+  let i = quoteIndex + 1
+  while (i < source.length) {
+    if (source[i] === '\\') {
+      i += 2
+      continue
+    }
+    if (source[i] === quote) {
+      mask[i] = 1
+      return i + 1
+    }
+    if (source[i] === '\n') return i
+    i++
+  }
+  return i
+}
+
+/** 标记一个模板字面量：静态段不是代码位，`${}` 内的表达式重新按代码标记。 */
+function markTemplate(source, mask, openIndex) {
+  mask[openIndex] = 1
+  let i = openIndex + 1
+  while (i < source.length) {
+    const c = source[i]
+    if (c === '\\') {
+      i += 2
+      continue
+    }
+    if (c === '$' && source[i + 1] === '{') {
+      mask[i] = 1
+      mask[i + 1] = 1
+      i = markCode(source, mask, i + 2, true)
+      if (i < source.length) {
+        mask[i] = 1
+        i++
+      }
+      continue
+    }
+    if (c === '`') {
+      mask[i] = 1
+      return i + 1
+    }
+    i++
+  }
+  return i
+}
+
+/**
+ * 括号配对表（双向可查）。错配处丢弃更深未闭合层，保证单次 O(n)：输入残缺时退化为
+ * 「认不出」，不会把嵌套里的 `&&` 误当顶层运算符。
+ */
+function buildPairs(source, mask) {
+  const pairs = new Map()
+  const stack = []
+  const wantOf = { ')': '(', ']': '[', '}': '{' }
+  for (let i = 0; i < source.length; i++) {
+    if (!mask[i]) continue
+    const c = source[i]
+    if (c === '(' || c === '[' || c === '{') {
+      stack.push(i)
+      continue
+    }
+    const want = wantOf[c]
+    if (!want) continue
+    let k = stack.length - 1
+    while (k >= 0 && source[stack[k]] !== want) k--
+    if (k < 0) continue
+    const open = stack[k]
+    stack.length = k
+    pairs.set(open, i)
+    pairs.set(i, open)
+  }
+  return pairs
+}
+
+/** 行号反查用：行首偏移表。 */
+function buildLineStarts(source) {
+  const starts = [0]
+  for (let i = 0; i < source.length; i++) if (source[i] === '\n') starts.push(i + 1)
+  return starts
+}
+
+function lineAt(lineStarts, offset) {
+  let low = 0
+  let high = lineStarts.length - 1
+  while (low < high) {
+    const mid = (low + high + 1) >> 1
+    if (lineStarts[mid] <= offset) low = mid
+    else high = mid - 1
+  }
+  return low + 1
+}
+
+/** 区间去首尾空白。 */
+function trimRange(source, from, to) {
+  let start = from
+  let end = to
+  while (start < end && isSpaceChar(source[start])) start++
+  while (end > start && isSpaceChar(source[end - 1])) end--
+  return [start, end]
+}
+
+/** 剥掉冗余外层括号（配对 `)` 必须正好收在区间末位才剥）。 */
+function unwrapOuterRange(source, pairs, from, to) {
+  let [start, end] = trimRange(source, from, to)
+  while (start < end && source[start] === '(' && pairs.get(start) === end - 1) {
+    start++
+    end--
+    ;[start, end] = trimRange(source, start, end)
+  }
+  return [start, end]
+}
+
+/** 顶层（括号外）`&&` / `||` 运算符位置。 */
+function findLogicalSplits(source, mask, pairs, from, to) {
+  const splits = []
+  let i = from
+  while (i < to) {
+    if (!mask[i]) {
+      i++
+      continue
+    }
+    const c = source[i]
+    if (c === '(' || c === '[' || c === '{') {
+      const close = pairs.get(i)
+      i = close !== undefined && close < to ? close + 1 : i + 1
+      continue
+    }
+    if ((c === '&' && source[i + 1] === '&') || (c === '|' && source[i + 1] === '|')) {
+      splits.push({ start: i, end: i + 2 })
+      i += 2
+      continue
+    }
+    i++
+  }
+  return splits
+}
+
+/** 按顶层运算符切出操作数区间。 */
+function logicalSegments(splits, from, to) {
+  const segments = []
+  let cursor = from
+  for (const split of splits) {
+    segments.push([cursor, split.start])
+    cursor = split.end
+  }
+  segments.push([cursor, to])
+  return segments
+}
+
+/** 顶层三元 `?`（排除 `?.` 与 `??`）下标；没有返回 -1。 */
+function findTopLevelQuestion(source, mask, pairs, from, to) {
+  let i = from
+  while (i < to) {
+    if (!mask[i]) {
+      i++
+      continue
+    }
+    const c = source[i]
+    if (c === '(' || c === '[' || c === '{') {
+      const close = pairs.get(i)
+      i = close !== undefined && close < to ? close + 1 : i + 1
+      continue
+    }
+    if (c === '?') {
+      const next = source[i + 1]
+      if (next === '?') {
+        i += 2
+        continue
+      }
+      if (next === '.') {
+        i++
+        continue
+      }
+      return i
+    }
+    i++
+  }
+  return -1
+}
+
+/** 区间内是否出现协议原子调用（`getAttr` / `hasAttr` / `getAttribute` / `hasAttribute`）。 */
+function containsProtocolAtom(source, mask, from, to) {
+  let i = from
+  while (i < to) {
+    if (!mask[i]) {
+      i++
+      continue
+    }
+    if (!IDENT_START_RE.test(source[i])) {
+      i++
+      continue
+    }
+    const word = readIdentifier(source, i, to)
+    if (!word) {
+      i++
+      continue
+    }
+    if (PROTOCOL_ATOM_NAMES.has(word)) {
+      let j = i + word.length
+      while (j < to && mask[j] && isSpaceChar(source[j])) j++
+      // 可选调用 `getAttribute?.(`：AST 里仍是 CallExpression，同名协议原子
+      if (source[j] === '?' && source[j + 1] === '.') {
+        j += 2
+        while (j < to && mask[j] && isSpaceChar(source[j])) j++
+      }
+      if (source[j] === '(') return true
+    }
+    i += word.length
+  }
+  return false
+}
+
+/** 顶层比较 / 嵌套逻辑 / 三元：出现即说明操作数是布尔表达式。 */
+function hasTopLevelBinaryOperator(source, mask, pairs, from, to) {
+  let i = from
+  while (i < to) {
+    if (!mask[i]) {
+      i++
+      continue
+    }
+    const c = source[i]
+    if (c === '(' || c === '[' || c === '{') {
+      const close = pairs.get(i)
+      i = close !== undefined && close < to ? close + 1 : i + 1
+      continue
+    }
+    if ((c === '&' && source[i + 1] === '&') || (c === '|' && source[i + 1] === '|')) return true
+    if (c === '=' && source[i + 1] === '=') return true
+    if (c === '!' && source[i + 1] === '=') return true
+    if (c === '<' || c === '>') return true
+    if (c === '?') {
+      if (source[i + 1] === '?') {
+        i += 2
+        continue
+      }
+      if (source[i + 1] === '.') {
+        i++
+        continue
+      }
+      return true
+    }
+    if (IDENT_START_RE.test(c)) {
+      const word = readIdentifier(source, i, to)
+      if (!word) {
+        i++
+        continue
+      }
+      if (word === 'in' || word === 'instanceof') {
+        const before = source[i - 1]
+        const after = source[i + word.length]
+        const spaced = (!before || !WORD_CHAR_RE.test(before)) && after !== undefined && isSpaceChar(after)
+        if (spaced) return true
+      }
+      i += word.length
+      continue
+    }
+    i++
+  }
+  return false
+}
+
+/** 标识符 / 括号组 / 属性访问 / 调用 / 元素访问链（`a.b(...)[0]!.c`、`(x as T).y`）。 */
+function isPostfixChain(source, mask, pairs, from, to) {
+  let i = from
+  if (source[i] === '(') {
+    const close = pairs.get(i)
+    if (close === undefined || close >= to) return false
+    i = close + 1
+  } else {
+    const head = readIdentifier(source, from, to)
+    if (!head) return false
+    i = from + head.length
+  }
+  while (i < to) {
+    while (i < to && mask[i] && isSpaceChar(source[i])) i++
+    if (i >= to) return true
+    const c = source[i]
+    if (c === '.') {
+      const name = readIdentifier(source, i + 1, to)
+      if (!name) return false
+      i += 1 + name.length
+      continue
+    }
+    if (c === '?' && source[i + 1] === '.') {
+      i += 2
+      const name = readIdentifier(source, i, to)
+      if (name) {
+        i += name.length
+        continue
+      }
+      // `?.(` / `?.[` 可选调用 / 可选下标
+      if (source[i] === '(' || source[i] === '[') {
+        const close = pairs.get(i)
+        if (close === undefined || close >= to) return false
+        i = close + 1
+        continue
+      }
+      return false
+    }
+    if (c === '(' || c === '[') {
+      const close = pairs.get(i)
+      if (close === undefined || close >= to) return false
+      i = close + 1
+      continue
+    }
+    if (c === '!' && source[i + 1] !== '=') {
+      i++
+      continue
+    }
+    return false
+  }
+  return true
+}
+
+/**
+ * 操作数是否布尔形态：标识符、属性/元素访问、调用、`!`、比较或嵌套逻辑。
+ * 数值/字符串字面量与算术表达式不算——把 `getAttr(...) || 320` 这类兜底默认值排除掉。
+ */
+function isBooleanOperandRange(source, mask, pairs, from, to) {
+  const [start, end] = trimRange(source, from, to)
+  if (start >= end) return false
+  const [innerStart, innerEnd] = unwrapOuterRange(source, pairs, start, end)
+  if (innerStart !== start || innerEnd !== end) {
+    return isBooleanOperandRange(source, mask, pairs, innerStart, innerEnd)
+  }
+  const head = source[start]
+  if (head === "'" || head === '"' || head === '`') return false
+  if (head === '-' || head === '+' || head === '~') return false
+  if (isDigit(head) || (head === '.' && isDigit(source[start + 1]))) return false
+  if (head === '!' && source[start + 1] !== '=') return true
+  if (hasTopLevelBinaryOperator(source, mask, pairs, start, end)) return true
+  const text = source.slice(start, end)
+  if (text === 'true' || text === 'false') return true
+  if (NON_BOOLEAN_PREFIX_RE.test(text)) return false
+  return isPostfixChain(source, mask, pairs, start, end)
+}
+
+function isDigit(ch) {
+  return ch !== undefined && ch >= '0' && ch <= '9'
+}
+
+/** 归一化：只折代码位空白，字符串内容原样保留（不做大小写 / 等值化简）。 */
+function normalizeRange(source, mask, from, to) {
+  let out = ''
+  let pendingSpace = false
+  for (let i = from; i < to; i++) {
+    const c = source[i]
+    if (mask[i] && isSpaceChar(c)) {
+      pendingSpace = true
+      continue
+    }
+    if (pendingSpace) {
+      if (out.length > 0) out += ' '
+      pendingSpace = false
+    }
+    out += c
+  }
+  return out
+}
+
+/**
+ * 复合布尔判定的归一化文本；不是「根为 `&&` / `||`（允许整体 `!`）且含协议原子」的
+ * 判定返回 null。
+ */
+function booleanPredicate(source, mask, pairs, from, to) {
+  const [start, end] = unwrapOuterRange(source, pairs, from, to)
+  if (start >= end) return null
+  if (!containsProtocolAtom(source, mask, start, end)) return null
+  const splits = findLogicalSplits(source, mask, pairs, start, end)
+  if (splits.length > 0) {
+    for (const [operandStart, operandEnd] of logicalSegments(splits, start, end)) {
+      if (!isBooleanOperandRange(source, mask, pairs, operandStart, operandEnd)) return null
+    }
+    return normalizeRange(source, mask, start, end)
+  }
+  // 整体取反：`!(a && b)` 与 `a && b` 不是同一结论，归一化文本保留 `!`
+  if (source[start] === '!' && source[start + 1] !== '=') {
+    const [innerStart, innerEnd] = unwrapOuterRange(source, pairs, start + 1, end)
+    const innerSplits = findLogicalSplits(source, mask, pairs, innerStart, innerEnd)
+    if (innerSplits.length === 0) return null
+    for (const [operandStart, operandEnd] of logicalSegments(innerSplits, innerStart, innerEnd)) {
+      if (!isBooleanOperandRange(source, mask, pairs, operandStart, operandEnd)) return null
+    }
+    return normalizeRange(source, mask, start, end)
+  }
+  return null
+}
+
+/** 从 `index` 往前找上一个非空白代码位。 */
+function previousCodeIndex(source, mask, index) {
+  let i = index
+  while (i >= 0 && (!mask[i] || isSpaceChar(source[i]))) i--
+  return i
+}
+
+/** 从 `index` 往后找下一个非空白代码位。 */
+function nextCodeIndex(source, mask, index) {
+  let i = index
+  while (i < source.length && mask[i] && isSpaceChar(source[i])) i++
+  return i
+}
+
+/** 参数表前面那个词（`if (` → `if`；`foo<T>(` / 返回类型注解 → 空串）。 */
+function wordBeforeParen(source, mask, pairs, parenIndex) {
+  const before = previousCodeIndex(source, mask, parenIndex - 1)
+  if (before < 0) return ''
+  let start = before
+  while (start >= 0 && WORD_CHAR_RE.test(source[start])) start--
+  return source.slice(start + 1, before + 1)
+}
+
+/** `{` 前若紧邻参数表 `)`（允许夹一个返回类型注解），返回参数表 `(` 的下标。 */
+function parameterListParen(source, mask, pairs, braceIndex) {
+  const prev = previousCodeIndex(source, mask, braceIndex - 1)
+  if (prev < 0) return undefined
+  if (source[prev] === ')') return pairs.get(prev)
+  // 返回类型注解：往前的 `:` 前必须是参数表 `)`（`): boolean {` / `): Promise<void> {` /
+  // `): Map<string, number> {`）；扫描长度有上限，避免大文件退化成 O(n²)
+  let depth = 0
+  const limit = Math.max(0, braceIndex - 240)
+  for (let i = prev; i >= limit; i--) {
+    if (!mask[i]) continue
+    const c = source[i]
+    if (c === ')' || c === ']' || c === '>' || c === '}') {
+      depth++
+      continue
+    }
+    if (c === '(' || c === '[' || c === '<' || c === '{') {
+      if (depth === 0) return undefined
+      depth--
+      continue
+    }
+    if (depth > 0) continue
+    if (c === ':') {
+      const before = previousCodeIndex(source, mask, i - 1)
+      if (before < 0 || source[before] !== ')') return undefined
+      return pairs.get(before)
+    }
+    if (c === ';' || c === '=' || c === ',') return undefined
+  }
+  return undefined
+}
+
+/** `{` 是否是函数体：`=>` 之后，或参数表 `)` 之后且参数表前不是控制关键字。 */
+function isFunctionBodyBrace(source, mask, pairs, braceIndex) {
+  const prev = previousCodeIndex(source, mask, braceIndex - 1)
+  if (prev < 0) return false
+  if (source[prev] === '>' && source[prev - 1] === '=') return true
+  const open = parameterListParen(source, mask, pairs, braceIndex)
+  if (open === undefined) return false
+  return !CONTROL_KEYWORDS.has(wordBeforeParen(source, mask, pairs, open))
+}
+
+/** 函数显示名：具名函数/方法取名字，箭头与匿名函数 `(anonymous)`。 */
+function functionLabel(source, mask, pairs, braceIndex) {
+  const prev = previousCodeIndex(source, mask, braceIndex - 1)
+  if (prev < 0) return '(anonymous)'
+  if (source[prev] === '>' && source[prev - 1] === '=') return '(anonymous)'
+  const open = parameterListParen(source, mask, pairs, braceIndex)
+  if (open === undefined) return '(anonymous)'
+  const word = wordBeforeParen(source, mask, pairs, open)
+  if (!word || word === 'function' || CONTROL_KEYWORDS.has(word)) return '(anonymous)'
+  return word
+}
+
+/** 全部函数体区间（`{` 起止偏移 + 显示名），供「跨函数」判定用。 */
+function collectFunctionBodies(source, mask, pairs) {
+  const bodies = []
+  for (let i = 0; i < source.length; i++) {
+    if (!mask[i] || source[i] !== '{') continue
+    const close = pairs.get(i)
+    if (close === undefined) continue
+    if (!isFunctionBodyBrace(source, mask, pairs, i)) continue
+    bodies.push({ start: i, end: close, label: functionLabel(source, mask, pairs, i) })
+  }
+  return bodies
+}
+
+/** 候选所在的最内层函数作用域（模块级兜底）。 */
+function scopeAt(file, bodies, offset) {
+  let best = null
+  for (const body of bodies) {
+    if (body.start >= offset || offset >= body.end) continue
+    if (!best || body.start > best.start) best = body
+  }
+  return best ? { key: `${file}#${best.start}`, label: best.label } : { key: `${file}#module`, label: '(module)' }
+}
+
+/** 行尾是未收口运算符时，`return` 表达式跨行继续。 */
+function continuesExpression(source, mask, newlineIndex) {
+  const last = previousCodeIndex(source, mask, newlineIndex - 1)
+  if (last < 0) return false
+  return CONTINUE_CHARS.has(source[last])
+}
+
+/**
+ * 取 `return` 后的表达式区间：depth=0 遇 `;` 或换行收口；换行前行尾是未收口运算符时继续；
+ * depth>0（括号内）跨行继续；遇到外层结构的收口括号即停。
+ */
+function readReturnExpression(source, mask, from) {
+  let i = from
+  while (i < source.length && mask[i] && (source[i] === ' ' || source[i] === '\t')) i++
+  if (i >= source.length) return null
+  const first = source[i]
+  if (first === '\n' || first === '\r' || first === ';' || first === '}' || first === ')' || first === ']') {
+    return null
+  }
+  const start = i
+  let depth = 0
+  while (i < source.length) {
+    if (!mask[i]) {
+      i++
+      continue
+    }
+    const c = source[i]
+    if (c === '(' || c === '[' || c === '{') {
+      depth++
+      i++
+      continue
+    }
+    if (c === ')' || c === ']' || c === '}') {
+      if (depth === 0) break
+      depth--
+      i++
+      continue
+    }
+    if (depth === 0) {
+      if (c === ';') break
+      if (c === '\n' && !continuesExpression(source, mask, i)) break
+    }
+    i++
+  }
+  return { start, end: i }
+}
+
+/**
+ * 单文件候选提取（有界词法扫描）：`if (...)` 的平衡括号条件、`return <expr>` 表达式，
+ * 以及其中顶层三元 `?` 之前的条件位（`return a && b ? x : y` 只取 `a && b`）。
+ * 返回 `{ file, line, predicate, scopeKey, scopeLabel, snippet }[]`。
+ */
+function scanTwinCandidates(file, source) {
+  // 注释先抹空（长度与换行不变，偏移与源码一致），保留字符串内容
+  const text = stripCommentsKeepStrings(source)
+  const mask = buildCodeMask(text)
+  const pairs = buildPairs(text, mask)
+  const lineStarts = buildLineStarts(text)
+  const bodies = collectFunctionBodies(text, mask, pairs)
+  const lines = source.split(/\r?\n/)
+  const candidates = []
+  const addCandidate = (from, to) => {
+    const question = findTopLevelQuestion(text, mask, pairs, from, to)
+    const [start, end] = trimRange(text, from, question >= 0 ? question : to)
+    if (start >= end) return
+    const predicate = booleanPredicate(text, mask, pairs, start, end)
+    if (!predicate) return
+    const scope = scopeAt(file, bodies, start)
+    const line = lineAt(lineStarts, start)
+    candidates.push({
+      file,
+      line,
+      predicate,
+      scopeKey: scope.key,
+      scopeLabel: scope.label,
+      snippet: (lines[line - 1] ?? '').trim().slice(0, 240),
+    })
+  }
+  for (const match of text.matchAll(/\bif\b/g)) {
+    if (!mask[match.index]) continue
+    const open = nextCodeIndex(text, mask, match.index + 2)
+    if (text[open] !== '(') continue
+    const close = pairs.get(open)
+    if (close === undefined) continue
+    addCandidate(open + 1, close)
+  }
+  for (const match of text.matchAll(/\breturn\b/g)) {
+    const at = match.index
+    if (!mask[at]) continue
+    if (at > 0 && text[at - 1] === '.') continue
+    const expression = readReturnExpression(text, mask, at + 'return'.length)
+    if (!expression) continue
+    addCandidate(expression.start, expression.end)
+  }
+  return candidates.sort((a, b) => a.line - b.line)
+}
+
+/**
+ * 批量提取候选（纯词法，不依赖编译器 / 子进程 / 虚拟文件系统）。
+ * @param entries `{ file, source }[]`，file 为仓库相对 POSIX 路径
+ */
+export function collectTwinPredicates(entries) {
+  const candidates = []
+  const seen = new Set()
+  for (const entry of entries) {
+    if (!entry || typeof entry.file !== 'string' || typeof entry.source !== 'string') continue
+    if (seen.has(entry.file)) continue
+    seen.add(entry.file)
+    candidates.push(...scanTwinCandidates(entry.file, entry.source))
+  }
+  return candidates.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
+}
+
+/** 位置摘要（detail 用）：`path:line（函数名）`。 */
+function twinLocation(candidate) {
+  return `${candidate.file}:${candidate.line}（${candidate.scopeLabel}）`
+}
+
+/**
+ * 把候选按归一化判定分组，跨函数/跨文件才输出违规；每条按「文件 × 判定」聚合。
+ * @param candidates collectTwinPredicates 的结果
+ */
+export function groupTwinPredicates(candidates) {
+  const groups = new Map()
+  for (const candidate of candidates) {
+    if (!groups.has(candidate.predicate)) groups.set(candidate.predicate, [])
+    groups.get(candidate.predicate).push(candidate)
+  }
+
+  const violations = []
+  for (const [predicate, list] of groups) {
+    const scopes = new Set(list.map((candidate) => candidate.scopeKey))
+    if (scopes.size < 2) continue
+    const byFile = new Map()
+    for (const candidate of list) {
+      if (!byFile.has(candidate.file)) byFile.set(candidate.file, [])
+      byFile.get(candidate.file).push(candidate)
+    }
+    const locations = list
+      .slice()
+      .sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
+      .map(twinLocation)
+    const summary =
+      locations.length > 8 ? `${locations.slice(0, 8).join('、')} 等 ${locations.length} 处` : locations.join('、')
+    for (const [file, occurrences] of byFile) {
+      const sorted = occurrences.slice().sort((a, b) => a.line - b.line)
+      violations.push({
+        file,
+        line: sorted[0].line,
+        rule: RULE_TWIN,
+        detail: `${predicate} 在 ${list.length} 处重复：${summary}`,
+        snippet: sorted[0].snippet,
+        message: `${file}:${sorted[0].line} [${RULE_TWIN}] 复合协议判定重复（本文件 ${sorted.length} 处，全仓 ${list.length} 处）：\`${predicate}\`。${RULE_TWIN_SUGGESTION}`,
+        predicate,
+        count: sorted.length,
+        occurrences: sorted.map((candidate) => ({
+          file: candidate.file,
+          line: candidate.line,
+          scope: candidate.scopeLabel,
+        })),
+      })
+    }
+  }
+  return violations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
+}
+
+/**
+ * 单文件孪生判定：跨函数（同文件内）重复即报；跨文件由 audit / group 负责。
+ * @param source 文件源码
+ * @param file 仓库相对路径
+ */
+export function findTwinPredicates(source, file) {
+  return groupTwinPredicates(collectTwinPredicates([{ file, source }]))
+}
+
+/** 全量审计：返回 `[{ file, violations }]`（仅含存在违规的文件，按文件排序）。 */
+export function auditTwinPredicates(root = UI_SRC) {
+  const absRoot = join(ROOT, root)
+  if (!existsSync(absRoot)) return []
+  const entries = []
+  for (const file of collectAllTsFiles(absRoot).map(relOf).sort()) {
+    if (/\.test\.ts$/.test(file)) continue
+    const source = readFileSync(join(ROOT, file), 'utf8')
+    // 没有协议原子名字的文件不可能产生候选，跳过解析（大文件解析成本不低）
+    if (!/getAttr|hasAttr|getAttribute|hasAttribute/.test(source)) continue
+    entries.push({ file, source })
+  }
+  const byFile = new Map()
+  for (const violation of groupTwinPredicates(collectTwinPredicates(entries))) {
+    if (!byFile.has(violation.file)) byFile.set(violation.file, [])
+    byFile.get(violation.file).push(violation)
+  }
+  return [...byFile.keys()].sort((a, b) => a.localeCompare(b)).map((file) => ({ file, violations: byFile.get(file) }))
+}
+
+/**
+ * 读取孪生判定例外表（`{ exceptions: [{ file, predicate, count, reason }] }`）。
+ * `count` 必须与当前出现次数一致：同文件再复制副本即重新红灯，旧例外不能继续放行。
+ */
+export function loadTwinPredicateExceptions(path) {
+  if (!existsSync(path)) return []
+  const raw = JSON.parse(readFileSync(path, 'utf8'))
+  const list = Array.isArray(raw) ? raw : (raw.exceptions ?? [])
+  return list.map((entry, index) => {
+    const where = `${path}#${index}`
+    if (!entry || typeof entry !== 'object') throw new Error(`${where}: 例外必须是对象`)
+    if (!entry.file) throw new Error(`${where}: 缺少 file`)
+    if (typeof entry.predicate !== 'string' || entry.predicate.trim().length === 0) {
+      throw new Error(`${where}: 缺少 predicate（归一化后的复合判定原文）`)
+    }
+    if (!Number.isInteger(entry.count) || entry.count < 1) {
+      throw new Error(`${where}: count 必须是正整数（当前文件内的出现次数）`)
+    }
+    if (typeof entry.reason !== 'string' || entry.reason.trim().length < 4) {
+      throw new Error(`${where}: 必须写 reason（为什么两处重复判定合理保留）`)
+    }
+    return entry
+  })
+}
+
+/** 剔除已登记例外，返回 `{ violations, stale }`（一条例外只消费一条命中）。 */
+export function applyTwinPredicateExceptions(violationList, exceptions) {
+  const used = new Set()
+  const remaining = violationList.filter((violation) => {
+    const index = exceptions.findIndex((exception, i) => {
+      if (used.has(i)) return false
+      return (
+        exception.file === violation.file &&
+        exception.predicate === violation.predicate &&
+        exception.count === violation.count
       )
     })
     if (index < 0) return true

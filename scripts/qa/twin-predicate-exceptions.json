@@ -1,0 +1,413 @@
+{
+  "$comment": "孪生协议判定守卫（scripts/qa/hygiene-guards.mjs）的精确例外。每条精确到 file + predicate（归一化后的复合判定原文）+ count（该文件当前出现次数）+ reason；一条例外只消费一条命中，同文件再复制一处副本（count 变化）会重新红灯并报陈旧例外，须人工复核。只登记真实候选（同一协议判定在不同事件入口/组件重复实现），不为清零修改产品源码。",
+  "exceptions": [
+    {
+      "file": "packages/ui/src/data/countdown/oas-countdown.ts",
+      "predicate": "!this.hasAttribute('active') || this.getAttr('active', '') !== 'false'",
+      "count": 1,
+      "reason": "countdown / number-animation 用同一 active 双协议判定（原生属性存在性 + getAttr 解析 false）实现 isActive；两组件语义相同、各自维护，抽共享判定属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/data/gantt/oas-gantt.ts",
+      "predicate": "!this.hasAttr('creatable') || this.hasAttr('readonly')",
+      "count": 2,
+      "reason": "甘特新建任务门禁（onSideDblClick / onTbodyDblClick）两处重复同一 creatable/readonly 判定；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/data/list/oas-list.ts",
+      "predicate": "this.dragFrom < 0 || !this.hasAttr('sortable')",
+      "count": 2,
+      "reason": "列表拖拽合法性判定在 handleDragOver / handleDrop 两处重复（dragFrom 未开始或 sortable 关闭即返回）；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/data/number-animation/oas-number-animation.ts",
+      "predicate": "!this.hasAttribute('active') || this.getAttr('active', '') !== 'false'",
+      "count": 1,
+      "reason": "countdown / number-animation 用同一 active 双协议判定（原生属性存在性 + getAttr 解析 false）实现 isActive；两组件语义相同、各自维护，抽共享判定属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/data/tree/oas-tree.ts",
+      "predicate": "!this.hasAttr('can-rename') || this.isTreeDisabled()",
+      "count": 2,
+      "reason": "节点重命名门禁在 nodeRenamable / startRename 两处重复同一判定；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/drawer/drawer.ts",
+      "predicate": "!el.hasAttribute('visible') && !el.opened && !el.closing",
+      "count": 1,
+      "reason": "命令式 drawer / modal API 的销毁路径重复同一「从未打开或已关闭」判定；两模块各自维护同一命令式封装，抽共享 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/drawer/oas-drawer.ts",
+      "predicate": "!this.hasAttr('no-scroll-lock') && !this.releaseScrollLock",
+      "count": 1,
+      "reason": "滚动锁建立判定（未禁用锁且未持有句柄）在打开入口重复；drawer 与 modal 各自维护句柄，共享判定需跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/hover-card/oas-hover-card.ts",
+      "predicate": "!aligned && !this.hasAttr('arrow-point-at-center')",
+      "count": 1,
+      "reason": "箭头定位的「未对齐且未要求居中」守卫；hover-card 与 tour 共用同一浮层定位约定、各自实现，抽共享 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/modal/modal.ts",
+      "predicate": "!el.hasAttribute('visible') && !el.opened && !el.closing",
+      "count": 3,
+      "reason": "命令式 drawer / modal API 的销毁路径重复同一「从未打开或已关闭」判定；两模块各自维护同一命令式封装，抽共享 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/modal/oas-modal.ts",
+      "predicate": "!this.hasAttr('no-scroll-lock') && !this.releaseScrollLock",
+      "count": 1,
+      "reason": "滚动锁建立判定（未禁用锁且未持有句柄）在打开入口重复；drawer 与 modal 各自维护句柄，共享判定需跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/popconfirm/oas-popconfirm.ts",
+      "predicate": "!this.popoverEl || !this.hasAttr('open')",
+      "count": 2,
+      "reason": "onReconnect 与滚动跟随 rAF 回调（onScroll）重复同一关闭判定（!popoverEl || !open）；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/popover/oas-popover.ts",
+      "predicate": "!this.panel || !this.hasAttr('open')",
+      "count": 2,
+      "reason": "onReconnect 与滚动跟随 rAF 回调（onScroll）重复同一关闭判定（!panel || !open）；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/popover/oas-popover.ts",
+      "predicate": "this.hasAttr('virtual') || this.hasAttr('disabled')",
+      "count": 5,
+      "reason": "浮层触发通道（click / mousedown / contextmenu / keydown 监听与 requestOpen）五个入口重复同一虚拟触发 + 禁用 gate；抽共享 gate 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/tooltip/oas-tooltip.ts",
+      "predicate": "!this.tipEl || !this.hasAttr('open')",
+      "count": 2,
+      "reason": "tooltip 的跟随定位 rAF 回调（光标跟随 / 滚动跟随）与重连路径重复同一关闭判定（!tipEl || !open）；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/feedback/tooltip/oas-tooltip.ts",
+      "predicate": "this.hasAttr('virtual') || this.hasAttr('disabled')",
+      "count": 1,
+      "reason": "scheduleShow 与 popover 的同型入口重复虚拟触发 + 禁用 gate，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/auto-complete/oas-auto-complete.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === ''",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为空串 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/auto-complete/oas-auto-complete.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 4,
+      "reason": "冻结判定（注入禁用或只读）在 handleInput / applyFilter / handleFocus / handleKey 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/auto-complete/oas-auto-complete.ts",
+      "predicate": "this.hasAttr('virtual') && this.vlist && !list.some((o) => o.group !== undefined)",
+      "count": 1,
+      "reason": "虚拟列表分组降级判定在 auto-complete 与 combobox 的渲染路径重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/calendar/oas-calendar.ts",
+      "predicate": "disabled || this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 2,
+      "reason": "日历日期禁用判定（外部 disabled + 组件冻结）在两个事件入口重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/calendar/oas-calendar.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "冻结判定（注入禁用或只读）在 selectDate 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/checkbox/oas-checkbox.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === null",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为 null 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/checkbox/oas-checkbox.ts",
+      "predicate": "this.hasAttr('readonly') || this.hasAttr('data-group-readonly')",
+      "count": 1,
+      "reason": "单选框/复选框共享同一只读判定（含 radio 组下发的 data-group-readonly），两组件各自维护，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/chips-input/oas-chips-input.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "冻结判定（注入禁用或只读）在 isFrozen 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "冻结判定（注入禁用或只读）在 isLocked 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/combobox/oas-combobox.ts",
+      "predicate": "this.hasAttr('required') && missing",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + missing 标志 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/combobox/oas-combobox.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 5,
+      "reason": "冻结判定（注入禁用或只读）在 openPanel / handleInput / handleKey / removeValue / clearValue 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/combobox/oas-combobox.ts",
+      "predicate": "this.hasAttr('virtual') && this.vlist && !list.some((o) => o.group !== undefined)",
+      "count": 1,
+      "reason": "虚拟列表分组降级判定在 auto-complete 与 combobox 的渲染路径重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/date-picker/oas-date-picker.ts",
+      "predicate": "this.hasAttribute('open') && !this.openState",
+      "count": 1,
+      "reason": "受控 open 属性与内部 openState 的同步判定在 date-picker / time-picker 的 update 入口重复（两组件同型），登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/date-picker/oas-date-picker.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "冻结判定（注入禁用或只读）在 clearValue 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/date-picker/oas-date-picker.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === null",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为 null 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/dynamic-input/oas-dynamic-input.ts",
+      "predicate": "this.hasAttr('disabled') || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "禁用/只读判定（原生 disabled 路径）在 dynamic-input 与 editable 的入口重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/dynamic-tags/oas-dynamic-tags.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "冻结判定（注入禁用或只读）在 isFrozen 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/dynamic-tags/oas-dynamic-tags.ts",
+      "predicate": "!this.hasAttr('allow-duplicate') && this.tags.includes(value)",
+      "count": 2,
+      "reason": "标签去重判定在 tryAdd / commitEdit 两个入口重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/editable/oas-editable.ts",
+      "predicate": "this.hasAttr('disabled') || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "禁用/只读判定（原生 disabled 路径）在 dynamic-input 与 editable 的入口重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/input-number/oas-input-number.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === ''",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为空串 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/input-number/oas-input-number.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 3,
+      "reason": "冻结判定（注入禁用或只读）在 commitFromInput / onWheel / startHold 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/input-number/oas-input-number.ts",
+      "predicate": "this.scrubOff() || this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "数值拖拽启动判定（scrubOff 收尾 + 冻结）在 input-number / slider 各自入口重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/input/oas-input.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === ''",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为空串 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/knob/oas-knob.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 5,
+      "reason": "冻结判定（注入禁用或只读）在 匿名回调(:368) / 匿名回调(:411) / reset / stepUp / stepDown 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/mentions/oas-mentions.ts",
+      "predicate": "!this.injectDisabled() && !this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "可交互判定（!injectDisabled && !readonly）与冻结组合同义，在 mentions / rate 两处重复，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/mentions/oas-mentions.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 6,
+      "reason": "冻结判定（注入禁用或只读）在 scanMention / handleInput / handleFocus / handleKey / handleKeyUp / clearValue 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/mentions/oas-mentions.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === ''",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为空串 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/picker/oas-picker.ts",
+      "predicate": "this.hasAttr('required') && this.currentValues().length === 0",
+      "count": 1,
+      "reason": "多值控件必填有效性判定（currentValues 为空）在 picker 与 tree-select 重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/radio/oas-radio-group.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "冻结判定（注入禁用或只读）在 匿名回调(:250) 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/radio/oas-radio-group.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === null",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为 null 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/radio/oas-radio.ts",
+      "predicate": "this.hasAttr('required') && !this.hasAttr('checked')",
+      "count": 1,
+      "reason": "布尔控件必填有效性判定（!checked）在 radio 与 switch 重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/radio/oas-radio.ts",
+      "predicate": "this.hasAttr('readonly') || this.hasAttr('data-group-readonly')",
+      "count": 1,
+      "reason": "单选框/复选框共享同一只读判定（含 radio 组下发的 data-group-readonly），两组件各自维护，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/rate/oas-rate.ts",
+      "predicate": "!this.injectDisabled() && !this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "可交互判定（!injectDisabled && !readonly）与冻结组合同义，在 mentions / rate 两处重复，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/select/oas-select.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 2,
+      "reason": "冻结判定（注入禁用或只读）在 toggle / clearValue 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/select/oas-select.ts",
+      "predicate": "this.hasAttr('required') && missing",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + missing 标志 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/slider/oas-slider.ts",
+      "predicate": "n === 2 && this.hasAttr('range')",
+      "count": 3,
+      "reason": "range 双滑块判定在 roleFor / numRoleFor / enforceOrder 三处重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/slider/oas-slider.ts",
+      "predicate": "this.scrubOff() || this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "数值拖拽启动判定（scrubOff 收尾 + 冻结）在 input-number / slider 各自入口重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/switch/oas-switch.ts",
+      "predicate": "this.hasAttr('required') && !this.hasAttr('checked')",
+      "count": 1,
+      "reason": "布尔控件必填有效性判定（!checked）在 radio 与 switch 重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/textarea/oas-textarea.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === ''",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为空串 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/time-picker/oas-time-picker.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 2,
+      "reason": "冻结判定（注入禁用或只读）在 匿名回调(:585) / clearValue 重复；与其它 form 控件的同型判定构成跨组件重复，抽基类 helper 属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/time-picker/oas-time-picker.ts",
+      "predicate": "this.hasAttribute('open') && !this.openState",
+      "count": 1,
+      "reason": "受控 open 属性与内部 openState 的同步判定在 date-picker / time-picker 的 update 入口重复（两组件同型），登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/time-picker/oas-time-picker.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === null",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为 null 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/transfer/oas-transfer.ts",
+      "predicate": "this.hasAttr('one-way') && side === 'right'",
+      "count": 3,
+      "reason": "单向模式右侧禁写判定在 toggleSelectAll / toggleItem / handleKey 三处重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/tree-select/oas-tree-select.ts",
+      "predicate": "this.hasAttr('required') && this.currentValues().length === 0",
+      "count": 1,
+      "reason": "多值控件必填有效性判定（currentValues 为空）在 picker 与 tree-select 重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/form/upload/oas-upload.ts",
+      "predicate": "this.hasAttr('required') && this.getFormValue() === null",
+      "count": 1,
+      "reason": "表单必填有效性判定（syncValidity 的 required + getFormValue 为 null 规则）在多个控件逐组件重复；有效性矩阵共享属跨组件重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/dropdown/oas-dropdown.ts",
+      "predicate": "(!this.hasTrigger('click') && !this.tapToggleOnCoarse()) || this.hasAttr('disabled')",
+      "count": 2,
+      "reason": "click 通道触发 gate 在 handleTap 与 pointer 监听两处重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/dropdown/oas-dropdown.ts",
+      "predicate": "!this.hasTrigger('hover') || this.hasAttr('disabled')",
+      "count": 2,
+      "reason": "hover 通道触发 gate 在两个监听入口重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/dropdown/oas-dropdown.ts",
+      "predicate": "!this.hasTrigger('focus') || this.hasAttr('disabled')",
+      "count": 2,
+      "reason": "focus 通道触发 gate 在两个监听入口重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/menubar/oas-menubar.ts",
+      "predicate": "this.getAttr('trigger') === 'hover' || this.expanded.size > 0",
+      "count": 2,
+      "reason": "menubar 悬浮展开判定在两个入口重复；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/page-header/oas-page-header.ts",
+      "predicate": "this.hasAttr('responsive') && !this.resizeObserver && typeof ResizeObserver !== 'undefined'",
+      "count": 1,
+      "reason": "响应式监听建立判定（responsive + 未建立 observer + 环境支持）在 page-header 与 pagination 重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/pagination/oas-pagination.ts",
+      "predicate": "this.hasAttr('responsive') && !this.resizeObserver && typeof ResizeObserver !== 'undefined'",
+      "count": 1,
+      "reason": "响应式监听建立判定（responsive + 未建立 observer + 环境支持）在 page-header 与 pagination 重复，跨组件共享属重构，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/stepper/oas-stepper.ts",
+      "predicate": "this.hasAttr('linear') && idx > this.resolveCurrent()",
+      "count": 2,
+      "reason": "线性步骤拦截判定在 canActivate / isBlocked 两处重复（返回相反值）；抽私有 helper 需改产品源码，登记跟踪。"
+    },
+    {
+      "file": "packages/ui/src/navigation/tour/oas-tour.ts",
+      "predicate": "!aligned && !this.hasAttr('arrow-point-at-center')",
+      "count": 1,
+      "reason": "箭头定位的「未对齐且未要求居中」守卫；hover-card 与 tour 共用同一浮层定位约定、各自实现，抽共享 helper 属跨组件重构，登记跟踪。"
+    }
+  ]
+}

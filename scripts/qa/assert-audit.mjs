@@ -36,6 +36,16 @@
  *   接缝抵消等组件自有常量）逐项登记在 `scripts/qa/magic-spacing-exceptions.json`
  *   （file + property + value + reason），阈值 0 = 零增量；新增直接像素间距必红灯。
  *
+ * 孪生协议判定维度（2026-11-16 新增，检测实现在 scripts/qa/hygiene-guards.mjs）：
+ * - `twinPredicate`：有界词法扫描提取 `if` / `return` / 三元条件里的复合布尔判定
+ *   （含 `getAttr` / `hasAttr` / `getAttribute` / `hasAttribute` 协议原子与 `&&` / `||`），
+ *   归一化（代码位空白折叠 + 剥冗余外层括号，字符串内容原样保留）后完全相同的副本
+ *   跨函数或跨文件出现即报。
+ *   单原子守卫、普通 `if (x)`、参数不同、数值/字符串兜底（`getAttr(...) || 320` 同型）
+ *   不命中，不做模糊相似度。真实候选逐项登记在
+ *   `scripts/qa/twin-predicate-exceptions.json`（file + predicate + count + reason），
+ *   阈值 0 = 零增量；同一文件再复制一处副本（count 变化）会重新红灯。
+ *
  * 阈值口径：`--check` 的上限**是防增量，不是要求清零**——历史存量按基线锁住，
  * 新增一条就让总数越过上限即红灯；确属合理新增（如新组件补了一组事件断言）才调阈值，
  * 并在提交说明里写清为什么。各维度各自独立设限（等待/弱断言/事件只断 length/OS 绝对量）。
@@ -54,6 +64,7 @@
  *   node scripts/qa/assert-audit.mjs --check --max-color-literal 0 --max-type-escape 0 --max-console-log 0
  *   node scripts/qa/assert-audit.mjs --check --max-unused-css-class 0
  *   node scripts/qa/assert-audit.mjs --check --max-magic-spacing 0
+ *   node scripts/qa/assert-audit.mjs --check --max-twin-predicate 0
  *   node scripts/qa/assert-audit.mjs --check --max-table-core-lines 7122   # 仅诊断用，不写基线
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -63,9 +74,12 @@ import {
   auditUnusedCssClasses,
   applyCssClassExceptions,
   applyMagicSpacingExceptions,
+  applyTwinPredicateExceptions,
   auditMagicSpacing,
+  auditTwinPredicates,
   loadCssClassExceptions,
   loadMagicSpacingExceptions,
+  loadTwinPredicateExceptions,
 } from './hygiene-guards.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -81,6 +95,7 @@ const INTENTIONAL_ZERO_EXPECT = new Set(['packages/ui/visual.spec.ts'])
 const OS_ASSERT_EXCEPTIONS = 'scripts/qa/os-assert-exceptions.json'
 const UNUSED_CSS_CLASS_EXCEPTIONS = 'scripts/qa/unused-css-class-exceptions.json'
 const MAGIC_SPACING_EXCEPTIONS = 'scripts/qa/magic-spacing-exceptions.json'
+const TWIN_PREDICATE_EXCEPTIONS = 'scripts/qa/twin-predicate-exceptions.json'
 
 export function walk(dir) {
   if (!existsSync(dir)) return []
@@ -800,6 +815,23 @@ export function runMagicSpacingAudit() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* 孪生协议判定（twin-predicate）                                              */
+/*                                                                           */
+/* 检测实现在 hygiene-guards.mjs（AST 提取/归一化/跨函数与跨文件口径见该文件   */
+/* 头注释）；这里只负责调用、例外过滤、报告与阈值。例外 =                       */
+/* scripts/qa/twin-predicate-exceptions.json（file + predicate + count +      */
+/* reason，一条例外消费一条命中，count 变化或消失即报陈旧）。                  */
+/* -------------------------------------------------------------------------- */
+
+/** 全量跑孪生协议判定维度并套用登记例外。 */
+export function runTwinPredicateAudit() {
+  const raw = auditTwinPredicates().flatMap((item) => item.violations)
+  const exceptions = loadTwinPredicateExceptions(join(ROOT, TWIN_PREDICATE_EXCEPTIONS))
+  const { violations, stale } = applyTwinPredicateExceptions(raw, exceptions)
+  return { raw: raw.length, violations, exceptions: exceptions.length, stale }
+}
+
+/* -------------------------------------------------------------------------- */
 /* 核文件行数防增量（core-growth）                                             */
 /*                                                                           */
 /* 单文件承载整个组件运行时（table 的 core）会随每次加功能线性膨胀，越晚拆越贵。 */
@@ -1014,6 +1046,14 @@ function main() {
   const maxMagicSpacing = argValue('--max-magic-spacing', 0)
   const magicSpacing = runMagicSpacingAudit()
 
+  // 孪生协议判定维度（2026-11-16 新增，检测在 hygiene-guards.mjs）：
+  // 有界词法扫描 if/return/三元里的复合协议判定（协议原子 + &&/||），归一化后
+  // 跨函数/跨文件重复即报；真实候选（同一冻结判定/必填判定/浮层 gate 在多个入口或
+  // 多个组件重复实现）逐项登记在 twin-predicate-exceptions.json，有效基线 0 →
+  // 阈值 0 = 零增量；新增孪生判定或同文件多复制一处副本（count 变化）都会红灯。
+  const maxTwinPredicate = argValue('--max-twin-predicate', 0)
+  const twinPredicates = runTwinPredicateAudit()
+
   // 核文件行数维度（2026-11-16 新增）：基线 = scripts/qa/core-growth-baseline.json 的人工承诺值，
   // 允许减少、不允许增加；`--max-table-core-lines` 只作临时诊断覆盖（不写回基线文件）。
   const maxCoreLines = argValue('--max-table-core-lines', loadCoreGrowthBaseline())
@@ -1075,6 +1115,12 @@ function main() {
             exceptions: magicSpacing.exceptions,
             stale: magicSpacing.stale,
           },
+          twinPredicates: {
+            raw: twinPredicates.raw,
+            violations: twinPredicates.violations,
+            exceptions: twinPredicates.exceptions,
+            stale: twinPredicates.stale,
+          },
         },
         null,
         2,
@@ -1095,6 +1141,9 @@ function main() {
     console.log(
       `  魔法间距：${magicSpacing.violations.length}（已剔除登记例外 ${magicSpacing.raw - magicSpacing.violations.length}）`,
     )
+    console.log(
+      `  孪生协议判定：${twinPredicates.violations.length}（已剔除登记例外 ${twinPredicates.raw - twinPredicates.violations.length}）`,
+    )
     // 陈旧例外在 check 与诊断两种模式都提示（不单独 fail）：例外对应的命中已消失，须人工删除
     for (const item of unusedCss.stale) {
       console.warn(`[qa:audit] 陈旧例外：${item.file} .${item.class} [unused-css-class] 已不再命中，请删除`)
@@ -1102,6 +1151,11 @@ function main() {
     for (const item of magicSpacing.stale) {
       console.warn(
         `[qa:audit] 陈旧例外：${item.file} ${item.property}: ${item.value} [magic-spacing] 已不再命中，请删除`,
+      )
+    }
+    for (const item of twinPredicates.stale) {
+      console.warn(
+        `[qa:audit] 陈旧例外：${item.file} ×${item.count} ${item.predicate} [twin-predicate] 已不再命中或副本数变化，请复核删除/更新`,
       )
     }
     if (!check || verbose) {
@@ -1131,6 +1185,10 @@ function main() {
       for (const violation of magicSpacing.violations.slice(0, 40)) console.log(`  ${violation.message}`)
       if (magicSpacing.violations.length > 40)
         console.log(`  ... 另有 ${magicSpacing.violations.length - 40} 条（--json 看全量）`)
+      console.log(`[qa:audit] 孪生协议判定（未登记例外 ${twinPredicates.violations.length} 条）`)
+      for (const violation of twinPredicates.violations.slice(0, 40)) console.log(`  ${violation.message}`)
+      if (twinPredicates.violations.length > 40)
+        console.log(`  ... 另有 ${twinPredicates.violations.length - 40} 条（--json 看全量）`)
       for (const item of stale) {
         console.warn(`[qa:audit] 陈旧例外：${item.file}:${item.line ?? item.snippet} [${item.rule}] 已不再命中，请删除`)
       }
@@ -1149,7 +1207,7 @@ function main() {
   if (check) {
     const effectiveOs = osViolations.length
     console.log(
-      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}；硬编码色值 ≤ ${maxColorLiteral}；类型逃逸 ≤ ${maxTypeEscape}；console.log ≤ ${maxConsoleLog}；未使用 CSS 类 ≤ ${maxUnusedCssClass}；魔法间距 ≤ ${maxMagicSpacing}；核文件行数 ≤ ${maxCoreLines}`,
+      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}；硬编码色值 ≤ ${maxColorLiteral}；类型逃逸 ≤ ${maxTypeEscape}；console.log ≤ ${maxConsoleLog}；未使用 CSS 类 ≤ ${maxUnusedCssClass}；魔法间距 ≤ ${maxMagicSpacing}；孪生协议判定 ≤ ${maxTwinPredicate}；核文件行数 ≤ ${maxCoreLines}`,
     )
     const problems = []
     if (summary.zeroExpectFiles > 0) problems.push(`无 expect 文件 ${summary.zeroExpectFiles}`)
@@ -1183,6 +1241,9 @@ function main() {
     if (magicSpacing.violations.length > maxMagicSpacing) {
       problems.push(`魔法间距 ${magicSpacing.violations.length} > ${maxMagicSpacing}`)
     }
+    if (twinPredicates.violations.length > maxTwinPredicate) {
+      problems.push(`孪生协议判定 ${twinPredicates.violations.length} > ${maxTwinPredicate}`)
+    }
     if (coreGrowth.exceeded) {
       problems.push(`核文件行数 ${coreGrowth.current} > ${coreGrowth.limit}（${coreGrowth.file}）`)
     }
@@ -1209,6 +1270,12 @@ function main() {
         for (const violation of magicSpacing.violations.slice(0, 20)) console.error(`  ${violation.message}`)
         if (magicSpacing.violations.length > 20)
           console.error(`  ... 另有 ${magicSpacing.violations.length - 20} 条（--json 看全量）`)
+      }
+      if (twinPredicates.violations.length > 0) {
+        console.error('[qa:audit] 孪生协议判定（抽具名 helper，或登记例外并写 reason）：')
+        for (const violation of twinPredicates.violations.slice(0, 20)) console.error(`  ${violation.message}`)
+        if (twinPredicates.violations.length > 20)
+          console.error(`  ... 另有 ${twinPredicates.violations.length - 20} 条（--json 看全量）`)
       }
       if (coreGrowth.exceeded) {
         console.error(

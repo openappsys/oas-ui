@@ -18,6 +18,7 @@ import {
   loadExceptions,
   loadOsAssertExceptions,
   runMagicSpacingAudit,
+  runTwinPredicateAudit,
   runUnusedCssClassAudit,
   stripComments,
   summarize,
@@ -506,16 +507,16 @@ test('色值例外按 文件:行 剔除命中，未命中的例外报 stale；sn
 
 /* ------------------------- 未使用 CSS 类（hygiene 接线） ------------------------- */
 
-test('未使用 CSS 类维度：真实仓库例外后零增量、无陈旧，例外覆盖全部原始命中', () => {
+test('未使用 CSS 类维度：真实仓库例外后零增量、无陈旧，例外与原始命中一一对应', () => {
   const result = runUnusedCssClassAudit()
-  assert.equal(typeof result.raw, 'number')
-  assert.ok(
-    result.exceptions >= result.raw,
-    `例外数（${result.exceptions}）应覆盖全部原始命中（${result.raw}）：每条真实候选都须登记精确例外`,
-  )
   assert.equal(
-    result.violations.length,
-    0,
+    result.exceptions,
+    result.raw,
+    `例外数（${result.exceptions}）必须与原始命中（${result.raw}）一一对应：每条真实候选都须登记精确例外，不多不少`,
+  )
+  assert.deepEqual(
+    result.violations,
+    [],
     `存在未登记的未使用类：${result.violations.map((v) => `${v.file}:${v.className}`).join(', ')}`,
   )
   assert.deepEqual(
@@ -527,16 +528,16 @@ test('未使用 CSS 类维度：真实仓库例外后零增量、无陈旧，例
 
 /* ------------------------- 魔法间距尺寸（hygiene 接线） ------------------------- */
 
-test('魔法间距维度：真实仓库例外后零增量、无陈旧，例外覆盖全部原始命中', () => {
+test('魔法间距维度：真实仓库例外后零增量、无陈旧，例外与原始命中一一对应', () => {
   const result = runMagicSpacingAudit()
-  assert.equal(typeof result.raw, 'number')
-  assert.ok(
-    result.exceptions >= result.raw,
-    `例外数（${result.exceptions}）应覆盖全部原始命中（${result.raw}）：每条真实候选都须登记精确例外`,
-  )
   assert.equal(
-    result.violations.length,
-    0,
+    result.exceptions,
+    result.raw,
+    `例外数（${result.exceptions}）必须与原始命中（${result.raw}）一一对应：每条真实候选都须登记精确例外，不多不少`,
+  )
+  assert.deepEqual(
+    result.violations,
+    [],
     `存在未登记的直接像素间距：${result.violations.map((v) => `${v.file}:${v.property}: ${v.value}`).join('；')}`,
   )
   assert.deepEqual(
@@ -546,27 +547,111 @@ test('魔法间距维度：真实仓库例外后零增量、无陈旧，例外�
   )
 })
 
-test('qa:audit CLI：文本、阈值与 --json 都带 magicSpacing，既有维度不漂移', () => {
+/* ------------------------- 孪生协议判定（hygiene 接线） ------------------------- */
+
+test('孪生协议判定维度：真实仓库例外后零增量、无陈旧，例外与原始命中一一对应', () => {
+  const result = runTwinPredicateAudit()
+  // 例外与命中必须一一对应：raw 归零而例外仍留在表里会由 stale 断言拦下，不是空跑通过
+  assert.equal(
+    result.exceptions,
+    result.raw,
+    `例外数（${result.exceptions}）必须与原始命中（${result.raw}）一一对应：每条真实候选都须登记精确例外，不多不少`,
+  )
+  assert.deepEqual(
+    result.violations,
+    [],
+    `存在未登记的孪生判定：${result.violations.map((v) => `${v.file}:${v.line} ×${v.count} ${v.predicate}`).join('；')}`,
+  )
+  assert.deepEqual(
+    result.stale.map((e) => `${e.file} ×${e.count} ${e.predicate}`),
+    [],
+    '例外表存在已不再命中或副本数变化的陈旧条目，须复核删除/更新',
+  )
+})
+
+test('qa:audit CLI：文本、阈值与 --json 都带 hygiene 三维度，既有维度不漂移', () => {
   const script = join(ROOT, 'scripts/qa/assert-audit.mjs')
   const run = (...args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' })
 
   const json = run('--json')
   assert.equal(json.status, 0, json.stderr)
   const report = JSON.parse(json.stdout)
-  assert.equal(typeof report.magicSpacing.raw, 'number')
-  assert.deepEqual(report.magicSpacing.violations, [])
-  assert.deepEqual(report.magicSpacing.stale, [])
-  assert.ok(report.magicSpacing.exceptions >= report.magicSpacing.raw)
+  // 顶层字段固定为 8 个：没有额外 i18n 死键维度（死键由 i18n 包的 EXPECTED_DEAD 双向断言覆盖）
+  assert.deepEqual(Object.keys(report).sort(), [
+    'coreGrowth',
+    'magicSpacing',
+    'osAbsolute',
+    'results',
+    'sourceGuards',
+    'summary',
+    'twinPredicates',
+    'unusedCssClasses',
+  ])
+  const hygiene = ['unusedCssClasses', 'magicSpacing', 'twinPredicates']
+  for (const dimension of hygiene) {
+    const section = report[dimension]
+    assert.deepEqual(
+      Object.keys(section).sort(),
+      ['exceptions', 'raw', 'stale', 'violations'],
+      `${dimension} 的 JSON 结构不得漂移`,
+    )
+    assert.equal(section.exceptions, section.raw, `${dimension} 的例外必须与原始命中一一对应`)
+    assert.deepEqual(section.violations, [], `${dimension} 不得有未登记命中`)
+    assert.deepEqual(section.stale, [], `${dimension} 不得有陈旧例外`)
+  }
   // 既有维度与结构不得漂移
-  assert.ok(report.unusedCssClasses && Array.isArray(report.unusedCssClasses.violations))
-  assert.ok(report.coreGrowth && typeof report.coreGrowth.limit === 'number')
-  assert.ok(report.sourceGuards && report.sourceGuards.colorLiteral)
-  assert.ok(report.summary && typeof report.summary.files === 'number')
+  assert.deepEqual(Object.keys(report.coreGrowth).sort(), ['current', 'exceeded', 'file', 'limit'])
+  assert.equal(report.coreGrowth.exceeded, false)
+  assert.equal(report.coreGrowth.file, 'packages/ui/src/data/table/oas-table.ts')
+  assert.deepEqual(Object.keys(report.sourceGuards).sort(), ['colorLiteral', 'consoleLog', 'ruleMeta', 'typeEscape'])
+  assert.deepEqual(report.sourceGuards.typeEscape.violations, [])
+  assert.deepEqual(report.sourceGuards.consoleLog.violations, [])
+  assert.deepEqual(Object.keys(report.summary).sort(), [
+    'eventLengthOnly',
+    'expects',
+    'files',
+    'osAbsoluteAssertions',
+    'tests',
+    'unconditionalSkips',
+    'waitForTimeout',
+    'weakAssertions',
+    'zeroExpectFiles',
+  ])
 
   const check = run('--check')
   assert.equal(check.status, 0, check.stderr)
-  assert.match(check.stdout, /魔法间距：\d+（已剔除登记例外 \d+）/)
-  assert.match(check.stdout, /魔法间距 ≤ 0/)
-  assert.match(check.stdout, /未使用 CSS 类 ≤ 0/, '既有阈值项不得被挤掉')
-  assert.match(check.stdout, /\[qa:audit\] 通过/)
+  const lines = check.stdout.split(/\r?\n/)
+  const countLine = (section, label) =>
+    `  ${label}：${section.violations.length}（已剔除登记例外 ${section.raw - section.violations.length}）`
+  assert.ok(
+    lines.includes(countLine(report.unusedCssClasses, '未使用 CSS 类')),
+    `文本统计行必须原样包含未使用 CSS 类：${check.stdout}`,
+  )
+  assert.ok(
+    lines.includes(countLine(report.magicSpacing, '魔法间距')),
+    `文本统计行必须原样包含魔法间距：${check.stdout}`,
+  )
+  assert.ok(
+    lines.includes(countLine(report.twinPredicates, '孪生协议判定')),
+    `文本统计行必须原样包含孪生协议判定：${check.stdout}`,
+  )
+  // 阈值行逐段核对：三个 hygiene 维度都以默认 0 出现，且既有阈值项不被挤掉
+  const thresholdLine = lines.find((line) => line.startsWith('[qa:audit] 阈值（防增量，非清零）：'))
+  assert.ok(thresholdLine, '阈值行必须存在')
+  const thresholdSegments = thresholdLine.replace('[qa:audit] 阈值（防增量，非清零）：', '').split('；')
+  for (const segment of [
+    'waitForTimeout ≤ 26',
+    '弱断言 ≤ 0',
+    '事件只断 length ≤ 105',
+    '硬编码色值 ≤ 0',
+    '类型逃逸 ≤ 0',
+    'console.log ≤ 0',
+    '未使用 CSS 类 ≤ 0',
+    '魔法间距 ≤ 0',
+    '孪生协议判定 ≤ 0',
+    `核文件行数 ≤ ${report.coreGrowth.limit}`,
+  ]) {
+    assert.ok(thresholdSegments.includes(segment), `阈值行缺少「${segment}」：${thresholdLine}`)
+  }
+  assert.ok(lines.includes('[qa:audit] 通过'), '--check 通过时必须有通过行')
 })

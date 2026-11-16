@@ -42,6 +42,7 @@
 
 ### 修复
 
+- **`oas-json-viewer` / `oas-diff-viewer` 普通间距改 token（视觉几何不变）**：3 处直接像素间距改走 `--oas-space-*`——json-viewer 占位块与错误块 `padding: 12px` → `var(--oas-space-3)`（各 1 处）、diff-viewer 空态 `padding: 32px 16px` → `var(--oas-space-6) var(--oas-space-4)`；对应 token 值与原子面逐档相等（12 / 16 / 32px），渲染几何零变化，缩放下随 token 体系生效。
 - **`oas-table` 缓冲上界私有方法改名（消公开属性撞名守卫）**：`max-loaded-rows` 的 camelCase `maxLoadedRows` 撞同类私有方法 `maxLoadedRows()` 与私有 flag——框架按「key in el」走 property 写入会以 own property 遮蔽原型成员（`collision-guard` 撞名守卫红线）；私有方法/flag 改名 `maxBufferRows` 消撞，公开属性名 `max-loaded-rows` 不变。
 - **`oas-table` 分批渲染组合边界**：print 媒体下旁路分批、全量同步渲染（打印快照不再只含首帧），退出后恢复分批配置并取消在途代次；全量重渲染末帧恢复保存的滚动位置，无真实手势 / 主动写入时沿用尚未落位的滚动目标（含连续渲染），真实滚动 / 滚动条 / 键盘滚动优先，普通点击与触屏 tap 不误判为滚动。单测覆盖垫高、末帧恢复、代次与手势守卫，e2e 固化排序中真实点击、print 往返与 screen 恢复。
 - **`oas-table` infinite 淘汰后行号坐标统一**：`max-loaded-rows` 淘汰最旧行后，保留行不再从 0 重编号——`data-row-index`、事件与结构槽 `rowIndex`、`aria-rowindex`、展示集快照统一采用累计装载坐标；非虚拟、分批、本地虚拟与 range 按行键选择同口径，`flatIndexByKey` 仍为缓冲内下标；`data` 替换按新累计计数，排序 / refresh 重置后从 0 起算。
@@ -58,6 +59,7 @@
 
 ### 工程
 
+- **源码卫生守卫三件套（`qa:audit:check` 新维度）**：新增未使用 CSS 类、魔法间距、孪生协议判定的防增量门禁（检测集中在 `scripts/qa/hygiene-guards.mjs`，用例同目录 `hygiene-guards.test.mjs`）——组件 `STYLE` 模板里定义却无任何 DOM 路径应用的类；margin / padding / gap 声明里的直接非零 px（`var()` / `calc()` / `clamp()` 等包裹的长度、0、百分比 / em / rem 不在范围）；`if` / `return` / 三元条件里跨函数或跨文件重复的复合属性协议判定（`getAttr` / `hasAttr` / `getAttribute` / `hasAttribute` + `&&` / `||`，归一化完全相同才报，不做模糊相似度）。真实候选逐条精确登记例外（file + class / property + value / predicate + count，均带 reason；同文件副本数变化会重新红灯），三条 `--max-*` 默认 0 = 零增量；守卫只读，不修改产品源码、不自动写例外或基线。i18n 死键沿用 `packages/i18n/src/slices/completeness.test.ts` 的 `EXPECTED_DEAD` 精确集合双向断言（新增 / 缺失都红），不重复建维度。
 - **构建期样式空白折叠（safe minify）**：`foldCssWhitespace`（引号状态机保护）——只做空行去重 + 引号外连续空白折叠，不改任何声明/选择器/值文本、引号内容逐字保留；产物 `cdn.js` gzip −16.4 KB（−2.2%）、全量 dist gzip 合计 −48 KB。金本位 + 全部样式源断言 + visual.spec（含 dark）零差异；语义等价证明（216 个样式源 277 段归一化对比 0 不一致）。
 - **`oas-table` 内联样式抽取为 `style/` 模块（批 E）**：组件内联 STYLE 抽取为 style/base 基础段 + style/features 特性段两模块（逐字节等价、零视觉变化）——纯内部重构，公开面零变化。
 - **WebKit 时序用例治理**：过滤面板触屏 / auto-height 测量回填 / fill-handle 真指针拖拽 / 浮层编辑器四条用例改确定性语义等待与稳定几何——触屏固定坐标并显式断言命中前提、动态行高按长短行同帧真值轮询、填充柄在预览命中后松手、浮层编辑器等待编辑装饰与重建静默后恢复单次双击；去除固定 sleep 与重试动作，WebKit `grepInvert` 隔离全部移除。WebKit 四条 `repeat-each=5`、`retries=0` 共 20/20，Chromium / Firefox 同集合通过。

@@ -18,6 +18,14 @@
  * column-gap）声明里的直接非零 px；var()/calc()/clamp()/min()/max()/env() 包裹的长度、
  * 0/0px、百分比/em/rem、边框/定位/宽高/字号都不命中。真实候选逐项登记在
  * scripts/qa/magic-spacing-exceptions.json（file + property + value + reason）。
+ *
+ * 孪生协议判定（twin-predicate）：有界词法扫描提取 if / return / 三元条件里含
+ * `getAttr` / `hasAttr` / `getAttribute` / `hasAttribute` 协议原子与 `&&` / `||` 的复合
+ * 布尔表达式（不引 TypeScript 编译器、不起子进程），归一化（代码位空白折叠 + 冗余括号剥离，
+ * 字符串内容原样保留）后完全相同的副本跨函数或跨文件出现即报；
+ * 单原子守卫、普通 `if (x)`、参数不同的同型判定、数值/字符串兜底（`getAttr(...) || 320`
+ * 同型）都不命中。不做模糊相似度。真实候选逐项登记在
+ * scripts/qa/twin-predicate-exceptions.json（file + predicate + count + reason）。
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
@@ -26,14 +34,20 @@ import { fileURLToPath } from 'node:url'
 import {
   applyCssClassExceptions,
   applyMagicSpacingExceptions,
+  applyTwinPredicateExceptions,
   auditMagicSpacing,
+  auditTwinPredicates,
   auditUnusedCssClasses,
   collectCssUsageByScope,
+  collectTwinPredicates,
   extractClassUsageTokens,
   findMagicSpacing,
+  findTwinPredicates,
   findUnusedCssClasses,
+  groupTwinPredicates,
   loadCssClassExceptions,
   loadMagicSpacingExceptions,
+  loadTwinPredicateExceptions,
   usageTokensFor,
 } from './hygiene-guards.mjs'
 
@@ -471,4 +485,250 @@ test('真实仓库：魔法间距审计结构完整，登记例外后零增量',
     `存在未登记的直接像素间距：${violations.map((v) => `${v.file}:${v.property}: ${v.value}`).join('；')}`,
   )
   assert.deepEqual(stale, [], `存在陈旧例外：${stale.map((e) => `${e.file}:${e.property}: ${e.value}`).join('；')}`)
+})
+
+/* --------------------------- 孪生协议判定（twin-predicate） --------------------------- */
+
+const twinOf = (source, file = BUTTON) => findTwinPredicates(source, file)
+const TWIN_TEXT = "this.hasAttr('open') && this.getAttr('mode', '') === 'x'"
+
+test('孪生判定：同一复合协议判定跨函数重复必报，空白差异视为相同', () => {
+  const source = [
+    'class X {',
+    `  a() { if (${TWIN_TEXT}) return 1 }`,
+    '  b() {',
+    '    if (',
+    "      this.hasAttr('open') &&    this.getAttr('mode', '') === 'x'",
+    '    ) return 2',
+    '  }',
+    '}',
+  ].join('\n')
+  const hits = twinOf(source)
+  assert.equal(hits.length, 1, '同一文件同一判定只报一条（按文件聚合，列出全部出现处）')
+  const [hit] = hits
+  assert.equal(hit.rule, 'twin-predicate')
+  assert.equal(hit.file, BUTTON)
+  assert.equal(hit.predicate, TWIN_TEXT)
+  assert.equal(hit.count, 2)
+  assert.deepEqual(
+    hit.occurrences.map((o) => o.line),
+    [2, 5],
+  )
+  assert.equal(hit.line, 2)
+  assert.match(hit.message, /twin-predicate/)
+  assert.match(hit.detail, /2 处/)
+})
+
+test('孪生判定：冗余外层括号归一化后相同；取反与原判定不同（不误判）', () => {
+  const source = [
+    'class X {',
+    "  a() { if (this.hasAttr('a') && this.hasAttr('b')) return 1 }",
+    "  b() { if (((this.hasAttr('a') && this.hasAttr('b')))) return 1 }",
+    "  c() { if (!(this.hasAttr('a') && this.hasAttr('b'))) return 1 }",
+    '}',
+  ].join('\n')
+  const hits = twinOf(source)
+  assert.equal(hits.length, 1)
+  assert.equal(hits[0].predicate, "this.hasAttr('a') && this.hasAttr('b')")
+  assert.equal(hits[0].count, 2, '取反判定不是同一结论，不得合并进同一组')
+  assert.deepEqual(
+    hits[0].occurrences.map((o) => o.line),
+    [2, 3],
+  )
+})
+
+test('孪生判定：三元条件与 return 布尔表达式同口径，跨函数重复命中', () => {
+  const source = [
+    'class X {',
+    `  a() { return ${TWIN_TEXT} ? 'on' : 'off' }`,
+    `  b() { return ${TWIN_TEXT} }`,
+    "  c() { return this.hasAttr('open') ? 1 : 2 }",
+    '}',
+  ].join('\n')
+  const hits = twinOf(source)
+  assert.equal(hits.length, 1)
+  assert.equal(hits[0].predicate, TWIN_TEXT)
+  assert.equal(hits[0].count, 2)
+})
+
+test('孪生判定：单原子守卫、普通变量、不同参数、非协议复合都不命中', () => {
+  const singleAtom = [
+    'class X {',
+    "  a() { if (this.hasAttr('open')) return 1 }",
+    "  b() { if (this.hasAttr('open')) return 2 }",
+    "  c() { return this.getAttr('mode', '') === 'x' }",
+    "  d() { return this.getAttr('mode', '') === 'x' }",
+    '}',
+  ].join('\n')
+  assert.deepEqual(twinOf(singleAtom), [], '单原子守卫与单比较重复不报')
+
+  const plain = [
+    'function a(x) { if (x) return 1 }',
+    'function b(x) { if (x) return 2 }',
+    'function c(a, b) { return a && b }',
+    'function d(a, b) { return a && b }',
+  ].join('\n')
+  assert.deepEqual(twinOf(plain), [], '普通变量/无协议原子的复合判定不报')
+
+  const differentArgs = [
+    'class X {',
+    "  a() { if (this.hasAttr('open') && this.hasAttr('disabled')) return 1 }",
+    "  b() { if (this.hasAttr('open') && this.hasAttr('readonly')) return 2 }",
+    "  c() { if (this.getAttr('mode', '') === 'x' && this.hasAttr('open')) return 3 }",
+    '}',
+  ].join('\n')
+  assert.deepEqual(twinOf(differentArgs), [], '参数不同 / 操作数顺序不同不报（不做模糊相似度）')
+})
+
+test('孪生判定：数值/字符串兜底（getAttr(...) || 320 同型）不是布尔判定，不命中', () => {
+  const source = [
+    'class X {',
+    "  a() { return Number(this.getAttr('height', '320')) || 320 }",
+    "  b() { return Number(this.getAttr('height', '320')) || 320 }",
+    "  c() { return this.getAttr('value', '') || 'on' }",
+    "  d() { return this.getAttr('value', '') || 'on' }",
+    '}',
+  ].join('\n')
+  assert.deepEqual(twinOf(source), [])
+})
+
+test('孪生判定：跨文件重复按文件各报一条，其它位置写进 detail', () => {
+  const candidates = collectTwinPredicates([
+    {
+      file: 'packages/ui/src/basic/a/one.ts',
+      source: `function a() { if (${TWIN_TEXT}) return 1 }`,
+    },
+    {
+      file: 'packages/ui/src/basic/b/two.ts',
+      source: `function b() { if (${TWIN_TEXT}) return 1 }`,
+    },
+  ])
+  const hits = groupTwinPredicates(candidates)
+  assert.deepEqual(
+    hits.map((h) => `${h.file}#${h.count}`),
+    ['packages/ui/src/basic/a/one.ts#1', 'packages/ui/src/basic/b/two.ts#1'],
+  )
+  for (const hit of hits) {
+    assert.equal(hit.predicate, TWIN_TEXT)
+    assert.equal(hit.occurrences.length, 1)
+    assert.match(hit.detail, /one\.ts|two\.ts/, 'detail 要指出另一处，便于人工判断是否抽公共判定')
+  }
+})
+
+test('孪生判定：语法错误源码不崩溃（解析容错）', () => {
+  assert.deepEqual(twinOf('const x = {'), [])
+})
+
+test('孪生判定：不平衡括号 / 未闭合字面量等残缺输入安全跳过（不崩溃、不误报）', () => {
+  // 未闭合的 if 括号
+  assert.deepEqual(twinOf("function a() { if (this.hasAttr('a') && this.hasAttr('b')\n"), [])
+  // 未闭合的 return 表达式 / 深层括号堆叠
+  assert.deepEqual(twinOf(`function a() { return ${'['.repeat(20000)}this.hasAttr('a') && this.hasAttr('b')`), [])
+  assert.deepEqual(twinOf(`function a() { if (${'('.repeat(20000)}`), [])
+  // 未闭合字符串 / 模板
+  assert.deepEqual(twinOf(`const s = 'unterminated ${'x'.repeat(20000)}`), [])
+  assert.deepEqual(twinOf(`const t = \`open ${'y'.repeat(20000)}`), [])
+  // 超大无闭合输入：仍要快速返回（不抛错、不卡死）
+  const started = Date.now()
+  assert.deepEqual(twinOf('{if('.repeat(30000)), [])
+  assert.ok(Date.now() - started < 5000, '超大无闭合输入应在有限时间内返回')
+})
+
+test('孪生判定：字符串/模板内容不参与结构判定，归一化也不改写字符串内空白', () => {
+  // 字符串与模板里的 `if` / `&&` / 括号是数据，不是代码
+  const noise = [
+    "const text = \"if (this.hasAttr('a') && this.hasAttr('b')) {\"",
+    'const tpl = `return this.hasAttr("x") && this.hasAttr("y")`',
+    "function f() { return this.hasAttr('a') && this.hasAttr('b') }",
+  ].join('\n')
+  assert.deepEqual(twinOf(noise), [], '字符串内容不得产生候选（否则会跨「作用域」误报）')
+
+  // 同一判定的字符串参数含双空格：归一化只折代码位空白，字符串内容原样保留
+  const spaced = [
+    'class X {',
+    "  a() { if (this.hasAttr('open') && this.getAttr('label', 'a  b') === 'a  b') return 1 }",
+    "  b() { if (this.hasAttr('open') && this.getAttr('label', 'a  b') === 'a  b') return 2 }",
+    '}',
+  ].join('\n')
+  const hits = twinOf(spaced)
+  assert.equal(hits.length, 1)
+  assert.equal(hits[0].predicate, "this.hasAttr('open') && this.getAttr('label', 'a  b') === 'a  b'")
+
+  // 字符串内空白不同 = 不同判定，不得合并
+  const differ = [
+    'class X {',
+    "  a() { if (this.hasAttr('open') && this.getAttr('label', 'a  b') === 'a  b') return 1 }",
+    "  b() { if (this.hasAttr('open') && this.getAttr('label', 'a b') === 'a b') return 2 }",
+    '}',
+  ].join('\n')
+  assert.deepEqual(twinOf(differ), [])
+})
+
+test('孪生例外加载：file/predicate/count/reason 强制', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const dir = mkdtempSync(join(tmpdir(), 'twin-exc-'))
+  const bad = join(dir, 'bad.json')
+  const predicate = TWIN_TEXT
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ predicate, count: 1, reason: '共享判定' }] }))
+  assert.throws(() => loadTwinPredicateExceptions(bad), /file/)
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ file: 'a.ts', count: 1, reason: '共享判定' }] }))
+  assert.throws(() => loadTwinPredicateExceptions(bad), /predicate/)
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ file: 'a.ts', predicate, reason: '共享判定' }] }))
+  assert.throws(() => loadTwinPredicateExceptions(bad), /count/)
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ file: 'a.ts', predicate, count: 0, reason: '共享判定' }] }))
+  assert.throws(() => loadTwinPredicateExceptions(bad), /count/)
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ file: 'a.ts', predicate, count: 1, reason: '短' }] }))
+  assert.throws(() => loadTwinPredicateExceptions(bad), /reason/)
+})
+
+test('applyTwinPredicateExceptions：file+predicate+count 精确匹配，新增一处副本即失效', () => {
+  const hits = [
+    { file: 'a.ts', predicate: TWIN_TEXT, count: 2, line: 3 },
+    { file: 'a.ts', predicate: "this.hasAttr('x') || this.hasAttr('y')", count: 1, line: 9 },
+    { file: 'b.ts', predicate: TWIN_TEXT, count: 1, line: 4 },
+  ]
+  const one = applyTwinPredicateExceptions(hits, [
+    { file: 'a.ts', predicate: TWIN_TEXT, count: 2, reason: 'A/B 两条路径共用同一协议判定，待抽 helper' },
+  ])
+  assert.deepEqual(
+    one.violations.map((v) => `${v.file}#${v.count}:${v.line}`),
+    ['a.ts#1:9', 'b.ts#1:4'],
+  )
+  assert.equal(one.stale.length, 0)
+
+  const grew = applyTwinPredicateExceptions(
+    [{ file: 'a.ts', predicate: TWIN_TEXT, count: 3, line: 3 }],
+    [{ file: 'a.ts', predicate: TWIN_TEXT, count: 2, reason: '登记时只有两处副本' }],
+  )
+  assert.equal(grew.violations.length, 1, '同一文件再复制一份（count 变化）必须重新红灯，不能被旧例外放行')
+  assert.equal(grew.stale.length, 1)
+
+  const miss = applyTwinPredicateExceptions(
+    [{ file: 'c.ts', predicate: TWIN_TEXT, count: 2, line: 1 }],
+    [{ file: 'a.ts', predicate: TWIN_TEXT, count: 2, reason: '判定已删除' }],
+  )
+  assert.equal(miss.violations.length, 1, 'file 必须精确匹配')
+  assert.equal(miss.stale.length, 1)
+})
+
+test('真实仓库：孪生判定审计结构完整，登记例外后零增量', () => {
+  const raw = auditTwinPredicates().flatMap((item) => item.violations)
+  for (const v of raw) {
+    assert.equal(v.rule, 'twin-predicate')
+    assert.ok(typeof v.file === 'string' && v.file.length > 0)
+    assert.ok(Number.isInteger(v.line) && v.line > 0)
+    assert.ok(typeof v.predicate === 'string' && v.predicate.length > 0)
+    assert.ok(Number.isInteger(v.count) && v.count > 0)
+    assert.equal(v.count, v.occurrences.length)
+    assert.match(v.message, /twin-predicate/)
+  }
+  const exceptions = loadTwinPredicateExceptions(join(ROOT, 'scripts/qa/twin-predicate-exceptions.json'))
+  const { violations, stale } = applyTwinPredicateExceptions(raw, exceptions)
+  assert.deepEqual(
+    violations,
+    [],
+    `存在未登记的孪生判定：${violations.map((v) => `${v.file}:${v.line} ×${v.count} ${v.predicate}`).join('；')}`,
+  )
+  assert.deepEqual(stale, [], `存在陈旧例外：${stale.map((e) => `${e.file} ×${e.count} ${e.predicate}`).join('；')}`)
 })

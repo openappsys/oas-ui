@@ -75,6 +75,12 @@
 | --- | --- | --- |
 | **SSR 与文档工程批** | `@oas-ui/ssr/polyfill` 新子路径（Firefox DSD 运行期注入伴侣，setHTMLUnsafe 特性探测 + 递归嵌套 DSD + 幂等）+ Nuxt/Next 双 fixture 跨引擎冒烟三用例；ssr.md 浏览器支持矩阵修正 + 运行时边界节（Edge 诚实口径）+ 缓存与高并发宿主配方节；导航形态组合 guide 页 ×2（zh/en，六个形态 live demo + 双轨组合口径）；遗留清理（kanban 折叠钮 aria-label 带列名、chips-input 全角分隔符、equation 退出事件） | ✅ 已完成（v2.6.8） |
 
+## v2.6.8（源码卫生守卫批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **源码卫生守卫三维度** | `qa:audit:check` 新增未使用 CSS 类 / 魔法间距 / 孪生协议判定防增量维度（例外精确到文件与定位并带 reason，阈值默认 0，只读、无自动修复）；i18n 死键沿用既有 `EXPECTED_DEAD` 双向断言，不重复建维度 | ✅ 已完成（v2.6.8） |
+
 ## v2.6.7（工具链）
 
 | 范围 | 内容 | 状态 |
