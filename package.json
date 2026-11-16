@@ -47,7 +47,7 @@
     "perf:browser:check": "node scripts/perf/browser-bench.mjs --check",
     "perf:browser:selftest": "node --test scripts/perf/browser-bench.test.mjs",
     "release:check": "node scripts/release-check.mjs",
-    "release:check:test": "node --test scripts/release-check.test.mjs scripts/release/*.test.mjs scripts/qa/assert-audit.test.mjs",
+    "release:check:test": "node --test scripts/release-check.test.mjs scripts/release/*.test.mjs scripts/qa/assert-audit.test.mjs scripts/qa/hygiene-guards.test.mjs",
     "release:rehearse": "node scripts/release/rehearse.mjs",
     "release:rehearse:wsl": "node scripts/release/rehearse-wsl.mjs",
     "release": "pnpm test && pnpm typecheck && pnpm build && node scripts/publish-skip-existing.mjs",

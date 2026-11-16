@@ -16,6 +16,7 @@ import {
   isOsAbsoluteScope,
   loadExceptions,
   loadOsAssertExceptions,
+  runUnusedCssClassAudit,
   stripComments,
   summarize,
 } from './assert-audit.mjs'
@@ -498,4 +499,25 @@ test('色值例外按 文件:行 剔除命中，未命中的例外报 stale；sn
   const miss = applyExceptions(violations, [{ file: SRC, line: 9, reason: '已经删掉的色值' }])
   assert.equal(miss.violations.length, 1)
   assert.equal(miss.stale.length, 1)
+})
+
+/* ------------------------- 未使用 CSS 类（hygiene 接线） ------------------------- */
+
+test('未使用 CSS 类维度：真实仓库例外后零增量、无陈旧，例外覆盖全部原始命中', () => {
+  const result = runUnusedCssClassAudit()
+  assert.equal(typeof result.raw, 'number')
+  assert.ok(
+    result.exceptions >= result.raw,
+    `例外数（${result.exceptions}）应覆盖全部原始命中（${result.raw}）：每条真实候选都须登记精确例外`,
+  )
+  assert.equal(
+    result.violations.length,
+    0,
+    `存在未登记的未使用类：${result.violations.map((v) => `${v.file}:${v.className}`).join(', ')}`,
+  )
+  assert.deepEqual(
+    result.stale.map((e) => `${e.file}:${e.class}`),
+    [],
+    '例外表存在已不再命中的陈旧条目，须删除',
+  )
 })
