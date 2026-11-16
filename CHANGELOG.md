@@ -41,6 +41,8 @@
 
 ### 修复
 
+- **`oas-table` 缓冲上界私有方法改名（消公开属性撞名守卫）**：`max-loaded-rows` 的 camelCase `maxLoadedRows` 撞同类私有方法 `maxLoadedRows()` 与私有 flag——框架按「key in el」走 property 写入会以 own property 遮蔽原型成员（`collision-guard` 撞名守卫红线）；私有方法/flag 改名 `maxBufferRows` 消撞，公开属性名 `max-loaded-rows` 不变。
+
 - **`oas-table` server 分组 × `column-virtual` 兼容（取代降级方案）**：此前该组合被判定为不兼容——列虚拟降级为普通渲染 + devWarn 一次（组行按列形态逐格渲染与数据行列窗口占位归并几何错位、聚合值落错列）；现组行与数据行**同源消费列窗口序列**（`columnWindowSequence` 输出）：label 格跨度按窗口内「前导附加列 + 首个聚合列前当前可见列」重算——遇占位格即止（label 不覆盖窗口外区域），横向滚动窗口切换时随 current 可见集重算、不跨窗口错位，ΣcolSpan 恒与数据行同构闭合；聚合列滚出窗口即不渲染、滚入恢复；首个可见列即聚合列时 label 并入首个真实列格（不占位格），折叠/展开交互不回退；`columnVirtualOn()` 移除 server 分组降级项（组合下零 devWarn）。零漂移面：client 本地分组 × column-virtual 组行恒全宽形态不变；server 无分组时列虚拟路径逐字节不变；数据行/表头路径零改动。TDD：单测（初始窗口逐格同构/ΣcolSpan 闭合、滚动窗口切换 label 重算双向、聚合列离场/入场、滚动态折叠可用、勾选前导列计入 label 跨度、labelSpan=0 退化 × 窗口、零降级告警）+ qa-regression e2e（真实浏览器 32 列宽表 + server 分组 + 横向滚动窗口切换 → 组行/数据行 colSpan 序列一致、聚合值正确、dark token 可读、console 零告警）；zh/en 文档（组合矩阵降级→兼容 + 窗口重算口径）+ api-descriptions 同步。
 - **`oas-table` 编辑校验警示条文字色**：`.edit-error` 文字改用 danger 实底反色 token `--oas-color-text-on-danger`（警示条为 danger 实底，原文字色压实底 light 约 1.03:1、dark 约 1.00:1 不可读）——与失败重试按钮 hover 反色同一体系，light / dark 双档对比度达标，暗色随 token 自适应。
 - **`oas-table` server 分组收尾小修（再审缺口/边界）**：① `column-virtual` × server 分组同开守卫——此前组行恒按全量叶子逐格渲染而数据行走列窗口占位归并，组合时组行/数据行格子几何错位（聚合值落错列）；现 `column-virtual` 判定加入「server 分组生效中」不兼容项（devWarn 一次），降级方向为关列虚拟保分组（分组是数据语义、列虚拟是性能优化），无 server 分组时列虚拟行为不变。② 组行 `labelSpan=0` 退化防御——首个叶子即聚合列且无 checkable/rowDrag 时无独立 label 空间，此前 `Math.max(1, 0)` 强凑 colSpan=1 使行宽比总列数多 1（ΣcolSpan 不闭合）；现该退化场景不渲染独立 label 格，label 内容（折叠钮/组标签/计数/depth 缩进）并入首个聚合格，行宽闭合且折叠交互不回退。③ 文档：server 分组限制说明补「固定列（sticky）在组行聚合格上未接线（横滚时组行吸附与数据行不同步），属后续增量」；聚合格 `part` 口径精确化（数据行格子仅在 rowClass 钩子在场时才有 part，组行聚合格恒写——属无副作用附加）；zh/en 同步。
@@ -52,6 +54,7 @@
 
 ### 工程
 
+- **构建期样式空白折叠（safe minify）**：`foldCssWhitespace`（引号状态机保护）——只做空行去重 + 引号外连续空白折叠，不改任何声明/选择器/值文本、引号内容逐字保留；产物 `cdn.js` gzip −16.4 KB（−2.2%）、全量 dist gzip 合计 −48 KB。金本位 + 全部样式源断言 + visual.spec（含 dark）零差异；语义等价证明（216 个样式源 277 段归一化对比 0 不一致）。
 - **`oas-table` 内联样式抽取为 `style/` 模块（批 E）**：组件内联 STYLE 抽取为 style/base 基础段 + style/features 特性段两模块（逐字节等价、零视觉变化）——纯内部重构，公开面零变化。
 
 所有显著变更记录于此。
