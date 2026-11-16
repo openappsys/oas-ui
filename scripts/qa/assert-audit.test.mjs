@@ -5,10 +5,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   analyzeSource,
+  applyExceptions,
   applyOsAssertExceptions,
+  findColorLiterals,
+  findConsoleLogs,
   findOsAbsoluteAssertions,
+  findTypeEscapes,
   isOsAbsoluteScope,
+  loadExceptions,
   loadOsAssertExceptions,
+  stripComments,
   summarize,
 } from './assert-audit.mjs'
 
@@ -251,4 +257,170 @@ test('汇总计数', () => {
   assert.equal(summary.waitForTimeout, 1)
   assert.equal(summary.weakAssertions, 1)
   assert.equal(summary.osAbsoluteAssertions, 1)
+})
+
+/* ------------------------- 源码守卫：硬编码色值 ------------------------- */
+
+const SRC = 'packages/ui/src/basic/x/oas-x.ts'
+
+test('stripComments 抹注释但保留字符串与模板字符串内容', () => {
+  const src = `// a #fff\nconst s = '#0b6cff'\n/* b #123456 */\nconst t = \`color: #18181b; /* css 注释 #ff0000 */\${x}\``
+  const stripped = stripComments(src)
+  assert.ok(!stripped.includes('#fff'), '行注释被抹掉')
+  assert.ok(!stripped.includes('#123456'), '块注释被抹掉')
+  assert.ok(stripped.includes('#0b6cff'), '单引号字符串保留')
+  assert.ok(stripped.includes('#18181b'), '模板字符串内容保留')
+  assert.ok(!stripped.includes('#ff0000'), '模板里的 CSS 注释被抹掉')
+  assert.equal(stripped.split('\n').length, src.split('\n').length, '行数不变（行号可反查）')
+})
+
+test('硬编码色值：样式文本里的 hex / rgb() / rgba( 命中', () => {
+  const hits = findColorLiterals(
+    `
+    const css = \`
+      color: #1a1a1a;
+      box-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+      background: rgba(0, 0, 0, 0.12);
+    \`
+    `,
+    SRC,
+  )
+  assert.equal(hits.length, 3)
+  assert.deepEqual(
+    hits.map((h) => h.line),
+    [3, 4, 5],
+  )
+  assert.match(hits[0].message, /color-literal/)
+  assert.match(hits[0].message, /token/)
+  assert.equal(hits[0].rule, 'color-literal')
+})
+
+test('硬编码色值：3/4/6/8 位 hex 与 rgb ( 空格变体都命中', () => {
+  const hits = findColorLiterals(
+    `
+      color: #fff;
+      color: #abcd;
+      color: #a1b2c3;
+      color: #a1b2c3d4;
+      color: rgb( 1, 2, 3 );
+    `,
+    SRC,
+  )
+  assert.equal(hits.length, 5)
+})
+
+test('硬编码色值：注释、token 定义行、currentColor/transparent 不命中', () => {
+  const hits = findColorLiterals(
+    `
+    // 注释里的 #fff 不算
+    /* 块注释里的 #0b6cff 不算 */
+    --oas-color-primary: #0b6cff;
+    color: currentColor;
+    background: transparent;
+    const doc = '注释说明：对 #18181b 底色不达标'
+    `,
+    SRC,
+  )
+  assert.equal(hits.length, 1, '字符串里的色值仍命中（style 文本载体不豁免），注释/token 定义行豁免')
+  assert.equal(hits[0].line, 7)
+})
+
+test('硬编码色值：单行多条命中合并为一条违规（便于按 文件:行 登记例外）', () => {
+  const [hit] = findColorLiterals('color-mix(in srgb, #43484f 50%, #b2bac5);', SRC)
+  assert.equal(hit.line, 1)
+  assert.match(hit.detail, /× 2/)
+})
+
+/* ------------------------- 源码守卫：类型逃逸 ------------------------- */
+
+test('类型逃逸：六种形态全部命中并给出种类', () => {
+  const hits = findTypeEscapes(
+    `
+    const a = x as any
+    const b: any = y
+    const c: any[] = []
+    const d: Record<string, any> = {}
+    // @ts-ignore
+    const e = f()
+    // @ts-expect-error 说明
+    const g = h()
+    const arr = ids as any[]
+    `,
+    SRC,
+  )
+  assert.equal(hits.length, 7)
+  assert.deepEqual(
+    hits.map((h) => h.detail),
+    [
+      'as any 逃逸',
+      ': any 逃逸',
+      'any[] 逃逸',
+      'Record<string, any> 逃逸',
+      '@ts-ignore 指令',
+      '@ts-expect-error 指令',
+      'as any[] 逃逸',
+    ],
+  )
+  assert.match(hits[0].message, /unknown/)
+})
+
+test('类型逃逸：unknown、Record<string, unknown>、注释与字符串里的 any 不命中', () => {
+  const hits = findTypeEscapes(
+    `
+    const a: unknown = x
+    const b: Record<string, unknown> = {}
+    // 注释里说 as any 不算逃逸
+    const s = '字面量 : any 不算'
+    function many(): anyish { return 1 }
+    const t: anyValue = 1
+    `,
+    SRC,
+  )
+  assert.equal(hits.length, 0)
+})
+
+/* ------------------------- 源码守卫：console.log ------------------------- */
+
+test('console.log 命中；console.warn/error、devWarn、注释与字符串不命中', () => {
+  const hits = findConsoleLogs(
+    `
+    console.log('debug')
+    console.warn('warn')
+    console.error('err')
+    devWarn('dev')
+    // 注释里的 console.log( 不算
+    const s = '字符串里的 console.log( 不算'
+    `,
+    SRC,
+  )
+  assert.equal(hits.length, 1)
+  assert.equal(hits[0].line, 2)
+  assert.match(hits[0].message, /devWarn/)
+})
+
+/* ------------------------- 源码守卫：例外登记 ------------------------- */
+
+test('色值例外必须写明 reason 且需要 line 或 snippet（整文件豁免不允许）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oas-qa-guard-'))
+  const noReason = join(dir, 'no-reason.json')
+  writeFileSync(noReason, JSON.stringify({ exceptions: [{ file: SRC, line: 1 }] }))
+  assert.throws(() => loadExceptions(noReason), /reason/)
+  const wholeFile = join(dir, 'whole-file.json')
+  writeFileSync(wholeFile, JSON.stringify({ exceptions: [{ file: SRC, reason: '整文件豁免' }] }))
+  assert.throws(() => loadExceptions(wholeFile), /line 或 snippet/)
+})
+
+test('色值例外按 文件:行 剔除命中，未命中的例外报 stale；snippet 匹配行号漂移安全', () => {
+  const violations = findColorLiterals('color: #1a1a1a;', SRC)
+  assert.equal(violations.length, 1)
+  const hit = applyExceptions(violations, [{ file: SRC, line: 1, reason: '合法：测试样例' }])
+  assert.equal(hit.violations.length, 0)
+  assert.equal(hit.stale.length, 0)
+
+  const drifted = applyExceptions(violations, [{ file: SRC, snippet: 'color: #1a1a1a;', reason: '合法：测试样例' }])
+  assert.equal(drifted.violations.length, 0, 'snippet 匹配不受行号漂移影响')
+
+  const miss = applyExceptions(violations, [{ file: SRC, line: 9, reason: '已经删掉的色值' }])
+  assert.equal(miss.violations.length, 1)
+  assert.equal(miss.stale.length, 1)
 })

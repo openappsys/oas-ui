@@ -10,6 +10,16 @@
  * - 事件只断言 length 的模式（启发式）；
  * - OS 派生的绝对量断言（scroll 偏移 / getBoundingClientRect 绝对坐标 / 布局计数常数）。
  *
+ * 源码守卫维度（2026-11-16 新增，扫描 packages/ui/src 下全部 .ts，排除 .test.ts）：
+ * - `colorLiteral` 硬编码色值：样式文本与色值数据里的 hex / rgb(a) 字面量。颜色只走
+ *   CSS 变量 token 是项目硬规，但存在合法例外（ANSI 标准调色板、取色器色相数学、
+ *   条码/二维码默认可扫色、遮罩/阴影语义色、对比度算法基准色等）——一律登记在
+ *   `scripts/qa/color-literal-exceptions.json`（每条带 reason），未登记的命中即红灯；
+ * - `typeEscape` 类型逃逸：`as any` / `: any` / `any[]` / `Record<string, any>` /
+ *   `@ts-ignore` / `@ts-expect-error`。基线 = 0（全仓源码当前零逃逸），阈值 0 = 零增量；
+ * - `consoleLog` 调试残留：`console.log(`（`console.warn/error` 与 `devWarn` 允许）。
+ *   基线 = 0，阈值 0 = 零增量。
+ *
  * 阈值口径：`--check` 的上限**是防增量，不是要求清零**——历史存量按基线锁住，
  * 新增一条就让总数越过上限即红灯；确属合理新增（如新组件补了一组事件断言）才调阈值，
  * 并在提交说明里写清为什么。各维度各自独立设限（等待/弱断言/事件只断 length/OS 绝对量）。
@@ -25,6 +35,7 @@
  *   node scripts/qa/assert-audit.mjs --check
  *   node scripts/qa/assert-audit.mjs --check --max-wait 400 --max-weak 380 --max-event-len 105
  *   node scripts/qa/assert-audit.mjs --check --max-os-absolute 77
+ *   node scripts/qa/assert-audit.mjs --check --max-color-literal 0 --max-type-escape 0 --max-console-log 0
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -474,6 +485,298 @@ export function auditOsAbsolute(roots = OS_ABSOLUTE_ROOTS) {
     .filter((item) => item.violations.length > 0)
 }
 
+/* -------------------------------------------------------------------------- */
+/* 源码守卫（source-guards）：硬编码色值 / 类型逃逸 / console.log 残留          */
+/*                                                                           */
+/* 扫描范围：packages/ui/src 下全部 .ts（排除 .test.ts）。与上方测试断言审计       */
+/* 互补：这三个维度防的是「源码本身的增量劣化」，不是测试写法。                */
+/* -------------------------------------------------------------------------- */
+
+/** 源码守卫扫描根目录（theme 包的 token 定义源不在范围内，天然豁免）。 */
+const SOURCE_GUARD_ROOT = 'packages/ui/src'
+const COLOR_LITERAL_EXCEPTIONS = 'scripts/qa/color-literal-exceptions.json'
+
+const COLOR_HEX_RE = /#[0-9a-fA-F]{3,8}\b/g
+const COLOR_RGB_RE = /\brgba?\s*\(/g
+/** token 定义源行：`--oas-color-*:` 定义不命中（定义 token 是 theme 包职责，这里是引用方）。 */
+const COLOR_TOKEN_DEF_RE = /--oas-color-[\w-]+\s*:/
+
+const TYPE_ESCAPE_CODE_RE =
+  /Record\s*<\s*string\s*,\s*any\s*>|\bas\s+any\s*\[\]|\bas\s+any\b|:\s*any\s*\[\]|:\s*any\b|\bany\s*\[\]/g
+const TS_DIRECTIVE_RE = /@ts-expect-error|@ts-ignore/g
+const CONSOLE_LOG_RE = /\bconsole\.log\s*\(/g
+
+const GUARD_META = {
+  'color-literal': {
+    label: '硬编码色值字面量',
+    suggestion:
+      '颜色只走 CSS 变量 token；确属合法（ANSI 固有调色板、取色器颜色数学、码默认可扫色、遮罩/阴影语义色等）请登记 scripts/qa/color-literal-exceptions.json 并写清 reason。',
+  },
+  'type-escape': {
+    label: '类型逃逸',
+    suggestion: '改用 unknown + 收窄、具体类型或泛型；确需 any 时在提交说明写清理由并调整阈值。',
+  },
+  'console-log': {
+    label: 'console.log 调试残留',
+    suggestion: '生产代码不应有 console.log：用户可见告警用 devWarn，致命错误用 console.error。',
+  },
+}
+
+/**
+ * 抹掉注释（行注释 + 块注释），保留字符串与模板字符串内容、保留换行与长度。
+ * 与 maskNonCode 的区别：字符串内容保留——样式文本就住在模板字符串里，
+ * 色值守卫要扫的正是它们；注释里的示例色值（如对比度计算说明）不算违规。
+ * `//` 出现在单双引号/模板字符串内时不视为注释（常见 `https://` 场景）。
+ */
+export function stripComments(source) {
+  const out = source.split('')
+  const blank = (from, to) => {
+    for (let k = from; k < to; k++) if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '
+  }
+  let i = 0
+  while (i < source.length) {
+    const c = source[i]
+    const n = source[i + 1]
+    if (c === '/' && n === '/') {
+      const start = i
+      while (i < source.length && source[i] !== '\n') i++
+      blank(start, i)
+      continue
+    }
+    if (c === '/' && n === '*') {
+      const start = i
+      i += 2
+      while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i++
+      i = Math.min(i + 2, source.length)
+      blank(start, i)
+      continue
+    }
+    if (c === "'" || c === '"') {
+      const quote = c
+      i++
+      while (i < source.length) {
+        if (source[i] === '\\') {
+          i += 2
+          continue
+        }
+        if (source[i] === quote) {
+          i++
+          break
+        }
+        if (source[i] === '\n') break
+        i++
+      }
+      continue
+    }
+    if (c === '`') {
+      // 模板字符串整体视为不透明文本（样式文本载体），但 CSS 注释（/* */）与
+      // ${...} 里的行注释仍要抹掉——注释里的示例色值（如对比度计算说明）不算违规。
+      i++
+      let depth = 0
+      while (i < source.length) {
+        if (source[i] === '\\') {
+          i += 2
+          continue
+        }
+        if (source[i] === '$' && source[i + 1] === '{') {
+          depth++
+          i += 2
+          continue
+        }
+        if (depth > 0 && source[i] === '}') {
+          depth--
+          i++
+          continue
+        }
+        if (source[i] === '/' && source[i + 1] === '*') {
+          const start = i
+          i += 2
+          while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i++
+          i = Math.min(i + 2, source.length)
+          blank(start, i)
+          continue
+        }
+        if (source[i] === '`' && depth === 0) {
+          i++
+          break
+        }
+        if (depth > 0 && source[i] === '/' && source[i + 1] === '/') {
+          const start = i
+          while (i < source.length && source[i] !== '\n') i++
+          blank(start, i)
+          continue
+        }
+        i++
+      }
+      continue
+    }
+    i++
+  }
+  return out.join('')
+}
+
+/**
+ * 单个文件里的硬编码色值命中（未过滤例外）。一行多条命中合并为一条违规，
+ * 便于按「文件:行」登记例外（与 os-assert-exceptions 同构）。
+ */
+export function findColorLiterals(source, file = '') {
+  const stripped = stripComments(source)
+  const toLine = lineIndex(source)
+  const lines = stripped.split(/\r?\n/)
+  const rawLines = source.split(/\r?\n/)
+  const violations = []
+  lines.forEach((line, index) => {
+    if (COLOR_TOKEN_DEF_RE.test(line)) return
+    const hits = [...line.matchAll(COLOR_HEX_RE), ...line.matchAll(COLOR_RGB_RE)]
+    if (hits.length === 0) return
+    const kinds = new Set(hits.map((m) => (m[0].startsWith('#') ? 'hex' : 'rgb()')))
+    violations.push({
+      file,
+      line: index + 1,
+      rule: 'color-literal',
+      detail: `${kinds.has('hex') ? 'hex' : ''}${kinds.size > 1 ? ' + ' : ''}${kinds.has('rgb()') ? 'rgb()' : ''} 字面量 × ${hits.length}`,
+      snippet: (rawLines[index] ?? '').trim().slice(0, 240),
+      message: `${file}:${index + 1} [color-literal] ${kinds.has('hex') ? 'hex' : ''}${kinds.size > 1 ? '+' : ''}${kinds.has('rgb()') ? 'rgb()' : ''} × ${hits.length}。${GUARD_META['color-literal'].suggestion}`,
+    })
+  })
+  return violations
+}
+
+/**
+ * 单个文件里的类型逃逸命中（未过滤例外）。
+ * any 系模式跑在 maskNonCode 上（注释/字符串不算逃逸）；@ts-* 指令本身就活在
+ * 注释里，从原文按行计数。匹配不含 unknown，Record<string, unknown> 不误报。
+ */
+export function findTypeEscapes(source, file = '') {
+  const masked = maskNonCode(source)
+  const toLine = lineIndex(source)
+  const violations = []
+  const lines = source.split(/\r?\n/)
+  const push = (offset, kind, detail) => {
+    const line = toLine(offset)
+    violations.push({
+      file,
+      line,
+      rule: 'type-escape',
+      detail,
+      snippet: (lines[line - 1] ?? '').trim().slice(0, 240),
+      message: `${file}:${line} [type-escape] ${detail}。${GUARD_META['type-escape'].suggestion}`,
+    })
+  }
+  for (const m of masked.matchAll(TYPE_ESCAPE_CODE_RE)) {
+    const text = m[0].replace(/\s+/g, ' ')
+    const arr = text.includes('[') ? '[]' : ''
+    const kind = text.startsWith('Record')
+      ? 'Record<string, any>'
+      : text.startsWith('as')
+        ? `as any${arr}`
+        : text.startsWith(':')
+          ? arr
+            ? 'any[]'
+            : ': any'
+          : 'any[]'
+    push(m.index, kind, `${kind} 逃逸`)
+  }
+  for (const m of source.matchAll(TS_DIRECTIVE_RE)) {
+    push(m.index, m[0], `${m[0]} 指令`)
+  }
+  return violations.sort((a, b) => a.line - b.line)
+}
+
+/** 单个文件里的 console.log 残留（注释/字符串不算，跑在 maskNonCode 上）。 */
+export function findConsoleLogs(source, file = '') {
+  const masked = maskNonCode(source)
+  const lines = source.split(/\r?\n/)
+  const violations = []
+  for (const m of masked.matchAll(CONSOLE_LOG_RE)) {
+    const line = lineIndex(source)(m.index)
+    violations.push({
+      file,
+      line,
+      rule: 'console-log',
+      detail: 'console.log( 调试输出',
+      snippet: (lines[line - 1] ?? '').trim().slice(0, 240),
+      message: `${file}:${line} [console-log] console.log( 调试输出。${GUARD_META['console-log'].suggestion}`,
+    })
+  }
+  return violations
+}
+
+/** 收集源码守卫扫描目标：`packages/ui/src` 下所有非测试 .ts。 */
+export function collectSourceFiles(root = SOURCE_GUARD_ROOT) {
+  const abs = join(ROOT, root)
+  if (!existsSync(abs)) return []
+  const out = []
+  const walkDir = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory() && entry.name === 'node_modules') continue
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walkDir(path)
+      else if (/\.ts$/.test(entry.name) && !/\.test\.ts$/.test(entry.name)) out.push(path)
+    }
+  }
+  walkDir(abs)
+  return out
+}
+
+/** 跑全部三个源码守卫维度，返回 `{ file, violations }[]`（每文件 violations 已合并三维度）。 */
+export function auditSourceGuards(root = SOURCE_GUARD_ROOT) {
+  return collectSourceFiles(root)
+    .map((path) => {
+      const file = relative(ROOT, path).replaceAll('\\', '/')
+      const source = readFileSync(path, 'utf8')
+      return {
+        file,
+        violations: [
+          ...findColorLiterals(source, file),
+          ...findTypeEscapes(source, file),
+          ...findConsoleLogs(source, file),
+        ],
+      }
+    })
+    .sort((a, b) => a.file.localeCompare(b.file))
+}
+
+/**
+ * 读取通用例外表（结构 = os-assert-exceptions 去 rule 字段）：
+ * 每条 `{ file, line?|snippet?, reason }`；`reason` 强制（没有理由的例外会把门禁变成摆设）。
+ */
+export function loadExceptions(path) {
+  if (!existsSync(path)) return []
+  const raw = JSON.parse(readFileSync(path, 'utf8'))
+  const list = Array.isArray(raw) ? raw : (raw.exceptions ?? [])
+  return list.map((entry, index) => {
+    const where = `${path}#${index}`
+    if (!entry || typeof entry !== 'object') throw new Error(`${where}: 例外必须是对象`)
+    if (!entry.file) throw new Error(`${where}: 缺少 file`)
+    if (entry.line === undefined && !entry.snippet) {
+      throw new Error(`${where}: 需要 line 或 snippet 之一（整文件豁免会把新增命中一起放过）`)
+    }
+    if (typeof entry.reason !== 'string' || entry.reason.trim().length < 4) {
+      throw new Error(`${where}: 必须写 reason（为什么这条命中合法）`)
+    }
+    return entry
+  })
+}
+
+/** 剔除已登记例外，返回 `{ violations, stale }`（一条例外只消费一条命中）。 */
+export function applyExceptions(violationList, exceptions) {
+  const used = new Set()
+  const remaining = violationList.filter((violation) => {
+    const index = exceptions.findIndex((exception, i) => {
+      if (used.has(i)) return false
+      if (exception.file !== violation.file) return false
+      if (exception.snippet) return violation.snippet.includes(exception.snippet)
+      return exception.line === violation.line
+    })
+    if (index < 0) return true
+    used.add(index)
+    return false
+  })
+  const stale = exceptions.filter((_, i) => !used.has(i))
+  return { violations: remaining, stale }
+}
+
 export function summarize(results) {
   return results.reduce(
     (acc, item) => ({
@@ -583,6 +886,27 @@ function main() {
   // 避免上限虚高把新增违规一起放过。
   const maxOsAbsolute = argValue('--max-os-absolute', 77)
 
+  // 源码守卫维度（2026-11-16 新增）：
+  // - colorLiteral 基线 134 处命中（104 行），全部属合法例外（ANSI 标准调色板、取色器
+  //   色相数学、码默认可扫色、遮罩/阴影语义色、对比度算法基准色、组件局部 token 默认值
+  //   等，逐条带 reason 登记在 color-literal-exceptions.json）→ 有效基线 0，阈值 0 = 零增量；
+  // - typeEscape / consoleLog 全仓源码基线实测即 0（无存量可登记）→ 阈值 0 = 零增量。
+  // 口径与上方一致：只防增量、不要求清零；确属合理新增才调阈值并写清理由。
+  const maxColorLiteral = argValue('--max-color-literal', 0)
+  const maxTypeEscape = argValue('--max-type-escape', 0)
+  const maxConsoleLog = argValue('--max-console-log', 0)
+
+  const guards = auditSourceGuards()
+  const guardViolations = guards.flatMap((item) => item.violations)
+  const colorExceptions = loadExceptions(join(ROOT, COLOR_LITERAL_EXCEPTIONS))
+  const colorApplied = applyExceptions(
+    guardViolations.filter((v) => v.rule === 'color-literal'),
+    colorExceptions,
+  )
+  const colorViolations = colorApplied.violations
+  const typeViolations = guardViolations.filter((v) => v.rule === 'type-escape')
+  const consoleViolations = guardViolations.filter((v) => v.rule === 'console-log')
+
   const exceptions = loadOsAssertExceptions()
   const osRaw = results.flatMap((item) => item.osAbsoluteAssertions)
   const { violations: osViolations, stale } = applyOsAssertExceptions(
@@ -604,6 +928,17 @@ function main() {
             exceptions: exceptions.length,
             stale,
           },
+          sourceGuards: {
+            ruleMeta: GUARD_META,
+            colorLiteral: {
+              raw: guardViolations.filter((v) => v.rule === 'color-literal').length,
+              violations: colorViolations,
+              exceptions: colorExceptions.length,
+              stale: colorApplied.stale,
+            },
+            typeEscape: { violations: typeViolations },
+            consoleLog: { violations: consoleViolations },
+          },
         },
         null,
         2,
@@ -613,6 +948,9 @@ function main() {
     console.log(`[qa:audit] ${summary.files} 文件 / ${summary.tests} 测试 / ${summary.expects} expect`)
     console.log(
       `  无 expect 文件 ${summary.zeroExpectFiles}；无条件 skip ${summary.unconditionalSkips}；waitForTimeout ${summary.waitForTimeout}；弱断言 ${summary.weakAssertions}；事件只断 length ${summary.eventLengthOnly}；OS 绝对量断言 ${osViolations.length}（已剔除登记例外 ${registered}）`,
+    )
+    console.log(
+      `  源码守卫：硬编码色值 ${colorViolations.length}（已剔除登记例外 ${guardViolations.filter((v) => v.rule === 'color-literal').length - colorViolations.length}）；类型逃逸 ${typeViolations.length}；console.log ${consoleViolations.length}`,
     )
     if (!check || verbose) {
       const noisy = results.filter(
@@ -636,13 +974,22 @@ function main() {
       for (const item of stale) {
         console.warn(`[qa:audit] 陈旧例外：${item.file}:${item.line ?? item.snippet} [${item.rule}] 已不再命中，请删除`)
       }
+      const guardAll = [...colorViolations, ...typeViolations, ...consoleViolations]
+      console.log(`[qa:audit] 源码守卫违规（未登记例外 ${guardAll.length} 条）`)
+      for (const violation of guardAll.slice(0, 40)) console.log(`  ${violation.message}`)
+      if (guardAll.length > 40) console.log(`  ... 另有 ${guardAll.length - 40} 条（--json 看全量）`)
+      for (const item of colorApplied.stale) {
+        console.warn(
+          `[qa:audit] 陈旧例外：${item.file}:${item.line ?? item.snippet} [color-literal] 已不再命中，请删除`,
+        )
+      }
     }
   }
 
   if (check) {
     const effectiveOs = osViolations.length
     console.log(
-      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}`,
+      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}；硬编码色值 ≤ ${maxColorLiteral}；类型逃逸 ≤ ${maxTypeEscape}；console.log ≤ ${maxConsoleLog}`,
     )
     const problems = []
     if (summary.zeroExpectFiles > 0) problems.push(`无 expect 文件 ${summary.zeroExpectFiles}`)
@@ -661,11 +1008,26 @@ function main() {
     if (effectiveOs > maxOsAbsolute) {
       problems.push(`OS 绝对量断言 ${effectiveOs} > ${maxOsAbsolute}`)
     }
+    if (colorViolations.length > maxColorLiteral) {
+      problems.push(`硬编码色值 ${colorViolations.length} > ${maxColorLiteral}`)
+    }
+    if (typeViolations.length > maxTypeEscape) {
+      problems.push(`类型逃逸 ${typeViolations.length} > ${maxTypeEscape}`)
+    }
+    if (consoleViolations.length > maxConsoleLog) {
+      problems.push(`console.log ${consoleViolations.length} > ${maxConsoleLog}`)
+    }
     if (problems.length) {
       if (effectiveOs > maxOsAbsolute) {
         console.error('[qa:audit] OS 绝对量断言违规（改成语义不变量，或登记例外）：')
         for (const violation of osViolations.slice(0, 20)) console.error(`  ${violation.message}`)
         if (effectiveOs > 20) console.error(`  ... 另有 ${effectiveOs - 20} 条（--json 看全量）`)
+      }
+      const guardOver = [...colorViolations, ...typeViolations, ...consoleViolations]
+      if (guardOver.length > 0) {
+        console.error('[qa:audit] 源码守卫违规（改为 token/unknown/devWarn，或登记例外并写 reason）：')
+        for (const violation of guardOver.slice(0, 20)) console.error(`  ${violation.message}`)
+        if (guardOver.length > 20) console.error(`  ... 另有 ${guardOver.length - 20} 条（--json 看全量）`)
       }
       console.error(`[qa:audit] 未通过：${problems.join('；')}`)
       process.exit(1)

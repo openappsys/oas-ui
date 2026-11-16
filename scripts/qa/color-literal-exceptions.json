@@ -1,0 +1,525 @@
+{
+  "$comment": "硬编码色值守卫（color-literal）的登记例外。每条须写 reason（为什么该行色值合法，如 ANSI 固有调色板 / 颜色数学输出 / 默认可扫色 / 遮罩阴影语义色 / 对比度算法基准色）。匹配顺序：有 snippet 按 file+片段包含匹配（行号漂移安全），否则按 file+line 精确匹配；一条例外只消费一条命中。例外不再命中时报「陈旧例外」提示，须及时删除。整文件豁免不允许（会把新增命中一起放过）。",
+  "exceptions": [
+    {
+      "file": "packages/ui/src/basic/badge/oas-badge.ts",
+      "line": 150,
+      "reason": "on-color 对比度计算的明暗基色（WCAG 相对亮度算法基准），语义固定非样式文本"
+    },
+    {
+      "file": "packages/ui/src/basic/badge/oas-badge.ts",
+      "line": 1285,
+      "reason": "premium 缎带金色皮肤专属文字色/浮雕高光（金底 token 派生皮肤，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/basic/badge/oas-badge.ts",
+      "line": 1287,
+      "reason": "premium 缎带金色皮肤专属文字色/浮雕高光（金底 token 派生皮肤，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/basic/button-group/oas-button-group.ts",
+      "line": 43,
+      "reason": "实底按钮组的分隔线高光（相邻实底同色的 1px 视觉分隔，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/basic/button-group/oas-button-group.ts",
+      "line": 49,
+      "reason": "实底按钮组的分隔线高光（相邻实底同色的 1px 视觉分隔，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/basic/button-group/oas-button-group.ts",
+      "line": 55,
+      "reason": "实底按钮组的分隔线高光（相邻实底同色的 1px 视觉分隔，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/basic/button/oas-button.ts",
+      "line": 47,
+      "reason": "on-color 对比度计算的明暗基色（WCAG 相对亮度算法基准），语义固定非样式文本"
+    },
+    {
+      "file": "packages/ui/src/data/avatar/oas-avatar.ts",
+      "line": 50,
+      "reason": "on-color 对比度计算的明暗基色（WCAG 相对亮度算法基准），语义固定非样式文本"
+    },
+    {
+      "file": "packages/ui/src/data/barcode/oas-barcode.ts",
+      "line": 358,
+      "reason": "条码默认可扫色（可扫性优先于主题一致性，dark 下同样要求深浅对比，可被 --oas-barcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/data/barcode/oas-barcode.ts",
+      "line": 367,
+      "reason": "条码默认可扫色（可扫性优先于主题一致性，dark 下同样要求深浅对比，可被 --oas-barcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/data/barcode/oas-barcode.ts",
+      "line": 373,
+      "reason": "条码默认可扫色（可扫性优先于主题一致性，dark 下同样要求深浅对比，可被 --oas-barcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/data/barcode/oas-barcode.ts",
+      "line": 392,
+      "reason": "条码默认可扫色（可扫性优先于主题一致性，dark 下同样要求深浅对比，可被 --oas-barcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
+      "line": 155,
+      "reason": "轮播点局部 token 的默认值（可被 --oas-carousel-dot-* 覆盖，非写死主题色）"
+    },
+    {
+      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
+      "line": 164,
+      "reason": "轮播点局部 token 的默认值（可被 --oas-carousel-dot-* 覆盖，非写死主题色）"
+    },
+    {
+      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
+      "line": 171,
+      "reason": "轮播点局部 token 的默认值（可被 --oas-carousel-dot-* 覆盖，非写死主题色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 108,
+      "reason": "ANSI 转 CSS 色值的格式化输出（组件本职：把终端颜色序列渲染成色值串）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 111,
+      "reason": "ANSI 转 CSS 色值的格式化输出（组件本职：把终端颜色序列渲染成色值串）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 156,
+      "reason": "ANSI 转 CSS 色值的格式化输出（组件本职：把终端颜色序列渲染成色值串）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 233,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 234,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 235,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 236,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 237,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 238,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 239,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 240,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 241,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 242,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 243,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 244,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 245,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 246,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 247,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 248,
+      "reason": "ANSI 16 色标准调色板（终端协议固有颜色，与主题无关）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 276,
+      "reason": "ANSI 转 CSS 色值的格式化输出（组件本职：把终端颜色序列渲染成色值串）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 505,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 506,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 507,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 508,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 509,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 510,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 511,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 512,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 513,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 514,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 515,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 516,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 517,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 518,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 519,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/log/oas-log.ts",
+      "line": 520,
+      "reason": "light-dark 双皮肤 ANSI 语义色映射（--ansi-* 局部 token 定义，终端协议固有颜色）"
+    },
+    {
+      "file": "packages/ui/src/data/marquee/oas-marquee.ts",
+      "line": 108,
+      "reason": "mask-image 遮罩渐变止点：#000 是遮罩语义色（表示透明区域），不参与可见配色"
+    },
+    {
+      "file": "packages/ui/src/data/marquee/oas-marquee.ts",
+      "line": 109,
+      "reason": "mask-image 遮罩渐变止点：#000 是遮罩语义色（表示透明区域），不参与可见配色"
+    },
+    {
+      "file": "packages/ui/src/data/marquee/oas-marquee.ts",
+      "line": 117,
+      "reason": "mask-image 遮罩渐变止点：#000 是遮罩语义色（表示透明区域），不参与可见配色"
+    },
+    {
+      "file": "packages/ui/src/data/marquee/oas-marquee.ts",
+      "line": 118,
+      "reason": "mask-image 遮罩渐变止点：#000 是遮罩语义色（表示透明区域），不参与可见配色"
+    },
+    {
+      "file": "packages/ui/src/data/qrcode/oas-qrcode.ts",
+      "line": 408,
+      "reason": "二维码默认可扫色（可扫性优先于主题一致性，可被 --oas-qrcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/data/qrcode/oas-qrcode.ts",
+      "line": 420,
+      "reason": "二维码默认可扫色（可扫性优先于主题一致性，可被 --oas-qrcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/data/qrcode/oas-qrcode.ts",
+      "line": 577,
+      "reason": "二维码默认可扫色（可扫性优先于主题一致性，可被 --oas-qrcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/data/qrcode/oas-qrcode.ts",
+      "line": 596,
+      "reason": "二维码默认可扫色（可扫性优先于主题一致性，可被 --oas-qrcode-* 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/feedback/modal/oas-modal.ts",
+      "line": 235,
+      "reason": "浮层边缘阴影渐变的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/feedback/modal/oas-modal.ts",
+      "line": 236,
+      "reason": "浮层边缘阴影渐变的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/color.ts",
+      "line": 380,
+      "reason": "颜色数学函数的格式化输出（组件本职：解析/转换用户色值）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/color.ts",
+      "line": 399,
+      "reason": "颜色数学函数的格式化输出（组件本职：解析/转换用户色值）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/color.ts",
+      "line": 400,
+      "reason": "颜色数学函数的格式化输出（组件本职：解析/转换用户色值）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 70,
+      "reason": "色相环 6 色标（HSL 空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 71,
+      "reason": "色相环 6 色标（HSL 空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 72,
+      "reason": "色相环 6 色标（HSL 空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 73,
+      "reason": "色相环 6 色标（HSL 空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 74,
+      "reason": "色相环 6 色标（HSL 空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 75,
+      "reason": "色相环 6 色标（HSL 空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 76,
+      "reason": "色相环 6 色标（HSL 空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker-designer.ts",
+      "line": 311,
+      "reason": "SV 面板渐变端点 #000/#fff（饱和度/明度空间的数学端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 27,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 28,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 29,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 30,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 31,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 32,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 33,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 34,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 35,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 36,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 37,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+      "line": 38,
+      "reason": "默认预设色板数据（组件自带的数据常量，供用户选取，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/form/slider/oas-slider.ts",
+      "line": 1323,
+      "reason": "色相/明度滑轨渐变（光谱空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/slider/oas-slider.ts",
+      "line": 1327,
+      "reason": "色相/明度滑轨渐变（光谱空间固有端点，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/form/switch/oas-switch.ts",
+      "line": 36,
+      "reason": "on-color 对比度计算的明暗基色（WCAG 相对亮度算法基准），语义固定非样式文本"
+    },
+    {
+      "file": "packages/ui/src/form/toggle-button/oas-toggle-button.ts",
+      "line": 32,
+      "reason": "on-color 对比度计算的明暗基色（WCAG 相对亮度算法基准），语义固定非样式文本"
+    },
+    {
+      "file": "packages/ui/src/form/toggle-group/oas-toggle-group.ts",
+      "line": 65,
+      "reason": "on-color 对比度计算的明暗基色（WCAG 相对亮度算法基准），语义固定非样式文本"
+    },
+    {
+      "file": "packages/ui/src/framework/theme-editor/oas-theme-editor.ts",
+      "line": 232,
+      "reason": "主题编辑器的中性灰样例数据（编辑器展示用常量，非组件自身配色）"
+    },
+    {
+      "file": "packages/ui/src/layout/scroll-area/oas-scroll-area.ts",
+      "line": 104,
+      "reason": "滚动区边缘阴影渐变的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/layout/scroll-area/oas-scroll-area.ts",
+      "line": 105,
+      "reason": "滚动区边缘阴影渐变的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+      "line": 114,
+      "reason": "侧边栏浮出阴影的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+      "line": 127,
+      "reason": "侧边栏浮出阴影的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+      "line": 193,
+      "reason": "侧边徽标文字局部 token 的默认值（可被 --oas-sidebar-badge-color 覆盖）"
+    },
+    {
+      "file": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+      "line": 583,
+      "reason": "侧边栏浮出阴影的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+      "line": 587,
+      "reason": "侧边栏浮出阴影的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+      "line": 609,
+      "reason": "侧边栏浮出阴影的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+      "line": 622,
+      "reason": "侧边栏浮出阴影的语义色 rgba(0,0,0,.12)（投影深浅，无对应全局 token）"
+    },
+    {
+      "file": "packages/ui/src/workbench/titlebar/oas-traffic-lights.ts",
+      "line": 28,
+      "reason": "窗口红绿灯平台固有颜色（macOS 窗口控件标准色，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/workbench/titlebar/oas-traffic-lights.ts",
+      "line": 29,
+      "reason": "窗口红绿灯平台固有颜色（macOS 窗口控件标准色，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/workbench/titlebar/oas-traffic-lights.ts",
+      "line": 30,
+      "reason": "窗口红绿灯平台固有颜色（macOS 窗口控件标准色，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/workbench/titlebar/oas-traffic-lights.ts",
+      "line": 31,
+      "reason": "窗口红绿灯平台固有颜色（macOS 窗口控件标准色，非设计 token 配色）"
+    },
+    {
+      "file": "packages/ui/src/workbench/titlebar/oas-traffic-lights.ts",
+      "line": 78,
+      "reason": "窗口红绿灯平台固有颜色（macOS 窗口控件标准色，非设计 token 配色）"
+    }
+  ]
+}
