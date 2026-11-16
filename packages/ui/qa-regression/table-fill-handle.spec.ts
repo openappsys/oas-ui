@@ -36,6 +36,35 @@ async function handleBox(page: import('@playwright/test').Page) {
   }, TABLE_ID)
 }
 
+/** 拖拽几何前置（WebKit 时序治理）：填充柄与目标格都须真实落在视口内——
+ * shadowRoot.elementFromPoint 对视口外坐标返回 null（实测 WebKit document/shadow 双通道
+ * 均 null），位置解析失败则预览/提交不发生（「拖了没反应」的 flaky 根因：demo 块在长文档页
+ * 中的视口位置随引擎布局差异漂移）。滚动后再由调用方读句柄/目标格坐标（读数即滚动后几何）。 */
+async function ensureDragGeometry(page: import('@playwright/test').Page) {
+  await page.locator(TABLE_ID).scrollIntoViewIfNeeded()
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel) as HTMLElement & { shadowRoot: ShadowRoot }
+    const tr = el.shadowRoot.querySelector('tr[data-row-index="2"]')
+    if (!tr) return
+    const r = tr.getBoundingClientRect()
+    if (r.bottom > window.innerHeight - 40) window.scrollBy(0, r.bottom - window.innerHeight + 120)
+  }, TABLE_ID)
+}
+
+/** 真实输入通道的语义等待：拖拽预览真正命中目标行——选区焦点格落在目标行
+ * （previewFill 合帧后 setSelection 落 class，是「预览已命中」的 DOM 真值；
+ * 不猜帧数、不固定 sleep，命中后才 pointerup）。 */
+async function waitPreviewReachedRow(page: import('@playwright/test').Page, row: number) {
+  await page.waitForFunction(
+    ({ sel, row }) => {
+      const el = document.querySelector(sel) as HTMLElement & { shadowRoot: ShadowRoot }
+      return !!el.shadowRoot.querySelector(`tr[data-row-index="${row}"] td.range-focus`)
+    },
+    { sel: TABLE_ID, row },
+    { timeout: 5000 },
+  )
+}
+
 /** 读数据行某字段（展示集行号） */
 async function cellValue(page: import('@playwright/test').Page, row: number, col: string) {
   return page.evaluate(
@@ -97,14 +126,24 @@ test.describe('table 拖拽填充柄', () => {
   })
 
   test('真指针拖拽：松开后填充提交且状态条可见反馈（一条写回事务）', async ({ page }) => {
+    // 前置精确锚点：程序化选区（demo setRangeSelection row0→row1）的焦点格在 row1——
+    // 后续 waitPreviewReachedRow(2)「焦点落到目标行」才有区分度（非恒真：起点 ≠ 目标行）
+    const focusRowBefore = await page.evaluate((sel) => {
+      const el = document.querySelector(sel) as HTMLElement & { shadowRoot: ShadowRoot }
+      return el.shadowRoot.querySelector('td.range-focus')?.closest('tr')?.getAttribute('data-row-index') ?? null
+    }, TABLE_ID)
+    expect(focusRowBefore, '选区焦点在 row1（demo 选区 row0→row1）').toBe('1')
+    await ensureDragGeometry(page)
     const handle = (await handleBox(page))!
     const target = await cellBox(page, 2, 'day')
     await page.mouse.move(handle.x, handle.y)
     await page.mouse.move(handle.down.x, handle.down.y)
     await page.mouse.down()
-    // 分步移动触发实时预览（rAF 合帧），最后落在目标格
+    // 分步移动触发实时预览（rAF 合帧）；最后落在目标格后等「预览真正命中目标行」
+    // （选区焦点格落在目标行 = previewFill 合帧落定的 DOM 真值）再松手——不猜帧数
     await page.mouse.move(target.x, (handle.y + target.y) / 2, { steps: 4 })
     await page.mouse.move(target.x, target.y, { steps: 4 })
+    await waitPreviewReachedRow(page, 2)
     await page.mouse.up()
     // auto 语义：日期按日步进 / 数值首差 / 文本循环（源 [2026-01-01,2026-01-04] / [1,5] / [张三,李四]）
     expect(await cellValue(page, 2, 'day'), '日期步进：拖一格得 2026-01-07').toBe('2026-01-07')
@@ -115,6 +154,7 @@ test.describe('table 拖拽填充柄', () => {
   })
 
   test('拖回原点（无位移释放）不写入', async ({ page }) => {
+    await ensureDragGeometry(page)
     const handle = (await handleBox(page))!
     await page.mouse.move(handle.x, handle.y)
     await page.mouse.move(handle.down.x, handle.down.y)
@@ -126,12 +166,15 @@ test.describe('table 拖拽填充柄', () => {
   })
 
   test('拖拽中 Esc 取消：后续 pointerup 不写入', async ({ page }) => {
+    await ensureDragGeometry(page)
     const handle = (await handleBox(page))!
     const target = await cellBox(page, 2, 'day')
     await page.mouse.move(handle.x, handle.y)
     await page.mouse.move(handle.down.x, handle.down.y)
     await page.mouse.down()
     await page.mouse.move(target.x, target.y, { steps: 4 })
+    // 等预览真正命中目标行再 Esc（时序与真指针拖拽主用例同口径）
+    await waitPreviewReachedRow(page, 2)
     // Esc 经表格 keydown 取消填充（真实用户路径：焦点在格内按键冒泡到 shadowRoot——
     // 处理器以 td 为门禁，直接派发到 shadowRoot 会被 closest 门禁早退，故派发到源锚点格）
     await page.evaluate((sel) => {
@@ -201,6 +244,7 @@ test.describe('table 拖拽填充柄', () => {
 
   test('RTL：dir=rtl 下手柄仍在（inline-end 镜像）且向下拖拽照常填充', async ({ page }) => {
     await page.evaluate((sel) => (document.querySelector(sel) as HTMLElement).setAttribute('dir', 'rtl'), TABLE_ID)
+    await ensureDragGeometry(page)
     const handle = (await handleBox(page))!
     expect(handle.label, 'RTL 下手柄不消失且本地化标签仍在').toBe('填充柄')
     const target = await cellBox(page, 2, 'seq')
@@ -208,6 +252,7 @@ test.describe('table 拖拽填充柄', () => {
     await page.mouse.move(handle.down.x, handle.down.y)
     await page.mouse.down()
     await page.mouse.move(target.x, target.y, { steps: 4 })
+    await waitPreviewReachedRow(page, 2)
     await page.mouse.up()
     expect(await cellValue(page, 2, 'seq'), 'RTL 纵向拖拽填充不受镜像影响').toBe(9)
     // 横向镜像（视觉左 = DOM 下一列）留给人工截图复核，机制由 direction 推导与 DOM 列序保证

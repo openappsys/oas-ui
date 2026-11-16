@@ -1788,17 +1788,97 @@ test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁�
   }
 })
 
+// WebKit 时序（实测归因）：编辑启动与宿主异步重建存在竞态——
+// 单次 dblclick 后 data-editing 曾正常置 true，但 ~26ms 后宿主又一次 tbody 重建把编辑态
+// 抹掉（失败样本 rebuilds=5 vs 成功 2；旧「hydration 旧 td」因果未证实，已弃）。语义等待
+// 两道门：① 编辑装饰（editable-cell）+ 编辑器组件定义（oas-select）就绪；② 宿主 tbody
+// 重建静默 500ms（childList 变更即重置计时——等待的是「重建排空」状态，非固定时长）；
+// 然后单次派发 dblclick，再等编辑器真实挂载（10s，错误不吞——卡点直接抛出暴露，不重试）。
+async function waitOverlayEditorReady(p: import('@playwright/test').Page): Promise<void> {
+  // 门①：编辑装饰 + 编辑器组件定义就绪
+  await p.waitForFunction(
+    () => {
+      const td = document.querySelector('#table-edit-overlay')!.shadowRoot!.querySelector('tbody td[data-col="dept"]')
+      return !!td && td.classList.contains('editable-cell') && customElements.get('oas-select') != null
+    },
+    null,
+    { timeout: 15_000 },
+  )
+  // 门②：宿主重建静默——编辑标记挂在 DOM 行上，任何后续重建都会抹掉编辑态；重建即重置计时
+  await p.evaluate(() => {
+    const w = window as { __oqCount?: number; __oqLast?: number; __oqMo?: MutationObserver }
+    w.__oqCount = 0
+    w.__oqLast = -1
+    const tbody = document.querySelector('#table-edit-overlay')!.shadowRoot!.querySelector('tbody')!
+    w.__oqMo?.disconnect()
+    w.__oqMo = new MutationObserver(() => {
+      w.__oqCount = (w.__oqCount ?? 0) + 1
+    })
+    w.__oqMo.observe(tbody, { childList: true })
+  })
+  await p.waitForFunction(
+    (q) => {
+      const w = window as { __oqCount?: number; __oqLast?: number; __oqT?: number }
+      if (w.__oqCount !== w.__oqLast) {
+        w.__oqLast = w.__oqCount
+        w.__oqT = performance.now()
+        return false
+      }
+      return performance.now() - (w.__oqT ?? 0) >= q
+    },
+    500,
+    { timeout: 15_000, polling: 100 },
+  )
+  // 单次派发 dblclick（两道门后不再重派）
+  await p.evaluate(() => {
+    const t = document.querySelector('#table-edit-overlay')!
+    const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+  })
+  await p.waitForFunction(
+    () =>
+      !!document
+        .querySelector('#table-edit-overlay')!
+        .shadowRoot!.querySelector('tbody td[data-col="dept"] .cell-editor-component'),
+    null,
+    { timeout: 10_000 },
+  )
+}
+
+/** 语义条件：浮层编辑器的 oas-select 触发器展开态（aria-expanded 真值） */
+async function waitOverlayOpen(p: import('@playwright/test').Page, open: boolean): Promise<void> {
+  await p.waitForFunction(
+    (want) => {
+      const editor = document
+        .querySelector('#table-edit-overlay')!
+        .shadowRoot!.querySelector('tbody td[data-col="dept"] .cell-editor-component')
+      const trigger = editor?.shadowRoot?.querySelector('.trigger')
+      return !!trigger && trigger.getAttribute('aria-expanded') === String(want)
+    },
+    open,
+    { timeout: 10_000 },
+  )
+}
+
+/** 语义条件：编辑态标记（data-editing 真值） */
+async function waitEditing(p: import('@playwright/test').Page, editing: boolean): Promise<void> {
+  await p.waitForFunction(
+    (want) => {
+      const t = document.querySelector('#table-edit-overlay')!
+      return !!t.shadowRoot!.querySelector('[data-editing="true"]') === want
+    },
+    editing,
+    { timeout: 10_000 },
+  )
+}
+
 test('table 浮层编辑器通道（editComponent 第二期）：选定即提交 + Esc 双层级 + 外点提交（PRD 验收闭环）', async ({
   page,
 }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit-overlay')
   // 1. 双击部门列 → oas-select 挂载 + 浮层自动展开
-  await page.evaluate(() => {
-    const t = document.querySelector('#table-edit-overlay')!
-    const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
-    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
-  })
+  await waitOverlayEditorReady(page)
   // 就绪等待用轮询而非固定 sleep：CI 2 核 runner 上挂载/展开/选项渲染都可能晚于任意常数，
   // 固定等待会让后续交互落在「还没接线」的列表上（曾致选定值未提交的失败：期望 be 实收旧值 fe）
   await expect
@@ -1858,58 +1938,42 @@ test('table 浮层编辑器通道（editComponent 第二期）：选定即提交
   expect(submitted.dept, '选定提交回写').toBe('be')
   expect(submitted.editing, '提交后退出编辑态').toBe(false)
 
-  // 3. Esc 双层级：第一层关浮层（编辑不取消），第二层取消编辑
-  const escFlow = await page.evaluate(async () => {
+  // 3. Esc 双层级：第一层关浮层（编辑不取消），第二层取消编辑。
+  // 动作 → 外部条件等待 → 下一动作（去除 evaluate 内固定 setTimeout，全部改语义等待）
+  await waitOverlayEditorReady(page)
+  await waitOverlayOpen(page, true)
+  // 第一层 Esc（派发到触发器——处理器以内部元素为门禁，同键盘链路口径）
+  await page.evaluate(() => {
     const t = document.querySelector('#table-edit-overlay')!
-    const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
-    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
-    await new Promise((r) => setTimeout(r, 300))
-    const editor = () => td.querySelector('.cell-editor-component')!
-    const trigger = () => editor().shadowRoot!.querySelector('.trigger')!
-    const isOpen = () => trigger().getAttribute('aria-expanded') === 'true'
-    const open1 = isOpen()
-    trigger().dispatchEvent(
-      new KeyboardEvent('keydown', {
-        key: 'Escape',
-        bubbles: true,
-        composed: true,
-      }),
-    )
-    await new Promise((r) => setTimeout(r, 200))
-    const afterFirst = {
-      open: isOpen(),
-      editing: !!t.shadowRoot!.querySelector('[data-editing="true"]'),
-    }
-    trigger().dispatchEvent(
-      new KeyboardEvent('keydown', {
-        key: 'Escape',
-        bubbles: true,
-        composed: true,
-      }),
-    )
-    await new Promise((r) => setTimeout(r, 200))
-    const afterSecond = !!t.shadowRoot!.querySelector('[data-editing="true"]')
-    return { open1, afterFirst, afterSecond }
+    const editor = t.shadowRoot!.querySelector('tbody td[data-col="dept"] .cell-editor-component')!
+    const trigger = editor.shadowRoot!.querySelector('.trigger')!
+    trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
   })
-  expect(escFlow.open1, '进编辑浮层开').toBe(true)
-  expect(escFlow.afterFirst.open, '第一层 Esc 关浮层').toBe(false)
-  expect(escFlow.afterFirst.editing, '第一层不取消编辑').toBe(true)
-  expect(escFlow.afterSecond, '第二层 Esc 取消编辑').toBe(false)
+  // 条件等待：浮层已关 + 编辑态保留（不猜时序）
+  await waitOverlayOpen(page, false)
+  await waitEditing(page, true)
+  // 第二层 Esc → 取消编辑
+  await page.evaluate(() => {
+    const t = document.querySelector('#table-edit-overlay')!
+    const editor = t.shadowRoot!.querySelector('tbody td[data-col="dept"] .cell-editor-component')!
+    const trigger = editor.shadowRoot!.querySelector('.trigger')!
+    trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }))
+  })
+  await waitEditing(page, false)
 
   // 4. 外点提交：进编辑 → 指针落在表外 + 焦点离开编辑器（真实点击的两步：pointerdown 判定
   // 抑制窗口 + blur 触发提交；合成事件不转移焦点，须显式派 focusout 模拟真实焦点链）
-  const outside = await page.evaluate(async () => {
-    const t = document.querySelector('#table-edit-overlay')!
-    const td = t.shadowRoot!.querySelector('tbody td[data-col="dept"]') as HTMLElement
-    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
-    await new Promise((r) => setTimeout(r, 300))
+  await waitOverlayEditorReady(page)
+  await waitOverlayOpen(page, true)
+  await page.evaluate(() => {
     document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true }))
-    const editor = td.querySelector('.cell-editor-component')!
+    const t = document.querySelector('#table-edit-overlay')!
+    const editor = t.shadowRoot!.querySelector('tbody td[data-col="dept"] .cell-editor-component')!
     editor.dispatchEvent(new FocusEvent('focusout', { bubbles: true, composed: true }))
-    return new Promise((r) => setTimeout(() => r(!t.shadowRoot!.querySelector('[data-editing="true"]')), 250))
   })
-  expect(outside, '外点提交退出编辑态').toBe(true)
+  // 条件等待：外点提交退出编辑态
+  await waitEditing(page, false)
 })
 
 test('table 子元素通道 + 列内模板 + 真实列宽拖拽：不崩表（回归：resize 回写 JSON 把 DOM 模板序列化成 {} 致整表渲染抛错）', async ({
@@ -5552,6 +5616,13 @@ test('table advanced：createWindowedSource × 视觉适配器——真实 adapt
 // —— 触屏外点关闭（hasTouch 真实触摸）：过滤面板 ——
 // 迁移回归：外点关闭统一走 shared/outside-dismiss（click + coarse pointerup 双通道）。
 // WebKit 对非交互目标上的 tap 只派发 pointer 事件、不合成 click——只挂 click 会整体失效。
+// WebKit 引擎适配（实测）：触屏 tap 后 WebKit 会合成一个「幽灵 click」，其命中测试不走
+// shadow 树——fixed 定位的面板被跳过，click target 落在面板下方的文档元素上；若该元素在
+// 表格宿主之外，外点处理按契约关闭面板（pointerup 通道按 composedPath 判内不误关）。适配：
+// ① 夹具 position:fixed 固定几何——免疫本文档页其余 demo 异步长高的几何漂移（实测打开面板
+// 与 tap 之间宿主视口位可漂移数千 px）；② tap 标题区保持在宿主边框盒内（实测 2 行数据即
+// 覆盖——标题紧贴触发钮下方）——幽灵 click target = 宿主 → contains 判内 → 面板不关。
+// 语义不变：面板内真实 tap 不关、外部非交互区 tap 经 pointerup 通道关。
 test('table 过滤面板触屏：面板内 tap 不关，外部非交互区 tap（pointerup 通道）关', async ({ browser }) => {
   const ctx = await browser.newContext({ hasTouch: true, viewport: { width: 1280, height: 800 } })
   const page = await ctx.newPage()
@@ -5570,10 +5641,9 @@ test('table 过滤面板触屏：面板内 tap 不关，外部非交互区 tap�
           { id: 'b', name: '乙' },
         ]),
       )
-      el.style.display = 'block'
-      el.style.margin = '32px 16px'
-      ;(document.querySelector('.vp-doc') ?? document.body).appendChild(el)
-      el.scrollIntoView({ block: 'center' })
+      // fixed 定位夹具：几何稳定（不受文档异步长高漂移影响），tap 点与面板标题均在宿主盒内
+      el.style.cssText = 'position:fixed;left:16px;top:120px;width:560px;z-index:2147483000'
+      document.body.appendChild(el)
       // 外部非交互区：纯 div（无 click 语义），WebKit 触屏 tap 只到 pointerup
       const blank = document.createElement('div')
       blank.id = 'qa-touch-blank'
@@ -5599,8 +5669,19 @@ test('table 过滤面板触屏：面板内 tap 不关，外部非交互区 tap�
     const panelPoint = await page.evaluate(() => {
       const panel = document.querySelector('#qa-touch-filter')!.shadowRoot!.querySelector<HTMLElement>('.filter-panel')!
       const r = panel.getBoundingClientRect()
-      return { x: r.left + r.width / 2, y: r.top + 10 }
+      const h = document.querySelector('#qa-touch-filter')!.getBoundingClientRect()
+      return {
+        x: r.left + r.width / 2,
+        y: r.top + 10,
+        host: { l: h.left, t: h.top, r: h.right, b: h.bottom },
+      }
     })
+    // 几何前提显式断言：tap 点在宿主边框盒内——WebKit 幽灵 click 的 target 即宿主，
+    // 外点处理 contains 判内、面板不关（前提不靠注释保证）
+    expect(panelPoint.x, 'tap 点 x 在宿主盒内').toBeGreaterThanOrEqual(panelPoint.host.l)
+    expect(panelPoint.x, 'tap 点 x 在宿主盒内').toBeLessThanOrEqual(panelPoint.host.r)
+    expect(panelPoint.y, 'tap 点 y 在宿主盒内').toBeGreaterThanOrEqual(panelPoint.host.t)
+    expect(panelPoint.y, 'tap 点 y 在宿主盒内').toBeLessThanOrEqual(panelPoint.host.b)
     // 面板内 tap（标题区，非按钮）：不得关闭
     await page.touchscreen.tap(panelPoint.x, panelPoint.y)
     const openAfterInside = await page.evaluate(
@@ -5978,11 +6059,27 @@ test('table auto-height：测量回填行撑高 + 滚动几何收敛 + console �
       { timeout: 15_000 },
     )
     .toBeGreaterThan(56)
-  // 短行仍 40px（测量只改长行），行 2 显著高于短行
-  const row2 = await t
-    .locator('tbody tr[data-row-index="2"]')
-    .evaluate((tr) => Math.round(tr.getBoundingClientRect().height))
-  expect(row2).toBeGreaterThan(56)
+  // 短行/长行双向真高（实测口径修正：既有注释「短行仍 40px（测量只改长行）」与行为不符——
+  // 收缩探测会放行短行表达真高（见 auto-height 能力头注释），可低于 row-height；
+  // 本 fixture 短行真高收敛 ≈22px）。语义条件轮询：同一 evaluate 快照读两行，
+  // row2 撑高（>56）且 row1 已收敛真高（0 < row1 < 40）双条件落定后才放行——重建 cycle 中
+  // 两行可能同处瞬态（实测 row2 短暂 0/row1 短暂未收敛——非时序承诺，仅实测描述），
+  // 快照级双条件轮询骑过瞬时。
+  await expect
+    .poll(
+      async () =>
+        t.evaluate((el) => {
+          const h = (i: string) => {
+            const tr = el.shadowRoot!.querySelector(`tbody tr[data-row-index="${i}"]`)
+            return tr ? Math.round(tr.getBoundingClientRect().height) : -1
+          }
+          const row1 = h('1')
+          const row2 = h('2')
+          return row2 > 56 && row1 > 0 && row1 < 40
+        }),
+      { timeout: 15_000 },
+    )
+    .toBe(true)
   // 滚动总高收敛：> 60×40=2400（长行贡献真高）——滚动条长度反映前缀和
   const scrollH = await t.evaluate((el) => el.shadowRoot!.querySelector('.table-scroll')!.scrollHeight)
   expect(scrollH).toBeGreaterThan(2400)

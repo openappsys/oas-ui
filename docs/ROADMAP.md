@@ -26,6 +26,7 @@
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
 | **table 组合边界收口** | 分批 × print 全量输出；分批末帧滚动恢复与真实滚动优先；infinite 淘汰后累计行号跨事件/ARIA/快照/range 同源；server 分组固定列接线与 label 固定区/续格拆分；helper × infinite 创建时 devWarn | ✅ 已完成（v2.6.8） |
+| **table WebKit 时序用例治理** | 过滤面板触屏 / auto-height / fill-handle / 浮层编辑器四条用例改确定性语义等待与稳定几何，恢复单次双击并移除 WebKit 隔离 | ✅ 已完成（v2.6.8） |
 
 ## v2.6.8（gantt 任务网格面板批）
 
