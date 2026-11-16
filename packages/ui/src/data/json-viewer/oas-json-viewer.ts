@@ -223,8 +223,8 @@ const STYLE = `
   text-decoration: underline;
   text-underline-offset: 1px;
 }
-.placeholder { padding: 12px; color: var(--oas-color-text-secondary); }
-.error { padding: 12px; color: var(--oas-color-danger-text); white-space: pre-wrap; }
+.placeholder { padding: var(--oas-space-3); color: var(--oas-color-text-secondary); }
+.error { padding: var(--oas-space-3); color: var(--oas-color-danger-text); white-space: pre-wrap; }
 :host([data-compact]) .row { font-size: 11px; }
 :host([data-compact]) .toolbar { padding: 4px 6px; }
 @media (prefers-reduced-motion: no-preference) {

@@ -29,6 +29,13 @@
  *   阈值 0 = 零增量；i18n 死键精确集合由 packages/i18n/src/slices/completeness.test.ts
  *   的 EXPECTED_DEAD 双向断言覆盖，不在此重复。
  *
+ * 魔法间距尺寸维度（2026-11-16 新增，检测实现在 scripts/qa/hygiene-guards.mjs）：
+ * - `magicSpacing`：margin/padding/gap（含逻辑子属性与 row-gap/column-gap）声明里的
+ *   直接非零 px。`var()/calc()/clamp()/min()/max()/env()` 包裹的长度、`0`/`0px`、
+ *   百分比/em/rem、边框/定位/宽高/字号都不命中。真实候选（命中区几何、光学对齐、
+ *   接缝抵消等组件自有常量）逐项登记在 `scripts/qa/magic-spacing-exceptions.json`
+ *   （file + property + value + reason），阈值 0 = 零增量；新增直接像素间距必红灯。
+ *
  * 阈值口径：`--check` 的上限**是防增量，不是要求清零**——历史存量按基线锁住，
  * 新增一条就让总数越过上限即红灯；确属合理新增（如新组件补了一组事件断言）才调阈值，
  * 并在提交说明里写清为什么。各维度各自独立设限（等待/弱断言/事件只断 length/OS 绝对量）。
@@ -46,12 +53,20 @@
  *   node scripts/qa/assert-audit.mjs --check --max-os-absolute 77
  *   node scripts/qa/assert-audit.mjs --check --max-color-literal 0 --max-type-escape 0 --max-console-log 0
  *   node scripts/qa/assert-audit.mjs --check --max-unused-css-class 0
+ *   node scripts/qa/assert-audit.mjs --check --max-magic-spacing 0
  *   node scripts/qa/assert-audit.mjs --check --max-table-core-lines 7122   # 仅诊断用，不写基线
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { auditUnusedCssClasses, applyCssClassExceptions, loadCssClassExceptions } from './hygiene-guards.mjs'
+import {
+  auditUnusedCssClasses,
+  applyCssClassExceptions,
+  applyMagicSpacingExceptions,
+  auditMagicSpacing,
+  loadCssClassExceptions,
+  loadMagicSpacingExceptions,
+} from './hygiene-guards.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 // 文档站 spec 与组件回归 spec 同一套质量口径（当前 docs 下没有 spec，新增会自动纳入）
@@ -65,6 +80,7 @@ const IGNORE_SKIP_FILES = new Set(['packages/ui/demo-coverage.spec.ts'])
 const INTENTIONAL_ZERO_EXPECT = new Set(['packages/ui/visual.spec.ts'])
 const OS_ASSERT_EXCEPTIONS = 'scripts/qa/os-assert-exceptions.json'
 const UNUSED_CSS_CLASS_EXCEPTIONS = 'scripts/qa/unused-css-class-exceptions.json'
+const MAGIC_SPACING_EXCEPTIONS = 'scripts/qa/magic-spacing-exceptions.json'
 
 export function walk(dir) {
   if (!existsSync(dir)) return []
@@ -767,6 +783,23 @@ export function runUnusedCssClassAudit() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* 魔法间距尺寸（magic-spacing）                                                */
+/*                                                                           */
+/* 检测实现在 hygiene-guards.mjs（属性白名单/函数剔除/值口径见该文件头注释）；   */
+/* 这里只负责调用、例外过滤、报告与阈值。例外 =                                 */
+/* scripts/qa/magic-spacing-exceptions.json（file + property + value + reason， */
+/* 一条例外消费一条命中，消失即报陈旧）。                                       */
+/* -------------------------------------------------------------------------- */
+
+/** 全量跑魔法间距维度并套用登记例外。 */
+export function runMagicSpacingAudit() {
+  const raw = auditMagicSpacing().flatMap((item) => item.violations)
+  const exceptions = loadMagicSpacingExceptions(join(ROOT, MAGIC_SPACING_EXCEPTIONS))
+  const { violations, stale } = applyMagicSpacingExceptions(raw, exceptions)
+  return { raw: raw.length, violations, exceptions: exceptions.length, stale }
+}
+
+/* -------------------------------------------------------------------------- */
 /* 核文件行数防增量（core-growth）                                             */
 /*                                                                           */
 /* 单文件承载整个组件运行时（table 的 core）会随每次加功能线性膨胀，越晚拆越贵。 */
@@ -974,6 +1007,13 @@ function main() {
   const maxUnusedCssClass = argValue('--max-unused-css-class', 0)
   const unusedCss = runUnusedCssClassAudit()
 
+  // 魔法间距尺寸维度（2026-11-16 新增，检测在 hygiene-guards.mjs）：
+  // 真实候选（命中区几何、光学对齐、边框接缝抵消、小于最小 token 档的微调）逐项
+  // 登记在 magic-spacing-exceptions.json，有效基线 0 → 阈值 0 = 零增量；
+  // 新增任何直接像素 margin/padding/gap（未经例外登记）都会红灯。
+  const maxMagicSpacing = argValue('--max-magic-spacing', 0)
+  const magicSpacing = runMagicSpacingAudit()
+
   // 核文件行数维度（2026-11-16 新增）：基线 = scripts/qa/core-growth-baseline.json 的人工承诺值，
   // 允许减少、不允许增加；`--max-table-core-lines` 只作临时诊断覆盖（不写回基线文件）。
   const maxCoreLines = argValue('--max-table-core-lines', loadCoreGrowthBaseline())
@@ -1029,6 +1069,12 @@ function main() {
             exceptions: unusedCss.exceptions,
             stale: unusedCss.stale,
           },
+          magicSpacing: {
+            raw: magicSpacing.raw,
+            violations: magicSpacing.violations,
+            exceptions: magicSpacing.exceptions,
+            stale: magicSpacing.stale,
+          },
         },
         null,
         2,
@@ -1046,9 +1092,17 @@ function main() {
     console.log(
       `  未使用 CSS 类：${unusedCss.violations.length}（已剔除登记例外 ${unusedCss.raw - unusedCss.violations.length}）`,
     )
+    console.log(
+      `  魔法间距：${magicSpacing.violations.length}（已剔除登记例外 ${magicSpacing.raw - magicSpacing.violations.length}）`,
+    )
     // 陈旧例外在 check 与诊断两种模式都提示（不单独 fail）：例外对应的命中已消失，须人工删除
     for (const item of unusedCss.stale) {
       console.warn(`[qa:audit] 陈旧例外：${item.file} .${item.class} [unused-css-class] 已不再命中，请删除`)
+    }
+    for (const item of magicSpacing.stale) {
+      console.warn(
+        `[qa:audit] 陈旧例外：${item.file} ${item.property}: ${item.value} [magic-spacing] 已不再命中，请删除`,
+      )
     }
     if (!check || verbose) {
       const noisy = results.filter(
@@ -1073,6 +1127,10 @@ function main() {
       for (const violation of unusedCss.violations.slice(0, 40)) console.log(`  ${violation.message}`)
       if (unusedCss.violations.length > 40)
         console.log(`  ... 另有 ${unusedCss.violations.length - 40} 条（--json 看全量）`)
+      console.log(`[qa:audit] 魔法间距（未登记例外 ${magicSpacing.violations.length} 条）`)
+      for (const violation of magicSpacing.violations.slice(0, 40)) console.log(`  ${violation.message}`)
+      if (magicSpacing.violations.length > 40)
+        console.log(`  ... 另有 ${magicSpacing.violations.length - 40} 条（--json 看全量）`)
       for (const item of stale) {
         console.warn(`[qa:audit] 陈旧例外：${item.file}:${item.line ?? item.snippet} [${item.rule}] 已不再命中，请删除`)
       }
@@ -1091,7 +1149,7 @@ function main() {
   if (check) {
     const effectiveOs = osViolations.length
     console.log(
-      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}；硬编码色值 ≤ ${maxColorLiteral}；类型逃逸 ≤ ${maxTypeEscape}；console.log ≤ ${maxConsoleLog}；未使用 CSS 类 ≤ ${maxUnusedCssClass}；核文件行数 ≤ ${maxCoreLines}`,
+      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}；硬编码色值 ≤ ${maxColorLiteral}；类型逃逸 ≤ ${maxTypeEscape}；console.log ≤ ${maxConsoleLog}；未使用 CSS 类 ≤ ${maxUnusedCssClass}；魔法间距 ≤ ${maxMagicSpacing}；核文件行数 ≤ ${maxCoreLines}`,
     )
     const problems = []
     if (summary.zeroExpectFiles > 0) problems.push(`无 expect 文件 ${summary.zeroExpectFiles}`)
@@ -1122,6 +1180,9 @@ function main() {
     if (unusedCss.violations.length > maxUnusedCssClass) {
       problems.push(`未使用 CSS 类 ${unusedCss.violations.length} > ${maxUnusedCssClass}`)
     }
+    if (magicSpacing.violations.length > maxMagicSpacing) {
+      problems.push(`魔法间距 ${magicSpacing.violations.length} > ${maxMagicSpacing}`)
+    }
     if (coreGrowth.exceeded) {
       problems.push(`核文件行数 ${coreGrowth.current} > ${coreGrowth.limit}（${coreGrowth.file}）`)
     }
@@ -1142,6 +1203,12 @@ function main() {
         for (const violation of unusedCss.violations.slice(0, 20)) console.error(`  ${violation.message}`)
         if (unusedCss.violations.length > 20)
           console.error(`  ... 另有 ${unusedCss.violations.length - 20} 条（--json 看全量）`)
+      }
+      if (magicSpacing.violations.length > 0) {
+        console.error('[qa:audit] 魔法间距（改走 --oas-space-* token，或登记例外并写 reason）：')
+        for (const violation of magicSpacing.violations.slice(0, 20)) console.error(`  ${violation.message}`)
+        if (magicSpacing.violations.length > 20)
+          console.error(`  ... 另有 ${magicSpacing.violations.length - 20} 条（--json 看全量）`)
       }
       if (coreGrowth.exceeded) {
         console.error(

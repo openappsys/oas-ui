@@ -348,6 +348,68 @@ test('diff-viewer RTL：并排旧文本保持在起始侧（右），行号镜�
   })
 })
 
+test('diff-viewer 空态占位内边距 = --oas-space-6 / --oas-space-4 token（四边精确）', async ({ page }) => {
+  await page.goto('/components/diff-viewer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dv-empty')
+  await page.waitForFunction(
+    () => !!document.querySelector('#dv-empty')?.shadowRoot?.querySelector('[part="placeholder"]'),
+  )
+  const measured = await page.evaluate(() => {
+    const node = document.querySelector('#dv-empty')!.shadowRoot!.querySelector<HTMLElement>('[part="placeholder"]')
+    if (!node) throw new Error('缺少 [part="placeholder"]')
+    const style = getComputedStyle(node)
+    return {
+      padding: {
+        top: style.paddingTop,
+        right: style.paddingRight,
+        bottom: style.paddingBottom,
+        left: style.paddingLeft,
+      },
+      // token 取占位节点自身的计算值：组件若局部覆盖 token，断言仍指向真实生效值
+      vertical: style.getPropertyValue('--oas-space-6').trim(),
+      horizontal: style.getPropertyValue('--oas-space-4').trim(),
+    }
+  })
+  for (const [axis, value] of [
+    ['纵向 --oas-space-6', measured.vertical],
+    ['横向 --oas-space-4', measured.horizontal],
+  ] as const) {
+    expect(value, `${axis} 必须是非零 px 长度`).toMatch(/^[1-9]\d*(?:\.\d+)?px$/)
+  }
+  // 上下取纵向档、左右取横向档；两档不同，能抓到写成 `var(--oas-space-4) var(--oas-space-6)` 的轴反置
+  expect(measured.padding.top).toBe(measured.vertical)
+  expect(measured.padding.bottom).toBe(measured.vertical)
+  expect(measured.padding.left).toBe(measured.horizontal)
+  expect(measured.padding.right).toBe(measured.horizontal)
+  expect(
+    Number.parseFloat(measured.vertical),
+    '纵向留白档必须大于横向档（--oas-space-6 > --oas-space-4）',
+  ).toBeGreaterThan(Number.parseFloat(measured.horizontal))
+
+  // 覆盖 token 后 padding 必须跟随：字面量 32px/16px 不会随变量变化，这一步才锁住「走 token」
+  const overridden = await page.evaluate(() => {
+    const host = document.querySelector('#dv-empty') as HTMLElement
+    host.style.setProperty('--oas-space-6', '40px')
+    host.style.setProperty('--oas-space-4', '18px')
+    const style = getComputedStyle(host.shadowRoot!.querySelector<HTMLElement>('[part="placeholder"]')!)
+    const box = {
+      top: style.paddingTop,
+      right: style.paddingRight,
+      bottom: style.paddingBottom,
+      left: style.paddingLeft,
+    }
+    host.style.removeProperty('--oas-space-6')
+    host.style.removeProperty('--oas-space-4')
+    return box
+  })
+  expect(overridden, '覆盖 --oas-space-6/--oas-space-4 后纵向/横向各自跟随').toEqual({
+    top: '40px',
+    right: '18px',
+    bottom: '40px',
+    left: '18px',
+  })
+})
+
 test('diff-viewer 暗色与 axe 零严重违规', async ({ page }) => {
   await open(page)
   const light = await new AxeBuilder({ page }).include('oas-diff-viewer').analyze()

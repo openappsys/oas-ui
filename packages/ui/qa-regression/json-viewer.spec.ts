@@ -205,6 +205,80 @@ test('json-viewer toolbar=false 工具栏隐藏且复制反馈浮层可见', asy
   expect(flash.text).toBe('已复制')
 })
 
+test('json-viewer 空态/错误态内边距 = --oas-space-3 token（四边精确）', async ({ page }) => {
+  await page.goto('/components/json-viewer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#jv-error')
+  await page.waitForFunction(() => !!document.querySelector('#jv-error')?.shadowRoot?.querySelector('[part="error"]'))
+  // demo 无空态块：按组件契约（无 text 时渲染 [part="empty"]）现场造 fixture
+  await page.evaluate(() => {
+    document.querySelector('#qa-jv-empty-padding')?.remove()
+    const el = document.createElement('oas-json-viewer')
+    el.id = 'qa-jv-empty-padding'
+    el.setAttribute('height', '160')
+    el.style.cssText = 'position:fixed;left:16px;bottom:16px;width:360px;z-index:2147483000'
+    document.body.appendChild(el)
+  })
+  await page.waitForFunction(
+    () => !!document.querySelector('#qa-jv-empty-padding')?.shadowRoot?.querySelector('[part="empty"]'),
+  )
+  const measured = await page.evaluate(() => {
+    const read = (host: Element, selector: string) => {
+      const node = host.shadowRoot!.querySelector<HTMLElement>(selector)
+      if (!node) throw new Error(`缺少 ${selector}`)
+      const style = getComputedStyle(node)
+      return {
+        padding: {
+          top: style.paddingTop,
+          right: style.paddingRight,
+          bottom: style.paddingBottom,
+          left: style.paddingLeft,
+        },
+        // token 取占位节点自身的计算值：组件若局部覆盖 token，断言仍指向真实生效值
+        token: style.getPropertyValue('--oas-space-3').trim(),
+      }
+    }
+    return {
+      empty: read(document.querySelector('#qa-jv-empty-padding')!, '[part="empty"]'),
+      error: read(document.querySelector('#jv-error')!, '[part="error"]'),
+    }
+  })
+  for (const [label, box] of [
+    ['空态', measured.empty],
+    ['错误态', measured.error],
+  ] as const) {
+    expect(box.token, `${label}：--oas-space-3 必须是非零 px 长度`).toMatch(/^[1-9]\d*(?:\.\d+)?px$/)
+    expect(
+      [box.padding.top, box.padding.right, box.padding.bottom, box.padding.left],
+      `${label}：四边 padding 必须等于 token 计算值 ${box.token}`,
+    ).toEqual([box.token, box.token, box.token, box.token])
+  }
+
+  // 覆盖 token 后 padding 必须跟随：字面量 12px 不会随变量变化，这一步才锁住「走 token」
+  const overridden = await page.evaluate(() => {
+    const probe = (host: Element, selector: string) => {
+      const element = host as HTMLElement
+      element.style.setProperty('--oas-space-3', '20px')
+      const style = getComputedStyle(element.shadowRoot!.querySelector<HTMLElement>(selector)!)
+      const box = {
+        top: style.paddingTop,
+        right: style.paddingRight,
+        bottom: style.paddingBottom,
+        left: style.paddingLeft,
+      }
+      element.style.removeProperty('--oas-space-3')
+      return box
+    }
+    return {
+      empty: probe(document.querySelector('#qa-jv-empty-padding')!, '[part="empty"]'),
+      error: probe(document.querySelector('#jv-error')!, '[part="error"]'),
+    }
+  })
+  const override = { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+  expect(overridden.empty, '覆盖 --oas-space-3 后空态四边跟随').toEqual(override)
+  expect(overridden.error, '覆盖 --oas-space-3 后错误态四边跟随').toEqual(override)
+  await page.evaluate(() => document.querySelector('#qa-jv-empty-padding')?.remove())
+})
+
 test('json-viewer 基础与错误态 axe 零违规', async ({ page }) => {
   await page.goto('/components/json-viewer.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#jv-basic')

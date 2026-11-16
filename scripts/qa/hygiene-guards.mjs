@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * 源码卫生守卫：未使用 CSS 类。
+ * 源码卫生守卫：未使用 CSS 类 + 魔法间距尺寸。
+ *
+ * ## 未使用 CSS 类
  *
  * 背景：组件样式全部内联在 `const XXX_STYLE = \`...\``（含 `*_CSS`）模板里，类选择器
  * 定义与使用分离——守卫要防的是「样式里定义了类，但任何 DOM 路径都不会把它挂上去」。
@@ -40,6 +42,30 @@
  * 一条例外只消费一条命中，不再命中即报陈旧；只登记真实候选，不修改产品源码清零。
  * i18n 死键精确集合由 packages/i18n/src/slices/completeness.test.ts 的 EXPECTED_DEAD
  * 双向断言覆盖，不在本守卫范围。
+ *
+ * ## 魔法间距尺寸（magic-spacing）
+ *
+ * 背景：间距只走 `--oas-space-*` token 是项目硬规；直接写死的 px 会在主题缩放、
+ * 紧凑模式和 RTL 下与 token 体系脱节（同一组件出现 2px/3px/4px 混杂的漂移）。
+ *
+ * 口径（低误报优先，用例见同目录 hygiene-guards.test.mjs）：
+ * - 只扫 margin / padding / gap 及其子属性（margin-block-start、padding-top、row-gap 等）；
+ *   border / inset / 宽高 / 字号等几何属性不在范围；
+ * - 只认声明里的**直接**非零 px：`var()` / `calc()` / `clamp()` / `min()` / `max()` /
+ *   `env()` 函数整体剔除后再找 px，所以 `var(--oas-space-2, 8px)`（token 回退）与
+ *   `calc(100% - 4px)`（相对计算）都不命中；
+ * - `0` / `0px` 是零值不命中，百分比 / em / rem 不命中（单位不是 px）；
+ * - 一条声明报一条违规（`padding: 4px 8px` 合并，detail 列出全部 px），行号指向声明行；
+ * - 扫描范围 = 与未使用 CSS 类同一个 CSS 块提取口径（样式模板），不含测试文件；
+ *   模板里 `${}` 插值被剔除，`padding: ${x}px` 之类的动态值不会命中；
+ * - 已知边界：自定义属性声明（`--x: 3px`）不是间距属性、模板 HTML 里的内联
+ *   `style="margin: 4px"` 不在 CSS 块内——两者都不在扫描范围（前者是 token 定义位，
+ *   后者应改写为类规则）。
+ *
+ * 例外：scripts/qa/magic-spacing-exceptions.json，精确到 file + property + value +
+ * reason；一条例外只消费一条命中（同一文件重复出现的同值声明须逐条登记），
+ * 不再命中即报陈旧。只登记真实候选（命中区几何、光学对齐、负值缝线等组件自有常量），
+ * 不修改产品源码清零。
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -131,8 +157,12 @@ export function stripCommentsKeepStrings(source) {
   return out.join('')
 }
 
-/** 从 `openIndex`（反引号下标）走到配对反引号，返回 { content, end }；content 只含 ${} 之外的静态文本。 */
-function walkTemplate(source, openIndex) {
+/**
+ * 从 `openIndex`（反引号下标）走到配对反引号，返回 { content, end }；content 只含 ${} 之外的静态文本。
+ * `keepLineBreaks` 为真时，插值内部的换行原样保留——CSS 块的行号反查必须与源码对齐
+ * （插值跨多行时，不保留换行会让后续声明行号整体前移）。
+ */
+function walkTemplate(source, openIndex, keepLineBreaks = false) {
   let i = openIndex + 1
   let depth = 0
   let content = ''
@@ -155,6 +185,7 @@ function walkTemplate(source, openIndex) {
     }
     if (c === '`' && depth === 0) return { content, end: i }
     if (depth === 0) content += c
+    else if (keepLineBreaks && c === '\n') content += '\n'
     i++
   }
   return { content, end: -1 }
@@ -500,7 +531,7 @@ export function extractCssBlocks(source) {
   let m
   while ((m = re.exec(stripped))) {
     const openIndex = re.lastIndex - 1
-    const { content, end } = walkTemplate(stripped, openIndex)
+    const { content, end } = walkTemplate(stripped, openIndex, true)
     if (end < 0) break
     re.lastIndex = end + 1
     if (!content.includes('{') || !content.includes('}')) continue
@@ -628,6 +659,195 @@ export function applyCssClassExceptions(violationList, exceptions) {
     const index = exceptions.findIndex((exception, i) => {
       if (used.has(i)) return false
       return exception.file === violation.file && exception.class === violation.className
+    })
+    if (index < 0) return true
+    used.add(index)
+    return false
+  })
+  const stale = exceptions.filter((_, i) => !used.has(i))
+  return { violations: remaining, stale }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 魔法间距尺寸（magic-spacing）                                                */
+/*                                                                           */
+/* 只命中 margin/padding/gap（含逻辑子属性、row/column-gap）声明里的直接非零 px； */
+/* var()/calc()/clamp()/min()/max()/env() 包裹的长度、0、百分比/em/rem 都不命中。 */
+/* 例外 = scripts/qa/magic-spacing-exceptions.json（file + property + value +  */
+/* reason，一条例外消费一条命中）。                                            */
+/* -------------------------------------------------------------------------- */
+
+const RULE_SPACING = 'magic-spacing'
+const RULE_SPACING_SUGGESTION =
+  '间距只走 --oas-space-* token；确属组件自有几何（命中区扩展、光学对齐、边框接缝负偏移、成对的 padding/margin 抵消）请登记 scripts/qa/magic-spacing-exceptions.json 并写清 reason。'
+
+/**
+ * 间距属性白名单（大小写不敏感）：
+ * - margin/padding（含 -inline/-block/-start/-end 与 -top/-right/-bottom/-left）；
+ * - gap / row-gap / column-gap 及其 grid- 前缀别名（grid-gap / grid-row-gap / grid-column-gap）；
+ * - grid-template-* / grid-auto-* 是轨道定义，不是间距，不命中。
+ */
+const SPACING_PROPERTY_RE =
+  /^(?:margin|padding)(?:-(?:top|right|bottom|left|inline|block)(?:-(?:start|end))?)?$|^(?:grid-)?(?:row-|column-)?gap$/i
+
+/** 参与相对计算的 CSS 函数：整体剔除后再找 px（token 回退、calc 表达式都不算直接值）。 */
+const SPACING_FUNCTION_RE = /\b(?:var|calc|clamp|min|max|env)\(/gi
+/** px 长度（含小数与负值）；紧跟字母数字的不算（px2、pxx 之类不是长度）。 */
+const PX_LENGTH_RE = /(-?\d*\.?\d+)px(?![a-z0-9])/gi
+
+/** 剔除 var()/calc()/clamp()/min()/max()/env() 调用（含嵌套括号），保留其余文本。 */
+function stripSpacingFunctions(value) {
+  const re = new RegExp(SPACING_FUNCTION_RE.source, 'gi')
+  let out = ''
+  let cursor = 0
+  let m
+  while ((m = re.exec(value))) {
+    const open = m.index + m[0].length - 1
+    let depth = 0
+    let i = open
+    while (i < value.length) {
+      if (value[i] === '(') depth++
+      else if (value[i] === ')') {
+        depth--
+        if (depth === 0) {
+          i++
+          break
+        }
+      }
+      i++
+    }
+    out += `${value.slice(cursor, m.index)} `
+    cursor = i
+    re.lastIndex = i
+  }
+  return out + value.slice(cursor)
+}
+
+/** 声明值里的直接非零 px 长度（保持源码写法，如 `-1px` / `2.5px`）。 */
+function collectMagicSpacingPx(value) {
+  const out = []
+  for (const m of stripSpacingFunctions(value).matchAll(PX_LENGTH_RE)) {
+    const number = Number(m[1])
+    if (!Number.isFinite(number) || number === 0) continue
+    out.push(m[0])
+  }
+  return out
+}
+
+/**
+ * 抹掉 CSS 注释但保留换行（行号反查必须与源码对齐；直接换成等长空格会吞掉注释里的换行）。
+ */
+function blankCssComments(css) {
+  const out = css.split('')
+  const re = new RegExp(CSS_COMMENT_RE.source, 'g')
+  let m
+  while ((m = re.exec(css))) {
+    for (let k = m.index; k < m.index + m[0].length; k++) {
+      if (out[k] !== '\n' && out[k] !== '\r') out[k] = ' '
+    }
+  }
+  return out.join('')
+}
+
+/**
+ * 从一段 CSS 提取间距声明（含相对块起始的行号）。
+ * 声明边界 = `;` 或 `{`（块内首条声明紧跟在选择器的 `{` 后）。
+ */
+function extractSpacingDeclarations(css, startLine) {
+  const cleaned = blankCssComments(css)
+  const out = []
+  const re = /(?:^|[;{])\s*([a-zA-Z-]+)\s*:\s*([^;{}]*)/g
+  let m
+  while ((m = re.exec(cleaned))) {
+    const property = m[1]
+    if (!SPACING_PROPERTY_RE.test(property)) continue
+    const value = m[2].trim().replace(/\s+/g, ' ')
+    if (!value) continue
+    const offset = m.index + m[0].indexOf(property)
+    const line = startLine + cleaned.slice(0, offset).split('\n').length - 1
+    out.push({ property, value, line })
+  }
+  return out
+}
+
+/**
+ * 单文件的魔法间距检测：直接非零 px 的 margin/padding/gap 声明各报一条。
+ * @param source 文件源码
+ * @param file 仓库相对路径
+ */
+export function findMagicSpacing(source, file) {
+  const lines = source.split(/\r?\n/)
+  const violations = []
+  for (const block of extractCssBlocks(source)) {
+    for (const { property, value, line } of extractSpacingDeclarations(block.content, block.startLine)) {
+      const px = collectMagicSpacingPx(value)
+      if (px.length === 0) continue
+      const declaration = `${property}: ${value}`
+      violations.push({
+        file,
+        line,
+        rule: RULE_SPACING,
+        detail: `${declaration} 直接使用 ${px.join('、')}（未走间距 token）`,
+        snippet: (lines[line - 1] ?? '').trim().slice(0, 240),
+        message: `${file}:${line} [${RULE_SPACING}] ${declaration} 直接使用 ${px.join('、')}。${RULE_SPACING_SUGGESTION}`,
+        property,
+        value,
+        px,
+      })
+    }
+  }
+  return violations.sort((a, b) => a.line - b.line)
+}
+
+/** 全量审计：返回 [{ file, violations }]（仅含存在违规的文件，按文件排序）。 */
+export function auditMagicSpacing(root = UI_SRC) {
+  const absRoot = join(ROOT, root)
+  if (!existsSync(absRoot)) return []
+  const results = []
+  for (const file of collectAllTsFiles(absRoot).map(relOf).sort()) {
+    if (/\.test\.ts$/.test(file)) continue
+    const violations = findMagicSpacing(readFileSync(join(ROOT, file), 'utf8'), file)
+    if (violations.length > 0) results.push({ file, violations })
+  }
+  return results
+}
+
+/**
+ * 读取魔法间距例外表（`{ exceptions: [{ file, property, value, reason }] }`）。
+ * 精确到文件 + 属性 + 声明值：属性必须落在间距白名单，value 是 CSS 声明值原文。
+ */
+export function loadMagicSpacingExceptions(path) {
+  if (!existsSync(path)) return []
+  const raw = JSON.parse(readFileSync(path, 'utf8'))
+  const list = Array.isArray(raw) ? raw : (raw.exceptions ?? [])
+  return list.map((entry, index) => {
+    const where = `${path}#${index}`
+    if (!entry || typeof entry !== 'object') throw new Error(`${where}: 例外必须是对象`)
+    if (!entry.file) throw new Error(`${where}: 缺少 file`)
+    if (typeof entry.property !== 'string' || !SPACING_PROPERTY_RE.test(entry.property)) {
+      throw new Error(`${where}: property 必须是间距属性（margin/padding/gap 及其逻辑子属性）`)
+    }
+    if (typeof entry.value !== 'string' || entry.value.trim().length === 0) {
+      throw new Error(`${where}: 缺少 value（CSS 声明值，如 "2px var(--oas-space-1)"）`)
+    }
+    if (typeof entry.reason !== 'string' || entry.reason.trim().length < 4) {
+      throw new Error(`${where}: 必须写 reason（为什么这个直接 px 合法）`)
+    }
+    return entry
+  })
+}
+
+/** 剔除已登记例外，返回 `{ violations, stale }`（一条例外只消费一条命中）。 */
+export function applyMagicSpacingExceptions(violationList, exceptions) {
+  const used = new Set()
+  const remaining = violationList.filter((violation) => {
+    const index = exceptions.findIndex((exception, i) => {
+      if (used.has(i)) return false
+      return (
+        exception.file === violation.file &&
+        exception.property === violation.property &&
+        exception.value === violation.value
+      )
     })
     if (index < 0) return true
     used.add(index)

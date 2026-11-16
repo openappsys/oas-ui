@@ -13,6 +13,11 @@
  *
  * i18n 死键精确集合由 packages/i18n/src/slices/completeness.test.ts 的 EXPECTED_DEAD
  * （当前 8 键）双向断言覆盖（pnpm test），本守卫不重复实现。
+ *
+ * 魔法间距尺寸（magic-spacing）：只命中 margin/padding/gap（含逻辑子属性与 row-gap /
+ * column-gap）声明里的直接非零 px；var()/calc()/clamp()/min()/max()/env() 包裹的长度、
+ * 0/0px、百分比/em/rem、边框/定位/宽高/字号都不命中。真实候选逐项登记在
+ * scripts/qa/magic-spacing-exceptions.json（file + property + value + reason）。
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
@@ -20,11 +25,15 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   applyCssClassExceptions,
+  applyMagicSpacingExceptions,
+  auditMagicSpacing,
   auditUnusedCssClasses,
   collectCssUsageByScope,
   extractClassUsageTokens,
+  findMagicSpacing,
   findUnusedCssClasses,
   loadCssClassExceptions,
+  loadMagicSpacingExceptions,
   usageTokensFor,
 } from './hygiene-guards.mjs'
 
@@ -282,4 +291,184 @@ test('真实仓库：审计可跑、违规结构完整，且登记例外后为�
     `存在未登记的真实未使用类：${violations.map((v) => `${v.file}:${v.className}`).join(', ')}`,
   )
   assert.deepEqual(stale, [], `存在陈旧例外：${stale.map((e) => `${e.file}:${e.class}`).join(', ')}`)
+})
+
+/* --------------------------- 魔法间距尺寸（magic-spacing） --------------------------- */
+
+const spacingOf = (source) => findMagicSpacing(source, BUTTON)
+
+test('魔法间距：margin/padding/gap 与逻辑/物理子属性的直接 px 命中', () => {
+  const source = `
+const STYLE = \`
+.box {
+  margin: 4px;
+  padding: 0 6px;
+  gap: 2px;
+  margin-inline-start: 3px;
+  padding-block: 1px 2px;
+  row-gap: 1px;
+  column-gap: 5px;
+  margin-top: 7px;
+  padding-right: 9px;
+}
+\`
+`
+  const hits = spacingOf(source)
+  assert.deepEqual(
+    hits.map((h) => `${h.property}:${h.value}`),
+    [
+      'margin:4px',
+      'padding:0 6px',
+      'gap:2px',
+      'margin-inline-start:3px',
+      'padding-block:1px 2px',
+      'row-gap:1px',
+      'column-gap:5px',
+      'margin-top:7px',
+      'padding-right:9px',
+    ],
+  )
+  assert.equal(hits[0].rule, 'magic-spacing')
+  assert.equal(hits[0].file, BUTTON)
+  assert.deepEqual(hits[0].px, ['4px'])
+  assert.match(hits[0].message, /magic-spacing/)
+  assert.match(hits[0].message, /--oas-space/)
+})
+
+test('魔法间距：var()/calc()/clamp()、0、百分比与 em/rem、非间距属性都不命中', () => {
+  const source = `
+const STYLE = \`
+.box {
+  margin: 0;
+  padding: var(--oas-space-2);
+  gap: calc(100% - 4px);
+  margin-block: clamp(2px, 1vw, 8px);
+  padding-inline: min(4px, 1vw) max(2px, 1rem);
+  padding-inline-start: env(safe-area-inset-left, 8px);
+  padding-inline-end: 1rem 2em 50%;
+  top: 4px;
+  border: 1px solid var(--oas-color-border);
+  font-size: 12px;
+  width: 120px;
+  line-height: 20px;
+}
+\`
+`
+  assert.deepEqual(spacingOf(source), [])
+})
+
+test('魔法间距：0px 不命中，负值与小数 px 命中，一行多值合并为一条并列出全部 px', () => {
+  const source = `
+const STYLE = \`
+.a { margin: 0px; }
+.b { margin: -1px; }
+.c { padding: 2.5px 0; }
+.d { padding: 4px 8px; }
+\`
+`
+  const hits = spacingOf(source)
+  assert.deepEqual(
+    hits.map((h) => `${h.property}:${h.value}`),
+    ['margin:-1px', 'padding:2.5px 0', 'padding:4px 8px'],
+  )
+  assert.deepEqual(hits[2].px, ['4px', '8px'])
+  assert.match(hits[2].detail, /4px.*8px/)
+})
+
+test('魔法间距：CSS 注释里的声明不命中，行号指向声明行', () => {
+  const source = ['const STYLE = `', '/* .ghost { margin: 4px; } */', '.real {', '  margin: 6px;', '}', '`'].join('\n')
+  const hits = spacingOf(source)
+  assert.equal(hits.length, 1)
+  assert.equal(hits[0].line, 4)
+  assert.equal(hits[0].snippet, 'margin: 6px;')
+})
+
+test('魔法间距：属性名/单位大小写不敏感，grid-gap 系列别名同样命中', () => {
+  const source = `
+const STYLE = \`
+.a { MARGIN: 4PX; }
+.b { Padding-Top: 2Px; }
+.c { grid-gap: 4px; }
+.d { grid-row-gap: 2px; }
+.e { grid-column-gap: 3px; }
+.f { grid-template-columns: 4px; }
+.g { grid-auto-rows: 8px; }
+\`
+`
+  const hits = spacingOf(source)
+  assert.deepEqual(
+    hits.map((h) => `${h.property}:${h.value}`),
+    ['MARGIN:4PX', 'Padding-Top:2Px', 'grid-gap:4px', 'grid-row-gap:2px', 'grid-column-gap:3px'],
+    'grid-template-*/grid-auto-* 是轨道定义，不是间距',
+  )
+})
+
+test('魔法间距例外加载：file/property/value/reason 强制，属性必须是间距属性', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const dir = mkdtempSync(join(tmpdir(), 'spacing-exc-'))
+  const bad = join(dir, 'bad.json')
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ property: 'margin', value: '4px', reason: '测试留白' }] }))
+  assert.throws(() => loadMagicSpacingExceptions(bad), /file/)
+  writeFileSync(
+    bad,
+    JSON.stringify({ exceptions: [{ file: 'a.ts', property: 'top', value: '4px', reason: '测试留白' }] }),
+  )
+  assert.throws(() => loadMagicSpacingExceptions(bad), /property/)
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ file: 'a.ts', property: 'margin', reason: '测试留白' }] }))
+  assert.throws(() => loadMagicSpacingExceptions(bad), /value/)
+  writeFileSync(bad, JSON.stringify({ exceptions: [{ file: 'a.ts', property: 'margin', value: '4px', reason: '短' }] }))
+  assert.throws(() => loadMagicSpacingExceptions(bad), /reason/)
+})
+
+test('applyMagicSpacingExceptions：file+property+value 精确匹配，重复声明逐条消费并报 stale', () => {
+  const hits = [
+    { file: 'a.ts', property: 'padding', value: '12px', line: 1 },
+    { file: 'a.ts', property: 'padding', value: '12px', line: 2 },
+    { file: 'a.ts', property: 'gap', value: '2px', line: 3 },
+    { file: 'b.ts', property: 'padding', value: '12px', line: 4 },
+  ]
+  const one = applyMagicSpacingExceptions(hits, [
+    { file: 'a.ts', property: 'padding', value: '12px', reason: '占位区留白，组件自有几何' },
+  ])
+  assert.deepEqual(
+    one.violations.map((v) => `${v.file}:${v.property}:${v.value}:${v.line}`),
+    ['a.ts:padding:12px:2', 'a.ts:gap:2px:3', 'b.ts:padding:12px:4'],
+    '一条例外只消费一条命中，新增的同值声明仍须红灯',
+  )
+  assert.equal(one.stale.length, 0)
+
+  const both = applyMagicSpacingExceptions(hits.slice(0, 2), [
+    { file: 'a.ts', property: 'padding', value: '12px', reason: '占位区留白，组件自有几何' },
+    { file: 'a.ts', property: 'padding', value: '12px', reason: '错误态留白，组件自有几何' },
+  ])
+  assert.deepEqual(both.violations, [])
+  assert.deepEqual(both.stale, [])
+
+  const miss = applyMagicSpacingExceptions(hits.slice(2), [
+    { file: 'a.ts', property: 'padding', value: '12px', reason: '已经删掉的声明' },
+  ])
+  assert.equal(miss.violations.length, 2, '不匹配 file/property/value 的命中不得被例外放行')
+  assert.equal(miss.stale.length, 1)
+})
+
+test('真实仓库：魔法间距审计结构完整，登记例外后零增量', () => {
+  const raw = auditMagicSpacing().flatMap((item) => item.violations)
+  for (const v of raw) {
+    assert.equal(v.rule, 'magic-spacing')
+    assert.ok(typeof v.file === 'string' && v.file.length > 0)
+    assert.ok(Number.isInteger(v.line) && v.line > 0)
+    assert.ok(typeof v.property === 'string' && v.property.length > 0)
+    assert.ok(typeof v.value === 'string' && v.value.length > 0)
+    assert.ok(Array.isArray(v.px) && v.px.length > 0)
+    assert.match(v.message, /magic-spacing/)
+  }
+  const exceptions = loadMagicSpacingExceptions(join(ROOT, 'scripts/qa/magic-spacing-exceptions.json'))
+  const { violations, stale } = applyMagicSpacingExceptions(raw, exceptions)
+  assert.deepEqual(
+    violations,
+    [],
+    `存在未登记的直接像素间距：${violations.map((v) => `${v.file}:${v.property}: ${v.value}`).join('；')}`,
+  )
+  assert.deepEqual(stale, [], `存在陈旧例外：${stale.map((e) => `${e.file}:${e.property}: ${e.value}`).join('；')}`)
 })

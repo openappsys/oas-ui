@@ -153,7 +153,7 @@ const STYLE = `
 }
 .fold-btn:focus-visible { outline: none; box-shadow: inset var(--oas-focus-ring); }
 .placeholder {
-  padding: 32px 16px;
+  padding: var(--oas-space-6) var(--oas-space-4);
   text-align: center;
   color: var(--oas-color-text-secondary);
 }

@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 import {
   analyzeSource,
   applyExceptions,
@@ -16,11 +17,13 @@ import {
   isOsAbsoluteScope,
   loadExceptions,
   loadOsAssertExceptions,
+  runMagicSpacingAudit,
   runUnusedCssClassAudit,
   stripComments,
   summarize,
 } from './assert-audit.mjs'
 
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const SPEC = 'packages/ui/qa-regression/demo.spec.ts'
 
 const rules = (source) => findOsAbsoluteAssertions(source, SPEC).map((v) => v.rule)
@@ -520,4 +523,50 @@ test('未使用 CSS 类维度：真实仓库例外后零增量、无陈旧，例
     [],
     '例外表存在已不再命中的陈旧条目，须删除',
   )
+})
+
+/* ------------------------- 魔法间距尺寸（hygiene 接线） ------------------------- */
+
+test('魔法间距维度：真实仓库例外后零增量、无陈旧，例外覆盖全部原始命中', () => {
+  const result = runMagicSpacingAudit()
+  assert.equal(typeof result.raw, 'number')
+  assert.ok(
+    result.exceptions >= result.raw,
+    `例外数（${result.exceptions}）应覆盖全部原始命中（${result.raw}）：每条真实候选都须登记精确例外`,
+  )
+  assert.equal(
+    result.violations.length,
+    0,
+    `存在未登记的直接像素间距：${result.violations.map((v) => `${v.file}:${v.property}: ${v.value}`).join('；')}`,
+  )
+  assert.deepEqual(
+    result.stale.map((e) => `${e.file}:${e.property}: ${e.value}`),
+    [],
+    '例外表存在已不再命中的陈旧条目，须删除',
+  )
+})
+
+test('qa:audit CLI：文本、阈值与 --json 都带 magicSpacing，既有维度不漂移', () => {
+  const script = join(ROOT, 'scripts/qa/assert-audit.mjs')
+  const run = (...args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' })
+
+  const json = run('--json')
+  assert.equal(json.status, 0, json.stderr)
+  const report = JSON.parse(json.stdout)
+  assert.equal(typeof report.magicSpacing.raw, 'number')
+  assert.deepEqual(report.magicSpacing.violations, [])
+  assert.deepEqual(report.magicSpacing.stale, [])
+  assert.ok(report.magicSpacing.exceptions >= report.magicSpacing.raw)
+  // 既有维度与结构不得漂移
+  assert.ok(report.unusedCssClasses && Array.isArray(report.unusedCssClasses.violations))
+  assert.ok(report.coreGrowth && typeof report.coreGrowth.limit === 'number')
+  assert.ok(report.sourceGuards && report.sourceGuards.colorLiteral)
+  assert.ok(report.summary && typeof report.summary.files === 'number')
+
+  const check = run('--check')
+  assert.equal(check.status, 0, check.stderr)
+  assert.match(check.stdout, /魔法间距：\d+（已剔除登记例外 \d+）/)
+  assert.match(check.stdout, /魔法间距 ≤ 0/)
+  assert.match(check.stdout, /未使用 CSS 类 ≤ 0/, '既有阈值项不得被挤掉')
+  assert.match(check.stdout, /\[qa:audit\] 通过/)
 })
