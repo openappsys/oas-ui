@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   analyzeSource,
   applyExceptions,
   applyOsAssertExceptions,
+  evaluateCoreGrowth,
   findColorLiterals,
   findConsoleLogs,
   findOsAbsoluteAssertions,
@@ -396,6 +398,79 @@ test('console.log 命中；console.warn/error、devWarn、注释与字符串不�
   assert.equal(hits.length, 1)
   assert.equal(hits[0].line, 2)
   assert.match(hits[0].message, /devWarn/)
+})
+
+/* ------------------------- 核文件行数防增量 ------------------------- */
+
+const BASELINE = 7123
+const CORES = 'packages/ui/src/data/table/oas-table.ts'
+
+/** 造一个 N 行的临时源文件（行尾换行 = 文件末尾的空 terminator，不是额外一行）。 */
+function writeLines(dir, name, count, eol = '\n') {
+  const file = join(dir, name)
+  writeFileSync(file, Array.from({ length: count }, (_, i) => `// line ${i + 1}`).join(eol) + eol)
+  return file
+}
+
+test('核文件行数：等于基线不超限（相等边界不误报）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oas-core-growth-'))
+  const result = evaluateCoreGrowth({ filePath: writeLines(dir, 'core.ts', BASELINE), baselineLines: BASELINE })
+  assert.deepEqual(result, { file: join(dir, 'core.ts'), current: BASELINE, limit: BASELINE, exceeded: false })
+})
+
+test('核文件行数：少于基线不超限', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oas-core-growth-'))
+  const result = evaluateCoreGrowth({ filePath: writeLines(dir, 'core.ts', BASELINE - 120), baselineLines: BASELINE })
+  assert.equal(result.current, BASELINE - 120)
+  assert.equal(result.exceeded, false)
+})
+
+test('核文件行数：多 1 行即超限（零增量容忍）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oas-core-growth-'))
+  const result = evaluateCoreGrowth({ filePath: writeLines(dir, 'core.ts', BASELINE + 1), baselineLines: BASELINE })
+  assert.equal(result.current, BASELINE + 1)
+  assert.equal(result.limit, BASELINE)
+  assert.equal(result.exceeded, true)
+})
+
+test('核文件行数：CRLF 与 LF 口径一致，末尾无换行不丢最后一行', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oas-core-growth-'))
+  const crlf = writeLines(dir, 'crlf.ts', BASELINE, '\r\n')
+  const noEol = join(dir, 'no-eol.ts')
+  writeFileSync(noEol, Array.from({ length: BASELINE }, (_, i) => `// line ${i + 1}`).join('\n'))
+  assert.equal(evaluateCoreGrowth({ filePath: crlf, baselineLines: BASELINE }).current, BASELINE)
+  assert.equal(evaluateCoreGrowth({ filePath: noEol, baselineLines: BASELINE }).current, BASELINE)
+})
+
+test('核文件缺失时报错并带路径，不静默通过', () => {
+  const missing = join(mkdtempSync(join(tmpdir(), 'oas-core-growth-')), 'gone.ts')
+  assert.throws(
+    () => evaluateCoreGrowth({ filePath: missing, baselineLines: BASELINE }),
+    (error) => {
+      assert.ok(error.message.includes(missing), '报错必须带文件路径')
+      return true
+    },
+  )
+})
+
+test('核文件行数：基线非法直接报错（缺字段/NaN 不得静默放行）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'oas-core-growth-'))
+  const file = writeLines(dir, 'core.ts', 10)
+  for (const baselineLines of [undefined, Number.NaN, -1, 3.5, '10']) {
+    assert.throws(() => evaluateCoreGrowth({ filePath: file, baselineLines }), /baselineLines/)
+  }
+})
+
+test('核文件行数：真实核文件未超基线（基线 JSON 与源文件同口径）', () => {
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+  const baseline = JSON.parse(readFileSync(join(repoRoot, 'scripts/qa/core-growth-baseline.json'), 'utf8'))
+  const result = evaluateCoreGrowth({ filePath: CORES, baselineLines: baseline.oasTableCoreLines })
+  assert.equal(
+    result.exceeded,
+    false,
+    `核文件 ${result.current} 行 > 基线 ${result.limit}：新逻辑外置到独立模块，或人工调基线并写清理由`,
+  )
+  assert.equal(result.file, CORES)
 })
 
 /* ------------------------- 源码守卫：例外登记 ------------------------- */

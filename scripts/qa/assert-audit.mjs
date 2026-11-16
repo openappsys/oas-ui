@@ -36,9 +36,10 @@
  *   node scripts/qa/assert-audit.mjs --check --max-wait 400 --max-weak 380 --max-event-len 105
  *   node scripts/qa/assert-audit.mjs --check --max-os-absolute 77
  *   node scripts/qa/assert-audit.mjs --check --max-color-literal 0 --max-type-escape 0 --max-console-log 0
+ *   node scripts/qa/assert-audit.mjs --check --max-table-core-lines 7122   # 仅诊断用，不写基线
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -737,6 +738,49 @@ export function auditSourceGuards(root = SOURCE_GUARD_ROOT) {
     .sort((a, b) => a.file.localeCompare(b.file))
 }
 
+/* -------------------------------------------------------------------------- */
+/* 核文件行数防增量（core-growth）                                             */
+/*                                                                           */
+/* 单文件承载整个组件运行时（table 的 core）会随每次加功能线性膨胀，越晚拆越贵。 */
+/* 这里只做一件事：只读行数，超过基线即红灯。基线是人工维护的承诺值，             */
+/* 脚本**永不**写入基线——自动降档会让门禁自我失效，自动抬档等于静默放行。        */
+/* -------------------------------------------------------------------------- */
+
+const CORE_GROWTH_FILE = 'packages/ui/src/data/table/oas-table.ts'
+const CORE_GROWTH_BASELINE = 'scripts/qa/core-growth-baseline.json'
+
+/**
+ * 源文件行数：CRLF/LF 统一，末尾换行只是 terminator、不额外算一行（与 `wc -l` 同口径）。
+ * 直接取 `split(/\r?\n/).length` 会把 7123 行文件算成 7124，与基线口径错位。
+ */
+export function countSourceLines(source) {
+  const lines = source.split(/\r?\n/)
+  if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
+  return lines.length
+}
+
+/** 读取核文件行数基线（`{ $comment, oasTableCoreLines }`）。 */
+export function loadCoreGrowthBaseline(path = join(ROOT, CORE_GROWTH_BASELINE)) {
+  if (!existsSync(path)) throw new Error(`核文件行数基线缺失：${path}`)
+  return JSON.parse(readFileSync(path, 'utf8')).oasTableCoreLines
+}
+
+/**
+ * 评估核文件是否超过行数上限。
+ * `baselineLines` 非法直接抛错：`undefined` 参与比较会恒 false，等于静默关掉维度。
+ */
+export function evaluateCoreGrowth({ filePath, baselineLines }) {
+  if (!Number.isInteger(baselineLines) || baselineLines < 0) {
+    throw new Error(
+      `evaluateCoreGrowth: baselineLines 必须是非负整数，收到 ${baselineLines === undefined ? '(缺失)' : JSON.stringify(baselineLines)}`,
+    )
+  }
+  const abs = isAbsolute(filePath) ? filePath : join(ROOT, filePath)
+  if (!existsSync(abs)) throw new Error(`核文件不存在：${filePath}`)
+  const current = countSourceLines(readFileSync(abs, 'utf8'))
+  return { file: filePath, current, limit: baselineLines, exceeded: current > baselineLines }
+}
+
 /**
  * 读取通用例外表（结构 = os-assert-exceptions 去 rule 字段）：
  * 每条 `{ file, line?|snippet?, reason }`；`reason` 强制（没有理由的例外会把门禁变成摆设）。
@@ -896,6 +940,11 @@ function main() {
   const maxTypeEscape = argValue('--max-type-escape', 0)
   const maxConsoleLog = argValue('--max-console-log', 0)
 
+  // 核文件行数维度（2026-11-16 新增）：基线 = scripts/qa/core-growth-baseline.json 的人工承诺值，
+  // 允许减少、不允许增加；`--max-table-core-lines` 只作临时诊断覆盖（不写回基线文件）。
+  const maxCoreLines = argValue('--max-table-core-lines', loadCoreGrowthBaseline())
+  const coreGrowth = evaluateCoreGrowth({ filePath: CORE_GROWTH_FILE, baselineLines: maxCoreLines })
+
   const guards = auditSourceGuards()
   const guardViolations = guards.flatMap((item) => item.violations)
   const colorExceptions = loadExceptions(join(ROOT, COLOR_LITERAL_EXCEPTIONS))
@@ -939,6 +988,7 @@ function main() {
             typeEscape: { violations: typeViolations },
             consoleLog: { violations: consoleViolations },
           },
+          coreGrowth,
         },
         null,
         2,
@@ -952,6 +1002,7 @@ function main() {
     console.log(
       `  源码守卫：硬编码色值 ${colorViolations.length}（已剔除登记例外 ${guardViolations.filter((v) => v.rule === 'color-literal').length - colorViolations.length}）；类型逃逸 ${typeViolations.length}；console.log ${consoleViolations.length}`,
     )
+    console.log(`  核文件行数：${coreGrowth.file} ${coreGrowth.current} / 上限 ${coreGrowth.limit}`)
     if (!check || verbose) {
       const noisy = results.filter(
         (item) =>
@@ -989,7 +1040,7 @@ function main() {
   if (check) {
     const effectiveOs = osViolations.length
     console.log(
-      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}；硬编码色值 ≤ ${maxColorLiteral}；类型逃逸 ≤ ${maxTypeEscape}；console.log ≤ ${maxConsoleLog}`,
+      `[qa:audit] 阈值（防增量，非清零）：waitForTimeout ≤ ${maxWait}；弱断言 ≤ ${maxWeak}；事件只断 length ≤ ${maxEventLen}；OS 绝对量断言 ≤ ${maxOsAbsolute}；硬编码色值 ≤ ${maxColorLiteral}；类型逃逸 ≤ ${maxTypeEscape}；console.log ≤ ${maxConsoleLog}；核文件行数 ≤ ${maxCoreLines}`,
     )
     const problems = []
     if (summary.zeroExpectFiles > 0) problems.push(`无 expect 文件 ${summary.zeroExpectFiles}`)
@@ -1017,6 +1068,9 @@ function main() {
     if (consoleViolations.length > maxConsoleLog) {
       problems.push(`console.log ${consoleViolations.length} > ${maxConsoleLog}`)
     }
+    if (coreGrowth.exceeded) {
+      problems.push(`核文件行数 ${coreGrowth.current} > ${coreGrowth.limit}（${coreGrowth.file}）`)
+    }
     if (problems.length) {
       if (effectiveOs > maxOsAbsolute) {
         console.error('[qa:audit] OS 绝对量断言违规（改成语义不变量，或登记例外）：')
@@ -1028,6 +1082,11 @@ function main() {
         console.error('[qa:audit] 源码守卫违规（改为 token/unknown/devWarn，或登记例外并写 reason）：')
         for (const violation of guardOver.slice(0, 20)) console.error(`  ${violation.message}`)
         if (guardOver.length > 20) console.error(`  ... 另有 ${guardOver.length - 20} 条（--json 看全量）`)
+      }
+      if (coreGrowth.exceeded) {
+        console.error(
+          '[qa:audit] 核文件行数超基线：新逻辑外置到独立模块；确需调基线须人工修改 scripts/qa/core-growth-baseline.json 并写清理由（脚本不会自动改写基线）。',
+        )
       }
       console.error(`[qa:audit] 未通过：${problems.join('；')}`)
       process.exit(1)

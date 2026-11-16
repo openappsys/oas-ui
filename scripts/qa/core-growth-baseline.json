@@ -1,0 +1,4 @@
+{
+  "$comment": "核文件行数基线（只防增量）。oasTableCoreLines 是 packages/ui/src/data/table/oas-table.ts 的人工承诺行数上限（口径见 assert-audit.mjs 的 countSourceLines：CRLF/LF 统一，末尾换行不计）。允许减少、不允许增加；新逻辑应外置到独立模块。确需调高必须人工改本文件并在提交说明写清理由——脚本只读，永不自动改写基线；为凑绿删代码或注释同样禁止。",
+  "oasTableCoreLines": 7123
+}
