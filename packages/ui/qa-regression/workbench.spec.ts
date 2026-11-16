@@ -20,12 +20,15 @@ type ConsolePage = import('@playwright/test').Page & { __oasConsole: string[] }
 test.beforeEach(async ({ page }) => {
   // 零告警门禁：error/warning 都算。
   // 白名单：preview 为 production build，GA4 注入的 cookie 过期属性覆盖告警属 benign
-  // （与 smoke/console-sweep 白名单同源口径，firefox 下以 JS Warning 形态出现）
+  // （与 smoke/console-sweep 白名单同源口径，firefox 下以 JS Warning 形态出现）；
+  // scroll-linked positioning 是 firefox 对 sticky/滚动联动定位的引擎级性能提示
+  // （非组件缺陷，与 smoke / table / gantt / kanban 等 spec 同口径过滤）
   const p = page as ConsolePage
   p.__oasConsole = []
   page.on('console', (msg) => {
     if (msg.type() !== 'error' && msg.type() !== 'warning') return
     if (/_ga_RXS142HBXF|Google Analytics|gtag/.test(msg.text())) return
+    if (msg.text().includes('scroll-linked positioning effect')) return
     p.__oasConsole.push(`${msg.type()}: ${msg.text()}`)
   })
 })
