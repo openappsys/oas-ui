@@ -6,10 +6,12 @@
 // statusbar-item / statistic-well / transport-well / music-well 全空态宿主级隐藏
 // （data-empty + 零布局足迹，相邻项 x 不变）、transport-well 键盘 seek 受控回写闭环、
 // action-bar 事件反馈（oas-action 回写 / oas-cancel）、charcoal 恒深表面跨主题不变、
+// inspector tab 条 class 契约（.tab 规则真实生效：胶囊 + 选中底 + 亮暗可读 + hover/focus/disabled 态）、
 // 四页 console 零告警 + 暗色冒烟。
 // 断言轮询属性/显隐/输出行文案，不断言过渡动画帧。
 
 import { test, expect } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 import { up, realClick } from './helpers'
 
 // console 告警收集容器（Page 内建 consoleMessages() 是方法，用独立属性名防撞）
@@ -130,6 +132,204 @@ test('inspector 分节折叠：点击切换 open 反射 + aria-expanded 同步 +
   const out = await page.evaluate(() => document.querySelector('#insp-fold-out')!.textContent ?? '')
   expect(out, '输出行含 name 与 open（可见反馈）').toContain('typography')
   expect(out).toContain('true')
+})
+
+test('inspector tab 条：.tab 类真实生效（胶囊 + 选中底，非仅 aria）+ 亮暗可读 + 点击/hover/focus/disabled 态', async ({
+  page,
+}) => {
+  await page.goto('/components/inspector.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#insp-tabs-bar')
+
+  // 计算样式探针：亮/暗共用。未选中 tab 底为透明 → 对比度基准取最近的非透明祖先底色。
+  const readTabs = () =>
+    page.evaluate(() => {
+      type Probe = {
+        cls: string
+        selected: string | null
+        bg: string
+        color: string
+        radius: string
+        height: string
+      }
+      const host = document.querySelector('#insp-tabs-bar') as HTMLElement & { shadowRoot: ShadowRoot }
+      const toRgb = (c: string) => {
+        const n = (c.match(/[\d.]+/g) ?? ['0', '0', '0', '1']).map(Number)
+        return { r: n[0]!, g: n[1]!, b: n[2]!, a: n[3] ?? 1 }
+      }
+      const lum = (c: string) => {
+        const { r, g, b } = toRgb(c)
+        const f = (v: number) => {
+          const s = v / 255
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+        }
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+      }
+      const ratio = (fg: string, bg: string) => {
+        const a = lum(fg)
+        const b = lum(bg)
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+      }
+      const opaqueBg = (el: Element): string => {
+        let n: Element | null = el
+        while (n && n !== document.documentElement) {
+          const c = getComputedStyle(n).backgroundColor
+          if (toRgb(c).a > 0) return c
+          n = n.parentElement
+        }
+        return getComputedStyle(document.body).backgroundColor
+      }
+      const baseBg = opaqueBg(host)
+      const probes: Probe[] = [...host.shadowRoot.querySelectorAll<HTMLElement>('[role="tab"]')].map((t) => {
+        const cs = getComputedStyle(t)
+        return {
+          cls: t.className,
+          selected: t.getAttribute('aria-selected'),
+          bg: cs.backgroundColor,
+          color: cs.color,
+          radius: cs.borderRadius,
+          height: cs.height,
+        }
+      })
+      return {
+        baseBg,
+        probes,
+        selectedContrast: probes.filter((p) => p.selected === 'true').map((p) => ratio(p.color, p.bg)),
+        idleContrast: probes.filter((p) => p.selected !== 'true').map((p) => ratio(p.color, baseBg)),
+      }
+    })
+
+  const light = await readTabs()
+  const declaredTabs = await page.evaluate(
+    () => JSON.parse(document.querySelector('#insp-tabs-bar')!.getAttribute('items') ?? '[]').length,
+  )
+  expect(light.probes.length, '渲染出的 tab 数与 items 声明一致').toBe(declaredTabs)
+  expect(declaredTabs, 'demo 声明了至少三个 tab（断言前提）').toBeGreaterThan(2)
+  for (const p of light.probes) {
+    // 回归：曾漏 className，`.tab` 全部规则（胶囊/选中底/hover/focus/disabled）落空——用户只看到裸文字按钮
+    expect(p.cls.split(/\s+/), '.tab 类挂在每个 tab 按钮上（样式规则唯一挂载点）').toContain('tab')
+    expect(p.height, '胶囊高度走控制高度 token（.tab 规则命中）').toBe('20px')
+    expect(p.radius, '胶囊圆角非 0（.tab 的 border-radius 规则真实生效）').not.toBe('0px')
+  }
+  const [sel, ...idle] = light.probes
+  expect(sel!.selected, '首 tab 选中（aria-selected）').toBe('true')
+  expect(
+    idle.map((p) => p.selected),
+    '其余 tab 未选中（aria-selected）',
+  ).toEqual(['false', 'false'])
+  expect(sel!.bg, '选中态有实心底色（非透明）').not.toBe('rgba(0, 0, 0, 0)')
+  expect(idle[0]!.bg, '未选中态无实底（选中/未选中视觉可区分）').toBe('rgba(0, 0, 0, 0)')
+  expect(sel!.color, '选中态文字色异于未选中').not.toBe(idle[0]!.color)
+  expect(Math.min(...light.selectedContrast), '亮色选中态文字对比度 ≥4:1').toBeGreaterThanOrEqual(4)
+  expect(Math.min(...light.idleContrast), '亮色未选中文字对比度 ≥4:1').toBeGreaterThanOrEqual(4)
+
+  // 暗色：选中底翻转且仍可读
+  const lightSelBg = sel!.bg
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await expect.poll(async () => (await readTabs()).probes[0]!.bg).not.toBe(lightSelBg)
+  const dark = await readTabs()
+  expect(dark.probes[0]!.bg, '暗色下选中底仍为实心').not.toBe('rgba(0, 0, 0, 0)')
+  expect(Math.min(...dark.selectedContrast), '暗色选中态文字对比度 ≥4:1').toBeGreaterThanOrEqual(4)
+  expect(Math.min(...dark.idleContrast), '暗色未选中文字对比度 ≥4:1').toBeGreaterThanOrEqual(4)
+  await page.evaluate(() => document.documentElement.classList.remove('dark'))
+
+  // 点击切换：属性反射 + aria 同步 + 底色随之迁移 + demo 可见反馈
+  await realClick(page, '#insp-tabs-bar', '[role="tab"][data-value="file"]')
+  await expect(page.locator('#insp-tabs-out')).toContainText('value=file', { timeout: 5000 })
+  const afterClick = await page.evaluate(() => {
+    const host = document.querySelector('#insp-tabs-bar') as HTMLElement & { shadowRoot: ShadowRoot }
+    return {
+      hostValue: host.getAttribute('value'),
+      selected: [...host.shadowRoot.querySelectorAll<HTMLElement>('[role="tab"]')].map((t) =>
+        t.getAttribute('aria-selected'),
+      ),
+    }
+  })
+  expect(afterClick.hostValue, '点击后 value 属性反射').toBe('file')
+  expect(afterClick.selected, 'aria-selected 随点击迁移').toEqual(['false', 'true', 'false'])
+  const switched = (await readTabs()).probes
+  expect(switched[1]!.bg, '切换后选中底色跟随（视觉迁移，非仅 aria）').not.toBe('rgba(0, 0, 0, 0)')
+  expect(switched[0]!.bg, '原选中项回到透明底').toBe('rgba(0, 0, 0, 0)')
+
+  // hover 态：未选中 tab 悬停出现 hover 底（`.tab:hover` 真实命中）
+  const hoverPoint = await page.evaluate(() => {
+    const host = document.querySelector('#insp-tabs-bar') as HTMLElement & { shadowRoot: ShadowRoot }
+    const t = host.shadowRoot.querySelector<HTMLElement>('[role="tab"][data-value="marks"]')!
+    const r = t.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  await page.mouse.move(hoverPoint.x, hoverPoint.y)
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const host = document.querySelector('#insp-tabs-bar') as HTMLElement & { shadowRoot: ShadowRoot }
+        const t = host.shadowRoot.querySelector<HTMLElement>('[role="tab"][data-value="marks"]')!
+        return getComputedStyle(t).backgroundColor
+      }),
+    )
+    .not.toBe('rgba(0, 0, 0, 0)')
+
+  // focus-visible：键盘进入 tab 条 → 焦点环真实渲染（box-shadow 非 none）
+  // 探针插到 demo 容器里（渲染树中排在 oas-inspector 之前），程序聚焦后按 Tab 走真实键盘序列。
+  await page.evaluate(() => {
+    const panel = document.getElementById('insp-tabs')!
+    const probe = document.createElement('button')
+    probe.id = 'insp-tabs-focus-probe'
+    probe.textContent = 'focus-probe'
+    panel.parentElement!.insertBefore(probe, panel)
+    probe.focus()
+  })
+  const readFocused = () =>
+    page.evaluate(() => {
+      const host = document.querySelector('#insp-tabs-bar') as HTMLElement & { shadowRoot: ShadowRoot }
+      const ae = host.shadowRoot.activeElement as HTMLElement | null
+      return ae ? { text: ae.textContent ?? '', shadow: getComputedStyle(ae).boxShadow } : null
+    })
+  let focused: Awaited<ReturnType<typeof readFocused>> = null
+  for (let i = 0; i < 5 && !focused; i++) {
+    await page.keyboard.press('Tab')
+    focused = await readFocused()
+  }
+  const focusedText = focused?.text ?? null
+  const focusedShadow = focused?.shadow ?? 'none'
+  expect(focusedText, '焦点落在当前选中 tab 上（roving tabindex 保留一枚序列内项）').toBe('文件')
+  expect(focusedShadow, ':focus-visible 焦点环真实渲染（非 none）').not.toBe('none')
+  await page.evaluate(() => document.getElementById('insp-tabs-focus-probe')?.remove())
+
+  // disabled 态：弱化 + not-allowed，且点击不改变 value（类名不改事件语义）
+  await page.evaluate(() => {
+    const el = document.createElement('oas-inspector-tabs')
+    el.id = 'insp-tabs-disabled-probe'
+    el.setAttribute('items', '[{"label":"可用","value":"ok"},{"label":"禁用","value":"no","disabled":true}]')
+    el.setAttribute('value', 'ok')
+    document.body.appendChild(el)
+  })
+  await up(page, '#insp-tabs-disabled-probe')
+  const disabled = await page.evaluate(() => {
+    const el = document.querySelector('#insp-tabs-disabled-probe') as HTMLElement & { shadowRoot: ShadowRoot }
+    const off = el.shadowRoot.querySelector<HTMLElement>('[role="tab"][data-value="no"]')!
+    off.click()
+    const cs = getComputedStyle(off)
+    return {
+      ariaDisabled: off.getAttribute('aria-disabled'),
+      opacity: cs.opacity,
+      cursor: cs.cursor,
+      value: el.getAttribute('value'),
+    }
+  })
+  expect(disabled.ariaDisabled, '禁用项 aria-disabled').toBe('true')
+  expect(disabled.opacity, '禁用态视觉弱化（.tab[aria-disabled] 规则命中）').toBe('0.6')
+  expect(disabled.cursor, '禁用态指针 not-allowed').toBe('not-allowed')
+  expect(disabled.value, '点击禁用项不改变 value').toBe('ok')
+  await page.evaluate(() => document.getElementById('insp-tabs-disabled-probe')?.remove())
+
+  // a11y：tab 条 axe 无 critical/serious 违规
+  const axe = await new AxeBuilder({ page }).include('#insp-tabs').analyze()
+  expect(
+    axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id),
+    'tab 条 axe 零 critical/serious 违规',
+  ).toEqual([])
+
+  expect((page as ConsolePage).__oasConsole, 'tab 交互全程 console 零告警').toEqual([])
 })
 
 test('statusbar 可点项：点击派发 oas-item-click、demo 输出可见反馈', async ({ page }) => {

@@ -68,7 +68,7 @@ const STYLE = `
   padding: 2px var(--oas-space-2, 8px);
 }
 .split-head[hidden] { display: none; }
-.split-head span { padding-inline: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.split-head span { padding-inline: var(--oas-space-1_5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stats { display: flex; align-items: center; gap: var(--oas-space-2, 8px); font-variant-numeric: tabular-nums; }
 .stats .added { color: var(--oas-color-success-text); }
 .stats .removed { color: var(--oas-color-danger-text); }
@@ -104,7 +104,7 @@ const STYLE = `
 .viewport:focus-visible .row.active, .viewport:focus-visible .fold.active { box-shadow: inset 0 0 0 2px var(--oas-color-primary); }
 .no {
   text-align: end;
-  padding-inline: 6px;
+  padding-inline: var(--oas-space-1_5);
   color: var(--oas-color-diff-gutter-text, var(--oas-color-text-secondary));
   user-select: none;
   font-variant-numeric: tabular-nums;
@@ -113,7 +113,7 @@ const STYLE = `
 .sign { text-align: center; user-select: none; color: var(--oas-color-diff-gutter-text, var(--oas-color-text-secondary)); }
 .code {
   min-width: 0;
-  padding-inline: 6px;
+  padding-inline: var(--oas-space-1_5);
   overflow: hidden;
   white-space: pre;
   text-overflow: ellipsis;
@@ -146,7 +146,7 @@ const STYLE = `
   color: var(--oas-color-primary-text);
   background: transparent;
   border: 0;
-  padding-inline: 8px;
+  padding-inline: var(--oas-space-2);
   cursor: pointer;
   height: 100%;
   text-align: start;

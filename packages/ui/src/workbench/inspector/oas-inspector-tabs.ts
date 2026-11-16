@@ -172,6 +172,7 @@ export class OASInspectorTabs extends OASElement {
     for (const item of this.itemsCache) {
       const tab = document.createElement('button')
       tab.type = 'button'
+      tab.className = 'tab'
       tab.setAttribute('part', 'tab')
       tab.setAttribute('role', 'tab')
       tab.dataset.value = item.value

@@ -33,12 +33,6 @@
     },
     {
       "file": "packages/ui/src/basic/button/oas-button.ts",
-      "property": "padding",
-      "value": "0 6px",
-      "reason": "button.xs 非图标按钮的横向内边距 6px：介于 4/8 档之间，与 xs 字号、xs 控件高度配比"
-    },
-    {
-      "file": "packages/ui/src/basic/button/oas-button.ts",
       "property": "padding-block",
       "value": "2px",
       "reason": "多行按钮（.wrap）：高度 auto 时用 2px 上下补白控制换行后行距，小于最小 token 档，配合 min-height 使用"
@@ -86,48 +80,6 @@
       "reason": "视觉隐藏状态容器（1px 尺寸）的 -1px 裁剪边距，与 sr-only 同型，不参与布局"
     },
     {
-      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
-      "property": "gap",
-      "value": "32px",
-      "reason": "圆点翻页器沿轴间距 32px：coarse 指针下每个圆点用 16px padding 扩大命中区、-16px margin 抵消视觉尺寸，32px 保证相邻命中区不重叠（规则上方注释已说明）"
-    },
-    {
-      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
-      "property": "padding",
-      "value": "16px",
-      "reason": "圆点：16px padding 扩大点击区，与下一条 -16px margin 成对抵消占位，单独改成 token 会破坏成对关系"
-    },
-    {
-      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
-      "property": "margin",
-      "value": "-16px",
-      "reason": "圆点：-16px margin 抵消上面的 16px padding，保持视觉尺寸不变同时扩大命中区"
-    },
-    {
-      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
-      "property": "padding",
-      "value": "20px 12px",
-      "reason": "线条变体圆点：20px/12px 命中区与视觉尺寸成对，属组件自有几何"
-    },
-    {
-      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
-      "property": "margin",
-      "value": "-20px -12px",
-      "reason": "线条变体圆点：-20px/-12px 抵消上面的 padding，成对使用"
-    },
-    {
-      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
-      "property": "padding",
-      "value": "12px 20px",
-      "reason": "纵向线条变体圆点：横纵互换的 12px/20px 命中区，与横向变体成镜像"
-    },
-    {
-      "file": "packages/ui/src/data/carousel/oas-carousel.ts",
-      "property": "margin",
-      "value": "-12px -20px",
-      "reason": "纵向线条变体圆点：-12px/-20px 抵消上面的 padding，成对使用"
-    },
-    {
       "file": "packages/ui/src/data/diff-viewer/oas-diff-viewer.ts",
       "property": "padding",
       "value": "2px var(--oas-space-2, 8px)",
@@ -141,33 +93,9 @@
     },
     {
       "file": "packages/ui/src/data/diff-viewer/oas-diff-viewer.ts",
-      "property": "padding-inline",
-      "value": "6px",
-      "reason": "对比头两栏标题的 6px 左右内缩：与 1fr 栅格列对齐使用，4/8 档会错位"
-    },
-    {
-      "file": "packages/ui/src/data/diff-viewer/oas-diff-viewer.ts",
       "property": "padding",
       "value": "2px 8px",
-      "reason": "工具栏小按钮：垂直 2px 收紧 + 水平 8px，按钮自带紧凑刻度（与 token 同值但语义是按钮内边距）"
-    },
-    {
-      "file": "packages/ui/src/data/diff-viewer/oas-diff-viewer.ts",
-      "property": "padding-inline",
-      "value": "6px",
-      "reason": "行号列左右 6px 内缩：对齐 gutter 槽宽，属行号列几何"
-    },
-    {
-      "file": "packages/ui/src/data/diff-viewer/oas-diff-viewer.ts",
-      "property": "padding-inline",
-      "value": "6px",
-      "reason": "代码列左右 6px 内缩：与行号列同一条 gutter 槽宽"
-    },
-    {
-      "file": "packages/ui/src/data/diff-viewer/oas-diff-viewer.ts",
-      "property": "padding-inline",
-      "value": "8px",
-      "reason": "折叠按钮左右 8px：紧凑按钮刻度的水平内边距"
+      "reason": "工具栏小按钮：垂直 2px 收紧 + 水平 8px（--oas-space-2），按钮自带紧凑刻度"
     },
     {
       "file": "packages/ui/src/data/equation/oas-equation.ts",
@@ -195,33 +123,9 @@
     },
     {
       "file": "packages/ui/src/data/gantt/gantt-style.ts",
-      "property": "margin-inline-start",
-      "value": "4px",
-      "reason": "行内悬浮数字与前一段说明文字的 4px 间隔：行内标注排版刻度，小于最小 token 档"
-    },
-    {
-      "file": "packages/ui/src/data/gantt/gantt-style.ts",
       "property": "margin-bottom",
       "value": "2px",
       "reason": "甘特提示浮层内标题与明细行 2px 紧排：tooltip 内部行距，4px 会撑高浮层"
-    },
-    {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "gap",
-      "value": "6px",
-      "reason": "JSON 工具栏：按钮间距 6px 不在 4/8 档，与 28px 工具按钮高度配比，属工具栏自有栅格"
-    },
-    {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "padding",
-      "value": "6px 8px",
-      "reason": "JSON 工具栏内边距 6px/8px：与按钮高度配比的紧凑刻度"
-    },
-    {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "padding",
-      "value": "0 8px",
-      "reason": "搜索框：左右 8px 与 28px 高度配比（垂直为 0），属表单控件内边距刻度"
     },
     {
       "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
@@ -230,46 +134,10 @@
       "reason": "复制状态浮层 3px/10px：小号浮层内边距，低于最小 token 档的垂直值"
     },
     {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "padding",
-      "value": "0 8px",
-      "reason": "工具栏按钮：左右 8px（垂直由固定 28px 高度控制），按钮自带内边距刻度"
-    },
-    {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "padding",
-      "value": "4px 0",
-      "reason": "视图滚动区上下 4px：滚动内容上下呼吸位，水平为 0（由行内缩进控制）"
-    },
-    {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "gap",
-      "value": "6px",
-      "reason": "行内 6px 列间距：与缩进层级、箭头宽度配比，属树行自有栅格"
-    },
-    {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "padding-inline-end",
-      "value": "8px",
-      "reason": "行尾 8px 内缩：绝对定位行铺满容器（inset-inline: 0）时给行内末列留呼吸位，属 JSON 行自有刻度"
-    },
-    {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "property": "padding",
-      "value": "4px 6px",
-      "reason": "紧凑模式工具栏 4px/6px：data-compact 下的压缩刻度（水平 6px 非 token 档）"
-    },
-    {
       "file": "packages/ui/src/data/log/oas-log.ts",
       "property": "padding",
       "value": "0 1px",
       "reason": "搜索命中 mark 的左右 1px：高亮背景紧贴文字，token 会明显过宽"
-    },
-    {
-      "file": "packages/ui/src/data/resource/oas-resource.ts",
-      "property": "gap",
-      "value": "4px",
-      "reason": "热力条图例：色块与文字 4px 间距（与 token 同值但属图例内部配比）"
     },
     {
       "file": "packages/ui/src/data/resource/oas-resource.ts",
@@ -334,12 +202,6 @@
     {
       "file": "packages/ui/src/data/table/style/features.ts",
       "property": "margin-inline-start",
-      "value": "4px",
-      "reason": "筛选图标按钮与表头文字的 4px 间距：18px 见方图标按钮的贴边几何（与 token 同值但语义是表头布局）"
-    },
-    {
-      "file": "packages/ui/src/data/table/style/features.ts",
-      "property": "margin-inline-start",
       "value": "2px",
       "reason": "列移动按钮 2px 左间距：22px 见方的图标按钮与列头文字的紧排"
     },
@@ -389,7 +251,7 @@
       "file": "packages/ui/src/form/calendar/oas-calendar.ts",
       "property": "gap",
       "value": "3px",
-      "reason": "日期格事件点标记 3px 间距：小圆点组的紧排刻度，不在 4/8 档"
+      "reason": "日期格事件点标记 3px 间距：小圆点组的紧排刻度，低于最小 token 档 4px"
     },
     {
       "file": "packages/ui/src/form/calendar/oas-calendar.ts",
@@ -530,12 +392,6 @@
       "reason": "拖拽气泡 2px/6px：绝对定位小气泡的内边距（与偏移量 6px 配对）"
     },
     {
-      "file": "packages/ui/src/form/slider/oas-slider.ts",
-      "property": "margin-top",
-      "value": "-6px",
-      "reason": "刻度轨道 -6px 上移：与滑块轨道（8px 高）对齐的负偏移，规则上方注释已说明"
-    },
-    {
       "file": "packages/ui/src/form/switch/oas-switch.ts",
       "property": "margin-top",
       "value": "-7px",
@@ -635,7 +491,7 @@
       "file": "packages/ui/src/navigation/command/oas-command.ts",
       "property": "padding",
       "value": "1px 5px",
-      "reason": "快捷键键帽 1px/5px：小于最小 token 档的键帽内边距，保证键帽不撑高行"
+      "reason": "快捷键键帽 1px/5px：垂直 1px 低于最小 token 档 4px、水平 5px 落在 4px 与 6px 两档之间，保证键帽不撑高行"
     },
     {
       "file": "packages/ui/src/navigation/command/oas-command.ts",

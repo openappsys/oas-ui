@@ -279,21 +279,21 @@ const STYLE = `
     height: max(var(--oas-control-height-md), var(--oas-touch-target-min, 44px));
   }
   .dots {
-    gap: 32px;
+    gap: var(--oas-space-6);
   }
   .dot {
     box-sizing: content-box;
-    padding: 16px;
-    margin: -16px;
+    padding: var(--oas-space-4);
+    margin: calc(-1 * var(--oas-space-4));
   }
   /* 线性指示器：按 20×4（水平）/ 4×20（垂直）补足 44px 命中区 */
   .dots.line .dot {
-    padding: 20px 12px;
-    margin: -20px -12px;
+    padding: var(--oas-space-4_5) var(--oas-space-3);
+    margin: calc(-1 * var(--oas-space-4_5)) calc(-1 * var(--oas-space-3));
   }
   :host([direction='vertical']) .dots.line .dot {
-    padding: 12px 20px;
-    margin: -12px -20px;
+    padding: var(--oas-space-3) var(--oas-space-4_5);
+    margin: calc(-1 * var(--oas-space-3)) calc(-1 * var(--oas-space-4_5));
   }
 }
 .arrow {

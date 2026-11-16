@@ -312,7 +312,7 @@ a[part='button'].xs {
   font-size: var(--oas-font-size-xs);
 }
 button.xs:not(.icon-only) {
-  padding: 0 6px;
+  padding: 0 var(--oas-space-1_5);
   /* xs 档防过窄：最小宽放宽至 44px（其余档无最小宽约束） */
   min-width: 44px;
 }

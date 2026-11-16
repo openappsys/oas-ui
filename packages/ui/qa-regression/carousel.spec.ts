@@ -116,8 +116,9 @@ test('carousel 触屏：箭头/暂停钮/圆点 coarse 命中区到 44px，圆�
     return {
       coarse: style.includes('@media (pointer: coarse)'),
       arrowMax: style.includes('max(var(--oas-control-height-md), var(--oas-touch-target-min, 44px))'),
-      dotPad: /padding:\s*16px/.test(style) && /margin:\s*-16px/.test(style),
-      dotsGap: /gap:\s*32px/.test(style),
+      dotPad:
+        /padding:\s*var\(--oas-space-4\)/.test(style) && /margin:\s*calc\(-1 \* var\(--oas-space-4\)\)/.test(style),
+      dotsGap: /gap:\s*var\(--oas-space-6\)/.test(style),
       dotWidth: getComputedStyle(dot).width,
     }
   })

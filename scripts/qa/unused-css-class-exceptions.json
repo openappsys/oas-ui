@@ -25,11 +25,6 @@
       "file": "packages/ui/src/workbench/inspector/oas-inspector-section.ts",
       "class": "extra-placeholder",
       "reason": "确认死样式（未使用 CSS 类守卫扫描）：模板仅有 .extra 容器（:157），不存在 .extra-placeholder 兄弟元素，规则无目标；登记为例外使基线归零，建议后续批次删除该规则"
-    },
-    {
-      "file": "packages/ui/src/workbench/inspector/oas-inspector-tabs.ts",
-      "class": "tab",
-      "reason": "确认死样式且按钮未设置 class（oas-inspector-tabs.ts:173 起 createElement('button') 后只设 part/role/dataset/textContent），守卫扫描时 .tab 规则无任何命中目标，待产品批修复"
     }
   ]
 }

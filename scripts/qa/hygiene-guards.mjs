@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 源码卫生守卫：未使用 CSS 类 + 魔法间距尺寸。
+ * 源码卫生守卫：未使用 CSS 类 + 魔法间距尺寸 + 孪生协议判定（三维度）。
  *
  * ## 未使用 CSS 类
  *
@@ -36,7 +36,11 @@
  * - 已知边界：具名 helper 的第二参数类名（createIcon(name, 'arrow') 同型）不做调用点
  *   数据流追踪——有测试断言（querySelector / classList.contains）覆盖的可被上下文 3/5
  *   自动指认（select chip-icon、menu icon 现状）；无测试断言覆盖时登记精确例外
- *   （unused-css-class-exceptions.json，file + class + reason，menu arrow 现状）。
+ *   （unused-css-class-exceptions.json，file + class + reason，menu arrow 现状）；
+ * - 已知边界：样式模板提取（extractCssBlocks）只认 `const|let|var <名> = \`…\``
+ *   这一种声明形态——带类型标注的常量（`const X: string = ...`）、类字段（`static X = ...`
+ *   与实例字段 `X = ...`）以及 String.raw 包裹的模板暂不扫描（宁可少报，不把非样式
+ *   模板误认成 CSS 块）。
  *
  * 例外：scripts/qa/unused-css-class-exceptions.json，精确到 file + class + reason；
  * 一条例外只消费一条命中，不再命中即报陈旧；只登记真实候选，不修改产品源码清零。
@@ -59,8 +63,10 @@
  * - 扫描范围 = 与未使用 CSS 类同一个 CSS 块提取口径（样式模板），不含测试文件；
  *   模板里 `${}` 插值被剔除，`padding: ${x}px` 之类的动态值不会命中；
  * - 已知边界：自定义属性声明（`--x: 3px`）不是间距属性、模板 HTML 里的内联
- *   `style="margin: 4px"` 不在 CSS 块内——两者都不在扫描范围（前者是 token 定义位，
- *   后者应改写为类规则）。
+ *   `style="margin: 4px"` 与 JS 内联声明（`style.cssText = 'margin: 4px'`）都不在 CSS
+ *   块内——三者都不在扫描范围（前者是 token 定义位，后两者应改写为类规则）；样式模板
+ *   提取只认 `const|let|var <名> = \`…\`` 声明形态（带类型标注常量、类字段与 String.raw
+ *   包裹的模板不扫描，同一已知边界见「未使用 CSS 类」）。
  *
  * 例外：scripts/qa/magic-spacing-exceptions.json，精确到 file + property + value +
  * reason；一条例外只消费一条命中（同一文件重复出现的同值声明须逐条登记），
@@ -97,9 +103,10 @@
  *   参数表前是 if/for/while/switch/catch/with 的 `{` 是语句块不算函数）；
  *   不平衡括号、未闭合字符串/模板等残缺输入一律安全跳过，不抛错。测试文件不参与
  *   （`*.test.ts` 跳过）；
- * - 已知边界（宁可少报）：只取 `if (...)` / `return <expr>` 两个位置的判定，赋值/实参里的
- *   三元条件位（`const x = a && b ? c : d`）不在提取范围；表达式体箭头（`() => expr`）不单独
- *   成函数作用域，其内部条件归外层函数；类属性箭头与回调箭头一律记 `(anonymous)`。
+ * - 已知边界（宁可少报）：只取 `if (...)` / `return <expr>` 两个位置的判定——变量初始化
+ *   赋值（`const x = a && b`）与赋值/实参里的三元条件位（`const x = a && b ? c : d`）整体
+ *   不在提取范围；表达式体箭头（`() => expr`）的表达式体不是 `if`/`return` 位置，其内部
+ *   判定不单独成为候选（也不单独成函数作用域）；类属性箭头与回调箭头一律记 `(anonymous)`。
  *
  * 例外：scripts/qa/twin-predicate-exceptions.json，精确到 file + predicate + count +
  * reason；`count` 必须与当前出现次数一致——同一文件再复制一份副本（count 变化）不会被
@@ -1198,7 +1205,7 @@ function containsProtocolAtom(source, mask, from, to) {
     if (PROTOCOL_ATOM_NAMES.has(word)) {
       let j = i + word.length
       while (j < to && mask[j] && isSpaceChar(source[j])) j++
-      // 可选调用 `getAttribute?.(`：AST 里仍是 CallExpression，同名协议原子
+      // 可选调用 `getAttribute?.(`：语义上仍是同名协议的调用（词法扫描把 `?.` 视作调用前缀）
       if (source[j] === '?' && source[j + 1] === '.') {
         j += 2
         while (j < to && mask[j] && isSpaceChar(source[j])) j++

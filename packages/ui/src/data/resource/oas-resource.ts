@@ -358,7 +358,7 @@ const STYLE = `
 .heat-legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--oas-space-1);
   color: var(--oas-color-text-secondary-strong);
   font-size: var(--oas-font-size-xs);
   white-space: nowrap;

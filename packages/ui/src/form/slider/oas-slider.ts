@@ -441,7 +441,7 @@ input:disabled {
 .marks {
   position: relative;
   width: 100%;
-  margin-top: -6px;
+  margin-top: calc(-1 * var(--oas-space-1_5));
 }
 /* 垂直模式：刻度区移到轨道右侧，刻度点沿竖直轴向排布。
    用 align-self: stretch 拉满轨道高度（height:100% 对弹性项会对着不定高容器解析成 0，

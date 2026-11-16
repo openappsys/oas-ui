@@ -82,8 +82,8 @@ const STYLE = `
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: var(--oas-space-1_5);
+  padding: var(--oas-space-1_5) var(--oas-space-2);
   border-bottom: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg-elevated, var(--oas-color-bg));
   flex: none;
@@ -93,7 +93,7 @@ const STYLE = `
   flex: 1 1 140px;
   min-width: 80px;
   height: 28px;
-  padding: 0 8px;
+  padding: 0 var(--oas-space-2);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-color-bg);
@@ -132,7 +132,7 @@ const STYLE = `
 .copy-status[hidden] { display: none; }
 .btn {
   height: 28px;
-  padding: 0 8px;
+  padding: 0 var(--oas-space-2);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-color-bg);
@@ -151,7 +151,7 @@ const STYLE = `
   overscroll-behavior: contain;
   overflow-anchor: none;
   outline: none;
-  padding: 4px 0;
+  padding: var(--oas-space-1) 0;
   box-sizing: border-box;
 }
 .viewport:focus-visible { outline: 2px solid var(--oas-color-primary); outline-offset: -2px; }
@@ -168,9 +168,9 @@ const STYLE = `
   inset-inline: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--oas-space-1_5);
   height: var(--_oas-jv-row-height, var(--oas-json-viewer-row-height, 24px));
-  padding-inline-end: 8px;
+  padding-inline-end: var(--oas-space-2);
   box-sizing: border-box;
   cursor: default;
   white-space: nowrap;
@@ -226,7 +226,7 @@ const STYLE = `
 .placeholder { padding: var(--oas-space-3); color: var(--oas-color-text-secondary); }
 .error { padding: var(--oas-space-3); color: var(--oas-color-danger-text); white-space: pre-wrap; }
 :host([data-compact]) .row { font-size: 11px; }
-:host([data-compact]) .toolbar { padding: 4px 6px; }
+:host([data-compact]) .toolbar { padding: var(--oas-space-1) var(--oas-space-1_5); }
 @media (prefers-reduced-motion: no-preference) {
   .row { transition: background-color var(--oas-transition-fast, 120ms) ease; }
 }

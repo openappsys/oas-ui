@@ -854,12 +854,19 @@ describe('OASCarousel', () => {
       expect(style).toMatch(
         /\.arrow[\s\S]*?width:\s*max\(var\(--oas-control-height-md\),\s*var\(--oas-touch-target-min,\s*44px\)\)/,
       )
-      // 圆点：视觉保持 12px，padding 扩出 44px 命中区，margin 负补偿不占布局
+      // 圆点：视觉保持 12px，padding 扩出 44px 命中区，margin 负补偿不占布局（成对走同一 token）
       expect(style).toMatch(/\.dot\s*\{[^}]*width:\s*12px/)
-      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dot\s*\{[^}]*padding:\s*16px/)
-      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dot\s*\{[^}]*margin:\s*-16px/)
+      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dot\s*\{[^}]*padding:\s*var\(--oas-space-4\)/)
+      expect(style).toMatch(
+        /@media \(pointer: coarse\)[\s\S]*\.dot\s*\{[^}]*margin:\s*calc\(-1 \* var\(--oas-space-4\)\)/,
+      )
       // 相邻圆点命中区间距补偿（防热区重叠误触）
-      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dots\s*\{[^}]*gap:\s*32px/)
+      expect(style).toMatch(/@media \(pointer: coarse\)[\s\S]*\.dots\s*\{[^}]*gap:\s*var\(--oas-space-6\)/)
+      // 线性变体：横纵镜像同样走 token（20/12 → space-4_5 / space-3）
+      expect(style).toMatch(/\.dots\.line \.dot\s*\{[^}]*padding:\s*var\(--oas-space-4_5\) var\(--oas-space-3\)/)
+      expect(style).toMatch(
+        /\.dots\.line \.dot\s*\{[^}]*margin:\s*calc\(-1 \* var\(--oas-space-4_5\)\) calc\(-1 \* var\(--oas-space-3\)\)/,
+      )
     })
 
     it('箭头/暂停钮/圆点 DOM 结构与 PC 一致（coarse 纯 CSS 增强，无结构分叉）', () => {

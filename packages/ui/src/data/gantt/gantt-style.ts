@@ -681,7 +681,7 @@ svg.links .temp-link {
   pointer-events: none;
 }
 .float-inline {
-  margin-inline-start: 4px;
+  margin-inline-start: var(--oas-space-1);
   color: inherit;
   font-size: var(--oas-font-size-xs, 11px);
   font-weight: normal;

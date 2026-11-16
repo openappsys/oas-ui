@@ -185,6 +185,27 @@ describe('OASInspectorTabs', () => {
     expect(tabs[1]!.textContent).toBe('文件')
   })
 
+  it('tab 按钮挂 .tab 类（样式表 .tab 规则的唯一挂载点；回归：曾漏 className 致胶囊/选中态全失效）', () => {
+    const el = mount<OASInspectorTabs>({
+      Ctor: OASInspectorTabs,
+      attrs: {
+        items: '[{"label":"A","value":"a"},{"label":"B","value":"b"},{"label":"C","value":"c","disabled":true}]',
+        value: 'a',
+      },
+    })
+    const tabs = tabEls(el)
+    expect(tabs.length).toBe(3)
+    for (const tab of tabs) expect(tab.classList.contains('tab')).toBe(true)
+    // 样式表靠类名挂载基础胶囊与选中/禁用态；缺类名这些规则全部落空
+    const css = styleText(el)
+    expect(css).toMatch(/\.tab\s*\{/)
+    expect(css).toMatch(/\.tab\[aria-selected='true'\]/)
+    expect(css).toMatch(/\.tab\[aria-disabled='true'\]/)
+    // 类名不影响事件/ARIA 契约
+    expect(tabs[2]!.getAttribute('aria-disabled')).toBe('true')
+    expect(tabs[0]!.getAttribute('aria-selected')).toBe('true')
+  })
+
   it('非法 items JSON：渲染为空不抛错（dev 告警一次）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount<OASInspectorTabs>({ Ctor: OASInspectorTabs, attrs: { items: '{broken' } })

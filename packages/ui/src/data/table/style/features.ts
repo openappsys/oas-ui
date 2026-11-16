@@ -321,7 +321,7 @@ tr.row.drop-after td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-inline-start: 4px;
+  margin-inline-start: var(--oas-space-1);
   width: 18px;
   height: 18px;
   border: none;
