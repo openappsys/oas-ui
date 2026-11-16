@@ -270,10 +270,6 @@ const STYLE = `
 .listbox[hidden] {
   display: none;
 }
-.oas-vlist {
-  flex: 1;
-  min-height: 0;
-}
 ${OPTION_STYLE}
 .empty {
   padding: var(--oas-space-3);

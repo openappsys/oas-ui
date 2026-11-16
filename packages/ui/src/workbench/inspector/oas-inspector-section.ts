@@ -76,9 +76,6 @@ const STYLE = `
   align-items: center;
   flex-shrink: 0;
 }
-.extra:not([hidden]) ~ .extra-placeholder {
-  display: none;
-}
 /* 展开动画：grid-template-rows 0fr→1fr 纯 CSS 方案，内容 overflow 裁剪（对齐 collapse 经验） */
 .body-wrap {
   display: grid;

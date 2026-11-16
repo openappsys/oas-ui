@@ -268,9 +268,6 @@ tr.spacer td {
 @keyframes oas-table-spin {
   to { transform: rotate(360deg); }
 }
-.check {
-  accent-color: var(--oas-color-primary);
-}
 .check-cell {
   width: 40px;
   text-align: center;

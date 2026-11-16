@@ -2,29 +2,9 @@
   "$comment": "未使用 CSS 类守卫（scripts/qa/hygiene-guards.mjs）的精确例外。每条精确到 file + class + reason；一条例外只消费一条命中，产品源码修改使命中消失后会报陈旧例外，须同步删除。i18n 死键精确集合由 packages/i18n/src/slices/completeness.test.ts 的 EXPECTED_DEAD 双向断言覆盖，不在本守卫范围。",
   "exceptions": [
     {
-      "file": "packages/ui/src/data/json-viewer/oas-json-viewer.ts",
-      "class": "meta",
-      "reason": "确认死样式（未使用 CSS 类守卫扫描）：全目录无任何 DOM 路径应用 .meta，登记为例外使基线归零，建议后续批次删除 .row.active .meta 与 .meta 两条规则"
-    },
-    {
-      "file": "packages/ui/src/data/table/style/base.ts",
-      "class": "check",
-      "reason": "确认死样式（未使用 CSS 类守卫扫描）：全目录无任何 DOM 路径应用 .check（复选列样式由 .check-cell input 覆盖），登记为例外使基线归零，建议后续批次删除该规则"
-    },
-    {
-      "file": "packages/ui/src/form/transfer/oas-transfer.ts",
-      "class": "oas-vlist",
-      "reason": "实际元素 class=vlist（oas-transfer.ts:487、511），.oas-vlist 为改名遗留死规则，待后续核对布局后处理"
-    },
-    {
       "file": "packages/ui/src/navigation/menu/oas-menu.ts",
       "class": "arrow",
       "reason": "子菜单箭头类经 createIcon(arrowName, 'arrow') 第二参数应用（oas-menu.ts:1204、1298；createIcon 形参 className 见 :1322），守卫不追踪具名 helper 的调用点实参"
-    },
-    {
-      "file": "packages/ui/src/workbench/inspector/oas-inspector-section.ts",
-      "class": "extra-placeholder",
-      "reason": "确认死样式（未使用 CSS 类守卫扫描）：模板仅有 .extra 容器（:157），不存在 .extra-placeholder 兄弟元素，规则无目标；登记为例外使基线归零，建议后续批次删除该规则"
     }
   ]
 }

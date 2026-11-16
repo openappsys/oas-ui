@@ -182,8 +182,7 @@ const STYLE = `
 .row:hover { background: var(--oas-color-bg-hover); }
 .row.active { background: var(--oas-color-bg-hover); }
 .row.active .key,
-.row.active .value,
-.row.active .meta { color: var(--oas-color-text-primary); }
+.row.active .value { color: var(--oas-color-text-primary); }
 .twisty {
   flex: none;
   display: flex;
@@ -214,7 +213,6 @@ const STYLE = `
 .value.number { color: var(--oas-color-primary-text); }
 .value.boolean { color: var(--oas-color-warning-text); }
 .value.null { color: var(--oas-color-text-secondary); font-style: italic; }
-.meta { color: var(--oas-color-text-secondary); font-size: .92em; }
 .mark {
   background: var(--oas-color-bg-hover);
   color: var(--oas-color-text-primary);
