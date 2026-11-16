@@ -423,12 +423,12 @@
     },
     {
       "file": "packages/ui/src/form/slider/oas-slider.ts",
-      "line": 1323,
+      "line": 1329,
       "reason": "色相/明度滑轨渐变（光谱空间固有端点，非设计 token 配色）"
     },
     {
       "file": "packages/ui/src/form/slider/oas-slider.ts",
-      "line": 1327,
+      "line": 1333,
       "reason": "色相/明度滑轨渐变（光谱空间固有端点，非设计 token 配色）"
     },
     {

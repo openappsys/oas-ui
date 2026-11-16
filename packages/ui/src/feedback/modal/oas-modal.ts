@@ -981,11 +981,17 @@ export class OASModal extends OASElement {
 
   // ===== P3 开合动画与生命周期事件（oas-open → oas-opened；关闭 → oas-closed） =====
 
+  /** 滚动锁尚未建立（未禁用锁且未持有句柄）时持锁 */
+  private acquireScrollLock(): void {
+    if (this.hasAttr('no-scroll-lock')) return
+    if (!this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+  }
+
   /** 打开边沿（同步）：锁滚动 → 记录来源焦点 → 聚焦 → 派发 open → 动画结束后派发 opened */
   private startOpen(): void {
     this.isOpen = true
     this.wasOpen = true
-    if (!this.hasAttr('no-scroll-lock') && !this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+    this.acquireScrollLock()
     if (!this.releaseEscapeLayer) {
       this.releaseEscapeLayer = pushEscapeLayer({
         name: 'modal',

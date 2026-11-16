@@ -495,7 +495,8 @@ export class OASDynamicTags extends OASElement {
 
   /** 组级冻结判定：disabled / readonly 均禁输入、删除、排序与编辑 */
   private isFrozen(): boolean {
-    return this.injectDisabled() || this.hasAttr('readonly')
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
   }
 
   private maxTagCountValue(): number {
@@ -764,13 +765,19 @@ export class OASDynamicTags extends OASElement {
       if (!silent) this.showHint(this.t('dynamicTags.patternMismatch'))
       return false
     }
-    if (!this.hasAttr('allow-duplicate') && this.tags.includes(value)) {
+    if (this.isDuplicate(value)) {
       if (!silent) this.showHint(this.t('dynamicTags.duplicate'))
       return false
     }
     if (!this.emit('before-add', { value }, { cancelable: true })) return false
     this.tags.push(value)
     return true
+  }
+
+  /** 查重判定：allow-duplicate 开启时不过滤，否则已存在的标签视为重复 */
+  private isDuplicate(value: string): boolean {
+    if (this.hasAttr('allow-duplicate')) return false
+    return this.tags.includes(value)
   }
 
   private patternOk(value: string): boolean {
@@ -1024,7 +1031,7 @@ export class OASDynamicTags extends OASElement {
       fail(this.t('dynamicTags.patternMismatch'))
       return
     }
-    if (!this.hasAttr('allow-duplicate') && this.tags.includes(value)) {
+    if (this.isDuplicate(value)) {
       fail(this.t('dynamicTags.duplicate'))
       return
     }

@@ -4166,9 +4166,15 @@ export class OASGantt extends OASElement {
     return isInteractiveTarget(target)
   }
 
+  /** 空白新建任务门禁：creatable 开启且非只读 */
+  private canCreateTask(): boolean {
+    if (!this.hasAttr('creatable')) return false
+    return !this.hasAttr('readonly')
+  }
+
   /** 双击左侧列表空白：按今天新建根级任务并进入重命名（仅 creatable 且非只读） */
   private onSideDblClick = (e: MouseEvent): void => {
-    if (!this.hasAttr('creatable') || this.hasAttr('readonly')) return
+    if (!this.canCreateTask()) return
     if (this.isInteractiveTarget(e.target)) return
     const id = this.addTask({})
     if (id) this.enterRename(id)
@@ -4191,7 +4197,7 @@ export class OASGantt extends OASElement {
 
   /** 双击时间轴空白：按落点日期新建任务并进入重命名（仅 creatable 且非只读） */
   private onTbodyDblClick = (e: MouseEvent): void => {
-    if (!this.hasAttr('creatable') || this.hasAttr('readonly')) return
+    if (!this.canCreateTask()) return
     if (this.isInteractiveTarget(e.target)) return
     if (!this.tbody || this.units.length === 0) return
     const ms = this.dateAtClientX(e.clientX)

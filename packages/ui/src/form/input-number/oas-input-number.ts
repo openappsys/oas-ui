@@ -795,9 +795,21 @@ export class OASInputNumber extends OASFormElement {
     return String(parsed)
   }
 
+  /** 必填未满足：required 且表单值为空串 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === ''
+  }
+
+  /** 冻结：注入禁用或只读（两者都不可写、不可步进） */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   /** 原生校验链同步：required 且值为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === '') {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})
@@ -977,7 +989,7 @@ export class OASInputNumber extends OASFormElement {
   private commitFromInput(): void {
     const i = this.input
     if (!i) return
-    if (this.injectDisabled() || this.hasAttr('readonly')) {
+    if (this.isFrozen()) {
       this.writeDisplay()
       return
     }
@@ -1009,7 +1021,7 @@ export class OASInputNumber extends OASFormElement {
 
   private onWheel(e: WheelEvent): void {
     if (!this.hasAttr('wheel')) return
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     if (this.input && this.shadow.activeElement !== this.input) return
     if (e.deltaY === 0) return
     e.preventDefault()
@@ -1023,6 +1035,13 @@ export class OASInputNumber extends OASFormElement {
     return this.getAttr('scrub', 'true') === 'false'
   }
 
+  /** 拖拽启动被拦：scrub 关闭或冻结（短路顺序与拆分前一致） */
+  private scrubBlocked(): boolean {
+    if (this.scrubOff()) return true
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   /** 触屏不启用 scrub：点按即聚焦弹键盘（文本键入优先），且防 scrub 与系统手势打架 */
   private isCoarsePointer(): boolean {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
@@ -1032,7 +1051,7 @@ export class OASInputNumber extends OASFormElement {
   /** 输入框按下：记录锚点（像素 + 基准值），挂 window 级 move/up；不 preventDefault（保留聚焦） */
   private beginPointerScrub(e: PointerEvent): void {
     if (this.scrubState) return
-    if (this.scrubOff() || this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.scrubBlocked()) return
     if (this.isCoarsePointer()) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const i = this.input
@@ -1138,7 +1157,7 @@ export class OASInputNumber extends OASFormElement {
   /** 长按连击：pointerdown 启动（仅计时）；快速点击的步进由 release 后的 click 承担 */
   private startHold(dir: 1 | -1): void {
     this.stopHold()
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.holdTimer = window.setTimeout(() => {
       this.repeatTimer = window.setInterval(() => this.stepBy(dir), REPEAT_INTERVAL_MS)
     }, HOLD_DELAY_MS)

@@ -263,6 +263,13 @@ export class OASPagination extends OASElement {
 
   /** responsive：容器宽度监听（清理走 onCleanup，断连后 update 幂等重建） */
   private resizeObserver: ResizeObserver | null = null
+  /** responsive：需要惰性建立 ResizeObserver（responsive 开、尚未建立且环境支持） */
+  private shouldObserveResponsiveSize(): boolean {
+    if (!this.hasAttr('responsive')) return false
+    if (this.resizeObserver) return false
+    return typeof ResizeObserver !== 'undefined'
+  }
+
   /** responsive：容器是否窄于断点（clientWidth>0 且 <640；0=未布局/SSR 不误判） */
   private narrow = false
   /**
@@ -348,7 +355,7 @@ export class OASPagination extends OASElement {
     const target = this.getAttr('target', '')
 
     // responsive：惰性建立 ResizeObserver（首次 update 时创建；断连清理后 update 幂等重建）
-    if (this.hasAttr('responsive') && !this.resizeObserver && typeof ResizeObserver !== 'undefined') {
+    if (this.shouldObserveResponsiveSize()) {
       this.resizeObserver = new ResizeObserver(() => this.syncResponsive())
       this.resizeObserver.observe(this)
       this.onCleanup(() => {

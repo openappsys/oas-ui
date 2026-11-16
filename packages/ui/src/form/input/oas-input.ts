@@ -1302,9 +1302,15 @@ export class OASInput extends OASFormElement {
     return this.inputEl ? this.rawValue() : this.getAttr('value', '')
   }
 
+  /** 必填未满足：required 且表单值为空串 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === ''
+  }
+
   /** 原生校验链同步：required 且值为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === '') {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

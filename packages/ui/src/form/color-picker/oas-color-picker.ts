@@ -695,7 +695,8 @@ export class OASColorPicker extends OASElement {
   }
 
   isLocked(): boolean {
-    return this.injectDisabled() || this.hasAttr('readonly')
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
   }
 
   private isInline(): boolean {

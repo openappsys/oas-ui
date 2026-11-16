@@ -483,6 +483,18 @@ export class OASTimePicker extends OASFormElement {
     return this.hasAttr('is-range')
   }
 
+  /** 冻结：注入禁用或只读（此刻按钮 / 清空一律不可写） */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
+  /** 受控 open 属性在场但内部尚未展开：update 时补 boot 面板 */
+  private openRequested(): boolean {
+    if (!this.hasAttribute('open')) return false
+    return !this.openState
+  }
+
   private use12(): boolean {
     return this.hasAttr('use12-hours')
   }
@@ -582,7 +594,7 @@ export class OASTimePicker extends OASFormElement {
     this.dropdown?.addEventListener('keydown', (e) => this.handleDropdownKey(e as KeyboardEvent))
     // 此刻按钮：填入当前时刻并确认关闭
     this.shadow.querySelector<HTMLElement>('[part="now"]')?.addEventListener('click', () => {
-      if (this.injectDisabled() || this.hasAttr('readonly')) return
+      if (this.isFrozen()) return
       const n = this.nowInZone()
       const p = { h: n.getHours(), m: n.getMinutes(), s: n.getSeconds() }
       this.sides = this.isRangeOn() ? [p, p] : [p]
@@ -651,7 +663,7 @@ export class OASTimePicker extends OASFormElement {
     }
     this.syncTrigger()
     this.renderPresets()
-    if (this.hasAttribute('open') && !this.openState) this.bootPanel(false)
+    if (this.openRequested()) this.bootPanel(false)
     if (this.openState) {
       // 面板打开时外部 value 变化需同步内部 sides（受控模式下改属性即时反映；
       // lastSyncedValue 守卫避免无关节点属性变化冲掉面板内未提交的点选）
@@ -1310,7 +1322,7 @@ export class OASTimePicker extends OASFormElement {
 
   /** clearable：清空值并派发 oas-clear + oas-change（空值）；readonly 拦截 */
   private clearValue(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     const prev = this.getAttr('value', '')
     if (prev === '') return
     let prevDetail: string | string[] = prev
@@ -1402,9 +1414,15 @@ export class OASTimePicker extends OASFormElement {
     return fd
   }
 
+  /** 必填未满足：required 且表单值为 null（范围模式语义由 getFormValue 决定） */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === null
+  }
+
   /** 原生校验链同步：required 且无选中（范围模式为两侧皆空）→ valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === null) {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

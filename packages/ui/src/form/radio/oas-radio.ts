@@ -409,9 +409,15 @@ export class OASRadio extends OASFormElement {
     this.input.setAttribute('aria-checked', String(this.input.checked))
   }
 
+  /** 必填未满足：required 且未选中 */
+  private requiredUnchecked(): boolean {
+    if (!this.hasAttr('required')) return false
+    return !this.hasAttr('checked')
+  }
+
   /** 原生校验链同步：required 且未选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && !this.hasAttr('checked')) {
+    if (this.requiredUnchecked()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})
@@ -420,7 +426,8 @@ export class OASRadio extends OASFormElement {
 
   /** 只读判定：单项显式 readonly > 组下发（可聚焦、不切换，与 disabled 表单语义分立） */
   private isReadonly(): boolean {
-    return this.hasAttr('readonly') || this.hasAttr('data-group-readonly')
+    if (this.hasAttr('readonly')) return true
+    return this.hasAttr('data-group-readonly')
   }
 
   /** 尺寸档解析链：单项显式 > 组下发 > provider 注入 > medium（非法值静默回落 medium） */

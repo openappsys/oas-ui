@@ -752,9 +752,21 @@ export class OASPopover extends OASElement {
    * 注意：不把 wasOpen 置 false——那会让 update() 走打开瞬间分支跑 applyInitialFocus，
    * 重连时抢走用户当前焦点（重连不是打开动作）。
    */
+  /** 面板未挂载或未打开（重连 / 滚动跟随路径的公共关闭判定） */
+  private isPanelClosed(): boolean {
+    if (!this.panel) return true
+    return !this.hasAttr('open')
+  }
+
+  /** 触发通道整体失效（virtual 触发模式或 disabled 禁用，各触发入口的公共 gate） */
+  private isTriggerBlocked(): boolean {
+    if (this.hasAttr('virtual')) return true
+    return this.hasAttr('disabled')
+  }
+
   protected override onReconnect(): void {
     this.bindLifecycle()
-    if (!this.panel || !this.hasAttr('open')) return
+    if (this.isPanelClosed()) return
     registerLayer(this)
     if (!this.hasAttr('virtual')) this.bindOutside()
     this.syncScrollFollow(true)
@@ -821,7 +833,7 @@ export class OASPopover extends OASElement {
       const now = performance.now()
       if (now - this.lastMousedownToggle < MOUSE_SUPPRESS_MS) return
       if (now - this.lastKeydownToggle < MOUSE_SUPPRESS_MS) return
-      if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+      if (this.isTriggerBlocked()) return
       // 触屏降级（P3）：coarse pointer 且 trigger 含 hover 时，点击通道接管 tap 切换
       // （hover 通道已停用；fine pointer 不含 click 时点击仍不响应，行为不变）
       const tapToggle = this.tapToggleOnCoarse()
@@ -833,14 +845,14 @@ export class OASPopover extends OASElement {
     })
     // P24 mousedown 触发：按下即切换（无需抬起，比 click 快一拍）
     this.anchor?.addEventListener('mousedown', (e) => {
-      if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+      if (this.isTriggerBlocked()) return
       if (!this.hasTrigger('mousedown')) return
       e.preventDefault()
       this.lastMousedownToggle = performance.now()
       this.toggle()
     })
     this.anchor?.addEventListener('contextmenu', (e) => {
-      if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+      if (this.isTriggerBlocked()) return
       if (!this.hasTrigger('contextmenu')) return
       e.preventDefault()
       // trigger=contextmenu 的「右键触发开面板」是 core 行为（锚定触发元素打开）；
@@ -877,7 +889,7 @@ export class OASPopover extends OASElement {
         .filter(Boolean)
         .map((k) => (k === 'Space' ? ' ' : k)) // 空格键的 key 值是字面空格
       if (!keys.includes(ke.key)) return
-      if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+      if (this.isTriggerBlocked()) return
       if (ke.repeat) return
       // P2 幂等守卫：preventDefault 阻止原生 button 的 Enter/Space 合成 click（单路径）；
       // 时间窗再吞没残余合成 click（个别浏览器 keyup 期派发 click 的边缘行为），open 态不重复触发
@@ -1103,7 +1115,7 @@ export class OASPopover extends OASElement {
   /** 通用开请求：open-delay 延迟（hover 路径回落 hover-delay，见 openDelay）；
    *  P15 hide-empty：无内容面板不打开（受控 setAttribute 不拦——面板视觉 gate 见 update） */
   private requestOpen(hover = false): void {
-    if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+    if (this.isTriggerBlocked()) return
     if (this.hasAttr('hide-empty') && this.isEmptyPopup()) return
     this.clearCloseTimer()
     const delay = this.openDelayMs(hover)
@@ -1978,7 +1990,7 @@ export class OASPopover extends OASElement {
   private onScroll = (): void => {
     cancelAnimationFrame(this.scrollRaf)
     this.scrollRaf = requestAnimationFrame(() => {
-      if (!this.panel || !this.hasAttr('open')) return
+      if (this.isPanelClosed()) return
       // 滞留 scroll 事件防御：滚动发生在打开之前（scroll 事件 task 异步派发、晚于打开执行，
       // 如 scrollIntoViewIfNeeded 后立即触发打开），scrollY 与打开瞬间相同 → 无有效滚动，
       // 不重定位（会把右键光标/长按触点的指针定位覆盖回锚点）也不触发 close-on-scroll

@@ -148,6 +148,13 @@ export class OASPageHeader extends OASElement {
 
   /** responsive：宿主宽度监听（清理走 onCleanup，断连后 update 幂等重建） */
   private resizeObserver: ResizeObserver | null = null
+  /** responsive：需要惰性建立 ResizeObserver（responsive 开、尚未建立且环境支持） */
+  private shouldObserveResponsiveSize(): boolean {
+    if (!this.hasAttr('responsive')) return false
+    if (this.resizeObserver) return false
+    return typeof ResizeObserver !== 'undefined'
+  }
+
   /** responsive：宿主是否窄于断点（clientWidth>0 且 <768；0=未布局/SSR 不误判） */
   private narrow = false
 
@@ -233,7 +240,7 @@ export class OASPageHeader extends OASElement {
     // ghost 透明背景变体：宿主类名作 CSS 钩子（背景置 none + footer 分隔线去除，颜色走 token）
     this.classList.toggle('oas-page-header--ghost', this.hasAttr('ghost'))
     // responsive：惰性建立 ResizeObserver（首次 update 时创建；断连清理后 update 幂等重建）
-    if (this.hasAttr('responsive') && !this.resizeObserver && typeof ResizeObserver !== 'undefined') {
+    if (this.shouldObserveResponsiveSize()) {
       this.resizeObserver = new ResizeObserver(() => this.syncResponsive())
       this.resizeObserver.observe(this)
       this.onCleanup(() => {

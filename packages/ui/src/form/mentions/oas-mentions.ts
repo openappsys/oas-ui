@@ -414,7 +414,7 @@ export class OASMentions extends OASFormElement {
     this.ta?.addEventListener('keyup', (e: KeyboardEvent) => this.handleKeyUp(e))
     // 光标移动/落点重扫：箭头键移动（keyup 时 caret 已就位）与鼠标点击/拖放后按新 caret 重算开/关
     this.ta?.addEventListener('mouseup', () => {
-      if (!this.injectDisabled() && !this.hasAttr('readonly')) this.scanMention()
+      if (this.isInteractive()) this.scanMention()
     })
     this.ta?.addEventListener('focus', () => this.handleFocus())
     this.ta?.addEventListener('blur', () => this.handleBlur())
@@ -558,13 +558,26 @@ export class OASMentions extends OASFormElement {
     return this.getAttr('type', 'textarea') === 'input'
   }
 
+  /** 冻结：注入禁用或只读（不可键入、不可扫描、不可清空） */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
+  /** 可交互：既未注入禁用也非只读 */
+  private isInteractive(): boolean {
+    if (this.injectDisabled()) return false
+    if (this.hasAttr('readonly')) return false
+    return true
+  }
+
   // ---- 触发扫描（从光标倒走至分隔符/\n/\r 即停，命中 prefix 数组即开，不要求 prefix 前空白） ----
 
   private scanMention(): void {
     if (this.composing) return
     const t = this.ta
     if (!t) return
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     const prefixes = this.prefixes()
     if (prefixes.length === 0) {
       this.close()
@@ -655,7 +668,7 @@ export class OASMentions extends OASFormElement {
   private handleInput(): void {
     const t = this.ta
     if (!t) return
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.draft = true
     if (this.autosizeEnabled()) this.autoResize()
     this.syncClear()
@@ -671,7 +684,7 @@ export class OASMentions extends OASFormElement {
     const t = this.ta
     if (!t) return
     this.emit('focus', { value: t.value })
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.scanMention()
   }
 
@@ -684,7 +697,7 @@ export class OASMentions extends OASFormElement {
   // ---- 键盘（IME 守卫 + disabled 跳过 + Home/End） ----
 
   private handleKey(e: KeyboardEvent): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // IME 组合期：Enter/方向键交给输入法（确认候选/移动候选光标），不触发选中与导航
     if (this.composing || e.isComposing) return
     // whole 整段删除：浮层开启与否均需生效（删除一个已插入的提及项通常浮层已关闭），
@@ -725,7 +738,7 @@ export class OASMentions extends OASFormElement {
 
   /** 光标移动重扫：左右键移动后按新 caret 重算（keyup 时 caret 已就位） */
   private handleKeyUp(e: KeyboardEvent): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     if (this.composing || e.isComposing) return
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') this.scanMention()
     // Home/End 仅在未拦截（浮层关闭时原生跳行首/尾）才需要重扫
@@ -1031,7 +1044,7 @@ export class OASMentions extends OASFormElement {
 
   /** clearable：清空文本与 value 并派发 oas-clear（detail 为清空前的值）+ oas-change（空值） */
   private clearValue(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     const t = this.ta
     if (!t) return
     const prev = t.value
@@ -1068,9 +1081,15 @@ export class OASMentions extends OASFormElement {
     return this.ta ? this.ta.value : this.getAttr('value', '')
   }
 
+  /** 必填未满足：required 且表单值为空串 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === ''
+  }
+
   /** 原生校验链同步：required 且文本为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === '') {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

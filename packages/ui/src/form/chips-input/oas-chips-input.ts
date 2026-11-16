@@ -333,7 +333,8 @@ export class OASChipsInput extends OASElement {
 
   /** 组级冻结判定：disabled / readonly 均禁输入、删除与编辑 */
   private isFrozen(): boolean {
-    return this.injectDisabled() || this.hasAttr('readonly')
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
   }
 
   /** chip 的非法邮箱提示文案（title 与 hint 共用） */

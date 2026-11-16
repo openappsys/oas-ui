@@ -610,9 +610,15 @@ export class OASPicker extends OASFormElement {
     }
   }
 
+  /** 必填未满足：required 且当前无任何选中值 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.currentValues().length === 0
+  }
+
   /** required 校验链：未选（无列/无有效值）即未填 */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.currentValues().length === 0) {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

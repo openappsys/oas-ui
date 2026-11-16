@@ -1434,6 +1434,12 @@ export class OASTour extends OASElement {
    *  - arrow-point-at-center 显式开启：center 对齐在弹层被夹取偏移后仍指向锚点中心；
    *  - 其余（center 对齐且无 point-at-center）保持 CSS calc(50% - 4px) 居中兜底。
    *  tour 无 merge 形态（箭头永远居中于锚点投影），无需 hover-card 的 arrow-merge 守卫。 */
+  /** 箭头需精确指向锚点中心（start/end 对齐或显式开启 arrow-point-at-center）；否则保持 CSS 居中 */
+  private shouldPointArrowAtCenter(aligned: boolean): boolean {
+    if (aligned) return true
+    return this.hasAttr('arrow-point-at-center')
+  }
+
   private positionArrow(anchorRect: DOMRect, placement: string): void {
     if (!this.popup) return
     if (placement === 'center') return
@@ -1443,7 +1449,7 @@ export class OASTour extends OASElement {
     arrow.style.left = ''
     arrow.style.top = ''
     const aligned = placement.endsWith('-start') || placement.endsWith('-end')
-    if (!aligned && !this.hasAttr('arrow-point-at-center')) return
+    if (!this.shouldPointArrowAtCenter(aligned)) return
     const vertical = placement.startsWith('top') || placement.startsWith('bottom')
     const rect = this.popup.getBoundingClientRect()
     const popupEdge = vertical ? parseFloat(this.popup.style.left) : parseFloat(this.popup.style.top)

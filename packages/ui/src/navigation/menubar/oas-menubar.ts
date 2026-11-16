@@ -1002,6 +1002,12 @@ export class OASMenubar extends OASElement {
     return this.hasAttr('disabled')
   }
 
+  /** hover 展开生效（trigger=hover 首开语义，或已有菜单打开时的 hover 切换） */
+  private isHoverExpansionEnabled(): boolean {
+    if (this.getAttr('trigger') === 'hover') return true
+    return this.expanded.size > 0
+  }
+
   /** loop 循环导航开关：缺省 true（保持既有循环行为），仅显式 "false" 关闭 */
   private loopEnabled(): boolean {
     return this.getAttr('loop', '') !== 'false'
@@ -1191,9 +1197,7 @@ export class OASMenubar extends OASElement {
         this.keyboardMode = false
         if (item.disabled || this.isBarDisabled()) return
         // click 首开语义：无开态时 hover 不展开（需点击首开）；一旦有菜单打开，hover 顶级项切换
-        if (this.getAttr('trigger') === 'hover' || this.expanded.size > 0) {
-          this.hoverExpand(item.value ?? '')
-        }
+        if (this.isHoverExpansionEnabled()) this.hoverExpand(item.value ?? '')
       })
       wrap.appendChild(btn)
       if (item.children?.length) {
@@ -1232,9 +1236,7 @@ export class OASMenubar extends OASElement {
       moreBtn.addEventListener('mouseenter', () => {
         this.keyboardMode = false
         if (this.isBarDisabled()) return
-        if (this.getAttr('trigger') === 'hover' || this.expanded.size > 0) {
-          this.hoverExpand('__more__')
-        }
+        if (this.isHoverExpansionEnabled()) this.hoverExpand('__more__')
       })
       const moreSub = document.createElement('ul')
       moreSub.className = 'submenu popup-first more-popup'

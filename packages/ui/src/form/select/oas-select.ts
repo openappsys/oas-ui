@@ -1174,8 +1174,14 @@ export class OASSelect extends OASFormElement {
     this.syncDropdown()
   }
 
+  /** 冻结：注入禁用或只读（展开/清空一律不可写） */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   private toggle(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.requestOpen(!this.openState)
   }
 
@@ -1773,7 +1779,7 @@ export class OASSelect extends OASFormElement {
 
   /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值）；readonly 拦截（值只读不可改） */
   private clearValue(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // 用户交互置脏：清空后的选中集不回写 reset 基线（与原生「用户清空不改善通初始值」一致）
     this.valueDirty = true
     const prev = this.currentValues()
@@ -2071,12 +2077,18 @@ export class OASSelect extends OASFormElement {
     return fd
   }
 
-  /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
-  private syncValidity(): void {
+  /** 必填未满足：required 且值缺失（多选看选中集、单选看表单值） */
+  private requiredMissing(): boolean {
     // 多选不能用 getFormValue()===null 作判据：无 name 时它恒为 null，会把「有选中」误判
     // valueMissing——多选按选中集是否为空判定（对齐 combobox 同款分流）
     const missing = this.hasAttr('multiple') ? this.currentValues().length === 0 : this.getFormValue() === null
-    if (this.hasAttr('required') && missing) {
+    if (!this.hasAttr('required')) return false
+    return missing
+  }
+
+  /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
+  private syncValidity(): void {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

@@ -516,11 +516,17 @@ export class OASCheckbox extends OASFormElement {
 
   /** 原生校验链同步：required 且未勾 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === null) {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})
     }
+  }
+
+  /** 必填缺失判定：未声明 required 即不缺失，否则未勾选（表单值为 null）才算缺失 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === null
   }
 
   /** 表单 reset：恢复 checked 属性态（受控源），不派发事件（与原生 reset 一致） */
@@ -535,7 +541,8 @@ export class OASCheckbox extends OASFormElement {
 
   /** 只读判定：单项显式 readonly > 组下发（可聚焦、不切换，与 disabled 表单语义分立） */
   private isReadonly(): boolean {
-    return this.hasAttr('readonly') || this.hasAttr('data-group-readonly')
+    if (this.hasAttr('readonly')) return true
+    return this.hasAttr('data-group-readonly')
   }
 
   /** 尺寸档解析链：单项显式 > 组下发 > 表级下发（oas-form[size]）> provider 注入 > medium（非法值静默回落 medium） */

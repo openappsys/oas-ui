@@ -702,9 +702,15 @@ export class OASSwitch extends OASFormElement {
     return tv !== '' ? tv : 'on'
   }
 
+  /** 必填未满足：required 且处于关闭态 */
+  private requiredUnchecked(): boolean {
+    if (!this.hasAttr('required')) return false
+    return !this.hasAttr('checked')
+  }
+
   /** 原生校验链同步：required 且关 → valueMissing（switch 语义：开 = 有值） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && !this.hasAttr('checked')) {
+    if (this.requiredUnchecked()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

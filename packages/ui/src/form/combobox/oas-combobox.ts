@@ -731,11 +731,17 @@ export class OASCombobox extends OASFormElement {
   private syncValidity(): void {
     // 多选不能用 getFormValue()===null 作判据：无 name 时它恒为 null，会把「有选中」误判 valueMissing
     const missing = this.isMultiple() ? this.currentValues().length === 0 : this.getFormValue() === null
-    if (this.hasAttr('required') && missing) {
+    if (this.requiredMissing(missing)) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})
     }
+  }
+
+  /** 必填缺失判定：未声明 required 即不拦截；缺失标志由调用处按多选/单选口径算好传入 */
+  private requiredMissing(missing: boolean): boolean {
+    if (!this.hasAttr('required')) return false
+    return missing
   }
 
   /** 表单 reset：恢复初始基线（清脏 + 按基线恢复 value 属性与显示文本），不派发事件（与原生 reset 一致） */
@@ -898,8 +904,14 @@ export class OASCombobox extends OASFormElement {
 
   // ---- 开合（受控 open 属性为唯一状态源，内部开合同步写属性） ----
 
+  /** 冻结判定：父级注入禁用或自身只读，两条通道任一成立即不响应开合/输入/清空 */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   private openPanel(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     if (!this.hasAttr('open')) this.writeOpenAttr(true)
   }
 
@@ -931,7 +943,7 @@ export class OASCombobox extends OASFormElement {
 
   private handleInput(): void {
     if (!this.input) return
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.query = this.input.value
     // source: 'search' 标记过滤词事件——宿主（oas-form）不得把它当字段值回写（C3）
     this.emit('input', { value: this.query, source: 'search' })
@@ -945,7 +957,7 @@ export class OASCombobox extends OASFormElement {
   }
 
   private handleKey(e: KeyboardEvent): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       this.moveActive(1)
@@ -1017,7 +1029,7 @@ export class OASCombobox extends OASFormElement {
 
   /** chip 移除按钮：移除单个已选值（多选专用），事件口径与选中 toggle 一致 */
   private removeValue(value: string): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.valueDirty = true
     const next = this.currentValues().filter((v) => v !== value)
     this.setAttribute('value', JSON.stringify(next))
@@ -1028,7 +1040,7 @@ export class OASCombobox extends OASFormElement {
 
   /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值口径随模式）；readonly 拦截（值只读不可改） */
   private clearValue(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // 用户清空置脏：reset 应恢复清空前的基线（对齐原生「用户交互不改默认值」）
     this.valueDirty = true
     const prev = this.currentValues()
@@ -1073,6 +1085,13 @@ export class OASCombobox extends OASFormElement {
     return Number.isNaN(n) ? 36 : n
   }
 
+  /** 虚拟模式可用判定：开启 virtual、vlist 已连接、且候选没有分组（分组行高不定，不适配定高窗口） */
+  private canVirtualize(list: Option[]): boolean {
+    if (!this.hasAttr('virtual')) return false
+    if (!this.vlist) return false
+    return !list.some((o) => o.group !== undefined)
+  }
+
   private renderListbox(): void {
     const listbox = this.listbox
     if (!listbox) return
@@ -1108,7 +1127,7 @@ export class OASCombobox extends OASFormElement {
     // 虚拟滚动：大数据量时复用 oas-virtual-list 仅渲染可见窗口；
     // 带 group 的选项回退非虚拟全量渲染（组标题是不同行高的流式分隔，虚拟定高模型不适配）；
     // vlist 缺失（如手写 DSD 快照无此元素）时同样回退全量渲染，避免静默空下拉
-    if (this.hasAttr('virtual') && this.vlist && !list.some((o) => o.group !== undefined)) {
+    if (this.canVirtualize(list)) {
       this.renderVirtualList(list)
       this.syncActive()
       return

@@ -149,7 +149,8 @@ export class OASCountdown extends OASElement {
 
   /** active 受控：缺席（默认）或任意非 "false" 值为走表；"false" 为暂停 */
   private isActive(): boolean {
-    return !this.hasAttribute('active') || this.getAttr('active', '') !== 'false'
+    if (!this.hasAttribute('active')) return true
+    return this.getAttr('active', '') !== 'false'
   }
 
   /** 正计时模式：type="countup" 从 start（默认 0）往上递增，无终止点 */

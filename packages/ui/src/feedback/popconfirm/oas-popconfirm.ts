@@ -510,9 +510,15 @@ export class OASPopconfirm extends OASElement {
    * 打开态重连时 update() 的「打开瞬间」分支被 wasOpen=true 跳过，不重压 Esc 会永久失效。
    * 不把 wasOpen 置 false——那会触发打开瞬间分支的 applyInitialFocus，重连时抢焦点。
    */
+  /** 面板未挂载或未打开（重连 / 滚动跟随路径的公共关闭判定） */
+  private isPanelClosed(): boolean {
+    if (!this.popoverEl) return true
+    return !this.hasAttr('open')
+  }
+
   protected override onReconnect(): void {
     this.bindLifecycle()
-    if (!this.popoverEl || !this.hasAttr('open')) return
+    if (this.isPanelClosed()) return
     registerLayer(this)
     if (!this.isVirtual()) addOutsideDismiss(this.handleOutside)
     this.syncScrollFollow(true)
@@ -925,7 +931,7 @@ export class OASPopconfirm extends OASElement {
   private onScroll = (): void => {
     cancelAnimationFrame(this.scrollRaf)
     this.scrollRaf = requestAnimationFrame(() => {
-      if (!this.popoverEl || !this.hasAttr('open')) return
+      if (this.isPanelClosed()) return
       this.placePanel()
     })
   }

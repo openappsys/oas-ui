@@ -1056,9 +1056,15 @@ export class OASTransfer extends OASElement {
     this.emit('select-change', { side, selected: [...selected] })
   }
 
+  /** 单向模式右侧禁写：one-way 属性在场且操作侧为右 */
+  private rightLocked(side: 'left' | 'right'): boolean {
+    if (!this.hasAttr('one-way')) return false
+    return side === 'right'
+  }
+
   private toggleSelectAll(side: 'left' | 'right', checked: boolean): void {
     if (this.injectDisabled()) return
-    if (this.hasAttr('one-way') && side === 'right') return
+    if (this.rightLocked(side)) return
     const selected = side === 'left' ? this.leftSelected : this.rightSelected
     selected.clear()
     if (checked) {
@@ -1074,7 +1080,7 @@ export class OASTransfer extends OASElement {
   private toggleItem(side: 'left' | 'right', item: TransferItem): void {
     if (this.injectDisabled()) return
     if (item.disabled) return
-    if (this.hasAttr('one-way') && side === 'right') return
+    if (this.rightLocked(side)) return
     if (this.hasAttr('simple')) {
       const value = this.currentValue()
       const next = side === 'left' ? this.mergeIntoTarget(value, [item.key]) : value.filter((k) => k !== item.key)
@@ -1260,7 +1266,7 @@ export class OASTransfer extends OASElement {
       }
       return
     }
-    if (this.hasAttr('one-way') && side === 'right') return
+    if (this.rightLocked(side)) return
     // ctrl+A / cmd+A：全选/全清当前面板可见可选项
     if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
       const items = this.visibleItems(side).filter((i) => !i.disabled)

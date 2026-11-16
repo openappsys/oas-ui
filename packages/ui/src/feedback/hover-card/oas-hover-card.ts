@@ -1008,6 +1008,12 @@ export class OASHoverCard extends OASElement {
    * 其余（center 对齐）保持面板中心（CSS calc(50% - 6px) 的边缘对齐兜底）。
    * 12 向 placement 按基向前缀判断主轴。
    */
+  /** 箭头需精确指向锚点中心（start/end 对齐或显式开启 arrow-point-at-center）；否则保持 CSS 居中 */
+  private shouldPointArrowAtCenter(aligned: boolean): boolean {
+    if (aligned) return true
+    return this.hasAttr('arrow-point-at-center')
+  }
+
   private positionArrow(anchorRect: DOMRect, placement: string): void {
     if (!this.card) return
     const arrow = this.card.querySelector<HTMLElement>('[data-popper-arrow]')
@@ -1015,7 +1021,7 @@ export class OASHoverCard extends OASElement {
     arrow.style.left = ''
     arrow.style.top = ''
     const aligned = placement.endsWith('-start') || placement.endsWith('-end')
-    if (!aligned && !this.hasAttr('arrow-point-at-center')) return
+    if (!this.shouldPointArrowAtCenter(aligned)) return
     // arrow-merge：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
     // 脱离角点、破坏与面板角的共边衔接——跳过指向中心计算
     if (this.hasAttr('arrow-merge')) return

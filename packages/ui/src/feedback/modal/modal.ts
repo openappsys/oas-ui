@@ -166,6 +166,13 @@ export function normalizeOptions<T>(options: T | null | undefined | unknown): T 
   return {} as T
 }
 
+/** 从未打开 / 已完全关闭：无关闭动画可播，销毁时直接移除 DOM */
+function isNeverOpenedOrClosed(el: OASModal): boolean {
+  if (el.hasAttribute('visible')) return false
+  if (el.opened) return false
+  return !el.closing
+}
+
 export function isPromiseLike(value: unknown): value is Promise<unknown> {
   return value != null && typeof (value as { then?: unknown }).then === 'function'
 }
@@ -216,7 +223,7 @@ export function trackCommandModal(el: OASModal): CommandModalScope {
       const idx = active.findIndex((e) => e.el === el)
       if (idx >= 0) active.splice(idx, 1)
     }
-    if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+    if (isNeverOpenedOrClosed(el)) {
       doRemove()
       return
     }
@@ -268,7 +275,7 @@ function open(variant: ModalVariant | '', rawOptions?: ModalOptions): ModalHandl
       const idx = active.findIndex((e) => e.el === el)
       if (idx >= 0) active.splice(idx, 1)
     }
-    if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+    if (isNeverOpenedOrClosed(el)) {
       doRemove()
       return
     }
@@ -556,7 +563,7 @@ export const modal = {
         const idx = active.findIndex((e) => e.el === el)
         if (idx >= 0) active.splice(idx, 1)
       }
-      if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+      if (isNeverOpenedOrClosed(el)) {
         doRemove()
         return
       }

@@ -1034,17 +1034,23 @@ export class OASSlider extends OASElement {
     return this.thumbCountCache
   }
 
+  /** range 双值形态：把手数为 2 且 range 属性在场 */
+  private isRangePair(n: number): boolean {
+    if (n !== 2) return false
+    return this.hasAttr('range')
+  }
+
   /** 把手 data-role：单值 range；range 双值 range-min/range-max（既有契约）；N≥3 thumb-<i> */
   private roleFor(i: number, n: number): string {
     if (n === 1) return 'range'
-    if (n === 2 && this.hasAttr('range')) return i === 0 ? 'range-min' : 'range-max'
+    if (this.isRangePair(n)) return i === 0 ? 'range-min' : 'range-max'
     return `thumb-${i}`
   }
 
   /** 数值输入框 data-role：单值 num；range 双值 num-min/num-max（既有契约）；N≥3 num-<i> */
   private numRoleFor(i: number, n: number): string {
     if (n === 1) return 'num'
-    if (n === 2 && this.hasAttr('range')) return i === 0 ? 'num-min' : 'num-max'
+    if (this.isRangePair(n)) return i === 0 ? 'num-min' : 'num-max'
     return `num-${i}`
   }
 
@@ -1226,7 +1232,7 @@ export class OASSlider extends OASElement {
     const n = this.activeThumbCount()
     if (n < 2) return
     // range 属性保留交换旧契约（lo/hi 超界交换）；value 数组模式（含 N=2）统一夹取相邻把手之间
-    if (n === 2 && this.hasAttr('range')) {
+    if (this.isRangePair(n)) {
       this.clampRangeInputs()
       return
     }
@@ -1609,6 +1615,13 @@ export class OASSlider extends OASElement {
     return this.getAttr('scrub', 'true') === 'false'
   }
 
+  /** 拖拽启动被拦：scrub 关闭或冻结（短路顺序与拆分前一致） */
+  private scrubBlocked(): boolean {
+    if (this.scrubOff()) return true
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   /** precision 属性（小数位，≥0 整数，上限 100）；未设置/非法返回 null（不修约） */
   private precisionAttr(): number | null {
     const raw = this.getAttr('precision', '').trim()
@@ -1634,7 +1647,7 @@ export class OASSlider extends OASElement {
   /** 读数框按下：记录锚点（像素 + 基准值），挂 window 级 move/up；不 preventDefault（保留聚焦） */
   private beginNumScrub(i: number, e: PointerEvent): void {
     if (this.numScrub) return
-    if (this.scrubOff() || this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.scrubBlocked()) return
     if (this.isCoarsePointer()) return
     if (e.pointerType === 'mouse' && e.button !== 0) return
     const base = Number(this.thumbs[i]?.value ?? 0)

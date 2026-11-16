@@ -343,7 +343,7 @@ export class OASDropdown extends OASElement {
     // 点击触发：trigger 含 click 时生效；触屏降级（P3）：coarse 且 trigger 含 hover 时
     // 点击通道接管 tap 切换（hover 通道已停用）。运行时改 trigger 走同一监听，处理内按当前属性 gate
     const handleTap = (e: Event): void => {
-      if ((!this.hasTrigger('click') && !this.tapToggleOnCoarse()) || this.hasAttr('disabled')) return
+      if (!this.isTapToggleEnabled()) return
       if (this.hasAttr('split') && !this.tapToggleOnCoarse()) {
         // 下拉按钮模式：主按钮只派发动作事件，不开菜单；箭头按钮负责开合。
         // 触屏降级除外：hover 语义覆盖整个触发区，点按主按钮与箭头一致切换菜单
@@ -364,7 +364,7 @@ export class OASDropdown extends OASElement {
     })
     this.arrowBtn?.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation()
-      if ((!this.hasTrigger('click') && !this.tapToggleOnCoarse()) || this.hasAttr('disabled')) return
+      if (!this.isTapToggleEnabled()) return
       this.focusOnOpen = true
       this.toggle()
     })
@@ -610,9 +610,28 @@ export class OASDropdown extends OASElement {
     return this.isCoarsePointer() && this.hasTrigger('hover')
   }
 
+  /** click/tap 通道触发 gate：trigger 含 click（或触屏降级 tap 切换接管）且未 disabled */
+  private isTapToggleEnabled(): boolean {
+    if (this.hasAttr('disabled')) return false
+    if (this.hasTrigger('click')) return true
+    return this.tapToggleOnCoarse()
+  }
+
+  /** hover 通道触发 gate：trigger 含 hover 且未 disabled */
+  private isHoverTriggerEnabled(): boolean {
+    if (this.hasAttr('disabled')) return false
+    return this.hasTrigger('hover')
+  }
+
+  /** focus 通道触发 gate：trigger 含 focus 且未 disabled */
+  private isFocusTriggerEnabled(): boolean {
+    if (this.hasAttr('disabled')) return false
+    return this.hasTrigger('focus')
+  }
+
   private onHoverEnter = (): void => {
     if (this.tapToggleOnCoarse()) return // 触屏降级：coarse 下 hover 展开停用（tap 切换接管）
-    if (!this.hasTrigger('hover') || this.hasAttr('disabled')) return
+    if (!this.isHoverTriggerEnabled()) return
     this.clearHoverHide()
     this.hoverShowTimer = setTimeout(
       () => {
@@ -626,7 +645,7 @@ export class OASDropdown extends OASElement {
   private onHoverLeave = (e: MouseEvent): void => {
     // 指针离开宿主即清除鼠标按下标记（mousedown 后拖拽到组件外释放不会残留，避免误判后续键盘聚焦）
     this.mouseDown = false
-    if (!this.hasTrigger('hover') || this.hasAttr('disabled')) return
+    if (!this.isHoverTriggerEnabled()) return
     // 触屏降级：tap 合成的 mouseleave 不得关掉刚 tap 展开的菜单（关闭走 tap/外点）
     if (this.tapToggleOnCoarse()) return
     // 指针移到浮层面板（shadow 内）或宿主 light DOM 内不关：悬停区域 = 宿主 + 面板
@@ -657,7 +676,7 @@ export class OASDropdown extends OASElement {
   private onFocusIn = (): void => {
     if (this.restoringFocus) return
     if (this.tapToggleOnCoarse()) return // 触屏降级：tap 会 focusin+click 连发，展开统一走 tap 切换
-    if (!this.hasTrigger('focus') || this.hasAttr('disabled')) return
+    if (!this.isFocusTriggerEnabled()) return
     // click+focus 共存：鼠标点击聚焦已由 click 触发接管（随后会 toggle），focusin 只响应键盘/程序化聚焦
     if (this.hasTrigger('click') && this.mouseDown) {
       this.mouseDown = false
@@ -669,7 +688,7 @@ export class OASDropdown extends OASElement {
 
   private onFocusOut = (e: FocusEvent): void => {
     this.mouseDown = false
-    if (!this.hasTrigger('focus') || this.hasAttr('disabled')) return
+    if (!this.isFocusTriggerEnabled()) return
     // 触屏降级：焦点迁移不关闭（tap 展开的菜单的关闭走 tap/外点）
     if (this.tapToggleOnCoarse()) return
     if (this.hoverTargetInside(e.relatedTarget)) return

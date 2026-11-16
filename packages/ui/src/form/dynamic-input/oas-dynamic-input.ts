@@ -317,7 +317,8 @@ export class OASDynamicInput extends OASElement {
 
   /** 组级禁用判定：disabled / readonly 均冻结增删与排序 */
   private isFrozen(): boolean {
-    return this.hasAttr('disabled') || this.hasAttr('readonly')
+    if (this.hasAttr('disabled')) return true
+    return this.hasAttr('readonly')
   }
 
   private syncRows(): void {

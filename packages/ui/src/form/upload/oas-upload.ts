@@ -2726,9 +2726,15 @@ export class OASUpload extends OASFormElement {
     return fd
   }
 
+  /** 必填未满足：required 且无 File（表单值为 null） */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === null
+  }
+
   /** 原生校验链同步：required 且无 File → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === null) {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

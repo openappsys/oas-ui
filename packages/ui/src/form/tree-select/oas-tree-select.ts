@@ -926,9 +926,15 @@ export class OASTreeSelect extends OASFormElement {
     return fd
   }
 
+  /** 必填未满足：required 且当前无任何选中值 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.currentValues().length === 0
+  }
+
   /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.currentValues().length === 0) {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

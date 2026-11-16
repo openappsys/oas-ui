@@ -505,11 +505,17 @@ export class OASAutoComplete extends OASFormElement {
 
   /** 原生校验链同步：required 且文本为空 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === '') {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})
     }
+  }
+
+  /** 必填缺失判定：未声明 required 即不缺失，否则当前文本为空串才算缺失 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === ''
   }
 
   /** 表单 reset：恢复初始基线文本（清脏 + 按基线恢复 value 属性与输入回显），不派发事件（与原生 reset 一致） */
@@ -549,9 +555,15 @@ export class OASAutoComplete extends OASFormElement {
 
   // ---- 输入链路（IME 守卫 + debounce） ----
 
+  /** 冻结判定：父级注入禁用或自身只读，两条通道任一成立即不响应输入 */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   private handleInput(): void {
     if (!this.input) return
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.query = this.input.value
     // 照原生 input 语义：FormData 提交当前输入文本（不随 debounce 延迟；debounce 只影响过滤与派发）
     this.syncFormValue()
@@ -590,7 +602,7 @@ export class OASAutoComplete extends OASFormElement {
   }
 
   private applyFilter(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // auto-complete 是自由文本组件：输入文本即字段值（无「搜索词 vs 已选值」双态），不打 search 标记
     this.emit('input', { value: this.query })
     this.activeIndex = 0
@@ -600,7 +612,7 @@ export class OASAutoComplete extends OASFormElement {
   // ---- 焦点 / 键盘 ----
 
   private handleFocus(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // trigger-on-focus 默认 false：聚焦不弹全量建议（维持「输入优先」现状），显式开启走 datalist 心智
     if (this.hasAttr('trigger-on-focus')) {
       this.activeIndex = 0
@@ -609,7 +621,7 @@ export class OASAutoComplete extends OASFormElement {
   }
 
   private handleKey(e: KeyboardEvent): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // IME 组合期：Enter/方向键交给输入法（确认候选/移动候选光标），不触发选中与导航
     if (this.composing || e.isComposing) return
     if (e.key === 'ArrowDown') {
@@ -756,7 +768,7 @@ export class OASAutoComplete extends OASFormElement {
     // 虚拟滚动：大数据量时复用 oas-virtual-list 仅渲染可见窗口（对齐 select 契约）；
     // 带 group 的选项回退非虚拟全量渲染（组标题是不同行高的流式分隔，虚拟定高模型不适配）；
     // vlist 缺失（如手写 DSD 快照无此元素）时同样回退全量渲染，避免静默空下拉
-    if (this.hasAttr('virtual') && this.vlist && !list.some((o) => o.group !== undefined)) {
+    if (this.canVirtualize(list)) {
       this.renderVirtualList(list)
       this.finishOpen()
       return
@@ -777,6 +789,13 @@ export class OASAutoComplete extends OASFormElement {
       idx++
     }
     this.finishOpen()
+  }
+
+  /** 虚拟模式可用判定：开启 virtual、vlist 已连接、且候选没有分组（分组行高不定，不适配定高窗口） */
+  private canVirtualize(list: Option[]): boolean {
+    if (!this.hasAttr('virtual')) return false
+    if (!this.vlist) return false
+    return !list.some((o) => o.group !== undefined)
   }
 
   /** 虚拟模式：切到 vlist 渲染（注入行样式/视口键盘可达性由 input 键盘流负责）并喂入可见选项 */

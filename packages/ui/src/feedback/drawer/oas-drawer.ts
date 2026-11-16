@@ -754,12 +754,18 @@ export class OASDrawer extends OASElement {
     if (this.panel) this.panel.style.zIndex = `calc(${base} + ${level + 1})`
   }
 
+  /** 滚动锁尚未建立（未禁用锁且未持有句柄）时持锁 */
+  private acquireScrollLock(): void {
+    if (this.hasAttr('no-scroll-lock')) return
+    if (!this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+  }
+
   /** 打开动画：入栈、锁滚动、记录来源焦点、移入初始焦点、data-open 驱动 CSS 过渡 */
   private onOpenStart(): void {
     this.isOpen = true
     this.wasOpen = true
     pushStack(this)
-    if (!this.hasAttr('no-scroll-lock') && !this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+    this.acquireScrollLock()
     // 共享 Esc 层：仅当自己是栈顶且无可见模态（模态置顶时 Esc 归模态）时消费；
     // no-esc-close 仍消费（不穿透关掉下层）但不关闭自己
     if (!this.releaseEscapeLayer) {

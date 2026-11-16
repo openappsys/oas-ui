@@ -424,7 +424,7 @@ export class OASStepper extends OASElement {
     const step = this._steps[idx]
     if (!step) return false
     if (step.disabled === true) return false
-    if (this.hasAttr('linear') && idx > this.resolveCurrent()) return false
+    if (this.isBeyondLinearStep(idx)) return false
     return true
   }
 
@@ -437,12 +437,18 @@ export class OASStepper extends OASElement {
     return Math.min(Math.max(Math.floor(raw), 0), len - 1)
   }
 
+  /** linear 线性拦截判定：linear 开启且 idx 越过当前步（未来步）时禁止 */
+  private isBeyondLinearStep(idx: number): boolean {
+    if (!this.hasAttr('linear')) return false
+    return idx > this.resolveCurrent()
+  }
+
   /** 某步是否被禁点（disabled 或 linear 未来步） */
   private isBlocked(idx: number): boolean {
     const step = this._steps[idx]
     if (!step) return true
     if (step.disabled === true) return true
-    if (this.hasAttr('linear') && idx > this.resolveCurrent()) return true
+    if (this.isBeyondLinearStep(idx)) return true
     return false
   }
 

@@ -245,9 +245,15 @@ export class OASRadioGroup extends OASFormElement {
     )
   }
 
+  /** 冻结：注入禁用或只读（组级键盘导航不参与） */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   /** 键盘导航：方向键/Home/End 移动即选中（radio 语义），跳过禁用与只读项，循环回绕 */
   private handleKeydown = (e: KeyboardEvent): void => {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     if (!NAV_KEYS.has(e.key)) return
     const enabled = this.items.map((r, i) => (this.isItemBlocked(r) ? -1 : i)).filter((i) => i >= 0)
     if (enabled.length === 0) return
@@ -300,9 +306,15 @@ export class OASRadioGroup extends OASFormElement {
     return v === '' ? null : v
   }
 
+  /** 必填未满足：required 且无选中值 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === null
+  }
+
   /** 原生校验链同步：required 且无选中 → valueMissing（flag 为 true 时 message 按 Chromium 契约必须非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === null) {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})

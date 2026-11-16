@@ -1927,9 +1927,15 @@ export class OASTree extends OASElement {
 
   // ---------- 节点重命名（can-rename：双击 label / F2 进入内联编辑） ----------
 
+  /** can-rename 总开关判定：全局开启 can-rename 且整树未禁用 */
+  private renamingAllowed(): boolean {
+    if (!this.hasAttr('can-rename')) return false
+    return !this.isTreeDisabled()
+  }
+
   /** can-rename 总开关 + 节点可重命名判定（节点级 disabled / renamable:false 排除） */
   private nodeRenamable(node: TreeNode): boolean {
-    if (!this.hasAttr('can-rename') || this.isTreeDisabled()) return false
+    if (!this.renamingAllowed()) return false
     if (this.acc.disabledOf(node)) return false
     const raw = node as unknown as Record<string, unknown>
     return raw.renamable !== false
@@ -1940,7 +1946,7 @@ export class OASTree extends OASElement {
    * 提交仅派发 oas-node-rename，不改数据模型（宿主不更新则保持旧值）。
    */
   private startRename(key: string): void {
-    if (!this.hasAttr('can-rename') || this.isTreeDisabled()) return
+    if (!this.renamingAllowed()) return
     const node = this.model.byId.get(key)
     if (!node || !this.nodeRenamable(node)) return
     if (this.rename) {

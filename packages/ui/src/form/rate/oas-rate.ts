@@ -390,7 +390,9 @@ export class OASRate extends OASElement {
 
   /** 交互可用：非 disabled（含注入）且非 readonly */
   private isInteractive(): boolean {
-    return !this.injectDisabled() && !this.hasAttr('readonly')
+    if (this.injectDisabled()) return false
+    if (this.hasAttr('readonly')) return false
+    return true
   }
 
   private onStarClick(idx: number, e: MouseEvent): void {

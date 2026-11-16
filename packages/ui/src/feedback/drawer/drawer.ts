@@ -55,6 +55,13 @@ function isPromiseLike(value: unknown): value is Promise<unknown> {
   return value != null && typeof (value as { then?: unknown }).then === 'function'
 }
 
+/** 从未打开 / 已完全关闭：无关闭动画可播，销毁时直接移除 DOM */
+function isNeverOpenedOrClosed(el: OASDrawer): boolean {
+  if (el.hasAttribute('visible')) return false
+  if (el.opened) return false
+  return !el.closing
+}
+
 /** 命令式开启抽屉：创建 oas-drawer 并挂载（最近 oas-app 容器，无则回退 document.body） */
 export function drawer(rawOptions?: DrawerOptions): DrawerHandle {
   const options = normalizeOptions(rawOptions)
@@ -88,7 +95,7 @@ export function drawer(rawOptions?: DrawerOptions): DrawerHandle {
       if (idx >= 0) active.splice(idx, 1)
     }
     // 从未打开 / 已完全关闭：无动画可播，直接移除
-    if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+    if (isNeverOpenedOrClosed(el)) {
       doRemove()
       return
     }

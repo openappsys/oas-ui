@@ -133,7 +133,8 @@ export class OASNumberAnimation extends OASElement {
 
   /** active 受控：缺席（默认）或任意非 "false" 值为播放；"false" 为停帧 */
   private isActive(): boolean {
-    return !this.hasAttribute('active') || this.getAttr('active', '') !== 'false'
+    if (!this.hasAttribute('active')) return true
+    return this.getAttr('active', '') !== 'false'
   }
 
   protected override update(): void {

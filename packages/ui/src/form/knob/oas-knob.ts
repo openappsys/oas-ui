@@ -364,8 +364,14 @@ export class OASKnob extends OASElement {
     if (this.drag) this.finishDrag(null, true)
   }
 
+  /** 冻结：注入禁用或只读（复位 / 步进 / 滚轮 / 双击复位一律不可写） */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   private readonly onDblClick = (): void => {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // 拖拽进行中的双击（多指误触）忽略——复位手势不打断进行中的拖拽
     if (this.drag) return
     this.applyReset()
@@ -408,7 +414,7 @@ export class OASKnob extends OASElement {
   private readonly onWheel = (e: Event): void => {
     // 滚轮调节默认关闭（wheel 属性显式开启）；readonly/disabled 全封
     if (!this.hasAttr('wheel')) return
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     const we = e as WheelEvent
     // 横向触控板平移（仅 deltaX、deltaY=0）不调值、不抢占滚动；
     // 也覆盖 Chromium 真机把 Shift+滚轮转译为横向滚动的行为（deltaY=0）——滚轮恒按 step 调节，不做 shift 精调分支（精调走 Shift+拖拽）
@@ -814,19 +820,19 @@ export class OASKnob extends OASElement {
 
   /** 复位到默认值（default-value 缺省 min），派发 oas-reset */
   reset(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.applyReset()
   }
 
   /** 按 step 步进一格（等价方向键） */
   stepUp(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.applyValue(this.displayValue() + this.stepSize())
   }
 
   /** 按 step 回退一格（等价方向键） */
   stepDown(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     this.applyValue(this.displayValue() - this.stepSize())
   }
 

@@ -659,8 +659,14 @@ export class OASEditable extends OASElement {
     this.enterEdit()
   }
 
+  /** 冻结判定：disabled / readonly 均禁止进入编辑态 */
+  private isFrozen(): boolean {
+    if (this.hasAttr('disabled')) return true
+    return this.hasAttr('readonly')
+  }
+
   private enterEdit(): void {
-    if (this.hasAttr('disabled') || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     if (this.editingState) return
     const fieldEl = this.fieldEl
     if (!fieldEl) return

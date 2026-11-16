@@ -1181,9 +1181,15 @@ export class OASList extends OASElement {
     }
   }
 
+  /** 拖拽排序未生效（未从有效行起拖，或 sortable 关闭） */
+  private isDragSortInactive(): boolean {
+    if (this.dragFrom < 0) return true
+    return !this.hasAttr('sortable')
+  }
+
   private handleDragOver = (e: Event): void => {
     if (this.winMode.windowed) return
-    if (this.dragFrom < 0 || !this.hasAttr('sortable')) return
+    if (this.isDragSortInactive()) return
     const row = this.dragRowFromEvent(e)
     if (!row || row === this.dragFromEl) return
     // disabled 行不作落点：无高亮、不拦截（拖过它相当于不可放置区）
@@ -1197,7 +1203,7 @@ export class OASList extends OASElement {
 
   private handleDrop = (e: Event): void => {
     if (this.winMode.windowed) return
-    if (this.dragFrom < 0 || !this.hasAttr('sortable')) return
+    if (this.isDragSortInactive()) return
     const row = this.dragRowFromEvent(e)
     if (!row) return
     // disabled 行不落定（与键盘重排墙同口径）：清高亮复位拖拽，不派发 reorder

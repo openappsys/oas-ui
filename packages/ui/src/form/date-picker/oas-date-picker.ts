@@ -1062,7 +1062,7 @@ export class OASDatePicker extends OASFormElement {
     this.syncTrigger()
     this.syncAffixes()
     // 初始 open 属性（upgrade 前的属性通知被基类吞掉）：挂载即展开，不抢焦点
-    if (this.hasAttribute('open') && !this.openState) this.bootPanel(false)
+    if (this.shouldBootOpen()) this.bootPanel(false)
     if (this.openState) this.renderPanel(false)
     // form.reset 基线：初始渲染/受控写入（非用户交互的属性变化）跟随 value 属性刷新；
     // 用户交互置脏后基线冻结（与原生 dirty checkedness 同思路）
@@ -1070,6 +1070,12 @@ export class OASDatePicker extends OASFormElement {
     // 原生表单数据 + 校验链同步（form-associated；无 name 浏览器自动不提交）
     this.syncFormValue()
     this.syncValidity()
+  }
+
+  /** 受控 open 属性已声明但内部尚未展开：挂载/更新时需要补一次开面板 */
+  private shouldBootOpen(): boolean {
+    if (!this.hasAttribute('open')) return false
+    return !this.openState
   }
 
   // ---- 开合（受控 open / oas-open-change） ----
@@ -1592,7 +1598,7 @@ export class OASDatePicker extends OASFormElement {
 
   /** clearable：清空值并派发 oas-clear（detail 为清空前的值）+ oas-change（空值）；readonly 拦截 */
   private clearValue(): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     const prev = this.getAttr('value', '')
     if (prev === '') return
     let prevDetail: string | string[] = prev
@@ -2979,13 +2985,25 @@ export class OASDatePicker extends OASFormElement {
     return this.formatWithType(d, this.pickerType)
   }
 
+  /** 冻结判定：父级注入禁用或自身只读（清空/删除等写操作统一拦截） */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
   /** 原生校验链同步：required 且空值（单值无选中 / 范围两侧皆空）→ valueMissing（message 按 Chromium 契约非空） */
   private syncValidity(): void {
-    if (this.hasAttr('required') && this.getFormValue() === null) {
+    if (this.requiredMissing()) {
       this.setValidity({ valueMissing: true }, this.t('form.valueMissing'))
     } else {
       this.setValidity({})
     }
+  }
+
+  /** 必填缺失判定：未声明 required 即不缺失，否则空值（null）才算缺失 */
+  private requiredMissing(): boolean {
+    if (!this.hasAttr('required')) return false
+    return this.getFormValue() === null
   }
 
   /** 表单 reset：恢复初始值基线（清脏 + 按基线恢复 value 属性），不派发事件（与原生 reset 一致） */

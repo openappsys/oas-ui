@@ -476,6 +476,18 @@ export class OAStooltip extends OASElement {
     })
   }
 
+  /** 浮层未挂载或未打开（光标跟随 / 滚动跟随 rAF 回调的公共关闭判定） */
+  private isTipClosed(): boolean {
+    if (!this.tipEl) return true
+    return !this.hasAttr('open')
+  }
+
+  /** 打开通道失效（virtual 触发模式或 disabled 禁用的公共 gate） */
+  private isTriggerBlocked(): boolean {
+    if (this.hasAttr('virtual')) return true
+    return this.hasAttr('disabled')
+  }
+
   /** follow-cursor：光标在锚点上移动时记录坐标（rAF 节流写入，打开时重定位） */
   private onCursorMove(e: PointerEvent): void {
     if (!this.hasAttr('follow-cursor')) return
@@ -485,7 +497,7 @@ export class OAStooltip extends OASElement {
       if (!this.hasAttr('open')) return
       cancelAnimationFrame(this.cursorRaf)
       this.cursorRaf = requestAnimationFrame(() => {
-        if (!this.tipEl || !this.hasAttr('open')) return
+        if (this.isTipClosed()) return
         this.position()
       })
     }
@@ -610,7 +622,7 @@ export class OAStooltip extends OASElement {
    */
   private scheduleShow(trigger: 'hover' | 'focus'): void {
     if (!this.triggerHas(trigger)) return
-    if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+    if (this.isTriggerBlocked()) return
     // 触屏降级：coarse 下 hover/focus 打开通道停用（tap 切换经 click 通道接管，
     // 避免触屏 tap 合成的 mouseenter/focusin 与 click 连发"刚开即关"）
     if (this.tapToggleOnCoarse()) return
@@ -1356,7 +1368,7 @@ export class OAStooltip extends OASElement {
     }
     cancelAnimationFrame(this.followRaf)
     this.followRaf = requestAnimationFrame(() => {
-      if (!this.tipEl || !this.hasAttr('open')) return
+      if (this.isTipClosed()) return
       this.position()
     })
   }

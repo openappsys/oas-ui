@@ -932,6 +932,18 @@ export class OASCalendar extends OASElement {
     this.evPanel = null
   }
 
+  /** 冻结判定：父级注入禁用或自身只读 */
+  private isFrozen(): boolean {
+    if (this.injectDisabled()) return true
+    return this.hasAttr('readonly')
+  }
+
+  /** 月/年格拦截判定：min-max 越界已置灰，或组件整体冻结 */
+  private isCellBlocked(disabled: boolean): boolean {
+    if (disabled) return true
+    return this.isFrozen()
+  }
+
   /** 12 月面板（mode=year 的常驻视图 / month 模式标题钻取的子面板共用） */
   private renderMonthPicker(grid: HTMLElement): void {
     const locale = this.effectiveLocale()
@@ -960,7 +972,7 @@ export class OASCalendar extends OASElement {
         btn.setAttribute('aria-disabled', 'true')
       }
       btn.addEventListener('click', () => {
-        if (disabled || this.injectDisabled() || this.hasAttr('readonly')) return
+        if (this.isCellBlocked(disabled)) return
         this.selectMonth(m)
       })
       months.appendChild(btn)
@@ -998,7 +1010,7 @@ export class OASCalendar extends OASElement {
         btn.setAttribute('aria-disabled', 'true')
       }
       btn.addEventListener('click', () => {
-        if (disabled || this.injectDisabled() || this.hasAttr('readonly')) return
+        if (this.isCellBlocked(disabled)) return
         this.selectYear(y)
       })
       years.appendChild(btn)
@@ -1053,7 +1065,7 @@ export class OASCalendar extends OASElement {
   }
 
   private selectDate(d: Date): void {
-    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    if (this.isFrozen()) return
     // range 范围选择：两段式（起点点击 → 悬停预览 → 终点点击提交 oas-change { start, end }；
     // 提交后再次点击重开新一轮，旧区间即时清除）
     if (this.isRange()) {
