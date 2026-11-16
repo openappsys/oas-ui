@@ -463,6 +463,25 @@ test('table infinite：批 G 缓冲上界（max-loaded-rows）——长列表滚
   expect(bufferInfo1.first).toBe('行80')
   expect(bufferInfo1.last).toBe('行119')
 
+  // ②b 行号坐标：淘汰后保留行沿用累计装载坐标（不重新编号——data-row-index / aria-rowindex
+  // 是累计装载坐标，淘汰不把保留行写回 0 起；range/edit 仍只作用于已装载行）
+  const rowCoords = await page.evaluate(() => {
+    const el = document.querySelector('#table-inf-maxloaded')!
+    return [...el.shadowRoot!.querySelectorAll('[part="row"]')].map((tr) => ({
+      data: tr.getAttribute('data-row-index'),
+      aria: tr.getAttribute('aria-rowindex'),
+    }))
+  })
+  // 缓冲上界 40 行全渲染 + 行号精确对齐（数组等值同时锁住行数）
+  expect(
+    rowCoords.map((r) => Number(r.data)),
+    'data-row-index = 累计装载坐标（行80..行119 → 80..119，而非 0..39）',
+  ).toEqual(Array.from({ length: 40 }, (_, i) => 80 + i))
+  expect(
+    rowCoords.map((r) => Number(r.aria)),
+    'aria-rowindex = 累计装载坐标 + 1（与事件 rowIndex 同坐标）',
+  ).toEqual(Array.from({ length: 40 }, (_, i) => 81 + i))
+
   // ③ 游标链连续：load-more 请求的 start 序列 = 30/60/90（累计口径，非缓冲长度）
   const stateMax = await stateOf(page, 'table-inf-maxloaded')
   const loadMoreStarts = stateMax.reqs

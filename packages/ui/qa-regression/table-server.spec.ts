@@ -651,6 +651,308 @@ test('table server 分组：混合行渲染 + 聚合值按列 + 折叠本地过�
 })
 
 /**
+ * 增量 D：server 分组组行 × 固定列 sticky 接线——组行聚合格与数据行同口径逐格吸附
+ * （复用同一 applyColumnOffset offsets）；label 覆盖区含固定列时拆格：固定区 label 格
+ * （前导附加列 + fixed-left 前缀，sticky left:0 承载折叠钮/组名/计数）+ 非固定续格逐格
+ * 空渲染——深滚全区间组行与数据行吸附同步、组名保持可见。
+ * 几何设计（全为让断言非恒真）：容器 520px（clientWidth 518）× 列 120/400/120（行宽 736，
+ * 实际滚动上限 scrollLeft=218 > 「行宽 − 单 label 宽 584」= 152——旧单一跨列 label 格在此
+ * 越过引擎行盒钳制、组名左缘被裁）；拆格后 label 只覆盖 name 吸附区（152px），218 全区间
+ * 全量吸附。断言：label 与数据 name 左缘一致、label 左缘不越出视口、组名 span 完整可见
+ * （均为几何断言，滚动前天然=吸附位置的对照在前段，深滚段天然位置 -45/+21 与吸附位置
+ * 可区分——断言成立当且仅当拆格吸附真实生效）。
+ */
+test('table server 分组 × 固定列：组行聚合格/label 格 sticky 与数据行横滚吸附同步', async ({ page }) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-group-fixed'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', fixed: 'left', width: '120px' },
+        { key: 'note', title: '备注', width: '400px' },
+        { key: 'amount', title: '金额', aggregate: true, type: 'number', fixed: 'right', width: '120px' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '4')
+    el.setAttribute('group-by', 'dept')
+    el.setAttribute('table-layout', 'fixed')
+    el.style.width = '520px'
+    el.setAttribute('data', '[]')
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      setTimeout(() => {
+        if (d.reason !== 'init') return
+        el.setAttribute(
+          'data',
+          JSON.stringify([
+            { kind: 'group', groupKey: '研发', groupLabel: '研发组', groupCount: 2, aggregates: { amount: 90 } },
+            { kind: 'data', key: 'a1', name: '张三', note: '备注甲内容', amount: 50 },
+            { kind: 'data', key: 'a2', name: '李四', note: '备注乙内容', amount: 40 },
+            { kind: 'group', groupKey: '销售', groupLabel: '销售组', groupCount: 1, aggregates: { amount: 60 } },
+            { kind: 'data', key: 'b1', name: '王五', note: '备注丙内容', amount: 60 },
+          ]),
+        )
+      }, 0)
+    })
+    document.body.prepend(el)
+  })
+
+  const root = page.locator('#table-server-group-fixed')
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toBeAttached({ timeout: 15000 })
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(3)
+
+  // 吸附语义：组行聚合格（fixed-right）与 label 格（覆盖 fixed-left 叶子）写 sticky
+  const stickyOf = (sel: string) =>
+    root.locator(`tbody tr.group-header[data-group="研发"] ${sel}`).evaluate((td) => {
+      const cs = getComputedStyle(td)
+      return { position: cs.position, fixed: td.getAttribute('data-fixed') }
+    })
+  expect(await stickyOf('td[data-col="amount"]'), '组行聚合格 sticky（fixed-right）').toEqual({
+    position: 'sticky',
+    fixed: 'right',
+  })
+  expect(await stickyOf('td:first-child'), '组行 label 格 sticky（fixed-left，跨列格左缘吸附）').toEqual({
+    position: 'sticky',
+    fixed: 'left',
+  })
+
+  // 横向滚动前：组行与数据行固定格几何逐一对齐（同口径吸附）
+  const geom = async () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#table-server-group-fixed')!
+      const rect = (td: Element): { left: number; right: number } => {
+        const r = td.getBoundingClientRect()
+        return { left: Math.round(r.left * 100) / 100, right: Math.round(r.right * 100) / 100 }
+      }
+      const group = el.shadowRoot!.querySelector('tbody tr.group-header')!
+      const data = el.shadowRoot!.querySelector('tbody tr[part="row"]')!
+      return {
+        label: rect(group.querySelector('td')!),
+        dataName: rect(data.querySelector('td[data-col="name"]')!),
+        agg: rect(group.querySelector('td[data-col="amount"]')!),
+        dataAmount: rect(data.querySelector('td[data-col="amount"]')!),
+      }
+    })
+  const before = await geom()
+  expect(Math.abs(before.label.left - before.dataName.left), '滚动前 label 格与数据行固定列左缘对齐').toBeLessThan(1)
+  expect(Math.abs(before.agg.right - before.dataAmount.right), '滚动前聚合格与数据行固定列右缘对齐').toBeLessThan(1)
+
+  // 横向滚动到实际上限（容器 518 → 行宽 736 − 518 = 218；超出旧单格钳制窗口 152——
+  // 旧结构下组名左缘在此被裁，拆格后 label 只覆盖固定区，全区间与数据行同步）
+  await root.locator('.table-scroll').evaluate((wrap) => {
+    ;(wrap as HTMLElement).scrollLeft = 999
+  })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#table-server-group-fixed')!
+      return (el.shadowRoot!.querySelector('.table-scroll') as HTMLElement).scrollLeft >= 200
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const after = await geom()
+  const viewportLeft = await root.locator('.table-scroll').evaluate((w) => {
+    const r = (w as HTMLElement).getBoundingClientRect()
+    return Math.round(r.left * 100) / 100
+  })
+  expect(Math.abs(after.label.left - after.dataName.left), '深滚后 label 格与数据行固定列左缘一致').toBeLessThan(1)
+  expect(Math.abs(after.agg.right - after.dataAmount.right), '深滚后聚合格与数据行固定列右缘一致').toBeLessThan(1)
+  // 组行信息完整可见（几何断言）：label 格左缘不越出视口（拆格前实测 -45 被裁）
+  expect(after.label.left, '深滚后 label 左缘不越出视口（组名不被裁）').toBeGreaterThanOrEqual(viewportLeft - 1)
+  // 组名文本 span 完整落在视口内（左缘 ≥ 视口左缘）——「组名完整可见」的直接证据
+  const nameSpanBox = await root
+    .locator('tbody tr.group-header[data-group="研发"] td:first-child span:not(.group-count)')
+    .evaluate((s) => {
+      const r = (s as HTMLElement).getBoundingClientRect()
+      return { left: Math.round(r.left * 100) / 100, right: Math.round(r.right * 100) / 100 }
+    })
+  expect(nameSpanBox.left, '组名 span 左缘不越出视口（完整可见）').toBeGreaterThanOrEqual(viewportLeft - 1)
+  await expect(root.locator('tbody tr.group-header[data-group="研发"] td:first-child')).toContainText('研发组')
+
+  // 暗色：固定区 label / 聚合格的背景与文字颜色必须等于对应 token 的计算值（探针现算，
+  // 不写硬编码色）——sticky 格须不透明且随 token 翻转，否则深滚时底层内容透出、暗色下文字不可读
+  const readGroupColors = () =>
+    page.evaluate(() => {
+      const token = (prop: 'color' | 'background-color', name: string): string => {
+        const probe = document.createElement('div')
+        probe.style.setProperty(prop, `var(${name})`)
+        document.body.appendChild(probe)
+        const v = getComputedStyle(probe).getPropertyValue(prop)
+        probe.remove()
+        return v
+      }
+      const el = document.querySelector('#table-server-group-fixed')!
+      const group = el.shadowRoot!.querySelector('tbody tr.group-header[data-group="研发"]')!
+      const cell = (td: Element) => {
+        const cs = getComputedStyle(td)
+        return { bg: cs.backgroundColor, color: cs.color }
+      }
+      return {
+        label: cell(group.querySelector('td:first-child')!),
+        agg: cell(group.querySelector('td[data-col="amount"]')!),
+        // 组行分节头底色 token（tr.group-header td 规则）与正文文字 token（:host 继承）
+        bgHover: token('background-color', '--oas-color-bg-hover'),
+        textPrimary: token('color', '--oas-color-text-primary'),
+      }
+    })
+  const lightColors = await readGroupColors()
+  expect(lightColors.label.bg, '亮色固定区 label 背景 = bg-hover token').toBe(lightColors.bgHover)
+  expect(lightColors.label.color, '亮色固定区 label 文字 = text-primary token').toBe(lightColors.textPrimary)
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  // 暗色切换可能有过渡插值：轮询到格子与 token 同值（同一次 evaluate 内取两侧，避免读到跨帧快照）
+  await expect
+    .poll(async () => {
+      const c = await readGroupColors()
+      return (
+        c.label.bg === c.bgHover &&
+        c.agg.bg === c.bgHover &&
+        c.label.color === c.textPrimary &&
+        c.agg.color === c.textPrimary
+      )
+    })
+    .toBe(true)
+  const darkColors = await readGroupColors()
+  expect(darkColors.label.bg, '暗色固定区 label 背景 = 暗色 bg-hover token 计算值').toBe(darkColors.bgHover)
+  expect(darkColors.agg.bg, '暗色聚合格背景 = 暗色 bg-hover token 计算值').toBe(darkColors.bgHover)
+  expect(darkColors.label.color, '暗色固定区 label 文字 = 暗色 text-primary token 计算值').toBe(darkColors.textPrimary)
+  expect(darkColors.agg.color, '暗色聚合格文字 = 暗色 text-primary token 计算值').toBe(darkColors.textPrimary)
+  // 反面证据：token 确实翻转（否则上面的等同断言可能是「两边都停在亮色」而恒真）
+  expect(darkColors.bgHover, '暗色 bg-hover 与亮色不同（token 暗色变体生效）').not.toBe(lightColors.bgHover)
+  expect(darkColors.textPrimary, '暗色 text-primary 与亮色不同（token 暗色变体生效）').not.toBe(lightColors.textPrimary)
+  // sticky 格必须不透明（透明会让深滚时底层数据格透出）
+  const opaque = (bg: string): boolean => !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(bg)
+  expect(opaque(darkColors.label.bg), '暗色固定区 label 格背景不透明').toBe(true)
+  expect(opaque(darkColors.agg.bg), '暗色聚合格背景不透明').toBe(true)
+
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+  await page.evaluate(() => {
+    document.documentElement.classList.remove('dark')
+    document.querySelector('#table-server-group-fixed')?.remove()
+  })
+})
+
+/**
+ * 增量 D 补充：checkable × 仅 fixed-right（无 fixed-left 前缀）——前导附加列只做空占位吸附，
+ * 组名放非固定续格。几何断言均为现算矩形（不写死 px），证明占位格不吃数据勾选格宽度、
+ * 组名不挤进勾选列。
+ */
+test('table server 分组 × 固定列（checkable + 仅 fixed-right）：附加列空占位格与数据勾选格同宽，组名不落占位格', async ({
+  page,
+}) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  await page.evaluate(() => {
+    const el = document.createElement('oas-table')
+    el.id = 'table-server-group-check-fixed'
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称', width: '200px' },
+        { key: 'note', title: '备注', width: '240px' },
+        { key: 'amount', title: '金额', aggregate: true, type: 'number', fixed: 'right', width: '120px' },
+      ]),
+    )
+    el.setAttribute('row-model', 'server')
+    el.setAttribute('total', '2')
+    el.setAttribute('group-by', 'dept')
+    el.setAttribute('checkable', '')
+    el.setAttribute('table-layout', 'fixed')
+    el.style.width = '520px'
+    el.setAttribute('data', '[]')
+    el.addEventListener('oas-rows-request', (e) => {
+      const d = (e as CustomEvent).detail
+      setTimeout(() => {
+        if (d.reason !== 'init') return
+        el.setAttribute(
+          'data',
+          JSON.stringify([
+            { kind: 'group', groupKey: '研发', groupLabel: '研发组', groupCount: 2, aggregates: { amount: 90 } },
+            { kind: 'data', key: 'a1', name: '张三', note: '备注甲', amount: 50 },
+            { kind: 'data', key: 'a2', name: '李四', note: '备注乙', amount: 40 },
+          ]),
+        )
+      }, 0)
+    })
+    document.body.prepend(el)
+  })
+
+  const root = page.locator('#table-server-group-check-fixed')
+  await expect(root.locator('tbody tr.group-header[data-group="研发"]')).toBeAttached({ timeout: 15000 })
+  await expect(root.locator('tbody tr[part="row"]')).toHaveCount(2)
+
+  const boxes = await page.evaluate(() => {
+    const el = document.querySelector('#table-server-group-check-fixed')!
+    const round = (n: number): number => Math.round(n * 100) / 100
+    const box = (node: Element) => {
+      const r = node.getBoundingClientRect()
+      return { left: round(r.left), right: round(r.right), width: round(r.width) }
+    }
+    const group = el.shadowRoot!.querySelector('tbody tr.group-header[data-group="研发"]')!
+    const data = el.shadowRoot!.querySelector('tbody tr[part="row"]')!
+    const gTds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    const dTds = [...data.querySelectorAll('td')] as HTMLTableCellElement[]
+    const carrier = gTds.find((td) => (td.textContent ?? '').includes('研发组'))!
+    return {
+      spacer: {
+        box: box(gTds[0]!),
+        fixed: gTds[0]!.getAttribute('data-fixed'),
+        left: gTds[0]!.style.left,
+        text: gTds[0]!.textContent ?? '',
+        hasGroupName: (gTds[0]!.textContent ?? '').includes('研发组'),
+        hasToggle: gTds[0]!.querySelector('button.toggle') !== null,
+      },
+      carrier: { box: box(carrier), fixed: carrier.getAttribute('data-fixed'), text: carrier.textContent ?? '' },
+      dataCheck: {
+        box: box(dTds[0]!),
+        className: dTds[0]!.className,
+        fixed: dTds[0]!.getAttribute('data-fixed'),
+      },
+      groupCells: gTds.map((td) => ({
+        col: td.getAttribute('data-col'),
+        span: td.colSpan,
+        fixed: td.getAttribute('data-fixed'),
+      })),
+      groupSpanSum: gTds.reduce((n, td) => n + td.colSpan, 0),
+      dataSpanSum: dTds.reduce((n, td) => n + td.colSpan, 0),
+    }
+  })
+
+  // 数据行勾选格（前导附加列）是对照基准：占位格与它同宽同左缘
+  expect(boxes.dataCheck.className, '数据行首格是勾选格').toContain('check-cell')
+  expect(boxes.dataCheck.fixed, '数据勾选格吸附（hasFixed）').toBe('left')
+  expect(boxes.spacer.fixed, '组行附加列空占位格吸附').toBe('left')
+  expect(boxes.spacer.left).toBe('0px')
+  expect(
+    Math.abs(boxes.spacer.box.width - boxes.dataCheck.box.width),
+    '占位格与数据勾选格等宽（几何比较）',
+  ).toBeLessThan(1)
+  expect(Math.abs(boxes.spacer.box.left - boxes.dataCheck.box.left), '占位格与数据勾选格同左缘').toBeLessThan(1)
+  // 组名承载格紧贴占位格右缘：不重叠、不留缝
+  expect(boxes.carrier.box.left, '组名承载格左缘 = 占位格右缘').toBeGreaterThanOrEqual(boxes.spacer.box.right - 1)
+  expect(Math.abs(boxes.carrier.box.left - boxes.spacer.box.right), '组名承载格与占位格无缝相邻').toBeLessThan(1)
+  // 组名 / 折叠钮 / 计数都不落在占位格里（不挤进勾选列宽度）
+  expect(boxes.spacer.text, '占位格为空').toBe('')
+  expect(boxes.spacer.hasGroupName, '组名不落在占位格').toBe(false)
+  expect(boxes.spacer.hasToggle, '折叠钮不落在占位格').toBe(false)
+  expect(boxes.carrier.text).toContain('研发组')
+  expect(boxes.carrier.fixed, '组名承载格为非固定格').toBe(null)
+  // 行宽闭合：组行与数据行 ΣcolSpan 相等（= 勾选 1 + 全列 3）
+  expect(boxes.groupSpanSum, '组行 ΣcolSpan 与数据行同构').toBe(boxes.dataSpanSum)
+  expect(boxes.groupSpanSum).toBe(4)
+  // 聚合格（fixed-right）照常吸附
+  expect(boxes.groupCells[boxes.groupCells.length - 1]!.fixed, '组行聚合格吸附（fixed-right）').toBe('right')
+
+  expect(issues, `console 零告警（实得 ${JSON.stringify(issues)}）`).toEqual([])
+  await page.evaluate(() => document.querySelector('#table-server-group-check-fixed')?.remove())
+})
+
+/**
  * 交叉审修复批回归（R1/R5）：按列聚合 × 可展开行的列位几何 + total 数据行口径。
  * R1：label 跨度只计前导附加列 + 首个聚合列之前的叶子列，尾部展开列逐格补占位——
  * 聚合格与数据行同列位、不与展开列重叠（此前 labelSpan 把尾部展开列计入导致整行右移

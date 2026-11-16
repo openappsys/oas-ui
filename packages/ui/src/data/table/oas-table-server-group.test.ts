@@ -617,3 +617,333 @@ describe('OASTable server 分组协议（批 B）', () => {
     expect(tds[0]!.querySelector('button.toggle')!.getAttribute('aria-expanded')).toBe('true')
   })
 })
+
+/**
+ * 增量 D：server 分组组行 × 固定列 sticky 接线（拆格结构）。
+ *
+ * 口径：label 覆盖区含固定列时拆格——固定区 label 格（前导附加列 + 连续 fixed-left 前缀，
+ * sticky left:0 承载折叠钮/组名/计数）+ 续格逐格空渲染（散置 fixed-left 叶子经
+ * applyColumnOffset 逐格吸附，与数据行全区间同步；跨列格 sticky 引擎钳制不再影响组名）。
+ * 无 fixed-left 前缀且 hasFixed 附加列在场：附加列空占位吸附、组名放非固定续格。
+ * 无固定列（client/既有形态）零漂移：单一非吸附 label 格。
+ */
+describe('OASTable server 分组组行 × 固定列 sticky（增量 D）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const AGG_ROWS = JSON.stringify([
+    { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+    { key: 'a', name: '张三', amount: 70 },
+    { key: 'b', name: '李四', amount: 50 },
+  ])
+
+  it('组行聚合格（fixed-left / fixed-right）与数据行同口径写入 sticky 偏移', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称', fixed: 'left', width: '100px' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', fixed: 'right', width: '80px' },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, AGG_ROWS, cols)
+    const group = groupRowsOf(el)[0]!
+    const aggTd = group.querySelector<HTMLTableCellElement>('td[data-col="amount"]')!
+    // 与数据行同偏移（右固定 right:0px）
+    expect(aggTd.getAttribute('data-fixed')).toBe('right')
+    expect(aggTd.style.right).toBe('0px')
+    const dataAmountTd = dataRowsOf(el)[0]!.querySelector<HTMLTableCellElement>('td[data-col="amount"]')!
+    expect(dataAmountTd.getAttribute('data-fixed')).toBe('right')
+    expect(dataAmountTd.style.right).toBe('0px')
+    // fixed-left 前缀（name）进固定区 label 格：sticky left:0 承载组名（拆格后跨度只含吸附区）
+    const labelTd = group.querySelector('td') as HTMLTableCellElement
+    expect(labelTd.colSpan).toBe(1)
+    expect(labelTd.getAttribute('data-fixed')).toBe('left')
+    expect(labelTd.style.left).toBe('0px')
+    expect(labelTd.textContent).toContain('研发')
+    expect(labelTd.querySelector('button.toggle')!.getAttribute('aria-expanded')).toBe('true')
+    // ΣcolSpan 闭合 = 全列 2
+    expect([...group.querySelectorAll('td')].reduce((n, t) => n + (t as HTMLTableCellElement).colSpan, 0)).toBe(2)
+  })
+
+  it('label 跨度内无 fixed-left 叶子时 label 格不吸附（fixed 列全在 label 之后）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称', width: '100px' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', fixed: 'right', width: '80px' },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, AGG_ROWS, cols)
+    const group = groupRowsOf(el)[0]!
+    const labelTd = group.querySelector('td') as HTMLTableCellElement
+    // label 只覆盖 name（非固定）→ 不吸附；聚合格（fixed-right）照常吸附
+    expect(labelTd.getAttribute('data-fixed')).toBeNull()
+    expect(labelTd.style.left).toBe('')
+    expect(group.querySelector<HTMLTableCellElement>('td[data-col="amount"]')!.getAttribute('data-fixed')).toBe('right')
+  })
+
+  it('checkable × hasFixed（无 fixed-left 叶子）：附加列空占位吸附 + 组名放非固定续格（不挤进勾选宽度）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称', width: '100px' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', fixed: 'right', width: '80px' },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept', checkable: '' }, AGG_ROWS, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds.length).toBe(3)
+    // 前导勾选列：空占位吸附（与数据行勾选列同口径），不承载组名
+    expect(tds[0]!.colSpan).toBe(1)
+    expect(tds[0]!.getAttribute('data-fixed')).toBe('left')
+    expect(tds[0]!.style.left).toBe('0px')
+    expect(tds[0]!.textContent, '附加列空占位——组名不挤进勾选/拖拽宽度').toBe('')
+    // 组名承载格：非固定续格（吸附语义让数据行同口径，组名随非固定列滚动）
+    expect(tds[1]!.colSpan).toBe(1)
+    expect(tds[1]!.getAttribute('data-fixed')).toBeNull()
+    expect(tds[1]!.textContent).toContain('研发')
+    expect(tds[1]!.querySelector('button.toggle')!.getAttribute('aria-expanded')).toBe('true')
+    // 聚合格（fixed-right）照常吸附
+    expect(tds[2]!.getAttribute('data-fixed')).toBe('right')
+    expect(tds[2]!.style.right).toBe('0px')
+    // ΣcolSpan 闭合 = 勾选(1) + 全列(2)
+    expect(tds.reduce((n, t) => n + t.colSpan, 0)).toBe(3)
+  })
+
+  it('拆格结构：fixed-left 前缀进固定区 label 格，非固定列续格逐格空渲染（不吸附/不重复组名）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称', fixed: 'left', width: '100px' },
+      { key: 'note', title: '备注', width: '100px' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', width: '80px' },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, AGG_ROWS, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds.length).toBe(3)
+    // 固定区 label 格：只覆盖 name（吸附区），承载折叠钮 + 组名 + 计数
+    expect(tds[0]!.colSpan).toBe(1)
+    expect(tds[0]!.getAttribute('data-fixed')).toBe('left')
+    expect(tds[0]!.style.left).toBe('0px')
+    expect(tds[0]!.textContent).toContain('研发')
+    expect(tds[0]!.querySelector('.group-count')!.textContent).toBe('2')
+    // 非固定续格：逐格空渲染（data-col/part 与数据行同口径，不吸附、不重复组名）
+    expect(tds[1]!.getAttribute('data-col')).toBe('note')
+    expect(tds[1]!.getAttribute('part')).toBe('cell')
+    expect(tds[1]!.getAttribute('data-fixed')).toBeNull()
+    expect(tds[1]!.textContent, '续格为空——组名只在固定区格').toBe('')
+    // 聚合格照常
+    expect(tds[2]!.getAttribute('data-col')).toBe('amount')
+    expect(tds[2]!.textContent).toContain('120')
+    // ΣcolSpan 闭合 = 全列 3
+    expect(tds.reduce((n, t) => n + t.colSpan, 0)).toBe(3)
+  })
+
+  it('散置 fixed-left（前缀断档，文档两端布局契约外）：组名放非固定首格，散置叶子独立成格并与数据行同值', () => {
+    // 注：fixed-left 列须连续靠左（两端布局契约）——前缀断档属契约外配置，数据行自身偏移
+    // 即重叠（computeLayout 只对固定列累加）；本用例锁定组行与数据行「同值一致 + 结构不吞格」
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称', width: '100px' },
+      { key: 'dept', title: '部门', fixed: 'left', width: '60px' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', width: '80px' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 1, aggregates: { amount: 70 } },
+      { key: 'a', name: '张三', dept: '研发', amount: 70 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds.length).toBe(3)
+    // 首叶子非 fixed-left → 无吸附前缀：组名放非固定首格（遇 fixed 即止，不吞散置列），不吸附
+    expect(tds[0]!.colSpan).toBe(1)
+    expect(tds[0]!.getAttribute('data-col')).toBeNull()
+    expect(tds[0]!.getAttribute('data-fixed')).toBeNull()
+    expect(tds[0]!.textContent).toContain('研发')
+    // 散置 fixed-left 叶子独立成格（data-col/part 同口径），与数据行同值一致（契约外同错，不错位）
+    expect(tds[1]!.getAttribute('data-col')).toBe('dept')
+    expect(tds[1]!.getAttribute('part')).toBe('cell')
+    expect(tds[1]!.textContent, '续格为空').toBe('')
+    const dataDeptTd = dataRowsOf(el)[0]!.querySelector<HTMLTableCellElement>('td[data-col="dept"]')!
+    expect(tds[1]!.style.left, '组行散置列偏移与数据行同值').toBe(dataDeptTd.style.left)
+    expect(tds[1]!.getAttribute('data-fixed')).toBe(dataDeptTd.getAttribute('data-fixed'))
+    // 聚合格照常
+    expect(tds[2]!.getAttribute('data-col')).toBe('amount')
+    expect(tds.reduce((n, t) => n + t.colSpan, 0)).toBe(3)
+  })
+
+  it('多个左侧固定列：首个 aggregate 列本身 fixed-left 时，组行聚合格 left 偏移按列宽累加（与数据行逐值一致）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称', fixed: 'left', width: '100px' },
+      { key: 'dept', title: '部门', fixed: 'left', width: '60px' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', fixed: 'left', width: '80px' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+      { key: 'a', name: '张三', dept: '研发', amount: 70 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows, cols)
+    const group = groupRowsOf(el)[0]!
+    // 固定区 label 格：跨「name + dept」两个 fixed-left 前缀列 → sticky left:0 承载组名
+    const labelTd = group.querySelector('td') as HTMLTableCellElement
+    expect(labelTd.colSpan).toBe(2)
+    expect(labelTd.getAttribute('data-fixed')).toBe('left')
+    expect(labelTd.style.left).toBe('0px')
+    expect(labelTd.textContent).toContain('研发')
+    // 首个 aggregate 列本身 fixed-left 且前面有固定列：组行聚合格 left = 100+60 = 160px 累计偏移
+    const aggTd = group.querySelector<HTMLTableCellElement>('td[data-col="amount"]')!
+    expect(aggTd.getAttribute('data-fixed')).toBe('left')
+    expect(aggTd.style.left).toBe('160px')
+    expect(aggTd.textContent).toContain('120')
+    // 与数据行同列逐值一致（同源 offsets，吸附同步）
+    const dataAmountTd = dataRowsOf(el)[0]!.querySelector<HTMLTableCellElement>('td[data-col="amount"]')!
+    expect(dataAmountTd.getAttribute('data-fixed')).toBe('left')
+    expect(dataAmountTd.style.left).toBe('160px')
+    // 数据行 dept 列偏移 100px（列宽累加口径不变）
+    const dataDeptTd = dataRowsOf(el)[0]!.querySelector<HTMLTableCellElement>('td[data-col="dept"]')!
+    expect(dataDeptTd.getAttribute('data-fixed')).toBe('left')
+    expect(dataDeptTd.style.left).toBe('100px')
+    // ΣcolSpan 闭合 = 全列 3
+    expect([...group.querySelectorAll('td')].reduce((n, t) => n + (t as HTMLTableCellElement).colSpan, 0)).toBe(3)
+  })
+
+  it('labelSpan=0 退化（首个叶子即 fixed 聚合列）：label 并入首格，首格按该列偏移吸附', () => {
+    const cols = JSON.stringify([
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', fixed: 'left', width: '80px' },
+      { key: 'name', title: '名称', width: '100px' },
+    ])
+    const rows = JSON.stringify([
+      { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+      { key: 'a', name: '张三', amount: 70 },
+    ])
+    const { el } = mountGroup({ 'row-model': 'server', total: '40', 'group-by': 'dept' }, rows, cols)
+    const group = groupRowsOf(el)[0]!
+    const first = group.querySelector('td') as HTMLTableCellElement
+    expect(first.getAttribute('data-col')).toBe('amount')
+    expect(first.textContent).toContain('研发')
+    expect(first.getAttribute('data-fixed')).toBe('left')
+    expect(first.style.left).toBe('0px')
+  })
+
+  it('client 本地分组零漂移：组行恒全宽形态不写 sticky（无 data-fixed）', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '名称', fixed: 'left', width: '100px' },
+      { key: 'amount', title: '金额', aggregate: true, type: 'number', width: '80px' },
+    ])
+    const data = JSON.stringify([
+      { key: 'a', name: '张三', dept: '研发', amount: 70 },
+      { key: 'b', name: '李四', dept: '研发', amount: 50 },
+    ])
+    const { el } = mountReq({ 'group-by': 'dept' }, data, cols)
+    const group = groupRowsOf(el)[0]!
+    const tds = [...group.querySelectorAll('td')] as HTMLTableCellElement[]
+    expect(tds.length).toBe(1)
+    expect(tds[0]!.colSpan).toBe(2)
+    expect(tds[0]!.getAttribute('data-fixed')).toBeNull()
+    expect(tds[0]!.style.left).toBe('')
+  })
+
+  // ==== 三方组合：server 分组 × column-virtual × 固定列（固定区拆格 × 列窗口序列） ====
+
+  /** 行 ΣcolSpan（格几何闭合口径：组行与数据行同构） */
+  const spanSum = (tr: HTMLElement): number =>
+    [...tr.querySelectorAll('td')].reduce((n, t) => n + (t as HTMLTableCellElement).colSpan, 0)
+
+  /**
+   * 横向滚动并等到列窗口真实切换：滚动信号不能取「数据行首格 data-col」——固定列恒在首格
+   * （不随窗口变化）。改以整行格签名（data-col / 占位 colSpan 序列）变化为窗口切换信号。
+   * 返回是否观察到切换（false 说明窗口未动，调用方应断言为 true 防假绿）。
+   */
+  const scrollColumnWindow = async (el: OASTable, left: number): Promise<boolean> => {
+    const w = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    const signature = (): string => {
+      const row = dataRowsOf(el)[0]
+      if (!row) return ''
+      return [...row.querySelectorAll('td')]
+        .map((td) => {
+          const cell = td as HTMLTableCellElement
+          return cell.getAttribute('data-col') ?? `ph:${cell.colSpan}`
+        })
+        .join('|')
+    }
+    const before = signature()
+    w.scrollLeft = left
+    w.dispatchEvent(new Event('scroll'))
+    for (let i = 0; i < 100; i++) {
+      await new Promise((r) => setTimeout(r, 20))
+      if (signature() !== before) return true
+    }
+    return false
+  }
+
+  it('server 分组 × column-virtual × fixed-left：固定区 label 只覆盖 fixed 前缀（left:0），窗口切换后 ΣcolSpan 闭合且不吞格', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const cols = JSON.stringify([
+        { key: 'name', title: '名称', fixed: 'left', width: '100px' },
+        { key: 'amount', title: '金额', aggregate: true, type: 'number', width: '80px' },
+        ...Array.from({ length: 30 }, (_, i) => ({ key: `c${i}`, title: `列${i}`, width: '80px' })),
+      ])
+      const rows = JSON.stringify([
+        { kind: 'group', groupKey: '研发', groupCount: 2, aggregates: { amount: 120 } },
+        { key: 'a', name: '张三', amount: 70 },
+        { key: 'b', name: '李四', amount: 50 },
+      ])
+      const { el } = mountGroup(
+        { 'row-model': 'server', total: '40', 'group-by': 'dept', 'column-virtual': '' },
+        rows,
+        cols,
+      )
+      const dataTds = [...dataRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      const gTds = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      // 列虚拟真实生效（窗口外列归并为占位格）——否则下面的「固定区 vs 窗口」断言失去意义
+      expect(
+        dataTds.some((t) => t.classList.contains('col-virtual-placeholder')),
+        '列虚拟生效（数据行有窗口外占位格）',
+      ).toBe(true)
+      // 固定区 label 格：只覆盖 fixed-left 前缀（name 一列），sticky left:0 承载折叠钮/组名/计数
+      expect(gTds[0]!.colSpan, 'label 只覆盖 fixed 前缀（不吸收窗口内非固定列）').toBe(1)
+      expect(gTds[0]!.getAttribute('data-fixed')).toBe('left')
+      expect(gTds[0]!.style.left).toBe('0px')
+      expect(gTds[0]!.textContent).toContain('研发')
+      expect(gTds[0]!.querySelector('button.toggle')!.getAttribute('aria-expanded')).toBe('true')
+      // 数据行固定列同口径（同源 offsets）
+      expect(dataTds[0]!.getAttribute('data-col')).toBe('name')
+      expect(dataTds[0]!.getAttribute('data-fixed')).toBe('left')
+      expect(dataTds[0]!.style.left).toBe('0px')
+      // 聚合格 / 续格 / 占位格与数据行逐格同构（colSpan 逐位相等）
+      expect(gTds.length, '组行格数与数据行一致（窗口列逐格 + 占位归并）').toBe(dataTds.length)
+      gTds.forEach((t, i) => expect(t.colSpan, `组行第 ${i} 格 colSpan 与数据行同位格一致`).toBe(dataTds[i]!.colSpan))
+      // 闭合：组行 / 数据行 ΣcolSpan 都 = 全列 32
+      expect(spanSum(groupRowsOf(el)[0]!)).toBe(32)
+      expect(spanSum(dataRowsOf(el)[0]!)).toBe(32)
+      // 聚合格与续格：聚合格 data-col/值在场，续格空渲染（不重复组名）
+      const aggTd = gTds.find((t) => t.getAttribute('data-col') === 'amount')!
+      expect(aggTd.textContent).toBe('120')
+      const noteTd = gTds.find((t) => t.getAttribute('data-col') === 'c0')!
+      expect(noteTd.textContent, '续格为空——组名只在固定区 label 格').toBe('')
+      // 切窗口：固定段恒在序列前导，label 仍只覆盖 fixed 前缀；ΣcolSpan 闭合、不吞格
+      expect(await scrollColumnWindow(el, 2000), '列窗口真实切换（行格签名已变化）').toBe(true)
+      const afterData = [...dataRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      const afterGroup = [...groupRowsOf(el)[0]!.querySelectorAll('td')] as HTMLTableCellElement[]
+      expect(afterData[0]!.getAttribute('data-col'), '数据行固定列仍在序列首位').toBe('name')
+      expect(afterGroup[0]!.getAttribute('data-fixed'), '深滚后固定区 label 仍吸附').toBe('left')
+      expect(afterGroup[0]!.style.left).toBe('0px')
+      expect(afterGroup[0]!.colSpan, '深滚后 label 仍只覆盖 fixed 前缀（不吞窗口列）').toBe(1)
+      expect(afterGroup[0]!.textContent).toContain('研发')
+      expect(afterGroup.length, '深滚后组行格数仍与数据行一致（固定区不吞格）').toBe(afterData.length)
+      afterGroup.forEach((t, i) =>
+        expect(t.colSpan, `深滚后第 ${i} 格 colSpan 与数据行一致`).toBe(afterData[i]!.colSpan),
+      )
+      expect(spanSum(groupRowsOf(el)[0]!)).toBe(32)
+      expect(spanSum(dataRowsOf(el)[0]!)).toBe(32)
+      // 窗口前移后仍有窗口外占位（左占位或右占位），证明断言落在真实窗口态
+      expect(
+        afterData.some((t) => t.classList.contains('col-virtual-placeholder')),
+        '深滚后数据行仍有占位格（窗口已前移）',
+      ).toBe(true)
+      // 全程无降级告警
+      expect(warn.mock.calls.filter((c: unknown[]) => String(c[0]).includes('column-virtual')).length).toBe(0)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+})

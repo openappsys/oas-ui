@@ -982,3 +982,207 @@ describe('OASTable infinite：批 G 缓冲上界与淘汰（max-loaded-rows）',
     })
   })
 })
+
+describe('OASTable infinite：淘汰后行号不重编号（累计装载坐标）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** 追加一块连续行（名称即行键）：r<from> .. r<from+count-1> */
+  const appendBlock = (el: OASTable, from: number, count: number): void => {
+    el.appendRows(Array.from({ length: count }, (_, i) => ({ name: `r${from + i}`, age: from + i })))
+  }
+  const rowIndexOf = (el: OASTable): Array<string | null> => rowsOf(el).map((tr) => tr.getAttribute('data-row-index'))
+  const ariaIndexOf = (el: OASTable): Array<string | null> => rowsOf(el).map((tr) => tr.getAttribute('aria-rowindex'))
+  const keysOf = (el: OASTable): Array<string | null> => rowsOf(el).map((tr) => tr.getAttribute('data-key'))
+
+  it('淘汰后保留行不重新编号：data-row-index / aria-rowindex 用累计装载坐标', () => {
+    const { el } = mountInfinite({ total: '100', 'max-loaded-rows': '5', 'row-key': 'name' })
+    appendBlock(el, 0, 4) // r0..r3（上界 5 内，无淘汰）
+    appendBlock(el, 4, 4) // 追加 r4..r7 → 淘汰 r0..r2，缓冲 r3..r7
+    appendBlock(el, 8, 4) // 追加 r8..r11 → 淘汰 r3..r6，缓冲 r7..r11
+    // 缓冲只剩 5 行，但累计装载 12 行：保留行沿用累计坐标（淘汰不重新编号）
+    expect(keysOf(el)).toEqual(['r7', 'r8', 'r9', 'r10', 'r11'])
+    expect(rowIndexOf(el)).toEqual(['7', '8', '9', '10', '11'])
+    expect(ariaIndexOf(el)).toEqual(['8', '9', '10', '11', '12'])
+    // 读屏总数仍是全量口径（已装载 / 未装载不改变 total）
+    expect(el.shadowRoot!.querySelector('table')!.getAttribute('aria-rowcount')).toBe('100')
+  })
+
+  it('无淘汰时零漂移：data-row-index 仍从 0 起（既有契约不变）', () => {
+    const { el } = mountInfinite({ total: '100', 'row-key': 'name' })
+    appendBlock(el, 0, 3)
+    expect(rowIndexOf(el)).toEqual(['0', '1', '2'])
+    expect(ariaIndexOf(el)).toEqual(['1', '2', '3'])
+  })
+
+  it('cell-click 的 rowIndex 与 data-row-index / aria-rowindex 同坐标（累计装载坐标）', () => {
+    const { el } = mountInfinite({ total: '100', 'max-loaded-rows': '5', 'row-key': 'name' })
+    appendBlock(el, 0, 4)
+    appendBlock(el, 4, 4)
+    appendBlock(el, 8, 4) // 缓冲 r7..r11
+    const events: Array<{ rowIndex: number }> = []
+    el.addEventListener('oas-cell-click', (e) => events.push((e as CustomEvent).detail))
+    rowsOf(el)[0]!.querySelector<HTMLElement>('td[data-col="name"]')!.click()
+    expect(events.length).toBe(1)
+    expect(events[0]!.rowIndex, '事件 rowIndex 与 data-row-index 同坐标').toBe(7)
+    expect(Number(rowsOf(el)[0]!.getAttribute('aria-rowindex')) - 1, '与 aria 播报同坐标').toBe(7)
+  })
+
+  it('displaySnapshot：rowIndexByKey / keysByIndex 同坐标，flatIndexByKey 保持缓冲内下标', () => {
+    const { el } = mountInfinite({ total: '100', 'max-loaded-rows': '5', 'row-key': 'name' })
+    appendBlock(el, 0, 4)
+    appendBlock(el, 4, 4)
+    appendBlock(el, 8, 4) // 缓冲 r7..r11
+    const snapshot = el.getDisplaySnapshot()!
+    expect(snapshot.rowIndexByKey.get('r7'), '按行键解析出累计装载坐标').toBe(7)
+    expect(snapshot.rowIndexByKey.get('r11')).toBe(11)
+    expect(snapshot.keysByIndex[7], '按坐标反解行键（range / paste 起点）').toBe('r7')
+    expect(snapshot.keysByIndex[11]).toBe('r11')
+    // 扁平滚动位置仍是缓冲内下标（虚拟窗口切片 / 展示序语义，不叠加累计偏移）
+    expect(snapshot.flatIndexByKey.get('r7')).toBe(0)
+    expect(snapshot.flatIndexByKey.get('r11')).toBe(4)
+    expect(snapshot.flatCount).toBe(5)
+  })
+
+  it('data 属性替换后按新累计计数重编：淘汰的部分仍计入累计装载数', () => {
+    const { el } = mountInfinite({ 'max-loaded-rows': '2', 'row-key': 'name' })
+    appendBlock(el, 0, 3) // r0..r2 → 淘汰 r0，缓冲 r1..r2
+    expect(rowIndexOf(el)).toEqual(['1', '2'])
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: 'n0', age: 0 },
+        { name: 'n1', age: 1 },
+        { name: 'n2', age: 2 },
+      ]),
+    )
+    // 替换 = 重新装载：累计计数按新交付行数（3）起算，裁剪掉的首行仍计入 → 保留行 1..2
+    expect(keysOf(el)).toEqual(['n1', 'n2'])
+    expect(rowIndexOf(el)).toEqual(['1', '2'])
+    expect(ariaIndexOf(el)).toEqual(['2', '3'])
+  })
+
+  it('排序 / refresh 重置缓冲后从 0 重新起算（累计坐标随装载重置清零）', () => {
+    const { el } = mountInfinite({ total: '100', 'max-loaded-rows': '2', 'row-key': 'name' })
+    appendBlock(el, 0, 4) // 缓冲 r2..r3，累计 4
+    expect(rowIndexOf(el)).toEqual(['2', '3'])
+    el.setAttribute('sort-key', 'name')
+    el.setAttribute('sort-order', 'asc')
+    expect(rowsOf(el).length, '缓冲已重置').toBe(0)
+    appendBlock(el, 0, 2) // 新装载窗口从 0 起
+    expect(rowIndexOf(el)).toEqual(['0', '1'])
+    expect(ariaIndexOf(el)).toEqual(['1', '2'])
+  })
+
+  it('infinite × height（本地虚拟）路径同样用累计装载坐标（虚拟窗口切片不重置编号）', () => {
+    const { el } = mountInfinite({
+      total: '100',
+      'max-loaded-rows': '5',
+      'row-key': 'name',
+      height: '200',
+      'row-height': '40',
+    })
+    appendBlock(el, 0, 4)
+    appendBlock(el, 4, 4)
+    appendBlock(el, 8, 4) // 缓冲 r7..r11（累计 12）
+    const rendered = rowsOf(el)
+    expect(rendered.length, '虚拟窗口只渲染视口量级行').toBeLessThanOrEqual(5)
+    // 视口在顶部 → 窗口从缓冲首行起；虚拟行号 = 缓冲下标 + 累计淘汰偏移（7）
+    expect(rendered[0]!.getAttribute('data-key')).toBe('r7')
+    expect(rendered[0]!.getAttribute('data-row-index')).toBe('7')
+    expect(rendered[0]!.getAttribute('aria-rowindex')).toBe('8')
+    const indexes = rowIndexOf(el).map((v) => Number(v))
+    expect(Math.min(...indexes), '虚拟行号从累计偏移起（非 0）').toBeGreaterThanOrEqual(7)
+    // 每渲染行与缓冲内下标一一对应（无跳号 / 无重置）
+    expect(rowIndexOf(el)).toEqual(indexes.map((_, i) => String(7 + i)))
+  })
+})
+
+/**
+ * infinite × max-loaded-rows × render-chunk 交叉：淘汰后的分批帧同样走累计装载坐标。
+ * 单独成组是因为本组以可控 rAF 队列验证「首帧」与「末帧」两处行号——full-sync 路径
+ * （非分批）的同一口径已由上组覆盖，本组必须证明断言经由 renderChunkedBody 的
+ * dataIndex 起点（而非全量同步循环）成立。
+ */
+describe('OASTable infinite × render-chunk：淘汰后分批帧沿用累计装载坐标', () => {
+  let rafHandles: Map<number, () => void>
+  let rafSeq = 0
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    rafHandles = new Map()
+    rafSeq = 0
+    vi.stubGlobal('requestAnimationFrame', (cb: () => void): number => {
+      const id = ++rafSeq
+      rafHandles.set(id, cb)
+      return id
+    })
+    vi.stubGlobal('cancelAnimationFrame', (id: number): void => {
+      rafHandles.delete(id)
+    })
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+    vi.unstubAllGlobals()
+  })
+
+  /** 推进直到无待执行帧（分批渲染跑完） */
+  const flushRafAll = (maxFrames = 50): void => {
+    for (let f = 0; f < maxFrames && rafHandles.size > 0; f++) {
+      const pending = [...rafHandles.values()]
+      rafHandles.clear()
+      for (const cb of pending) cb()
+    }
+  }
+
+  const appendBlock = (el: OASTable, from: number, count: number): void => {
+    el.appendRows(Array.from({ length: count }, (_, i) => ({ name: `r${from + i}`, age: from + i })))
+  }
+  const rowIndexOf = (el: OASTable): Array<string | null> => rowsOf(el).map((tr) => tr.getAttribute('data-row-index'))
+  const ariaIndexOf = (el: OASTable): Array<string | null> => rowsOf(el).map((tr) => tr.getAttribute('aria-rowindex'))
+  const keysOf = (el: OASTable): Array<string | null> => rowsOf(el).map((tr) => tr.getAttribute('data-key'))
+
+  it('淘汰后首帧与末帧行号都是累计坐标：无重复、不回 0（分批路径，非全量同步）', () => {
+    const { el } = mountInfinite({
+      total: '100',
+      'max-loaded-rows': '5',
+      'row-key': 'name',
+      'render-chunk': '2',
+    })
+    appendBlock(el, 0, 4) // r0..r3：上界 5 内无淘汰
+    flushRafAll()
+    expect(rowIndexOf(el)).toEqual(['0', '1', '2', '3'])
+    appendBlock(el, 4, 4) // 追加 r4..r7 → 淘汰 r0..r2，缓冲 r3..r7（累计装载 8）
+    // 首帧：分批只铺 chunk=2 行（缓冲 5 行 → 渲染 2 行，证明走 renderChunkedBody，
+    // 而非全量同步循环——全量路径此刻会一次铺满 5 行）
+    expect(rowsOf(el).length, '首帧只铺 chunk 行（分批路径生效）').toBe(2)
+    expect(keysOf(el)).toEqual(['r3', 'r4'])
+    expect(rowIndexOf(el), '首帧行号从累计淘汰偏移 3 起').toEqual(['3', '4'])
+    expect(ariaIndexOf(el), '首帧 aria-rowindex 与 data-row-index 同坐标（+1）').toEqual(['4', '5'])
+    // 末帧：剩余行逐帧追加，行号严格递增、不重复、不再回到 0
+    flushRafAll()
+    expect(rafHandles.size, '末帧后无在途帧').toBe(0)
+    expect(keysOf(el)).toEqual(['r3', 'r4', 'r5', 'r6', 'r7'])
+    expect(rowIndexOf(el)).toEqual(['3', '4', '5', '6', '7'])
+    expect(ariaIndexOf(el)).toEqual(['4', '5', '6', '7', '8'])
+    // 二次淘汰：偏移随累计装载数前移（7），分批帧仍同一口径
+    appendBlock(el, 8, 4) // 追加 r8..r11 → 淘汰 r3..r6，缓冲 r7..r11（累计装载 12）
+    expect(rowsOf(el).length, '二次淘汰仍分批（首帧 chunk 行）').toBe(2)
+    expect(keysOf(el), '首帧 = 新缓冲前 chunk 行').toEqual(['r7', 'r8'])
+    expect(rowIndexOf(el)).toEqual(['7', '8'])
+    flushRafAll()
+    expect(rowIndexOf(el)).toEqual(['7', '8', '9', '10', '11'])
+    expect(ariaIndexOf(el)).toEqual(['8', '9', '10', '11', '12'])
+    expect(new Set(rowIndexOf(el)).size, '无重复行号').toBe(5)
+  })
+})

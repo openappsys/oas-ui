@@ -9,7 +9,7 @@ import type { RangeWriteChange, RangeWriteDetail, RangeWriteKind } from '../oas-
 
 export type { RangeWriteChange, RangeWriteDetail, RangeWriteKind } from '../oas-table-range-write.js'
 
-/** 单元格坐标：row 为 `data-row-index` 展示集行号（0 基；windowed 为全量绝对行号），与 oas-cell-click / oas-edit 一致 */
+/** 单元格坐标：row 为 `data-row-index` 展示集行号（0 基；windowed 为全量绝对行号；infinite 为累计装载坐标——淘汰不重新编号），与 oas-cell-click / oas-edit 一致 */
 export interface CellPosition {
   row: number
   col: string
@@ -1390,7 +1390,7 @@ export function selectByKey(table: HTMLElement, anchor: CellKeyOptionalCol, focu
   controller.setSelection({ anchor: nextAnchor, focus: nextFocus })
 }
 
-/** 选中整行（row 为展示集行号；windowed 为全量绝对行号） */
+/** 选中整行（row 为展示集行号；windowed 为全量绝对行号；infinite 为累计装载坐标） */
 export function selectRow(table: HTMLElement, row: number): void {
   const host = table as RangeHost
   const cols = columnOrder(host)

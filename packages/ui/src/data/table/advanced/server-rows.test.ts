@@ -335,6 +335,31 @@ describe('createServerSource', () => {
     source2.destroy()
   })
 
+  it('组合守卫：元素 infinite 属性在场 → 创建时 devWarn 一次（语义冲突提醒，不阻断照常返回实例）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    el.setAttribute('infinite', '')
+    const fetchRows = vi.fn(async (_request: ServerRowsRequest) => [{ name: '行' }])
+    const source = createServerSource(el, { fetchRows, total: 100 })
+    // 文档口径落地实现侧：整页 data 覆盖与 appendRows 追加语义冲突——提醒一次、不 throw、实例可用
+    expect(warn, 'infinite 组合 devWarn 一次').toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('与 infinite 组合不适用')
+    expect(String(warn.mock.calls[0]![0])).toContain('自管 oas-rows-request')
+    source.refresh()
+    await vi.waitFor(() => expect(fetchRows).toHaveBeenCalledTimes(1))
+    warn.mockRestore()
+    source.destroy()
+  })
+
+  it('组合守卫：无 infinite 属性的元素创建零告警（对照档）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    const source = createServerSource(el, { fetchRows: async () => [], total: 100 })
+    expect(warn, '无 infinite 零告警').not.toHaveBeenCalled()
+    warn.mockRestore()
+    source.destroy()
+  })
+
   it('advanced 入口导出接线：createServerSource 与直连模块为同一函数', async () => {
     const { createServerSource: fromIndex } = await import('./index.js')
     expect(fromIndex).toBe(createServerSource)

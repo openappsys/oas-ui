@@ -344,7 +344,7 @@
     {
       "name": "getDisplaySnapshot",
       "signature": "getDisplaySnapshot(): TableDisplaySnapshot | null",
-      "description": "展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改"
+      "description": "展示集只读快照：供 range 等能力按行键解析绝对数据行号（windowed 含窗口偏移、infinite 含累计装载偏移，缓冲淘汰不重编号）与缓冲内扁平滚动位置；map 复用缓存，调用方不得修改"
     },
     {
       "name": "translateText",

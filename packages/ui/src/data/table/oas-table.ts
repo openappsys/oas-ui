@@ -291,7 +291,8 @@ export interface TableStructuralRenderers {
   pagination?: (ctx: TableStructuralPaginationCtx) => void
 }
 
-/** 正文行结构槽上下文：rowIndex 与 tr[data-row-index] 同口径（windowed 为绝对数据行号） */
+/** 正文行结构槽上下文：rowIndex 与 tr[data-row-index] 同口径（windowed 为绝对数据行号；
+    infinite 为累计装载坐标——淘汰只缩缓冲、不使保留行重新编号） */
 export interface TableStructuralBodyRowCtx {
   el: HTMLTableRowElement
   row: Record<string, unknown>
@@ -302,7 +303,8 @@ export interface TableStructuralBodyRowCtx {
 export interface TableStructuralBodyCellCtx {
   el: HTMLTableCellElement
   row: Record<string, unknown>
-  /** 与 data-row-index 同口径（windowed 为绝对数据行号） */
+  /** 与 data-row-index 同口径（windowed 为绝对数据行号；infinite 为累计装载坐标，
+      淘汰后保留行不重新编号） */
   rowIndex: number
   column: TableColumn
   api: TableStructuralApi
@@ -623,7 +625,7 @@ const SERVER_SPAN_HINT =
  * | 行拖拽            | 禁用 + devWarn（装载顺序语义由服务端游标持有）                   | rowDragEnabled |
  * | 列拖拽            | 支持（批 F 契约：列序是展示态）——与 client 同语义，无闸门        | setColumnOrder（无闸门） |
  * | merge/span-method | 禁用 + devWarn（已装载缓冲跨界合并语义不确定，同 server 口径）    | update / buildRow useSpan |
- * | 填充柄/区域选择   | 已装载行相对行号语义（data-row-index 为装载序 0 起）——文档声明    | range 能力 |
+ * | 填充柄/区域选择   | 已装载行累计装载坐标（data-row-index 为装载序累计值，淘汰不重新编号）——文档声明 | range 能力 |
  * | 过滤面板候选值    | 来自已装载数据（面板照常打开）——文档声明                         | openFilterPanel |
  * | 历史（撤销）      | 仅记录本地操作，重置装载（排序/过滤/refresh）即失效——文档声明    | range/edit 能力内部 |
  * | 编辑              | 已装载行编辑仅本地、重置装载回填即丢失——文档声明                 | edit 能力 |
@@ -849,6 +851,11 @@ export class OASTableBase extends OASElement {
   /** 主动滚动写入代次：键盘导航 / 程序化滚动 / 帧尾恢复每写一次 +1。帧尾恢复只在代次未变时
       回写（同帧「先滚动、后按 Ctrl+End」时，更新的写入优先于帧首保存的旧值） */
   private scrollWriteSeq = 0
+  /** 真实滚动意图代次（滚轮 / 触摸拖动 / 滚动条拖动 / 键盘滚动每发生一次 +1）：分批渲染的末帧
+      滚动位恢复据此让位——用户在分批期间真的滚动过的位置优先，旧值不回写（writeScrollPosition
+      代次只覆盖程序化写入，覆盖不到原生滚动；普通按压/点击不改变滚动位，不计入——见
+      noteUserScrollGesture / noteScrollbarDrag） */
+  private userScrollSeq = 0
   /** 主动写入的滚动意图位（位置 + 代次 + 剩余守卫帧）：见 guardScrollIntent */
   private scrollIntent: { top: number; left: number; seq: number; frames: number } | null = null
   /** 意图守卫的帧推进句柄 */
@@ -1050,6 +1057,13 @@ export class OASTableBase extends OASElement {
   private infiniteLoadMoreRaf = 0
   /** render-chunk 分批渲染的 rAF 句柄（0 = 无在途分批帧） */
   private renderChunkRaf = 0
+  /**
+   * 分批渲染的滚动位恢复目标（{ top, left, seq, userSeq }）：分批期间内容不足，实时 scrollTop
+   * 会被钳到可达上界——连续渲染（排序写 sort-key / sort-order 两轮、以及宿主在批次间
+   * 再写属性）若从实时值重新起读会丢掉用户原位置。首轮记录目标，后续渲染在「期间无更新的主动
+   * 写入 / 无用户手势滚动」时继承，末帧落位后清空（不残留给后续无关渲染）。
+   */
+  private chunkScrollTarget: { top: number; left: number; seq: number; userSeq: number } | null = null
   /** 分批渲染代次：新一轮全量渲染 / 断连时 +1——陈旧 rAF 帧比对代次自我作废（rAF 句柄取消之外的双保险） */
   private renderChunkGen = 0
   /** render-chunk × 虚拟滚动（height）同开的一次性告警 flag（虚拟即窗口渲染，分批不适用——忽略并告警） */
@@ -1126,7 +1140,10 @@ export class OASTableBase extends OASElement {
     // 主动滚动写入的意图状态随断开复位：重连后不继承上一次连接的保存位/代次/回波吞位
     this.savedScroll = null
     this.scrollWriteSeq = 0
+    this.userScrollSeq = 0
     this.swallowScrollSeq = -1
+    // 分批渲染的滚动位继承目标同样不跨连接遗留（重连后的渲染从实时位置起算）
+    this.chunkScrollTarget = null
     super.disconnectedCallback()
   }
 
@@ -1597,6 +1614,12 @@ export class OASTableBase extends OASElement {
     this.wrap?.addEventListener('wheel', this.cancelScrollIntent, { passive: true })
     this.wrap?.addEventListener('touchstart', this.cancelScrollIntent, { passive: true })
     this.wrap?.addEventListener('pointerdown', this.cancelScrollIntent, { passive: true })
+    // 真实滚动意图代次（分批渲染末帧恢复据此让位）：只认会产生滚动的输入——滚轮 / 触摸拖动 /
+    // 滚动条拖动（target === wrap）；pointerdown / touchstart 的「按压即取消守卫」语义见上方，
+    // 但普通按压/点击不改变滚动位，不计入（否则分批期间点一下行就让末帧放弃恢复）
+    this.wrap?.addEventListener('wheel', this.noteUserScrollGesture, { passive: true })
+    this.wrap?.addEventListener('touchmove', this.noteUserScrollGesture, { passive: true })
+    this.wrap?.addEventListener('pointerdown', this.noteScrollbarDrag, { passive: true })
     // 键盘滚动取消（须先于下方网格导航注册：导航写入后布的新意图不被清掉）
     this.wrap?.addEventListener('keydown', this.cancelScrollIntentOnKey)
     // column-virtual：容器尺寸变化（视口宽 → 可见列数）重算列窗口；windowed：视口高变化
@@ -1634,6 +1657,9 @@ export class OASTableBase extends OASElement {
       this.wrap?.removeEventListener('wheel', this.cancelScrollIntent)
       this.wrap?.removeEventListener('touchstart', this.cancelScrollIntent)
       this.wrap?.removeEventListener('pointerdown', this.cancelScrollIntent)
+      this.wrap?.removeEventListener('wheel', this.noteUserScrollGesture)
+      this.wrap?.removeEventListener('touchmove', this.noteUserScrollGesture)
+      this.wrap?.removeEventListener('pointerdown', this.noteScrollbarDrag)
       this.wrap?.removeEventListener('keydown', this.cancelScrollIntentOnKey)
       this.scrollIntent = null
       if (this.scrollIntentRaf) {
@@ -1842,7 +1868,8 @@ export class OASTableBase extends OASElement {
     const flatIndexByKey = new Map<string, number>()
     const keysByIndex: string[] = []
     const keys: string[] = []
-    const offset = this.windowedOn() ? this._winMode.windowStart : 0
+    // 行号坐标起点：windowed = 切片绝对行号；infinite = 累计装载偏移（淘汰不重新编号）
+    const offset = this.dataRowStartIndex()
     for (let index = 0; index < display.length; index++) {
       const flat = display[index]!
       if (flat.kind !== 'data') continue
@@ -2371,37 +2398,59 @@ export class OASTableBase extends OASElement {
     } else {
       // span-method 占用表按渲染轮重置（显式 span 的跨行/跨列覆盖关系仅本轮有效）
       this._spanCovered.clear()
-      const chunk = this.renderChunkSize()
+      let chunk = this.renderChunkSize()
+      // print 媒体旁路：打印/打印预览是单次快照，分批渲染只落首帧 chunk 行——打印可能缺行。
+      // print 下强制全量同步渲染（与行/列窗口「print 恒全量」同口径，见 printModeOn），
+      // 进入时 matchMedia change 触发的重渲染已先经 update 头部 cancelRenderChunk 作废在途代次；
+      // 退出 print（screen）后本旁路自然失效，回到 render-chunk 分批配置。
+      if (this.printModeOn()) chunk = 0
       if (chunk > 0 && typeof requestAnimationFrame === 'function') {
         // 分批渲染（时间切片）：首帧 chunk 行同步落位，其余行经 rAF 逐帧追加直至完整。
         // 合计行 / infinite 底部状态行 / merge 列归并随末帧落位（merge 需要完整连续行序列）。
         // 环境无 rAF（SSR 快照类场景）时不分批，一轮铺完——与全量同步渲染同结果。
-        this.renderChunkedBody(body, display, rowKey, layout, chunk, summaryRowData)
+        // 滚动位目标：优先继承上一轮未落位的目标（连续渲染——排序写 sort-key /
+        // sort-order 两轮：首轮把 tbody 清空后实时 scrollTop 已被钳到可达上界，次轮从实时值
+        // 起读会丢掉用户原位置）。继承条件：期间无更新的主动写入、无用户手势滚动，且实时位只
+        // 应是「被钳制向下」（clamp 只会让 scrollTop 变小；实时位更大 = 期间另有外部写入，
+        // 继承目标已失效）。
+        const carried = this.chunkScrollTarget
+        const carryValid =
+          carried !== null &&
+          carried.seq === this.scrollWriteSeq &&
+          carried.userSeq === this.userScrollSeq &&
+          st <= carried.top
+        const chunkTarget = carryValid
+          ? carried
+          : { top: st, left: this.wrap ? this.wrap.scrollLeft : 0, seq: seqAtSave, userSeq: this.userScrollSeq }
+        this.chunkScrollTarget = chunkTarget
+        this.renderChunkedBody(body, display, rowKey, layout, chunk, summaryRowData, chunkTarget)
         if (this.renderChunkRaf !== 0) {
-          // 分批进行中：首帧语义立即落位——垫高移除 + grid/aria/sticky（aria-rowcount 首帧
-          // 即写全量，读屏行数与最终一致）+ 焦点/滚动恢复 + 渲染状态落定（分批期间 selected
-          // 变化仍走行级补丁快路径）；合计/底部行与 merge 归并待末帧。
-          body.style.minHeight = ''
+          // 分批进行中：首帧语义立即落位——grid/aria/sticky（aria-rowcount 首帧
+          // 即写全量，读屏行数与最终一致）+ 焦点恢复 + 渲染状态落定（分批期间 selected
+          // 变化仍走行级补丁快路径）。稳定清空的垫高保留到末帧（首帧只铺 chunk 行），
+          // 合计/底部行、merge 归并与滚动位恢复随末帧落位（见 renderChunkedBody 的 finish /
+          // 末帧 restoreScroll）。首帧不写滚动位：此时可达上界只到 chunk 行高，
+          // 写回保存位只会被钳到中部——正确位置等末帧内容完整后一次落位。
           this.applyGridSemantics()
           this.applyRowAriaSemantics()
           this.applyStickyRows()
           this.restoreWindowedFocusAnchor(this.autoSyncUpdate)
-          if (this.wrap) this.restoreScrollPosition(seqAtSave, st, this.wrap.scrollLeft)
           this.settleRenderState()
           return
         }
         // display 行数 ≤ chunk：一轮铺完（merge 归并已落位），落入下方统一尾程
       } else {
         const rowInfos: { tr: HTMLTableRowElement; kind: string }[] = []
-        // windowed：事件 rowIndex / 条纹等按绝对行号（windowStart 起），与虚拟窗口渲染同口径
-        let dataIndex = this.windowedOn() ? this._winMode.windowStart : 0
+        // windowed：事件 rowIndex / 条纹等按绝对行号（windowStart 起）；infinite：累计装载坐标
+        //（淘汰不重新编号）；其余从 0 起——与展示集快照 / ARIA 同一坐标
+        let dataIndex = this.dataRowStartIndex()
         for (let i = 0; i < display.length; i++) {
           const f = display[i]!
           const tr =
             f.kind === 'expand'
               ? this.buildExpandRow(f)
               : f.kind === 'group'
-                ? this.buildGroupRow(f)
+                ? this.buildGroupRow(f, layout)
                 : this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
           if (f.kind === 'data') {
             const idx = dataIndex
@@ -2442,8 +2491,20 @@ export class OASTableBase extends OASElement {
     // 拉回焦点格，与刚恢复的锚定 scrollTop 互相打架（二轮交叉审 I-4）
     this.restoreWindowedFocusAnchor(this.autoSyncUpdate)
     // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
-    // 帧内若有更新的主动写入（键盘导航 / 程序化滚动），新写入优先——旧值不回写
-    if (this.wrap) this.restoreScrollPosition(seqAtSave, st, this.wrap.scrollLeft)
+    // 帧内若有更新的主动写入（键盘导航 / 程序化滚动），新写入优先——旧值不回写。
+    // 分批渲染留下的继承目标（未落位的滚动位）优先：连续渲染可能已把实时位置钳制
+    //（如分批中途数据变少改走全量同步，或上一轮分批被取消），实时值不再代表用户位置。
+    const carriedScroll = this.chunkScrollTarget
+    const carryUsable =
+      carriedScroll !== null &&
+      carriedScroll.seq === this.scrollWriteSeq &&
+      carriedScroll.userSeq === this.userScrollSeq &&
+      st <= carriedScroll.top
+    if (this.wrap) {
+      if (carryUsable) this.restoreScrollPosition(carriedScroll.seq, carriedScroll.top, carriedScroll.left)
+      else this.restoreScrollPosition(seqAtSave, st, this.wrap.scrollLeft)
+    }
+    this.chunkScrollTarget = null
     // 全量渲染完成：落定渲染状态（此后仅 selected 变化可走局部补丁快路径）
     this.settleRenderState()
   }
@@ -2932,11 +2993,13 @@ export class OASTableBase extends OASElement {
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
     chunk: number,
     summaryRow: { configs: SummaryConfig[]; values: Map<string, string> } | null,
+    scroll: { seq: number; userSeq: number; top: number; left: number } | null,
   ): void {
     const gen = this.renderChunkGen
     const rowInfos: { tr: HTMLTableRowElement; kind: string }[] = []
-    // windowed：事件 rowIndex / 条纹等按绝对行号（windowStart 起），与全量同步路径同口径
-    let dataIndex = this.windowedOn() ? this._winMode.windowStart : 0
+    // windowed：事件 rowIndex / 条纹等按绝对行号（windowStart 起）；infinite：累计装载坐标
+    //（淘汰不重新编号）——与全量同步路径 / 展示集快照 / ARIA 同口径
+    let dataIndex = this.dataRowStartIndex()
     let cursor = 0
     const renderBatch = (): boolean => {
       // 每批读取当时的 selected / expanded 快照：分批期间的变更对后续批次即时生效
@@ -2949,7 +3012,7 @@ export class OASTableBase extends OASElement {
           f.kind === 'expand'
             ? this.buildExpandRow(f)
             : f.kind === 'group'
-              ? this.buildGroupRow(f)
+              ? this.buildGroupRow(f, layout)
               : this.buildRow(f, i, rowKey, selectedNow, expandedNow, layout, dataIndex)
         if (f.kind === 'data') {
           const idx = dataIndex
@@ -2973,9 +3036,25 @@ export class OASTableBase extends OASElement {
       this.applyMergePostProcess(rowInfos)
       if (summaryRow) body.appendChild(this.buildSummaryRow(summaryRow.configs, summaryRow.values, layout))
       this.appendInfiniteFooterRow(body, this.columnCount())
+      // 内容已完整：移除稳定清空的垫高（此后不再需要撑高）
+      body.style.minHeight = ''
+    }
+    /**
+     * 末帧滚动位恢复（语义全部落位之后调用，与全量同步路径尾程同次序——语义应用期间
+     * 焦点/tabindex 落位可能触发浏览器内部位移，先写会被覆盖）。代次守卫双通道：
+     * 分批期间若有更新的主动写入（键盘导航 / 程序化写入）或真实用户手势滚动，用户位优先、
+     * 旧值不回写；数据变少时浏览器对越界目标的合法钳制照常接受。
+     * 目标对象即 chunkScrollTarget（继承位）：落位即清空，不把目标残留给后续无关渲染。
+     */
+    const restoreScroll = (): void => {
+      if (!scroll) return
+      if (this.chunkScrollTarget === scroll) this.chunkScrollTarget = null
+      if (!this.wrap || scroll.userSeq !== this.userScrollSeq) return
+      this.restoreScrollPosition(scroll.seq, scroll.top, scroll.left)
     }
     if (renderBatch()) {
-      // 一轮铺完：只落位 merge 归并（行序列已完整），合计/底部行交调用方统一尾程（防双份）
+      // 一轮铺完：只落位 merge 归并（行序列已完整），合计/底部行交调用方统一尾程（防双份）；
+      // 滚动位同样交调用方尾程（含继承目标优先口径），此处不写
       this.applyMergePostProcess(rowInfos)
       return
     }
@@ -2983,11 +3062,13 @@ export class OASTableBase extends OASElement {
       if (gen !== this.renderChunkGen) return // 代次作废（新一轮渲染 / 断连）：陈旧帧不再追加
       this.renderChunkRaf = 0
       const done = renderBatch()
+      // 末帧先落合计/底部行并拆垫高（DOM 完整后语义才落位，与全量同步路径同次序）
+      if (done) finish()
       // 新追加行的 grid / aria / sticky 语义逐帧落位（aria-rowcount 首帧已写全量，此处补行序号）
       this.applyGridSemantics()
       this.applyRowAriaSemantics()
       this.applyStickyRows()
-      if (done) finish()
+      if (done) restoreScroll()
       else this.renderChunkRaf = requestAnimationFrame(step)
     }
     this.renderChunkRaf = requestAnimationFrame(step)
@@ -3142,6 +3223,9 @@ export class OASTableBase extends OASElement {
     // 数据行序前缀（不含 expand/group 行）：虚拟窗口行的 rowIndex（cell-click / edit / ARIA）
     // 须与全量展示集同口径。缓存未携带时（外部直调兜底）就地补扫一次
     const ordinals = dataOrdinal ?? this.computeOrdinals(display).ordinals
+    // infinite 已装载行：行号 = 缓冲内数据行序 + 累计淘汰偏移（淘汰不重新编号；非 infinite 恒 0）
+    const rowBase = this.infiniteRowOffset()
+    const rowOrdinal = (i: number): number => ordinals[i]! + rowBase
     // 吸顶行恒渲染在列表顶部（视口外的吸顶行也从窗口中排除，避免重复渲染）
     const sticky = this.stickyRowCount()
     const stickyEnd = Math.min(sticky, display.length)
@@ -3149,11 +3233,11 @@ export class OASTableBase extends OASElement {
     if (stickyEnd > 0) {
       for (let i = 0; i < stickyEnd; i++) {
         const f = display[i]!
-        const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
+        const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, rowOrdinal(i))
         tr.style.height = `${this.rowHeightAt(i)}px`
         if (stampDisplayIdx && f.kind === 'data') tr.dataset.oasDisplayIdx = String(i)
         body.appendChild(tr)
-        if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
+        if (f.kind === 'data') this.structuralBodyRow(tr, f.row, rowOrdinal(i))
       }
       windowStart = Math.max(win.start, stickyEnd)
     }
@@ -3168,11 +3252,11 @@ export class OASTableBase extends OASElement {
 
     for (let i = windowStart; i < win.end; i++) {
       const f = display[i]!
-      const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, ordinals[i]!)
+      const tr = this.buildVirtualRow(f, i, rowKey, selected, expanded, layout, rowOrdinal(i))
       tr.style.height = `${this.rowHeightAt(i)}px`
       if (stampDisplayIdx && f.kind === 'data') tr.dataset.oasDisplayIdx = String(i)
       body.appendChild(tr)
-      if (f.kind === 'data') this.structuralBodyRow(tr, f.row, ordinals[i]!)
+      if (f.kind === 'data') this.structuralBodyRow(tr, f.row, rowOrdinal(i))
     }
 
     const bottomSpacer = document.createElement('tr')
@@ -3200,7 +3284,7 @@ export class OASTableBase extends OASElement {
     dataIndex: number,
   ): HTMLTableRowElement {
     if (f.kind === 'expand') return this.buildExpandRow(f)
-    if (f.kind === 'group') return this.buildGroupRow(f)
+    if (f.kind === 'group') return this.buildGroupRow(f, layout)
     return this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
   }
 
@@ -3458,7 +3542,7 @@ export class OASTableBase extends OASElement {
     return this._columns
   }
 
-  /** 展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改 */
+  /** 展示集只读快照：供 range 等能力按行键解析绝对数据行号（windowed 含窗口偏移、infinite 含累计装载偏移，缓冲淘汰不重编号）与缓冲内扁平滚动位置；map 复用缓存，调用方不得修改 */
   getDisplaySnapshot(): TableDisplaySnapshot | null {
     const cache = this.visibleCache
     if (!cache) return null
@@ -4036,10 +4120,15 @@ export class OASTableBase extends OASElement {
    * - 全宽形态（既有）：整行 colSpan 全宽，折叠箭头 + 字段值 + 组内计数（本地分组恒走此形态）；
    * - 按列形态（server 分组协议）：**表级判定**——server 分组生效且列定义存在 aggregate
    *   配置列时，组行一律按叶子列逐格渲染（同表组行形态统一，不随单行 aggregates 有无
-   *   漂移；组行无 aggregates 时聚合格留空）。格子几何与数据行同构：label 格覆盖
+   *   漂移；组行无 aggregates 时聚合格留空）。格子几何与数据行同构：label 区覆盖
    *   「前导附加列（行拖拽手柄 + 勾选列，渲染在数据列之前）+ 首个聚合列之前的叶子列」，
    *   其后叶子列逐格渲染（聚合列显示宿主值、无值留空，data-col + part 与数据行同口径
-   *   ——固定列 sticky 与宿主 ::part(cell)/td[data-col] 选择器可命中），尾部展开列补
+   *   ——固定列 sticky 复用数据行 applyColumnOffset 逐格吸附）。label 区含固定列时拆格
+   *   （增量 D）：固定区 label 格（附加列 + 连续 fixed-left 前缀）sticky left:0 承载折叠
+   *   钮/组名/计数，续格逐格空渲染——跨列格 sticky 被引擎钳制在行盒内（深滚随滚淡出、
+   *   组名被裁），拆格后吸附宽度不含非固定列，深滚组名保持可见；无 fixed-left 前缀且
+   *   hasFixed 附加列在场时附加列做空占位吸附格、组名放非固定续格（不挤进勾选/拖拽宽度），
+   *   尾部展开列补
    *   占位格（组行无展开交互）。修复此前 labelSpan = columnCount() - leaves.length 把
    *   尾部展开列计入 label 跨度导致的整行右移一列、聚合值落到展开列下方。
    * labelSpan=0 退化（首个叶子即聚合列且无 checkable/rowDrag）：无独立 label 空间——
@@ -4052,7 +4141,10 @@ export class OASTableBase extends OASElement {
    * 计数节点：groupCount 非有限数（协议缺省 / NaN / 负数在数据层已归一）不创建——文档
    * 承诺「缺省不显示计数」；本地分组组行恒有值，零漂移。
    */
-  private buildGroupRow(flat: FlatRow): HTMLTableRowElement {
+  private buildGroupRow(
+    flat: FlatRow,
+    layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+  ): HTMLTableRowElement {
     const tr = document.createElement('tr')
     tr.className = 'group-header'
     tr.setAttribute('part', 'group-row')
@@ -4099,27 +4191,91 @@ export class OASTableBase extends OASElement {
       // ΣcolSpan 恒 = 前导附加列 + 全列（与数据行同构闭合）
       const seq = this.columnWindowSequence()
       const leafIndex = new Map(leaves.map((c, idx) => [c, idx]))
-      let labelSpan = leadingAux
+      // 固定区分区（增量 D 拆格）：label 覆盖区 [0, firstAgg) 内存在 fixed-left 叶子、或
+      // hasFixed 时存在前导附加列 → 单一跨列 label 格拆为「固定区 label 格 + 续格逐格」：
+      // 固定区 = 前导附加列 + 叶子序连续 fixed-left 前缀（sticky left:0 整格吸附，承载折叠
+      // 钮/组名/计数）；续格 = 剩余叶子逐格渲染（空内容；散置的 fixed-left 叶子经
+      // applyColumnOffset 逐格吸附，与数据行全区间同步）——跨列格 sticky 被引擎钳制在行盒
+      // 内（scrollLeft 超「行宽 − label 宽」后随滚淡出、组名被裁），拆格后吸附宽度不再含
+      // 非固定列，深滚组名保持可见。无固定区时保持单一非吸附 label 格（client/既有零漂移）
+      let fixedPrefix = 0
+      while (fixedPrefix < firstAgg && leaves[fixedPrefix]!.fixed === 'left') fixedPrefix++
+      const splitLabel =
+        leaves.slice(0, Math.max(firstAgg, 0)).some((c) => c.fixed === 'left') || (layout.hasFixed && leadingAux > 0)
       let i = 0
-      for (; i < seq.length; i++) {
-        const col = seq[i]!.col
-        if (!col) break // 窗口外占位格：label 止于窗口边界
-        if ((leafIndex.get(col) ?? 0) >= firstAgg) break
-        labelSpan++
+      // labelSpan=0 退化防御（首个可见列即聚合列且无独立 label 空间）：不渲染 label 格
+      // （此前 Math.max(1, 0) 强凑 colSpan=1 会让 ΣcolSpan 比总列数多 1，行宽不闭合），
+      // label 内容（折叠钮 + 组标签 + 计数 + depth 缩进）并入其后首个真实列格：行宽闭合、
+      // 折叠交互/组标签可见性不回退；占位格不承载 label（窗口外区域不可见）
+      let labelPending = false
+      if (!splitLabel) {
+        // 单格形态（零漂移路径）：label 吸收序列前段「当前可见且位于首个聚合列之前」的
+        // 连续列——遇占位格即止（label 不覆盖窗口外区域），ΣcolSpan 恒 = 附加列 + 全列
+        let labelSpan = leadingAux
+        for (; i < seq.length; i++) {
+          const col = seq[i]!.col
+          if (!col) break // 窗口外占位格：label 止于窗口边界
+          if ((leafIndex.get(col) ?? 0) >= firstAgg) break
+          labelSpan++
+        }
+        if (labelSpan === 0) labelPending = true
+        else {
+          td.colSpan = labelSpan
+          indent(td)
+          td.append(btn, label)
+          if (count) td.append(count)
+          tr.appendChild(td)
+        }
+      } else {
+        // 前导附加列：hasFixed 时与数据行附加列同口径吸附。fixedPrefix>0 时并入固定区
+        // label 格（格左缘即吸附位，钮/组名仍在行最左——与既有组行视觉一致）；=0 时独立
+        // 空占位吸附格——组名不挤进只有勾选/拖拽宽度的格子（组名放其后非固定续格）
+        if (fixedPrefix === 0 && layout.hasFixed && leadingAux > 0) {
+          const auxTd = document.createElement('td')
+          auxTd.colSpan = leadingAux
+          auxTd.setAttribute('data-fixed', 'left')
+          auxTd.style.left = '0px'
+          tr.appendChild(auxTd)
+        }
+        if (fixedPrefix > 0) {
+          // 固定区 label 格：附加列 + 窗口序列前段 leafIndex < fixedPrefix 的连续列
+          //（fixed-left 前缀恒在窗口前导固定段，整段消费；遇占位即止）
+          let fixedCells = 0
+          for (; i < seq.length; i++) {
+            const col = seq[i]!.col
+            if (!col) break
+            if ((leafIndex.get(col) ?? 0) >= fixedPrefix) break
+            fixedCells++
+          }
+          td.colSpan = leadingAux + fixedCells
+          indent(td)
+          td.setAttribute('data-fixed', 'left')
+          td.style.left = '0px'
+          td.append(btn, label)
+          if (count) td.append(count)
+          tr.appendChild(td)
+          // 其后剩余叶子（含续格区非固定列/散置 fixed-left/聚合列）走下方统一逐格循环
+        } else {
+          // 组名承载格（无 fixed-left 前缀）：消费「首个聚合列之前」的连续非固定叶子，
+          // 遇 fixed 叶子即止——散置 fixed 叶子留给下方统一逐格循环（applyColumnOffset
+          // 逐格吸附，与数据行同步）；首叶子非 fixed（fp=0 定义）故 span ≥ 1
+          let span = 0
+          for (; i < seq.length; i++) {
+            const col = seq[i]!.col
+            if (!col) break
+            if ((leafIndex.get(col) ?? 0) >= firstAgg || col.fixed) break
+            span++
+          }
+          if (span === 0) labelPending = true
+          else {
+            td.colSpan = span
+            indent(td)
+            td.append(btn, label)
+            if (count) td.append(count)
+            tr.appendChild(td)
+          }
+        }
       }
-      // labelSpan=0 退化防御（首个可见列即聚合列且无 checkable/rowDrag）：无独立 label 空间
-      // ——不渲染 label 格（此前 Math.max(1, 0) 强凑 colSpan=1 会让 ΣcolSpan 比总列数多 1，
-      // 行宽不闭合），label 内容（折叠钮 + 组标签 + 计数 + depth 缩进）并入其后首个真实列格：
-      // 行宽闭合、折叠交互/组标签可见性不回退；占位格不承载 label（窗口外区域不可见）
-      const mergedLabel = labelSpan === 0
-      if (!mergedLabel) {
-        td.colSpan = labelSpan
-        indent(td)
-        td.append(btn, label)
-        if (count) td.append(count)
-        tr.appendChild(td)
-      }
-      let labelPending = mergedLabel
       for (; i < seq.length; i++) {
         const item = seq[i]!
         const cell = document.createElement('td')
@@ -4132,6 +4288,8 @@ export class OASTableBase extends OASElement {
           // 与数据行同口径：data-col + part=cell（固定列 sticky / 宿主选择器命中）
           cell.setAttribute('data-col', col.key)
           cell.setAttribute('part', 'cell')
+          // 固定列吸附：复用数据行 sticky 实现（offsets 同源，含右侧 fixed）
+          this.applyColumnOffset(cell, col, layout)
           const merged = labelPending
           if (merged) {
             labelPending = false
@@ -5562,6 +5720,28 @@ export class OASTableBase extends OASElement {
   }
 
   /**
+   * infinite 已装载行的累计装载坐标偏移 = 累计装载数 - 缓冲行数（钳 >= 0，即已淘汰行数）。
+   * 淘汰只缩缓冲、不减累计计数：保留行的 `data-row-index` / 事件与结构槽 rowIndex /
+   * `aria-rowindex`（以及展示集快照的 rowIndexByKey / keysByIndex）统一用累计装载坐标，
+   * 淘汰不使保留行重新编号。非 infinite 恒 0（本地全量 / windowed 各自口径不变）；
+   * data 替换、排序/过滤/refresh 重置缓冲时累计计数与缓冲同步清零 → 偏移归零。
+   */
+  private infiniteRowOffset(): number {
+    if (!this.infiniteOn()) return 0
+    return Math.max(0, this.infiniteLoadedCount - this.infiniteRows.length)
+  }
+
+  /**
+   * 数据行号起点（全量同步 / 分批渲染的非虚拟循环共用；虚拟渲染经 computeOrdinals +
+   * infiniteRowOffset 同口径）：windowed = 切片绝对行号，infinite = 累计装载偏移，
+   * 其余形态从 0 起。
+   */
+  private dataRowStartIndex(): number {
+    if (this.windowedOn()) return this._winMode.windowStart
+    return this.infiniteRowOffset()
+  }
+
+  /**
    * infinite 请求接线（update 渲染路径统一入口）：与 syncServerRows 同一原因推导纯函数
    * （init 首载 / paginate=页大小变更 / sort / filter，全同值静默）。排序/过滤/页大小变更
    * 先重置装载缓冲（清 cursor/已装载/到底信号）再派首块请求；首次进入（lastRowsRequestState
@@ -6031,8 +6211,33 @@ export class OASTableBase extends OASElement {
     const k = e.key
     if (k.startsWith('Arrow') || k === 'PageUp' || k === 'PageDown' || k === 'Home' || k === 'End') {
       this.scrollIntent = null
+      // 键盘滚动同为真实滚动意图：计入真实滚动代次（分批渲染末帧恢复让位）
+      this.userScrollSeq += 1
       this.swallowScrollSeq = -1
     }
+  }
+
+  /**
+   * 真实滚动意图代次 +1（分批渲染末帧恢复据此让位）：只有**会产生滚动位变化**的真实输入才计入。
+   *
+   * 与 `cancelScrollIntent` 的语义分开：后者绑 pointerdown / touchstart / wheel，是「主动写入守卫
+   * 让位于用户手势」的取消语义，按压即成立（按下滚动条、按下行、触屏 tap 都要摘守卫）；
+   * 但按压 / 点击本身不改变滚动位——若把它也算作「用户滚动」，分批期间点一下行/单元格/勾选框
+   * 就会让末帧放弃恢复保存位，原滚动丢失缺陷在这类交互下复发。故本方法只绑 wheel /
+   * touchmove / 滚动条拖动（见 noteScrollbarDrag），键盘滚动在 cancelScrollIntentOnKey 内计入。
+   */
+  private noteUserScrollGesture = (): void => {
+    this.userScrollSeq += 1
+  }
+
+  /**
+   * 拖动滚动条：pointerdown 命中的目标必须是滚动容器自身（`e.target === wrap`）才算滚动意图。
+   * 依据：原生滚动条不属于 DOM 树，浏览器把滚动条上的按压派给拥有滚动条的元素（即 wrap）；
+   * 而按下行 / 单元格 / 勾选框时 pointerdown 从子元素冒泡上来，target 仍是该子元素。因此
+   * 「target === wrap」可把滚动条拖动与普通点击区分开（内容区按下不改变滚动位，不计入）。
+   */
+  private noteScrollbarDrag = (e: Event): void => {
+    if (e.target === this.wrap) this.userScrollSeq += 1
   }
 
   /**

@@ -21,6 +21,10 @@
  * 各 devWarn 一次（不阻断宿主，照常返回新实例）；请先 destroy() 再重建（destroy 解除
  * 登记，重建无告警）。
  *
+ * 组合守卫：元素 `infinite` 属性在场时创建即 devWarn 一次（整页 data 覆盖与 appendRows
+ * 追加语义冲突，不阻断、不 throw——devWarn 惯例）；infinite 形态请宿主自管
+ * `oas-rows-request` 监听取数。
+ *
  * 数据层缓存（批 C，层在 helper 内、不影响组件协议）：默认启用（TTL 5 分钟、不启用
  * 后台刷新；`cache: false` 完全关闭——关闭档与既有行为逐值一致）。缓存键 = 完整查询
  * 签名（start / end / sortModel / filterValues / groupBy / cursor，与 reason 无关——init /
@@ -137,6 +141,14 @@ export function createServerSource(table: HTMLElement, options: ServerSourceOpti
     devWarn('[oas-table] 该元素已存在 createServerSource 实例——重复创建会双监听双取数，请先 destroy() 再重建')
   }
   serverSourceRegistry.set(table, true)
+  // 组合守卫（文档口径落地实现侧）：helper 的整页 data 覆盖回填与 infinite 的 appendRows
+  // 追加语义冲突（同开时 infinite 优先，helper 回写会重置已装载缓冲）——创建时提醒一次，
+  // 不阻断不 throw（devWarn 惯例）；infinite 形态请宿主自管 oas-rows-request 监听取数
+  if (table.hasAttribute('infinite')) {
+    devWarn(
+      '[oas-table] createServerSource 仅服务服务端分页/分组形态，与 infinite 组合不适用（整页 data 覆盖与 appendRows 追加语义冲突）——请移除 infinite 或改由宿主自管 oas-rows-request 监听取数',
+    )
+  }
   let destroyed = false
   /** 组件最新在途请求序号（事件 detail 权威记录；-1 = 尚未见过任何请求） */
   let latestRequestId = -1

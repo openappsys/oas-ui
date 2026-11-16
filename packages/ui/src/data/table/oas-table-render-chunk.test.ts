@@ -19,6 +19,38 @@ type RafCb = () => void
 let rafHandles: Map<number, RafCb>
 let rafSeq = 0
 
+/**
+ * matchMedia('print') 可变 stub（同 oas-table-print.test.ts 口径）：happy-dom 对 (print) 恒 false
+ * 且无 change 派发，测试以可控 stub 替换 window.matchMedia（组件在 connectedCallback 捕获 MLI）。
+ * 原始引用在模块加载时捕获一次：stub 内部与 afterEach 统一恢复都用它——否则每层 stub 会套住
+ * 上一层（`real` 取自当前 window.matchMedia），后例靠前例残留状态自救，顺序耦合。
+ */
+const originalMatchMedia = window.matchMedia
+
+function stubPrintMedia(): { setPrint(on: boolean): void } {
+  const cbs = new Set<(e: unknown) => void>()
+  const mql = {
+    matches: false,
+    media: 'print',
+    onchange: null,
+    addEventListener: (_: string, cb: (e: unknown) => void) => cbs.add(cb),
+    removeEventListener: (_: string, cb: (e: unknown) => void) => cbs.delete(cb),
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }
+  window.matchMedia = ((query: string) =>
+    query === 'print'
+      ? (mql as unknown as MediaQueryList)
+      : originalMatchMedia.call(window, query)) as typeof window.matchMedia
+  return {
+    setPrint(on: boolean) {
+      mql.matches = on
+      for (const cb of cbs) cb({ matches: on })
+    },
+  }
+}
+
 function stubRaf(): void {
   rafHandles = new Map()
   vi.stubGlobal('requestAnimationFrame', (cb: RafCb): number => {
@@ -76,6 +108,9 @@ describe('OASTable render-chunk 分批渲染（时间切片）', () => {
   afterEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
+    // 恢复原始 matchMedia（stubPrintMedia 直接赋值替换，vi.unstubAllGlobals 管不到）：
+    // 每个用例自带 print 态，不再依赖前一个用例的残留或自救
+    window.matchMedia = originalMatchMedia
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
@@ -344,5 +379,157 @@ describe('OASTable render-chunk 分批渲染（时间切片）', () => {
         .getAttribute('data-selected'),
       '末批按新快照补齐选中态',
     ).toBe('true')
+  })
+
+  it('print 媒体下连接（初始即 print）：全量同步渲染，不排任何分批帧', () => {
+    stubPrintMedia().setPrint(true)
+    const el = mount({ 'render-chunk': '100' })
+    expect(dataRows(el).length, 'print 下不分批——300 行一次性全量落位').toBe(300)
+    expect(rafHandles.size, 'print 下不排分批帧').toBe(0)
+    expect(dataRows(el)[299]!.getAttribute('data-key'), '末行真实渲染').toBe('用户 300')
+  })
+
+  it('screen → print → screen 往返：print 全量不截断 + 在途代次取消 + 恢复分批配置', () => {
+    const printCtl = stubPrintMedia()
+    printCtl.setPrint(false)
+    const el = mount({ 'render-chunk': '100' })
+    expect(dataRows(el).length, 'screen 首帧 chunk 行').toBe(100)
+    expect(rafHandles.size, '在途分批帧').toBe(1)
+    // 分批进行中进入 print：matchMedia change → 重渲染——全量同步、在途句柄取消、陈旧代次作废
+    printCtl.setPrint(true)
+    expect(dataRows(el).length, 'print 下立即全量（非首帧 100 行定格）').toBe(300)
+    expect(rafHandles.size, '在途分批帧已取消').toBe(0)
+    flushRafAll()
+    expect(dataRows(el).length, '陈旧代次剩余帧不得再追加（不泄漏）').toBe(300)
+    expect(dataRows(el)[299]!.getAttribute('data-key'), '末行真实渲染').toBe('用户 300')
+    // 退出 print 回 screen：恢复 render-chunk 分批配置（首帧 chunk 行 + 在途帧重新排队）
+    printCtl.setPrint(false)
+    expect(dataRows(el).length, 'screen 恢复分批首帧').toBe(100)
+    expect(rafHandles.size, 'screen 恢复分批在途帧').toBe(1)
+    flushRafAll()
+    expect(dataRows(el).length, 'screen 分批跑完仍完整').toBe(300)
+  })
+
+  it('print 下合计行随全量同步尾程落位（不分批、不待末帧）', () => {
+    stubPrintMedia().setPrint(true)
+    const el = new OASTable()
+    el.setAttribute('columns', COLUMNS)
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('render-chunk', '100')
+    el.setAttribute('summary', JSON.stringify([{ key: 'age', type: 'sum' }]))
+    el.setAttribute('data', rowData(300))
+    document.body.appendChild(el)
+    expect(dataRows(el).length).toBe(300)
+    const summary = el.shadowRoot!.querySelector('[part="summary-row"]')
+    expect(summary?.getAttribute('part'), 'print 全量渲染同帧落位合计行').toBe('summary-row')
+    expect(summary!.textContent).toContain(String(((1 + 300) * 300) / 2))
+    expect(rafHandles.size).toBe(0)
+  })
+
+  // ===== 分批完成后的滚动位恢复（与全量同步路径同口径） =====
+  // 缺陷背景：垫高在首帧被提前移除 → 首帧 200 行的高度成为可达上界，scrollTop 被钳制；
+  // 异步末帧也不恢复。修复后垫高保留到末帧，内容完整后移除并写回保存位。
+
+  /** 同量替换数据（行数不变、内容全变）——触发一轮新的分批渲染 */
+  const replacedData = (n: number): string =>
+    JSON.stringify(Array.from({ length: n }, (_, i) => ({ name: `改名 ${i + 1}`, age: i + 1 })))
+
+  it('首帧保留稳定清空的垫高，末帧内容完整后移除（防首帧高度钳制）', () => {
+    const el = mount({ 'render-chunk': '100' })
+    const body = el.shadowRoot!.querySelector('tbody') as HTMLElement
+    // happy-dom 无布局：显式给旧表体一个高度，模拟真实浏览器稳定清空前的度量
+    Object.defineProperty(body, 'offsetHeight', { value: 9245, configurable: true })
+    el.setAttribute('data', replacedData(300))
+    expect(dataRows(el).length, '首帧 chunk 行').toBe(100)
+    expect(body.style.minHeight, '首帧不得提前拆垫高').toBe('9245px')
+    flushRafAll()
+    expect(dataRows(el).length).toBe(300)
+    expect(body.style.minHeight, '末帧内容完整后移除垫高').toBe('')
+  })
+
+  it('末帧内容完整后写回保存的滚动位（分批期间被钳回也恢复）', () => {
+    const el = mount({ 'render-chunk': '100', 'max-height': '400' })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 300
+    el.setAttribute('data', replacedData(300))
+    expect(dataRows(el).length).toBe(100)
+    wrap.scrollTop = 0 // 模拟浏览器在内容不足时的钳制
+    flushRafAll()
+    expect(dataRows(el).length).toBe(300)
+    expect(wrap.scrollTop, '末帧按保存位恢复（旧值不被钳制位吞掉）').toBe(300)
+  })
+
+  it('分批期间主动写入滚动位（writeScrollPosition）→ 末帧不用旧值回滚', () => {
+    const el = mount({ 'render-chunk': '100', 'max-height': '400' })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 300
+    el.setAttribute('data', replacedData(300))
+    expect(dataRows(el).length).toBe(100)
+    wrap.scrollTop = 0 // 模拟首帧钳制
+    el.writeScrollPosition(900) // 分批期间用户主动写入（键盘导航 / 滚轮导航同口径入口）
+    flushRafAll()
+    expect(dataRows(el).length).toBe(300)
+    expect(wrap.scrollTop, '主动写入优先于帧尾恢复（不得被旧值覆盖）').toBe(900)
+  })
+
+  it('分批期间真实用户手势滚动（wheel）→ 末帧不把位置拉回保存位', () => {
+    const el = mount({ 'render-chunk': '100', 'max-height': '400' })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 300
+    el.setAttribute('data', replacedData(300))
+    expect(dataRows(el).length).toBe(100)
+    // 首帧钳制后用户滚轮手势滚到别处（原生滚动不经过 writeScrollPosition，无写入代次）
+    wrap.scrollTop = 0
+    wrap.dispatchEvent(new Event('wheel'))
+    wrap.scrollTop = 120
+    flushRafAll()
+    expect(dataRows(el).length).toBe(300)
+    expect(wrap.scrollTop, '用户手势位置优先于保存位').toBe(120)
+  })
+
+  it('分批期间点击行 / touchstart（无滚动）不算滚动意图 → 末帧仍恢复保存位', () => {
+    const el = mount({ 'render-chunk': '100', 'max-height': '400' })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 300
+    el.setAttribute('data', replacedData(300))
+    expect(dataRows(el).length).toBe(100)
+    wrap.scrollTop = 0 // 模拟首帧钳制
+    // 普通按压 / 点击数据行单元格（含触屏 tap 的 touchstart）：不产生滚动位变化
+    const cell = dataRows(el)[0]!.querySelector('td')!
+    for (const type of ['pointerdown', 'touchstart', 'pointerup', 'click']) {
+      cell.dispatchEvent(new Event(type, { bubbles: true }))
+    }
+    flushRafAll()
+    expect(dataRows(el).length).toBe(300)
+    expect(wrap.scrollTop, '按压/点击不让位：末帧仍恢复保存位').toBe(300)
+  })
+
+  it('分批期间触摸拖动（touchmove）→ 末帧不把位置拉回保存位', () => {
+    const el = mount({ 'render-chunk': '100', 'max-height': '400' })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 300
+    el.setAttribute('data', replacedData(300))
+    expect(dataRows(el).length).toBe(100)
+    wrap.scrollTop = 0
+    wrap.dispatchEvent(new Event('touchmove'))
+    wrap.scrollTop = 150
+    flushRafAll()
+    expect(dataRows(el).length).toBe(300)
+    expect(wrap.scrollTop, '触摸拖动是真实滚动意图，位置优先于保存位').toBe(150)
+  })
+
+  it('分批期间拖动滚动条（pointerdown 命中滚动容器自身）→ 末帧不把位置拉回保存位', () => {
+    const el = mount({ 'render-chunk': '100', 'max-height': '400' })
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    wrap.scrollTop = 300
+    el.setAttribute('data', replacedData(300))
+    expect(dataRows(el).length).toBe(100)
+    wrap.scrollTop = 0
+    // 滚动条按压的事件目标即滚动容器自身（内容区按压 target 是行/单元格）
+    wrap.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    wrap.scrollTop = 180
+    flushRafAll()
+    expect(dataRows(el).length).toBe(300)
+    expect(wrap.scrollTop, '滚动条拖动是真实滚动意图，位置优先于保存位').toBe(180)
   })
 })

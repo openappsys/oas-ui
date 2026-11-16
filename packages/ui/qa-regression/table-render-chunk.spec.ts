@@ -99,6 +99,102 @@ test('table render-chunk：2000 行首帧 200 → 逐帧追加至全量 → 滚�
   expect(issues, `console 告警集：\n${issues.join('\n')}`).toEqual([])
 })
 
+test('table render-chunk：滚到中部后排序（含分批中点击行），末帧恢复滚动位 + 首帧垫高精确', async ({ page }) => {
+  const issues = collectConsoleIssues(page)
+  await gotoTablePage(page)
+
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-table')
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄', sortable: true },
+      ]),
+    )
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('render-chunk', '200')
+    el.setAttribute('max-height', '400')
+    // 初始数据 age 升序，并先落到「age 升序」排序态：随后点表头 = asc → desc，只写 sort-order
+    // 一个属性（单次分批渲染）——首帧垫高可精确断言为排序前表体高度；再点一次 = desc → 无排序
+    // （清空 sort-key + sort-order 两个属性 = 连续两次渲染），覆盖「继承滚动位目标」路径
+    el.setAttribute('sort-key', 'age')
+    el.setAttribute('sort-order', 'asc')
+    el.setAttribute(
+      'data',
+      JSON.stringify(Array.from({ length: 2000 }, (_, i) => ({ name: `用户 ${i + 1}`, age: i + 1 }))),
+    )
+    const host = document.createElement('div')
+    host.style.cssText = 'position:fixed;left:8px;top:8px;z-index:2147483647;background:#fff;padding:4px;width:420px'
+    host.appendChild(el)
+    document.body.appendChild(host)
+
+    const rows = (): number => el.shadowRoot!.querySelectorAll('tbody tr.row').length
+    const body = (): HTMLElement => el.shadowRoot!.querySelector('tbody') as HTMLElement
+    const pad = (): string => body().style.minHeight
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    const nextFrame = (): Promise<void> =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve())
+      })
+    const waitFull = async (): Promise<void> => {
+      for (let guard = 0; rows() < 2000 && guard < 600; guard++) await nextFrame()
+    }
+    // 首次分批渲染跑完（2000 行）后再滚到中部，保证目标位置在可达范围内
+    await waitFull()
+    wrap.scrollTop = 46022
+    wrap.dispatchEvent(new Event('scroll'))
+    await nextFrame()
+    await nextFrame()
+    const before = wrap.scrollTop
+    const heightBefore = wrap.scrollHeight
+    const bodyHeightBefore = body().offsetHeight
+    const padBefore = pad()
+    // 表头点击排序（真实用户路径）：单属性写入 → 一轮分批渲染
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    const firstFramePad = pad()
+    // 分批进行中点击数据行（真实交互，不做任何滚动）：不得让末帧放弃恢复保存位
+    const cell = el.shadowRoot!.querySelector<HTMLElement>('tbody tr.row td[data-col="name"]')!
+    for (const type of ['pointerdown', 'touchstart', 'pointerup', 'click']) {
+      cell.dispatchEvent(new Event(type, { bubbles: true }))
+    }
+    await waitFull()
+    const afterSort = wrap.scrollTop
+    const sortedFirstRow = el.shadowRoot!.querySelector('tbody tr.row')!.textContent ?? ''
+    // 再点一次：desc → 无排序（清空两个排序属性 = 连续两轮渲染）
+    el.shadowRoot!.querySelector<HTMLElement>('th.sortable')!.click()
+    await waitFull()
+    return {
+      before,
+      heightBefore,
+      bodyHeightBefore,
+      padBefore,
+      firstFramePad,
+      afterSort,
+      afterClear: wrap.scrollTop,
+      afterLeft: wrap.scrollLeft,
+      afterHeight: wrap.scrollHeight,
+      total: rows(),
+      sortedFirstRow,
+      lastFramePad: pad(),
+    }
+  })
+
+  expect(r.total, '分批完成：全量 2000 行').toBe(2000)
+  expect(r.padBefore, '排序前无垫高（idle 态）').toBe('')
+  // 首帧垫高精确等于排序前表体高度（不依赖任何表头/行高常量；h=0 时垫高会是空串，同样被此断言拦下）
+  expect(r.firstFramePad, '首帧垫高 = 排序前 tbody.offsetHeight').toBe(`${r.bodyHeightBefore}px`)
+  expect(r.sortedFirstRow, '排序生效（desc 后首行为 age=2000 的用户 2000）').toContain('用户 2000')
+  expect(r.afterHeight, '末帧内容高度与排序前一致（行高不变）').toBe(r.heightBefore)
+  // 核心行为：单次渲染与连续两次渲染的末帧都恢复排序前 scrollTop
+  //（修复前停在首帧可达上界 8845 / 被清空排序时丢到 0）
+  expect(r.afterSort, '首轮分批（单次渲染）末帧恢复 scrollTop；分批中点击行不让位').toBe(r.before)
+  expect(r.afterClear, '清空排序（连续两轮渲染）末帧仍恢复 scrollTop').toBe(r.before)
+  expect(r.afterLeft).toBe(0)
+  expect(r.lastFramePad, '末帧内容完整后移除垫高').toBe('')
+  expect(issues, `console 告警集：\n${issues.join('\n')}`).toEqual([])
+})
+
 test('table render-chunk × height 同开：虚拟窗口渲染接管（devWarn 为 dev-only，由单测覆盖）', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (m) => {

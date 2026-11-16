@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
 import { OASTable } from '../index.js'
@@ -1454,5 +1454,56 @@ describe('table/range 复审边界回归', () => {
     cellAtDataIndex(el, 60, 'name').dispatchEvent(paste)
     expect(events).toHaveLength(1)
     expect(events[0]!.startKey).toBe('r55')
+  })
+})
+
+describe('table range：infinite 淘汰后的累计装载坐标', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** infinite 挂载 + 远离底部的几何（happy-dom 无布局：0,0,0 会落进触底阈值触发续派） */
+  function mountInfiniteEvicted(): OASTable {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute('infinite', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('total', '100')
+    el.setAttribute('max-loaded-rows', '5')
+    el.setAttribute('data', '[]')
+    document.body.appendChild(el)
+    const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    Object.defineProperty(wrap, 'clientHeight', { value: 100, configurable: true })
+    Object.defineProperty(wrap, 'scrollHeight', { value: 5000, configurable: true })
+    wrap.scrollTop = 0
+    for (const from of [0, 4, 8]) {
+      el.appendRows(Array.from({ length: 4 }, (_, i) => ({ name: `r${from + i}`, age: from + i })))
+    }
+    return el
+  }
+
+  it('淘汰后按行键选择仍命中保留行（keysByIndex / rowIndexByKey 用累计坐标）', () => {
+    const el = mountInfiniteEvicted()
+    // 缓冲 r7..r11（累计装载 12 行，淘汰 7 行）——r7 的累计坐标 = 7
+    selectByKey(el, { key: 'r7', col: 'name' })
+    expect(getRangeSelection(el)).toEqual({ start: { row: 7, col: 'name' }, end: { row: 7, col: 'name' } })
+    expect(cellAtDataIndex(el, 7, 'name').classList.contains('range-selected')).toBe(true)
+    // 选中末行（累计坐标 11）同样命中
+    selectByKey(el, { key: 'r11', col: 'name' })
+    expect(getRangeSelection(el)).toEqual({ start: { row: 11, col: 'name' }, end: { row: 11, col: 'name' } })
+    expect(cellAtDataIndex(el, 11, 'name').classList.contains('range-selected')).toBe(true)
+    expect(cellAtDataIndex(el, 7, 'name').classList.contains('range-selected')).toBe(false)
   })
 })

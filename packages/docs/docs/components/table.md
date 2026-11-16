@@ -331,11 +331,13 @@ table.addEventListener('oas-edit', (e) => {
 
 `render-chunk="N"`（N 为合法正整数）开启**分批渲染**（时间切片）：首帧同步渲染前 N 行让表格立即可见，其余行经 `requestAnimationFrame` 逐帧追加（每帧 N 行）直至完整。缺省 / `0` / 非法值保持现有**全量同步渲染**，行为零漂移。
 
+**打印视图**：`print` 媒体（浏览器打印 / 导出 PDF）下自动旁路分批、**全量同步渲染**——打印快照是单次截取，只含分批中段已渲染的行会**缺行**；与行/列窗口「print 恒全量」同口径（感知机制与打印几何见「大数据量（虚拟滚动）」节的打印视图说明），退出打印后恢复分批配置。
+
 **适用场景**：超大表格的**首帧可用性**——非虚拟表格（不设 `height`）一次同步渲染几千行会长时间阻塞首帧，分批渲染把长任务切成多帧，首屏先出前 N 行。
 
 **与虚拟滚动的区别**：`height` 虚拟滚动是**空间**切片（DOM 只保留可视窗口行，行数再多 DOM 体积也恒定，代价是滚动容器限高、行高定高）；`render-chunk` 是**时间**切片（最终全量行进 DOM，不限高、行高自然）。两者解决不同问题、互为互补档位；同开时以虚拟滚动为准（告警一次并忽略 `render-chunk`）。
 
-**交互保证**：追加只在尾部进行——滚动位置、选择、行内编辑不受分批影响；分批期间变更选择 / 展开，后续批次按当时的值落位（已渲染行走行级补丁）；数据更新（排序 / 过滤 / 翻页 / 换数据）会取消未完成的分批代次并重新开始；`aria-rowcount` 首帧即写全量行数，读屏播报与最终一致。分组 / 树形行随展示序列切段渲染，结构渲染（structural-render）逐行回调与全量渲染同口径；合计行、infinite 底部状态行与 merge 列归并在末帧落位（分批中段不做跨行合并，末帧一次归并与全量渲染同结果）。
+**交互保证**：追加只在尾部进行——全量重渲染末帧恢复原滚动位置（真实滚动 / 主动写入优先，普通点击不误判为滚动）；选择、行内编辑不受分批影响；分批期间变更选择 / 展开，后续批次按当时的值落位（已渲染行走行级补丁）；数据更新（排序 / 过滤 / 翻页 / 换数据）会取消未完成的分批代次并重新开始；`aria-rowcount` 首帧即写全量行数，读屏播报与最终一致。分组 / 树形行随展示序列切段渲染，结构渲染（structural-render）逐行回调与全量渲染同口径；合计行、infinite 底部状态行与 merge 列归并在末帧落位（分批中段不做跨行合并，末帧一次归并与全量渲染同结果）。
 
 ## 多行单元格
 
@@ -693,7 +695,7 @@ const source = createServerSource(table, {
 
 缓存语义速查：键 = 完整查询（`start` / `end` / `sortModel` / `filterValues` / `groupBy` / `cursor`，与请求原因无关——`init` / `sort` / `filter` / `paginate` / `group` 同属查询态，翻页往返与分组回切命中同一条目；排序组序敏感、过滤键序不敏感、值类型敏感）；命中（未过期）直接回填（`data` / `total` 属性写与成功路径同一通道，requestId 校验语义保持）；命中（已过期）默认重新取数，SWR 开启时走两阶段；同键在途复用同一 Promise。宿主数据在服务端被外部修改后，请用 `refresh({ purge: true })`（单页强刷用 `refresh()`）；需要「每次都真取」的场景（非幂等 fetcher / 实时性敏感）请 `cache: false`。
 
-两点提示：**适用面**——helper 仅服务「服务端分页/分组」形态，**与 `infinite` 组合不适用**（缓存的整页 `data` 覆盖回填与 `appendRows` 的追加语义冲突；infinite 形态请 `cache: false` 或宿主自管取数）。**total 回写语义**——缓存条目的 `total` 随命中一并回写，而 `total` 是页响应字段：跨页期间服务端数据变化（增删行）时，命中回填可能让页数回跳；需要强一致页数请用 `refresh({ purge: true })`。
+两点提示：**适用面**——helper 仅服务「服务端分页/分组」形态，**与 `infinite` 组合不适用**（整页 `data` 覆盖回填与 `appendRows` 的追加语义冲突，`cache: false` 只关缓存、不能解决该冲突）：创建时元素 `infinite` 属性在场会 devWarn 一次提醒，不阻断——**infinite 形态请不要创建此 helper，由宿主自管 `oas-rows-request` 监听取数**。**total 回写语义**——缓存条目的 `total` 随命中一并回写，而 `total` 是页响应字段：跨页期间服务端数据变化（增删行）时，命中回填可能让页数回跳；需要强一致页数请用 `refresh({ purge: true })`。
 
 超时与取消：组件不内置请求超时——超时是数据层（宿主 fetcher）的职责。在 `fetchRows` 内组合中止信号再交给宿主 fetch：`AbortSignal.any([signal, AbortSignal.timeout(8000)])`（helper 的 `signal` + 8s 超时取先到者；`AbortSignal.any`/`AbortSignal.timeout` 基线 2024 年，各引擎 2023-08 ~ 2024-04 陆续支持——旧环境可 `typeof AbortSignal.any === 'function'` 检测，降级为手动 AbortController + setTimeout 组合或宿主侧超时）——超时即 reject，与其它失败走同一路径：自动经 helper 桥接错误条 + 可重试，无需自建超时反馈：
 
@@ -763,7 +765,7 @@ fetchRows: async ({ signal, ...rest }) => {
   </div>
 </DemoBlock>
 
-限制说明：聚合口径 = 服务端当前返回切片的组内聚合（跨页组的全组聚合由服务端按 `groupBy` 查询自行决定——分页与分组叠加时，每个分组行只覆盖其数据行所在页的切片）；导出/打印仍按当前页切片（含组内数据行，组行不入导出）；固定列（sticky）在组行聚合格上未接线（横滚时组行吸附与数据行不同步），属后续增量。
+限制说明：聚合口径 = 服务端当前返回切片的组内聚合（跨页组的全组聚合由服务端按 `groupBy` 查询自行决定——分页与分组叠加时，每个分组行只覆盖其数据行所在页的切片）；导出/打印仍按当前页切片（含组内数据行，组行不入导出）；固定列（sticky）在组行已接线——聚合格与数据行同口径逐格吸附（复用同一 sticky 偏移）；label 区含固定列时拆格：固定区 label 格（前导附加列 + 连续 fixed-left 前缀）sticky left:0 承载折叠钮/组名/计数，非固定列续格逐格空渲染（不吸附、不重复组名）——吸附宽度不含非固定列，深滚全区间组名保持可见、与数据行固定列同步。无 fixed-left 前缀且 hasFixed 附加列在场时：附加列做空占位吸附格，组名放非固定续格（不挤进勾选/拖拽宽度）。label 区无固定列时保持单一非吸附跨列 label 格（形态不变）。
 
 ### 服务端数据方案选用决策表
 
@@ -793,7 +795,7 @@ fetchRows: async ({ signal, ...rest }) => {
 | 行拖拽 | 禁用 + devWarn（行序语义服务端持有） | windowed 虚拟形态同样不可用（虚拟窗口行序不稳定，虚拟不兼容守卫） |
 | 列拖拽 / `setColumnOrder` | **支持（展示态）**：写回 column-keys + 派发 oas-column-order，与 client 同语义（列序是显示层语义，与服务端行序无关——批 F 契约）；列设置面板移动按钮照常可用 | windowed 同口径（本就无此闸门） |
 | merge / span-method | 禁用 + devWarn | **同口径**（两边都跳过本地合并——占位行/切片边界与跨行合并相互腐蚀） |
-| 填充柄 / 区域选择 | 页内相对行号语义（`data-row-index` 为页内 0 起序）；只写当前已装载行、不静默扩行 | 同口径（windowed 同为只写已装载行、不静默扩行） |
+| 填充柄 / 区域选择 | 页内相对行号语义（`data-row-index` 为页内 0 起序）；只写当前已装载行、不静默扩行 | 同口径（windowed 同为只写已装载行、不静默扩行）。infinite 下同一列语义为**仅已装载行可操作 + 累计装载坐标**（`data-row-index` 与 `aria-rowindex` 同坐标，淘汰不重编号） |
 | 过滤面板候选值 | 来自当前页数据（页内语义，面板照常打开） | 不同口径：windowed 下面板不打开（宿主监听 `oas-filter-change` 自行实现全量过滤） |
 | 历史（撤销） | 仅记录本地操作，翻页即失效 | — |
 | 编辑 | 页内编辑仅本地、翻页回填即丢失（v1 无服务端编辑回写契约） | — |
@@ -843,13 +845,13 @@ fetchRows: async ({ signal, ...rest }) => {
 
 失败通道与 server 模式共用：`reportRowsError`（同序号校验）→ 保留旧数据 + `oas-rows-error` + 内建错误条（`role="alert"`，重试按钮调 `refreshRows()`）。
 
-A11y：`aria-rowcount` 用已知 total（未知时省略不写——读屏不作总数播报）；在途装载 `aria-busy` 同步；行 `aria-rowindex` = 装载序 + 1。
+A11y：`aria-rowcount` 用已知 total（未知时省略不写——读屏不作总数播报）；在途装载 `aria-busy` 同步；行 `aria-rowindex` = 累计装载坐标 + 1（淘汰不重编号）。
 
 **与虚拟滚动（`height`）可叠加**：已装载缓冲整体走既有虚拟化窗口切片（大数据量推荐组合；触底检测基于滚动容器几何，虚拟与非虚拟同阈值）。
 
 **缓冲上界与淘汰（`max-loaded-rows`，批 G）**：缺省无上界（已装载缓冲随滚动线性增长，超长会话由宿主经到底信号 / `refreshRows()` 收敛）。配置合法正整数 N 后，缓冲收敛到**最近 N 行**——`appendRows` 追加超界时淘汰最旧行，滚动位按淘汰行数 × 行高自动回拉（当前视口行不跳）。淘汰只缩缓冲不减计数：`detail.start`（游标链定位）与「装满 total 即到底」判定按**累计装载数**参与，宿主游标与到底信号不受上界影响；`data` 属性替换写重置缓冲与计数并按上界裁剪。非法值一次性提示并按无上界处理。infinite 与 windowed 互斥（同开 windowed 优先并告警一次），需要窗口化数据缓冲的场景直接采用 windowed 形态。
 
-填充柄 / 区域选择 / 过滤面板 / 历史 / 编辑在 infinite 下均为**已装载行相对语义**（`data-row-index` 为装载序 0 起序）——与 server 模式页内语义同型，详见上方能力闸门表。
+填充柄 / 区域选择 / 过滤面板 / 历史 / 编辑在 infinite 下均为**已装载行语义**：**仅已装载行可操作**（不静默扩展未装载区域）；行号是**累计装载坐标**（`data-row-index` 与 `aria-rowindex` 同坐标，淘汰不使保留行重新编号——缓冲收敛到最近 N 行后，保留行的行号仍是其装载序）——与 server 模式页内语义同型，详见上方能力闸门表。
 
 ## 列过滤
 
@@ -2878,7 +2880,7 @@ document.querySelector('table')!.appendChild(tbody)
 | `setCapabilityOptions` | `setCapabilityOptions(name: string, options: unknown): void` | Pro 能力通用选项入口：如 `table.setCapabilityOptions('format', rules)`；写入后触发重渲染 |
 | `effectiveColumns` | `effectiveColumns(): TableColumn[]` | 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。 |
 | `getColumns` | `getColumns(): TableColumn[]` | 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） |
-| `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | 展示集只读快照：供 range 等能力按行键解析离窗坐标与扁平滚动位置；map 复用缓存，调用方不得修改 |
+| `getDisplaySnapshot` | `getDisplaySnapshot(): TableDisplaySnapshot \| null` | 展示集只读快照：供 range 等能力按行键解析绝对数据行号（windowed 含窗口偏移、infinite 含累计装载偏移，缓冲淘汰不重编号）与缓冲内扁平滚动位置；map 复用缓存，调用方不得修改 |
 | `translateText` | `translateText(key: string, params?: Record<string, string \| number>): string` | 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。 |
 | `paintCell` | `paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void` | 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。 |
 | `scrollToRow` | `scrollToRow(key: string): boolean` | `scrollToRow(key: string): boolean`：滚动到指定行（virtual / windowed 视口生效，其余形态返回 false；virtual 非 windowed 仅支持扁平数据）。windowed 树形懒装载收起锚定的宿主配方底座：回填 total 突变后调它复位视口（锚定滚动走 scroll 通道，可能派发 reason=scroll 的 oas-window-request——与滚动驱动的窗口回填同语义） |

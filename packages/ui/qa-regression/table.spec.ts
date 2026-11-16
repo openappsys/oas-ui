@@ -6378,6 +6378,39 @@ test('table 打印视图 × windowed：已装载切片照常渲染（数据在�
   expect(errors, 'console 零 error').toEqual([])
 })
 
+// 打印视图回归 × render-chunk：print 媒体下分批渲染必须旁路为全量同步渲染——否则打印快照
+// 只含首帧 chunk 行（缺行）。冻结 rAF（返回非 0 句柄但永不执行）让分批定格首帧，使断言确定性。
+test('table 打印视图 × render-chunk：print 下全量行进 DOM（不分批定格），screen 恢复分批首帧', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => !!document.querySelector('oas-table')?.shadowRoot)
+  await page.evaluate(() => {
+    // 冻结 rAF：分批渲染首帧落位后排队的追加帧永不执行 → 屏显定格在首帧 chunk 行
+    let rafId = 0
+    window.requestAnimationFrame = (() => ++rafId) as typeof window.requestAnimationFrame
+    const el = document.createElement('oas-table')
+    el.id = 'table-print-chunk-e2e'
+    el.setAttribute('render-chunk', '100')
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '名称' }]))
+    el.setAttribute('data', JSON.stringify(Array.from({ length: 300 }, (_, i) => ({ name: `行${i}` }))))
+    document.body.prepend(el)
+  })
+  const t = page.locator('#table-print-chunk-e2e')
+  // 屏显：分批首帧 = 100 行（rAF 冻结，追加帧不执行）
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(100)
+  await expect(t.locator('tbody tr[part="row"]').last()).toContainText('行99')
+  // print 媒体：matchMedia change → 重渲染全量同步（分批旁路）——300 行一次性进 DOM
+  await page.emulateMedia({ media: 'print' })
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(300)
+  await expect(t.locator('tbody tr[part="row"]').last()).toContainText('行299')
+  // 退出打印回 screen：恢复 render-chunk 分批配置（首帧 100 行重新定格，陈旧代次不得泄漏追加）
+  await page.emulateMedia({ media: 'screen' })
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(100)
+  await expect(t.locator('tbody tr[part="row"]').last()).toContainText('行99')
+  expect(errors, 'console 零 error').toEqual([])
+})
+
 // 数据导入 demo：文件入口真实上传 CSV → 表格出数据 + 结果区反馈 N 行 M 列（demo 交互可见反馈固化）
 test('table 数据导入 demo：上传 CSV 文件 → 表格渲染导入数据 + 反馈「导入了 N 行 M 列」', async ({ page }) => {
   const errors: string[] = []
