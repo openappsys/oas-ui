@@ -77,6 +77,21 @@ i18n 死键**不在此重复建设**：`packages/i18n/src/slices/completeness.te
 - 演示：`pnpm dev`（predev 先跑 ui build 保证 dist 完整，再并行起 core/i18n/icons/ui 的 watch 构建 + Vitepress dev，固定 5175 端口 strictPort，被占即报错不自增；dev 与生产共用 `packages/*/dist`，改组件源码 → watch 构建更新 dist → dev server 自动 full reload，无需重启/清缓存）
 - **提交纪律**：涉及组件/样式/Shadow DOM 的改动，提交前必跑 `pnpm build`（happy-dom 与 vue-tsc 均抓不到 scoped CSS 语法错误，只有真实构建能抓）
 
+### 未引用内部导出报告（报告型，不阻断）
+
+- **命令**：`pnpm qa:dead-exports` 输出文本报告（扫描文件数 / 入口数 / 候选总数 / kind 分布 / 逐条 `file:line name (kind)`）；`pnpm qa:dead-exports --json` 输出结构化数组（stdout 只有 JSON，便于脚本消费）；`pnpm qa:dead-exports --only-runtime` 排除 `type` / `interface`，只看运行时导出。
+- **定位**：只报告「非公共入口可达 + 仓库内零引用」的内部导出候选，**不接 CI、不接 `qa:audit:check`、不进发布门禁**。候选数量不是错误指标，不设失败阈值、不自动删代码；单测随 `pnpm release:check:test` 执行，只保证报告器本身行为正确。
+- **公共入口排除规则**（命中任一即不算候选）：包内全部 `index.ts` / `ssr.ts`；各包 `package.json#exports` 指向的源文件（如 `./dist/format-byte.js` → `src/format-byte.ts`，通配子路径无法静态枚举、跳过）。入口沿相对 `from './x.js'` 递归收集导出名，覆盖 `export *`、`export * as ns`、`export { A as B }`、`export type { ... }`。
+- **引用口径**：全仓 TS（含单测 / qa-regression / docs / fixtures）与构建脚本 JS（`.mjs/.cjs/.js`）；注释、字符串、模板内容、正则内容不算引用；声明所在文件自身不计引用（同文件内部使用不能证明 `export` 必要）。排除 `node_modules` / `dist` / `.opencode` / `test-results` / VitePress 缓存等生成物目录。
+- **候选来源**：非入口实现文件的顶层 `const/let/var/function/class/interface/type/enum`；单测 / e2e / fixture / `.d.ts` 的导出不作为候选（不是发布实现）。
+- **不据零引用直接删公共 API**：仓库内零引用不等于外部消费者不引用——公开入口之外的实现也可能被宿主直接 import，或经文档示例、SSR 快照、动态属性名等非静态方式使用。候选只说明「这个 `export` 可能不必要」，不是删除许可。
+- **候选清理原则**：
+  1. 先看 kind：`type` / `interface` 只影响类型可见性，去掉 `export` 风险最低；`const` / `function` / `class` / `enum` 是运行时导出，优先确认是否仅同文件使用。
+  2. 确认没有扫描面之外的引用：`.md` 里的 demo `<script setup>`、构建脚本、CDN 示例、宿主仓直连 import 都不完全在扫描面内。
+  3. 确认不在 `package.json#exports` 通配子路径的落点上（如 `@oas-ui/ui/*` 会把对应目录的 `index.ts` 变成公开入口）。
+  4. 一次只清同文件的一组导出，跑 `pnpm typecheck` + `pnpm test`；涉及对外类型面时同步 `pnpm api:check`。
+  5. 不要为了「候选归零」反向给内部实现补 `export` 或加依赖。
+
 ### API 表格自动化
 
 - **单一数据源纪律**：API 结构元数据（属性/property/事件/插槽/类型/默认值）的权威来源是组件源码；说明文案的权威来源是 `docs/api-descriptions.{zh,en}.json`；md 的 `## API` 章节是生成物，**禁止手改**

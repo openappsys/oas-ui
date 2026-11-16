@@ -65,6 +65,7 @@
 - **构建期样式空白折叠（safe minify）**：`foldCssWhitespace`（引号状态机保护）——只做空行去重 + 引号外连续空白折叠，不改任何声明/选择器/值文本、引号内容逐字保留；产物 `cdn.js` gzip −16.4 KB（−2.2%）、全量 dist gzip 合计 −48 KB。金本位 + 全部样式源断言 + visual.spec（含 dark）零差异；语义等价证明（216 个样式源 277 段归一化对比 0 不一致）。
 - **`oas-table` 内联样式抽取为 `style/` 模块（批 E）**：组件内联 STYLE 抽取为 style/base 基础段 + style/features 特性段两模块（逐字节等价、零视觉变化）——纯内部重构，公开面零变化。
 - **WebKit 时序用例治理**：过滤面板触屏 / auto-height 测量回填 / fill-handle 真指针拖拽 / 浮层编辑器四条用例改确定性语义等待与稳定几何——触屏固定坐标并显式断言命中前提、动态行高按长短行同帧真值轮询、填充柄在预览命中后松手、浮层编辑器等待编辑装饰与重建静默后恢复单次双击；去除固定 sleep 与重试动作，WebKit `grepInvert` 隔离全部移除。WebKit 四条 `repeat-each=5`、`retries=0` 共 20/20，Chromium / Firefox 同集合通过。
+- **未引用内部导出报告（`qa:dead-exports`）**：新增只读报告命令，按包内 `index.ts` / `ssr.ts` 与 `package.json#exports` 反推公共入口，列出「非公共入口可达且全仓零引用」的内部导出候选（`--json` 结构化输出、`--only-runtime` 只看运行时导出）。报告型定位：不接 CI 与发布门禁、不设失败阈值、不自动删代码；候选只说明 `export` 可能不必要，清理需先排除扫描面之外的引用。
 
 所有显著变更记录于此。
 
