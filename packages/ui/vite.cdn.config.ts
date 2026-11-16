@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'node:path'
-import { stripStyleComments } from './scripts/strip-css-comments'
+import { stripStyleComments, foldStyleComments } from './scripts/strip-css-comments'
 
 /**
  * CDN IIFE bundle 构建（多入口，按需打包族）：
@@ -31,7 +31,7 @@ export default defineConfig(() => {
         enforce: 'pre',
         transform(code, id) {
           if (!/[\\/]packages[\\/]ui[\\/]src[\\/].*\.ts$/.test(id)) return null
-          const out = stripStyleComments(code)
+          const out = foldStyleComments(stripStyleComments(code))
           return out === code ? null : { code: out, map: null }
         },
       },
