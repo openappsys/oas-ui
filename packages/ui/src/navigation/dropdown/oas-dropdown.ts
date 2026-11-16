@@ -610,7 +610,8 @@ export class OASDropdown extends OASElement {
     return this.isCoarsePointer() && this.hasTrigger('hover')
   }
 
-  /** click/tap 通道触发 gate：trigger 含 click（或触屏降级 tap 切换接管）且未 disabled */
+  /** click/tap 通道触发 gate：trigger 含 click（或触屏降级 tap 切换接管）且未 disabled。
+      与下方 hover / focus gate 一样把 disabled 前置；操作数均为纯读取，布尔结果与原判定一致 */
   private isTapToggleEnabled(): boolean {
     if (this.hasAttr('disabled')) return false
     if (this.hasTrigger('click')) return true
