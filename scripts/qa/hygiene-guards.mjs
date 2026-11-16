@@ -1732,3 +1732,45 @@ export function applyTwinPredicateExceptions(violationList, exceptions) {
   const stale = exceptions.filter((_, i) => !used.has(i))
   return { violations: remaining, stale }
 }
+
+/**
+ * 重复 devWarn 文案：同一「纯字符串字面量」消息出现在多个 devWarn 调用点。
+ *
+ * 只统计直接传单/双引号字面量的调用——模板字符串（动态前缀/插值）与常量引用不在内，
+ * 后两者正是推荐的去重形态。devWarn 是 dev-only 通道，文案就近组件比集中登记更利于
+ * 按需加载与上下文；只有完全相同的字面文案才应抽共享常量。
+ */
+export function collectDevWarnLiterals(source) {
+  const stripped = stripCommentsKeepStrings(source)
+  const out = []
+  for (const m of stripped.matchAll(/^[ \t]*devWarn\(\s*(['"])((?:\\.|(?!\1)[^\\])*)\1/gm)) {
+    out.push({ line: stripped.slice(0, m.index).split('\n').length, message: m[2] })
+  }
+  return out
+}
+
+/** 按文案聚合，返回出现次数 ≥2 的组（附每处 file/line）。 */
+export function findDuplicateDevWarnLiterals(entries) {
+  const by = new Map()
+  for (const entry of entries) {
+    if (!by.has(entry.message)) by.set(entry.message, [])
+    by.get(entry.message).push(entry)
+  }
+  return [...by.entries()]
+    .filter(([, list]) => list.length > 1)
+    .map(([message, list]) => ({ message, occurrences: list }))
+}
+
+/** 全量审计：返回重复文案组（空数组 = 无重复）。 */
+export function auditDuplicateDevWarnMessages(root = UI_SRC) {
+  const absRoot = join(ROOT, root)
+  if (!existsSync(absRoot)) return []
+  const entries = []
+  for (const file of collectAllTsFiles(absRoot)) {
+    if (file.endsWith('.test.ts')) continue
+    for (const hit of collectDevWarnLiterals(readFileSync(file, 'utf8'))) {
+      entries.push({ ...hit, file: relOf(file) })
+    }
+  }
+  return findDuplicateDevWarnLiterals(entries)
+}

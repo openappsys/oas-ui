@@ -25,7 +25,6 @@ import {
   RESERVED_TASK_KEYS,
   SCALES,
   DAY_MS,
-  MAX_PERIODS,
   cloneCustom,
   parseTaskDate,
   addDays,
@@ -36,6 +35,7 @@ import {
   toPublicResource,
   spansOf,
 } from './model.js'
+import { PERIODS_TRUNCATED_WARNING } from './hints.js'
 import type {
   PeriodSpan,
   ResourceTaskClickDetail,
@@ -1614,7 +1614,7 @@ export class OASResource extends OASElement {
     const warnTrunc = (): void => {
       if (this.periodsTruncWarned) return
       this.periodsTruncWarned = true
-      devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
+      devWarn(PERIODS_TRUNCATED_WARNING)
     }
     if (axis) {
       // 轴托管：period 覆盖宿主给定范围（与已装载任务多少无关 → windowed 切片换页不抖动时间轴）

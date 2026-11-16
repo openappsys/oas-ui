@@ -35,12 +35,15 @@ import {
   applyCssClassExceptions,
   applyMagicSpacingExceptions,
   applyTwinPredicateExceptions,
+  auditDuplicateDevWarnMessages,
   auditMagicSpacing,
   auditTwinPredicates,
   auditUnusedCssClasses,
   collectCssUsageByScope,
+  collectDevWarnLiterals,
   collectTwinPredicates,
   extractClassUsageTokens,
+  findDuplicateDevWarnLiterals,
   findMagicSpacing,
   findTwinPredicates,
   findUnusedCssClasses,
@@ -731,4 +734,36 @@ test('真实仓库：孪生判定审计结构完整，登记例外后零增量',
     `存在未登记的孪生判定：${violations.map((v) => `${v.file}:${v.line} ×${v.count} ${v.predicate}`).join('；')}`,
   )
   assert.deepEqual(stale, [], `存在陈旧例外：${stale.map((e) => `${e.file} ×${e.count} ${e.predicate}`).join('；')}`)
+})
+
+test('devWarn 重复文案：只统计行首纯字符串字面量调用', () => {
+  const src = [
+    "devWarn('[oas-x] 同一句')",
+    'devWarn("[oas-x] 同一句")',
+    'devWarn(`[oas-x] ${value}`)',
+    'devWarn(MSG)',
+    "// devWarn('[oas-x] 同一句')",
+    'const example = "devWarn(\'[oas-x] 同一句\')"',
+  ].join('\n')
+  const hits = collectDevWarnLiterals(src)
+  assert.deepEqual(
+    hits.map((hit) => hit.message),
+    ['[oas-x] 同一句', '[oas-x] 同一句'],
+    '模板插值、常量引用、注释与字符串内容都不计入',
+  )
+  const dup = findDuplicateDevWarnLiterals(hits.map((hit, i) => ({ ...hit, file: `f${i}.ts` })))
+  assert.equal(dup.length, 1)
+  assert.equal(dup[0].message, '[oas-x] 同一句')
+  assert.equal(dup[0].occurrences.length, 2)
+})
+
+test('真实仓库：devWarn 字面文案零重复', () => {
+  const dup = auditDuplicateDevWarnMessages()
+  assert.deepEqual(
+    dup,
+    [],
+    `相同 devWarn 文案出现多次，请抽共享常量：${dup
+      .map((g) => `「${g.message}」→ ${g.occurrences.map((o) => `${o.file}:${o.line}`).join('、')}`)
+      .join('；')}`,
+  )
 })

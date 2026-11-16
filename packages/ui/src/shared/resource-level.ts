@@ -12,11 +12,11 @@
  */
 import { addMonthsClamped, toISODate } from '../form/calendar/date-grid.js'
 import { devWarn } from './dev-warn.js'
+import { PERIODS_TRUNCATED_WARNING } from '../data/resource/hints.js'
 import {
   addDays,
   buildPeriodSpans,
   calendarDaysBetween,
-  MAX_PERIODS,
   parseTaskDate,
   periodCapacity,
   SCALES,
@@ -237,7 +237,7 @@ export function levelResources(
       // 纯函数路径模块级去重：levelResources 迭代内反复构建 period，防刷屏
       if (periodsTruncWarned) return
       periodsTruncWarned = true
-      devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
+      devWarn(PERIODS_TRUNCATED_WARNING)
     })
     if (periods.length === 0) break
     // 找第一个超载档（资源输入序 → period 时序）
@@ -351,7 +351,7 @@ function reassignOverload(
   const periods = buildPeriodSpans(minMs, maxMs, scale, weekStart, () => {
     if (periodsTruncWarned) return
     periodsTruncWarned = true
-    devWarn(`[oas-resource] period 数超过 ${MAX_PERIODS}，已截断（任务日期跨度可能异常）`)
+    devWarn(PERIODS_TRUNCATED_WARNING)
   })
   if (periods.length === 0) return []
 

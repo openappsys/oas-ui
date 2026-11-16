@@ -2118,7 +2118,8 @@ export class OASTableBase extends OASElement {
         this.syncColumnWindow(segs)
       } else {
         this._colSegments = null
-        this.warnColVirtualOnce(
+        this.warnOnce(
+          this.colVirtualWarned,
           'fixed-layout',
           'column-virtual 要求固定列仅出现在两端（left 段 → 非固定段 → right 段）：当前列序穿插，已降级为普通渲染',
         )
@@ -2126,13 +2127,14 @@ export class OASTableBase extends OASElement {
     } else {
       this._colSegments = null
       if (this.windowedOn() && this.hasAttr('column-virtual')) {
-        this.warnColVirtualOnce(
+        this.warnOnce(
+          this.colVirtualWarned,
           'windowed',
           'column-virtual 与 windowed 暂不兼容：已降级为普通渲染（column-virtual 已忽略）',
         )
       }
       if (this.columnVirtualOn() && summaryConfigs.length > 0) {
-        this.warnColVirtualOnce('summary', '合计行（summary）与 column-virtual 暂不兼容：已降级为普通渲染')
+        this.warnOnce(this.colVirtualWarned, 'summary', '合计行（summary）与 column-virtual 暂不兼容：已降级为普通渲染')
       }
     }
     // windowed：跨全量本地操作的配置在场 → dev 告警一次（行为上的跳过已在上游完成）。
@@ -4371,7 +4373,8 @@ export class OASTableBase extends OASElement {
     if (!groupBy) return ''
     const hasMerge = this.flattenLeaves(this._columns).some((c) => c.merge)
     if (hasMerge || this._spanMethod) {
-      this.warnGroupByOnce(
+      this.warnOnce(
+        this.groupWarned,
         'merge-span',
         'group-by 与 merge 列 / span-method 不兼容（分节头会破坏合并语义）：已降级为普通渲染（group-by 已忽略）',
       )
@@ -4380,7 +4383,8 @@ export class OASTableBase extends OASElement {
     if (this.rowDragEnabled()) {
       // 分组后展示序 ≠ 宿主 data 原始数组序，oas-row-reorder 的 from/to 应用到宿主 splice 会得到错误结果。
       // 用 rowDragEnabled() 而非 hasAttr：虚拟滚动下拖拽本就禁用（另有告警），此时分组安全，无谓降级是语义误导
-      this.warnGroupByOnce(
+      this.warnOnce(
+        this.groupWarned,
         'row-draggable',
         'group-by 与 row-draggable 不兼容（分组后展示序与原始数组序不一致，行重排索引会错位）：已降级为普通渲染（group-by 已忽略）',
       )
@@ -4389,10 +4393,10 @@ export class OASTableBase extends OASElement {
     return groupBy
   }
 
-  /** group-by 互斥降级告警（同值去重；参照 column-virtual 的 warnOnce 先例） */
-  private warnGroupByOnce(kind: string, message: string): void {
-    if (this.groupWarned.has(kind)) return
-    this.groupWarned.add(kind)
+  /** 表格告警去重：同 kind 只提示一次，统一 `[oas-table]` 前缀 */
+  private warnOnce(seen: Set<string>, kind: string, message: string): void {
+    if (seen.has(kind)) return
+    seen.add(kind)
     devWarn(`[oas-table] ${message}`)
   }
 
@@ -5943,26 +5947,22 @@ export class OASTableBase extends OASElement {
   private columnVirtualOn(): boolean {
     if (!this.hasAttr('column-virtual')) return false
     if (this.headerDepth() > 1) {
-      this.warnColVirtualOnce(
+      this.warnOnce(
+        this.colVirtualWarned,
         'multi-header',
         '多级表头与 column-virtual 不兼容：已降级为普通渲染（column-virtual 已忽略）',
       )
       return false
     }
     if (this._spanMethod) {
-      this.warnColVirtualOnce(
+      this.warnOnce(
+        this.colVirtualWarned,
         'span-method',
         'span-method 与 column-virtual 不兼容（列窗口会破坏跨列合并）：已降级为普通渲染',
       )
       return false
     }
     return true
-  }
-
-  private warnColVirtualOnce(kind: string, message: string): void {
-    if (this.colVirtualWarned.has(kind)) return
-    this.colVirtualWarned.add(kind)
-    devWarn(`[oas-table] ${message}`)
   }
 
   /**
