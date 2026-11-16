@@ -88,6 +88,79 @@ export async function realClick(
   await p.mouse.click(pt.x, pt.y)
 }
 
+/** waitForTableMutationQuiet 写在 window 上的观察态（按宿主 id 分槽，多表并存互不覆盖） */
+interface TableQuietStore {
+  states?: Map<string, { readonly count: number; mo: MutationObserver }>
+  seen?: Map<string, { c: number; t: number }>
+}
+
+// 等表格 tbody 重建静默 quietMs。
+//
+// 语义：观察宿主 shadow 内当前 tbody 的 childList，任一重建批次到达即重置计时；连续 quietMs
+// 无变更才返回——等的是「重建排空」这个状态，不是固定 sleep。
+//
+// 用途（实测归因）：oas-table 在挂载/尺寸测量/滚动帧/焦点 reveal 后会异步重建 tbody，
+// 动作落在这一波重建里会被随后的重建直接抹掉——WebKit 行内编辑曾稳定复现：dblclick 后
+// data-editing 已置 true、input.cell-editor 已挂载，约 26ms 后宿主又一次 tbody 重建
+// （失败样本 rebuilds=5 vs 成功 2）把编辑态清空；单次 dblclick 落在即将销毁的 td 上时
+// 编辑器则 5s 都不出现。故交互前先等排空，再单次派发动作（不重试、不延长超时）。
+export async function waitForTableMutationQuiet(
+  p: import('@playwright/test').Page,
+  id: string,
+  quiet = 500,
+): Promise<void> {
+  const sel = `#${id}`
+  // 门：tbody 已渲染进 shadow（首帧可能还没有；挂载竞态与重建竞态无关，先分开等）
+  await p.waitForFunction((s) => !!document.querySelector(s)?.shadowRoot?.querySelector('tbody'), sel, {
+    timeout: 15000,
+  })
+  // 布防：只观察当前 tbody（核心模板里 tbody 容器稳定，重建 = 换子节点）
+  await p.evaluate((s) => {
+    const w = window as unknown as { __oasTableQuiet?: TableQuietStore }
+    const store = (w.__oasTableQuiet ??= {})
+    store.states ??= new Map()
+    store.seen ??= new Map()
+    store.states.get(s)?.mo.disconnect()
+    const tbody = document.querySelector(s)!.shadowRoot!.querySelector('tbody')!
+    let count = 0
+    const mo = new MutationObserver(() => {
+      count += 1
+    })
+    mo.observe(tbody, { childList: true })
+    store.states.set(s, {
+      get count() {
+        return count
+      },
+      mo,
+    })
+    store.seen.delete(s)
+  }, sel)
+  // 静默判定：计数变化（含一次重建里的多批记录）即重置计时；计数单调，轮询漏拍也不会误判
+  await p.waitForFunction(
+    ({ s, q }) => {
+      const store = (window as unknown as { __oasTableQuiet?: TableQuietStore }).__oasTableQuiet
+      const state = store?.states?.get(s)
+      if (!state) return false
+      const seen = (store!.seen ??= new Map())
+      const last = seen.get(s)
+      if (!last || last.c !== state.count) {
+        seen.set(s, { c: state.count, t: performance.now() })
+        return false
+      }
+      return performance.now() - last.t >= q
+    },
+    { s: sel, q: quiet },
+    { timeout: 15000, polling: 100 },
+  )
+  // 收线：观察器不留在页面上（后续交互/断言不再受其影响）
+  await p.evaluate((s) => {
+    const store = (window as unknown as { __oasTableQuiet?: TableQuietStore }).__oasTableQuiet
+    store?.states?.get(s)?.mo.disconnect()
+    store?.states?.delete(s)
+    store?.seen?.delete(s)
+  }, sel)
+}
+
 export interface PanelGeom {
   left: number
   anchorLeft: number

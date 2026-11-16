@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { up } from './helpers'
+import { up, waitForTableMutationQuiet } from './helpers'
 
 /** packages/ui/dist 真实路径：按本文件位置（packages/ui/qa-regression）解析，从任意 cwd 运行都指向同一份产物 */
 const builtUiDist = fileURLToPath(new URL('../dist', import.meta.url))
@@ -173,6 +173,23 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
   // 直接对首行「姓名」单元格派发 dblclick 进入编辑
   // （Playwright 真实 dblclick 手势会把两次 click 派发给同一解析元素——首击触发行选中重建
   //  后该元素已脱离文档，进入编辑会落到游离节点上；这里用 DOM 事件直派更确定）
+  //
+  // 但直派也吃同样的重建竞态（WebKit --repeat-each=25 实测 20 failed / 5 passed，两类失败）：
+  // ① 单次 dblclick 后 input.cell-editor 5s 不出现——dblclick 落在即将被重建销毁的 td 上；
+  // ② waitForFunction 已看见 editor，紧接着的 evaluate 里它已消失——编辑器挂载后宿主又一次
+  //    tbody 重建把编辑态/编辑器一起抹掉（实测 dblclick 后 data-editing 置 true，~26ms 后
+  //    重建清空）。根因是动作落在挂载后的持续重建风暴里，故先等两件事：编辑装饰就绪
+  //    + tbody 重建静默（排空），再只派发一次 dblclick，随后等编辑器真实挂载；
+  //    不重试 dblclick、不加超时、不改产品源码。
+  await page.waitForFunction(
+    () => {
+      const td = document.querySelector('#table-edit')!.shadowRoot!.querySelector('tbody tr.row td')
+      return !!td && td.classList.contains('editable-cell')
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await waitForTableMutationQuiet(page, 'table-edit')
   await page.evaluate(() => {
     const table = document.querySelector('#table-edit')!
     const td = table.shadowRoot!.querySelector('tbody tr.row td')!
@@ -1792,8 +1809,9 @@ test('table 三开（height + group-by + row-draggable）：虚拟下拖拽禁�
 // 单次 dblclick 后 data-editing 曾正常置 true，但 ~26ms 后宿主又一次 tbody 重建把编辑态
 // 抹掉（失败样本 rebuilds=5 vs 成功 2；旧「hydration 旧 td」因果未证实，已弃）。语义等待
 // 两道门：① 编辑装饰（editable-cell）+ 编辑器组件定义（oas-select）就绪；② 宿主 tbody
-// 重建静默 500ms（childList 变更即重置计时——等待的是「重建排空」状态，非固定时长）；
-// 然后单次派发 dblclick，再等编辑器真实挂载（10s，错误不吞——卡点直接抛出暴露，不重试）。
+// 重建静默 500ms（共用的 waitForTableMutationQuiet：childList 变更即重置计时——等待的是
+// 「重建排空」状态，非固定时长）；然后单次派发 dblclick，再等编辑器真实挂载（10s，错误不吞
+// ——卡点直接抛出暴露，不重试）。
 async function waitOverlayEditorReady(p: import('@playwright/test').Page): Promise<void> {
   // 门①：编辑装饰 + 编辑器组件定义就绪
   await p.waitForFunction(
@@ -1805,30 +1823,7 @@ async function waitOverlayEditorReady(p: import('@playwright/test').Page): Promi
     { timeout: 15_000 },
   )
   // 门②：宿主重建静默——编辑标记挂在 DOM 行上，任何后续重建都会抹掉编辑态；重建即重置计时
-  await p.evaluate(() => {
-    const w = window as { __oqCount?: number; __oqLast?: number; __oqMo?: MutationObserver }
-    w.__oqCount = 0
-    w.__oqLast = -1
-    const tbody = document.querySelector('#table-edit-overlay')!.shadowRoot!.querySelector('tbody')!
-    w.__oqMo?.disconnect()
-    w.__oqMo = new MutationObserver(() => {
-      w.__oqCount = (w.__oqCount ?? 0) + 1
-    })
-    w.__oqMo.observe(tbody, { childList: true })
-  })
-  await p.waitForFunction(
-    (q) => {
-      const w = window as { __oqCount?: number; __oqLast?: number; __oqT?: number }
-      if (w.__oqCount !== w.__oqLast) {
-        w.__oqLast = w.__oqCount
-        w.__oqT = performance.now()
-        return false
-      }
-      return performance.now() - (w.__oqT ?? 0) >= q
-    },
-    500,
-    { timeout: 15_000, polling: 100 },
-  )
+  await waitForTableMutationQuiet(p, 'table-edit-overlay')
   // 单次派发 dblclick（两道门后不再重派）
   await p.evaluate(() => {
     const t = document.querySelector('#table-edit-overlay')!

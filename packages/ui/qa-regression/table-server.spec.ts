@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { waitForTableMutationQuiet } from './helpers'
 
 // server 行模型（row-model="server"）真实浏览器回归：请求协议、失败反馈、模式切换、
 // hover 可读性（F1 修复的视觉层——happy-dom 测不了真 hover，这里以真实渲染计算样式闭环）。
@@ -1355,6 +1356,11 @@ test('table server 分组 × column-virtual：组行参与列窗口（滚动重�
     null,
     { timeout: 10000 },
   )
+  // 列窗口落定后再读 DOM / 再点折叠钮：横向滚动帧会整帧重建 tbody（含组行），
+  // 滚动后的重算可能跨多帧。在风暴中读到的组行/colSpan 与点击命中的折叠钮可能是
+  // 即将被替换的旧节点（点击落在脱离文档的节点上则静默无效果）。等 tbody 重建静默
+  // 后再动作，断言口径不变（下方仍是精确 count / aria-expanded）。
+  await waitForTableMutationQuiet(page, 'table-server-group-colvirtual')
   const amountGone = await page.evaluate(() => {
     const el = document.querySelector('#table-server-group-colvirtual')!
     return el.shadowRoot!.querySelectorAll('tbody tr.group-header[data-group="研发"] td[data-col="amount"]').length
