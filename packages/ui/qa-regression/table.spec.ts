@@ -4197,6 +4197,10 @@ test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延�
   expect(home.selected).toBe('R0')
   expect(home.activeRow).toBe('0')
 
+  // 程序化回到底部：先等上一导航帧落定。意图守卫在主动写入后的若干帧内，会把
+  // 「落回本帧保存位」认作浏览器回滚并写回意图位——守卫窗口内直接写旧位会被正确拦截，
+  // 测试驱动程序化滚动必须先排空该窗口（真实用户滚动则先有手势，见下方 wheel）。
+  await settleTableScroll(page, 'qa-pro-virtual-home')
   await page.evaluate(() => {
     const el = document.querySelector('#qa-pro-virtual-home')!
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
@@ -4237,6 +4241,9 @@ test('table Pro 第三批：本地虚拟 Ctrl+Home 与 pending 取消不会延�
       }),
     )
     const wrap = el.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+    // 真实用户滚动先有手势：wheel 摘掉导航意图守卫（用户滚动永远优先于组件写入），
+    // 再写滚动位；缺手势的直写会被守卫当成浏览器回滚
+    wrap.dispatchEvent(new Event('wheel'))
     wrap.scrollTop = 50 * 40
     wrap.dispatchEvent(new Event('scroll'))
   })
