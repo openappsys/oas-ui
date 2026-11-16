@@ -136,10 +136,15 @@ test('message-scroller 500 行 track-visible：IO 驱动 data-visible + 滚动�
     const frames: number[] = []
     for (let i = 1; i <= 20; i++) {
       const start = performance.now()
+      const beforeEvents = events
       vp.scrollTop = (maxScroll * i) / 20
       vp.dispatchEvent(new Event('scroll'))
       await raf()
       frames.push(performance.now() - start)
+      // 可见性事件由 IO 回调异步驱动：等本次跨越落地再进下一步——否则高负载下相邻两次
+      // 滚动会合并为一次 IO 观察，事件数少 1（全量 e2e 实测 19 vs 20 的 flake 根因）。
+      // 帧预算只统计上面的写入 → rAF，等待不计入。若某步真未派发事件，末帧断言按实数失败。
+      for (let k = 0; k < 60 && events === beforeEvents; k++) await raf()
     }
     await raf()
     await raf()
