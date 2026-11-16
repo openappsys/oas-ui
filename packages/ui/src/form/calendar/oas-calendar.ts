@@ -1,5 +1,7 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { getLocaleTranslator } from '@oas-ui/core/translator'
+import { chevronLeftPath } from '@oas-ui/icons/icons/chevron-left'
+import { chevronRightPath } from '@oas-ui/icons/icons/chevron-right'
 import { parseJsonArray } from '../../shared/json-array.js'
 import {
   resolveLocale,
@@ -86,6 +88,19 @@ const STYLE = `
   color: var(--oas-color-text-disabled);
   background: transparent;
   cursor: not-allowed;
+}
+/* 翻页导航钮：箭头居中（flex），箭头随按钮文字色（svg stroke=currentColor），disabled 降透明 */
+[part='header'] button.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+[part='header'] button.nav svg {
+  display: block;
+}
+[part='header'] button.nav:disabled svg {
+  opacity: 0.4;
 }
 [part='title'] {
   flex: 1;
@@ -565,9 +580,9 @@ export class OASCalendar extends OASElement {
       <div class="calendar" part="calendar">
         <div class="header" part="header">
           <slot name="header">
-            <button type="button" class="nav prev" part="prev" aria-label=""></button>
+            <button type="button" class="nav prev" part="prev" aria-label=""><svg class="nav-arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">${chevronLeftPath}</svg></button>
             <button type="button" class="title" part="title" aria-live="polite"></button>
-            <button type="button" class="nav next" part="next" aria-label=""></button>
+            <button type="button" class="nav next" part="next" aria-label=""><svg class="nav-arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">${chevronRightPath}</svg></button>
             <button type="button" class="today" part="today" hidden></button>
           </slot>
         </div>

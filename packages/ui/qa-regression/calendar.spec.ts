@@ -3,6 +3,59 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
+test('calendar 导航箭头：prev/next 内嵌 chevron 可见 + aria-label 保留 + 翻页交互仍工作', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-calendar#calendar-cell-render')
+  const before = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-cell-render')!
+    const prev = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="prev"]')!
+    const next = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+    const prevSvg = prev.querySelector('svg')!
+    const nextSvg = next.querySelector('svg')!
+    const cs = (el: Element) => {
+      const s = getComputedStyle(el)
+      return { display: s.display, opacity: s.opacity }
+    }
+    return {
+      prev: {
+        aria: prev.getAttribute('aria-label'),
+        svg: cs(prevSvg),
+        box: prevSvg.getBoundingClientRect().toJSON(),
+      },
+      next: {
+        aria: next.getAttribute('aria-label'),
+        svg: cs(nextSvg),
+        box: nextSvg.getBoundingClientRect().toJSON(),
+      },
+    }
+  })
+  expect(before.prev.aria).toBe('上一月')
+  expect(before.next.aria).toBe('下一月')
+  // 箭头真实渲染且可见：svg 16×16（曾完全缺失：hover 只有灰色块）
+  for (const side of [before.prev, before.next]) {
+    expect(side.svg.display).toBe('block')
+    expect(side.svg.opacity).toBe('1')
+    expect(side.box.width).toBe(16)
+    expect(side.box.height).toBe(16)
+  }
+  // 翻页交互仍工作：点 next 后标题从 2026年8月 推进到 2026年9月
+  await page.evaluate(() => {
+    document
+      .querySelector('oas-calendar#calendar-cell-render')!
+      .shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+      .click()
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-calendar#calendar-cell-render')!
+    return el.shadowRoot!.querySelector('[part="title"]')!.textContent === '2026年9月'
+  })
+  const after = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-cell-render')!
+    return el.shadowRoot!.querySelector('[part="title"]')!.textContent
+  })
+  expect(after).toBe('2026年9月')
+})
+
 test('calendar 自定义单元格：cell-render 标记的节假日点可见', async ({ page }) => {
   await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-calendar#calendar-cell-render')

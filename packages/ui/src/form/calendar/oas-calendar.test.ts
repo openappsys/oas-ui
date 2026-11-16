@@ -714,6 +714,38 @@ describe('P2 批：header 插槽 / locale / format', () => {
     expect(el.shadowRoot!.querySelectorAll('slot[name="header"]').length).toBe(1)
   })
 
+  it('导航钮内嵌翻页箭头：chevron svg 在位（规范 V 形路径）+ aria-label 保留 + 翻页交互仍工作', () => {
+    const el = mount({ value: '2026-08-09' })
+    const prev = el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!
+    const next = el.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!
+    expect(prev.querySelectorAll('svg').length, 'prev 缺翻页箭头（曾无任何视觉实现）').toBe(1)
+    expect(next.querySelectorAll('svg').length, 'next 缺翻页箭头（曾无任何视觉实现）').toBe(1)
+    const prevSvg = prev.querySelector('svg')!
+    const nextSvg = next.querySelector('svg')!
+    expect(prevSvg.getAttribute('aria-hidden')).toBe('true')
+    expect(nextSvg.getAttribute('aria-hidden')).toBe('true')
+    expect(prevSvg.querySelector('path')!.getAttribute('d')).toBe('M10 4 L6 8 L10 12')
+    expect(nextSvg.querySelector('path')!.getAttribute('d')).toBe('M6 4 L10 8 L6 12')
+    expect(prev.getAttribute('aria-label')).toBe('上一月')
+    expect(next.getAttribute('aria-label')).toBe('下一月')
+    // 翻页交互不回归：next → 9 月，prev 两次 → 7 月
+    next.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年9月')
+    prev.click()
+    prev.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
+  })
+
+  it('导航箭头边界置灰时仍在位（disabled 降透明，不摘除 svg）', () => {
+    const el = mount({ value: '2026-08-09', min: '2026-08-01', max: '2026-08-31' })
+    const prev = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="prev"]')!
+    const next = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+    expect(prev.disabled).toBe(true)
+    expect(next.disabled).toBe(true)
+    expect(prev.querySelectorAll('svg').length, 'disabled 态 prev 箭头应保留').toBe(1)
+    expect(next.querySelectorAll('svg').length, 'disabled 态 next 箭头应保留').toBe(1)
+  })
+
   it('header 插槽：宿主内容分发进头部，宿主内容可交互', () => {
     const el = mount({ value: '2026-08-09' })
     const custom = document.createElement('button')
