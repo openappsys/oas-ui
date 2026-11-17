@@ -14,10 +14,12 @@ const E2E_SKIP_BUILD = process.env.E2E_SKIP_BUILD === '1' || !!process.env.CI
 const E2E_REUSE = process.env.E2E_REUSE === '1'
 
 // 单次调用的并发：E2E_WORKERS 显式覆盖优先；否则 CI 保底 4（2 核 runner，过多 worker 抢 CPU 反慢）、
-// 本地按 CPU 自适应（留 2 核给单线程 preview server + 系统，上限 12）——本地机器充裕时显著缩短全量时长。
-// 高并发下负载敏感用例（真手势/动画/SPA 导航）偶发时序抖动由 retries:1 吸收；若真翻车可临时调低 E2E_WORKERS。
+// 本地按 CPU 自适应（留 2 核给单线程 preview server + 系统，上限 8——2026-11-17 从 12 下调：32 核机
+// 全量实测 12 workers 每轮 1–2 个 WebKit 单点 flake（帧饥饿致稳定性判定超时），4 workers 全量零
+// flaky 但时长 19→32min；8 为折中）。高并发下负载敏感用例（真手势/动画/SPA 导航）偶发时序抖动由
+// retries:1 吸收；若仍翻车可临时再调低 E2E_WORKERS。
 const E2E_WORKERS =
-  Number(process.env.E2E_WORKERS) || (process.env.CI ? 4 : Math.min(Math.max(os.cpus().length - 2, 4), 12))
+  Number(process.env.E2E_WORKERS) || (process.env.CI ? 4 : Math.min(Math.max(os.cpus().length - 2, 4), 8))
 
 // CI 失败现场默认不保留任何 trace/截图，失败只剩控制台日志。CI 或显式 E2E_ARTIFACTS=1 时
 // 只在首次重试保留 trace、只对失败用例截图；本地默认关闭，避免无谓 I/O。
