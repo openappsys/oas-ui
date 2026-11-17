@@ -49,6 +49,7 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 - [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
 - [Knob](/en/components/knob) —— A rotary control that maps continuous/discrete values to a circular angle, designed for parameter-dense panels (audio/industrial/3D); supports circular + linear drag interactions and double-click reset.
 - [Mentions](/en/components/mentions) —— A mention input component that pops a suggestion overlay when typing `@`, suited for @member / @task scenarios.
+- [PasswordStrength](/en/components/password-strength) —— A standalone password-strength meter: `for` association or slot auto-discovery, built-in 0–4 scoring with weak-password penalties, controlled and custom-scorer modes.
 - [Picker](/en/components/picker) — Mobile-style scroll-wheel column selector: independent columns or cascading tree, native inertial scrolling with snap, keyboard accessible, form-associated.
 - [PinInput](/en/components/pin-input) —— A segmented code input supporting keyboard arrow navigation, Backspace fallback, and paste auto-distribution.
 - [Questionnaire](/en/components/questionnaire) —— A step-driven form flow orchestrator: step header + progress (Step n / m) + one panel per step + per-step validation gating; each step embeds one `<oas-form>`, reusing the `oas-form` kernel.

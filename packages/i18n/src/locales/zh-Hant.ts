@@ -377,6 +377,11 @@ export const zhHant: LocaleMessages = {
   // pin-input（驗證碼分格輸入）
   'pinInput.group': '驗證碼',
   'pinInput.digit': '第 {position} 位',
+  'passwordStrength.0': '很弱',
+  'passwordStrength.1': '弱',
+  'passwordStrength.2': '一般',
+  'passwordStrength.3': '強',
+  'passwordStrength.4': '很強',
   // dynamic-input（動態列表）
   'dynamicInput.add': '新增',
   'dynamicInput.remove': '刪除',

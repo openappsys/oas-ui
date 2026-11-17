@@ -379,6 +379,11 @@ export const es: LocaleMessages = {
   // pin-input (código de verificación por dígitos)
   'pinInput.group': 'Código de verificación',
   'pinInput.digit': 'Dígito {position}',
+  'passwordStrength.0': 'Muy débil',
+  'passwordStrength.1': 'Débil',
+  'passwordStrength.2': 'Regular',
+  'passwordStrength.3': 'Fuerte',
+  'passwordStrength.4': 'Muy fuerte',
   // dynamic-input (lista dinámica)
   'dynamicInput.add': 'Añadir',
   'dynamicInput.remove': 'Eliminar',

@@ -49,6 +49,7 @@ OAS-UI 提供 150 个框架无关的 Web Components 组件，按用途划分为 
 - [InputNumber 数字输入](/components/input-number) —— 原生 `<input type="number">` 增强，带步进按钮并支持范围约束。
 - [Knob 旋钮](/components/knob) —— 把连续/离散值映射为圆周角度的旋钮控件，为参数密集面板（音频/工业/3D）设计；支持圆周 + 直线拖拽两种交互与双击复位。
 - [Mentions 提及](/components/mentions) —— 输入 `@` 触发建议浮层的提及输入组件，适合 @成员 / @任务 等场景。
+- [PasswordStrength 密码强度](/components/password-strength) —— 密码强度独立指示条：`for` 关联或 slot 自动发现密码输入，内置 0–4 五档评分与弱口令惩罚，受控/自定义评分双模式。
 - [Picker 滚轮选择器](/components/picker) —— 移动式滚轮列选择：独立多列 / 级联树两形态，原生滚动惯性 + 吸附，键盘可达，form-associated 直接进原生表单。
 - [PinInput 验证码](/components/pin-input) —— 分格验证码输入，支持键盘方向键移动、Backspace 回退、粘贴自动分发。
 - [Questionnaire 多步问卷](/components/questionnaire) —— 步骤驱动的表单流程编排器：步骤头 + 进度（第 n / m 步）+ 每步独立面板 + 逐步校验门控；每个步骤内嵌一个 `<oas-form>`，复用 `oas-form` 内核。

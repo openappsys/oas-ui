@@ -379,6 +379,12 @@ export const zhCN = {
   // pin-input（验证码分格输入）
   'pinInput.group': '验证码',
   'pinInput.digit': '第 {position} 位',
+  // password-strength（密码强度指示）
+  'passwordStrength.0': '很弱',
+  'passwordStrength.1': '弱',
+  'passwordStrength.2': '一般',
+  'passwordStrength.3': '强',
+  'passwordStrength.4': '很强',
   // dynamic-input（动态列表）
   'dynamicInput.add': '添加',
   'dynamicInput.remove': '删除',

@@ -2511,6 +2511,23 @@
       "value": "当前值：各格字符拼接字符串；property 与 `value` 属性同源（setter 写回 attribute、属性改动即时同步各格），会反射到 attribute"
     }
   },
+  "oas-password-strength": {
+    "attrs": {
+      "for": "精确关联的密码输入 id（同根节点内查找；可为原生 input[type=password] 或 oas-input 等承载 password 输入的组件）；设置后优先于 slot 自动发现",
+      "level": "受控分数（0–4）：在场时停止自动计算、不派发事件（值由宿主给）；移除恢复自动；越界钳制 0–4，非法值按 0 并一次性告警",
+      "levels": "五档文案覆盖：JSON 数组（5 个非空字符串，索引 0–4 对应档位）；缺省走 locale `passwordStrength.*`；非法回落并一次性告警",
+      "show-label": "显示当前档位文案"
+    },
+    "events": {
+      "oas-score-change": "分数变化时派发（仅自动/自定义评分模式；受控 `level` 不派发），`detail: { score, label }`"
+    },
+    "slots": {
+      "": "自动发现区：缺省在此查找第一个 `[type=password]` 输入（原生 input 或承载组件）并自动绑定"
+    },
+    "props": {
+      "scoreFn": "自定义评分函数 `(password: string) => 0–4`：设置后完全接管内置评分；置 null 恢复。受控 `level` 在场时不参与"
+    }
+  },
   "oas-popconfirm": {
     "attrs": {
       "open": "是否显示气泡",

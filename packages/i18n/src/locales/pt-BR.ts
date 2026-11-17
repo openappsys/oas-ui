@@ -379,6 +379,11 @@ export const ptBR: LocaleMessages = {
   // pin-input (código de verificação por dígitos)
   'pinInput.group': 'Código de verificação',
   'pinInput.digit': 'Dígito {position}',
+  'passwordStrength.0': 'Muito fraca',
+  'passwordStrength.1': 'Fraca',
+  'passwordStrength.2': 'Razoável',
+  'passwordStrength.3': 'Forte',
+  'passwordStrength.4': 'Muito forte',
   // dynamic-input (lista dinâmica)
   'dynamicInput.add': 'Adicionar',
   'dynamicInput.remove': 'Remover',

@@ -375,6 +375,11 @@ export const he: LocaleMessages = {
   // pin-input (הזנת קוד אימות)
   'pinInput.group': 'קוד אימות',
   'pinInput.digit': 'ספרה {position}',
+  'passwordStrength.0': 'חלש מאוד',
+  'passwordStrength.1': 'חלש',
+  'passwordStrength.2': 'בינוני',
+  'passwordStrength.3': 'חזק',
+  'passwordStrength.4': 'חזק מאוד',
   // dynamic-input (רשימה דינמית)
   'dynamicInput.add': 'הוסף',
   'dynamicInput.remove': 'מחק',

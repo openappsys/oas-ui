@@ -379,6 +379,11 @@ export const ja: LocaleMessages = {
   // pin-input（認証コード分割入力）
   'pinInput.group': '認証コード',
   'pinInput.digit': '{position} 桁目',
+  'passwordStrength.0': '非常に弱い',
+  'passwordStrength.1': '弱い',
+  'passwordStrength.2': '普通',
+  'passwordStrength.3': '強い',
+  'passwordStrength.4': '非常に強い',
   // dynamic-input（動的リスト）
   'dynamicInput.add': '追加',
   'dynamicInput.remove': '削除',

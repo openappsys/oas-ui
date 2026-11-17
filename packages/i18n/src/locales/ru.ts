@@ -379,6 +379,11 @@ export const ru: LocaleMessages = {
   // pinInput (ввод кода по разрядам)
   'pinInput.group': 'Код подтверждения',
   'pinInput.digit': 'Цифра {position}',
+  'passwordStrength.0': 'Очень слабый',
+  'passwordStrength.1': 'Слабый',
+  'passwordStrength.2': 'Средний',
+  'passwordStrength.3': 'Сильный',
+  'passwordStrength.4': 'Очень сильный',
   // dynamicInput (динамический список)
   'dynamicInput.add': 'Добавить',
   'dynamicInput.remove': 'Удалить',

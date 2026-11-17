@@ -111,6 +111,7 @@ export const NOT_SSR: readonly NotSsrEntry[] = [
   { tag: 'oas-chips-input', reason: 'pending', note: 'SSR 白名单化未立项（P1/P2 批新组件，先登记 pending）' },
   { tag: 'oas-scanner', reason: 'client-only', note: 'getUserMedia 相机能力仅客户端可用' },
   { tag: 'oas-signature', reason: 'client-only', note: 'canvas 笔迹绘制仅客户端可用' },
+  { tag: 'oas-password-strength', reason: 'pending', note: 'SSR 白名单化未立项（v2.6.8 新组件，先登记 pending）' },
 ]
 
 export const NOT_SSR_TAGS: ReadonlySet<string> = new Set(NOT_SSR.map((entry) => entry.tag))

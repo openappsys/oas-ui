@@ -2619,6 +2619,23 @@
       "blur": "Blur the currently active cell"
     }
   },
+  "oas-password-strength": {
+    "attrs": {
+      "for": "ID of the password input to associate with (resolved within the same root node; can be a native input[type=password] or a component hosting one, e.g. oas-input); takes precedence over slot auto-discovery",
+      "level": "Controlled score (0–4): stops auto-scoring while present and dispatches no events (the value is host-owned); removing it resumes auto mode; out-of-range values clamp to 0–4, invalid values fall back to 0 with a one-time warning",
+      "levels": "Five-level label override: JSON array (5 non-empty strings, indexes 0–4); defaults to locale `passwordStrength.*`; invalid values fall back with a one-time warning",
+      "show-label": "Show the current level label"
+    },
+    "events": {
+      "oas-score-change": "Fires when the score changes (auto/custom scoring modes only; not in controlled `level` mode), `detail: { score, label }`"
+    },
+    "slots": {
+      "": "Auto-discovery area: the first `[type=password]` input (native input or hosting component) is discovered here and bound automatically"
+    },
+    "props": {
+      "scoreFn": "Custom scoring function `(password: string) => 0–4`: fully replaces the built-in scorer while set; set null to restore. Ignored while controlled `level` is present"
+    }
+  },
   "oas-popconfirm": {
     "attrs": {
       "open": "Whether the bubble is shown",

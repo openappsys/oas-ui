@@ -81,6 +81,7 @@
   "oas-toggle-group",
   "oas-toggle-item",
   "oas-pin-input",
+  "oas-password-strength",
   "oas-dynamic-input",
   "oas-chips-input",
   "oas-dynamic-tags",

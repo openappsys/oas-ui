@@ -375,6 +375,11 @@ export const fa: LocaleMessages = {
   // pin-input (ورودی رقم‌به‌رقم کد تأیید)
   'pinInput.group': 'کد تأیید',
   'pinInput.digit': 'رقم {position}',
+  'passwordStrength.0': 'بسیار ضعیف',
+  'passwordStrength.1': 'ضعیف',
+  'passwordStrength.2': 'متوسط',
+  'passwordStrength.3': 'قوی',
+  'passwordStrength.4': 'بسیار قوی',
   // dynamic-input (فهرست پویا)
   'dynamicInput.add': 'افزودن',
   'dynamicInput.remove': 'حذف',

@@ -379,6 +379,11 @@ export const ko: LocaleMessages = {
   // pin-input（인증번호 분할 입력）
   'pinInput.group': '인증번호',
   'pinInput.digit': '{position}번째 자리',
+  'passwordStrength.0': '매우 약함',
+  'passwordStrength.1': '약함',
+  'passwordStrength.2': '보통',
+  'passwordStrength.3': '강함',
+  'passwordStrength.4': '매우 강함',
   // dynamic-input（동적 목록）
   'dynamicInput.add': '추가',
   'dynamicInput.remove': '삭제',

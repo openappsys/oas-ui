@@ -63,6 +63,7 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'InputNumber 数字输入', link: '/components/input-number' },
       { text: 'Knob 旋钮', link: '/components/knob' },
       { text: 'Mentions 提及', link: '/components/mentions' },
+      { text: 'PasswordStrength 密码强度', link: '/components/password-strength' },
               { text: 'Picker 滚轮选择器', link: '/components/picker' },
       { text: 'PinInput 验证码', link: '/components/pin-input' },
       { text: 'Questionnaire 多步问答', link: '/components/questionnaire' },

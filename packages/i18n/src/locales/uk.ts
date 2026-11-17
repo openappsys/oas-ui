@@ -375,6 +375,11 @@ export const uk: LocaleMessages = {
   // pin-input (посимвольне введення коду)
   'pinInput.group': 'Код підтвердження',
   'pinInput.digit': 'Цифра {position}',
+  'passwordStrength.0': 'Дуже слабкий',
+  'passwordStrength.1': 'Слабкий',
+  'passwordStrength.2': 'Середній',
+  'passwordStrength.3': 'Сильний',
+  'passwordStrength.4': 'Дуже сильний',
   // dynamic-input (динамічний список)
   'dynamicInput.add': 'Додати',
   'dynamicInput.remove': 'Видалити',

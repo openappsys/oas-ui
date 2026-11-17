@@ -375,6 +375,11 @@ export const hi: LocaleMessages = {
   // pin-input (पिन इनपुट)
   'pinInput.group': 'सत्यापन कोड',
   'pinInput.digit': 'अंक {position}',
+  'passwordStrength.0': 'बहुत कमज़ोर',
+  'passwordStrength.1': 'कमज़ोर',
+  'passwordStrength.2': 'सामान्य',
+  'passwordStrength.3': 'मज़बूत',
+  'passwordStrength.4': 'बहुत मज़बूत',
   // dynamic-input (डायनामिक लिस्ट)
   'dynamicInput.add': 'जोड़ें',
   'dynamicInput.remove': 'हटाएँ',

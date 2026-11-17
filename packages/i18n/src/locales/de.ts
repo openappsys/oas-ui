@@ -379,6 +379,11 @@ export const de: LocaleMessages = {
   // pin-input (aufgeteilte Code-Eingabe)
   'pinInput.group': 'Bestätigungscode',
   'pinInput.digit': 'Ziffer {position}',
+  'passwordStrength.0': 'Sehr schwach',
+  'passwordStrength.1': 'Schwach',
+  'passwordStrength.2': 'Mittel',
+  'passwordStrength.3': 'Stark',
+  'passwordStrength.4': 'Sehr stark',
   // dynamic-input (dynamische Liste)
   'dynamicInput.add': 'Hinzufügen',
   'dynamicInput.remove': 'Entfernen',

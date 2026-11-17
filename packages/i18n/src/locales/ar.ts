@@ -379,6 +379,11 @@ export const ar: LocaleMessages = {
   // pinInput (إدخال رمز التحقق خانة بخانة)
   'pinInput.group': 'رمز التحقق',
   'pinInput.digit': 'الخانة {position}',
+  'passwordStrength.0': 'ضعيف جدًا',
+  'passwordStrength.1': 'ضعيف',
+  'passwordStrength.2': 'متوسط',
+  'passwordStrength.3': 'قوي',
+  'passwordStrength.4': 'قوي جدًا',
   // dynamicInput (قائمة ديناميكية)
   'dynamicInput.add': 'إضافة',
   'dynamicInput.remove': 'حذف',
