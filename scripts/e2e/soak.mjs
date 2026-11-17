@@ -19,6 +19,8 @@
  *      避免每轮重复 build 又慢又互相踩 dist）。
  *   5. 结果采集：运行时在本次产物目录生成一个临时 reporter（JSONL），不依赖
  *      playwright 的 PLAYWRIGHT_JSON_OUTPUT_NAME（1.64 起已移除）。
+ *   注：soak 不显式设 E2E_WORKERS，并发继承 playwright.config.ts 本地默认（2026-11-17
+ *      上限 12→8）；跨日期对比 soak 报告时注意负载基线变化。
  */
 import { spawn, spawnSync } from 'node:child_process'
 import { createWriteStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'

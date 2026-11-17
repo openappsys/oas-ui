@@ -927,7 +927,7 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit-component')
   // 编辑装饰 + tbody 重建静默后再派发 dblclick：重建风暴中启动的编辑会被随后的重建抹掉
-  // （T16 归因；编辑器宿主到场 ≠ 内部控件已渲染，故下方等待同时要求 input）
+  // （重建风暴归因；编辑器宿主到场 ≠ 内部控件已渲染，故下方等待同时要求 input）
   await waitForTableMutationQuiet(page, 'table-edit-component')
   await page.evaluate(() => {
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
@@ -984,7 +984,7 @@ test('form-associated：表格行内编辑点击关联 label 不退出编辑（�
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit-component')
   // 编辑装饰 + tbody 重建静默后再派发 dblclick：重建风暴中启动的编辑会被随后的重建抹掉
-  // （T16 归因；编辑器宿主到场 ≠ 内部控件已渲染，故下方等待同时要求 input）
+  // （重建风暴归因；编辑器宿主到场 ≠ 内部控件已渲染，故下方等待同时要求 input）
   await waitForTableMutationQuiet(page, 'table-edit-component')
   await page.evaluate(() => {
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
