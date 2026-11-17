@@ -108,6 +108,13 @@ describe('scorePassword（内置评分纯函数）', () => {
     expect(scorePassword('Xk9$mQ2#vL8@')).toBe(4)
   })
 
+  it('CJK 字符计独立类别且按 3 计有效长：纯中文长口令不被公式系统性压弱', () => {
+    // 回归：CJK 曾全数计入「符号」一类且按 1 计长，14 字纯中文口令恒 1 分
+    expect(scorePassword('这是一个非常长的中文密码口令')).toBe(3)
+    expect(scorePassword('正确马电池钉2024')).toBe(4)
+    expect(scorePassword('パスワード設定')).toBe(3)
+  })
+
   it('重复密码同样弱（abcdef 连续段）', () => {
     expect(scorePassword('abcdefgh')).toBe(1)
   })
@@ -198,32 +205,6 @@ describe('for 关联', () => {
     addPasswordInput('pwd', MEDIUM_PWD)
     const el = mount({ for: 'pwd' })
     expect(barAria(el).now).toBe('3')
-  })
-
-  it('宽度跟随目标输入（happy-dom 无布局：mock rect + ResizeObserver 桩验证行内宽与清理）', () => {
-    const observed: { disconnect: () => void; target: unknown }[] = []
-    const OriginalRO = (globalThis as { ResizeObserver?: unknown }).ResizeObserver
-    ;(globalThis as { ResizeObserver?: unknown }).ResizeObserver = class {
-      constructor(private cb: () => void) {}
-      observe(target: unknown): void {
-        observed.push({ disconnect: () => {}, target })
-      }
-      disconnect(): void {}
-    }
-    try {
-      const input = addPasswordInput('pwd')
-      input.getBoundingClientRect = () =>
-        ({ width: 280, height: 32, x: 0, y: 0, top: 0, left: 0, right: 280, bottom: 32, toJSON: () => ({}) }) as DOMRect
-      const el = mount({ for: 'pwd' })
-      expect(el.style.width).toBe('280px')
-      expect(observed.length).toBe(1)
-      // 目标移除换绑/断开：不抛错（清理路径）
-      input.remove()
-      document.body.innerHTML = ''
-      expect(() => el.remove()).not.toThrow()
-    } finally {
-      ;(globalThis as { ResizeObserver?: unknown }).ResizeObserver = OriginalRO
-    }
   })
 
   it('for 指向 oas-input type=password：内部原生输入驱动评分（真实承载联测）', () => {

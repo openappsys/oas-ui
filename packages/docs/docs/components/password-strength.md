@@ -1,6 +1,6 @@
 # PasswordStrength 密码强度
 
-密码强度独立指示条：**不包裹输入框**，`for` 精确关联或 slot 自动发现密码输入，与 `oas-input` / 原生 input 均可组合；内置 0–4 五档评分（长度基础分 + 字符类别多样性 + 长度加权 − 常见弱口令 / 重复 / 连续字符惩罚）；`level` 受控、`levels` 文案覆盖、`score-fn` 自定义评分 property；4 段分段条全 token 配色（暗色自动正确）；host 承载 `role="meter"` 无障碍语义；档位文案 i18n 16 语言。
+密码强度独立指示条：**不包裹输入框**，`for` 精确关联或 slot 自动发现密码输入，与 `oas-input` / 原生 input 均可组合；内置 0–4 五档评分（长度三档 + 字符类别多样性（含 CJK）− 常见弱口令 / 重复 / 连续字符惩罚）；`level` 受控、`levels` 文案覆盖、`score-fn` 自定义评分 property；4 段分段条全 token 配色（暗色自动正确），默认宽 12rem（`--oas-password-strength-width` 覆盖）；分段条（`part="bar"`）承载 `role="meter"` 无障碍语义（host 保持 generic，slot 内嵌输入不被 meter 展平）；档位文案 i18n 16 语言。
 
 ## 基础用法（for 关联 oas-input）
 
@@ -16,6 +16,7 @@
 ## 显示档位文案（show-label）
 
 <DemoBlock title="缺省（隐藏）与 show-label（显示）对照">
+  <oas-input id="ps-demo-nolabel" type="password" placeholder="输入密码对照两种形态" style="width: 280px"></oas-input>
   <oas-password-strength for="ps-demo-nolabel"></oas-password-strength>
   <oas-password-strength for="ps-demo-nolabel" show-label></oas-password-strength>
 </DemoBlock>
@@ -97,9 +98,8 @@ onMounted(() => {
 
 计分口径（0–4，原创实现）：
 
-- **长度基础分**：≥8 位 +1
-- **字符类别多样性**：小写 / 大写 / 数字 / 符号四类——≥2 类 +1，≥3 类再 +1
-- **长度加权**：≥12 位且 ≥3 类再 +1（正分封顶 4）
+- **长度三档**（有效长度 = ASCII 每字 1 + CJK 每字 3）：≥8 → +1，≥12 → +1，≥20 → +1
+- **字符类别多样性**：小写 / 大写 / 数字 / 符号 / CJK 五类——≥2 类 +1，≥3 类再 +1（正分封顶 4）
 - **常见弱口令惩罚**：内置约 50 条原创整理的高频弱口令集合（123456 / password / qwerty / letmein 等）——小写归一**精确命中** → 0 分（`password` → 0）；**不认子串**：强口令内含弱词片段（`Str0ng!Passw0rd` 含 `passw0rd`）不清零，熵由长度/类别分自然刻画
 - **重复字符惩罚**：≥5 位全同字符（如 `aaaaaa`）→ 上限 1
 - **连续字符惩罚**：含 ≥5 位连续升/降序段（如 `12345` / `abcde`）→ 上限 2
@@ -149,5 +149,11 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 自动发现区：缺省在此查找第一个 `[type=password]` 输入（原生 input 或承载组件）并自动绑定 |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-password-strength-width` | `12rem` |
 
 颜色：分段条与文案全部走 `--oas-color-*` token（`--oas-color-danger` / `--oas-color-warning` / `--oas-color-success` / `--oas-color-bg-hover` / `--oas-color-text-*`），暗色与高对比主题自动正确；样式部件 `part="bar"` / `part="segment"` / `part="label"` 可被宿主 `::part()` 定制。

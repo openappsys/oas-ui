@@ -314,7 +314,7 @@ P1 中优先增强四项 + P2 顺手小项四件一批，来源为 everything �
 ## v2.6.8：password-strength 密码强度指示组件
 
 - 形态：独立强度指示条（不包裹输入框）：`for="<id>"` 精确关联，或 default slot 内自动发现 `[type=password]` 输入；与 oas-input / 原生 input 均可组合。
-- 评分：内置 0–4 五档——长度基础分 + 字符类别多样性（小写/大写/数字/符号）+ 长度加权 − 常见弱口令惩罚（内置原创小份弱口令表）；`score-fn` property 可整体覆盖（入参密码串，返回 0–4）。
+- 评分：内置 0–4 五档——长度三档（有效长度 ≥8/≥12/≥20 各 +1，CJK 每字按 3 计有效长）+ 字符类别多样性（小写/大写/数字/符号/CJK 五类，≥2 类 +1、≥3 类再 +1）− 常见弱口令惩罚（内置原创小份弱口令表，只认小写归一精确命中、不认子串）− 重复字符惩罚（≥5 位全同上限 1）− 连续字符惩罚（≥5 位升降序段上限 2）；`score-fn` property 可整体覆盖（入参密码串，返回 0–4）。
 - 属性：`for`、`level`（0–4 受控；设置后停止自动计算，受控/非受控双模式）、`levels`（JSON 档位文案数组，默认走 i18n `passwordStrength.*`）、`show-label`（显示档位文案）。事件 `oas-score-change`（detail `{ score, label }`，仅变化时派发）。
 - 视觉：4 段分段条；空档 neutral、1 danger、2 warning、3/4 success；颜色全走 `--oas-color-*` token（暗色自动正确）；part：`bar` / `segment` / `label`。
 - a11y：`role="meter"` + `aria-valuenow/min/max`，档位文案进 `aria-label`；纯指示组件不抢焦点、不进 tab 序。

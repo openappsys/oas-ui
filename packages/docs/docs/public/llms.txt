@@ -77,7 +77,7 @@
 - [InputNumber 数字输入框](https://oas-ui.dev/components/input-number): 数字输入组件：内层为文本输入 + 数字键盘（inputmode="decimal"），带步进按钮、范围约束与格式化显示，role="spinbutton" 提供完整的数值 aria 状态。
 - [Knob 旋钮](https://oas-ui.dev/components/knob): 把连续/离散数值编码为圆周角度的旋转输入控件，为参数密集面板（音频/工业/3D）而生：紧凑圆形 + 相对拖拽（无跳变）+ 双极零位。
 - [Mentions 提及](https://oas-ui.dev/components/mentions): 输入 @（或 # 等）触发建议浮层的提及输入组件，适合 @成员 / @任务 / 评论发布等场景。
-- [PasswordStrength 密码强度](https://oas-ui.dev/components/password-strength): 密码强度独立指示条：不包裹输入框，for 精确关联或 slot 自动发现密码输入，与 oas-input / 原生 input 均可组合；内置 0–4 五档评分（长度基础分 + 字符类别多样性 + 长度加权 − 常见弱口令 / 重复 / 连续字符惩罚）；level 受控、levels 文案覆盖、score-fn 自定义评分 property；4 段分段条全 token 配色（暗色自动正确）…
+- [PasswordStrength 密码强度](https://oas-ui.dev/components/password-strength): 密码强度独立指示条：不包裹输入框，for 精确关联或 slot 自动发现密码输入，与 oas-input / 原生 input 均可组合；内置 0–4 五档评分（长度三档 + 字符类别多样性（含 CJK）− 常见弱口令 / 重复 / 连续字符惩罚）；level 受控、levels 文案覆盖、score-fn 自定义评分 property；4 段分段条全 token 配色（暗色自动正确），默认宽…
 - [Picker 滚轮选择器](https://oas-ui.dev/components/picker): 移动式滚轮列选择器：原生滚动 + 吸附提供惯性手感，滚动/键盘选中落停后回写 value 并派发 oas-change。
 - [PinInput 验证码](https://oas-ui.dev/components/pin-input): 分格验证码输入：字符约束过滤（type / pattern）、分隔符分组、尺寸与形态档位、OTP 短信自动填充、填满自动提交、loading / success 校验反馈；键盘方向键移动、Backspace 回退、粘贴自动分发（含过滤）。
 - [Questionnaire 多步问答](https://oas-ui.dev/components/questionnaire): 步骤驱动的表单流程编排组件：步骤头 + 进度（「第 n / m 步」）+ 每步内容面板 + 单步校验门控。

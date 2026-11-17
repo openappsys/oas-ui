@@ -1,6 +1,6 @@
 # PasswordStrength
 
-A standalone password-strength meter that **does not wrap the input**: associate it via `for` or auto-discover a password input inside the default slot — it composes with `oas-input` as well as native inputs. Built-in 0–4 scoring (length base score + character-class diversity + length bonus − common weak-password / repetition / sequential-run penalties); controlled `level`, `levels` label override, and a `scoreFn` custom scorer property; a 4-segment bar fully themed with tokens (dark mode automatic); the host carries the `role="meter"` accessibility semantics; level labels are localized in 16 languages.
+A standalone password-strength meter that **does not wrap the input**: associate it via `for` or auto-discover a password input inside the default slot — it composes with `oas-input` as well as native inputs. Built-in 0–4 scoring (length tiers + character-class diversity incl. CJK − common weak-password / repetition / sequential-run penalties); controlled `level`, `levels` label override, and a `scoreFn` custom scorer property; a 4-segment bar fully themed with tokens (dark mode automatic) with a default width of 12rem (`--oas-password-strength-width` overrides); the `part="bar"` segment bar carries the `role="meter"` accessibility semantics (the host stays generic so a slotted input is not flattened by the meter); level labels are localized in 16 languages.
 
 ## Basic Usage (for + oas-input)
 
@@ -97,9 +97,8 @@ When both `for` and a slot input are available, **the `for` association wins**.
 
 Scoring (0–4, original implementation):
 
-- **Length base score**: ≥8 chars → +1
-- **Character-class diversity**: lowercase / uppercase / digits / symbols — ≥2 classes → +1, ≥3 classes → +1 more
-- **Length bonus**: ≥12 chars with ≥3 classes → +1 more (positive score capped at 4)
+- **Length tiers** (effective length = 1 per ASCII char, 3 per CJK char): ≥8 → +1, ≥12 → +1, ≥20 → +1
+- **Character-class diversity**: lowercase / uppercase / digits / symbols / CJK — ≥2 classes → +1, ≥3 classes → +1 more (positive score capped at 4)
 - **Common weak-password penalty**: a built-in set of about 50 curated high-frequency weak passwords (123456 / password / qwerty / letmein …) — an exact lowercase match scores 0 (`password` → 0); **substring matches are NOT zeroed** — a strong password containing a weak word (`Str0ng!Passw0rd` contains `passw0rd`) keeps its entropy-derived score
 - **Repetition penalty**: ≥5 identical characters (e.g. `aaaaaa`) → capped at 1
 - **Sequential-run penalty**: a ≥5-char ascending/descending run (e.g. `12345` / `abcde`) → capped at 2
@@ -149,5 +148,11 @@ Level labels default to i18n (`passwordStrength.0`–`passwordStrength.4`, all 1
 | Name | Description |
 | --- | --- |
 | default | Auto-discovery area: the first `[type=password]` input (native input or hosting component) is discovered here and bound automatically |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-password-strength-width` | `12rem` |
 
 Colors: the bar and label use only `--oas-color-*` tokens (`--oas-color-danger` / `--oas-color-warning` / `--oas-color-success` / `--oas-color-bg-hover` / `--oas-color-text-*`); dark and high-contrast themes work automatically. Style parts `part="bar"` / `part="segment"` / `part="label"` can be customized via host `::part()`.

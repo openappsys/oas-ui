@@ -170,18 +170,18 @@ test('真实输入驱动档位：弱打字→danger、强打字→success、弱�
     .poll(() => meterState(page, MAIN_METER), { timeout: 10_000 })
     .toEqual(expect.objectContaining({ now: '4', barLevel: 'success', lit: 4, labelText: '很强' }))
   expect(await meterState(page, MAIN_METER)).toEqual(expect.objectContaining({ ariaLabel: '很强', labelHidden: false }))
-  // 几何回归：指示条宽度跟随目标输入（flex 收缩语境下曾塌成 12px——真实浏览器截图复核发现）
+  // 几何回归：指示条不得塌缩（flex 收缩语境下曾塌成 12px——真实浏览器截图复核发现）；
+  // 宽度由 :host 的 --oas-password-strength-width（默认 12rem）承载，不改写宿主行内样式
   const widths = await page.evaluate(() => {
     const host = document.querySelector('oas-password-strength[for="ps-demo-pwd"]') as HTMLElement
     const bar = host.shadowRoot!.querySelector('[part="bar"]') as HTMLElement
     const target = document.getElementById('ps-demo-pwd') as HTMLElement
     const br = bar.getBoundingClientRect()
     const ir = target.getBoundingClientRect()
-    return { barW: br.width, inputW: ir.width, hostInlineW: host.style.width }
+    return { barW: br.width, inputW: ir.width }
   })
   expect(widths.inputW, '目标输入应有布局宽').toBeGreaterThan(100)
-  expect(widths.barW, '指示条不得塌缩（回归：flex 收缩语境下曾 12px）').toBeGreaterThan(200)
-  expect(widths.hostInlineW).toBe(`${Math.round(widths.inputW)}px`)
+  expect(widths.barW, '指示条不得塌缩（回归：flex 收缩语境下曾 12px）').toBeGreaterThan(100)
   expectNoConsole(page)
 })
 
@@ -206,8 +206,8 @@ test('oas-score-change：detail {score,label}，逐字符输入 21 键仅 6 次�
     .toEqual(expect.objectContaining({ now: '4' }))
 
   // 精确事件序列（探针实测固化为回归口径）：
-  // 弱组合升 1 → 清空回落 0 → 强密码逐字符 1('MyStr0')→2('MyStr0n'，len 7 无长度基础分)→
-  // 3('MyStr0ng'，len 8)→4('MyStr0ng!Pas'，len 12 加权；末位同分不重发）
+  // 弱组合升 1 → 清空回落 0 → 强密码逐字符：'MyS'（2 类）→1、'MyStr0'（3 类）→2、
+  // 'MyStr0ng'（len 8 长度分）→3、'MyStr0ng!Pas'（len 12 长度分）→4（末位同分不重发）
   expect(await collectedEvents(page)).toEqual([
     { score: 1, label: '弱', host: 'ps-demo-pwd' },
     { score: 0, label: '很弱', host: 'ps-demo-pwd' },

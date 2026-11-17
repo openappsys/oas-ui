@@ -229,6 +229,10 @@ const INTERACTIONS: Array<[string, string]> = [
 //   resizecol     DOM 列宽拖拽：在匹配 th 右缘热区派发 pointerdown/move/up 合成事件序列
 //                 （真实指针会被原生 draggable 拖拽启动/视口外遮挡干扰）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
+  'password-strength': [
+    // score-change 是「变化才派发」语义：通用探针的固定填充打不出分数变化，须填真强口令
+    ['#ps-demo-pwd input', 'fill:MyStr0ng!Pass', '密码输入驱动分数变化 → oas-score-change'],
+  ],
   scanner: [
     ['[part="manual"] input', 'fill:6901234567892', '手动行填码值'],
     ['[part="manual"] button', 'click', '提交 → oas-scan'],

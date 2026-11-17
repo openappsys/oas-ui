@@ -9,9 +9,9 @@ export type PasswordScoreFn = (password: string) => number
 
 /**
  * 内置常见弱口令表（原创整理的高频弱口令小写集合，约 50 条，不抄第三方字典）：
- * 密码串小写归一后**精确命中**时分数压到 0（弱口令加尾巴仍是弱口令，
- * 如 `password1!` 不归一命中表、由长度/类别分自然给低分）。不认子串——
- * 强口令内含弱词片段（`Str0ng!Passw0rd` 含 `passw0rd`）不应被清零。
+ * 密码串小写归一后**精确命中**时分数压到 0。不认子串——强口令内含弱词片段
+ * （`Str0ng!Passw0rd` 含 `passw0rd`）不应被清零。弱口令加尾巴/分隔符可能逃出
+ * 本表（如 `q w e r t y 1`）——已知边界，强约束场景请用 `score-fn` 整体接管。
  */
 const WEAK_PASSWORDS: readonly string[] = [
   // 纯数字序列
@@ -94,9 +94,8 @@ function warnOnce(msg: string): void {
 
 /**
  * 内置评分（原创实现，0–4 五档）：
- * - 长度基础分：≥8 位 +1
- * - 类别多样性：小写/大写/数字/符号四类，≥2 类 +1、≥3 类再 +1
- * - 长度加权：≥12 位且 ≥3 类再 +1
+ * - 长度三档：有效长度 ≥8 / ≥12 / ≥20 各 +1（CJK 每字按 3 计有效长——表意文字信息熵高）
+ * - 类别多样性：小写/大写/数字/符号/CJK 五类，≥2 类 +1、≥3 类再 +1
  * 惩罚：弱口令**精确命中**（小写归一）→ 0；全同字符 → 上限 1；连续升降序段 → 上限 2
  * 弱口令只认精确命中不认子串：强口令内含弱词片段（如 `Str0ng!Passw0rd` 含 `passw0rd`）
  * 不应被清零——熵由长度/类别分自然刻画，子串清零会误杀好口令
@@ -107,11 +106,13 @@ export function scorePassword(password: string): number {
   if (isWeakPassword(raw)) return 0
   const chars = Array.from(raw)
   const classes = countCharClasses(raw)
+  const effLength = chars.reduce((n, ch) => n + (isCjk(ch) ? 3 : 1), 0)
   let points = 0
-  if (chars.length >= 8) points += 1
+  if (effLength >= 8) points += 1
+  if (effLength >= 12) points += 1
+  if (effLength >= 20) points += 1
   if (classes >= 2) points += 1
   if (classes >= 3) points += 1
-  if (chars.length >= 12 && classes >= 3) points += 1
   let score = Math.max(0, Math.min(4, points))
   if (isRepetitive(chars)) score = Math.min(score, 1)
   if (hasSequentialRun(chars, SEQUENTIAL_RUN_MIN)) score = Math.min(score, 2)
@@ -123,19 +124,27 @@ function isWeakPassword(password: string): boolean {
   return WEAK_PASSWORDS.includes(password.toLowerCase())
 }
 
-/** 字符类别计数：小写 / 大写 / 数字 / 符号（非前三类一律计符号，含空格与全部非 ASCII 字符） */
+/** 字符类别计数：小写 / 大写 / 数字 / 符号 / CJK（CJK 文字计独立类别，纯中日韩口令不被公式系统性压弱） */
 function countCharClasses(password: string): number {
   let lower = false
   let upper = false
   let digit = false
   let symbol = false
+  let cjk = false
   for (const ch of password) {
     if (ch >= 'a' && ch <= 'z') lower = true
     else if (ch >= 'A' && ch <= 'Z') upper = true
     else if (ch >= '0' && ch <= '9') digit = true
+    else if (isCjk(ch)) cjk = true
     else symbol = true
   }
-  return Number(lower) + Number(upper) + Number(digit) + Number(symbol)
+  return Number(lower) + Number(upper) + Number(digit) + Number(symbol) + Number(cjk)
+}
+
+/** CJK 文字：中日韩统一表意文字 / 日文假名 / 韩文音节（独立计类，不再混入符号） */
+function isCjk(ch: string): boolean {
+  const cp = ch.codePointAt(0) ?? 0
+  return (cp >= 0x4e00 && cp <= 0x9fff) || (cp >= 0x3040 && cp <= 0x30ff) || (cp >= 0xac00 && cp <= 0xd7af)
 }
 
 /** 全同字符判定：长度 ≥5 且只含一种字符（如 aaaaaa） */
@@ -187,7 +196,7 @@ const PASSWORD_STRENGTH_STYLE = `
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
-  /* 默认宽（无目标/目标无布局时）；绑定目标后以行内 width 跟随目标输入宽（指示条与密码框等宽） */
+  /* 默认宽 12rem；宿主/配方可用 --oas-password-strength-width 覆盖（不改写宿主行内样式） */
   width: var(--oas-password-strength-width, 12rem);
   font-family: inherit;
 }
@@ -265,8 +274,6 @@ export class OASPasswordStrength extends OASElement {
   private boundTarget: (HTMLElement & { value?: unknown }) | null = null
   private boundHandler: ((e: Event) => void) | null = null
   private rootObserver: MutationObserver | null = null
-  /** 目标输入宽度跟随观察器（指示条与密码框等宽的通行布局；目标无布局时保留 CSS 默认宽） */
-  private widthObserver: ResizeObserver | null = null
   /** 当前生效分数（事件「变化才派发」的对比基准） */
   private currentScore = 0
   private customScoreFn: PasswordScoreFn | null = null
@@ -363,32 +370,14 @@ export class OASPasswordStrength extends OASElement {
       next.addEventListener('input', this.onTargetInput)
       this.boundTarget = next
       this.boundHandler = this.onTargetInput
-      this.syncWidthToTarget()
     }
     return true
-  }
-
-  /** 绑定后宽度跟随目标输入（happy-dom/SSR 无布局返回 0 时不写行内宽，回落 CSS 默认） */
-  private syncWidthToTarget(): void {
-    this.widthObserver?.disconnect()
-    this.widthObserver = null
-    const target = this.boundTarget
-    if (!target || typeof ResizeObserver === 'undefined') return
-    const apply = (): void => {
-      const w = target.getBoundingClientRect().width
-      if (w > 0) this.style.width = `${Math.round(w)}px`
-    }
-    apply()
-    this.widthObserver = new ResizeObserver(apply)
-    this.widthObserver.observe(target)
   }
 
   private detachTarget(): void {
     if (this.boundTarget && this.boundHandler) {
       this.boundTarget.removeEventListener('input', this.boundHandler)
     }
-    this.widthObserver?.disconnect()
-    this.widthObserver = null
     this.boundTarget = null
     this.boundHandler = null
   }
