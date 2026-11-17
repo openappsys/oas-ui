@@ -2,7 +2,7 @@
 // 背景：自定义元素默认非 labelable，消费侧 <label for> 对 oas-input 完全不生效（下游 42 处 a11y 告警根因）。
 
 import { test, expect } from '@playwright/test'
-import { up } from './helpers'
+import { up, waitForTableMutationQuiet } from './helpers'
 
 test('form-associated：label for 关联 + 焦点转递 + FormData + reset + fieldset disabled（pilot: oas-input）', async ({
   page,
@@ -926,6 +926,9 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
   //         同根 label 动态刷新且不覆盖表格注入的既有命名 ----
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit-component')
+  // 编辑装饰 + tbody 重建静默后再派发 dblclick：重建风暴中启动的编辑会被随后的重建抹掉
+  // （T16 归因；编辑器宿主到场 ≠ 内部控件已渲染，故下方等待同时要求 input）
+  await waitForTableMutationQuiet(page, 'table-edit-component')
   await page.evaluate(() => {
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
     const td = table.shadowRoot.querySelector('td.editable-cell') as HTMLElement
@@ -933,7 +936,11 @@ test('form-associated：外部 label 动态刷新矩阵（直连 / 弹窗 / 表�
   })
   await page.waitForFunction(() => {
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
-    return !!table.shadowRoot!.querySelector('oas-input.cell-editor-component')
+    // 编辑器宿主挂载 + 内部 input 渲染两个条件都要等：宿主先到场、控件渲染异步跟帧，
+    // 期间还可能被下一次 tbody 重建抹掉——只等宿主会在后续 evaluate 读到 null（全量 e2e 实测 flake；
+    // 重建风暴由上方 waitForTableMutationQuiet 先行排空）
+    const editor = table.shadowRoot!.querySelector('oas-input.cell-editor-component') as HTMLElement | null
+    return !!editor?.shadowRoot?.querySelector('input')
   })
   const result = await page.evaluate(async () => {
     const tick = () => new Promise((res) => setTimeout(res, 0))
@@ -976,6 +983,9 @@ test('form-associated：表格行内编辑点击关联 label 不退出编辑（�
 }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit-component')
+  // 编辑装饰 + tbody 重建静默后再派发 dblclick：重建风暴中启动的编辑会被随后的重建抹掉
+  // （T16 归因；编辑器宿主到场 ≠ 内部控件已渲染，故下方等待同时要求 input）
+  await waitForTableMutationQuiet(page, 'table-edit-component')
   await page.evaluate(() => {
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
     const td = table.shadowRoot.querySelector('td.editable-cell') as HTMLElement
@@ -983,7 +993,11 @@ test('form-associated：表格行内编辑点击关联 label 不退出编辑（�
   })
   await page.waitForFunction(() => {
     const table = document.querySelector('#table-edit-component') as HTMLElement & { shadowRoot: ShadowRoot }
-    return !!table.shadowRoot!.querySelector('oas-input.cell-editor-component')
+    // 编辑器宿主挂载 + 内部 input 渲染两个条件都要等：宿主先到场、控件渲染异步跟帧，
+    // 期间还可能被下一次 tbody 重建抹掉——只等宿主会在后续 evaluate 读到 null（全量 e2e 实测 flake；
+    // 重建风暴由上方 waitForTableMutationQuiet 先行排空）
+    const editor = table.shadowRoot!.querySelector('oas-input.cell-editor-component') as HTMLElement | null
+    return !!editor?.shadowRoot?.querySelector('input')
   })
   // 关联 label 插到表格工具栏（同 shadowRoot、编辑器之外——避免被绝对定位的编辑器盖住导致真实点击落点错误）
   await page.evaluate(() => {
