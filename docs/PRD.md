@@ -311,6 +311,23 @@ P1 中优先增强四项 + P2 顺手小项四件一批，来源为 everything �
 - 用户视角门禁：demo 真点/真输入（tooltip 真 hover、扫码手动模式真实输入、签名板真实笔画）、交互态、dark/RTL、console 零告警、Vue 桥接属性存活。
 - 收口 ≥2 轮 × ≥2 模型交叉 review，修复批再审；每个修复项固化回归。
 
+## v2.6.8：password-strength 密码强度指示组件
+
+- 形态：独立强度指示条（不包裹输入框）：`for="<id>"` 精确关联，或 default slot 内自动发现 `[type=password]` 输入；与 oas-input / 原生 input 均可组合。
+- 评分：内置 0–4 五档——长度基础分 + 字符类别多样性（小写/大写/数字/符号）+ 长度加权 − 常见弱口令惩罚（内置原创小份弱口令表）；`score-fn` property 可整体覆盖（入参密码串，返回 0–4）。
+- 属性：`for`、`level`（0–4 受控；设置后停止自动计算，受控/非受控双模式）、`levels`（JSON 档位文案数组，默认走 i18n `passwordStrength.*`）、`show-label`（显示档位文案）。事件 `oas-score-change`（detail `{ score, label }`，仅变化时派发）。
+- 视觉：4 段分段条；空档 neutral、1 danger、2 warning、3/4 success；颜色全走 `--oas-color-*` token（暗色自动正确）；part：`bar` / `segment` / `label`。
+- a11y：`role="meter"` + `aria-valuenow/min/max`，档位文案进 `aria-label`；纯指示组件不抢焦点、不进 tab 序。
+- i18n：五档文案进 form 语料切片（`passwordStrength.0`–`passwordStrength.4`），16 语言全量（completeness 双层守卫）。
+
+### 验收
+
+- TDD（RED→GREEN）：评分函数边界（空串/弱/中/强、常见口令惩罚、重复字符惩罚、`score-fn` 覆盖）、`for` 关联与 slot 发现、`level` 受控/非受控、`levels` 覆盖、事件 detail 与「变化才派发」、目标输入移除后清理监听。
+- 新文档页（zh/en：oas-input 组合、受控档位、自定义评分、slot 形态）触发全量 e2e（smoke/dark/code/visual/console-sweep 自动收集）+ qa-regression 定点 spec（真实输入驱动档位变化、axe、暗色对比、Vue 桥接属性存活）。
+- `pnpm api:scan && pnpm api:gen && pnpm api:check` 零漂移；`llms:gen/check`、`stats:gen/check` 同步刷新；`perf:size` 不破族天花板；`qa:audit:check` 全维度零新增例外。
+- 用户视角门禁：demo 真输入可见档位反馈、dark 视觉、console 零告警。
+- 收口 ≥2 轮 × ≥2 模型交叉 review，修复批再审；每个修复项固化回归。
+
 ## v2.6.7：gantt 资源泳道增强批（分配编辑 + reassign 避让 + 泳道内嵌负荷 + 资源日历口径固化）
 
 ### 功能定义
