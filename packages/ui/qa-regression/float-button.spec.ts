@@ -415,6 +415,28 @@ test('group actions 气泡：hover 时 .bubble 可见（其余隐藏）且文本
   await expect(host).toHaveAttribute('expanded', '', { timeout: 5000 })
   // 子钮渲染就绪的真实信号：3 个气泡全部出现
   await expect.poll(() => host.evaluate((el) => el.shadowRoot!.querySelectorAll('.action-btn .bubble').length)).toBe(3)
+  // 展开动画落定门：首子钮包围盒连续 2 帧一致再 hover——高负载下 WebKit 帧饥饿会把
+  // Playwright 的「visible and stable」判定拖到超时（全量 e2e 实测 hover 120s 超时 flake）
+  await expect
+    .poll(
+      () =>
+        host.evaluate(
+          (el) =>
+            new Promise<boolean>((resolve) => {
+              const btn = el.shadowRoot!.querySelector('.action-btn') as HTMLElement | null
+              if (!btn) return resolve(false)
+              const r1 = btn.getBoundingClientRect()
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => {
+                  const r2 = btn.getBoundingClientRect()
+                  resolve(r1.x === r2.x && r1.y === r2.y && r1.width === r2.width && r1.height === r2.height)
+                }),
+              )
+            }),
+        ),
+      { timeout: 15000 },
+    )
+    .toBe(true)
   // 气泡文本 = label
   const labels = await host.evaluate((el) =>
     [...el.shadowRoot!.querySelectorAll<HTMLElement>('.action-btn .bubble')].map((b) => b.textContent),

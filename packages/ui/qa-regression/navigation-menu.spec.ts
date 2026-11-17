@@ -326,7 +326,6 @@ test('navigation-menu 浮层 hidden→visible：面板尺寸自愈，与可见�
       { label: '系统设置', value: 'sys', children: [{ label: '基础设置', value: 'settings', href: '#' }] },
     ])
     const raf = () => new Promise((res) => requestAnimationFrame(res))
-    const tick = (n: number) => new Promise((res) => setTimeout(res, n))
 
     const build = async (hidden: boolean) => {
       const wrap = document.createElement('div')
@@ -339,14 +338,25 @@ test('navigation-menu 浮层 hidden→visible：面板尺寸自愈，与可见�
       // 受控打开：面板在挂载首帧即渲染（hidden 时即为「不可测帧」路径）
       nav.setAttribute('value', 'biz')
       wrap.appendChild(nav)
-      await tick(60)
+      // 等首帧渲染完成（shadow + viewport 出现）再翻可见——必须在 hidden 态完成首帧才
+      // 是「不可测帧挂载」复现路径（条件门替代固定 tick(60)）
+      for (let k = 0; k < 120 && !nav.shadowRoot?.querySelector('[part="viewport"]'); k++) await raf()
       if (hidden) {
         wrap.style.display = ''
       }
-      await raf()
-      await raf()
-      // 等 width/height 过渡稳定（.viewport transition 0.2s），避免半途 rect 抖动
-      await tick(350)
+      // 等 RO 自愈 + width/height 过渡落定（.viewport transition 0.2s）：--vp-w 已写入且
+      // viewport rect 连续 2 帧一致（条件门替代固定 tick(350)——高负载下固定 sleep 不够，
+      // 全量 e2e 实测会量到过渡半途、尺寸断言抖动）
+      const settled = async (): Promise<boolean> => {
+        const vp0 = nav.shadowRoot?.querySelector('[part="viewport"]') as HTMLElement | null
+        if (!vp0 || vp0.style.getPropertyValue('--vp-w') === '') return false
+        const ra = vp0.getBoundingClientRect()
+        await raf()
+        await raf()
+        const rb = vp0.getBoundingClientRect()
+        return ra.x === rb.x && ra.y === rb.y && ra.width === rb.width && ra.height === rb.height
+      }
+      for (let k = 0; k < 90 && !(await settled()); k++) await raf()
       const sr = nav.shadowRoot!
       const vp = sr.querySelector('[part="viewport"]') as HTMLElement
       const panel = sr.querySelector('[part="panel"]') as HTMLElement
