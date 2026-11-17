@@ -85,7 +85,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **oas-password-strength** | 密码强度独立指示组件（不包裹输入框）：`for` 关联 / slot 自动发现密码输入；内置 0–4 五档评分（长度 + 字符类别多样性 + 常见弱口令惩罚）；`level` 受控、`levels` 文案覆盖、`score-fn` 自定义评分 property；`oas-score-change` 事件；分段条全 token 配色（暗色自动）；`role="meter"`；i18n 16 语言五档文案 | 🚧 进行中（v2.6.8） |
+| **oas-password-strength** | 密码强度独立指示组件（不包裹输入框）：`for` 关联 / slot 自动发现密码输入；内置 0–4 五档评分（有效长度三档（CJK 每字按 3 计）+ 五类字符多样性 + 常见弱口令精确命中惩罚/重复/连续段惩罚）；`level` 受控、`levels` 文案覆盖、`score-fn` 自定义评分 property；`oas-score-change` 事件；分段条全 token 配色（暗色自动），宽 `--oas-password-strength-width` 可调；`part="bar"` 承载 `role="meter"`（host generic）；i18n 16 语言五档文案；45 单测 + qa-regression 8 条 + demo-coverage 探针 | ✅ 已完成（v2.6.8） |
 
 ## v2.6.7（工具链）
 
