@@ -14,14 +14,18 @@ function waitFrame(): Promise<void> {
   return new Promise((r) => setTimeout(r, 40))
 }
 
-/** 等一个动画周期（进入 ≈20+180ms、退场 ≈180ms，取 280ms 裕量） */
-function waitAnim(): Promise<void> {
-  return new Promise((r) => setTimeout(r, 280))
-}
-
 /** 等 shake 动画结束（CSS 300ms，取 420ms 裕量） */
 function waitShake(): Promise<void> {
   return new Promise((r) => setTimeout(r, 420))
+}
+
+/** 条件轮询（有界）：动画链是 20ms+180ms 定时器串，负载下滑点会让固定 sleep 读到半途状态 */
+async function until(cond: () => boolean, maxMs = 2000, step = 25): Promise<void> {
+  const start = Date.now()
+  while (!cond()) {
+    if (Date.now() - start > maxMs) return
+    await new Promise((r) => setTimeout(r, step))
+  }
 }
 
 function maskClick(el: OASBackdrop): MouseEvent {
@@ -84,7 +88,7 @@ describe('OASBackdrop', () => {
       el.removeAttribute('open')
       // 立即进入退场态（data-closing 保持可见播放淡出）
       expect(el.hasAttribute('data-closing')).toBe(true)
-      await waitAnim()
+      await until(() => !document.body.contains(el))
       expect(document.body.contains(el)).toBe(false)
       expect(dispatchWheel()).toBe(false)
     })
@@ -210,7 +214,7 @@ describe('OASBackdrop', () => {
       const events: string[] = []
       el.addEventListener('oas-after-open', () => events.push('after-open'))
       el.addEventListener('oas-after-show', () => events.push('after-show'))
-      await waitAnim()
+      await until(() => events.length >= 2)
       // 双发顺序与 modal/drawer 家族先例一致：兼容别名在前、规范名在后
       expect(events).toEqual(['after-show', 'after-open'])
     })
@@ -222,7 +226,7 @@ describe('OASBackdrop', () => {
       el.addEventListener('oas-after-close', () => events.push('after-close'))
       el.removeAttribute('open')
       expect(el.hasAttribute('data-closing')).toBe(true)
-      await waitAnim()
+      await until(() => events.length >= 1 && !document.body.contains(el))
       expect(document.body.contains(el)).toBe(false)
       expect(events).toEqual(['after-close'])
     })
