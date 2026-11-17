@@ -133,7 +133,23 @@ async function wheelToBottom(page: Page, id: string): Promise<void> {
   const box = await page.locator(`#${id}`).boundingBox()
   if (!box) throw new Error(`#${id} 无几何（不可见）`)
   await page.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height / 2, 100))
-  for (let i = 0; i < 25; i++) await page.mouse.wheel(0, 120) // 25 格 × 120px ≫ 全量内容高，必达底
+  // 分批供给轮事件（批内 5 × 120px + 帧间隙）：infinite 装载链靠 scroll 事件驱动下一块
+  // （含 max-loaded-rows 淘汰位移后无原生事件），一次性 25 tick 洪发会在链中间把事件耗尽、
+  // 近底探测断流（Firefox 实测 2/5 超时——滚动到底但 loaded 停在 60/90）。滚动位连续两批
+  // 不再前进 = 真到底（有界 15 批）。
+  let lastTop = -1
+  let stall = 0
+  for (let batch = 0; batch < 15 && stall < 2; batch++) {
+    for (let i = 0; i < 5; i++) await page.mouse.wheel(0, 120)
+    await runScrollFrames(page, 2)
+    const top = await page.evaluate((hostId) => {
+      const wrap = document.getElementById(hostId)!.shadowRoot!.querySelector('.table-scroll') as HTMLElement
+      return wrap.scrollTop
+    }, id)
+    if (top === lastTop) stall++
+    else stall = 0
+    lastTop = top
+  }
 }
 
 const noMoreRow = (page: Page, id: string) => page.locator(`#${id} [part="no-more-row"]`)
