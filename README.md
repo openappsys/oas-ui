@@ -10,12 +10,12 @@ TypeScript 全量类型 · tree-shakable · light/dark/high-contrast 三主题 �
 
 | 指标 | 数值 |
 | --- | --- |
-| 组件数 | 145 |
-| CDN 全量包（gzip） | 601.5 KB |
-| 按钮链（gzip） | 22.4 KB |
-| 测试（含 e2e） | 11419 |
+| 组件数 | 155 |
+| CDN 全量包（gzip） | 712.8 KB |
+| 按钮链（gzip） | 20.9 KB |
+| 测试用例（vitest 单测） | 14459 |
 | 语言包 | 内置 16 种：zh-CN / zh-Hant / en / ja / ko / de / fr / es / pt-BR / ru / ar / hi / th / uk / he / fa（ar、he、fa 为 RTL；pt 为 pt-BR 兼容别名） |
-| 当前版本 | v2.6.2 |
+| 当前版本 | v2.6.8 |
 
 ## 快速开始
 
