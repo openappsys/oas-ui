@@ -28,7 +28,7 @@ test.beforeEach(async ({ page }) => {
   page.on('console', (msg) => {
     if (msg.type() !== 'error' && msg.type() !== 'warning') return
     if (/_ga_RXS142HBXF|Google Analytics|gtag/.test(msg.text())) return
-    if (!/scroll-linked positioning effect/i.test(msg.text())) return
+    if (/scroll-linked positioning effect/i.test(msg.text())) return
     p.__oasConsole.push(`${msg.type()}: ${msg.text()}`)
   })
 })
