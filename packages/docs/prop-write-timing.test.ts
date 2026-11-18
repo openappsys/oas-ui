@@ -275,7 +275,8 @@ function walkMd(dir: string): string[] {
 }
 
 describe('docs demo 升级前裸 property 写入防回流', () => {
-  test('全站 md 无裸写（transfer/virtual-list/calendar/message-scroller 曾真实命中）', () => {
+  // 30s：全站 152 页 md 正则扫描是确定性重负载（非时序竞态），低核 CI runner（Gitea 2 核）会超 vitest 默认 5s
+  test('全站 md 无裸写（transfer/virtual-list/calendar/message-scroller 曾真实命中）', { timeout: 30_000 }, () => {
     const all: Finding[] = []
     for (const f of walkMd(DOCS_DIR)) {
       all.push(...scanMarkdown(readFileSync(f, 'utf8'), f.replaceAll('\\', '/')))

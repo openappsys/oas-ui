@@ -2480,7 +2480,8 @@ describe('OASGantt 列虚拟滚动（横向时间轴窗口）', () => {
     expectWindow(g.winColStart, g.winColEnd)
   })
 
-  it('renderHeader 不随总列数线性（分组预计算 + 二分）：10 年 day 档滚动帧不再扫全列', () => {
+  // 30s：10 年 day 刻度真实渲染是确定性重负载（非时序竞态），低核 CI runner 会超 vitest 默认 5s
+  it('renderHeader 不随总列数线性（分组预计算 + 二分）：10 年 day 档滚动帧不再扫全列', { timeout: 30_000 }, () => {
     const el = mount({ tasks: JSON.stringify([{ id: 'a', name: 'A', start: '2016-01-01', end: '2025-12-31' }]) })
     const g = priv(el)
     const tbody = stubViewport(el, 600)
