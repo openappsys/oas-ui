@@ -221,7 +221,10 @@ async function scanPage(p: import('@playwright/test').Page): Promise<Array<{ pat
 for (const path of PAGES) {
   test(`交互元素视觉内容非空：${path}`, async ({ page }) => {
     await page.goto(path, { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('.demo-block', { state: 'attached', timeout: 15000 })
+    // 60s：重页（gantt 多实例初始渲染）在慢 WebKit/CI 上会长时间占满主线程——Playwright
+    // 注入脚本拿不到执行间隙，出现「选择器已解析到 N 个元素仍超时」的饥饿假象（GH e2e-webkit
+    // shard 实测 15s 超时 ×2）。条件语义不变（等 demo 块 attached），只是给慢机器执行间隙余量。
+    await page.waitForSelector('.demo-block', { state: 'attached', timeout: 60_000 })
     await page.evaluate(() => document.fonts.ready)
     await waitForStableDom(page)
     const failures = await scanPage(page)
