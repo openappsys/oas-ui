@@ -17,7 +17,7 @@ jobs:
       contents: read # checkout 本仓库
       actions: read # 查询 CI run 状态的最小权限
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 同 SHA 完整 CI 全绿校验（gh api 查询，判定矩阵见 scripts/release-gate.mjs）
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -33,15 +33,15 @@ jobs:
     steps:
       # 固定验证通过的 SHA：tag 若在验证后被移动，后续 tag=HEAD 校验会失败而不是发布到另一提交；
       # fetch-depth: 0 完整历史：tag 解引用（v<版本>^{commit}）与上版基线 diff 需要全部 tag/提交
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
       # 发布前硬校验（CI 严格模式）：tag v<版本> 必须解析到已验证的 HEAD，版本号/CHANGELOG 一致；
       # 非 semver tag 直接失败。必须在 build/api:check/发布之前跑
       - run: node scripts/release-check.mjs "${GITHUB_REF_NAME#v}" --require-tag-head
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
