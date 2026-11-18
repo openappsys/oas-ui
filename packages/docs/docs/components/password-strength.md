@@ -119,6 +119,10 @@ onMounted(() => {
 - host 保持普通容器、不挂指示角色：slot 内嵌的密码输入与分段条是 flat tree 兄弟节点，不会被 meter 角色的「子内容展平」吞掉（`nested-interactive` 回归固化于 qa-regression 定点 spec）；纯指示组件不抢焦点、不进 tab 序
 - 分段点亮与档位文案双重编码（颜色 + 文字），色弱用户可从文案区分档位；档位文案用 `-text` 文字安全 token（浅底对比度 ≥4.5:1），分段填充用实色 token（非文字图形 ≥3:1）
 
+## 已知边界
+
+- 目标输入带初始 `value` 时，挂载即对初始值评分并在首帧派发一次 `oas-score-change`（「变化才派发」的自然结果）。`appendChild` 之后才 `addEventListener` 的宿主如需初始分数，请直接读 `level` 属性而非依赖首帧事件。
+
 ## API
 
 ### oas-password-strength

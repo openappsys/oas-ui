@@ -227,7 +227,11 @@ export {
   type ToggleItem,
 } from './form/toggle-group/index.js'
 export { OASPinInput } from './form/pin-input/oas-pin-input.js'
-export { OASPasswordStrength, type PasswordScoreFn } from './form/password-strength/oas-password-strength.js'
+export {
+  OASPasswordStrength,
+  scorePassword,
+  type PasswordScoreFn,
+} from './form/password-strength/oas-password-strength.js'
 export { OASDynamicInput } from './form/dynamic-input/oas-dynamic-input.js'
 export { OASChipsInput } from './form/chips-input/oas-chips-input.js'
 export { OASDynamicTags } from './form/dynamic-tags/oas-dynamic-tags.js'

@@ -449,3 +449,34 @@ test('强制色：box-shadow 被弃用后组件仍可键盘操作（存在性 + 
     { timeout: 5000 },
   )
 })
+
+test('password-strength：forced-colors 下点亮段回退系统 Highlight 保持可辨', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' })
+  await page.goto('/components/password-strength.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-password-strength[for="ps-demo-pwd"]')
+  await page.locator('#ps-demo-pwd input').click()
+  await page.locator('#ps-demo-pwd input').fill('MyStr0ng!Pass')
+  // 点亮 4 段后：forced-colors 回退段（Highlight）生效——作者色被 UA 重映射时点亮段仍非透明且同色
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const host = document.querySelector('oas-password-strength[for="ps-demo-pwd"]') as HTMLElement
+          const filled = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="segment"].filled')]
+          if (filled.length !== 4) return ''
+          const colors = filled.map((s) => getComputedStyle(s).backgroundColor)
+          return colors.every((c) => c === colors[0]) ? colors[0]! : 'mismatch'
+        }),
+      { timeout: 5000 },
+    )
+    .not.toBe('')
+  const color = await page.evaluate(
+    () =>
+      getComputedStyle(
+        document
+          .querySelector('oas-password-strength[for="ps-demo-pwd"]')!
+          .shadowRoot!.querySelector<HTMLElement>('[part="segment"].filled')!,
+      ).backgroundColor,
+  )
+  expect(color, 'forced-colors 下点亮段不得透明（Highlight 回退生效）').not.toContain('rgba(0, 0, 0, 0)')
+})

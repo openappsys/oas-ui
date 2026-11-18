@@ -118,6 +118,10 @@ Level labels default to i18n (`passwordStrength.0`–`passwordStrength.4`, all 1
 - The host stays a plain container without an indicator role: a password input slotted inside is a flat-tree sibling of the bar, so it is not swallowed by the meter role's "children are presentational" semantics (the `nested-interactive` regression is pinned by the qa-regression spec); a pure indicator — no focus grab, not in the tab order
 - Segments and label encode the level twice (color + text), so color-blind users can still tell levels apart; the label uses `-text` safe-contrast tokens (≥4.5:1 on light backgrounds) and the segment fills use solid tokens (≥3:1 for non-text graphics)
 
+## Known Limitations
+
+- When the target input carries an initial `value`, the component scores it on mount and fires `oas-score-change` once on the first frame (a natural consequence of "fire on change"). Hosts that attach `addEventListener` after `appendChild` should read the `level` attribute for the initial score instead of relying on that first event.
+
 ## API
 
 ### oas-password-strength
