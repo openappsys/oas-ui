@@ -19,7 +19,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   // 侧栏链接点击自带 actionability 等待（SPA 首屏渲染完成后可点）
 
-  // 客户端跳转到日程
+  // 客户端跳转到日程（同类重页，条件等待 60s 对齐 gantt 口径）
   await page.locator('a[href="/components/scheduler"]').first().click()
   await page.waitForFunction(
     () =>
@@ -27,7 +27,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
         (el) => (el.shadowRoot?.querySelectorAll('.event, .res-ev, .res-bar').length ?? 0) > 0,
       ),
     undefined,
-    { timeout: 20000 },
+    { timeout: 60_000 },
   )
   const sched = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-scheduler')]
@@ -41,7 +41,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
   expect(sched.events, 'scheduler demo 渲染事件').toBeGreaterThanOrEqual(1)
   expect(sched.ownView, '元素上不得出现 own 属性 view').toBe(false)
 
-  // 客户端跳转到甘特
+  // 客户端跳转到甘特（重页：任务数据 + 布局计算，低核 WebKit runner 渲染条 >20s——条件等待给到 60s）
   await page.locator('a[href="/components/gantt"]').first().click()
   await page.waitForFunction(
     () =>
@@ -49,7 +49,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
         (el) => (el.shadowRoot?.querySelectorAll('.bars .bar').length ?? 0) > 0,
       ),
     undefined,
-    { timeout: 20000 },
+    { timeout: 60_000 },
   )
   const gantt = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-gantt')]
@@ -67,7 +67,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
   expect(gantt.ownScale, '元素上不得出现 own 属性 scale（会遮蔽方法）').toBe(false)
   expect(gantt.ownExpanded, '元素上不得出现 own 属性 expanded（会遮蔽 Set 字段）').toBe(false)
 
-  // 客户端跳转到资源
+  // 客户端跳转到资源（同类重页，条件等待 60s 对齐 gantt 口径）
   await page.locator('a[href="/components/resource"]').first().click()
   await page.waitForFunction(
     () =>
@@ -75,7 +75,7 @@ test('docs SPA 跳转：gantt / resource demo 不因属性-方法撞名而空白
         (el) => (el.shadowRoot?.querySelectorAll('.lanes .row.lane .bar').length ?? 0) > 0,
       ),
     undefined,
-    { timeout: 20000 },
+    { timeout: 60_000 },
   )
   const res = await page.evaluate(() => {
     const els = [...document.querySelectorAll('oas-resource')]
