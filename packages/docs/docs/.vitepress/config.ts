@@ -7,6 +7,32 @@ import { fileURLToPath } from 'node:url'
 
 /** docs 根目录（config.ts 位于 docs/.vitepress/）——用于构建期生成每页 markdown 镜像 */
 const DOCS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
+/** 组件库当前版本（导航版本下拉用）——直接读 ui 包 package.json，构建期即取真值、零漂移 */
+const VERSION = (JSON.parse(readFileSync(join(DOCS_DIR, '../../..', 'packages/ui/package.json'), 'utf8')) as {
+  version: string
+}).version
+
+/** 版本下拉导航（Beszel 式）：版本号 + 发布记录 / 站内更新记录 / 提交问题 */
+const versionNav = (prefix = ''): DefaultTheme.NavItem[] => [
+  {
+    text: `v${VERSION}`,
+    items: [
+      {
+        text: prefix === 'en/' ? 'Release Notes' : '发布记录',
+        link: 'https://github.com/openappsys/oas-ui/releases',
+        target: '_blank',
+        rel: 'noopener',
+      },
+      { text: prefix === 'en/' ? 'Changelog' : '更新记录', link: `${prefix}changelog` },
+      {
+        text: prefix === 'en/' ? 'Report an Issue' : '提交问题',
+        link: 'https://github.com/openappsys/oas-ui/issues',
+        target: '_blank',
+        rel: 'noopener',
+      },
+    ],
+  },
+]
 /** 自定义元素标签清单（API 生成物）；Preflight 原生 reset 需要显式排除这些宿主。 */
 const OAS_TAGS = JSON.parse(
   readFileSync(join(DOCS_DIR, '../../..', 'docs/api-manifest/index.json'), 'utf8'),
@@ -277,6 +303,7 @@ gtag('config', 'G-RXS142HBXF');`,
   themeConfig: {
     logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
     nav: [
+      ...versionNav(),
       { text: '指南', link: '/guide/getting-started' },
       { text: '设计 Token', link: '/guide/tokens' },
       {
@@ -361,6 +388,7 @@ gtag('config', 'G-RXS142HBXF');`,
       themeConfig: {
         logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
         nav: [
+          ...versionNav('en/'),
           { text: 'Guide', link: '/en/guide/getting-started' },
           { text: 'Tokens', link: '/en/guide/tokens' },
           {
