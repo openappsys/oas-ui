@@ -1,0 +1,118 @@
+{
+  "className": "OASBarrage",
+  "sourceFile": "packages/ui/src/data/barrage/oas-barrage.ts",
+  "attrs": [
+    {
+      "name": "tracks",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "speed",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "gap",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-active",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "paused",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "accessible",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [
+    {
+      "name": "add",
+      "signature": "add(text: string, options: BarrageItemOptions): void",
+      "description": "追加一条弹幕；空文本忽略"
+    },
+    {
+      "name": "addBatch",
+      "signature": "addBatch(items: Array<string | BarrageItemInput>): void",
+      "description": "批量追加（字符串或 `{ text, color?, key? }`）"
+    },
+    {
+      "name": "pause",
+      "signature": "pause(): void",
+      "description": "暂停：CSS 动画与排期计时一起冻结"
+    },
+    {
+      "name": "resume",
+      "signature": "resume(): void",
+      "description": "继续"
+    },
+    {
+      "name": "clear",
+      "signature": "clear(): void",
+      "description": "清空在场与排队弹幕，轨道重新可用"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-item-click",
+      "detail": "{ text: item.text, key: item.key, color: item.color }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-barrage-height",
+      "default": "200px"
+    },
+    {
+      "name": "--oas-barrage-bg",
+      "default": "transparent"
+    },
+    {
+      "name": "--oas-barrage-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-barrage-tracks",
+      "default": "3"
+    },
+    {
+      "name": "--oas-barrage-item-bg",
+      "default": "color-mix(in srgb, var(--oas-color-overlay) 24%, transparent)"
+    },
+    {
+      "name": "--oas-barrage-item-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-barrage-font-size",
+      "default": "var(--oas-font-size-md)"
+    },
+    {
+      "name": "--oas-barrage-item-hover-bg",
+      "default": "color-mix(in srgb, var(--oas-color-overlay) 36%, transparent)"
+    },
+    {
+      "name": "--oas-barrage-stage-width",
+      "default": "800px"
+    }
+  ],
+  "unresolved": []
+}
