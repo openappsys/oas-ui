@@ -1,0 +1,90 @@
+{
+  "className": "OASCurtain",
+  "sourceFile": "packages/ui/src/overlay/curtain/oas-curtain.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "storage-key",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "persist",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "auto",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "heading",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mask-closable",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [
+    {
+      "name": "show",
+      "signature": "show(): void",
+      "description": "命令式展开（不清理本地记忆）"
+    },
+    {
+      "name": "close",
+      "signature": "close(reason: CloseReason): void",
+      "description": "命令式关闭：写本地记忆并派发 oas-close"
+    },
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "清除本地记忆（下次进入重新弹出）；不改变当前显隐"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-close",
+      "detail": "{ reason }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-curtain-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-curtain-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-curtain-duration",
+      "default": "var(--oas-transition-base)"
+    },
+    {
+      "name": "--oas-curtain-max-width",
+      "default": "420px"
+    },
+    {
+      "name": "--oas-curtain-panel-bg",
+      "default": "var(--oas-color-bg-elevated)"
+    }
+  ],
+  "unresolved": []
+}
