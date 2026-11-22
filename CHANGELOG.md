@@ -2,6 +2,41 @@
 
 ## [未发布]
 
+### 新增
+
+**电商组件族（commerce，新场景族，9 件）**
+
+- **oas-sku（commerce 族，商品规格选择）**：`specs`（规格组 + 选项）/ `skus`（选项组合 → 价格 / 库存 / 图片）数据契约；内置组合匹配算法——精确匹配定位 SKU、逐项「可选路径」判定（选中项按「该组合有货」过滤可选项）、缺货组合置灰；数量步进按库存钳制；aria-live 价格播报；原生 radio fieldset 键盘可达；桌面内嵌面板形态（底部弹层形态后续补）。TDD（RED→GREEN）：单测覆盖匹配矩阵 / 置灰语义 / 库存钳制 / 注入安全（规格值含引号与 CSS 元字符二次 update 不崩——宿主数据不拼选择器）/ property 双通道（specs / skus / value / quantity get+set 反射 attribute，消属性撞方法）；zh/en 文档 + API 表 + qa-regression e2e（真实点选 / 缺货置灰 / 键盘）。
+- **oas-coupon（commerce 族，优惠券）**：券面卡片（面额 / 门槛 / 有效期 / 状态语义色——未达门槛与过期已使用走 `-text` 文字加深档，axe 对比度实测修正）+ 领取 / 选择列表弹层（原生 radio + 焦点移入归还 + Esc / 遮罩 + Tab 循环）；`open` 受控双模式（宿主写属性静默、命令式 `openOverlay()` / `closeOverlay()` 派发事件）；`list` / `code` / `currency` / `locale` / `selected` property 双通道；`clearSelection()`；浮层层级走 `--oas-z-index-base` token 通道；缺 amount / 未知 icon 一次性 devWarn。i18n ×16；TDD + qa-regression e2e + zh/en 文档。
+- **oas-submit-bar（commerce 族，结算栏）**：底部固定栏（默认 sticky 吸底）——合计金额内嵌 oas-price + 主操作按钮（loading / disabled / danger）+ 扩展插槽（prefix / suffix / tips）；`oas-submit` 事件；表单内 invalid 注入禁用；`currency` / `locale` / `precision`。TDD + e2e + zh/en 文档。
+- **oas-goods-action（commerce 族，商品导航）**：底部 icon 按钮组（内置 key 文案 + 图标——含本批新增原创 cart 图标）+ 主按钮组；`items` / `actions` JSON property 双通道；角标 99+；`aria-pressed`；事件委托；自定义 icon 覆盖（path 差异回归）+ 未注册 icon 告警回退。TDD + e2e + zh/en 文档。
+- **oas-price（commerce 族，价格展示）**：Intl 部件顺序（de-DE 符号在后等）；币种 / 精度 / locale（缺省读 `<html lang>`，非法回落 zh-CN）；划线价 / 区间价；涨跌箭头走 danger-text / success-text 文字安全档（实色不达 WCAG 1.4.3——axe 实测修正）；字号档。TDD + e2e + zh/en 文档。
+- **oas-address（commerce 族，地址）**：edit / list / contact 三形态；省市区三级联动——**宿主注入数据契约**（不内置行政区划：体积 / 更新频率 / 版本追溯不可控，README 论证；数据缺失时地区不参与校验）；校验 + `oas-submit` / `oas-invalid`（region 必填错误可见，aria-invalid 落在省下拉）；列表默认标记 / 单选 / 新增；选中项被宿主删除回落 default / first 并派发；contact 模式 Enter 隐式提交拦截；readonly 走原生 `readOnly`（可聚焦复制，区别于 disabled）；电话正则（`+` 仅首位、数字 ≥6 位——拦截全符号串）。i18n ×16；TDD + e2e（含 RTL）+ zh/en 文档。
+- **oas-invoice（commerce 族，发票）**：个人 / 企业抬头切换、税号 15–20 位校验、内容选择（值不在 options 告警回落首项）、已保存抬头 listbox 弹层（键盘 / 外点 / Esc 焦点归还）+ **视口检测向上翻转**（`data-placement="up"`，SSR / 零尺寸不翻转）；readonly 原生 `readOnly`；分段控件 RTL 四向映射。TDD + e2e + zh/en 文档。
+- **oas-ecard（commerce 族，电子卡）**：卡面单选列表（选中态 1px 主色描边 + inset 内环——替代 6% 混底，axe 对比度实测修正）、自定义面额（`currency` / min / max 整数校验）、协议勾选必选、`oas-submit`。i18n ×16；TDD + e2e + zh/en 文档。
+- **oas-category（commerce 族，分类选择）**：左类右品双栏联动——左侧多级类目树（↑↓←→ / Enter 键盘导航、子级 `role="group"`）+ 右侧子类宫格 / 商品位；受控 `active-key`；面板重建焦点保留；RTL chevron 镜像（三引擎 transform 断言）。TDD + e2e + zh/en 文档。
+
+**form 族增补（4 件）**
+
+- **oas-number-keyboard（数字键盘）**：数字 / 车牌双布局（31 省份、字母集排除 I/O、Fisher-Yates 乱序 + `randomize()`）；删除 / 完成键 + `oas-input` / `oas-delete` / `oas-done`；物理键盘输入（plate 布局字符集与屏上键一致）；`value` / `maxlength` / `disabled` / `readonly`；SSR 登记 pending。TDD + e2e + zh/en 文档。
+- **oas-code-button（验证码发送按钮）**：点击派 `oas-send`（可 `preventDefault()` 拦截——宿主验证成功后 `start()` 命令式冷却，拦截契约 + sentOnce 语义闭环）；内置倒计时（插槽双通道语义：倒计时期间隐藏插槽内容、显示内置倒计时——可见性几何断言堵假绿）；`remaining` / `counting` 只读 property；sr-only aria-live 播报；断开计时清理 + 重连恢复。i18n ×16；TDD + e2e + zh/en 文档。
+- **oas-image-picker（多图选择）**：文件选择 / 拖拽 / 拍照（`capture`）；缩略图网格预览、排序（`move`）/ 删除（`removeAt`，避 HTMLElement.remove 撞名）；`max` 上限（`oas-exceed-limit`）/ `accept` / 类型拒绝（`oas-reject`）；`files` property + attribute JSON 双通道；**onCleanup 全量 revokeObjectURL**（对齐 oas-upload 先例，重连懒重建——mock create / revoke 配平单测）。TDD + e2e + zh/en 文档。
+- **oas-image-cropper（图片裁剪）**：固定 / 自由比例（`"1"` / `"16/9"`）/ 旋转 / 缩放——`zoom` property 写入静默、`setZoom` 仅变化时派发（**双向绑定回环修复**：applyZoom 返回变化标记，宿主事件回写不再递归，真实浏览器回归断言 calls===1）；裁剪框方向键移动（Shift×10）；`toBlob` / `toDataURL` 输出（`max-output-size` / `output-type` / `max-zoom`）；**加载失败错误态**（破图隐藏 + 错误文案 + 换 src 自动复位，i18n `imageCropper.loadFailed` ×16）；SSR client-only。TDD + e2e（真实 Chromium blob 断言）+ zh/en 文档。
+
+**移动端与工具组件（8 件，overlay 自此为公开语义族）**
+
+- **oas-share-sheet（overlay 族，分享面板）**：底部弹出宫格渠道 + 取消；焦点入面板 / Esc / 遮罩关闭 / 点击渠道自动关闭；关闭态 visibility 延迟过渡处理；`channels` property 双通道（私有字段撞名 own property 遮蔽修复 + vue-prop-hijack 契约登记）。TDD + e2e + zh/en 文档。
+- **oas-curtain（overlay 族，幕帘）**：进入后一次性全屏浮层 + 本地记忆（`persist`）/ `reset()`；**焦点陷阱并入插槽内容**——Tab 循环覆盖宿主自定义可交互内容（shadow / light DOM 双态焦点解析）。TDD + e2e（真实键盘回绕）+ zh/en 文档。
+- **oas-rolling-text（data 族，翻滚文本）**：数字 / 字符逐位滚动动画，值变化逐列翻滚；**最短路径滚轮**（20 档双周期轴，9→0 落 10 不绕远）；数字恒 LTR（`direction: ltr` 防 RTL 列序镜像）；前缀 / 后缀 / 精度（>10 告警）；live 播报。TDD + e2e（三引擎 RTL 列序断言）+ zh/en 文档。
+- **oas-barrage（data 族，弹幕）**：流式轨道防重叠、速度 / 密度控制（`tracks` / `gap` / `max-active`）、暂停 / 清空 API；RTL 镜像关键帧（自左进场向右飞出，计时与方向无关同构）；reduced-motion 时长对齐（JS 与 CSS 同口径）；`accessible` 下弹幕项键盘可达（Enter / Space 派发 `oas-item-click`，装饰态 aria-hidden 不加 tabindex 规避 axe）；数值属性非法值告警。TDD + e2e（三引擎）+ zh/en 文档。
+- **oas-safe-area / oas-status-bar（layout 族，平台适配件）**：安全区占位（顶部 / 底部 inset 适配）/ 状态栏占位（高度占位 + 前景色覆盖）——移动端嵌入宿主用；全 token（含暗色）；SSR pending。TDD + e2e + zh/en 文档。
+- **oas-offline / oas-page-loading（feedback 族，状态件）**：断网提示（online / offline 侦测、初始离线不闪、恢复自动消失、清理回调去重 `windowBound` 守卫）；整页加载态（骨架 / 转菊花 / 进度三形态、全屏遮罩中心面板、可编程关闭、`rows` 非法值告警）。TDD + e2e + zh/en 文档。
+
+**基础设施（随本批同步）**
+
+- 族注册与构建：commerce 新族 + overlay 公开族——CDN 11 族 bundle（`dist/cdn/overlay.js` 等）、families / index / ssr 导出 / not-ssr 台账 / 侧栏 / 总览 / llms / stats / api-manifest 全量登记；i18n 新增 commerce / overlay 切片（11 族 588 键 ×16 语言，completeness 双层守卫）。
+- 属性通道治理：21 件复杂数据属性全部落实「property 优先 + setter 反射 attribute」双通道约定；`vue-prop-hijack.spec.ts` 契约表扩至 14 条新组件（attrContract + propContract + stringProbe 含含引号值注入）；collision-guard 撞名守卫全绿（sku / coupon / category / ecard / image-cropper / barrage / curtain / share-sheet 等撞名点全部消歧）。
+
 ### 文档站（SEO 与语言机制）
 
 - **移除浏览器语言自动跳转**：不再按 `navigator.language` 把访客从首页改写到 `/en/`——URL 即真源，爬虫/用户/外链看到一致内容（原 v2.6.7「Landing 语言适配」自动跳转行为下线；显式保存的语言偏好深链跳转保留，爬虫无 localStorage 不受影响）。语言引导改由 hreflang + 新增的语言提示条与导航栏分段切换器（中 / EN）承接。

@@ -66,7 +66,7 @@ i18n 死键**不在此重复建设**：`packages/i18n/src/slices/completeness.te
 - [ ] **用户视角验证门禁**（见 AGENTS.md）：涉及交互的 demo 块真点/真输入看可见反馈；该组件支持的 hover / focus-visible / selected / disabled / loading 逐一过；console 零告警；截图识图核对颜色/圆角/间距；dark 主题同样过一遍
 - [ ] 发现的缺陷先在 `packages/ui/qa-regression/<组件>.spec.ts` 固化回归再提交
 
-> **分组约定（源码目录 = 文档站语义组，单一权威）**：`packages/ui/src/` 的顶层目录与文档站侧栏的七组语义一一对应（basic / layout / form / feedback / navigation / data / framework），新组件按其语义放入对应顶层目录，不再另设"按旧目录"的组织；overlay/ 为内部基建（浮层定位引擎等），不属分组语义。历史迁移（floating/layout/data 内 24 组件归位语义组）为 **breaking 变更，不保留旧路径别名**（早期消费方仅模板仓，迁移成本为 import 路径机械替换；变更记录与迁移说明随下个版本 CHANGELOG 给出）；改动目录结构后需同步更新 index.ts / families / CDN 族列表与 `packages/ssr/src/index.ts` 的 TAG_ENTRY 映射。
+> **分组约定（源码目录 = 文档站语义组，单一权威）**：`packages/ui/src/` 的顶层目录与文档站侧栏的语义组一一对应（basic / layout / form / feedback / navigation / data / framework / commerce / conversation / workbench / overlay），新组件按其语义放入对应顶层目录，不再另设"按旧目录"的组织；overlay/ 自未发布批起为公开语义族（含 oas-share-sheet / oas-curtain 公开组件），其浮层定位引擎等内部基建件仍居该目录但不单独成组。历史迁移（floating/layout/data 内 24 组件归位语义组）为 **breaking 变更，不保留旧路径别名**（早期消费方仅模板仓，迁移成本为 import 路径机械替换；变更记录与迁移说明随下个版本 CHANGELOG 给出）；改动目录结构后需同步更新 index.ts / families / CDN 族列表与 `packages/ssr/src/index.ts` 的 TAG_ENTRY 映射。
 
 ## 4. 质量命令（根目录）
 
