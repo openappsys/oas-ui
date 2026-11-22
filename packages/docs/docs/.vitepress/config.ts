@@ -222,6 +222,9 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
+    // OG 大图在 Google 发现/搜索预览中完整展示（theme-color 明暗双值经实测会被 VitePress
+    // head 序列化按 name 去重，无法双发，放弃）
+    ['meta', { name: 'robots', content: 'max-image-preview:large' }],
     // 语言偏好跳转（仅对显式保存过偏好的回访用户）：localStorage oas-lang=en 时中文 root 与中文
     // 深链跳对应英文页。爬虫没有 localStorage，永远看到 URL 所标示的语言；不做任何基于
     // navigator.language 的自动跳转——语言推荐走 hreflang + 可见的 LangHint 提示条，URL 即真源。
@@ -280,7 +283,10 @@ gtag('config', 'G-RXS142HBXF');`,
     const enUrl = SITE_URL + pageUrl(en ? rel : EN_PREFIX + rel)
     const isHome = rel === 'index.md' || rel === 'en/index.md'
     const ogImage = SITE_URL + '/og-image.jpg'
-    const ogImageAlt = 'OAS-UI — 框架无关的 Web Components UI 组件库'
+    // 分享卡片的 alt 随页面语言——英文页挂中文 alt 会让英文社交时间线的读屏/降级展示失语
+    const ogImageAlt = en
+      ? 'OAS-UI — Framework-agnostic Web Components UI library'
+      : 'OAS-UI — 框架无关的 Web Components UI 组件库'
     const head: HeadConfig[] = [
       ['link', { rel: 'canonical', href: canonical }],
       ['link', { rel: 'alternate', hreflang: 'zh-CN', href: zhUrl }],

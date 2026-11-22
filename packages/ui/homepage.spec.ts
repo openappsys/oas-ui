@@ -558,5 +558,8 @@ test.describe('文档站 SEO 产物', () => {
       'href',
       'https://oas-ui.dev/en/components/button',
     )
+    // OG 分享卡 alt 随页面语言（英文页不得挂中文 alt）
+    await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute('content', /Framework-agnostic/)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'max-image-preview:large')
   })
 })
