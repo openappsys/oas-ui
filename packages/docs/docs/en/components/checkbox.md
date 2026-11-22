@@ -1,3 +1,7 @@
+---
+description: "An enhanced native <input type=\"checkbox\"> supporting indeterminate state, checkbox groups, select-all linkage, count limits, and a card variant."
+---
+
 # Checkbox
 
 An enhanced native `<input type="checkbox">` supporting indeterminate state, checkbox groups, select-all linkage, count limits, and a card variant.

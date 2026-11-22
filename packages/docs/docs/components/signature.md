@@ -1,3 +1,7 @@
+---
+description: canvas 笔迹捕获的签名板组件：pointer 事件覆盖 mouse/pen/touch，DPR 高清渲染，笔色跟随主题 token（暗色自动翻转），容器 resize 笔迹保留，value（PNG dataURL）双通道受控。
+---
+
 # Signature 签名板
 
 canvas 笔迹捕获的签名板组件：pointer 事件覆盖 mouse/pen/touch，DPR 高清渲染，笔色跟随主题 token（暗色自动翻转），容器 resize 笔迹保留，`value`（PNG dataURL）双通道受控。

@@ -1,3 +1,7 @@
+---
+description: 页面顶部/区块内的通告条：图标 + 文本 + 可关闭 + action 链接。文本超长时可横向无缝滚动（内嵌 oas-marquee 组合复用其滚动引擎）
+---
+
 # NoticeBar 通告栏
 
 页面顶部/区块内的通告条：图标 + 文本 + 可关闭 + action 链接。文本超长时可横向无缝滚动（内嵌 `oas-marquee` 组合复用其滚动引擎）；多条通告以 `items` 纵向轮播（淡入淡出，`prefers-reduced-motion` 下不自动轮播）。配色走语义 token，暗色主题自动适配。

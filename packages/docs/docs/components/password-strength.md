@@ -1,3 +1,7 @@
+---
+description: 密码强度独立指示条：不包裹输入框，for 精确关联或 slot 自动发现密码输入，与 oas-input / 原生 input 均可组合
+---
+
 # PasswordStrength 密码强度
 
 密码强度独立指示条：**不包裹输入框**，`for` 精确关联或 slot 自动发现密码输入，与 `oas-input` / 原生 input 均可组合；内置 0–4 五档评分（长度三档 + 字符类别多样性（含 CJK）− 常见弱口令 / 重复 / 连续字符惩罚）；`level` 受控、`levels` 文案覆盖、`score-fn` 自定义评分 property；4 段分段条全 token 配色（暗色自动正确），默认宽 12rem（`--oas-password-strength-width` 覆盖）；分段条（`part="bar"`）承载 `role="meter"` 无障碍语义（host 保持 generic，slot 内嵌输入不被 meter 展平）；档位文案 i18n 16 语言。

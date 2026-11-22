@@ -1,3 +1,7 @@
+---
+description: A purely presentational component that loops long content seamlessly via a slot; supports pause on hover and static fallback under prefers-reduced-motion.
+---
+
 # Marquee
 
 A purely presentational component that loops long content seamlessly via a slot; supports pause on hover and static fallback under `prefers-reduced-motion`. Scroll speed is a true pixels-per-second value (the component measures content width to derive duration), and content shorter than the container is auto-filled; when `max-loops` finishes, `oas-finish` is emitted (detail `{ loops }`).

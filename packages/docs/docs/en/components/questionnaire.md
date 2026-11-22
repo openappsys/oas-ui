@@ -1,3 +1,7 @@
+---
+description: "A step-driven form flow orchestrator: step header + progress (\"Step {current} of {total}\") + per-step content panels + per-step validation gating. Ideal for wizards, surveys, and multi-step checkout."
+---
+
 # Questionnaire Multi-step Form
 
 A step-driven form flow orchestrator: step header + progress ("Step {current} of {total}") + per-step content panels + per-step validation gating. Ideal for wizards, surveys, and multi-step checkout. Validation reuses the `oas-form` kernel — **place one `<oas-form>` inside each step panel**; moving forward validates the current step and blocks on failure, while going back never validates and panels stay mounted (filled values are preserved).

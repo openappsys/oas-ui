@@ -1,3 +1,7 @@
+---
+description: Data pagination navigation with page-number ellipsis, prev/next flipping, configurable sibling page count, total display, page-size switching and quick jump.
+---
+
 # Pagination
 
 Data pagination navigation with page-number ellipsis, prev/next flipping, configurable sibling page count, total display, page-size switching and quick jump.

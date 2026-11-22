@@ -1,3 +1,7 @@
+---
+description: 步骤驱动的分步内容面板一体机：头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），适合向导 / 表单分步 / 结账流程等场景。
+---
+
 # Stepper 步骤面板
 
 步骤驱动的分步内容面板一体机：头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），适合向导 / 表单分步 / 结账流程等场景。双组件配套使用：`oas-stepper` 管步骤头、`oas-stepper-panel` 管内容、`value` 关联显示（同构 `oas-tabs` / `oas-tab-panel` 模式）。面板的 `id` 只在宿主显式设置时使用并同步步骤头的 `aria-controls`（组件不代生成 light DOM id，避免同页多实例 duplicate id）；未设置时面板命名由 `aria-labelledby` 与自身内容承担，需要完整 tab/panel 关联请给面板显式 `id`。

@@ -1,3 +1,7 @@
+---
+description: "Type to get suggestions: the value is free text (browser address bar / datalist mental model) — the suggestion list only aids input."
+---
+
 # AutoComplete
 
 Type to get suggestions: **the value is free text** (browser address bar / datalist mental model) — the suggestion list only aids input. Keyboard selection, grouping, debounced remote suggestions, and custom rendering are supported.

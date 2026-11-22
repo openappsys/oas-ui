@@ -1,3 +1,7 @@
+---
+description: "Edit --oas-* theme tokens in real time: edits are written to host CSS variables immediately, so the subtree previews them live."
+---
+
 # ThemeEditor
 
 Edit `--oas-*` theme tokens in real time: edits are written to host CSS variables immediately, so the subtree previews them live. Light and dark keep independent overrides, so either bucket can be edited without polluting the other. Color token rows use a dual channel of swatch + text box (the swatch only carries `#rrggbb`; the text box can edit any CSS color function such as `rgb()`/`oklch()`/`color-mix()` without corrupting the original value); numeric token rows link a range slider with a number input. The panel has a search box that filters by token name, collapsible groups, built-in compact / comfortable presets, and export / import / reset tools.

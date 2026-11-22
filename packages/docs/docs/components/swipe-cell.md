@@ -1,3 +1,7 @@
+---
+description: "列表项横向滑动露出操作按钮组：默认插槽为内容层（列表项主体），slot=\"actions\" 为操作按钮组（宿主放置 button / oas-button）。"
+---
+
 # SwipeCell 滑动操作
 
 列表项横向滑动露出操作按钮组：默认插槽为**内容层**（列表项主体），`slot="actions"` 为**操作按钮组**（宿主放置 `button` / `oas-button`）。向 inline-start 方向滑动内容层即可露出 inline-end 侧的操作区，松手按位移阈值吸附开合；`oas-open` / `oas-close` 在开 / 关落定时各派发一次（程序性 `open` 属性变化同样派发）。同一项还可在**另一侧**再放一组操作（`slot="actions-start"`，见「双侧滑动」）——两侧同项互斥开合。

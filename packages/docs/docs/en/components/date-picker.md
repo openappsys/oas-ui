@@ -1,3 +1,7 @@
+---
+description: A date picker supporting ten types — date, daterange, month, monthrange, year, yearrange, datetime, datetimerange, week, and quarter — with keyboard operation and Intl.DateTimeFormat formatting.
+---
+
 # DatePicker
 
 A date picker supporting ten types — date, daterange, month, monthrange, year, yearrange, datetime, datetimerange, week, and quarter — with keyboard operation and `Intl.DateTimeFormat` formatting. The trigger is an input: you can type a date or range directly (committed on blur or Enter; invalid input reverts).

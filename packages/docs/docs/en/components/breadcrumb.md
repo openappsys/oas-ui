@@ -1,3 +1,7 @@
+---
+description: "Shows the page hierarchy path; the last item is the current page (aria-current=\"page\")."
+---
+
 # Breadcrumb
 
 Shows the page hierarchy path; the last item is the current page (`aria-current="page"`).

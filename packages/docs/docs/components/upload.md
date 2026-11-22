@@ -1,3 +1,7 @@
+---
+description: 点击或拖拽选择文件，展示文件列表与上传进度。支持真实上传通道（action XHR / custom-request 逃生舱）、上传前校验转换、失败重试与取消。
+---
+
 # Upload 上传
 
 点击或拖拽选择文件，展示文件列表与上传进度。支持真实上传通道（`action` XHR / `custom-request` 逃生舱）、上传前校验转换、失败重试与取消。

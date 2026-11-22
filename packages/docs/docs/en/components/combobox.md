@@ -1,3 +1,7 @@
+---
+description: "A filterable combobox whose input is the control: an always-visible editable input shows the selected label, typing filters options in real time, and value takes option.value on selection."
+---
+
 # Combobox
 
 A filterable combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection. Multi-select is built in via `multiple`.

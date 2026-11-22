@@ -1,3 +1,7 @@
+---
+description: "原生 <input type=\"checkbox\"> 增强，支持半选、多选组、全选联动、数量限制与卡片形态。"
+---
+
 # Checkbox 复选框
 
 原生 `<input type="checkbox">` 增强，支持半选、多选组、全选联动、数量限制与卡片形态。

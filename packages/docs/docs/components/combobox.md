@@ -1,3 +1,7 @@
+---
+description: 输入框即控件的可过滤单选组合框：常显可编辑的输入框显示选中项 label，输入实时过滤选项，选中后 value 取 option.value。
+---
+
 # Combobox 组合框
 
 输入框即控件的可过滤单选组合框：**常显可编辑的输入框**显示选中项 label，输入实时过滤选项，选中后 `value` 取 `option.value`。

@@ -1,3 +1,7 @@
+---
+description: "For hundreds of thousands of rows: the component only computes which slice it needs; fetching, cancelling and merging are the host's job."
+---
+
 # Server-side windowed data (recipe)
 
 > For hundreds of thousands of rows: **the component only computes which slice it needs; fetching, cancelling and merging are the host's job**. This page gives a four-step recipe plus a runnable example (`oas-table` demoed; gantt / resource / tree / list share the contract — differences below).

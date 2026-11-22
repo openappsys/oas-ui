@@ -52,8 +52,8 @@ export default defineConfig({
   workers: E2E_WORKERS,
   use: {
     baseURL: `http://localhost:${E2E_PORT}`,
-    // 默认锁 zh-CN：绝大多数 spec 断言面向中文页。语言规则：仅 `/` / `/index.html` 按浏览器语言做
-    // landing 猜测，深链不做；语言偏好与 landing 分支在 homepage.spec.ts 用 browser.newContext({ locale }) 显式覆盖。
+    // 默认锁 zh-CN：绝大多数 spec 断言面向中文页。语言规则：无任何浏览器语言自动跳转（URL 即真源），
+    // 语言机制用例在 homepage.spec.ts 用 browser.newContext({ locale }) 显式覆盖。
     locale: 'zh-CN',
     // 失败现场：只保留首次重试的 trace 与失败截图，正常用例零额外开销。
     trace: E2E_ARTIFACTS ? 'on-first-retry' : 'off',
@@ -98,7 +98,7 @@ export default defineConfig({
         browserName: 'firefox',
         // Firefox 不吃 Playwright 的 locale 配置（Juggler 不映射 intl.locale.requested，navigator.language
         // 仍 en-US）。默认锁 zh-CN 并让 Firefox 与 Chromium 的 navigator.language 一致
-        //（intl.accept_languages 是其真实来源）；语言 landing 分支只在 homepage.spec.ts 显式覆盖。
+        //（intl.accept_languages 是其真实来源）；语言机制用例只在 homepage.spec.ts 显式覆盖。
         firefoxUserPrefs: { 'intl.accept_languages': 'zh-CN' },
       },
       testMatch: [

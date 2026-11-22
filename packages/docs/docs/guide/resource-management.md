@@ -1,3 +1,7 @@
+---
+description: 本页不是新组件：演示如何用 oas-resource（泳道 + 负载直方图）+ oas-card（资源卡）+ oas-checkbox（任务分配表）加纯函数 levelResources() 组合出一个可交互的资源管理页。
+---
+
 # 资源管理示例（组合示例）
 
 > 本页**不是新组件**：演示如何用 `oas-resource`（泳道 + 负载直方图）+ `oas-card`（资源卡）+ `oas-checkbox`（任务分配表）加纯函数 `levelResources()` 组合出一个可交互的资源管理页。资源卡与分配表都属**宿主层**（页面脚本实现），组件只负责泳道/直方图渲染、超载检测与平衡计算。

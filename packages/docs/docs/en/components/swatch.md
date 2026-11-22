@@ -1,3 +1,7 @@
+---
+description: "Inline color blocks for quick preset-color selection and display — for theme colors, tag colors, favorite colors and other \"pick a color without opening a panel\" scenarios."
+---
+
 # Swatch
 
 Inline color blocks for quick preset-color selection and display — for theme colors, tag colors, favorite colors and other "pick a color without opening a panel" scenarios. `oas-swatch` is the color block; `oas-swatch-group` is the selection group (single-select radio semantics / multi-select checkbox semantics, roving keyboard navigation).

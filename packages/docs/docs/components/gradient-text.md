@@ -1,3 +1,7 @@
+---
+description: "以渐变色填充文字的纯展示组件，background-clip: text 实现；默认走主题 token 双色渐变，支持任意色标数组与方向。无事件。"
+---
+
 # GradientText 渐变文字
 
 以渐变色填充文字的纯展示组件，`background-clip: text` 实现；默认走主题 token 双色渐变，支持任意色标数组与方向。无事件。

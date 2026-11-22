@@ -1,3 +1,7 @@
+---
+description: "This page is not a new component: it demonstrates how to combine oas-resource (swimlanes + load histogram) with oas-card (resource cards), oas-checkbox (assignment table) and the pure function…"
+---
+
 # Resource Management Example (Combined Example)
 
 > This page is **not a new component**: it demonstrates how to combine `oas-resource` (swimlanes + load histogram) with `oas-card` (resource cards), `oas-checkbox` (assignment table) and the pure function `levelResources()` into an interactive resource management page. The resource cards and assignment table belong to the **host layer** (implemented by the page script); the component only handles swimlane/histogram rendering, overload detection and leveling.

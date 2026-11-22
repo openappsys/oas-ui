@@ -1,3 +1,7 @@
+---
+description: "A container for groups of tool controls: role=\"toolbar\" + aria-label, Tab enters and arrow keys move between controls (roving tabindex — only the current item is focused)."
+---
+
 # Toolbar
 
 A container for groups of tool controls: `role="toolbar"` + `aria-label`, `Tab` enters and arrow keys move between controls (roving tabindex — only the current item is focused). Ships with three companion widgets — toggle group, separator, input — plus vertical layout, loop toggle, whole-bar disabled, size steps, overflow collapse and attached look.

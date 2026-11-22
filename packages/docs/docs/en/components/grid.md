@@ -1,3 +1,7 @@
+---
+description: A 24-column grid layout system. Pair it with oas-grid-item to divide column widths, with support for gap, offset and a custom total column count; setting columns switches to an auto equal-width…
+---
+
 # Grid
 
 A 24-column grid layout system. Pair it with `oas-grid-item` to divide column widths, with support for gap, offset and a custom total column count; setting `columns` switches to an auto equal-width layout (simple-grid).

@@ -1,3 +1,7 @@
+---
+description: Step-by-step feature onboarding with a fullscreen overlay and target highlighting.
+---
+
 # Tour
 
 Step-by-step feature onboarding with a fullscreen overlay and target highlighting. Supports 12-direction placement with overflow flipping, scroll-following repositioning, mask/form customization, keyboard navigation, async steps, hints beacons and a "Don't show again" memory.

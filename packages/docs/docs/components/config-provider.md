@@ -1,3 +1,7 @@
+---
+description: 全局配置的注入入口，统一管理包裹子树的 locale / size / theme / config / direction / z-index / disabled。
+---
+
 # ConfigProvider 全局配置
 
 全局配置的注入入口，统一管理包裹子树的 `locale` / `size` / `theme` / `config` / `direction` / `z-index` / `disabled`。组件读取顺序：自身属性 > config-provider > 全局默认。

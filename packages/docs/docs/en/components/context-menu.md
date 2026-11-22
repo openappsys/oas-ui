@@ -1,3 +1,7 @@
+---
+description: A right-click menu that opens at the mouse position within its wrapped region.
+---
+
 # ContextMenu
 
 A right-click menu that opens at the mouse position within its wrapped region.

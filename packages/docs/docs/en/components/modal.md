@@ -1,3 +1,7 @@
+---
+description: A modal dialog for interrupting flows that require user confirmation or input.
+---
+
 # Modal
 
 A modal dialog for interrupting flows that require user confirmation or input.

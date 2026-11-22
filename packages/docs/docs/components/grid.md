@@ -1,3 +1,7 @@
+---
+description: 24 栅格布局系统，配合 oas-grid-item 划分列宽，支持间距、偏移与自定义总列数；设置 columns 后切换为自动等分布局（simple-grid）。
+---
+
 # Grid 栅格
 
 24 栅格布局系统，配合 `oas-grid-item` 划分列宽，支持间距、偏移与自定义总列数；设置 `columns` 后切换为自动等分布局（simple-grid）。

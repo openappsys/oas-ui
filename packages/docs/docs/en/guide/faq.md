@@ -1,3 +1,7 @@
+---
+description: Common questions and pitfalls from real-world integrations.
+---
+
 # Integration FAQ
 
 Common questions and pitfalls from real-world integrations.

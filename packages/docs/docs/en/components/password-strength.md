@@ -1,3 +1,7 @@
+---
+description: "A standalone password-strength meter that does not wrap the input: associate it via for or auto-discover a password input inside the default slot — it composes with oas-input as well as native inputs."
+---
+
 # PasswordStrength
 
 A standalone password-strength meter that **does not wrap the input**: associate it via `for` or auto-discover a password input inside the default slot — it composes with `oas-input` as well as native inputs. Built-in 0–4 scoring (length tiers + character-class diversity incl. CJK − common weak-password / repetition / sequential-run penalties); controlled `level`, `levels` label override, and a `scoreFn` custom scorer property; a 4-segment bar fully themed with tokens (dark mode automatic) with a default width of 12rem (`--oas-password-strength-width` overrides); the `part="bar"` segment bar carries the `role="meter"` accessibility semantics (the host stays generic so a slotted input is not flattened by the meter); level labels are localized in 16 languages.

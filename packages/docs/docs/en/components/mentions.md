@@ -1,3 +1,7 @@
+---
+description: "A mention input component that pops a suggestion overlay when typing @ (or # etc.), suited for @member / @task / comment-posting scenarios."
+---
+
 # Mentions
 
 A mention input component that pops a suggestion overlay when typing `@` (or `#` etc.), suited for @member / @task / comment-posting scenarios.

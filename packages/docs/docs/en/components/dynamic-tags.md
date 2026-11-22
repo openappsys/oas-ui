@@ -1,3 +1,7 @@
+---
+description: "Always-visible input + tag flow: press Enter or a separator to create tags; supports deduplication, validation, limits, save-on-blur, reordering, overflow collapsing, and in-place tag editing."
+---
+
 # DynamicTags
 
 Always-visible input + tag flow: press Enter or a separator to create tags; supports deduplication, validation, limits, save-on-blur, reordering, overflow collapsing, and in-place tag editing.

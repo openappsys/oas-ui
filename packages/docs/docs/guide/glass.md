@@ -1,3 +1,7 @@
+---
+description: 半透明 surface + backdrop 模糊 + 高光折光边的材质层
+---
+
 # 磨砂玻璃画廊
 
 > 半透明 surface + backdrop 模糊 + 高光折光边的材质层（不依赖浏览器专属滤镜，Chromium / Firefox 同构；动态流动感由可选运行时 `glass-fluid.js` 提供——指针镜面高光 + 按压收紧，详见本页「动态流动感」）。

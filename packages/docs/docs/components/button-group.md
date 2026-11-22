@@ -1,3 +1,7 @@
+---
+description: 按钮组：将多个 oas-button 组合为一个选值组，相邻按钮圆角合并、hover 只亮当前项。
+---
+
 # ButtonGroup 按钮组
 
 按钮组：将多个 `oas-button` 组合为一个选值组，相邻按钮圆角合并、hover 只亮当前项。

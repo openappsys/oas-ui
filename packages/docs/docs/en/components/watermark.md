@@ -1,3 +1,7 @@
+---
+description: A container-level watermark layer that sits on top of the content without intercepting any interaction, suitable for preventing sensitive information from leaking.
+---
+
 # Watermark
 
 A container-level watermark layer that sits on top of the content without intercepting any interaction, suitable for preventing sensitive information from leaking.

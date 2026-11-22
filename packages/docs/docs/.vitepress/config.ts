@@ -3,6 +3,7 @@ import { componentSidebar, enComponentSidebar } from './sidebar.js'
 import type { DefaultTheme, HeadConfig } from 'vitepress'
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 /** docs 根目录（config.ts 位于 docs/.vitepress/）——用于构建期生成每页 markdown 镜像 */
@@ -113,6 +114,42 @@ function isEnglishPage(relativePath: string): boolean {
   return relativePath.startsWith(EN_PREFIX)
 }
 
+/**
+ * 一次性读取 git 历史中全部 docs 源文件的最后提交时间（ISO 8601），返回 相对路径 → lastmod。
+ * git log 从新到旧输出，首次出现即最后提交；解析失败（无 git/浅克隆等）返回空 Map，
+ * sitemap 只是少了 lastmod，不阻断构建。
+ * 浅克隆（CI 默认 checkout 即浅克隆）的边界提交会把全部文件表现为「本次新增」，每个文件都拿到
+ * 同一个假日期——宁缺勿假：浅克隆整段跳过。
+ */
+function gitLastmodByFile(): Map<string, string> {
+  const map = new Map<string, string>()
+  try {
+    const repoRoot = join(DOCS_DIR, '../../..')
+    const shallow = execFileSync('git', ['rev-parse', '--is-shallow-repository'], { cwd: repoRoot })
+      .toString()
+      .trim()
+    if (shallow === 'true') return map
+    const out = execFileSync(
+      'git',
+      ['log', '--format=format:%cI', '--name-only', '--', 'packages/docs/docs'],
+      { cwd: repoRoot, maxBuffer: 32 * 1024 * 1024 },
+    ).toString()
+    let date = ''
+    for (const line of out.split(/\r?\n/)) {
+      if (/^\d{4}-\d{2}-\d{2}T/.test(line)) {
+        date = line
+      } else if (date && line.endsWith('.md')) {
+        // git 输出仓库相对路径，转成 docs 相对路径（与 transformItems 中 source 一致）
+        const rel = line.startsWith('packages/docs/docs/') ? line.slice('packages/docs/docs/'.length) : line
+        if (!map.has(rel)) map.set(rel, date)
+      }
+    }
+  } catch {
+    // 无 git 环境等：静默降级，sitemap 不含 lastmod
+  }
+  return map
+}
+
 export default defineConfig({
   title: 'OAS-UI',
   description: '框架无关的 Web Components UI 组件库',
@@ -130,14 +167,29 @@ export default defineConfig({
   // 生成 sitemap.xml；VitePress 会按 locale 分组自动补 <xhtml:link rel="alternate"> hreflang
   sitemap: {
     hostname: SITE_URL,
-    // 内置只补各语言版本 alternate（zh-CN/en），缺 x-default；这里补上（指向中文默认版）
+    // 内置只补各语言版本 alternate（zh-CN/en），缺 x-default；这里补上（指向中文默认版）。
+    // 同时按 URL 反查源 md 文件，注入 <lastmod>（git 最后提交时间）——搜索引擎据新鲜度定抓取
+    // 优先级。一次性 git log 解析全 docs 目录历史（而非每文件一次调用，Windows 上 340 次
+    // fork 开销过大）；从未提交过的新文件拿不到时间则省略该字段，不造假。
     transformItems(items) {
+      const lastmodByFile = gitLastmodByFile()
+      // 同一页面组的 zh/en 两个 item 共享同一个 links 数组引用：x-default 补链每组只做一次，
+      // 否则第二个 item 会因「已存在 x-default」被 skip 连带跳过下面的 lastmod 注入
+      const xDefaultDone = new WeakSet<unknown[]>()
       for (const item of items) {
         const links = item.links
-        if (!links || links.length < 2) continue
-        if (links.some((link) => link.lang === 'x-default')) continue
-        const fallback = links.find((link) => link.lang === 'zh-CN')
-        if (fallback) links.push({ lang: 'x-default', url: fallback.url })
+        if (links && links.length >= 2 && !xDefaultDone.has(links)) {
+          xDefaultDone.add(links)
+          if (!links.some((link) => link.lang === 'x-default')) {
+            const fallback = links.find((link) => link.lang === 'zh-CN')
+            if (fallback) links.push({ lang: 'x-default', url: fallback.url })
+          }
+        }
+        const rel = item.url.startsWith('/') ? item.url.slice(1) : item.url
+        // 首页 url 为 ''（index.md 归一的产物）；目录页以 / 结尾（如 en/）
+        const source = rel === '' ? 'index.md' : rel.endsWith('/') ? `${rel}index.md` : `${rel}.md`
+        const lastmod = lastmodByFile.get(source)
+        if (lastmod) item.lastmod = lastmod
       }
       return items
     },
@@ -170,12 +222,13 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
-    // 语言偏好跳转：显式保存的偏好（localStorage oas-lang=en）在中文 root 与中文深链都跳对应英文页；
-    // 浏览器语言只做「landing page」一次性猜测——无偏好且首选语言为 en 时，仅 `/` / `/index.html`
-    // 跳 `/en/`，深链一律保持显式地址，避免爬虫/外链/书签在所有页面被语言改写。SEO 取舍：首页
-    // JS 语言跳转可能影响爬虫对根 URL 的语言判断；深链全量保留且 canonical/hreflang 不变，影响收敛
-    // 在单页。自动猜测不写偏好；已带 /en/ 前缀的路径视为显式英文，永不回弹。location.replace 不产生
-    // 历史记录；脚本内联在 head 尽早执行（减少语言闪烁）。
+    // 语言偏好跳转（仅对显式保存过偏好的回访用户）：localStorage oas-lang=en 时中文 root 与中文
+    // 深链跳对应英文页。爬虫没有 localStorage，永远看到 URL 所标示的语言；不做任何基于
+    // navigator.language 的自动跳转——语言推荐走 hreflang + 可见的 LangHint 提示条，URL 即真源。
+    // 已带 /en/ 前缀的路径视为显式英文，永不回弹。location.replace 不产生历史记录；
+    // 脚本内联在 head 尽早执行（减少语言闪烁）。
+    // 第二段职责：绘制前按与 LangHint.evaluate() 完全相同的规则预置 oas-lang-hint-predict 类，
+    // 让框架提前为提示条让位 36px（消 CLS）；LangHint 挂载后对账撤除（局部存储竞态时自愈）。
     [
       'script',
       {},
@@ -183,15 +236,15 @@ export default defineConfig({
   try {
     var path = location.pathname
     var onEn = path === '/en' || path === '/en/' || path.indexOf('/en/') === 0
-    if (onEn) return
     var pref = localStorage.getItem('oas-lang')
-    if (pref === 'en') location.replace('/en' + path + location.search + location.hash)
-    if (pref != null) return
-    var language = ''
-    try { language = navigator.language || '' } catch (e) {}
-    var landing = path === '/' || path === '/index.html'
-    if (landing && language.toLowerCase().indexOf('en') === 0) {
-      location.replace('/en/' + location.search + location.hash)
+    if (pref === 'en' && !onEn) location.replace('/en' + path + location.search + location.hash)
+    if (pref == null && !localStorage.getItem('oas-lang-hint-dismissed')) {
+      var ls = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]
+      var hasZh = false
+      for (var i = 0; i < ls.length; i++) {
+        if (ls[i] && ls[i].toLowerCase().indexOf('zh') === 0) hasZh = true
+      }
+      if (onEn ? hasZh : !hasZh) document.documentElement.classList.add('oas-lang-hint-predict')
     }
   } catch (e) {}
 })()`,

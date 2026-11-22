@@ -1,3 +1,7 @@
+---
+description: Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target.
+---
+
 # Anchor
 
 Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target. Supports custom scroll containers, click landing offsets, multi-level nesting, horizontal direction, affix, a moving ink bar, style variants and history control.

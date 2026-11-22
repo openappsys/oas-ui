@@ -1,3 +1,7 @@
+---
+description: "Conversation composer: auto-growing multiline input, Enter to submit, Shift+Enter for a newline, suggestions, send/stop state, plus prefix/actions/footer slots."
+---
+
 # PromptInput
 
 Conversation composer: auto-growing multiline input, Enter to submit, Shift+Enter for a newline, suggestions, send/stop state, plus prefix/actions/footer slots.

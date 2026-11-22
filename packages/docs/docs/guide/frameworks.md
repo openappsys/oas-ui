@@ -1,3 +1,7 @@
+---
+description: OAS-UI 是 Web Components 组件库，不需要官方 wrapper 也能直接用。本页说明各框架的原生用法、常见坑和可选集成，不引入新的组件封装层。
+---
+
 # 框架接入（React、Vue 等）
 
 > OAS-UI 是 Web Components 组件库，**不需要官方 wrapper 也能直接用**。本页说明各框架的原生用法、常见坑和可选集成，不引入新的组件封装层。

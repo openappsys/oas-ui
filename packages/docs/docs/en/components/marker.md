@@ -1,3 +1,7 @@
+---
+description: "Conversation timestamp/system-event marker: inline micro-status, outlined pill row, or labeled separator line."
+---
+
 # Marker
 
 Conversation timestamp/system-event marker: inline micro-status, outlined pill row, or labeled separator line. IM time dividers ("Today 10:00"), join/leave system events, and AI "generating" statuses all belong here.

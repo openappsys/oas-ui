@@ -1,3 +1,7 @@
+---
+description: Click or drag to select files; displays the file list and upload progress. Supports a real upload channel (action XHR / custom-request escape hatch), before-upload validation & transform, failure…
+---
+
 # Upload
 
 Click or drag to select files; displays the file list and upload progress. Supports a real upload channel (`action` XHR / `custom-request` escape hatch), before-upload validation & transform, failure retry and cancel.

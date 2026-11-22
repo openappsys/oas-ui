@@ -1,3 +1,7 @@
+---
+description: Set data-theme on the root element (<html> or any container) to switch between three built-in themes
+---
+
 # Theming
 
 ## Built-in themes

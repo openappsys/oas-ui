@@ -1,3 +1,7 @@
+---
+description: "A back-to-top button fixed to a corner of the viewport: it auto-appears once you scroll past a threshold, and clicking smooth-scrolls back to the top."
+---
+
 # BackTop
 
 A back-to-top button fixed to a corner of the viewport: it auto-appears once you scroll past a threshold, and clicking smooth-scrolls back to the top. Supports custom scroll targets, a scroll progress ring, reverse (scroll-to-bottom) mode, full-width bars and more.

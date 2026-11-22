@@ -1,3 +1,7 @@
+---
+description: Tree-structure selection supporting parent-child cascaded multiple selection, search filtering, lazy loading and tag-based display.
+---
+
 # TreeSelect
 
 Tree-structure selection supporting parent-child cascaded multiple selection, search filtering, lazy loading and tag-based display.

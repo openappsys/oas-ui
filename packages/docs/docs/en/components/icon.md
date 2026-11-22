@@ -1,3 +1,7 @@
+---
+description: An original linear icon set that renders inline SVGs by name; tree-shakable.
+---
+
 # Icon
 
 An original linear icon set that renders inline SVGs by name; tree-shakable.

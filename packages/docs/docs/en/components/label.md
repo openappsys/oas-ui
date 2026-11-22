@@ -1,3 +1,7 @@
+---
+description: "A form label component. for points to the target control's id, and clicking focuses the control; supports a required asterisk and its position."
+---
+
 # Label
 
 A form label component. `for` points to the target control's id, and clicking focuses the control; supports a required asterisk and its position.

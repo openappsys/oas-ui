@@ -1,3 +1,7 @@
+---
+description: Click/Enter/Space enters edit mode; Enter submits, Esc cancels, and empty-value submission is non-destructive by default.
+---
+
 # Editable
 
 Click/Enter/Space enters edit mode; Enter submits, Esc cancels, and empty-value submission is non-destructive by default. Supports multiline editing, icon triggering, controlled editing state, and the four-way submit-mode matrix.

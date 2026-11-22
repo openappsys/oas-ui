@@ -1,3 +1,7 @@
+---
+description: "Text match highlighting component: computes matched segments from text (the source string) plus highlight (keywords — space-separated words or a JSON array) and renders each hit as a <mark>…"
+---
+
 # Highlight
 
 Text match highlighting component: computes matched segments from `text` (the source string) plus `highlight` (keywords — space-separated words or a JSON array) and renders each hit as a `<mark>` (colors come from theme tokens, adapting to dark mode automatically). Three toggles are supported — case sensitivity, whole-word matching, and accent sensitivity (all off by default; accent folding strips combining marks via `String.normalize('NFD')`). After each content recomputation it dispatches `oas-count` (detail `{ count, matches }`).

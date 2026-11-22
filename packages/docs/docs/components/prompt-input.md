@@ -1,3 +1,7 @@
+---
+description: 会话输入框：多行自增高、Enter 提交、Shift+Enter 换行、建议项、发送/停止态、附件与页脚插槽。
+---
+
 # PromptInput 提示词输入
 
 会话输入框：多行自增高、Enter 提交、Shift+Enter 换行、建议项、发送/停止态、附件与页脚插槽。

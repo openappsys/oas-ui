@@ -1,3 +1,7 @@
+---
+description: "原生 <input type=\"range\"> 增强的滑动条。"
+---
+
 # Slider 滑块
 
 原生 `<input type="range">` 增强的滑动条。

@@ -1,3 +1,7 @@
+---
+description: Displays a collection of related items, capable of carrying a title, description, and extra actions.
+---
+
 # List
 
 Displays a collection of related items, capable of carrying a title, description, and extra actions.

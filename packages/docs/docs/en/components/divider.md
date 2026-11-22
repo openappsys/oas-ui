@@ -1,3 +1,7 @@
+---
+description: A horizontal/vertical divider that separates content.
+---
+
 # Divider
 
 A horizontal/vertical divider that separates content.

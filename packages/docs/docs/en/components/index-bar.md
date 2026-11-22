@@ -1,3 +1,7 @@
+---
+description: "A mobile sectioned list with an alphabet index rail: tap or drag a letter to jump to a section, and scrolling highlights the current letter in reverse (scroll spy)."
+---
+
 # IndexBar
 
 A mobile sectioned list with an alphabet index rail: tap or drag a letter to jump to a section, and scrolling highlights the current letter in reverse (scroll spy). Great for quickly locating entries in long lists such as contacts or city pickers.

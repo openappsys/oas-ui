@@ -1,3 +1,7 @@
+---
+description: "A rotary input control that encodes a continuous/discrete value as an angle around a circle — built for parameter-dense panels (audio/industrial/3D): compact circular form, relative dragging…"
+---
+
 # Knob
 
 A rotary input control that encodes a continuous/discrete value as an angle around a circle — built for parameter-dense panels (audio/industrial/3D): compact circular form, relative dragging (no jumps), and bipolar zero-point.

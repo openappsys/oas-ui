@@ -1,3 +1,7 @@
+---
+description: Tab-based content switching with arrow-key navigation; inactive panels are hidden via the hidden attribute. Use oas-tabs together with oas-tab-panel.
+---
+
 # Tabs
 
 Tab-based content switching with arrow-key navigation; inactive panels are hidden via the `hidden` attribute. Use `oas-tabs` together with `oas-tab-panel`.

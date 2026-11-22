@@ -1,3 +1,7 @@
+---
+description: "Composition recipes for cross-component navigation shapes: the library ships no single \"dual-rail sidebar\" component — a dual rail is a composition of existing parts (oas-sidebar and friends), with…"
+---
+
 # Navigation Patterns
 
 Composition recipes for cross-component navigation shapes: **the library ships no single "dual-rail sidebar" component** — a dual rail is a composition of existing parts (`oas-sidebar` and friends), with scale, zoning and wiring left to the host. This page collects six shapes, each a live demo.

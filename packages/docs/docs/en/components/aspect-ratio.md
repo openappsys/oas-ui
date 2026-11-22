@@ -1,3 +1,7 @@
+---
+description: "A purely presentational component that locks a container's size to a specified aspect ratio, with preset ratio names (square/landscape/portrait/wide/ultrawide/golden) as well as fraction/decimal…"
+---
+
 # AspectRatio
 
 A purely presentational component that locks a container's size to a specified aspect ratio, with preset ratio names (`square`/`landscape`/`portrait`/`wide`/`ultrawide`/`golden`) as well as fraction/decimal syntax: 100% width with height derived from the ratio, content filling the area and cropped to the ratio; with no children it still occupies space at the ratio. No events.

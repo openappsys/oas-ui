@@ -1,3 +1,7 @@
+---
+description: A time picker with dropdown hour/minute/second columns (plus an AM/PM column in 12-hour mode); ↑/↓ adjusts, Home/End jumps to bounds, Enter confirms, Esc cancels.
+---
+
 # TimePicker
 
 A time picker with dropdown hour/minute/second columns (plus an AM/PM column in 12-hour mode); `↑`/`↓` adjusts, `Home`/`End` jumps to bounds, `Enter` confirms, `Esc` cancels. Stepping intervals, disabled times, ranges, and direct typing are supported.

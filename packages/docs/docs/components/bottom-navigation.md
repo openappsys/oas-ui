@@ -1,3 +1,7 @@
+---
+description: "移动端底部导航栏：role=\"navigation\" + 当前项 aria-current=\"page\" 同步（视图导航，不伪装成无 panel 的 tablist）…"
+---
+
 # BottomNavigation 底部导航
 
 移动端底部导航栏：`role="navigation"` + 当前项 `aria-current="page"` 同步（视图导航，不伪装成无 panel 的 tablist），全部可用项 Tab 可达、方向键/Home/End 为增强焦点移动、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。

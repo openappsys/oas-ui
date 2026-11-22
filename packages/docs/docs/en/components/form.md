@@ -1,4 +1,8 @@
-﻿# Form
+﻿---
+description: An enhanced native <form> supporting validation and submission of inner fields according to rules.
+---
+
+# Form
 
 An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 

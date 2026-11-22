@@ -1,3 +1,7 @@
+---
+description: 移动式滚轮列选择器：原生滚动 + 吸附提供惯性手感，滚动/键盘选中落停后回写 value 并派发 oas-change。支持独立多列（columns）与级联树（options）两种数据形态，form-associated 可直接进原生表单。
+---
+
 # Picker 滚轮选择器
 
 移动式滚轮列选择器：原生滚动 + 吸附提供惯性手感，滚动/键盘选中落停后回写 `value` 并派发 `oas-change`。支持独立多列（`columns`）与级联树（`options`）两种数据形态，form-associated 可直接进原生表单。适合移动端的日期式分栏、地区级联、规格多选等场景。

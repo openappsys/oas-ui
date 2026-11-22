@@ -1,3 +1,7 @@
+---
+description: A star rating supporting keyboard arrow-key adjustment, half-star interaction, hover preview, readonly display, and touch drag; clicking the currently selected star clears the value by default.
+---
+
 # Rate
 
 A star rating supporting keyboard arrow-key adjustment, half-star interaction, hover preview, readonly display, and touch drag; clicking the currently selected star clears the value by default.

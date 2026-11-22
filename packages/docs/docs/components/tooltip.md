@@ -1,3 +1,7 @@
+---
+description: 简单的文字提示气泡，hover 或键盘聚焦触发。
+---
+
 # Tooltip 文字提示
 
 简单的文字提示气泡，hover 或键盘聚焦触发。

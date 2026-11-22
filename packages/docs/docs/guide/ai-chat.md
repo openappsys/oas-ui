@@ -1,3 +1,7 @@
+---
+description: 一条最小可运行的 AI 会话链路：oas-prompt-input 负责输入与停止，oas-message-scroller 负责消息列表与自动跟随，oas-message-row / oas-bubble 负责消息呈现。
+---
+
 # AI 会话接入
 
 一条最小可运行的 AI 会话链路：`oas-prompt-input` 负责输入与停止，`oas-message-scroller` 负责消息列表与自动跟随，`oas-message-row` / `oas-bubble` 负责消息呈现。

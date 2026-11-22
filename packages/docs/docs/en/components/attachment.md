@@ -1,3 +1,7 @@
+---
+description: "A conversation attachment row: media (icon/thumbnail) + file name/metadata + upload state machine + actions (download/remove/whole-card trigger)."
+---
+
 # Attachment
 
 A conversation attachment row: media (icon/thumbnail) + file name/metadata + upload state machine + actions (download/remove/whole-card trigger). For sending files in chats, uploading images to AI conversations, support ticket attachments, etc.

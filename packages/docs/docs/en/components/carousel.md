@@ -1,3 +1,7 @@
+---
+description: Cycles through multiple screens of content in the same viewport, with manual switching and autoplay support.
+---
+
 # Carousel
 
 Cycles through multiple screens of content in the same viewport, with manual switching and autoplay support.

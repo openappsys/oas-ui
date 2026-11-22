@@ -1,3 +1,7 @@
+---
+description: "A window title bar (app shell chrome): drag region + centered title / document well + built-in window actions + compact/large sizes."
+---
+
 # TitleBar
 
 A window title bar (app shell chrome): drag region + centered title / document well + built-in window actions + compact/large sizes. Semantics live at the "window" level, serving Electron/Tauri hosts; in plain Web the drag attributes are harmless no-ops and the component degrades to app shell semantics (distinct from `oas-app-bar`, the page-level `role="banner"`).

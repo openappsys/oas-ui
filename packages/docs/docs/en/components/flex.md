@@ -1,3 +1,7 @@
+---
+description: A layout container based on CSS Flexbox; attributes control direction, main/cross-axis alignment, gap and wrapping.
+---
+
 # Flex
 
 A layout container based on CSS Flexbox; attributes control direction, main/cross-axis alignment, gap and wrapping.

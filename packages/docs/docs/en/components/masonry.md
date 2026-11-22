@@ -1,3 +1,7 @@
+---
+description: A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.
+---
+
 # Masonry
 
 A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.

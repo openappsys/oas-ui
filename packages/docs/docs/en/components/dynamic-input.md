@@ -1,3 +1,7 @@
+---
+description: Add/remove/edit for array fields; each row reuses the oas-input component, supporting controlled/uncontrolled modes, key-value pair rows, custom row content, and button sorting.
+---
+
 # DynamicInput
 
 Add/remove/edit for array fields; each row reuses the `oas-input` component, supporting controlled/uncontrolled modes, key-value pair rows, custom row content, and button sorting.

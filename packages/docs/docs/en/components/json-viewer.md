@@ -1,3 +1,7 @@
+---
+description: A read-only JSON tree viewer with collapse/expand, search, JSONPath copy, fixed-row virtual scrolling, keyboard support and screen-reader semantics.
+---
+
 # JSONViewer
 
 A read-only JSON tree viewer with collapse/expand, search, JSONPath copy, fixed-row virtual scrolling, keyboard support and screen-reader semantics. Use it as an embeddable block for API responses, configuration review or log inspection; two instances can sit side by side for comparison.

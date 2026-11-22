@@ -1,3 +1,7 @@
+---
+description: "OAS-UI is a Web Components library: components register custom elements, Shadow DOM and events at runtime in the browser. The following boundaries apply in SSR / static-generation environments."
+---
+
 # SSR Boundaries
 
 OAS-UI is a Web Components library: components register custom elements,

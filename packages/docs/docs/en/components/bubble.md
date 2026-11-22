@@ -1,3 +1,7 @@
+---
+description: "The message bubble surface for conversations: owns only the bubble itself (background/border/radius/max width + content), while avatar, name, time, and delivery state belong to the oas-message-row…"
+---
+
 # Bubble
 
 The message bubble surface for conversations: owns only the bubble itself (background/border/radius/max width + content), while avatar, name, time, and delivery state belong to the `oas-message-row` composition row. For AI assistants, support chats, IM conversations, etc.

@@ -1,3 +1,7 @@
+---
+description: Typography components for text, titles, and paragraphs.
+---
+
 # Typography
 
 Typography components for text, titles, and paragraphs.

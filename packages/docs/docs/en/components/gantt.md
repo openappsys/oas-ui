@@ -1,3 +1,7 @@
+---
+description: "Project-scheduling chart component (data family): a WBS row tree (parent summary bars span the union of their children's time) against a horizontal time axis, with three bar forms…"
+---
+
 # Gantt
 
 Project-scheduling chart component (data family): a WBS row tree (parent summary bars span the union of their children's time) against a horizontal time axis, with three bar forms (task / milestone / summary) plus progress fill; dependency links (FS/SS/FF/SF, drawn on a single SVG overlay); a drag trio (drag to reschedule, edge handles to resize, in-bar handle to change progress — written back once on pointerup with events); six time scales (hour/day/week/month/quarter/year) with a two-tier header; today line and weekend/holiday column highlights; row virtualization for tens of thousands of tasks; three readonly levels plus per-task disabling. The data contract is a flat `parent` pointer list (nested `children` input is flattened automatically).

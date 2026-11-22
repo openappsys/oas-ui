@@ -1,3 +1,7 @@
+---
+description: Displays image resources, with an optional built-in preview feature.
+---
+
 # Image
 
 Displays image resources, with an optional built-in preview feature.

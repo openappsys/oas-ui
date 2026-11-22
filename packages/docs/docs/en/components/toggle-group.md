@@ -1,3 +1,7 @@
+---
+description: "A mutually exclusive button group for single/multiple selection: single mode uses radio semantics, multiple mode uses checkbox semantics; keyboard arrow and Home/End navigation and controlled value."
+---
+
 # ToggleGroup
 
 A mutually exclusive button group for single/multiple selection: single mode uses radio semantics, multiple mode uses checkbox semantics; keyboard arrow and Home/End navigation and controlled `value`. Supports size steps, vertical layout, attached form, item icons, mandatory selection, multiple-select limit, spread, selection color and validation status.

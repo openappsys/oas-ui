@@ -1,3 +1,7 @@
+---
+description: "Button group: combines multiple oas-button elements into a value-selection group; adjacent button corners merge and hover only highlights the current item."
+---
+
 # ButtonGroup
 
 Button group: combines multiple `oas-button` elements into a value-selection group; adjacent button corners merge and hover only highlights the current item.

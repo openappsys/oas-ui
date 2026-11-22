@@ -1,3 +1,7 @@
+---
+description: 原创线性图标集，按名渲染内联 SVG，tree-shakable。
+---
+
 # Icon 图标
 
 原创线性图标集，按名渲染内联 SVG，tree-shakable。

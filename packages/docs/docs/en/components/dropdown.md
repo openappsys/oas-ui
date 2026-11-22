@@ -1,3 +1,7 @@
+---
+description: A click-triggered menu that opens anchored to the trigger element.
+---
+
 # Dropdown
 
 A click-triggered menu that opens anchored to the trigger element.

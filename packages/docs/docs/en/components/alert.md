@@ -1,3 +1,7 @@
+---
+description: An inline notice bar for success, info, warning, or error messages, with support for a title, description, icon, action area, close animation, and multiple variants.
+---
+
 # Alert
 
 An inline notice bar for success, info, warning, or error messages, with support for a title, description, icon, action area, close animation, and multiple variants.

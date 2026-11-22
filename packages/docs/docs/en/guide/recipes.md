@@ -1,3 +1,7 @@
+---
+description: "Copy-ready composition patterns: each recipe shows how multiple components form a real business shape."
+---
+
 # Scenarios
 
 Copy-ready composition patterns: each recipe shows how multiple components form a real business shape.

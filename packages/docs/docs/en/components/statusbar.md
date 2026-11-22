@@ -1,3 +1,7 @@
+---
+description: "A bottom silent information strip: left/right segmented cells + clickable items + background activity spinner + warning/progress semantic colors."
+---
+
 # StatusBar
 
 A bottom silent information strip: left/right segmented cells + clickable items + background activity spinner + warning/progress semantic colors. Distinct from `oas-footer` (a content footer) — the statusbar carries status vocabulary (aggregate counts, current selection, sync state).

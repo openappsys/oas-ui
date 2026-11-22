@@ -242,7 +242,9 @@ function buildLlmsFullTxt() {
   for (const rel of fullSourcePaths()) {
     const md = readMd(rel)
     if (md == null) continue
-    out.push(`<!-- ${SITE_URL}${pageUrlFromRel(rel)} -->`, '', md.trim(), '', '---', '')
+    // 剥离首个 frontmatter 块（本批全量页面级 description 后，原样拼接会渲染成 <hr> + description: 噪声行）
+    const body = md.trim().replace(/^---\r?\n[\s\S]*?\r?\n---(\r?\n|$)/, '')
+    out.push(`<!-- ${SITE_URL}${pageUrlFromRel(rel)} -->`, '', body.trim(), '', '---', '')
   }
   return out.join('\n')
 }

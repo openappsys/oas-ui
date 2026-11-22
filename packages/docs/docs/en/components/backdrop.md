@@ -1,3 +1,7 @@
+---
+description: A full-screen semi-transparent overlay with content slot, color/opacity/blur customization, fade in/out animation and lifecycle events; the node is automatically unmounted after the exit animation…
+---
+
 # Backdrop
 
 A full-screen semi-transparent overlay with content slot, color/opacity/blur customization, fade in/out animation and lifecycle events; the node is automatically unmounted after the exit animation finishes when `open=false`, leaving no orphan DOM.

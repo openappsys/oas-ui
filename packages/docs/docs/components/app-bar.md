@@ -1,3 +1,7 @@
+---
+description: "页面 / 工具区顶部的应用栏布局条（role=\"banner\"）：leading 区（汉堡钮 / 自定义内容）+ 标题 + 操作区 + 末端区 + overflow 收纳 + 滚动折叠 + 扩展区第二行。"
+---
+
 # AppBar 应用栏
 
 页面 / 工具区顶部的应用栏布局条（`role="banner"`）：leading 区（汉堡钮 / 自定义内容）+ 标题 + 操作区 + 末端区 + overflow 收纳 + 滚动折叠 + 扩展区第二行。

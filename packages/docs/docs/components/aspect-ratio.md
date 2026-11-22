@@ -1,3 +1,7 @@
+---
+description: 按指定宽高比锁定容器尺寸的纯展示组件，支持预定义比例名（square/landscape/portrait/wide/ultrawide/golden）与分式/小数语法；宽度 100%、高度由比例推导，内容铺满并按比例裁切
+---
+
 # AspectRatio 等比容器
 
 按指定宽高比锁定容器尺寸的纯展示组件，支持预定义比例名（`square`/`landscape`/`portrait`/`wide`/`ultrawide`/`golden`）与分式/小数语法；宽度 100%、高度由比例推导，内容铺满并按比例裁切；无子内容时仍按比例占位。无事件。

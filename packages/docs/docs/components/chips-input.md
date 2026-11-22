@@ -1,3 +1,7 @@
+---
+description: 收件人 chips 输入：chip 与无边框输入同居一个控件盒。粘贴多地址自动拆分（分号 / 逗号 / 换行 / 空白），Enter /, /; 成 chip，非法邮箱 chip 红描边并派发 oas-invalid…
+---
+
 # ChipsInput 收件人输入
 
 收件人 chips 输入：chip 与无边框输入同居一个控件盒。粘贴多地址自动拆分（分号 / 逗号 / 换行 / 空白），`Enter` / `,` / `;` 成 chip，非法邮箱 chip 红描边并派发 `oas-invalid`（不拦截提交语义，受控数据宿主裁决）。

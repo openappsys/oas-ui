@@ -1,3 +1,7 @@
+---
+description: "A numeric input component: text input with numeric keypad (inputmode=\"decimal\"), stepper buttons, range constraints and formatted display, with full role=\"spinbutton\" aria state."
+---
+
 # InputNumber
 
 A numeric input component: text input with numeric keypad (`inputmode="decimal"`), stepper buttons, range constraints and formatted display, with full `role="spinbutton"` aria state.

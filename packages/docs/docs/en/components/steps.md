@@ -1,3 +1,7 @@
+---
+description: A step indicator that guides users through a task, with four states (wait / process / finish / error), vertical layout and clickable navigation.
+---
+
 # Steps
 
 A step indicator that guides users through a task, with four states (wait / process / finish / error), vertical layout and clickable navigation.

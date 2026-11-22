@@ -1,3 +1,7 @@
+---
+description: 统计数值展示，Intl.NumberFormat 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。
+---
+
 # Statistic 统计数值
 
 统计数值展示，`Intl.NumberFormat` 千分位与精度（locale 感知），支持前后缀与骨架屏加载占位。

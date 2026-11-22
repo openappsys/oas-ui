@@ -1,3 +1,7 @@
+---
+description: A QR code component based on a pure TypeScript, zero-dependency encoder (built in-house) that outputs inline SVG and is scannable and downloadable.
+---
+
 # QRCode
 
 A QR code component based on a **pure TypeScript, zero-dependency encoder** (built in-house) that outputs inline SVG and is scannable and downloadable.

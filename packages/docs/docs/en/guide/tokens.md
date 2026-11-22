@@ -1,3 +1,7 @@
+---
+description: "All of OAS-UI's visual language is driven by CSS variables (semantic tokens). Components in principle reference semantic tokens only — no hardcoded colors, font sizes or spacing…"
+---
+
 # Design Tokens
 
 All of OAS-UI's visual language is driven by CSS variables (semantic tokens). Components in principle reference semantic tokens only — no hardcoded colors, font sizes or spacing (a few extreme-value/preset exceptions exist) — so theming means overriding CSS variables, without touching components.

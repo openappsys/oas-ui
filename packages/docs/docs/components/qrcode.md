@@ -1,3 +1,7 @@
+---
+description: 基于纯 TypeScript 零依赖编码器（自研）的二维码组件，输出内联 SVG，可扫码、可下载。
+---
+
 # QRCode 二维码
 
 基于**纯 TypeScript 零依赖编码器**（自研）的二维码组件，输出内联 SVG，可扫码、可下载。

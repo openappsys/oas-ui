@@ -1,3 +1,7 @@
+---
+description: 窗口标题栏（应用外壳 chrome）：拖动区 + 居中标题/文档井 + 内建窗口操作 + compact/large 两档。语义在「窗口」，服务 Electron/Tauri 宿主
+---
+
 # TitleBar 标题栏
 
 窗口标题栏（应用外壳 chrome）：拖动区 + 居中标题/文档井 + 内建窗口操作 + compact/large 两档。语义在「窗口」，服务 Electron/Tauri 宿主；纯 Web 下拖动属性为无害空操作，组件退化为应用外壳语义（与 `oas-app-bar` 的页面级 `role="banner"` 分工）。

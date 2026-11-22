@@ -1,3 +1,7 @@
+---
+description: 基于 CSS columns 的瀑布流布局容器，子项自动均分到各列且不被拆分。
+---
+
 # Masonry 瀑布流
 
 基于 CSS columns 的瀑布流布局容器，子项自动均分到各列且不被拆分。

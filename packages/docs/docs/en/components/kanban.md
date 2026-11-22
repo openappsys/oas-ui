@@ -1,3 +1,7 @@
+---
+description: "A board view of columns and cards: drag cards across columns or reorder them within a column, with column reordering, WIP limits, multi-select, and swimlanes on top; every settled move emits…"
+---
+
 # Kanban
 
 A board view of columns and cards: drag cards across columns or reorder them within a column, with column reordering, WIP limits, multi-select, and swimlanes on top; every settled move emits `oas-change` so the host can sync data. Fits staged workflows such as task boards, idea pools, and hiring pipelines.

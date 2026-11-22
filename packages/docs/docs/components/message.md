@@ -1,3 +1,7 @@
+---
+description: 命令式全局消息提示，支持类型图标、加载态、悬停暂停、倒计时进度条、位置偏移、数量上限、富内容与 promise 链。进出场动画走 transform/opacity，尊重 prefers-reduced-motion。
+---
+
 # Message 消息提示
 
 命令式全局消息提示，支持类型图标、加载态、悬停暂停、倒计时进度条、位置偏移、数量上限、富内容与 promise 链。进出场动画走 transform/opacity，尊重 `prefers-reduced-motion`。

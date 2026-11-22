@@ -1,3 +1,7 @@
+---
+description: OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素、Shadow DOM 与事件。在 SSR / 静态生成环境下需要遵循以下边界。
+---
+
 # SSR 边界策略
 
 OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素、Shadow DOM 与事件。在 SSR / 静态生成环境下需要遵循以下边界。

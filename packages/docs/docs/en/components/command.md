@@ -1,3 +1,7 @@
+---
+description: A command palette (⌘K to invoke, hotkey configurable) — search filtering, score-based ranking, keyboard selection, Enter to execute, nested sub-pages, nested-level navigation…
+---
+
 # Command
 
 A command palette (⌘K to invoke, hotkey configurable) — search filtering, score-based ranking, keyboard selection, Enter to execute, nested sub-pages, nested-level navigation (declarative `children` + `levelLoader` dynamic levels), recent history and multi-select batch run. `open` is controlled: it can be set externally, and the configurable global shortcut or Esc closes it (each open/close fires one `oas-open-change`).

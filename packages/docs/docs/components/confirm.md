@@ -1,3 +1,7 @@
+---
+description: 命令式确认对话框，基于 Promise，底层复用 oas-modal。
+---
+
 # Confirm 确认框
 
 命令式确认对话框，基于 Promise，底层复用 `oas-modal`。

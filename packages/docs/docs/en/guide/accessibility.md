@@ -1,3 +1,7 @@
+---
+description: OAS-UI targets WCAG 2.1 AA and is continuously audited with axe.
+---
+
 # Accessibility (A11y)
 
 OAS-UI targets WCAG 2.1 AA and is continuously audited with axe.

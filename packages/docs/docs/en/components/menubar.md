@@ -1,3 +1,7 @@
+---
+description: A desktop-app-style top menu bar (File / Edit / View). Click or hover expands submenus (cascading popups), with arrow key support, Alt access keys and a focus trap.
+---
+
 # Menubar
 
 A desktop-app-style top menu bar (File / Edit / View). Click or hover expands submenus (cascading popups), with arrow key support, `Alt` access keys and a focus trap.

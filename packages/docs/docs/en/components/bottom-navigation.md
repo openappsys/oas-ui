@@ -1,3 +1,7 @@
+---
+description: "A mobile bottom navigation bar: role=\"navigation\" with the current item marked aria-current=\"page\" (view navigation — not a tablist without panels); every enabled item is Tab-reachable, arrow…"
+---
+
 # BottomNavigation
 
 A mobile bottom navigation bar: `role="navigation"` with the current item marked `aria-current="page"` (view navigation — not a tablist without panels); every enabled item is Tab-reachable, arrow keys/Home/End move focus as an enhancement, Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.

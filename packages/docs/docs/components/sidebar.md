@@ -1,3 +1,7 @@
+---
+description: 可折叠侧栏：桌面端 collapsed 收窄为图标条，移动端（窄于 mobile-breakpoint，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。
+---
+
 # Sidebar 侧栏
 
 可折叠侧栏：桌面端 `collapsed` 收窄为图标条，移动端（窄于 `mobile-breakpoint`，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。

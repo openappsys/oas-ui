@@ -1,3 +1,7 @@
+---
+description: "Resource load / swimlane view (new component, data family): given resources and tasks (tasks carrying assigned resources), it renders resource swimlanes…"
+---
+
 # Resource Load
 
 Resource load / swimlane view (new component, data family): given **resources** and **tasks** (tasks carrying assigned resources), it renders **resource swimlanes** (one row per resource, showing its assigned task bars on a shared timeline) and a **load histogram** (parallel task count per period by scale, highlighting overload above capacity). It is a pure view layer — no scheduling/leveling engine; leveling is exported as a pure function `levelResources()`, and the host decides whether to write back.

@@ -1,3 +1,7 @@
+---
+description: A layout container with even horizontal/vertical spacing.
+---
+
 # Space
 
 A layout container with even horizontal/vertical spacing.

@@ -1,3 +1,7 @@
+---
+description: "右侧（可左）属性编辑面板：tab 条 + 可折叠分节 + 标签/控件行。设计工具右侧栏语义（role=\"complementary\"）——与 oas-sidebar（导航菜单）的分工：inspector 是上下文属性编辑…"
+---
+
 # Inspector 属性检视面板
 
 右侧（可左）属性编辑面板：tab 条 + 可折叠分节 + 标签/控件行。设计工具右侧栏语义（`role="complementary"`）——与 `oas-sidebar`（导航菜单）的分工：inspector 是上下文属性编辑，sidebar 是 items/选中/嵌套导航。

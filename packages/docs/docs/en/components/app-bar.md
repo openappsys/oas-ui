@@ -1,3 +1,7 @@
+---
+description: "An application bar layout strip at the top of a page / tool area (role=\"banner\"): leading area (menu button / custom content) + title + action area + trailing area + overflow collection + scroll…"
+---
+
 # AppBar
 
 An application bar layout strip at the top of a page / tool area (`role="banner"`): leading area (menu button / custom content) + title + action area + trailing area + overflow collection + scroll collapse + an extended second row.

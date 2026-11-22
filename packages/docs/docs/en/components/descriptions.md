@@ -1,3 +1,7 @@
+---
+description: "Displays read-only information in groups, suitable for detail page scenarios. The default horizontal layout places the label and content on the same row (greyed label on the left); layout=\"vertical\"…"
+---
+
 # Descriptions
 
 Displays read-only information in groups, suitable for detail page scenarios. The default `horizontal` layout places the label and content on the same row (greyed label on the left); `layout="vertical"` stacks the label above the content.

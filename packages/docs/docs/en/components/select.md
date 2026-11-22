@@ -1,3 +1,7 @@
+---
+description: A dropdown selector supporting single/multiple selection, groups, clearable, remote search, and custom creation, with size/status variants, controlled open, and selection limits, fully operable by…
+---
+
 # Select
 
 A dropdown selector supporting single/multiple selection, groups, clearable, remote search, and custom creation, with size/status variants, controlled open, and selection limits, fully operable by keyboard.

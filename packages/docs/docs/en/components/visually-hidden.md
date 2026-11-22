@@ -1,3 +1,7 @@
+---
+description: A container that is visible to screen readers but visually hidden. Commonly used for assistive descriptions, form validation hints, and other accessibility scenarios.
+---
+
 # VisuallyHidden
 
 A container that is visible to screen readers but visually hidden. Commonly used for assistive descriptions, form validation hints, and other accessibility scenarios.

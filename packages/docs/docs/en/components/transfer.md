@@ -1,3 +1,7 @@
+---
+description: Dual left/right panels with shuttle buttons in the middle, supporting search filtering, keyboard operation, target-side drag sorting and the select-to-move mode.
+---
+
 # Transfer
 
 Dual left/right panels with shuttle buttons in the middle, supporting search filtering, keyboard operation, target-side drag sorting and the select-to-move mode.

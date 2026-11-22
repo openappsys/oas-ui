@@ -1,3 +1,7 @@
+---
+description: "A math formula component (self-developed simplified LaTeX subset, zero third-party formula engine) covering common high-school / university formulas: superscripts/subscripts, fractions, square roots…"
+---
+
 # Equation
 
 A math formula component (self-developed simplified LaTeX subset, zero third-party formula engine) covering common high-school / university formulas: superscripts/subscripts, fractions, square roots, summation/integration (with limits), Greek letters, and common operators.

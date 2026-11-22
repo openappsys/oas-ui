@@ -1,3 +1,7 @@
+---
+description: A standalone menu list with selection state and keyboard navigation.
+---
+
 # Menu
 
 A standalone menu list with selection state and keyboard navigation.

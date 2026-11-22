@@ -1,3 +1,7 @@
+---
+description: "Reveal a row of action buttons by swiping a list item horizontally: the default slot is the content layer (the list item body) and slot=\"actions\" is the action button group…"
+---
+
 # SwipeCell
 
 Reveal a row of action buttons by swiping a list item horizontally: the default slot is the **content layer** (the list item body) and `slot="actions"` is the **action button group** (the host places `button` / `oas-button` elements). Swiping the content layer toward inline-start reveals the inline-end action area; releasing snaps to open or closed based on the drag threshold. `oas-open` / `oas-close` are dispatched once each when the open / closed state settles (programmatic `open` attribute changes dispatch them too). An item can also carry a group on the **other side** (`slot="actions-start"`, see "Two-Sided Swipe")—the two sides open exclusively on the same item.

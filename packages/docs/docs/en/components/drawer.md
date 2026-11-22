@@ -1,3 +1,7 @@
+---
+description: A panel that slides in from the screen edge, often used for filters, details, and form editing.
+---
+
 # Drawer
 
 A panel that slides in from the screen edge, often used for filters, details, and form editing.

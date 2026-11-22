@@ -1,3 +1,7 @@
+---
+description: Click the trigger swatch to open a color panel with a 2D saturation-brightness field + vertical hue rail, preset colors, RGB and hex input, an alpha channel, a gradient mode (multi-stop editing)…
+---
+
 # ColorPicker
 
 Click the trigger swatch to open a color panel with a 2D saturation-brightness field + vertical hue rail, preset colors, RGB and hex input, an alpha channel, a gradient mode (multi-stop editing), tolerant value parsing, clearing and a controlled open state; it can also render inline without a popup. The popup panel is positioned with a fixed viewport anchor and auto-flips / clamps at viewport edges.

@@ -1,3 +1,7 @@
+---
+description: A small tag used for marking and categorization.
+---
+
 # Tag
 
 A small tag used for marking and categorization.

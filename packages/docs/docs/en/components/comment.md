@@ -1,3 +1,7 @@
+---
+description: A purely presentational comment block container that assembles the author avatar, name, time, content, and actions via slots; nested child comments are automatically indented.
+---
+
 # Comment
 
 A purely presentational comment block container that assembles the author avatar, name, time, content, and actions via slots; nested child comments are automatically indented. It ships a built-in input row (Enter submits / Shift+Enter for a newline) and a resolved state (muted + strikethrough); comment data is always owned by the host and written back to drive rendering.

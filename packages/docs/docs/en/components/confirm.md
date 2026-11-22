@@ -1,3 +1,7 @@
+---
+description: Imperative confirmation dialog based on Promises, reusing oas-modal under the hood.
+---
+
 # Confirm
 
 Imperative confirmation dialog based on Promises, reusing `oas-modal` under the hood.

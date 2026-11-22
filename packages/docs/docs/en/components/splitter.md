@@ -1,3 +1,7 @@
+---
+description: A split component that resizes panel sizes, adjustable via mouse drag, arrow keys, double-click reset, with collapse, lazy rendering, multi-panel and custom handle support.
+---
+
 # Splitter
 
 A split component that resizes panel sizes, adjustable via mouse drag, arrow keys, double-click reset, with collapse, lazy rendering, multi-panel and custom handle support.

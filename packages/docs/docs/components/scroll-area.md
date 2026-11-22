@@ -1,3 +1,7 @@
+---
+description: 包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，type 控制滚动条显示时机（auto / always / scroll / hover），滚动事件节流派发。
+---
+
 # ScrollArea 滚动区域
 
 包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，`type` 控制滚动条显示时机（auto / always / scroll / hover），滚动事件节流派发。

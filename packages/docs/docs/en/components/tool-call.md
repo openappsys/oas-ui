@@ -1,3 +1,7 @@
+---
+description: "Tool-call card: name, summary, status, arguments and result; collapsed by default and toggled from the header."
+---
+
 # ToolCall
 
 Tool-call card: name, summary, status, arguments and result; collapsed by default and toggled from the header. The component only renders host data; it does not execute tools, parse functions or inject HTML.

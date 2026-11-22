@@ -1,3 +1,7 @@
+---
+description: Camera-based code scanning. Decoding uses the native BarcodeDetector browser API (zero third-party decoding libraries); when the environment is unsupported, permission is denied, or the camera fails…
+---
+
 # Scanner
 
 Camera-based code scanning. Decoding uses the native `BarcodeDetector` browser API (zero third-party decoding libraries); when the environment is unsupported, permission is denied, or the camera fails, the component automatically falls back to a manual input row — deterministic and testable.

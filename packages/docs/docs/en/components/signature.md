@@ -1,3 +1,7 @@
+---
+description: "A canvas-based signature pad: pointer events cover mouse/pen/touch, DPR-aware crisp rendering, stroke color follows theme tokens (auto-flips in dark), strokes survive container resizes, and value…"
+---
+
 # Signature
 
 A canvas-based signature pad: pointer events cover mouse/pen/touch, DPR-aware crisp rendering, stroke color follows theme tokens (auto-flips in dark), strokes survive container resizes, and `value` (PNG dataURL) is two-way bindable.

@@ -1,3 +1,7 @@
+---
+description: "A slider built on an enhanced native <input type=\"range\">."
+---
+
 # Slider
 
 A slider built on an enhanced native `<input type="range">`.

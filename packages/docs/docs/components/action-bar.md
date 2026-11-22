@@ -1,3 +1,7 @@
+---
+description: "底部命令条 + 读数井（容器 role=\"group\" + aria-label）：命令按钮组 + 统计/任务进度/媒体运输/音乐节奏读数井，三表体（charcoal/dark/light）。"
+---
+
 # ActionBar 操作栏
 
 底部命令条 + 读数井（容器 `role="group"` + aria-label）：命令按钮组 + 统计/任务进度/媒体运输/音乐节奏读数井，三表体（charcoal/dark/light）。与 `oas-toolbar`（工具调色板）的分工——action-bar 是底部命令 + 读数，读数井是 toolbar 没有的词汇；因 center 槽常规承载读数井（progressbar 等读数区非命令控件），容器不作 `toolbar` 角色承诺（其 roving 方向键导航契约以纯命令集合为前提），降级 `group` 诚实播报，命令按钮各自原生 Tab 可达。

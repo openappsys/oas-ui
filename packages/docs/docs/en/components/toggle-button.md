@@ -1,3 +1,7 @@
+---
+description: An aria-pressed two-state toggle button; the pressed state uses the primary color background. Supports size steps, icons (including icon-only form), selection color and validation status.
+---
+
 # ToggleButton
 
 An `aria-pressed` two-state toggle button; the pressed state uses the primary color background. Supports size steps, icons (including icon-only form), selection color and validation status.

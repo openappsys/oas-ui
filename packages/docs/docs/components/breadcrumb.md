@@ -1,3 +1,7 @@
+---
+description: "展示页面层级路径。末项为当前页（aria-current=\"page\"）。"
+---
+
 # Breadcrumb 面包屑
 
 展示页面层级路径。末项为当前页（`aria-current="page"`）。

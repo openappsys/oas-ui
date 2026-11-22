@@ -1,3 +1,7 @@
+---
+description: "role=\"switch\" 的开关按钮。"
+---
+
 # Switch 开关
 
 `role="switch"` 的开关按钮。

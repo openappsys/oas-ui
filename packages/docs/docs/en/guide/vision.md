@@ -1,3 +1,7 @@
+---
+description: "Foundation: an open-source, framework-agnostic, TypeScript-first general-purpose UI component library: built on Web Components as the runtime, it works with React, Vue, vanilla JS, Svelte, or any…"
+---
+
 # Project Vision
 
 ## Vision in one sentence

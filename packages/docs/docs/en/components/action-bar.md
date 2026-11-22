@@ -1,3 +1,7 @@
+---
+description: "A bottom command strip + readout wells (container role=\"group\" + aria-label): command buttons + statistic / task-progress / media transport / music rhythm readouts, three surfaces…"
+---
+
 # ActionBar
 
 A bottom command strip + readout wells (container `role="group"` + aria-label): command buttons + statistic / task-progress / media transport / music rhythm readouts, three surfaces (charcoal/dark/light). Distinct from `oas-toolbar` (a tool palette) — the action-bar is bottom commands + readouts, and readout wells are vocabulary the toolbar lacks; because the `center` slot routinely carries readout wells (progressbar and other readout regions are not command controls), the container does not claim the `toolbar` role (whose roving arrow-key navigation contract presumes a pure command set) and degrades to an honest `group` with natively tabbable command buttons.

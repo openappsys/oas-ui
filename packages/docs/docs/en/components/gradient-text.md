@@ -1,3 +1,7 @@
+---
+description: "A purely presentational component that fills text with a gradient color, implemented with background-clip: text; it defaults to a two-color theme-token gradient and supports arbitrary color-stop…"
+---
+
 # GradientText
 
 A purely presentational component that fills text with a gradient color, implemented with `background-clip: text`; it defaults to a two-color theme-token gradient and supports arbitrary color-stop arrays and directions. No events.

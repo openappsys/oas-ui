@@ -1,3 +1,7 @@
+---
+description: A text link, an enhanced native <a>.
+---
+
 # Link
 
 A text link, an enhanced native `<a>`.

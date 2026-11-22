@@ -1,3 +1,7 @@
+---
+description: "A mobile pull-to-refresh container: the default slot is the scrollable content (a list, etc.) and the container itself is the scroll box (height constrained by the host)."
+---
+
 # PullRefresh
 
 A mobile pull-to-refresh container: the default slot is the scrollable content (a list, etc.) and the container itself is the scroll box (height constrained by the host). Keep pulling down past the top of the list to reveal the indicator, which follows the finger with a resistance curve (asymptotically approaching the distance cap); releasing past the threshold triggers a refresh — `oas-refresh` is dispatched and the component parks at the threshold height showing the refreshing visual. When the host finishes the async refresh it removes `refreshing`, and the component plays the success copy before bouncing back. Mouse drag works the same on desktop (unified pointer events); wheel scrolling is unaffected. Colors derive from semantic tokens and adapt to dark mode automatically.

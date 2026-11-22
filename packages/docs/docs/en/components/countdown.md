@@ -1,3 +1,7 @@
+---
+description: A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits oas-finish when reaching zero, and automatically cleans up its timer on disconnect.
+---
+
 # Countdown
 
 A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect. Set `type="countup"` to switch to count-up mode (increments from `start`, no end point).

@@ -1,3 +1,7 @@
+---
+description: "A notice bar for the top of a page or inside a section: icon + text + closable + an action link."
+---
+
 # NoticeBar
 
 A notice bar for the top of a page or inside a section: icon + text + closable + an action link. Extra-long text can scroll seamlessly horizontally (embedding `oas-marquee` and reusing its scroll engine); multiple notices rotate vertically via `items` (crossfade; no auto-rotation under `prefers-reduced-motion`). Colors derive from semantic tokens and adapt to dark mode automatically.

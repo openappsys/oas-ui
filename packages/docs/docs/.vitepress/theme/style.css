@@ -1,7 +1,26 @@
 /* 组件 demo 样式（DemoBlock 已在组件内处理；此处保留通用 demo 工具样式） */
 
-/* 中英切换统一走默认主题内置语言下拉（VPNavBarTranslations，locales 配置自动生成）；
-   组件内部文案由 Layout.vue 的 lang watcher 同步（@oas-ui/i18n setLocale） */
+/* 中英切换：桌面导航栏右侧用自定义分段切换（LocaleSwitch，nav-bar-content-after slot 注入）；
+   隐藏默认语言下拉（仅桌面断点；移动端汉堡菜单内的语言入口保留——移动导航栏放不下分段控件）。
+   组件内部文案由 Layout.vue 的 lang watcher 同步（@oas-ui/i18n setLocale）。 */
+
+@media (min-width: 48rem) {
+  .VPNav .VPNavBarTranslations.VPNavTranslations {
+    display: none;
+  }
+
+  /* 分段切换器经 nav-bar-content-after slot 注入后在 DOM 最尾，用 order 归位到原语言下拉的
+     位置（菜单之后、外观切换之前），视觉与肌肉记忆与旧下拉一致 */
+  .VPNavBar .content-body > .oas-locale-switch {
+    order: 1;
+  }
+
+  .VPNavBar .content-body > .appearance,
+  .VPNavBar .content-body > .social-links,
+  .VPNavBar .content-body > .extra {
+    order: 2;
+  }
+}
 
 /* ===== 官网首页（重设计版）：HomeHero / HomeUseCases / HomeCode / HomePerf / HomeCta ===== */
 /* 首页设计变量：浅色默认（:root），深色走 html.dark，跟随系统主题切换。

@@ -1,3 +1,7 @@
+---
+description: An enhanced base input built on the native <input> element.
+---
+
 # Input
 
 An enhanced base input built on the native `<input>` element.

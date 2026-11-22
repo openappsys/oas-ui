@@ -1,3 +1,7 @@
+---
+description: "The conversation message row (composition row): the row-layout owner — avatar slot, direction, header/footer arrangement, and delivery status; the visible surface is provided by oas-bubble inside the…"
+---
+
 # MessageRow
 
 The conversation message row (composition row): the row-layout owner — avatar slot, direction, header/footer arrangement, and delivery status; the visible surface is provided by `oas-bubble` inside the default slot. Message actions (copy/retry etc.) live in the footer slot; the component owns no specific actions.

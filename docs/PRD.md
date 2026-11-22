@@ -5,6 +5,19 @@
 
 ---
 
+## 未发布：文档站语言机制 SEO 改造
+
+**语言切换机制去跳转化，SEO 最优化**：任何 URL 对爬虫与用户呈现一致语言（URL 即真源），不再按浏览器语言自动改写。细分需求：
+
+- **D1 移除自动跳转**：删除 `navigator.language` 首页自动跳转（原 v2.6.7「Landing 语言适配」行为下线）；显式 `oas-lang` 偏好深链跳转保留（爬虫无 localStorage 永不命中）。
+- **D2 语言提示条**：语言明显不匹配时提示另一语言版本（zh 页无 zh / en 页含 zh 才提示，第三语言用户收敛到英文版后不再提示）；可关闭持久；点击 = 显式切换写偏好；绘制前预布局让位零 CLS；暗色固定品牌蓝。
+- **D3 分段切换器**：桌面导航栏「中 / EN」分段控件替换默认语言下拉（永久可见、深链互指、点击写偏好）；移动端隐藏，汉堡菜单语言入口保留。
+- **D4 sitemap lastmod + x-default 修复**：git 提交时间注入 `<lastmod>`（浅克隆宁缺勿假）；修复同组共享 links 数组导致第二语言缺 x-default。
+- **D5 页面级 description**：170×2 文档页 frontmatter `description` 全量覆盖；llms-full 拼接剥离 frontmatter。
+
+验收：homepage.spec.ts 语言机制用例（无跳转/提示条四向/切换器/移动入口/SEO 产物）全绿；sitemap 340 条 lastmod + x-default 实测；交叉评审收口。
+
+---
 ## v2.6.8：table 缺口补齐续批（批 G/H/I）
 
 ### 功能定义

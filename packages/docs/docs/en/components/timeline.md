@@ -1,3 +1,7 @@
+---
+description: Displays a series of event nodes in chronological order.
+---
+
 # Timeline
 
 Displays a series of event nodes in chronological order.

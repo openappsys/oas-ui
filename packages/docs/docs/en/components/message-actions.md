@@ -1,3 +1,7 @@
+---
+description: "Message action bar: copy, retry, edit, regenerate, branch, feedback and more. The component only renders buttons and dispatches oas-action; business actions and conversation state stay in the host."
+---
+
 # MessageActions
 
 Message action bar: copy, retry, edit, regenerate, branch, feedback and more. The component only renders buttons and dispatches `oas-action`; business actions and conversation state stay in the host.

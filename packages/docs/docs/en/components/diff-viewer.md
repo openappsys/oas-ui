@@ -1,3 +1,7 @@
+---
+description: "A read-only text diff viewer: line-level differences with word-level highlights, unified and split views, collapsed unchanged regions, fixed-row-height virtual scrolling, and full…"
+---
+
 # DiffViewer Text Diff
 
 A read-only text diff viewer: line-level differences with word-level highlights, unified and split views, collapsed unchanged regions, fixed-row-height virtual scrolling, and full keyboard/screen-reader support. Suited to config version comparison, prompt review, and formatted JSON before/after checks. It does not edit, merge, accept/reject changes, or compute structural JSON diffs.

@@ -1,3 +1,7 @@
+---
+description: Shows task progress, supporting line / circle / dashboard forms, status colors, indeterminate state, custom colors and text, stripes, step segments, buffer segments, and more.
+---
+
 # Progress
 
 Shows task progress, supporting line / circle / dashboard forms, status colors, indeterminate state, custom colors and text, stripes, step segments, buffer segments, and more.

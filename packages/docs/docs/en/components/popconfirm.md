@@ -1,3 +1,7 @@
+---
+description: Shows a confirmation bubble next to the trigger element, commonly used before destructive actions like deletion.
+---
+
 # Popconfirm
 
 Shows a confirmation bubble next to the trigger element, commonly used before destructive actions like deletion. Built on the floating positioning engine: 12 placements + overflow auto-flip + pointing arrow + fixed positioning (never clipped by containers).

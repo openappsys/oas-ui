@@ -1,3 +1,7 @@
+---
+description: "数字输入组件：内层为文本输入 + 数字键盘（inputmode=\"decimal\"），带步进按钮、范围约束与格式化显示，role=\"spinbutton\" 提供完整的数值 aria 状态。"
+---
+
 # InputNumber 数字输入框
 
 数字输入组件：内层为文本输入 + 数字键盘（`inputmode="decimal"`），带步进按钮、范围约束与格式化显示，`role="spinbutton"` 提供完整的数值 aria 状态。

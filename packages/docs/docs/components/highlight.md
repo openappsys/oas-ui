@@ -1,3 +1,7 @@
+---
+description: 文本命中高亮组件：text（原文）+ highlight（关键词，空格多词或 JSON 数组）计算命中片段，命中部分渲染为 <mark>（配色走主题 token，dark 自动适配）。
+---
+
 # Highlight 文本高亮
 
 文本命中高亮组件：`text`（原文）+ `highlight`（关键词，空格多词或 JSON 数组）计算命中片段，命中部分渲染为 `<mark>`（配色走主题 token，dark 自动适配）。支持大小写敏感、整词匹配、重音敏感三个开关（缺省均不敏感，重音折叠走 `String.normalize('NFD')` 去组合附加符）。内容重算后派发 `oas-count`（detail `{ count, matches }`）。

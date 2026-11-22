@@ -1,5 +1,14 @@
 # Changelog
 
+## [未发布]
+
+### 文档站（SEO 与语言机制）
+
+- **移除浏览器语言自动跳转**：不再按 `navigator.language` 把访客从首页改写到 `/en/`——URL 即真源，爬虫/用户/外链看到一致内容（原 v2.6.7「Landing 语言适配」自动跳转行为下线；显式保存的语言偏好深链跳转保留，爬虫无 localStorage 不受影响）。语言引导改由 hreflang + 新增的语言提示条与导航栏分段切换器（中 / EN）承接。
+- **语言提示条（LangHint）**：浏览器语言与页面语言明显不匹配时（zh 页浏览器无 zh / en 页浏览器含 zh）置顶提示另一语言版本，可关闭且持久、点击即显式切换；绘制前内联脚本预布局让位，无 CLS；暗色固定品牌蓝保证对比度。
+- **sitemap 增强**：每条 URL 注入 `<lastmod>`（git 最后提交时间；浅克隆/无 git 环境整段跳过，宁缺勿假）并补齐 `x-default` alternate（修复同组共享 links 数组导致每组第二语言被跳过的问题）。
+- **页面级 meta description**：全部 170×2 文档页写入 frontmatter `description`，meta/og:description 不再全站回退同一句话；`llms-full.txt` 拼接时剥离 frontmatter 块防渲染噪声。
+
 ## [2.6.8] - 2026-11-18
 
 ### 新增

@@ -1,3 +1,7 @@
+---
+description: Notification cards anchored to the four viewport corners, supporting title, description, duration, type, pause-on-hover, priority preemption, and stack governance…
+---
+
 # Notification
 
 Notification cards anchored to the four viewport corners, supporting title, description, duration, type, pause-on-hover, priority preemption, and stack governance (collapsible counter / peek-on-hover).

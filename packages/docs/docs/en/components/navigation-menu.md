@@ -1,3 +1,7 @@
+---
+description: "A website-style multi-level navigation bar: top-level triggers open a unified viewport panel (mega-panel multi-column link cards) on hover/click, with delayed open/close, a controlled open value, and…"
+---
+
 # NavigationMenu
 
 A website-style multi-level navigation bar: top-level triggers open a unified viewport panel (mega-panel multi-column link cards) on hover/click, with delayed open/close, a controlled open value, and full keyboard navigation. Leaf items with `href` render as links.

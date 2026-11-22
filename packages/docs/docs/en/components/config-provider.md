@@ -1,3 +1,7 @@
+---
+description: The injection entry point for global configuration, centrally managing locale / size / theme / config / direction / z-index / disabled for the wrapped subtree.
+---
+
 # ConfigProvider
 
 The injection entry point for global configuration, centrally managing `locale` / `size` / `theme` / `config` / `direction` / `z-index` / `disabled` for the wrapped subtree. Component resolution order: own attribute > config-provider > global default.

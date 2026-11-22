@@ -1,3 +1,7 @@
+---
+description: OAS-UI 以 WCAG 2.1 AA 为目标，并有持续的 axe 自动化审计。
+---
+
 # 无障碍（A11y）
 
 OAS-UI 以 WCAG 2.1 AA 为目标，并有持续的 axe 自动化审计。

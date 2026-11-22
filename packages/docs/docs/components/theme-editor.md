@@ -1,3 +1,7 @@
+---
+description: 实时编辑 --oas-* 主题 token，编辑即时写入宿主 CSS 变量，子树实时继承预览。light/dark 各存一套独立 overrides，可在两套间切换编辑而不互相污染。
+---
+
 # ThemeEditor 主题编辑器
 
 实时编辑 `--oas-*` 主题 token，编辑即时写入宿主 CSS 变量，子树实时继承预览。light/dark 各存一套独立 overrides，可在两套间切换编辑而不互相污染。颜色 token 行为「色板 + 文本框」双通道（色板只承载 `#rrggbb`，文本框可编辑 `rgb()`/`oklch()`/`color-mix()` 等任意 CSS 颜色函数且不破坏原值）；数字 token 行为 range 滑块 + number 输入联动。面板顶部支持按 token 名搜索过滤，分组可折叠；内置 compact / comfortable 预设主题与导出 / 导入 / 重置工具。

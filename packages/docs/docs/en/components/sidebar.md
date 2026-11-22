@@ -1,3 +1,7 @@
+---
+description: "A collapsible side bar: on desktop, collapsed narrows it to an icon strip; on mobile (narrower than mobile-breakpoint, default 768px) it automatically becomes an overlay drawer with a backdrop."
+---
+
 # Sidebar
 
 A collapsible side bar: on desktop, `collapsed` narrows it to an icon strip; on mobile (narrower than `mobile-breakpoint`, default 768px) it automatically becomes an overlay drawer with a backdrop. Clicking outside, the close button or Esc collapses it.

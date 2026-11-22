@@ -1,3 +1,7 @@
+---
+description: An animation component that eases a number from its current value to the target value, stops at the target and emits oas-finish; under prefers-reduced-motion it jumps straight to the target, and…
+---
+
 # NumberAnimation
 
 An animation component that eases a number from its current value to the target value, stops at the target and emits `oas-finish`; under `prefers-reduced-motion` it jumps straight to the target, and disconnecting cancels the rAF without leaks.

@@ -1,3 +1,7 @@
+---
+description: "Recipient chips input: chips and a borderless input share a single control box. Pasting multiple addresses auto-splits on semicolons / commas / newlines / whitespace; Enter /, /; commits a chip…"
+---
+
 # ChipsInput
 
 Recipient chips input: chips and a borderless input share a single control box. Pasting multiple addresses auto-splits on semicolons / commas / newlines / whitespace; `Enter` / `,` / `;` commits a chip; invalid emails get a red outline and emit `oas-invalid` (submission is not blocked — the host decides on controlled data).

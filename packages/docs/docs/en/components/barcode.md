@@ -1,3 +1,7 @@
+---
+description: A 1D barcode component based on a pure TypeScript, zero-dependency encoder (built in-house).
+---
+
 # Barcode
 
 A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house). It covers 10 symbologies (CODE128 / GS1-128 / EAN-13 / EAN-8 / UPC-E / UPC-A / CODE39 / Codabar / MSI / ITF-14), outputs inline SVG, and is scannable and downloadable.

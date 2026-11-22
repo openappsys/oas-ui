@@ -1,3 +1,7 @@
+---
+description: Basic button component, an enhanced native <button>.
+---
+
 # Button
 
 Basic button component, an enhanced native `<button>`.

@@ -1,3 +1,7 @@
+---
+description: Stows content in collapsible panels to keep the focus on key information.
+---
+
 # Collapse
 
 Stows content in collapsible panels to keep the focus on key information.

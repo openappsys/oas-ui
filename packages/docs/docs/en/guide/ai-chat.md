@@ -1,3 +1,7 @@
+---
+description: "A minimal runnable AI chat loop: oas-prompt-input owns input/stop, oas-message-scroller owns the message list and auto-follow, and oas-message-row / oas-bubble render each turn."
+---
+
 # AI Chat Integration
 
 A minimal runnable AI chat loop: `oas-prompt-input` owns input/stop, `oas-message-scroller` owns the message list and auto-follow, and `oas-message-row` / `oas-bubble` render each turn.

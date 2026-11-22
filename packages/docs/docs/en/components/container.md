@@ -1,3 +1,7 @@
+---
+description: "A fixed-width, centered container: size maps to --oas-container-* width tokens, margin-inline: auto centers it (logical property, RTL-compliant automatically), and max-width: min(100%, token)…"
+---
+
 # Container
 
 A fixed-width, centered container: `size` maps to `--oas-container-*` width tokens, `margin-inline: auto` centers it (logical property, RTL-compliant automatically), and `max-width: min(100%, token)` prevents overflow on narrow screens.

@@ -1,3 +1,7 @@
+---
+description: "A single-select linear segmented control for light filtering / view switching, role=\"radiogroup\", with per-item disabling. The selection indicator slides between items."
+---
+
 # Segmented
 
 A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling. The selection indicator slides between items.

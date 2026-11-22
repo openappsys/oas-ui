@@ -1,3 +1,7 @@
+---
+description: A classic page skeleton of header + sider + content + footer, used with semantic child components.
+---
+
 # Layout
 
 A classic page skeleton of header + sider + content + footer, used with semantic child components.

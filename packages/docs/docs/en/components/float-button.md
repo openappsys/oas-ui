@@ -1,3 +1,7 @@
+---
+description: "A circular action button fixed to the bottom-right corner of the page by default, for quick actions like \"New\" and \"Feedback\"; supports a badge, a custom icon, extended text and link mode."
+---
+
 # FloatButton
 
 A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge, a custom icon, extended text and link mode.

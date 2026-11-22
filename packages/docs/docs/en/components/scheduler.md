@@ -1,3 +1,7 @@
+---
+description: "Month-view scheduling component: renders event chips (title + color bar) inside day cells; events read/write channel plus addEvent / updateEvent / removeEvent CRUD methods; clicking a chip dispatches…"
+---
+
 # Scheduler
 
 Month-view scheduling component: renders event chips (title + color bar) inside day cells; `events` read/write channel plus `addEvent` / `updateEvent` / `removeEvent` CRUD methods; clicking a chip dispatches `oas-event-click`, clicking a day dispatches `oas-day-click` (host attaches an editor), and data changes made through the CRUD methods dispatch `oas-events-change` (writing via `setAttribute('events', …)` does not).

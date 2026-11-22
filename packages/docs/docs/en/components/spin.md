@@ -1,3 +1,7 @@
+---
+description: A loading indicator that can be used standalone or wrap content with an overlaid mask; supports tips, progress, fullscreen and custom indicators.
+---
+
 # Spin
 
 A loading indicator that can be used standalone or wrap content with an overlaid mask; supports tips, progress, fullscreen and custom indicators.

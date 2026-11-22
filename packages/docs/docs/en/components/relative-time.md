@@ -1,3 +1,7 @@
+---
+description: Renders epoch milliseconds / ISO 8601 / Date as a localized relative time, backed by a semantic <time datetime> element. Optional auto-refresh keeps it fresh and pauses while the page is hidden.
+---
+
 # RelativeTime
 
 Renders epoch milliseconds / ISO 8601 / `Date` as a localized relative time, backed by a semantic `<time datetime>` element. Optional `auto-refresh` keeps it fresh and pauses while the page is hidden. Invalid or missing values render a safe empty state — never `NaN` / `Invalid Date`.

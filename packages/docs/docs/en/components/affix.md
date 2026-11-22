@@ -1,3 +1,7 @@
+---
+description: Pins content to the top or bottom of the viewport; it becomes fixed once the page scrolls past a given offset. Commonly used for fixed table action bars, toolbars, etc.
+---
+
 # Affix
 
 Pins content to the top or bottom of the viewport; it becomes fixed once the page scrolls past a given offset. Commonly used for fixed table action bars, toolbars, etc.

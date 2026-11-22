@@ -1,3 +1,7 @@
+---
+description: "A non-modal workbench tool window: draggable, resizable and stackable (palettes, layers, logs, monitors). open and rect are the controlled state; pointer and keyboard are equivalent."
+---
+
 # FloatingPanel
 
 A non-modal workbench tool window: draggable, resizable and stackable (palettes, layers, logs, monitors). `open` and `rect` are the controlled state; pointer and keyboard are equivalent. Panels in the same family share a fixed overlay tier — z-index never grows with open/close cycles.

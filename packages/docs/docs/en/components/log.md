@@ -1,3 +1,7 @@
+---
+description: "A monospace log display container that supports incremental appending and \"stick-to-bottom\" auto-scrolling, suitable for consoles / build output scenarios."
+---
+
 # Log
 
 A monospace log display container that supports incremental appending and "stick-to-bottom" auto-scrolling, suitable for consoles / build output scenarios.

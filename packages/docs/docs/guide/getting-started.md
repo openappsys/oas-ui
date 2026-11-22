@@ -1,3 +1,7 @@
+---
+description: 整包（最简单，注册全部组件）：cdn.js 是打包好的 IIFE 单文件，<script> 直接引入即可
+---
+
 # 快速开始
 
 ## CDN 引入

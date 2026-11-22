@@ -1,3 +1,7 @@
+---
+description: A click / hover / focus triggered popup panel that can hold a title, body text and arbitrary custom content.
+---
+
 # Popover
 
 A click / hover / focus triggered popup panel that can hold a title, body text and arbitrary custom content. Supports 12-way placement, dual-axis offset, open/close animation, portal, modal mode and nested popovers.

@@ -1,3 +1,7 @@
+---
+description: OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
+---
+
 # Component Overview
 
 OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.

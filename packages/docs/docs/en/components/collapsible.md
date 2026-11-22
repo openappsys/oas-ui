@@ -1,3 +1,7 @@
+---
+description: "A single-panel disclosure primitive: a standalone collapsible block with no container that manages its own open state."
+---
+
 # Collapsible
 
 A single-panel disclosure primitive: a standalone collapsible block with no container that manages its own open state. Relationship with `oas-collapse` — collapse orchestrates a container with multiple panels (panel state is driven by the container); collapsible is one independent panel, suited to file-tree nodes, form section folding, sidebar groups, and any "this block folds itself" scenario.

@@ -12,7 +12,7 @@ const stats = JSON.parse(
 test.describe.configure({ mode: 'parallel' })
 
 test.describe('官网首页（重设计版）', () => {
-  // 默认 Playwright context 是 en-US；首页浏览器语言自动跳转只针对 landing page，
+  // 默认 Playwright context 是 en-US；无任何浏览器语言自动跳转（URL 即真源），
   // 本 describe 的默认首页断言固定 zh-CN，避免每个用例重复声明。
   test.use({ locale: 'zh-CN' })
 
@@ -164,7 +164,7 @@ test.describe('官网首页（重设计版）', () => {
     expect(shadow).not.toBe('none')
   })
 
-  test('英文首页渲染 + 中英切换链路', async ({ browser, page }) => {
+  test('英文首页渲染（显式 /en/ 路径直达）', async ({ browser, page }) => {
     // /en/ 是显式英文路径：直接打开即英文首页。
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
@@ -173,45 +173,48 @@ test.describe('官网首页（重设计版）', () => {
     await expect(hero).toBeAttached()
     await expect(hero.locator('.hh-title')).toContainText('framework-agnostic')
     await ctxEn.close()
-    // 中文首页：zh 浏览器不触发英文 landing 跳转，zh 标题渲染是“未被重定向”的确定性信号
-    // （重定向脚本在 head 同步执行，若发生 goto 直接落在 /en/，zh 标题永不出现 → 此处超时红）
+    // 中文首页：zh 浏览器访问无任何跳转/提示条，zh 标题渲染是「未被重定向」的确定性信号
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
   })
 
-  // 浏览器语言自动跳转只作用于 landing page：en 首访根路径跳 /en/，query/hash 保留；
+  // SEO 决策（2026-11）：不做任何基于浏览器语言的自动跳转——语言推荐走 hreflang + LangHint 提示条，
+  // URL 即真源（爬虫/用户/外链看到一致内容）。en 首访根路径留在中文首页，但应看到英文提示条；
   // 中文深链是显式内容地址，不做浏览器语言猜测；zh 浏览器根路径自然留在中文。
-  test('landing 自动跳转：en 首页跳 /en/ 并保留 query/hash，子页面不自动', async ({ browser }) => {
+  test('无自动跳转：en 首访根路径留在中文首页并看到语言提示条，深链不自动', async ({ browser }) => {
     const ctx = await browser.newContext({ locale: 'en-US' })
     const p = await ctx.newPage()
     await p.goto('/?from=landing#a11y', { waitUntil: 'domcontentloaded' })
-    await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/')
-    expect(new URL(p.url()).search, 'landing 跳转应保留 query').toBe('?from=landing')
-    expect(new URL(p.url()).hash, 'landing 跳转应保留 hash').toBe('#a11y')
-    await expect(p.locator('.home-hero .hh-title')).toContainText('framework-agnostic', { timeout: 15000 })
-    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), '自动猜测不得持久化').toBeNull()
+    // 根路径原样保留（含 query/hash）——无重定向、无 URL 改写
+    expect(new URL(p.url()).pathname, 'en 首访不应自动跳走').toBe('/')
+    expect(new URL(p.url()).search).toBe('?from=landing')
+    expect(new URL(p.url()).hash).toBe('#a11y')
+    await expect(p.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
+    // 提示条替代跳转：英文文案，链接指向英文首页
+    const hint = p.locator('.oas-lang-hint')
+    await expect(hint).toBeVisible()
+    await expect(hint).toContainText('available in English')
+    await expect(hint.locator('.oas-lang-hint-link')).toHaveAttribute('href', '/en/')
+    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), '提示不等于偏好，不得持久化').toBeNull()
 
-    await p.goto('/index.html?from=landing-index#index', { waitUntil: 'domcontentloaded' })
-    await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/')
-    expect(new URL(p.url()).search, 'index.html landing 跳转应保留 query').toBe('?from=landing-index')
-    expect(new URL(p.url()).hash, 'index.html landing 跳转应保留 hash').toBe('#index')
-    expect(await p.evaluate(() => localStorage.getItem('oas-lang')), 'index.html 自动猜测仍不得持久化').toBeNull()
-
+    // 深链：en 浏览器无偏好访问中文深链不自动跳，提示条深链到同页英文版
     const deep = await ctx.newPage()
     await deep.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
     await expect.poll(() => deep.evaluate(() => document.documentElement.lang), { timeout: 15000 }).toBe('zh-CN')
     expect(new URL(deep.url()).pathname, 'en 浏览器无偏好访问中文深链不应自动跳').toBe('/components/button.html')
+    await expect(deep.locator('.oas-lang-hint')).toBeVisible()
+    await expect(deep.locator('.oas-lang-hint-link')).toHaveAttribute('href', '/en/components/button')
     await ctx.close()
   })
 
-  // 语言偏好跳转（head inline 脚本）：显式保存的偏好仍全站生效；浏览器语言猜测只作用于 landing。
-  test('语言偏好跳转：无偏好 landing 按浏览器语言，显式 oas-lang=en 才跳深链', async ({ browser }) => {
-    // en 浏览器、无偏好：根路径自动跳英文首页
+  // 语言偏好跳转（head inline 脚本）：显式保存的偏好仍全站生效；无偏好不做任何自动跳转。
+  test('语言偏好跳转：无偏好全留显式 URL，显式 oas-lang=en 才跳深链', async ({ browser }) => {
+    // en 浏览器、无偏好：根路径留在中文（提示条引导，不跳转）
     const ctxEn = await browser.newContext({ locale: 'en-US' })
     const pEn = await ctxEn.newPage()
     await pEn.goto('/', { waitUntil: 'domcontentloaded' })
-    await expect.poll(() => new URL(pEn.url()).pathname, { timeout: 15000 }).toBe('/en/')
-    await expect(pEn.locator('.home-hero .hh-title')).toContainText('framework-agnostic', { timeout: 15000 })
+    await expect(pEn.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
+    expect(new URL(pEn.url()).pathname, 'en 浏览器无偏好首访应留在中文根路径').toBe('/')
     // en 浏览器、无偏好：zh 深链留中文（html lang=zh-CN 为 zh 页确定性信号，en 页为 lang=en）
     await pEn.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
     await expect.poll(() => pEn.evaluate(() => document.documentElement.lang), { timeout: 15000 }).toBe('zh-CN')
@@ -223,6 +226,10 @@ test.describe('官网首页（重设计版）', () => {
     await pEn.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
     await expect.poll(() => pEn.url(), { timeout: 15000 }).toContain('/en/components/button')
     expect(new URL(pEn.url()).pathname, '已存 en 偏好访问 zh 深链应跳对应英文页').toContain('/en/components/button')
+    // /index.html 旧入口同规则（head 脚本按路径跳转，入口形态不影响）；serve-dist 不规范化
+    // index.html 别名，落点是物理存在的 /en/index.html（Cloudflare 侧 307 到 /en/ 是托管层行为）
+    await pEn.goto('/index.html', { waitUntil: 'domcontentloaded' })
+    await expect.poll(() => new URL(pEn.url()).pathname, { timeout: 15000 }).toMatch(/^\/en\//)
     await ctxEn.close()
     // zh 浏览器、无偏好：根路径留中文
     const ctxZh = await browser.newContext({ locale: 'zh-CN' })
@@ -285,22 +292,157 @@ test.describe('官网首页（重设计版）', () => {
     await settle('zh-CN', '/components/button-group.html', '/en/components/button-group.html', 'en')
   })
 
-  test('语言偏好只在显式切换时写：落地首屏不写、点语言下拉切换才写（满负载污染实抓回归锁）', async ({ browser }) => {
+  test('语言偏好只在显式切换时写：落地首屏不写、点分段切换器才写（满负载污染实抓回归锁）', async ({ browser }) => {
     // 曾现：仅靠 oldValue === undefined 判定「首屏不写」不够——路由/水合重算会以 oldValue 有值
     // 再次触发 watcher，满负载下把落地页 locale 写回 oas-lang（en 浏览器访问 zh 深链不再跳转）。
-    // 现判据：点击 .VPNavBarTranslations 内的链接才算显式切换。
+    // 现判据：点击语言入口（分段切换器 / 移动菜单语言项）才算显式切换；落地与 SPA 内重算一律不写。
     const ctx = await browser.newContext({ locale: 'zh-CN' })
     const p = await ctx.newPage()
     await p.goto('/', { waitUntil: 'domcontentloaded' })
     // 水合完成的确定性信号：hero 标题渲染（曾误写偏好的 watcher 在水合期触发，此刻必然已跑完）
     await expect(p.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
     expect(await p.evaluate(() => localStorage.getItem('oas-lang')), '落地首屏不得写偏好').toBeNull()
-    // 显式切换：打开语言下拉 → 点 English
-    await p.locator('.VPNavBarTranslations button.button').click()
-    await p.locator('.VPNavBarTranslations .VPMenuLink a[href="/en/"]').click()
+    // 显式切换：点分段切换器的 EN
+    await p.locator('.oas-locale-switch a[lang="en"]').click()
     await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toContain('/en')
     await expect.poll(() => p.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('en')
     await ctx.close()
+  })
+
+  // ===== 语言提示条（LangHint）与分段切换器（LocaleSwitch） =====
+  // SEO 决策落地组件：去掉浏览器语言自动跳转后，由提示条 + 可见切换器承接语言引导。
+  test.describe('语言提示条与分段切换器', () => {
+    test('提示条：点击跟进跳英文版并写偏好，之后不再提示', async ({ browser }) => {
+      const ctx = await browser.newContext({ locale: 'en-US' })
+      const p = await ctx.newPage()
+      await p.goto('/', { waitUntil: 'domcontentloaded' })
+      const hint = p.locator('.oas-lang-hint')
+      await expect(hint).toBeVisible()
+      await expect(hint).toContainText('available in English')
+      await hint.locator('.oas-lang-hint-link').click()
+      await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/')
+      // 点击跟进 = 显式选择英文：写偏好，且落地英文页后提示条消失（watch lang 重算）
+      await expect.poll(() => p.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('en')
+      await expect(hint).toBeHidden()
+      await ctx.close()
+    })
+
+    test('提示条：关闭一次后不再出现（跨重载持久）', async ({ browser }) => {
+      const ctx = await browser.newContext({ locale: 'en-US' })
+      const p = await ctx.newPage()
+      await p.goto('/', { waitUntil: 'domcontentloaded' })
+      const hint = p.locator('.oas-lang-hint')
+      await expect(hint).toBeVisible()
+      await hint.locator('.oas-lang-hint-close').click()
+      await expect(hint).toBeHidden()
+      await p.reload({ waitUntil: 'domcontentloaded' })
+      // 水合锚点后再断言：LangHint 挂载晚于 DOMContentLoaded，立即求值会绕过判定假绿
+      await expect(p.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
+      await expect(p.locator('.oas-lang-hint')).toHaveCount(0)
+      await ctx.close()
+    })
+
+    test('zh 用户在英文页看到中文提示条，回点写 zh 偏好', async ({ browser }) => {
+      const ctx = await browser.newContext({ locale: 'zh-CN' })
+      const p = await ctx.newPage()
+      await p.goto('/en/', { waitUntil: 'domcontentloaded' })
+      const hint = p.locator('.oas-lang-hint')
+      await expect(hint).toBeVisible()
+      await expect(hint).toContainText('简体中文')
+      await hint.locator('.oas-lang-hint-link').click()
+      await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/')
+      await expect.poll(() => p.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('zh')
+      await ctx.close()
+    })
+
+    test('第三语言用户（de）：中文页提示英文版，落地英文页后不再提示', async ({ browser }) => {
+      const ctx = await browser.newContext({ locale: 'de-DE' })
+      const p = await ctx.newPage()
+      await p.goto('/', { waitUntil: 'domcontentloaded' })
+      const hint = p.locator('.oas-lang-hint')
+      await expect(hint).toBeVisible()
+      await expect(hint).toContainText('available in English')
+      await hint.locator('.oas-lang-hint-link').click()
+      await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/')
+      await expect(hint).toBeHidden()
+      await ctx.close()
+    })
+
+    test('已有显式偏好的用户不再看到提示条', async ({ browser }) => {
+      const ctx = await browser.newContext({ locale: 'en-US' })
+      const p = await ctx.newPage()
+      await p.goto('/', { waitUntil: 'domcontentloaded' })
+      await p.evaluate(() => localStorage.setItem('oas-lang', 'zh'))
+      await p.reload({ waitUntil: 'domcontentloaded' })
+      // 用计数而非可见性：v-if 移除节点，toBeHidden 对空选择器恒真；
+      // 水合锚点后再断言：LangHint 挂载晚于 DOMContentLoaded，立即求值会假绿
+      await expect(p.locator('.home-hero .hh-title')).toContainText('框架无关的', { timeout: 15000 })
+      await expect(p.locator('.oas-lang-hint')).toHaveCount(0)
+      await ctx.close()
+    })
+
+    test('分段切换器：两段/当前态/深链互指（zh 深链）', async ({ page }) => {
+      await page.goto('/components/button', { waitUntil: 'domcontentloaded' })
+      const sw = page.locator('.oas-locale-switch')
+      await expect(sw).toBeVisible()
+      await expect(sw.locator('a')).toHaveCount(2)
+      // 默认 context 锁 zh-CN：落在中文深链，当前态仍高亮中文（URL 即真源）
+      await expect(sw.locator('a.active')).toHaveAttribute('lang', 'zh-CN')
+      await expect(sw.locator('a[lang="en"]')).toHaveAttribute('href', '/en/components/button')
+      await expect(sw.locator('a[lang="zh-CN"]')).toHaveAttribute('href', '/components/button')
+      // 点击 EN 段：跳对应英文页并写偏好
+      await sw.locator('a[lang="en"]').click()
+      await expect.poll(() => new URL(page.url()).pathname, { timeout: 15000 }).toBe('/en/components/button')
+      await expect.poll(() => page.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('en')
+      await expect(sw.locator('a.active')).toHaveAttribute('lang', 'en')
+      // 反向：英文深链的 zh href 指回中文同页
+      await expect(sw.locator('a[lang="zh-CN"]')).toHaveAttribute('href', '/components/button')
+      // 位置归位：占据原语言下拉位（视觉序在外观切换按钮之前；CSS order 不改 DOM 序）
+      const pos = await page.evaluate(() => {
+        const sw = document.querySelector('.oas-locale-switch')?.getBoundingClientRect()
+        const ap = document.querySelector('.VPNavBar .content-body > .appearance')?.getBoundingClientRect()
+        return { swLeft: sw?.left ?? Infinity, apLeft: ap?.left ?? -Infinity }
+      })
+      expect(pos.swLeft, '切换器应位于外观切换按钮左侧（原语言下拉位）').toBeLessThan(pos.apLeft)
+    })
+
+    test('点当前语言段后提示条立即消失（oas-lang-pref 广播回归）', async ({ page, browser }) => {
+      // en 浏览器在中文页看到提示条；点「中」（当前语言段）——阻止默认导航后 lang 不变、
+      // 偏好已写入：横幅只能靠 oas-lang-pref 广播复算隐藏，删掉广播此用例即红（导航场景
+      // 整页重载后 evaluate 也会隐藏，覆盖不到广播本身）
+      const ctx = await browser.newContext({ locale: 'en-US' })
+      const p = await ctx.newPage()
+      await p.goto('/', { waitUntil: 'domcontentloaded' })
+      const hint = p.locator('.oas-lang-hint')
+      await expect(hint).toBeVisible()
+      await p.evaluate(() => {
+        document
+          .querySelector('.oas-locale-switch a[lang="zh-CN"]')
+          ?.addEventListener('click', (e) => e.preventDefault())
+      })
+      await p.locator('.oas-locale-switch a[lang="zh-CN"]').click()
+      await expect(hint).toBeHidden()
+      await expect.poll(() => p.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('zh')
+      await ctx.close()
+    })
+
+    test('移动端：切换器隐藏，汉堡菜单保留语言入口且点击写偏好', async ({ browser }) => {
+      const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } })
+      const p = await ctx.newPage()
+      await p.goto('/components/button', { waitUntil: 'domcontentloaded' })
+      await expect(p.locator('.oas-locale-switch')).toBeHidden()
+      await p.locator('.VPNavBarHamburger').click()
+      const trans = p.locator('.VPNavScreenTranslations')
+      await expect(trans).toBeVisible()
+      // 移动菜单语言入口是手风琴：先展开再点（未展开时列表 hidden，直接点会超时）
+      await trans.locator('button.title').click()
+      // 点击入口是 Layout watcher「点击才写偏好」的唯一可达路径，须断言落库。
+      // 中文态菜单只渲染对侧语言一项（「English」→ /en/ 同页）
+      await trans.locator('a[href="/en/components/button"]').click()
+      await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/components/button')
+      await expect.poll(() => p.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('en')
+      await ctx.close()
+    })
   })
 
   test('页脚：自定义四栏页脚 + 双许可与版权', async ({ page }) => {
@@ -369,5 +511,52 @@ test.describe('官网首页（重设计版）', () => {
     })
     await expect(page.locator('.home-reveal.in').first()).toBeVisible()
     await expect(reveal).toHaveClass(/in/)
+  })
+})
+
+// ===== 文档站 SEO 产物（语言机制去跳转化的配套固化） =====
+// sitemap 每 URL 带 git lastmod 与 x-default alternate；每页 meta description 为页面级 frontmatter
+test.describe('文档站 SEO 产物', () => {
+  test('sitemap：每条 URL 含 lastmod 与 x-default alternate', async ({ request }) => {
+    const res = await request.get('/sitemap.xml')
+    expect(res.ok()).toBe(true)
+    const xml = await res.text()
+    const locs = xml.match(/<loc>/g)?.length ?? 0
+    const lastmods = xml.match(/<lastmod>/g)?.length ?? 0
+    const xDefaults = xml.match(/hreflang="x-default"/g)?.length ?? 0
+    expect(locs, '应收录中英全部页面').toBeGreaterThanOrEqual(300)
+    // lastmod 来自 git 历史：完整检出下全量注入；浅克隆（CI 默认 checkout）与无 git 环境整段跳过
+    // （宁缺勿假——浅克隆边界提交会给全部文件同一个假日期）；未提交的新页面也拿不到日期。
+    // 用与构建完全相同的判定（同仓库同工作树）锁两个分支，而不是写死期望值。
+    const { execSync } = await import('node:child_process')
+    const shallow = execSync('git rev-parse --is-shallow-repository').toString().trim() === 'true'
+    if (shallow) {
+      expect(lastmods, '浅克隆下应整段跳过 lastmod（宁缺勿假）').toBe(0)
+    } else {
+      expect(lastmods, 'lastmod 注入数与 URL 数差距不应超过未提交新页面上限').toBeGreaterThanOrEqual(locs - 20)
+      // 防「全站同一假日期」回归：真实 git 历史下日期必然多样
+      const distinct = new Set(xml.match(/<lastmod>[^<]+/g)?.map((s) => s.slice(8)) ?? []).size
+      expect(distinct, 'lastmod 不应全站同一日期（假日期信号）').toBeGreaterThan(1)
+    }
+    expect(xDefaults, '每条 URL 组都应补 x-default').toBe(locs)
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en"')
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="zh-CN"')
+  })
+
+  test('页面 description：中英组件页各取页面级 frontmatter，canonical/hreflang 不变', async ({ page }) => {
+    await page.goto('/components/button', { waitUntil: 'domcontentloaded' })
+    const meta = (name: string) => page.locator(`meta[name="${name}"]`).getAttribute('content')
+    expect(await meta('description')).toContain('基础按钮组件')
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://oas-ui.dev/components/button')
+    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute(
+      'href',
+      'https://oas-ui.dev/en/components/button',
+    )
+    await page.goto('/en/components/button', { waitUntil: 'domcontentloaded' })
+    expect(await meta('description')).toContain('Basic button component')
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://oas-ui.dev/en/components/button',
+    )
   })
 })

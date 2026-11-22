@@ -1,3 +1,7 @@
+---
+description: 日期选择器，支持 date / daterange / month / monthrange / year / yearrange / datetime / datetimerange / week / quarter 十种类型…
+---
+
 # DatePicker 日期选择器
 
 日期选择器，支持 `date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter` 十种类型，键盘可操作，`Intl.DateTimeFormat` 格式化；触发器为输入框，可直接键入日期或范围（失焦或回车提交，非法输入自动回退）。

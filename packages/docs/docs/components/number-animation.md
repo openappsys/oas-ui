@@ -1,3 +1,7 @@
+---
+description: 数字从当前值缓动到目标值的动画组件，到目标值停止并派发 oas-finish；prefers-reduced-motion 时直接跳目标，断开连接自动取消 rAF 无泄漏。
+---
+
 # NumberAnimation 数字滚动
 
 数字从当前值缓动到目标值的动画组件，到目标值停止并派发 `oas-finish`；`prefers-reduced-motion` 时直接跳目标，断开连接自动取消 rAF 无泄漏。

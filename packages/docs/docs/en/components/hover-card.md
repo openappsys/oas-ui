@@ -1,3 +1,7 @@
+---
+description: A hover/focus-triggered preview card whose popup stays open on hover (no flicker). Rich content slot, 12-way placement, separate open/close delays, arrow
+---
+
 # HoverCard
 
 A hover/focus-triggered preview card whose popup stays open on hover (no flicker). Rich content slot, 12-way placement, separate open/close delays, arrow (incl. corner-merge), dual-axis offset, collision tuning, append-to container, delay groups and controlled display.

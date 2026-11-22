@@ -1,3 +1,7 @@
+---
+description: "The conversation scroll container: a scroll-intent model — follow new content only when the reader is at the bottom (AI style), an always-pinned IM mode, a scroll-to-bottom button, jump-free history…"
+---
+
 # MessageScroller
 
 The conversation scroll container: a scroll-intent model — follow new content only when the reader is at the bottom (AI style), an always-pinned IM mode, a scroll-to-bottom button, jump-free history prepending (including async-resource position preservation), turn anchoring ("return to the last question"), and first-paint jump prevention. The component owns no messages (only scroll behavior), so hosts can connect any backend.

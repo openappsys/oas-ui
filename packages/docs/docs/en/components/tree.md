@@ -1,3 +1,7 @@
+---
+description: Displays hierarchical data with support for expand / collapse, selection, cascading checks, multi-select by click, search filtering, lazy loading, keyboard operation, and node drag-and-drop.
+---
+
 # Tree
 
 Displays hierarchical data with support for expand / collapse, selection, cascading checks, multi-select by click, search filtering, lazy loading, keyboard operation, and node drag-and-drop.

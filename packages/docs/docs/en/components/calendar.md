@@ -1,3 +1,7 @@
+---
+description: A calendar component with month/year modes, supporting selection, disabled dates, week numbers, and keyboard grid navigation; date descriptions use Intl.DateTimeFormat (locale-aware).
+---
+
 # Calendar
 
 A calendar component with month/year modes, supporting selection, disabled dates, week numbers, and keyboard grid navigation; date descriptions use `Intl.DateTimeFormat` (locale-aware).

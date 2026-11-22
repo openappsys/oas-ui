@@ -1,3 +1,7 @@
+---
+description: "A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; type controls when the scrollbar is visible (auto / always / scroll / hover)…"
+---
+
 # ScrollArea
 
 A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; `type` controls when the scrollbar is visible (auto / always / scroll / hover), and scroll events are throttled.

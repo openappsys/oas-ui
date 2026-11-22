@@ -1,3 +1,7 @@
+---
+description: "6 brand-color skins × 3 built-in themes — switch live. Mechanism & usage: Theming."
+---
+
 # Skin Gallery
 
 > 6 brand-color skins × 3 built-in themes — switch live. Mechanism & usage: [Theming](/en/guide/theming).

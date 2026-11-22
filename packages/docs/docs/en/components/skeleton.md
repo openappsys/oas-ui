@@ -1,3 +1,7 @@
+---
+description: "Placeholder skeletons for loading states: a full paragraph composition (avatar/title/rows) plus single-shape placeholder blocks (oas-skeleton-item), with controlled loading toggle, three animation…"
+---
+
 # Skeleton
 
 Placeholder skeletons for loading states: a full paragraph composition (avatar/title/rows) plus single-shape placeholder blocks (`oas-skeleton-item`), with controlled loading toggle, three animation effects, list repetition, per-row widths, and an anti-flicker delay.

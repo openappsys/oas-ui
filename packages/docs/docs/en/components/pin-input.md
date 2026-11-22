@@ -1,3 +1,7 @@
+---
+description: A segmented code input with per-character constraint filtering (type / pattern), separator grouping, size and variant tiers, OTP SMS autofill, submit-on-complete, and loading / success validation…
+---
+
 # PinInput
 
 A segmented code input with per-character constraint filtering (type / pattern), separator grouping, size and variant tiers, OTP SMS autofill, submit-on-complete, and loading / success validation feedback; plus keyboard arrow navigation, Backspace fallback, and paste auto-distribution (with filtering).

@@ -1,3 +1,7 @@
+---
+description: "Mobile bottom sheet container: a bottom-risen panel with drag handle and backdrop, closable via drag-down / backdrop click / Esc, with safe-area inset and focus trap built in; the passive passthrough…"
+---
+
 # BottomSheet
 
 Mobile bottom sheet container: a bottom-risen panel with drag handle and backdrop, closable via drag-down / backdrop click / Esc, with safe-area inset and focus trap built in; the `passive` passthrough mode doubles as a structural placeholder for overlay components' PC forms.

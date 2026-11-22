@@ -3,23 +3,42 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
-test('docs chrome：VitePress 2 导航语言按钮/侧栏条目保留原生 reset（无 UA 边框/段落外边距）', async ({ page }) => {
-  await page.setViewportSize({ width: 1126, height: 800 })
+test('docs chrome：语言入口/侧栏条目保留原生 reset（无 UA 边框/段落外边距）', async ({ browser }) => {
+  // 桌面 ≥48rem：默认语言 flyout 已被分段切换器接替（隐藏），但切换器与侧栏仍依赖
+  // Preflight 宿主 reset（oas-* 排除后的原生元素样式）
+  const ctx = await browser.newContext({ viewport: { width: 1126, height: 800 } })
+  const page = await ctx.newPage()
   await page.goto('/guide/getting-started', { waitUntil: 'networkidle' })
+  await expect(page.locator('.VPNavBarTranslations'), '桌面默认语言下拉应隐藏（切换器接替）').toBeHidden()
+  await expect(page.locator('.oas-locale-switch'), '分段切换器应可见').toBeVisible()
+  await expect(
+    page.locator('.VPSidebar a[href="/guide/getting-started"]'),
+    '侧栏条目选择器须命中（否则下方高度断言恒真）',
+  ).toBeAttached()
   const r = await page.evaluate(() => {
-    const lang = document.querySelector<HTMLElement>('.VPNavBarTranslations .button')
     const item = document.querySelector<HTMLElement>('.VPSidebar a[href="/guide/getting-started"]')
     const text = item?.querySelector<HTMLElement>('.text')
-    const cs = lang ? getComputedStyle(lang) : null
     return {
-      langBorder: cs?.borderTopWidth ?? '',
       itemHeight: item?.getBoundingClientRect().height ?? 0,
       textMargin: text ? getComputedStyle(text).margin : '',
     }
   })
-  expect(r.langBorder, '语言切换按钮不应出现 UA 2px outset').toBe('0px')
   expect(r.itemHeight, '侧栏条目应紧凑，不应被 p 默认 margin 撑到 60px').toBeLessThan(40)
   expect(r.textMargin, '侧栏 p.text 外边距应归零').toBe('0px')
+  await ctx.close()
+
+  // 移动端：汉堡菜单内仍是原生 <button>（.VPNavScreenTranslations .title），同一份 reset 继续守护
+  const ctxMob = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  const pMob = await ctxMob.newPage()
+  await pMob.goto('/guide/getting-started', { waitUntil: 'networkidle' })
+  await pMob.locator('.VPNavBarHamburger').click()
+  await expect(pMob.locator('.VPNavScreenTranslations')).toBeVisible()
+  const mobBorder = await pMob.evaluate(() => {
+    const btn = document.querySelector<HTMLElement>('.VPNavScreenTranslations .title')
+    return btn ? getComputedStyle(btn).borderTopWidth : ''
+  })
+  expect(mobBorder, '移动菜单语言按钮不应出现 UA 2px outset').toBe('0px')
+  await ctxMob.close()
 })
 
 test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => {

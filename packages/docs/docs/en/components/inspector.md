@@ -1,3 +1,7 @@
+---
+description: "A right-side (optionally left) property editing panel: tab strip + collapsible sections + label/control rows."
+---
+
 # Inspector
 
 A right-side (optionally left) property editing panel: tab strip + collapsible sections + label/control rows. Design-tool sidebar semantics (`role="complementary"`) — distinct from `oas-sidebar` (a navigation menu): the inspector is contextual property editing.

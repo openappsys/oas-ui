@@ -1,3 +1,7 @@
+---
+description: "A step-driven content panel: a clickable step header synced with content panels (only the current step is visible) — for wizards, multi-step forms and checkout flows."
+---
+
 # Stepper
 
 A step-driven content panel: a clickable step header synced with content panels (only the current step is visible) — for wizards, multi-step forms and checkout flows. Two components work as a pair: `oas-stepper` manages the step header, `oas-stepper-panel` holds the content, associated by `value` (same pattern as `oas-tabs` / `oas-tab-panel`).

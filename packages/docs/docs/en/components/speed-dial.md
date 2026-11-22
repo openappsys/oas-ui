@@ -1,3 +1,7 @@
+---
+description: "A floating main button that expands a list of sub-actions, commonly used for quick actions like \"New/Share\"; aria-expanded stays in sync, clicking outside / Esc collapses it, with no orphan popups."
+---
+
 # SpeedDial
 
 A floating main button that expands a list of sub-actions, commonly used for quick actions like "New/Share"; `aria-expanded` stays in sync, clicking outside / Esc collapses it, with no orphan popups.

@@ -1,3 +1,7 @@
+---
+description: An information container that groups a set of related content.
+---
+
 # Card
 
 An information container that groups a set of related content.

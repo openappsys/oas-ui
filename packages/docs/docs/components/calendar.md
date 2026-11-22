@@ -1,3 +1,7 @@
+---
+description: 日历组件，月/年两种模式，支持选中、禁用日期、周号与键盘网格导航；日期描述走 Intl.DateTimeFormat（locale 感知）。
+---
+
 # Calendar 日历
 
 日历组件，月/年两种模式，支持选中、禁用日期、周号与键盘网格导航；日期描述走 `Intl.DateTimeFormat`（locale 感知）。

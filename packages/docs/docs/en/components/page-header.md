@@ -1,3 +1,7 @@
+---
+description: A page header information area with title, subtitle, back button, breadcrumb, a body area and a bottom action area. Commonly used at the top of detail and edit pages.
+---
+
 # PageHeader
 
 A page header information area with title, subtitle, back button, breadcrumb, a body area and a bottom action area. Commonly used at the top of detail and edit pages.

@@ -1,3 +1,7 @@
+---
+description: A simple text prompt bubble triggered on hover or keyboard focus.
+---
+
 # Tooltip
 
 A simple text prompt bubble triggered on hover or keyboard focus.

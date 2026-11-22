@@ -1,3 +1,7 @@
+---
+description: Imperative global message notifications with type icons, loading state, hover-pause, countdown progress, placement/offset, max cap, rich content, and promise chains.
+---
+
 # Message
 
 Imperative global message notifications with type icons, loading state, hover-pause, countdown progress, placement/offset, max cap, rich content, and promise chains. Enter/exit animations use transform/opacity and respect `prefers-reduced-motion`.

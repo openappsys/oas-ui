@@ -1,3 +1,7 @@
+---
+description: "A switch button with role=\"switch\"."
+---
+
 # Switch
 
 A switch button with `role="switch"`.

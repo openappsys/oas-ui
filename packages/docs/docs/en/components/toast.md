@@ -1,3 +1,7 @@
+---
+description: Imperative global toasts supporting success/error/warning/info/loading states, action buttons, promise chains, queue governance, and keyboard/screen-reader accessibility; auto-dismisses after 3…
+---
+
 # Toast
 
 Imperative global toasts supporting success/error/warning/info/loading states, action buttons, promise chains, queue governance, and keyboard/screen-reader accessibility; auto-dismisses after 3 seconds by default.

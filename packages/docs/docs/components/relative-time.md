@@ -1,3 +1,7 @@
+---
+description: 把 epoch 毫秒 / ISO 8601 / Date 渲染为本地化相对时间，内层使用语义化 <time datetime>；可选 auto-refresh 自动刷新，页面隐藏时暂停。
+---
+
 # RelativeTime 相对时间
 
 把 epoch 毫秒 / ISO 8601 / `Date` 渲染为本地化相对时间，内层使用语义化 `<time datetime>`；可选 `auto-refresh` 自动刷新，页面隐藏时暂停。非法或缺失值渲染安全空态，不显示 `NaN` / `Invalid Date`。

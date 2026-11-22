@@ -1,3 +1,7 @@
+---
+description: 内联预设色快选与展示的色块件：主题色/tag 色/收藏色等「不开面板直接选色」场景。
+---
+
 # Swatch 色板
 
 内联预设色快选与展示的色块件：主题色/tag 色/收藏色等「不开面板直接选色」场景。`oas-swatch` 为色块件，`oas-swatch-group` 为选择组（单选 radio 语义 / 多选 checkbox 语义，roving 键盘导航）。

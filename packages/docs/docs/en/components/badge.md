@@ -1,3 +1,7 @@
+---
+description: A numeric/status badge, typically used for message counts or new-content indicators.
+---
+
 # Badge
 
 A numeric/status badge, typically used for message counts or new-content indicators.

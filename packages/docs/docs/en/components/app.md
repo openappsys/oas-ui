@@ -1,3 +1,7 @@
+---
+description: The host container for imperative APIs such as message / notification / loadingBar. When an app container exists, messages mount inside it (instead of document.body); works well with config-provider.
+---
+
 # App
 
 The host container for imperative APIs such as message / notification / loadingBar. When an app container exists, messages mount inside it (instead of `document.body`); works well with config-provider.

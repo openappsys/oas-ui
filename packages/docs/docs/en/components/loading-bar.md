@@ -1,3 +1,7 @@
+---
+description: A global loading progress bar at the top (or bottom) of the page, driven by an imperative API. Multiple start calls count concurrent sessions — only the last finish/error closes the bar.
+---
+
 # LoadingBar
 
 A global loading progress bar at the top (or bottom) of the page, driven by an imperative API. Multiple `start` calls count concurrent sessions — only the last `finish`/`error` closes the bar. Supports incremental control, local containers, reverse/RTL, and lifecycle events.

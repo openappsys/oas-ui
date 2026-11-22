@@ -1,3 +1,7 @@
+---
+description: "An enhanced native <textarea>: auto height (capped or unlimited), character count, clearable, size tiers, variants and validation status."
+---
+
 # Textarea
 
 An enhanced native `<textarea>`: auto height (capped or unlimited), character count, clearable, size tiers, variants and validation status.

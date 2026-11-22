@@ -1,3 +1,7 @@
+---
+description: "An enhanced native <input type=\"radio\"> supporting group keyboard navigation (radiogroup pattern), data-driven options, and a card variant."
+---
+
 # Radio
 
 An enhanced native `<input type="radio">` supporting group keyboard navigation (radiogroup pattern), data-driven options, and a card variant.

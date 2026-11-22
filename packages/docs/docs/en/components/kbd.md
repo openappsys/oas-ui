@@ -1,3 +1,7 @@
+---
+description: A keyboard shortcut display component. keys is split by spaces into multiple keycaps joined with +; non-interactive.
+---
+
 # Kbd
 
 A keyboard shortcut display component. `keys` is split by spaces into multiple keycaps joined with `+`; non-interactive.

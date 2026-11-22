@@ -1,3 +1,7 @@
+---
+description: A material layer of translucent surfaces, backdrop blur, and specular edge rings…
+---
+
 # Frosted Glass Gallery
 
 > A material layer of translucent surfaces, backdrop blur, and specular edge rings (no browser-specific filters; Chromium and Firefox render the same geometry; dynamic fluidity is provided by the optional `glass-fluid.js` runtime — pointer specular highlight + press tightening; see "Dynamic fluidity" on this page).

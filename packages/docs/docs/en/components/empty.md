@@ -1,3 +1,7 @@
+---
+description: A placeholder for empty data, supporting titles, rich descriptions, icon media, two built-in illustrations, size tiers, horizontal alignment and container variants.
+---
+
 # Empty
 
 A placeholder for empty data, supporting titles, rich descriptions, icon media, two built-in illustrations, size tiers, horizontal alignment and container variants.

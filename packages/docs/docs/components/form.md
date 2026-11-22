@@ -1,4 +1,8 @@
-﻿# Form 表单
+﻿---
+description: 原生 <form> 增强，支持按 rules 规则对内部字段做校验与提交。
+---
+
+# Form 表单
 
 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
 

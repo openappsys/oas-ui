@@ -1,3 +1,7 @@
+---
+description: A self-developed SVG chart component (no third-party chart engine) supporting line / bar / horizontal-bar / pie / area / donut / stacked-bar / radar / polar-area, plus series-level combo and dual…
+---
+
 # Chart
 
 A self-developed SVG chart component (no third-party chart engine) supporting line / bar / horizontal-bar / pie / area / donut / stacked-bar / radar / polar-area, plus series-level combo and dual axis. Data updates redraw automatically, and animations are disabled under `prefers-reduced-motion`; `options.tooltip` optionally enables the built-in hover overlay (the native `<title>` is used by default).

@@ -1,3 +1,7 @@
+---
+description: "工具按钮组容器：role=\"toolbar\" + aria-label，Tab 进入后方向键在控件间移动（roving tabindex，只聚焦当前项）。"
+---
+
 # Toolbar 工具栏
 
 工具按钮组容器：`role="toolbar"` + `aria-label`，`Tab` 进入后方向键在控件间移动（roving tabindex，只聚焦当前项）。配套切换组、分隔符、输入框三个部件，支持纵向布局、循环开关、整栏禁用、尺寸档位、溢出收纳与贴边形态。

@@ -1,3 +1,7 @@
+---
+description: "Multi-level linked selection: multiple checkboxes, parent-child decoupled checking, value strategies, path search, lazy loading, controlled open and tag collapsing. Fully keyboard operable."
+---
+
 # Cascader
 
 Multi-level linked selection: multiple checkboxes, parent-child decoupled checking, value strategies, path search, lazy loading, controlled open and tag collapsing. Fully keyboard operable.

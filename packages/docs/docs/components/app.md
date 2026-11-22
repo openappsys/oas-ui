@@ -1,3 +1,7 @@
+---
+description: message / notification / loadingBar 等命令式 API 的宿主容器。app 容器存在时，消息挂载到 app 内（而非 document.body）；可与 config-provider 配套使用。
+---
+
 # App 消息上下文容器
 
 message / notification / loadingBar 等命令式 API 的宿主容器。app 容器存在时，消息挂载到 app 内（而非 `document.body`）；可与 config-provider 配套使用。

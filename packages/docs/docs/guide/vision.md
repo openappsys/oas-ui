@@ -1,3 +1,7 @@
+---
+description: "基础：一套框架无关、独立可用、TypeScript 优先的开源通用 UI 组件库：以 Web Components 为运行时载体，兼顾 React / Vue / 原生 / Svelte 等任何宿主，让\"同一套组件\"在任何前端栈里开箱即用。"
+---
+
 # 项目愿景（Vision）
 
 ## 一句话愿景

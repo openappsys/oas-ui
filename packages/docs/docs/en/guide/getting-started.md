@@ -1,3 +1,7 @@
+---
+description: "Full bundle (simplest, registers all components): cdn.js is a pre-bundled IIFE file; just load it via a <script> tag"
+---
+
 # Getting Started
 
 ## CDN usage

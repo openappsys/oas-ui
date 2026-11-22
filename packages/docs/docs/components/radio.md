@@ -1,3 +1,7 @@
+---
+description: "原生 <input type=\"radio\"> 增强，支持单选组键盘导航（radiogroup 模式）、数据驱动与卡片形态。"
+---
+
 # Radio 单选框
 
 原生 `<input type="radio">` 增强，支持单选组键盘导航（radiogroup 模式）、数据驱动与卡片形态。

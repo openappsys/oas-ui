@@ -1,3 +1,7 @@
+---
+description: "定宽居中容器：按 size 映射 --oas-container-* 宽度 token，margin-inline: auto 居中（逻辑属性，RTL 自动合规），max-width: min(100%, token) 保证窄屏不溢出。"
+---
+
 # Container 容器
 
 定宽居中容器：按 `size` 映射 `--oas-container-*` 宽度 token，`margin-inline: auto` 居中（逻辑属性，RTL 自动合规），`max-width: min(100%, token)` 保证窄屏不溢出。

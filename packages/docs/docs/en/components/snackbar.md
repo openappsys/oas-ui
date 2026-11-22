@@ -1,3 +1,7 @@
+---
+description: A lightweight feedback bar anchored to the bottom (or top) center. The open attribute is controlled; multiple bars stack vertically automatically (up to 3 per direction); the timer pauses on…
+---
+
 # Snackbar
 
 A lightweight feedback bar anchored to the bottom (or top) center. The `open` attribute is controlled; multiple bars stack vertically automatically (up to 3 per direction); the timer pauses on hover/focus/hidden tab and resumes with the remaining time; `oas-close` carries `detail.reason` (`timeout` / `escape` / `close` / `swipe` / `evict` / `group`) and the host is responsible for removing `open`.

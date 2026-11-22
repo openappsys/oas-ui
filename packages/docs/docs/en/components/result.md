@@ -1,3 +1,7 @@
+---
+description: A result feedback page supporting success, error, warning, info, plus 403/404/500 HTTP error page states — with dual title/description channels, a body slot, custom icons and size tiers.
+---
+
 # Result
 
 A result feedback page supporting success, error, warning, info, plus 403/404/500 HTTP error page states — with dual title/description channels, a body slot, custom icons and size tiers.

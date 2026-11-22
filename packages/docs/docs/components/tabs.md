@@ -1,3 +1,7 @@
+---
+description: 标签式内容切换，支持键盘方向键导航；未激活面板通过 hidden 隐藏。oas-tabs + oas-tab-panel 配套使用。
+---
+
 # Tabs 标签页
 
 标签式内容切换，支持键盘方向键导航；未激活面板通过 `hidden` 隐藏。`oas-tabs` + `oas-tab-panel` 配套使用。

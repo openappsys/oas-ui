@@ -1,3 +1,7 @@
+---
+description: 基于纯 TypeScript 零依赖编码器（自研）的一维条码组件，覆盖 10 码制…
+---
+
 # Barcode 条码
 
 基于**纯 TypeScript 零依赖编码器**（自研）的一维条码组件，覆盖 10 码制（CODE128 / GS1-128 / EAN-13 / EAN-8 / UPC-E / UPC-A / CODE39 / Codabar / MSI / ITF-14），输出内联 SVG，可扫码、可下载。

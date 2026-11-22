@@ -1,3 +1,7 @@
+---
+description: Displays a user or object avatar, supporting both text-placeholder and image forms.
+---
+
 # Avatar
 
 Displays a user or object avatar, supporting both text-placeholder and image forms.

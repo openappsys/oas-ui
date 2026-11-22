@@ -1,3 +1,7 @@
+---
+description: OAS-UI is a Web Components library. You do not need an official wrapper to use it. This page covers native usage per framework, common pitfalls, and optional integrations.
+---
+
 # Framework Integration (React, Vue, etc.)
 
 > OAS-UI is a Web Components library. **You do not need an official wrapper to use it.** This page covers native usage per framework, common pitfalls, and optional integrations. It does not introduce a new component wrapper layer.

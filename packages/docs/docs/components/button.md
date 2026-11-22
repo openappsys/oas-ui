@@ -1,3 +1,7 @@
+---
+description: 基础按钮组件，原生 <button> 增强。
+---
+
 # Button 按钮
 
 基础按钮组件，原生 `<button>` 增强。

@@ -1,3 +1,7 @@
+---
+description: 分格验证码输入：字符约束过滤（type / pattern）、分隔符分组、尺寸与形态档位、OTP 短信自动填充、填满自动提交、loading / success 校验反馈；键盘方向键移动、Backspace 回退、粘贴自动分发（含过滤）。
+---
+
 # PinInput 验证码
 
 分格验证码输入：字符约束过滤（type / pattern）、分隔符分组、尺寸与形态档位、OTP 短信自动填充、填满自动提交、loading / success 校验反馈；键盘方向键移动、Backspace 回退、粘贴自动分发（含过滤）。

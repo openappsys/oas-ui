@@ -1,3 +1,7 @@
+---
+description: 原生 <input> 增强的基础输入组件。
+---
+
 # Input 输入框
 
 原生 `<input>` 增强的基础输入组件。

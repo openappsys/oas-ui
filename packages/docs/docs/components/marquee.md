@@ -1,3 +1,7 @@
+---
+description: 循环无缝滚动展示长内容的纯展示组件，内容经 slot 无缝循环；支持悬停暂停、prefers-reduced-motion 静态降级。滚动速度为像素/秒真实速度（组件测量内容宽推导时长），内容不足一屏时自动填充
+---
+
 # Marquee 跑马灯
 
 循环无缝滚动展示长内容的纯展示组件，内容经 slot 无缝循环；支持悬停暂停、`prefers-reduced-motion` 静态降级。滚动速度为像素/秒真实速度（组件测量内容宽推导时长），内容不足一屏时自动填充；`max-loops` 播完派发 `oas-finish`（detail `{ loops }`）。

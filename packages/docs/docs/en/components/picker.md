@@ -1,3 +1,7 @@
+---
+description: "Mobile-style scroll-wheel column selector: native scrolling + snap alignment delivers inertial feel; selection settles and writes back value, then fires oas-change."
+---
+
 # Picker
 
 Mobile-style scroll-wheel column selector: native scrolling + snap alignment delivers inertial feel; selection settles and writes back `value`, then fires `oas-change`. Supports independent columns (`columns`) and cascading trees (`options`); form-associated for native form integration. Ideal for mobile split-field input, region cascading, and multi-spec selection.

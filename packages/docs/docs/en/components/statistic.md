@@ -1,3 +1,7 @@
+---
+description: Displays statistical values with Intl.NumberFormat thousands separators and precision (locale-aware), supporting prefix/suffix and a skeleton loading placeholder.
+---
+
 # Statistic
 
 Displays statistical values with `Intl.NumberFormat` thousands separators and precision (locale-aware), supporting prefix/suffix and a skeleton loading placeholder.

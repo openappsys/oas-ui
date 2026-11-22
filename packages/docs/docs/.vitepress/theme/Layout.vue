@@ -1,5 +1,9 @@
 <template>
   <DefaultTheme.Layout>
+    <!-- 语言提示条：固定置顶，框架经 --vp-layout-top-height 让位（VPNav/VPContent/VPSidebar 均消费） -->
+    <template #layout-top><LangHint /></template>
+    <!-- 桌面导航栏右侧分段语言切换（中 / EN）；移动端经汉堡菜单内默认语言下拉 -->
+    <template #nav-bar-content-after><LocaleSwitch /></template>
     <!-- 官网首页（layout: home）专用 slot；非 home 页面这些 slot 不会被渲染 -->
     <template #home-hero-before><HomeHero /></template>
     <template #home-hero-after><HomeUseCases /></template>
@@ -12,6 +16,8 @@
 import { nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import { useData, useRoute } from 'vitepress'
+import LangHint from './components/LangHint.vue'
+import LocaleSwitch from './components/LocaleSwitch.vue'
 import HomeHero from './components/HomeHero.vue'
 import HomeUseCases from './components/HomeUseCases.vue'
 import HomeCode from './components/HomeCode.vue'
@@ -24,8 +30,9 @@ const route = useRoute()
 
 // 内置语言下拉只切路由；这里跟随页面 locale 同步组件内部文案（@oas-ui/i18n）。
 // immediate：直接落在 /en/ 深链的首屏也要对齐。
-// 持久化（oas-lang）只在用户「显式切换」时写——判据是点击语言下拉（.VPNavBarTranslations）里的
-// 链接；落地首屏与 SPA 内的 lang 重算一律不写。仅靠 oldValue === undefined 判定不够：路由/水合
+// 持久化（oas-lang）只在用户「显式切换」时写——判据是点击语言入口（.VPNavTranslations，覆盖桌面
+// flyout 与移动菜单两种形态；分段切换 LocaleSwitch 与提示条 LangHint 的偏好在各自组件内直写）。
+// 落地首屏与 SPA 内的 lang 重算一律不写。仅靠 oldValue === undefined 判定不够：路由/水合
 // 重算会以「oldValue 有值」的形式再次触发，满负载下曾把落地页 locale 写回偏好槽（污染后 en 浏览器
 // 访问 zh 深链不再跳转，homepage.spec 全量并发实抓），故改为显式点击判据 + 首调守卫双保险。
 let userSwitchedLang = false
@@ -34,7 +41,7 @@ if (typeof document !== 'undefined') {
     'click',
     (e) => {
       const el = e.target as Element | null
-      if (el?.closest?.('.VPNavBarTranslations')) userSwitchedLang = true
+      if (el?.closest?.('.VPNavTranslations')) userSwitchedLang = true
     },
     true,
   )
@@ -49,7 +56,7 @@ watch(
         localStorage.setItem('oas-lang', value === 'en' ? 'en' : 'zh')
       }
     } catch {
-      // localStorage 不可用（隐私模式等）静默——偏好无法持久化；landing 浏览器语言猜测失效时回落中文默认页。
+      // localStorage 不可用（隐私模式等）静默——偏好无法持久化；回访深链跳转失效时回落显式 URL 语言。
     }
   },
   { immediate: true },
