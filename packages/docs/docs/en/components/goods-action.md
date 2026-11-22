@@ -35,7 +35,7 @@ An item's `key` is its event identity; built-in keys (`favorite` / `shop` / `car
 
 ## Custom icons and disabling
 
-`icon` takes a registered icon name (built-in or `registerIcon`) to override the default icon; `actions[].disabled` disables a single button and the host `disabled` disables everything:
+`icon` takes a registered icon name (built-in or `registerIcon`) to override the default icon; an unregistered name warns once in development and falls back to the built-in icon for that key (no built-in icon means no icon, and the text stays readable). `actions[].disabled` disables a single button and the host `disabled` disables everything:
 
 <DemoBlock title="Custom icon / single disabled / globally disabled">
   <oas-goods-action
@@ -50,6 +50,18 @@ An item's `key` is its event identity; built-in keys (`favorite` / `shop` / `car
   ></oas-goods-action>
 </DemoBlock>
 
+## Navigation accessible name
+
+`label` overrides the accessible name of the navigation region (`<nav>`), which defaults to the i18n `goodsAction.label`; use it to tell several action bars on one page apart:
+
+<DemoBlock title="Custom accessible name">
+  <oas-goods-action
+    label="Product actions"
+    items='[{"key":"favorite"},{"key":"cart","badge":1}]'
+    actions='[{"key":"buy","text":"Buy now","primary":true}]'
+  ></oas-goods-action>
+</DemoBlock>
+
 ## API
 
 ### oas-goods-action
@@ -58,9 +70,9 @@ An item's `key` is its event identity; built-in keys (`favorite` / `shop` / `car
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions` | Main button JSON array `[{ key, text, primary?, disabled? }]` | — | — |
+| `actions` | Main button JSON array `[{ key, text, primary?, disabled? }]` | `GoodsActionButton[] \| string` | — |
 | `disabled` | Disables everything (honours config-provider injected disabled) | `boolean` | — |
-| `items` | Icon button JSON array `[{ key, label?, icon?, badge?, active? }]`; built-in keys (`favorite` / `shop` / `cart`) get default labels and icons | — | — |
+| `items` | Icon button JSON array `[{ key, label?, icon?, badge?, active? }]`; built-in keys (`favorite` / `shop` / `cart`) get default labels and icons | `GoodsActionItem[] \| string` | — |
 | `label` | Navigation accessible name, defaults to the i18n `goodsAction.label` | — | — |
 
 #### Events

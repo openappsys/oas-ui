@@ -26,10 +26,15 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `selected`：选中态标记（供外层组合排版）
  * - `list`：JSON 数组——选择列表 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`
  * - `trigger-text`：触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额）
- * - `open`：弹层开合（受控属性；宿主写入静默生效，交互引起的变化派发 `oas-open-change`）
+ * - `open`：弹层开合（受控：宿主写 attribute / property 即生效且静默；用户交互与命令式
+ *   `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）
  *
  * 方法：
- * - `open()` / `close()`：命令式开合（派发 `oas-open-change`）
+ * - `openOverlay()` / `closeOverlay()`：命令式开合（幂等；派发 `oas-open-change`）
+ * - `clearSelection()`：清空已选券（静默，供宿主重置选择状态）
+ *
+ * property 通道：`list` 与 `open` 同时是读+写访问器（setter 接受数组 / 布尔或 JSON 字符串
+ * 并反射 attribute），供框架把模板静态属性直接写成 property 时走同一份数据入口。
  *
  * 事件（bubbles + composed）：
  * - `oas-select`：选中可用券，detail `{ code, coupon }`，随后关闭弹层
@@ -92,10 +97,12 @@ const STYLE = `
 .coupon[data-status='used'] {
   --coupon-accent: var(--oas-color-text-disabled);
   --coupon-surface: var(--oas-color-bg-disabled);
-  color: var(--oas-color-text-secondary);
+  /* 弱化底上的次级文字走安全档：secondary on bg-hover 仅 4.39，不到 WCAG AA 4.5 */
+  color: var(--oas-color-text-secondary-strong);
 }
 .coupon[data-status='unavailable'] {
-  --coupon-accent: var(--oas-color-warning);
+  /* 未达门槛等：面额与左侧色条走加深档 warning-text（浅色底上可读，暗色由 deep-mix 提亮） */
+  --coupon-accent: color-mix(in srgb, var(--oas-color-warning-text) var(--oas-deep-mix, 72%), var(--oas-deep-sink, black));
 }
 .coupon[data-selected='true'] {
   border-color: var(--oas-color-primary);
@@ -127,7 +134,8 @@ const STYLE = `
 }
 .validity {
   font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary);
+  /* 卡片可能落在选中态/弱化底的着色面上：小字走安全档保证 ≥4.5 */
+  color: var(--oas-color-text-secondary-strong);
 }
 .state {
   flex: none;
@@ -135,6 +143,10 @@ const STYLE = `
   color: var(--oas-color-text-secondary);
   text-align: end;
   max-width: 40%;
+}
+.coupon[data-status='expired'] .state,
+.coupon[data-status='used'] .state {
+  color: var(--oas-color-text-secondary-strong);
 }
 .coupon[data-status='unavailable'] .state {
   color: color-mix(in srgb, var(--oas-color-warning-text) var(--oas-deep-mix, 72%), var(--oas-deep-sink, black));
@@ -187,7 +199,7 @@ const STYLE = `
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -407,6 +419,31 @@ export class OASCoupon extends OASElement {
   private lastOpen = false
   /** 打开前的焦点元素（关闭时归还） */
   private lastFocus: HTMLElement | null = null
+  /** 卡片模式缺少 amount 的 dev 告警去重（实例级一次） */
+  private warnedMissingAmount = false
+
+  // -------------------------------------------------------------------------
+  // property 通道（框架把模板静态属性写成 property 时的数据入口）
+  // -------------------------------------------------------------------------
+
+  /** 选择列表（读=归一后的券数据；写=接受数组或 JSON 字符串，反射 `list` attribute） */
+  get list(): CouponData[] {
+    return this.parseList()
+  }
+  set list(value: CouponData[] | string) {
+    this.setAttribute('list', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 弹层开合（受控：读写即反射 `open` attribute，静默不派发事件） */
+  get open(): boolean {
+    return this.hasAttribute('open')
+  }
+  set open(value: boolean | string) {
+    // presence 语义：静态 `<oas-coupon open>` 经框架 property 通道写入的是空串，
+    // 空串必须视为打开；仅 false / 'false' 关闭。
+    const on = value !== false && value !== 'false' && value != null
+    this.toggleAttribute('open', on)
+  }
 
   private template(): string {
     return `
@@ -471,7 +508,7 @@ export class OASCoupon extends OASElement {
   // -------------------------------------------------------------------------
 
   /** 命令式打开（幂等；派发 open-change） */
-  open(): void {
+  openOverlay(): void {
     if (this.hasAttribute('open')) return
     this.lastFocus = this.shadow.activeElement as HTMLElement | null
     this.setAttribute('open', '')
@@ -479,29 +516,36 @@ export class OASCoupon extends OASElement {
   }
 
   /** 命令式关闭（幂等；派发 open-change） */
-  close(): void {
+  closeOverlay(): void {
     if (!this.hasAttribute('open')) return
     this.removeAttribute('open')
     this.emit('open-change', { open: false } satisfies CouponOpenChangeDetail)
   }
 
+  /** 清空已选券（静默：不派发事件；供宿主重置选择状态） */
+  clearSelection(): void {
+    if (this.selectedCode === '') return
+    this.selectedCode = ''
+    this.update()
+  }
+
   private onTriggerClick = (): void => {
-    this.open()
+    this.openOverlay()
   }
 
   private onCloseClick = (): void => {
-    this.close()
+    this.closeOverlay()
   }
 
   private onBackdropClick = (): void => {
-    this.close()
+    this.closeOverlay()
   }
 
   /** 面板键盘：Esc 关闭；Tab 在面板内循环（焦点陷阱） */
   private onPanelKeydown = (event: KeyboardEvent): void => {
     if (event.key === 'Escape') {
       event.preventDefault()
-      this.close()
+      this.closeOverlay()
       return
     }
     if (event.key !== 'Tab' || !this.panelEl) return
@@ -529,7 +573,7 @@ export class OASCoupon extends OASElement {
     if (!coupon || coupon.status !== 'available') return
     this.selectedCode = coupon.code
     this.emit('select', { code: coupon.code, coupon } satisfies CouponSelectDetail)
-    this.close()
+    this.closeOverlay()
     this.update()
   }
 
@@ -537,9 +581,11 @@ export class OASCoupon extends OASElement {
   // 渲染
   // -------------------------------------------------------------------------
 
-  /** 卡面模式数据（自身属性） */
+  /** 卡面模式数据（自身属性）；amount 缺省/非数字视为无券面 */
   private ownCoupon(): CouponData | null {
-    const amount = Number(this.getAttr('amount'))
+    const raw = this.getAttr('amount').trim()
+    if (raw === '') return null
+    const amount = Number(raw)
     if (!Number.isFinite(amount)) return null
     const threshold = Number(this.getAttr('threshold'))
     const rawStatus = this.getAttr('status', 'available')
@@ -683,6 +729,10 @@ export class OASCoupon extends OASElement {
       this.cardHostEl.replaceChildren()
       const own = this.ownCoupon()
       if (own) this.cardHostEl.appendChild(this.renderCard(own, currency, locale, this.hasAttr('selected')))
+      else if (!this.warnedMissingAmount) {
+        this.warnedMissingAmount = true
+        devWarn('[oas-coupon] 卡片模式缺少合法的 amount，券面未渲染（列表模式请改用 list 属性）')
+      }
       this.listEl!.replaceChildren()
     }
 

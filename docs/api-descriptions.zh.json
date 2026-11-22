@@ -5215,7 +5215,7 @@
       "selected": "选中态标记（供外层组合排版）",
       "list": "选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态",
       "trigger-text": "触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额）",
-      "open": "弹层开合（受控属性；宿主写入静默生效，交互/命令式变化派发 `oas-open-change`）"
+      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）"
     },
     "events": {
       "oas-select": "选中可用券时派发，detail `{ code, coupon }`，随后关闭弹层",
@@ -5223,8 +5223,9 @@
     },
     "slots": {},
     "methods": {
-      "open": "命令式打开弹层（已打开则忽略），派发 `oas-open-change`",
-      "close": "命令式关闭弹层（已关闭则忽略），派发 `oas-open-change`"
+      "openOverlay": "命令式打开弹层（已打开则忽略），派发 `oas-open-change`",
+      "closeOverlay": "命令式关闭弹层（已关闭则忽略），派发 `oas-open-change`",
+      "clearSelection": "清空已选券与触发按钮上的面额（静默，不派发事件）"
     }
   },
   "oas-sku": {

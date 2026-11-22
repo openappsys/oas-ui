@@ -20,7 +20,16 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "items",
+      "type": "GoodsActionItem[] | string"
+    },
+    {
+      "name": "actions",
+      "type": "GoodsActionButton[] | string"
+    }
+  ],
   "methods": [],
   "events": [
     {

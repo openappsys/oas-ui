@@ -23,6 +23,10 @@ import '../price/index.js'
  * 属性（kebab-case）：上列数据属性 + `currency`（默认 CNY）/ `locale` / `precision`（默认 2）/
  * `disabled`（全禁用，兼容 config-provider 注入禁用）
  *
+ * property 通道：`specs` / `skus` / `value` / `quantity` 四个数据属性同时是读+写访问器
+ * （setter 接受数组 / 对象或 JSON 字符串并反射 attribute），供框架把模板静态属性直接写成
+ * property 时走同一份数据入口。
+ *
  * 事件（bubbles + composed）：
  * - `oas-change`：规格或数量变化，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`
  *   （`sku` 为完整匹配对象或 `null`；程序性写入属性不回派事件）
@@ -251,8 +255,26 @@ const STYLE = `
   color: var(--oas-color-text-disabled);
   background: var(--oas-color-bg-disabled);
 }
-:host([disabled]) .panel {
-  opacity: 0.6;
+/*
+ * 禁用态：逐控件弱化（虚线边 + 弱化底），**不改整块 opacity**——整块降透明度会把
+ * 组标签 / 门槛说明等只读文字一并压到不可读（曾实测 0.6 透明 ⇒ #aaaaaf on #fff，对比度破线）。
+ * 选中项保留主色实线边，否则禁用后看不出当前选的是哪个组合。
+ */
+:host([disabled]) .option {
+  cursor: not-allowed;
+  border-style: dashed;
+  border-color: var(--oas-color-border);
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-primary);
+}
+:host([disabled]) .option:hover {
+  border-color: var(--oas-color-border);
+}
+:host([disabled]) .option[data-checked='true'] {
+  border-style: solid;
+  border-color: var(--oas-color-primary);
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-primary);
 }
 
 @media (pointer: coarse) {
@@ -365,6 +387,43 @@ export class OASSku extends OASElement {
   /** 程序性写入抑制（避免 update 回写属性造成回环） */
   private writingValue = false
 
+  // -------------------------------------------------------------------------
+  // property 通道（框架把模板静态属性写成 property 时的数据入口）
+  // -------------------------------------------------------------------------
+
+  /** 规格组（读=归一后的数据；写=接受数组或 JSON 字符串，反射 `specs` attribute） */
+  get specs(): SkuSpecGroup[] {
+    return this.parseSpecs()
+  }
+  set specs(value: SkuSpecGroup[] | string) {
+    this.setAttribute('specs', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** SKU 行（读=归一后的数据；写=接受数组或 JSON 字符串，反射 `skus` attribute） */
+  get skus(): SkuItem[] {
+    return this.parseSkus()
+  }
+  set skus(value: SkuItem[] | string) {
+    this.setAttribute('skus', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 选中组合（读=归一后的选中项；写=接受对象或 JSON 字符串，反射 `value` attribute） */
+  get value(): Record<string, string> {
+    return this.parseValue(this.parseSpecs())
+  }
+  set value(value: Record<string, string> | string) {
+    this.setAttribute('value', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 数量（读=属性数值；写=数字或数字字符串，反射 `quantity` attribute） */
+  get quantity(): number {
+    const raw = Number(this.getAttr('quantity'))
+    return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : DEFAULTS.quantity
+  }
+  set quantity(value: number | string) {
+    this.setAttribute('quantity', String(value))
+  }
+
   private template(): string {
     return `
       <style>${STYLE}</style>
@@ -419,14 +478,14 @@ export class OASSku extends OASElement {
   // 数据解析
   // -------------------------------------------------------------------------
 
-  private specs(): SkuSpecGroup[] {
+  private parseSpecs(): SkuSpecGroup[] {
     const raw = parseJsonArray<unknown>(this.getAttr('specs'), () =>
       devWarn('[oas-sku] specs 不是合法 JSON 数组，已忽略'),
     )
     return normalizeGroups(raw)
   }
 
-  private skus(): SkuItem[] {
+  private parseSkus(): SkuItem[] {
     const raw = parseJsonArray<unknown>(this.getAttr('skus'), () =>
       devWarn('[oas-sku] skus 不是合法 JSON 数组，已忽略'),
     )
@@ -479,8 +538,9 @@ export class OASSku extends OASElement {
     return this.injectDisabled()
   }
 
+  /** locale 归一：属性 → 文档 `<html lang>` → `zh-CN`（非法 BCP47 回落默认） */
   private resolveLocale(): string {
-    const raw = this.getAttr('locale').trim()
+    const raw = (this.getAttr('locale') || document.documentElement.lang || '').trim()
     if (raw === '') return 'zh-CN'
     try {
       return new Intl.NumberFormat(raw).resolvedOptions().locale
@@ -524,16 +584,16 @@ export class OASSku extends OASElement {
   }
 
   private onMinus = (): void => {
-    const groups = this.specs()
-    const sku = this.matchedSku(groups, this.skus())
+    const groups = this.parseSpecs()
+    const sku = this.matchedSku(groups, this.parseSkus())
     const current = this.resolveQuantity(sku?.stock ?? null)
     if (current <= 1) return
     this.applyQuantity(current - 1)
   }
 
   private onPlus = (): void => {
-    const groups = this.specs()
-    const sku = this.matchedSku(groups, this.skus())
+    const groups = this.parseSpecs()
+    const sku = this.matchedSku(groups, this.parseSkus())
     const current = this.resolveQuantity(sku?.stock ?? null)
     const stock = sku?.stock ?? null
     if (stock !== null && stock > 0 && current >= stock) return
@@ -542,8 +602,8 @@ export class OASSku extends OASElement {
 
   /** 数量提交：钳制到 [1, 库存] → 回写属性 → 同步 DOM → 派发事件 */
   private applyQuantity(raw: number): void {
-    const groups = this.specs()
-    const skus = this.skus()
+    const groups = this.parseSpecs()
+    const skus = this.parseSkus()
     const sku = this.matchedSku(groups, skus)
     let qty = Number.isFinite(raw) ? Math.floor(raw) : DEFAULTS.quantity
     if (qty < 1) qty = 1
@@ -561,8 +621,8 @@ export class OASSku extends OASElement {
 
   /** 回写属性（抑制 update 中的重复解析）并派发事件 */
   private commit(change: 'spec' | 'quantity'): void {
-    const groups = this.specs()
-    const skus = this.skus()
+    const groups = this.parseSpecs()
+    const skus = this.parseSkus()
     const sku = this.matchedSku(groups, skus)
     const quantity = this.resolveQuantity(sku?.stock ?? null)
     this.writingValue = true
@@ -648,15 +708,23 @@ export class OASSku extends OASElement {
     return label
   }
 
-  /** 结构未变时的轻量同步：选中态 / 可用性 / 缺货标记 / disabled */
+  /**
+   * 结构未变时的轻量同步：选中态 / 可用性 / 缺货标记 / disabled。
+   *
+   * 规格值来自宿主数据，可能含引号（如 `6"`）或其它 CSS 选择器元字符——因此**不用**
+   * 拼接 `querySelector` 选择器（曾抛 DOMException 打崩组件），改为遍历已建子节点按
+   * `dataset` 比对：既无注入面，也不依赖 CSS.escape 的可选性。
+   */
   private syncGroups(groups: SkuSpecGroup[], skus: SkuItem[]): void {
     if (!this.groupsEl) return
     const disabled = this.disabledState()
+    const fieldsets = [...this.groupsEl.querySelectorAll<HTMLElement>('fieldset[data-group]')]
     for (const group of groups) {
+      const fieldset = fieldsets.find((node) => node.getAttribute('data-group') === group.key)
+      if (!fieldset) continue
+      const labels = [...fieldset.querySelectorAll<HTMLElement>('label[part="option"]')]
       for (const option of group.values) {
-        const label = this.groupsEl.querySelector<HTMLElement>(
-          `[part="option"][data-group="${group.key}"][data-value="${option.value}"]`,
-        )
+        const label = labels.find((node) => node.getAttribute('data-value') === option.value)
         if (!label) continue
         const available = this.isAvailable(groups, skus, group.key, option.value)
         const checked = this.selected[group.key] === option.value
@@ -727,8 +795,8 @@ export class OASSku extends OASElement {
   }
 
   protected override update(): void {
-    const groups = this.specs()
-    const skus = this.skus()
+    const groups = this.parseSpecs()
+    const skus = this.parseSkus()
     if (this.qtyLabelEl) {
       this.qtyLabelEl.textContent = this.t('sku.quantityLabel')
       if (!this.qtyLabelEl.id)

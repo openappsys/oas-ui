@@ -51,6 +51,34 @@ description: "商品规格选择面板：specs + skus 数据契约、选中组�
   </p>
 </DemoBlock>
 
+## 币种与精度
+
+面板内价格通过内嵌 `oas-price` 展示，`currency` / `locale` / `precision` 与价格组件同源：
+
+<DemoBlock title="多币种 / 无小数位">
+  <oas-sku
+    value='{"color":"曜石黑","size":"M"}'
+    currency="USD"
+    locale="en-US"
+    precision="0"
+    specs='[{"key":"color","label":"Color","values":["曜石黑"]},{"key":"size","label":"Size","values":["M"]}]'
+    skus='[{"id":"usd","specs":{"color":"曜石黑","size":"M"},"price":49.9,"stock":4}]'
+  ></oas-sku>
+</DemoBlock>
+
+## 全禁用
+
+`disabled` 让所有选项与数量控件不可用（金额与缺货提示仍可读），常用于下架或活动未开始：
+
+<DemoBlock title="禁用态">
+  <oas-sku
+    disabled
+    value='{"color":"雾霭白","size":"S"}'
+    specs='[{"key":"color","label":"颜色","values":["曜石黑","雾霭白"]},{"key":"size","label":"尺码","values":["S","M"]}]'
+    skus='[{"id":"w-s","specs":{"color":"雾霭白","size":"S"},"price":309,"stock":3}]'
+  ></oas-sku>
+</DemoBlock>
+
 ## API
 
 ### oas-sku
@@ -63,10 +91,10 @@ description: "商品规格选择面板：specs + skus 数据契约、选中组�
 | `disabled` | 全禁用（兼容 config-provider 注入禁用） | `boolean` | — |
 | `locale` | 价格格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN` | — | — |
 | `precision` | 价格小数位，默认 2 | — | — |
-| `quantity` | 数量（默认 1；上限 = 匹配 sku 库存） | — | — |
-| `skus` | SKU JSON 数组 `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]` | — | — |
-| `specs` | 规格组 JSON 数组 `[{ key, label?, values: (string \| { value, label? })[] }]` | — | — |
-| `value` | 选中组合 JSON 对象 `{ [specKey]: value }`（受控；用户选择回写） | — | — |
+| `quantity` | 数量（默认 1；上限 = 匹配 sku 库存） | `number \| string` | — |
+| `skus` | SKU JSON 数组 `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]` | `SkuItem[] \| string` | — |
+| `specs` | 规格组 JSON 数组 `[{ key, label?, values: (string \| { value, label? })[] }]` | `SkuSpecGroup[] \| string` | — |
+| `value` | 选中组合 JSON 对象 `{ [specKey]: value }`（受控；用户选择回写） | `Record<string, string> \| string` | — |
 
 #### 事件
 

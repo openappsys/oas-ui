@@ -852,6 +852,15 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-tour [part="mask-top"]', 'click', '遮罩点击 → oas-cancel'],
     ['oas-button:has-text("已记忆则不显示") button', 'click', '预置记忆并打开 → oas-dismiss'],
   ],
+  // commerce：JSON 属性供数 + 弹层选择 + 按钮组点击（通用探针够不到 shadow 内控件）
+  coupon: [
+    ['oas-coupon[list] [part="trigger"]', 'domclick', 'DOM click 触发按钮展开弹层 → oas-open-change'],
+    ['oas-coupon[list] input[type="radio"]', 'domclick', 'DOM click 首个可用券 radio → oas-select（选中即关闭）'],
+  ],
+  'goods-action': [
+    ['oas-goods-action [part="icon-button"]', 'domclick', '点 icon 项 → oas-action-click（source=icon）'],
+    ['oas-goods-action [part="button"]', 'domclick', '点主按钮 → oas-action-click（source=button）'],
+  ],
 }
 
 /** 真实点击，失败回落 DOM click（隐藏/浮层关闭态下 handler 仍会执行） */

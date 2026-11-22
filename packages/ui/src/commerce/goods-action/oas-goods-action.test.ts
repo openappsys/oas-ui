@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OASGoodsAction } from './index.js'
+import type { GoodsActionButton, GoodsActionItem } from './oas-goods-action.js'
 
 function mount(attrs: Record<string, string> = {}): OASGoodsAction {
   const el = new OASGoodsAction()
@@ -61,9 +62,78 @@ describe('oas-goods-action', () => {
 
   it('icon：属性可覆盖默认图标（自定义注册名优先）', () => {
     const el = mount({ items: JSON.stringify([{ key: 'favorite', icon: 'star' }]) })
-    const svg = el.shadowRoot!.querySelector('[part="icon"] svg')!
-    expect(svg.innerHTML).toContain('<path')
+    const overridden = el.shadowRoot!.querySelector('[part="icon"] svg')!
+    expect(overridden.innerHTML).toContain('<path')
     expect(iconButtons(el)[0]!.getAttribute('aria-label')).toBe('收藏')
+  })
+
+  it('icon 覆盖：渲染的是覆盖图标本体（与内置图标 path 不同，非「存在即通过」）', () => {
+    const withOverride = mount({ items: JSON.stringify([{ key: 'favorite', icon: 'star' }]) })
+    const withDefault = mount({ items: JSON.stringify([{ key: 'favorite' }]) })
+    const d = (host: OASGoodsAction): string =>
+      host.shadowRoot!.querySelector('[part="icon"] svg')!.innerHTML.match(/d="([^"]+)"/)?.[1] ?? ''
+    expect(d(withOverride)).not.toBe('')
+    expect(d(withDefault)).not.toBe('')
+    expect(d(withOverride)).not.toBe(d(withDefault))
+    // favorite 的内置图标是心形，star 覆盖后不再是心形
+    expect(d(withOverride)).not.toContain(d(withDefault))
+  })
+
+  it('icon 未注册：告警一次并回退内置图标（同一名字不重复告警）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({
+        items: JSON.stringify([
+          { key: 'favorite', icon: 'not-a-registered-icon' },
+          { key: 'shop', icon: 'not-a-registered-icon' },
+        ]),
+      })
+      const iconWarns = warn.mock.calls.filter((c) => String(c[0]).includes('not-a-registered-icon'))
+      expect(iconWarns).toHaveLength(1)
+      const icons = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="icon"] svg')]
+      expect(icons).toHaveLength(2)
+      // 回退到内置图标：favorite 心形 + shop 组织图标（不同 path）
+      const paths = icons.map((svg) => svg.innerHTML)
+      expect(new Set(paths).size).toBe(2)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('icon 未注册且该 key 无内置图标：不渲染图标但文字仍可读', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ items: JSON.stringify([{ key: 'custom', label: '自定义', icon: 'nope' }]) })
+      expect(el.shadowRoot!.querySelector('[part="icon"]')).toBeNull()
+      expect(iconButtons(el)[0]!.querySelector('[part="label"]')!.textContent).toBe('自定义')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  // ---------------------------------------------------------------------------
+  // property 通道（框架按「key in el」走 property 赋值时的数据入口）
+  // ---------------------------------------------------------------------------
+  it('property 通道：items/actions 为 get+set 访问器，接受数组与 JSON 字符串', () => {
+    const el = mount()
+    const proto = Object.getOwnPropertyDescriptors(OASGoodsAction.prototype)
+    for (const key of ['items', 'actions']) {
+      expect(typeof proto[key]!.get, `${key}.get`).toBe('function')
+      expect(typeof proto[key]!.set, `${key}.set`).toBe('function')
+    }
+    el.items = JSON.parse(ITEMS) as GoodsActionItem[]
+    el.actions = JSON.parse(ACTIONS) as GoodsActionButton[]
+    expect(el.getAttribute('items')).toBe(ITEMS)
+    expect(el.getAttribute('actions')).toBe(ACTIONS)
+    expect(el.items.map((i) => i.key)).toEqual(['favorite', 'shop', 'cart'])
+    expect(iconButtons(el)).toHaveLength(3)
+    expect(actionButtons(el)).toHaveLength(2)
+
+    el.items = '[{"key":"cart","badge":2}]'
+    expect(el.items).toHaveLength(1)
+    expect(iconButtons(el)).toHaveLength(1)
+    el.actions = '[]'
+    expect(actionButtons(el)).toHaveLength(0)
   })
 
   it('active 项：aria-pressed=true 且带 data-active', () => {

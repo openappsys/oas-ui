@@ -35,7 +35,7 @@ description: "商品底部导航：icon 按钮组（收藏 / 店铺 / 购物车�
 
 ## 自定义图标与禁用
 
-`icon` 传已注册的图标名（内置或 `registerIcon` 自定义）覆盖默认图标；`actions[].disabled` 或宿主 `disabled` 禁用对应项：
+`icon` 传已注册的图标名（内置或 `registerIcon` 自定义）覆盖默认图标；名字未注册时开发态告警一次并回退该 key 的内置图标（无内置图标则不渲染图标，文字照常可读）。`actions[].disabled` 或宿主 `disabled` 禁用对应项：
 
 <DemoBlock title="自定义图标 / 单项禁用 / 全局禁用">
   <oas-goods-action
@@ -50,6 +50,18 @@ description: "商品底部导航：icon 按钮组（收藏 / 店铺 / 购物车�
   ></oas-goods-action>
 </DemoBlock>
 
+## 导航可访问名称
+
+`label` 覆盖导航区（`<nav>`）的可访问名称，缺省走 i18n `goodsAction.label`；一个页面有多条操作栏时用它区分：
+
+<DemoBlock title="自定义可访问名称">
+  <oas-goods-action
+    label="商品操作栏"
+    items='[{"key":"favorite"},{"key":"cart","badge":1}]'
+    actions='[{"key":"buy","text":"立即购买","primary":true}]'
+  ></oas-goods-action>
+</DemoBlock>
+
 ## API
 
 ### oas-goods-action
@@ -58,9 +70,9 @@ description: "商品底部导航：icon 按钮组（收藏 / 店铺 / 购物车�
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions` | 主按钮 JSON 数组 `[{ key, text, primary?, disabled? }]` | — | — |
+| `actions` | 主按钮 JSON 数组 `[{ key, text, primary?, disabled? }]` | `GoodsActionButton[] \| string` | — |
 | `disabled` | 全局禁用（兼容 config-provider 注入禁用） | `boolean` | — |
-| `items` | icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射 | — | — |
+| `items` | icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射 | `GoodsActionItem[] \| string` | — |
 | `label` | 导航区可访问名称，缺省走 i18n `goodsAction.label` | — | — |
 
 #### 事件

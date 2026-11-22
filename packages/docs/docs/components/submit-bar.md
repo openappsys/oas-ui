@@ -29,6 +29,21 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
   </oas-submit-bar>
 </DemoBlock>
 
+## 币种与精度
+
+合计金额的格式化与 `oas-price` 同源：`currency` 换币种、`locale` 决定符号位置与分组、「`precision`」决定小数位。
+
+<DemoBlock title="多币种 / 无小数位">
+  <oas-submit-bar id="sb-usd" total="99.5" currency="USD" locale="en-US" action-text="Pay"></oas-submit-bar>
+  <oas-submit-bar
+    id="sb-precision"
+    total="1299.6"
+    precision="0"
+    action-text="提交订单"
+    style="margin-top: var(--oas-space-2)"
+  ></oas-submit-bar>
+</DemoBlock>
+
 ## 加载 / 禁用 / 危险
 
 `loading` 时按钮禁用并显示 spinner、`aria-busy="true"`；`disabled` 保留视觉但不可触发；`danger` 让主按钮走危险色。

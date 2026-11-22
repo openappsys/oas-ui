@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { OASSku } from './index.js'
+import { OASSku, type SkuItem, type SkuSpecGroup } from './index.js'
 
 const SPECS = JSON.stringify([
   { key: 'color', label: '颜色', values: ['红', '蓝'] },
@@ -171,6 +171,17 @@ describe('oas-sku', () => {
     expect((part(el, 'plus') as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it('disabled 视觉：逐控件弱化，不整块降透明度（否则只读说明文字对比度破线）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, disabled: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).not.toMatch(/:host\(\[disabled\]\)\s+\.panel\s*\{[^}]*opacity/)
+    expect(css).toMatch(/:host\(\[disabled\]\)\s+\.option\s*\{[^}]*--oas-color-bg-disabled/)
+    // 选中项保留主色实线边：禁用后仍要看得出当前选的是哪个组合
+    expect(css).toMatch(
+      /:host\(\[disabled\]\)\s+\.option\[data-checked='true'\]\s*\{[^}]*border-style:\s*solid[^}]*border-color:\s*var\(--oas-color-primary\)/,
+    )
+  })
+
   it('a11y：fieldset/legend 组织规格组，数量控件有关联标签与 i18n 名称', () => {
     const el = mount({ specs: SPECS, skus: SKUS })
     expect(groups(el)[0]!.tagName.toLowerCase()).toBe('fieldset')
@@ -193,5 +204,91 @@ describe('oas-sku', () => {
     expect(css).toContain('var(--oas-color-')
     expect(css).not.toMatch(/margin-(left|right)/)
     expect(css).not.toMatch(/padding-(left|right)/)
+  })
+
+  // ---------------------------------------------------------------------------
+  // 回归：宿主 JSON 值含 CSS 选择器元字符（引号等）不得拼进 querySelector
+  // ---------------------------------------------------------------------------
+  it('规格值含引号（6"）：再次 update 不抛错且选中态正确同步', () => {
+    const specs = JSON.stringify([{ key: 'screen', label: '屏幕', values: ['6"', '7"'] }])
+    const skus = JSON.stringify([
+      { id: 's6', specs: { screen: '6"' }, price: 10, stock: 2 },
+      { id: 's7', specs: { screen: '7"' }, price: 20, stock: 3 },
+    ])
+    const el = mount({ specs, skus, value: JSON.stringify({ screen: '7"' }) })
+    const labels = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]')]
+    expect(labels[0]!.getAttribute('data-value')).toBe('6"')
+    expect(labels[1]!.getAttribute('data-checked')).toBe('true')
+    // 第二次 update 走结构未变的增量同步分支（修复前在此抛 DOMException）
+    expect(() => el.setAttribute('quantity', '2')).not.toThrow()
+    expect(labels[1]!.getAttribute('data-checked')).toBe('true')
+    // 程序性换选中值同样不抛错
+    expect(() => el.setAttribute('value', JSON.stringify({ screen: '6"' }))).not.toThrow()
+    expect(labels[0]!.getAttribute('data-checked')).toBe('true')
+    expect(labels[1]!.getAttribute('data-checked')).toBe('false')
+  })
+
+  it('规格值含选择器元字符（] [ = \\）不抛错', () => {
+    const specs = JSON.stringify([{ key: 'k', label: 'K', values: ['a]b', 'c[=d', 'e\\f'] }])
+    const el = mount({ specs })
+    expect(() => el.setAttribute('quantity', '3')).not.toThrow()
+    expect(el.shadowRoot!.querySelectorAll('[part="option"]')).toHaveLength(3)
+  })
+
+  // ---------------------------------------------------------------------------
+  // property 通道（框架按「key in el」走 property 赋值时的数据入口）
+  // ---------------------------------------------------------------------------
+  it('property 通道：specs/skus/value/quantity 均为 get+set 访问器', () => {
+    const proto = Object.getOwnPropertyDescriptors(OASSku.prototype)
+    for (const key of ['specs', 'skus', 'value', 'quantity']) {
+      expect(typeof proto[key], key).toBe('object')
+      expect(typeof proto[key]!.get, `${key}.get`).toBe('function')
+      expect(typeof proto[key]!.set, `${key}.set`).toBe('function')
+    }
+  })
+
+  it('property 通道：setter 接受数组/对象并反射 attribute，getter 读回归一后的数据', () => {
+    const el = mount()
+    el.specs = JSON.parse(SPECS) as SkuSpecGroup[]
+    el.skus = JSON.parse(SKUS) as SkuItem[]
+    expect(el.getAttribute('specs')).toBe(SPECS)
+    expect(el.getAttribute('skus')).toBe(SKUS)
+    expect(el.specs.map((g) => g.key)).toEqual(['color', 'size'])
+    expect(el.skus.map((s) => s.id)).toEqual(['red-s', 'red-m', 'blue-s', 'blue-m'])
+    expect(groups(el)).toHaveLength(2)
+
+    el.value = { color: '蓝', size: 'M' }
+    expect(el.getAttribute('value')).toBe(JSON.stringify({ color: '蓝', size: 'M' }))
+    expect(el.value).toEqual({ color: '蓝', size: 'M' })
+    expect(optionInput(el, 0, '蓝').checked).toBe(true)
+
+    el.quantity = 3
+    expect(el.getAttribute('quantity')).toBe('3')
+    expect(el.quantity).toBe(3)
+    expect((part(el, 'quantity-input') as HTMLInputElement).value).toBe('3')
+  })
+
+  it('property 通道：setter 容忍 JSON 字符串（框架静态属性直写 property 的到达形态）', () => {
+    const el = mount()
+    el.specs = SPECS
+    el.skus = SKUS
+    el.value = JSON.stringify({ color: '红', size: 'S' })
+    el.quantity = '2'
+    expect(groups(el)).toHaveLength(2)
+    expect(optionInput(el, 1, 'S').checked).toBe(true)
+    expect(el.shadowRoot!.querySelector('oas-price')!.getAttribute('value')).toBe('99')
+    expect(el.quantity).toBe(2)
+  })
+
+  it('locale 缺省读文档 <html lang>（与 price/coupon 同源）', () => {
+    const original = document.documentElement.lang
+    document.documentElement.lang = 'en-US'
+    try {
+      const el = mount({ specs: SPECS, skus: SKUS, value: JSON.stringify({ color: '红', size: 'S' }) })
+      const price = el.shadowRoot!.querySelector('oas-price')!
+      expect(price.getAttribute('locale')).toBe('en-US')
+    } finally {
+      document.documentElement.lang = original
+    }
   })
 })

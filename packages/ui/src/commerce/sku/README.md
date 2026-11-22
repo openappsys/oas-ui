@@ -5,4 +5,4 @@
 3. **多步交互失败点**：部分选择 → 全选链路；可用性按「其余已选规格吻合 + 在库」逐项判定，避免走到死路；数量上限 = 匹配 sku 库存，输入超库存钳制、加号到顶禁用；缺货组合下数量控件禁用；用户操作回写 `value`/`quantity` 后派发 `oas-change`（程序性写入不回派）。
 4. **破坏性选项**：无破坏性行为；缺货仅禁用，不静默改选其他组合。
 5. **键盘/ARIA**：每组 `fieldset` + `legend`；选项为原生 radio（方向键/空格）；缺货项原生 disabled 且文本含「缺货」；数量为 number input（spinbutton 语义）+ 加减按钮，均有 i18n 名称与关联标签；价格区 `aria-live="polite"`；移动粗指针下选项/步进抬到触摸目标高度。
-6. **受控/非受控与宿主桥接**：`value` / `quantity` 为受控属性镜像，用户交互回写并派发事件；JSON 属性在 Vue 中通过字符串绑定传值；实例内 radio name 由数据哈希派生，shadow 作用域内互不串选。
+6. **受控/非受控与宿主桥接**：`value` / `quantity` 为受控属性镜像，用户交互回写并派发事件；`specs` / `skus` / `value` / `quantity` 均为 get+set 访问器（setter 容忍数组/对象与 JSON 字符串并反射 attribute），框架按「key in el」写 property 也能落到同一数据入口；实例内 radio name 由数据哈希派生，shadow 作用域内互不串选。

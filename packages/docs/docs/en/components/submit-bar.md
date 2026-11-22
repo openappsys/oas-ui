@@ -39,6 +39,21 @@ The default slot renders before the total — useful for agreement checkboxes or
   <oas-submit-bar id="sb-danger-en" total="99" action-text="Delete order" danger></oas-submit-bar>
 </DemoBlock>
 
+## Currency and precision
+
+The total is formatted by the same code path as `oas-price`: `currency` switches the currency, `locale` decides symbol placement and grouping and `precision` sets the decimal places.
+
+<DemoBlock title="Multi-currency / no decimals">
+  <oas-submit-bar id="sb-usd-en" total="99.5" currency="USD" locale="en-US" action-text="Pay"></oas-submit-bar>
+  <oas-submit-bar
+    id="sb-precision-en"
+    total="1299.6"
+    precision="0"
+    action-text="Place order"
+    style="margin-top: var(--oas-space-2)"
+  ></oas-submit-bar>
+</DemoBlock>
+
 ## Toggling state
 
 Hosts can toggle loading by writing the attribute; no `oas-submit` fires while loading.

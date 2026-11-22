@@ -5471,7 +5471,7 @@
       "selected": "Selected marker for outer layout composition",
       "list": "Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form",
       "trigger-text": "Trigger label (defaults to i18n `coupon.select`; shows the selected amount once picked)",
-      "open": "Sheet open state (controlled; host writes are silent, interaction/imperative changes dispatch `oas-open-change`)"
+      "open": "Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change)"
     },
     "events": {
       "oas-select": "Dispatched when an available coupon is selected with `{ code, coupon }`, then the sheet closes",
@@ -5479,8 +5479,9 @@
     },
     "slots": {},
     "methods": {
-      "open": "Opens the sheet (no-op when already open) and dispatches `oas-open-change`",
-      "close": "Closes the sheet (no-op when already closed) and dispatches `oas-open-change`"
+      "openOverlay": "Opens the sheet (no-op when already open) and dispatches oas-open-change",
+      "closeOverlay": "Closes the sheet (no-op when already closed) and dispatches oas-open-change",
+      "clearSelection": "Clears the selected coupon and the amount on the trigger (silent, no events)"
     }
   },
   "oas-sku": {

@@ -26,6 +26,8 @@ import { arrowUpPath } from '@oas-ui/icons/icons/arrow-up'
  * 语义走 visually-hidden 的方向文案（i18n）；划线价带「原价」读屏前缀。
  * 颜色全部走 token：`--oas-price-color` / `--oas-price-original-color` /
  * `--oas-price-up-color` / `--oas-price-down-color`（暗色随主题 token 自适应）。
+ * 趋势文字默认用深/浅双主题都可读的 `--oas-color-danger-text` / `--oas-color-success-text`
+ * （纯语义色 `--oas-color-danger/success` 在白底上对比度不足，只适合做底/边框）。
  */
 
 const VALID_SIZES = ['sm', 'md', 'lg'] as const
@@ -113,10 +115,10 @@ const STYLE = `
   font-size: var(--oas-font-size-sm);
 }
 .trend[data-trend='up'] {
-  color: var(--oas-price-up-color, var(--oas-color-danger));
+  color: var(--oas-price-up-color, var(--oas-color-danger-text));
 }
 .trend[data-trend='down'] {
-  color: var(--oas-price-down-color, var(--oas-color-success));
+  color: var(--oas-price-down-color, var(--oas-color-success-text));
 }
 .trend svg {
   width: 1em;

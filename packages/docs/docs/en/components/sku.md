@@ -51,6 +51,34 @@ The quantity cap equals the matched SKU's stock; the plus button disables at the
   </p>
 </DemoBlock>
 
+## Currency and precision
+
+The price inside the panel is rendered by an embedded `oas-price`, so `currency` / `locale` / `precision` behave exactly like the price component:
+
+<DemoBlock title="Multi-currency / no decimals">
+  <oas-sku
+    value='{"color":"Obsidian","size":"M"}'
+    currency="USD"
+    locale="en-US"
+    precision="0"
+    specs='[{"key":"color","label":"Color","values":["Obsidian"]},{"key":"size","label":"Size","values":["M"]}]'
+    skus='[{"id":"usd","specs":{"color":"Obsidian","size":"M"},"price":49.9,"stock":4}]'
+  ></oas-sku>
+</DemoBlock>
+
+## Fully disabled
+
+`disabled` makes every option and the quantity controls unavailable (amount and sold-out hints stay readable); handy for delisted products or campaigns that have not started:
+
+<DemoBlock title="Disabled state">
+  <oas-sku
+    disabled
+    value='{"color":"Mist","size":"S"}'
+    specs='[{"key":"color","label":"Color","values":["Obsidian","Mist"]},{"key":"size","label":"Size","values":["S","M"]}]'
+    skus='[{"id":"w-s","specs":{"color":"Mist","size":"S"},"price":309,"stock":3}]'
+  ></oas-sku>
+</DemoBlock>
+
 ## API
 
 ### oas-sku
@@ -63,10 +91,10 @@ The quantity cap equals the matched SKU's stock; the plus button disables at the
 | `disabled` | Disables everything (honours config-provider injected disabled) | `boolean` | — |
 | `locale` | Price formatting locale; defaults to the document `<html lang>`, then `en` | — | — |
 | `precision` | Price decimal places, default 2 | — | — |
-| `quantity` | Quantity (default 1; capped by the matched SKU stock) | — | — |
-| `skus` | SKU JSON array `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]` | — | — |
-| `specs` | Spec group JSON array `[{ key, label?, values: (string \| { value, label? })[] }]` | — | — |
-| `value` | Selected combination JSON object `{ [specKey]: value }` (controlled; user picks write back) | — | — |
+| `quantity` | Quantity (default 1; capped by the matched SKU stock) | `number \| string` | — |
+| `skus` | SKU JSON array `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]` | `SkuItem[] \| string` | — |
+| `specs` | Spec group JSON array `[{ key, label?, values: (string \| { value, label? })[] }]` | `SkuSpecGroup[] \| string` | — |
+| `value` | Selected combination JSON object `{ [specKey]: value }` (controlled; user picks write back) | `Record<string, string> \| string` | — |
 
 #### Events
 

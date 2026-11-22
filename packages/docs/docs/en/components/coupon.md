@@ -28,27 +28,51 @@ Both forms share the same card rendering:
   <oas-coupon amount="50" threshold="299" status="unavailable" reason="Requires a 299 order" style="margin-top: var(--oas-space-2)"></oas-coupon>
 </DemoBlock>
 
+## Currency, coupon code and selected marker
+
+`currency` / `locale` control amount and date formatting; `code` is the coupon identifier returned in the `oas-select` detail for host bookkeeping; `selected` is only a selected-state marker (used by outer layout composition, it does not drive selection logic):
+
+<DemoBlock title="Multi-currency + coupon code + selected state">
+  <oas-coupon amount="20" threshold="199" currency="USD" locale="en-US" code="usd-20"></oas-coupon>
+  <oas-coupon
+    amount="15"
+    validity="No expiry"
+    selected
+    code="local-15"
+    style="margin-top: var(--oas-space-2)"
+  ></oas-coupon>
+</DemoBlock>
+
 ## Selection sheet
 
-`list` takes the coupon array; the trigger opens a bottom sheet (`role="dialog"`, focus moved in, Esc / backdrop closes). Picking an available coupon dispatches `oas-select` and closes the sheet; the selected amount is shown on the trigger.
+`list` takes the coupon array; the trigger opens a bottom sheet (`role="dialog"`, focus moved in, Esc / backdrop closes). Picking an available coupon dispatches `oas-select` and closes the sheet; the selected amount is shown on the trigger and `trigger-text` overrides the trigger label (shown while nothing is picked):
 
 <DemoBlock title="Select a coupon + event feedback">
   <oas-coupon
     id="cp-select-en"
     list='[{"code":"a","amount":30,"threshold":199,"start":"2026-01-01","end":"2026-02-28"},{"code":"b","amount":10,"threshold":0,"validity":"No expiry"},{"code":"c","amount":50,"threshold":299,"status":"unavailable","reason":"Requires a 299 order"},{"code":"d","amount":20,"status":"expired"}]'
   ></oas-coupon>
+  <oas-coupon
+    id="cp-trigger-text-en"
+    trigger-text="My coupons"
+    list='[{"code":"e","amount":5,"threshold":0,"validity":"No expiry"}]'
+    style="margin-top: var(--oas-space-2)"
+  ></oas-coupon>
   <p id="cp-select-out-en" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Click the trigger to select a coupon.
   </p>
 </DemoBlock>
 
-## Imperative open/close
+## Imperative open/close and selection reset
 
-Controlled `open` attribute plus `open()` / `close()` methods: host attribute writes are silent, while interactions and imperative calls dispatch `oas-open-change`.
+`open` is a controlled attribute (host attribute / property writes are silent); `openOverlay()` / `closeOverlay()` are the imperative calls (they dispatch `oas-open-change`), and `clearSelection()` clears the picked coupon silently for hosts that need to reset the selection.
 
-<DemoBlock title="open() / close()">
+<DemoBlock title="openOverlay() / closeOverlay() / clearSelection()">
   <oas-coupon id="cp-api-en" list='[{"code":"x","amount":15,"threshold":0,"validity":"No expiry"}]'></oas-coupon>
-  <oas-button id="cp-open-en" size="small" style="margin-top: var(--oas-space-2)">Open sheet</oas-button>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="cp-open-en" size="small">Open sheet</oas-button>
+    <oas-button id="cp-clear-en" size="small">Clear selection</oas-button>
+  </div>
 </DemoBlock>
 
 ## API
@@ -63,9 +87,9 @@ Controlled `open` attribute plus `open()` / `close()` methods: host attribute wr
 | `code` | Coupon identifier returned in event details | — | — |
 | `currency` | ISO 4217 currency, default `CNY` | `string` | `CNY` |
 | `end` | Validity end (`YYYY-MM-DD`) | — | — |
-| `list` | Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form | — | — |
+| `list` | Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form | `CouponData[] \| string` | — |
 | `locale` | Amount and date formatting locale; defaults to the document `<html lang>`, then `en` | — | — |
-| `open` | Sheet open state (controlled; host writes are silent, interaction/imperative changes dispatch `oas-open-change`) | — | — |
+| `open` | Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change) | `boolean \| string` | — |
 | `reason` | Reason text shown when `status="unavailable"` | — | — |
 | `selected` | Selected marker for outer layout composition | `boolean` | — |
 | `start` | Validity start (`YYYY-MM-DD`) | — | — |
@@ -78,8 +102,9 @@ Controlled `open` attribute plus `open()` / `close()` methods: host attribute wr
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `open` | `open(): void` | Opens the sheet (no-op when already open) and dispatches `oas-open-change` |
-| `close` | `close(): void` | Closes the sheet (no-op when already closed) and dispatches `oas-open-change` |
+| `openOverlay` | `openOverlay(): void` | Opens the sheet (no-op when already open) and dispatches oas-open-change |
+| `closeOverlay` | `closeOverlay(): void` | Closes the sheet (no-op when already closed) and dispatches oas-open-change |
+| `clearSelection` | `clearSelection(): void` | Clears the selected coupon and the amount on the trigger (silent, no events) |
 
 #### Events
 
@@ -98,7 +123,11 @@ onMounted(() => {
     })
     const api = document.getElementById('cp-api-en')
     document.getElementById('cp-open-en')?.addEventListener('click', () => {
-      api?.open()
+      api?.openOverlay()
+    })
+    document.getElementById('cp-clear-en')?.addEventListener('click', () => {
+      api?.clearSelection()
+      out.textContent = 'clearSelection: selection cleared'
     })
     api?.addEventListener('oas-open-change', (e) => {
       out.textContent = 'oas-open-change: open=' + e.detail.open

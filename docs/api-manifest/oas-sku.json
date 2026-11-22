@@ -38,7 +38,24 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "specs",
+      "type": "SkuSpecGroup[] | string"
+    },
+    {
+      "name": "skus",
+      "type": "SkuItem[] | string"
+    },
+    {
+      "name": "value",
+      "type": "Record<string, string> | string"
+    },
+    {
+      "name": "quantity",
+      "type": "number | string"
+    }
+  ],
   "methods": [],
   "events": [
     {

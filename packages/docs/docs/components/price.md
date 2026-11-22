@@ -76,6 +76,6 @@ description: "价格展示组件：币种符号 + 千分位 + 指定小数位，
 | CSS 变量 | 默认值 |
 | --- | --- |
 | `--oas-price-color` | `var(--oas-color-text-primary)` |
-| `--oas-price-down-color` | `var(--oas-color-success)` |
+| `--oas-price-down-color` | `var(--oas-color-success-text)` |
 | `--oas-price-original-color` | `var(--oas-color-text-secondary)` |
-| `--oas-price-up-color` | `var(--oas-color-danger)` |
+| `--oas-price-up-color` | `var(--oas-color-danger-text)` |

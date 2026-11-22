@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { OASCoupon } from './index.js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { OASCoupon, type CouponData } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASCoupon {
   const el = new OASCoupon()
@@ -98,19 +98,65 @@ describe('oas-coupon 选择弹层（list 模式）', () => {
     expect(events).toEqual([{ open: true }])
   })
 
-  it('受控 open：宿主写属性直接开（不派发事件），close() 关闭并派发', () => {
+  it('受控 open：宿主写属性直接开（不派发事件），closeOverlay() 关闭并派发', () => {
     const el = mount({ list: LIST })
     const events: Array<{ open?: boolean }> = []
     el.addEventListener('oas-open-change', (e) => events.push((e as CustomEvent).detail))
     el.setAttribute('open', '')
     expect(part(el, 'overlay')!.hidden).toBe(false)
     expect(events).toHaveLength(0)
-    el.close()
+    el.closeOverlay()
     expect(el.hasAttribute('open')).toBe(false)
     expect(part(el, 'overlay')!.hidden).toBe(true)
     expect(events).toEqual([{ open: false }])
-    el.open()
+    el.openOverlay()
     expect(el.hasAttribute('open')).toBe(true)
+  })
+
+  it('property 通道：open 为 get+set 访问器，写布尔即反射属性且静默', () => {
+    const el = mount({ list: LIST })
+    const events: unknown[] = []
+    el.addEventListener('oas-open-change', (e) => events.push((e as CustomEvent).detail))
+    el.open = true
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(el.open).toBe(true)
+    expect(part(el, 'overlay')!.hidden).toBe(false)
+    el.open = false
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.open).toBe(false)
+    // 框架把静态布尔属性写成 property 时到达的是空串——presence 语义必须视为打开
+    el.open = ''
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(events).toHaveLength(0)
+  })
+
+  it('property 通道：list 为 get+set 访问器，接受数组与 JSON 字符串', () => {
+    const el = mount()
+    el.list = JSON.parse(LIST) as CouponData[]
+    expect(el.getAttribute('list')).toBe(LIST)
+    expect(el.list.map((c) => c.code)).toEqual(['a', 'b', 'c'])
+    ;(part(el, 'trigger') as HTMLButtonElement).click()
+    expect(el.shadowRoot!.querySelectorAll('input[type="radio"]')).toHaveLength(3)
+    el.list = '[]'
+    expect(el.list).toEqual([])
+    expect(part(el, 'empty')!.hidden).toBe(false)
+  })
+
+  it('clearSelection：清空已选券（静默，不派发事件）', () => {
+    const el = mount({ list: LIST })
+    ;(part(el, 'trigger') as HTMLButtonElement).click()
+    let fired = 0
+    el.addEventListener('oas-select', () => {
+      fired++
+    })
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="radio"]')!
+    input.checked = true
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(fired).toBe(1)
+    expect(part(el, 'trigger')!.textContent).toContain('¥30')
+    el.clearSelection()
+    expect(part(el, 'trigger')!.textContent).toContain('选择优惠券')
+    expect(fired).toBe(1)
   })
 
   it('列表项：可用项可选中，过期/未达门槛项禁用', () => {
@@ -181,5 +227,61 @@ describe('oas-coupon 选择弹层（list 模式）', () => {
     expect(css).toContain('var(--oas-color-')
     expect(css).not.toMatch(/margin-(left|right)/)
     expect(css).not.toMatch(/padding-(left|right)/)
+  })
+
+  it('浮层层级走 token 通道（config-provider 的 --oas-z-index-base 可整体前移）', () => {
+    const el = mount({ list: LIST })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toContain('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050))')
+    expect(css).not.toMatch(/z-index:\s*\d{3,}/)
+  })
+})
+
+describe('oas-coupon 卡片空态与可读性', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('卡片模式缺少 amount：不渲染券面且只告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount()
+      expect(part(el, 'coupon')).toBeNull()
+      const first = warn.mock.calls.filter((c) => String(c[0]).includes('[oas-coupon]')).length
+      expect(first).toBe(1)
+      el.setAttribute('amount', '30')
+      el.removeAttribute('amount')
+      const after = warn.mock.calls.filter((c) => String(c[0]).includes('[oas-coupon]')).length
+      expect(after).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('未达门槛态：面额走加深档 warning-text（浅色可读、暗色由 deep-mix 提亮）', () => {
+    const el = mount({ amount: '50', threshold: '299', status: 'unavailable', reason: '未满 299 元可用' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(
+      /\.coupon\[data-status='unavailable'\]\s*\{[^}]*--coupon-accent:\s*color-mix\(in srgb,\s*var\(--oas-color-warning-text\)/,
+    )
+  })
+
+  it('弱化底 / 选中底上的次级文字走 secondary-strong 安全档（secondary 在弱化底仅 4.39）', () => {
+    const el = mount({ amount: '10' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    // 过期 / 已使用：整卡继承色走安全档（覆盖「无门槛」等继承文字）
+    expect(css).toMatch(
+      /\.coupon\[data-status='expired'\],\s*\.coupon\[data-status='used'\]\s*\{[^}]*color:\s*var\(--oas-color-text-secondary-strong\)/,
+    )
+    // 有效期小字可能落在选中态着色面上
+    expect(css).toMatch(/\.validity\s*\{[^}]*color:\s*var\(--oas-color-text-secondary-strong\)/)
+    // 过期 / 已使用卡右侧状态文字
+    expect(css).toMatch(
+      /\.coupon\[data-status='expired'\]\s+\.state,\s*\.coupon\[data-status='used'\]\s+\.state\s*\{[^}]*color:\s*var\(--oas-color-text-secondary-strong\)/,
+    )
   })
 })

@@ -118,4 +118,14 @@ describe('oas-price', () => {
     expect(css).not.toMatch(/margin-(left|right)/)
     expect(css).not.toMatch(/padding-(left|right)/)
   })
+
+  it('趋势文字色走「-text」深档 token（纯语义色白底对比度不足，仅适合做底/边框）', () => {
+    const el = mount({ value: '10', trend: 'up', 'trend-value': '1' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toContain('var(--oas-price-up-color, var(--oas-color-danger-text))')
+    expect(css).toContain('var(--oas-price-down-color, var(--oas-color-success-text))')
+    // 不再回落纯语义色（a11y 对比度基线曾因此破线）
+    expect(css).not.toContain('var(--oas-price-up-color, var(--oas-color-danger))')
+    expect(css).not.toContain('var(--oas-price-down-color, var(--oas-color-success))')
+  })
 })

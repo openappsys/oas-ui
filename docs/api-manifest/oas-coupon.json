@@ -64,17 +64,31 @@
       "observed": true
     }
   ],
-  "props": [],
-  "methods": [
+  "props": [
+    {
+      "name": "list",
+      "type": "CouponData[] | string"
+    },
     {
       "name": "open",
-      "signature": "open(): void",
+      "type": "boolean | string"
+    }
+  ],
+  "methods": [
+    {
+      "name": "openOverlay",
+      "signature": "openOverlay(): void",
       "description": "命令式打开（幂等；派发 open-change）"
     },
     {
-      "name": "close",
-      "signature": "close(): void",
+      "name": "closeOverlay",
+      "signature": "closeOverlay(): void",
       "description": "命令式关闭（幂等；派发 open-change）"
+    },
+    {
+      "name": "clearSelection",
+      "signature": "clearSelection(): void",
+      "description": "清空已选券（静默：不派发事件；供宿主重置选择状态）"
     }
   ],
   "events": [

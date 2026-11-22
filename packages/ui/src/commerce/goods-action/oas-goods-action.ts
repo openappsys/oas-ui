@@ -16,12 +16,16 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `items`：JSON 数组——icon 按钮：`[{ key, label?, icon?, badge?, active? }]`
  *   - `key`：事件标识；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射
  *   - `label`：可访问名称（缺省取内置 key 文案，再回退 key 本身）
- *   - `icon`：图标名（lookupIcon 查表，自定义注册优先）；缺省按内置 key 取内置图标
+ *   - `icon`：图标名（lookupIcon 查表，自定义注册优先）；缺省按内置 key 取内置图标；
+ *     未注册的名字告警一次并回退内置图标
  *   - `badge`：非负整数角标；>0 显示，>99 收敛 `99+`
  *   - `active`：收藏类开关项的按下态（`aria-pressed`）
  * - `actions`：JSON 数组——主按钮：`[{ key, text, primary?, disabled? }]`
  * - `label`：导航区可访问名称，缺省走 i18n `goodsAction.label`
  * - `disabled`：全局禁用（兼容 config-provider 注入禁用）
+ *
+ * property 通道：`items` / `actions` 同时是读+写访问器（setter 接受数组或 JSON 字符串并
+ * 反射 attribute），供框架把模板静态属性直接写成 property 时走同一份数据入口。
  *
  * 插槽：无。
  * 事件（bubbles + composed）：
@@ -242,6 +246,28 @@ export class OASGoodsAction extends OASElement {
   private navEl: HTMLElement | null = null
   private iconsEl: HTMLElement | null = null
   private actionsEl: HTMLElement | null = null
+  /** 未注册图标名的 dev 告警去重（实例级；同一名字只报一次） */
+  private warnedIcons = new Set<string>()
+
+  // -------------------------------------------------------------------------
+  // property 通道（框架把模板静态属性写成 property 时的数据入口）
+  // -------------------------------------------------------------------------
+
+  /** icon 按钮组（读=解析后的条目；写=接受数组或 JSON 字符串，反射 `items` attribute） */
+  get items(): GoodsActionItem[] {
+    return this.parseItems()
+  }
+  set items(value: GoodsActionItem[] | string) {
+    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 主按钮组（读=解析后的条目；写=接受数组或 JSON 字符串，反射 `actions` attribute） */
+  get actions(): GoodsActionButton[] {
+    return this.parseActions()
+  }
+  set actions(value: GoodsActionButton[] | string) {
+    this.setAttribute('actions', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   private template(): string {
     return `
@@ -328,7 +354,7 @@ export class OASGoodsAction extends OASElement {
     const label = item.label || (defaultKey ? this.t(defaultKey) : item.key)
     btn.setAttribute('aria-label', badge > 0 ? `${label} ${badge}` : label)
 
-    const iconPath = item.icon ? lookupIcon(item.icon) : DEFAULT_ICONS[item.key]
+    const iconPath = this.resolveIconPath(item)
     if (iconPath) {
       const icon = document.createElement('span')
       icon.className = 'icon'
@@ -373,5 +399,21 @@ export class OASGoodsAction extends OASElement {
     const n = Number(raw)
     if (!Number.isFinite(n) || n <= 0) return 0
     return Math.floor(n)
+  }
+
+  /**
+   * 图标 path 解析：`icon` 命中注册表则用之；未注册时告警一次并回退该 key 的内置图标
+   * （无内置图标则不渲染图标，文字仍可读——不因一个错名把整项画坏）。
+   */
+  private resolveIconPath(item: GoodsActionItem): string | undefined {
+    const fallback = DEFAULT_ICONS[item.key]
+    if (!item.icon) return fallback
+    const found = lookupIcon(item.icon)
+    if (found) return found
+    if (!this.warnedIcons.has(item.icon)) {
+      this.warnedIcons.add(item.icon)
+      devWarn(`[oas-goods-action] 图标 "${item.icon}" 未注册，已回退内置图标（自定义图标需先 registerIcon）`)
+    }
+    return fallback
   }
 }

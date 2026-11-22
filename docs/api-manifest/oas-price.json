@@ -59,11 +59,11 @@
     },
     {
       "name": "--oas-price-up-color",
-      "default": "var(--oas-color-danger)"
+      "default": "var(--oas-color-danger-text)"
     },
     {
       "name": "--oas-price-down-color",
-      "default": "var(--oas-color-success)"
+      "default": "var(--oas-color-success-text)"
     }
   ],
   "unresolved": []

@@ -76,6 +76,6 @@ With both `min` and `max` present and no `value`, a range is rendered (single va
 | CSS Variable | Default |
 | --- | --- |
 | `--oas-price-color` | `var(--oas-color-text-primary)` |
-| `--oas-price-down-color` | `var(--oas-color-success)` |
+| `--oas-price-down-color` | `var(--oas-color-success-text)` |
 | `--oas-price-original-color` | `var(--oas-color-text-secondary)` |
-| `--oas-price-up-color` | `var(--oas-color-danger)` |
+| `--oas-price-up-color` | `var(--oas-color-danger-text)` |
