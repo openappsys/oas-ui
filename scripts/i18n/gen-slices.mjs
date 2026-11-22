@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 生成 @oas-ui/i18n 的家族默认文案切片：packages/i18n/src/slices/<family>.ts（9 个）。
+ * 生成 @oas-ui/i18n 的家族默认文案切片：packages/i18n/src/slices/<family>.ts（10 个）。
  *
  * 单一事实源：packages/i18n/src/locales/zh-CN.ts（只读，不改）。
  * 消费侧事实源：packages/ui/src 下的全部 .ts（排除 .test.ts）。
@@ -34,8 +34,19 @@ const UI_SRC = path.join(REPO_ROOT, 'packages', 'ui', 'src')
 const SLICES_DIR = path.join(REPO_ROOT, 'packages', 'i18n', 'src', 'slices')
 const BIOME_BIN = path.join(REPO_ROOT, 'node_modules', '@biomejs', 'biome', 'bin', 'biome')
 
-/** 9 个家族目录（overlay/shared 无 families/*.ts 且零 key，不生成切片） */
-const FAMILIES = ['basic', 'conversation', 'data', 'feedback', 'form', 'framework', 'layout', 'navigation', 'workbench']
+/** 10 个家族目录（overlay/shared 无 families/*.ts 且零 key，不生成切片） */
+const FAMILIES = [
+  'basic',
+  'commerce',
+  'conversation',
+  'data',
+  'feedback',
+  'form',
+  'framework',
+  'layout',
+  'navigation',
+  'workbench',
+]
 const FAMILY_SET = new Set(FAMILIES)
 /** 死键归属家族 */
 const DEAD_KEY_FAMILY = 'framework'
