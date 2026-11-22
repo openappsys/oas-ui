@@ -5243,5 +5243,75 @@
       "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）"
     },
     "slots": {}
+  },
+  "oas-address": {
+    "attrs": {
+      "mode": "形态：edit（默认，地址编辑）/ list（地址列表，单选 + 默认标记）/ contact（联系人轻模式，仅姓名与电话）",
+      "value": "受控地址值（JSON 对象）：{ id?, name, phone, province?, city?, district?, detail?, isDefault? }；编辑模式用于预填，联系人模式只用 name / phone",
+      "items": "地址列表数据（mode=list）：JSON 数组 [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]；isDefault 项优先预选",
+      "selected-id": "列表选中项 id（受控）；缺省选 isDefault 项，否则选第一项",
+      "regions": "省市区数据（宿主注入契约）：JSON 数组 [{ name, code?, children? }]，最多三级；组件不内置行政区划数据",
+      "disabled": "禁用全部输入与操作（含列表单选与新增）",
+      "readonly": "只读：可聚焦与复制，不可编辑 / 提交 / 选择"
+    },
+    "events": {
+      "oas-add": "列表模式点击「新增地址」时派发，无 detail",
+      "oas-change": "字段输入或地区选择变化时派发，detail { field, value }（value 为当前地址草稿）",
+      "oas-invalid": "提交校验失败时派发，detail { fields }（字段名数组），同时标记错误并聚焦首个错误字段",
+      "oas-submit": "编辑模式校验通过时派发，detail { value }（完整地址对象）",
+      "oas-select": "列表模式选中地址项时派发，detail { id, item }"
+    },
+    "slots": {}
+  },
+  "oas-invoice": {
+    "attrs": {
+      "type": "抬头类型：personal（默认）/ company；企业抬头显示并校验税号",
+      "title": "发票抬头（受控）；输入时派发 oas-change，提交成功后回写",
+      "tax-id": "纳税人识别号（受控）；企业抬头下校验 15–20 位字母或数字",
+      "content": "发票内容选中值（受控）；需与 contents 的 value 对应",
+      "contents": "发票内容选项（宿主注入）：JSON 数组 [{ value, label }]；缺省或非法时不渲染内容字段",
+      "save-titles": "已保存抬头（宿主注入）：JSON 数组 [{ id?, type, title, taxId? }]；缺省或非法时隐藏弹层入口",
+      "disabled": "禁用全部输入、弹层入口与提交",
+      "readonly": "只读：可聚焦与复制，不可编辑 / 选择 / 提交"
+    },
+    "events": {
+      "oas-change": "字段或抬头类型变化时派发，detail { field, value }（field：type / title / taxId / content / saved）",
+      "oas-title-select": "从已保存抬头弹层选择时派发，detail { id, value }（value 已回填到当前表单）",
+      "oas-invalid": "提交校验失败时派发，detail { fields }，同时标记错误并聚焦首个错误字段",
+      "oas-submit": "校验通过时派发，detail { value }（{ type, title, taxId, content }）"
+    },
+    "slots": {}
+  },
+  "oas-ecard": {
+    "attrs": {
+      "cards": "卡面数据（宿主注入）：JSON 数组 [{ id, name, value, faceValue, price?, description?, disabled? }]；value 为提交金额，faceValue / price 为展示文案",
+      "selected-id": "选中卡 id（受控）或 custom（自定义面额）；缺省选第一张可用卡，无可用卡回落 custom",
+      "amount": "自定义面额（字符串，提交时转数值）",
+      "min-amount": "自定义面额下限（整数，默认 1）",
+      "max-amount": "自定义面额上限（整数，默认 10000）",
+      "agreed": "是否已勾选协议（受控布尔属性；点击复选框时回写并派发 oas-change）",
+      "disabled": "禁用卡面 / 面额 / 协议与确认按钮",
+      "readonly": "只读：不可选择、输入、勾选或提交",
+      "currency": "自定义面额前缀货币符号（默认 ¥；仅影响自定义面额输入框展示）"
+    },
+    "events": {
+      "oas-invalid": "提交校验失败时派发，detail { fields }（card / amount / agreement）",
+      "oas-submit": "校验通过时派发，detail { card, cardId, amount, custom, agreed }",
+      "oas-change": "选择卡种、输入自定义面额或勾选协议时派发，detail { card, cardId, amount, custom, agreed }"
+    },
+    "slots": {
+      "agreement": "自定义协议文案（覆盖默认文本，可放协议链接）"
+    }
+  },
+  "oas-category": {
+    "attrs": {
+      "categories": "类目树（宿主注入）：JSON 数组 [{ key?, id?, label?, name?, children?, items? }]；key 全局唯一，children 可递归，items 为商品位 [{ key, label, meta? }]",
+      "active-key": "当前激活类目 key（受控）；外部写入会自动展开其路径，缺省选第一个根类目"
+    },
+    "events": {
+      "oas-change": "左侧选中类目或从右侧进入子类时派发，detail { key, path, node }（path 为根到当前类的 key 数组）",
+      "oas-select": "点击商品位时派发，detail { key, item, path }"
+    },
+    "slots": {}
   }
 }

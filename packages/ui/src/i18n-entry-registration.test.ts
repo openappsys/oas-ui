@@ -547,7 +547,7 @@ describe('i18n 入口注册完备性（静态：入口 import 闭包 × 切片 k
     expect(hitsOf(ROOT_ENTRY).size, '根入口（全量聚合）闭包应命中大量 key，否则闭包解析已失效').toBeGreaterThan(100)
     const registeredCount = ENTRY_FILES.filter((p) => registrationOf(p).callArgs.length > 0).length
     expect(registeredCount, `应有 >100 个入口已注册切片，实际 ${registeredCount}`).toBeGreaterThan(100)
-    expect(ALL_KEYS.size, '9 个切片 key 全集不应为空').toBeGreaterThan(100)
+    expect(ALL_KEYS.size, '10 个切片 key 全集不应为空').toBeGreaterThan(100)
   })
 
   it('需要文案的入口：值导入 + 显式 registerDefaultMessages(<本族>Messages)，不允许缺注册 / 跨族 / 假注册', {

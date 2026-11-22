@@ -197,8 +197,12 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
     text: '电商组件',
     collapsed: true,
     items: [
+      { text: 'Address 地址', link: '/components/address' },
+      { text: 'Category 分类', link: '/components/category' },
       { text: 'Coupon 优惠券', link: '/components/coupon' },
+      { text: 'ECard 电子卡', link: '/components/ecard' },
       { text: 'GoodsAction 商品导航', link: '/components/goods-action' },
+      { text: 'Invoice 发票', link: '/components/invoice' },
       { text: 'Price 价格', link: '/components/price' },
       { text: 'SKU 商品规格', link: '/components/sku' },
       { text: 'SubmitBar 结算栏', link: '/components/submit-bar' },

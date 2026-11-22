@@ -173,8 +173,12 @@ OAS-UI 提供 155 个框架无关的 Web Components 组件，按用途划分为 
 
 ## 电商组件
 
+- [Address 地址](/components/address) —— 地址簿：地址编辑（联系人 / 省市区三级联动 / 详细地址 / 默认地址）+ 地址列表（单选 / 默认标记）+ 联系人轻模式；省市区数据由宿主注入。
+- [Category 分类](/components/category) —— 左类右品双栏联动：左侧多级类目树、右侧当前类子类宫格与商品位，支持键盘树导航与外部受控高亮。
 - [Coupon 优惠券](/components/coupon) —— 券面卡片（面额 / 门槛 / 有效期 / 状态语义色）+ 选择弹层，过期、已使用、未达门槛等不可用态完整覆盖。
+- [ECard 电子卡](/components/ecard) —— 电子卡 / 储值卡购买：卡面单选列表、自定义面额、协议勾选与确认提交，卡面与面额范围由宿主注入。
 - [GoodsAction 商品导航](/components/goods-action) —— 商品底部导航：icon 按钮组（含角标）+ 主按钮组，JSON 数据驱动。
+- [Invoice 发票](/components/invoice) —— 发票信息表单：个人 / 企业抬头切换、税号校验、发票内容选择与已保存抬头选择弹层。
 - [Price 价格](/components/price) —— 价格格式化：币种 / 千分位 / 划线价 / 区间价 + 涨跌趋势箭头。
 - [SKU 商品规格](/components/sku) —— 规格组与 SKU 组合匹配、缺货置灰、可选路径提示与数量步进。
 - [SubmitBar 结算栏](/components/submit-bar) —— 底部结算栏：扩展区 + 合计金额 + 主按钮（加载 / 禁用 / 危险态）。

@@ -852,7 +852,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-tour [part="mask-top"]', 'click', '遮罩点击 → oas-cancel'],
     ['oas-button:has-text("已记忆则不显示") button', 'click', '预置记忆并打开 → oas-dismiss'],
   ],
-  // commerce：JSON 属性供数 + 弹层选择 + 按钮组点击（通用探针够不到 shadow 内控件）
+  // commerce 族：JSON 属性供数 + 弹层/按钮组等 shadow 内控件，通用探针够不到
   coupon: [
     ['oas-coupon[list] [part="trigger"]', 'domclick', 'DOM click 触发按钮展开弹层 → oas-open-change'],
     ['oas-coupon[list] input[type="radio"]', 'domclick', 'DOM click 首个可用券 radio → oas-select（选中即关闭）'],
@@ -860,6 +860,34 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'goods-action': [
     ['oas-goods-action [part="icon-button"]', 'domclick', '点 icon 项 → oas-action-click（source=icon）'],
     ['oas-goods-action [part="button"]', 'domclick', '点主按钮 → oas-action-click（source=button）'],
+  ],
+  address: [
+    ['#address-list-demo [part="add"]', 'click', '列表模式新增钮 → oas-add'],
+    ['#address-list-demo .card input[type="radio"]', 'click:n1', '选第二地址 → oas-select'],
+    ['#address-validate-demo button[type="submit"]', 'click', '空表单提交 → oas-invalid'],
+    ['#address-validate-demo input[name="name"]', 'fill:张三', '输入姓名 → oas-change'],
+    ['#address-validate-demo input[name="phone"]', 'fill:13800000000', '补齐电话'],
+    ['#address-validate-demo button[type="submit"]', 'click', '校验通过 → oas-submit'],
+  ],
+  category: [
+    ['#category-demo .node[data-key="home"]', 'click', '点左侧类目 → oas-change'],
+    ['#category-demo .tile', 'click', '点宫格子类 → oas-change'],
+    ['#category-demo .tile', 'click', '点商品位 → oas-select'],
+  ],
+  ecard: [
+    ['#ecard-submit-demo .cards .card input[type="radio"]', 'click:n1', '换选卡种 → oas-change'],
+    ['#ecard-submit-demo .confirm', 'click', '未勾协议 → oas-invalid'],
+    ['#ecard-submit-demo .agreement-row input', 'click', '勾选协议 → oas-change'],
+    ['#ecard-submit-demo .confirm', 'click', '确认提交 → oas-submit'],
+  ],
+  invoice: [
+    ['#invoice-company-demo input[name="title"]', 'fill:探针公司', '输入抬头 → oas-change'],
+    ['#invoice-company-demo input[name="taxId"]', 'fill:123', '填非法税号'],
+    ['#invoice-company-demo button[type="submit"]', 'click', '税号非法 → oas-invalid'],
+    ['#invoice-company-demo [part="segment"][data-value="personal"]', 'click', '切个人抬头 → oas-change'],
+    ['#invoice-company-demo button[type="submit"]', 'click', '个人抬头提交 → oas-submit'],
+    ['#invoice-saved-demo [part="saved-trigger"]', 'click', '打开已保存抬头弹层'],
+    ['#invoice-saved-demo [role="option"]', 'click', '选已保存抬头 → oas-title-select'],
   ],
 }
 

@@ -173,8 +173,12 @@ OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups 
 
 ## Commerce
 
+- [Address](/en/components/address) —— Address book: address editor (contact / region cascade / street address / default flag) + address list (single selection / default badge) + contact-only mode; region data is host-injected.
+- [Category](/en/components/category) —— Linked two-pane category navigation: a multi-level tree on the left, the active category's child grid and product slots on the right, with keyboard tree navigation and controlled highlighting.
 - [Coupon](/en/components/coupon) —— Coupon card (amount / minimum spend / validity / status colors) plus a selection sheet covering expired, used and not-eligible states.
+- [ECard](/en/components/ecard) —— E-card / stored-value card purchase: card radio list, custom amount, terms acceptance and confirm; cards and amount bounds are host-injected.
 - [GoodsAction](/en/components/goods-action) —— Product bottom bar: icon buttons with badges plus main buttons, driven by JSON data.
+- [Invoice](/en/components/invoice) —— Invoice information form: personal/company title switching, tax ID validation, invoice content selection and a saved-title picker popup.
 - [Price](/en/components/price) —— Price formatting: currency, thousands separators, original price, ranges and trend arrows.
 - [SKU](/en/components/sku) —— Spec groups and SKU matching with sold-out options, path hints and a quantity stepper.
 - [SubmitBar](/en/components/submit-bar) —— Bottom submit bar with an extra area, formatted total and a primary button covering loading, disabled and danger states.

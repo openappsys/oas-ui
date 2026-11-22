@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：222
+- 组件：226
 - SSR 白名单：175
-- 有意不 SSR：47
+- 有意不 SSR：51
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -227,6 +227,10 @@
 | `oas-goods-action` | commerce | `commerce/goods-action` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-coupon` | commerce | `commerce/coupon` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-sku` | commerce | `commerce/sku` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-address` | commerce | `commerce/address` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-invoice` | commerce | `commerce/invoice` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-ecard` | commerce | `commerce/ecard` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-category` | commerce | `commerce/category` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-config-provider` | framework | `framework/config-provider` | ✅ 白名单 | — | — | `@oas-ui/ui/framework/config-provider` | ✅ | ✅ | — | ✅ | ✅/✅ |
 | `oas-app` | framework | `framework/app` | ✅ 白名单 | — | — | `@oas-ui/ui/framework/app` | ✅ | ✅ | — | ✅ | ✅/✅ |
 | `oas-theme-editor` | framework | `framework/theme-editor` | ⛔ 不 SSR | dev-tool | — | — | — | — | ✅ | — | ✅/✅ |

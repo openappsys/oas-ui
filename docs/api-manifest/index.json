@@ -218,6 +218,10 @@
   "oas-goods-action",
   "oas-coupon",
   "oas-sku",
+  "oas-address",
+  "oas-invoice",
+  "oas-ecard",
+  "oas-category",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

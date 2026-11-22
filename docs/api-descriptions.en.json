@@ -5499,5 +5499,75 @@
       "oas-change": "Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' | 'quantity' }` (sku is the matched object or null)"
     },
     "slots": {}
+  },
+  "oas-address": {
+    "attrs": {
+      "mode": "Shape: edit (default, address editor) / list (address list with single selection and default badge) / contact (contact-only mode, name and phone only)",
+      "value": "Controlled address value (JSON object): { id?, name, phone, province?, city?, district?, detail?, isDefault? }; prefills edit mode and only name / phone in contact mode",
+      "items": "Address list data (mode=list): JSON array [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]; the isDefault item is preselected",
+      "selected-id": "Selected list id (controlled); defaults to the isDefault item, otherwise the first item",
+      "regions": "Region data (host-injected contract): JSON array [{ name, code?, children? }], up to three levels; the component ships no administrative-division dataset",
+      "disabled": "Disables all inputs and actions (including list selection and add)",
+      "readonly": "Read-only: focusable and copyable, but cannot edit / submit / select"
+    },
+    "events": {
+      "oas-add": "Emitted when “Add address” is clicked in list mode; no detail",
+      "oas-change": "Emitted on field input or region change; detail { field, value } (value is the current address draft)",
+      "oas-invalid": "Emitted when submit validation fails; detail { fields } (field names), marks errors and focuses the first invalid field",
+      "oas-submit": "Emitted when edit-mode validation passes; detail { value } (full address object)",
+      "oas-select": "Emitted when an address is selected in list mode; detail { id, item }"
+    },
+    "slots": {}
+  },
+  "oas-invoice": {
+    "attrs": {
+      "type": "Title type: personal (default) / company; company shows and validates the tax ID",
+      "title": "Invoice title (controlled); typing emits oas-change and a successful submit writes it back",
+      "tax-id": "Tax ID (controlled); validated as 15–20 letters or digits for company titles",
+      "content": "Selected invoice content (controlled); must match a value in contents",
+      "contents": "Invoice content options (host-injected): JSON array [{ value, label }]; the content field is hidden when absent or invalid",
+      "save-titles": "Saved titles (host-injected): JSON array [{ id?, type, title, taxId? }]; the popup entry is hidden when absent or invalid",
+      "disabled": "Disables all inputs, the popup entry and submit",
+      "readonly": "Read-only: focusable and copyable, but cannot edit / select / submit"
+    },
+    "events": {
+      "oas-change": "Emitted on field or title-type change; detail { field, value } (field: type / title / taxId / content / saved)",
+      "oas-title-select": "Emitted when a saved title is picked; detail { id, value } (value already applied to the form)",
+      "oas-invalid": "Emitted when submit validation fails; detail { fields }, marks errors and focuses the first invalid field",
+      "oas-submit": "Emitted when validation passes; detail { value } ({ type, title, taxId, content })"
+    },
+    "slots": {}
+  },
+  "oas-ecard": {
+    "attrs": {
+      "cards": "Card data (host-injected): JSON array [{ id, name, value, faceValue, price?, description?, disabled? }]; value is the submitted amount, faceValue / price are display strings",
+      "selected-id": "Selected card id (controlled) or custom (custom amount); defaults to the first enabled card, falling back to custom",
+      "amount": "Custom amount (string, converted to number on submit)",
+      "min-amount": "Custom amount lower bound (integer, default 1)",
+      "max-amount": "Custom amount upper bound (integer, default 10000)",
+      "agreed": "Whether the terms are accepted (controlled boolean attribute; toggling writes it back and emits oas-change)",
+      "disabled": "Disables cards / amount / terms and the confirm button",
+      "readonly": "Read-only: cannot select, type, check or submit",
+      "currency": "Currency symbol prefix for the custom amount input (default ¥; display only)"
+    },
+    "events": {
+      "oas-invalid": "Emitted when submit validation fails; detail { fields } (card / amount / agreement)",
+      "oas-submit": "Emitted when validation passes; detail { card, cardId, amount, custom, agreed }",
+      "oas-change": "Emitted when a card is selected, a custom amount is typed or terms are toggled; detail { card, cardId, amount, custom, agreed }"
+    },
+    "slots": {
+      "agreement": "Custom terms copy (replaces the default text; links allowed)"
+    }
+  },
+  "oas-category": {
+    "attrs": {
+      "categories": "Category tree (host-injected): JSON array [{ key?, id?, label?, name?, children?, items? }]; keys are globally unique, children are recursive, items are product slots [{ key, label, meta? }]",
+      "active-key": "Active category key (controlled); writing it expands its path, absent selects the first root"
+    },
+    "events": {
+      "oas-change": "Emitted when a left node is selected or a subcategory is entered from the right; detail { key, path, node } (path runs from root to the active category)",
+      "oas-select": "Emitted when a product slot is clicked; detail { key, item, path }"
+    },
+    "slots": {}
   }
 }

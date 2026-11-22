@@ -1,0 +1,87 @@
+{
+  "className": "OASAddress",
+  "sourceFile": "packages/ui/src/commerce/address/oas-address.ts",
+  "attrs": [
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "edit",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "selected-id",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "regions",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "AddressEntry | string"
+    },
+    {
+      "name": "items",
+      "type": "AddressEntry[] | string"
+    },
+    {
+      "name": "regions",
+      "type": "AddressRegion[] | string"
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-add"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ field, value: { ...this.draft } }"
+    },
+    {
+      "name": "oas-invalid",
+      "detail": "{ fields: errors }"
+    },
+    {
+      "name": "oas-submit",
+      "detail": "{ value: { ...this.draft } }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ id: fallback, item } | { id, item }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-address-width",
+      "default": "100%"
+    }
+  ],
+  "unresolved": []
+}

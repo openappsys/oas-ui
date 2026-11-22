@@ -697,6 +697,10 @@ import './commerce/submit-bar/index.js'
 import './commerce/goods-action/index.js'
 import './commerce/coupon/index.js'
 import './commerce/sku/index.js'
+import './commerce/address/index.js'
+import './commerce/invoice/index.js'
+import './commerce/ecard/index.js'
+import './commerce/category/index.js'
 export { OASPrice } from './commerce/price/oas-price.js'
 export { OASSubmitBar } from './commerce/submit-bar/oas-submit-bar.js'
 export type { SubmitBarDetail } from './commerce/submit-bar/oas-submit-bar.js'
@@ -720,6 +724,19 @@ export type {
   SkuSpecGroup,
   SkuSpecValue,
 } from './commerce/sku/oas-sku.js'
+export { OASAddress } from './commerce/address/index.js'
+export type { AddressEntry, AddressMode, AddressRegion } from './commerce/address/oas-address.js'
+export { OASInvoice } from './commerce/invoice/index.js'
+export type {
+  InvoiceContent,
+  InvoiceSavedTitle,
+  InvoiceType,
+  InvoiceValue,
+} from './commerce/invoice/oas-invoice.js'
+export { OASECard } from './commerce/ecard/index.js'
+export type { ECard, ECardSelection } from './commerce/ecard/oas-ecard.js'
+export { OASCategory } from './commerce/category/index.js'
+export type { CategoryItem, CategoryNode } from './commerce/category/oas-category.js'
 
 import './framework/config-provider/index.js'
 import './framework/app/index.js'

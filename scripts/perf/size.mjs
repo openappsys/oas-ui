@@ -590,10 +590,10 @@ if (importViolations.length) {
 {
   const idx = readFileSync(join(ROOT, 'packages/i18n/dist/index.js'), 'utf8')
   const calls = (idx.match(/registerDefaultMessages\(/g) ?? []).length
-  if (calls < 9) {
+  if (calls < 10) {
     fail = true
     console.error(
-      `FAIL [i18n 主入口] dist/index.js 只有 ${calls} 次 registerDefaultMessages 调用（应 ≥ 9）——公共入口默认文案会丢`,
+      `FAIL [i18n 主入口] dist/index.js 只有 ${calls} 次 registerDefaultMessages 调用（应 ≥ 10）——公共入口默认文案会丢`,
     )
   } else {
     console.log(`PASS [i18n 主入口] dist/index.js 含 ${calls} 次显式注册调用（值导入，不依赖副作用）`)

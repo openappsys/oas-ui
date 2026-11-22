@@ -196,8 +196,12 @@
 
 ## 电商组件
 
+- [Address 地址](https://oas-ui.dev/components/address): 地址簿场景组件，一个组件覆盖三种形态：地址编辑表单、地址列表（默认标记 + 单选）、联系人轻模式（只含姓名与电话，不独立成件）。
+- [Category 分类](https://oas-ui.dev/components/category): 电商分类导航的双栏形态：左侧多级类目树（可展开 / 收起），右侧展示当前类的子类宫格；叶子类目展示商品位。
 - [Coupon 优惠券](https://oas-ui.dev/components/coupon): 两种形态共用一份券面渲染：
+- [ECard 电子卡](https://oas-ui.dev/components/ecard): 电子卡 / 储值卡购买面板：卡面单选列表、自定义面额、协议勾选与确认提交。
 - [GoodsAction 商品导航](https://oas-ui.dev/components/goods-action): 商品详情页底部的操作栏：左侧 icon 按钮组（收藏 / 店铺 / 购物车，可带角标、收藏可呈按下态），右侧主按钮组（加入购物车 / 立即购买等）。
+- [Invoice 发票](https://oas-ui.dev/components/invoice): 发票信息填写组件：抬头类型切换、抬头与税号校验、发票内容选择、已保存抬头弹层回填。
 - [Price 价格](https://oas-ui.dev/components/price): 价格展示组件：币种符号 + 千分位 + 指定小数位，支持划线价（original）、区间价（min + max）与涨跌趋势箭头（trend + trend-value）。
 - [SKU 商品规格](https://oas-ui.dev/components/sku): 商品规格选择面板（桌面内嵌形态）：specs 描述规格组与选项，skus 描述组合对应的价格 / 库存 / 图片。
 - [SubmitBar 结算栏](https://oas-ui.dev/components/submit-bar): 页面或区块底部的结算栏：左侧扩展区（默认插槽，可放协议勾选、备注入口等）+ 合计金额 + 主操作按钮。

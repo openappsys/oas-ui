@@ -43,8 +43,9 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
   const all = parseComponentImports(indexText)
 
   it('src/index.ts 全量清单可解析且按顶层目录对齐各族', () => {
-    // 168 = 163 已有组件 + commerce 族五件（price / submit-bar / goods-action / coupon / sku）
-    expect(all.length, '全量注册表组件数').toBe(168)
+    // 172 = 163 已有组件 + commerce 族九件（price / submit-bar / goods-action / coupon / sku /
+    //       address / invoice / ecard / category）
+    expect(all.length, '全量注册表组件数').toBe(172)
     const tops = new Set(all.map((p) => p.split('/')[0]))
     expect(tops).toEqual(new Set(Object.values(FAMILY_DIR)))
     // 每个顶层目录的全部组件都在 index.ts 全量清单里
@@ -60,7 +61,7 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
         // data 42 = 39 组件 + auto-height 能力包（row-auto-height L3，data/table/auto-height）+ scanner/signature（P0 批次）
         data: 42,
         conversation: 8,
-        commerce: 5,
+        commerce: 9,
         framework: 3,
       }
       expect(dirComps.length, `${dir} 族注册组件数`).toBe(EXPECTED_PER_DIR[dir])

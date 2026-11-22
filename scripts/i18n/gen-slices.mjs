@@ -10,7 +10,7 @@
  * - 字面量内容恰好等于某个 zh-CN key 才算命中（任意上下文，不限 t(）；
  * - 有插值的模板字面量取首个静态段，按其点分前缀（`messageRow.status.${x}` → `messageRow`、
  *   `barcode.invalid${x}` → `barcode`）展开；该前缀必须是 key 的合法点分前缀，否则忽略；
- * - 家族 = 文件相对 packages/ui/src 的首段目录（9 个家族目录之一）；
+ * - 家族 = 文件相对 packages/ui/src 的首段目录（10 个家族目录之一）；
  * - 跨家族 key（≥2 个家族引用）重复写入每个消费族的切片；
  * - 未被任何家族引用的 key（死键）全部归 framework，并在报告里列出，禁止静默丢键；
  * - 非 9 家族目录（shared/overlay/families/根文件）出现 key 引用 → 报错退出（需人工决策归属）。

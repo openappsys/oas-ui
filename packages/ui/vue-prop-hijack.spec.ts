@@ -219,6 +219,25 @@ const CONTRACT: ContractEntry[] = [
     },
   },
   {
+    page: 'address',
+    tag: 'oas-address',
+    attrContract: { mode: 'json-or-scalar', value: 'object', items: 'array', regions: 'array' },
+    propContract: {
+      attrs: ['value', 'items', 'regions'],
+      renderedSel: 'input[name="name"], [part="card"]',
+      stringProbe: [
+        { prop: 'value', raw: '{"name":"Probe A","phone":"13800000000"}', kind: 'object' },
+        {
+          prop: 'items',
+          raw: '[{"id":"probe-a","name":"Probe Address","phone":"13800000000","isDefault":true}]',
+          identity: true,
+          text: 'Probe Address',
+        },
+        { prop: 'regions', raw: '[{"name":"Probe Province","children":[{"name":"Probe City"}]}]', identity: true },
+      ],
+    },
+  },
+  {
     page: 'sku',
     tag: 'oas-sku',
     attrContract: { specs: 'array', skus: 'array', value: 'object' },
@@ -239,6 +258,63 @@ const CONTRACT: ContractEntry[] = [
     page: 'submit-bar',
     tag: 'oas-submit-bar',
     attrContract: { total: 'json-or-scalar', currency: 'json-or-scalar', precision: 'json-or-scalar' },
+  },
+  {
+    page: 'category',
+    tag: 'oas-category',
+    attrContract: { categories: 'array', 'active-key': 'json-or-scalar' },
+    propContract: {
+      attrs: ['categories'],
+      renderedSel: '.node',
+      mode: 'when-data',
+      probe: 'categories',
+      stringProbe: [
+        {
+          prop: 'categories',
+          raw: '[{"key":"probe-cat","label":"Probe Category"}]',
+          identity: true,
+          text: 'Probe Category',
+        },
+      ],
+    },
+  },
+  {
+    page: 'ecard',
+    tag: 'oas-ecard',
+    attrContract: { cards: 'array', 'selected-id': 'json-or-scalar' },
+    propContract: {
+      attrs: ['cards'],
+      renderedSel: '[part="card"]',
+      stringProbe: [
+        {
+          prop: 'cards',
+          raw: '[{"id":"probe-card","name":"Probe Card","value":100,"faceValue":"100 USD"}]',
+          identity: true,
+          text: 'Probe Card',
+        },
+      ],
+    },
+  },
+  {
+    page: 'invoice',
+    tag: 'oas-invoice',
+    attrContract: { type: 'json-or-scalar', contents: 'array', 'save-titles': 'array' },
+    propContract: {
+      attrs: ['contents', 'saveTitles'],
+      renderedSel: '[role="option"]',
+      mode: 'when-data',
+      probe: 'saveTitles',
+      stringProbe: [
+        { prop: 'contents', raw: '[{"value":"probe","label":"Probe Content"}]', identity: true },
+        {
+          prop: 'saveTitles',
+          accessor: 'saveTitles',
+          raw: '[{"id":"probe-t","type":"personal","title":"Probe Title"}]',
+          identity: true,
+          text: 'Probe Title',
+        },
+      ],
+    },
   },
 ]
 

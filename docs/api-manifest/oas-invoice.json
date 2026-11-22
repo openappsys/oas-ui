@@ -1,0 +1,89 @@
+{
+  "className": "OASInvoice",
+  "sourceFile": "packages/ui/src/commerce/invoice/oas-invoice.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "personal",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tax-id",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "contents",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "save-titles",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "contents",
+      "type": "InvoiceContent[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "saveTitles",
+      "type": "InvoiceSavedTitle[] | string",
+      "default": "[]"
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ field: 'title', value: this.currentValue() } | { field: 'taxId', value: this.currentValue() } | { field: 'content', value: this.currentValue() } | { field: 'type', value: this.currentValue() } | { field: 'saved', value }"
+    },
+    {
+      "name": "oas-title-select",
+      "detail": "{ id, value }"
+    },
+    {
+      "name": "oas-invalid",
+      "detail": "{ fields: errors }"
+    },
+    {
+      "name": "oas-submit",
+      "detail": "{ value: { type, title, taxId: type === 'company' ? taxId : '', content: this.contentSelect?.value ?? this.getAttr('content', ''), }, }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-invoice-width",
+      "default": "100%"
+    }
+  ],
+  "unresolved": []
+}

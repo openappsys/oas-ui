@@ -235,6 +235,10 @@ export { OASSubmitBar } from './commerce/submit-bar/oas-submit-bar.js'
 export { OASGoodsAction } from './commerce/goods-action/oas-goods-action.js'
 export { OASCoupon } from './commerce/coupon/oas-coupon.js'
 export { OASSku } from './commerce/sku/oas-sku.js'
+export { OASAddress } from './commerce/address/oas-address.js'
+export { OASInvoice } from './commerce/invoice/oas-invoice.js'
+export { OASECard } from './commerce/ecard/oas-ecard.js'
+export { OASCategory } from './commerce/category/oas-category.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'

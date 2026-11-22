@@ -1,0 +1,51 @@
+{
+  "className": "OASCategory",
+  "sourceFile": "packages/ui/src/commerce/category/oas-category.ts",
+  "attrs": [
+    {
+      "name": "categories",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "active-key",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "categories",
+      "type": "CategoryNode[] | string",
+      "default": "[]"
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-select",
+      "detail": "{ key, item, path: activeEntry?.path ?? [] }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ key, path: entry.path, node: entry.node }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-category-side-width",
+      "default": "9rem"
+    },
+    {
+      "name": "--oas-category-height",
+      "default": "24rem"
+    },
+    {
+      "name": "--oas-category-side-height",
+      "default": "12rem"
+    }
+  ],
+  "unresolved": []
+}
