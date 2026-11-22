@@ -15,6 +15,9 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `cancel-text`：取消按钮文案；缺省走 i18n `shareSheet.cancel`
  * - `channels`：渠道 JSON 数组 `[{ key, name, icon? }]`；非法 JSON 忽略并告警一次
  *
+ * property 通道：`channels`（get/set）——与 attribute 同一数据源，赋数组时自动 JSON
+ * 序列化反射回属性（框架按 `key in el` 走 property 写入，属性通道不会丢值）。
+ *
  * 方法：
  * - `show()`：展开面板（写入 open）
  * - `close(reason = 'api')`：收起面板并派发 `oas-close`
@@ -220,7 +223,12 @@ export class OASShareSheet extends OASElement {
   private gridEl: HTMLElement | null = null
   private cancelEl: HTMLButtonElement | null = null
   private closeEl: HTMLButtonElement | null = null
-  private channels: ShareSheetChannel[] = []
+  /**
+   * 解析后的渠道列表。刻意不叫 `channels`：同名实例字段会成为 own property，
+   * Vue 的 `'channels' in el` 判定会把静态 attribute 走 property 赋值，随后 update()
+   * 又用属性解析结果覆盖字段 → 数组写入被静默丢弃（空态）。读写通道统一走下方访问器。
+   */
+  private channelList: ShareSheetChannel[] = []
   private lastChannelsRaw: string | null = null
   private wasOpen = false
   private returnFocus: HTMLElement | null = null
@@ -238,6 +246,23 @@ export class OASShareSheet extends OASElement {
         <button class="cancel" part="cancel" type="button"></button>
       </div>
     `
+  }
+
+  /**
+   * 渠道列表（property 通道）：读取当前解析结果；写入数组时序列化为 JSON 反射到
+   * `channels` 属性，字符串按属性通道原样写入（非法 JSON 由解析侧告警忽略）。
+   * @apiProperty 渠道列表：等价 `channels` 属性的解析结果；赋数组时自动序列化反射
+   */
+  get channels(): ShareSheetChannel[] {
+    return this.resolveChannels()
+  }
+  set channels(value: ShareSheetChannel[] | string) {
+    if (typeof value === 'string') {
+      this.setAttribute('channels', value)
+      return
+    }
+    if (!Array.isArray(value)) return
+    this.setAttribute('channels', JSON.stringify(value))
   }
 
   private bind(): void {
@@ -280,7 +305,7 @@ export class OASShareSheet extends OASElement {
     const target = (e.target as HTMLElement | null)?.closest?.('button.channel') as HTMLButtonElement | null
     if (!target) return
     const index = Number(target.dataset.index)
-    const channel = this.channels[index]
+    const channel = this.channelList[index]
     if (!channel) return
     this.emit('select', { key: channel.key, name: channel.name, channel })
     this.requestClose('select', channel.key)
@@ -320,11 +345,16 @@ export class OASShareSheet extends OASElement {
     }
   }
 
-  /** 解析 channels JSON：数组、每项 key/name 为非空字符串；非法项跳过 */
+  /** 解析 channels JSON：数组、每项 key/name 为非空字符串；非法项跳过（按原始字符串缓存） */
   private resolveChannels(): ShareSheetChannel[] {
     const raw = this.getAttr('channels', '')
-    if (raw === this.lastChannelsRaw) return this.channels
+    if (raw === this.lastChannelsRaw) return this.channelList
     this.lastChannelsRaw = raw
+    this.channelList = this.parseChannels(raw)
+    return this.channelList
+  }
+
+  private parseChannels(raw: string): ShareSheetChannel[] {
     if (raw.trim() === '') return []
     let parsed: unknown
     try {
@@ -362,14 +392,14 @@ export class OASShareSheet extends OASElement {
     const grid = this.gridEl
     if (!grid) return
     grid.replaceChildren()
-    if (this.channels.length === 0) {
+    if (this.channelList.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
       empty.textContent = this.t('shareSheet.empty')
       grid.appendChild(empty)
       return
     }
-    this.channels.forEach((channel, index) => {
+    this.channelList.forEach((channel, index) => {
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'channel'
@@ -408,7 +438,7 @@ export class OASShareSheet extends OASElement {
     }
     if (this.closeEl) this.closeEl.setAttribute('aria-label', this.t('shareSheet.close'))
 
-    this.channels = this.resolveChannels()
+    this.channelList = this.resolveChannels()
     this.renderChannels()
 
     const open = this.hasAttribute('open')

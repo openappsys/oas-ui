@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /**
  * oas-rolling-text —— 翻滚文本（数字 / 字符逐位滚动）。
@@ -52,6 +53,9 @@ const STYLE = `
   height: var(--oas-rolling-text-height, 1em);
   overflow: hidden;
   line-height: 1;
+  /* 数字列恒按 LTR 排列：RTL 宿主下 inline-flex 主轴反转会把 "123" 显示成 "321"，
+     而数值属「强 LTR」语义（同 theme-editor 数值输入的处置）。 */
+  direction: ltr;
 }
 .digit-col,
 .char-col {
@@ -116,6 +120,16 @@ const STYLE = `
 
 export type RollingTextColumn = 'digit' | 'char'
 
+/**
+ * 数字滚轮档位轴：strip 内 20 个数字 = 逻辑档位 -5…14 的连续两个周期。
+ * 常规稳态档位为 0…9（`--n` 即当前数字）；值变化时按**最短方向**取目标档位，
+ * 跨越 9↔0 时落到越界瞬态（9→0 落 10、0→9 落 -1），翻滚结束再无过渡归位到常规档位
+ * （位移差恰为 10em 的整周期，视觉等价无回弹）。没有这条轴，9→0 会从 9 一路倒卷到 0
+ * （9 格），0→9 同理——「最短路径」在视觉上是必需的。
+ */
+const STRIP_OFFSET = 5
+const STRIP_DIGITS = 20
+
 interface ColumnState {
   kind: RollingTextColumn
   el: HTMLElement
@@ -129,10 +143,18 @@ export function formatRollingValue(value: string, precision: string): string {
   if (value.trim() === '') return value
   const digits = Number.parseInt(precision, 10)
   if (!Number.isFinite(digits) || digits < 0) return value
+  if (digits > 10) {
+    if (!warnedPrecision.has(precision)) {
+      warnedPrecision.add(precision)
+      devWarn(`[oas-rolling-text] precision="${precision}" 超出上限，已按 10 位小数处理`)
+    }
+  }
   const n = Number(value.trim())
   if (!Number.isFinite(n)) return value
   return n.toFixed(Math.min(10, digits))
 }
+
+const warnedPrecision = new Set<string>()
 
 function isDigit(ch: string): boolean {
   return ch >= '0' && ch <= '9'
@@ -212,10 +234,11 @@ export class OASRollingText extends OASElement {
     col.setAttribute('part', 'digit')
     const strip = document.createElement('span')
     strip.className = 'strip'
-    for (let d = 0; d <= 9; d++) {
+    for (let i = 0; i < STRIP_DIGITS; i++) {
       const item = document.createElement('span')
       item.className = 'digit'
-      item.textContent = String(d)
+      // 逻辑档位 = i - STRIP_OFFSET；数字 = 逻辑档位对 10 取模（支持负档位）
+      item.textContent = String((((i - STRIP_OFFSET) % 10) + 10) % 10)
       strip.appendChild(item)
     }
     strip.style.setProperty('--n', digit)
@@ -247,6 +270,8 @@ export class OASRollingText extends OASElement {
 
     const chars = [...text]
     const flipping: HTMLElement[] = []
+    /** 动画结束后需归位到常规档位的数字列（最短路径产生的越界瞬态） */
+    const normalizing: ColumnState[] = []
     for (let i = 0; i < chars.length; i++) {
       const ch = chars[i]!
       let col = this.columns[i]
@@ -267,10 +292,16 @@ export class OASRollingText extends OASElement {
       }
 
       if (col.kind === 'digit') {
-        if (col.value !== ch) {
-          col.strip?.style.setProperty('--n', ch)
-          col.value = ch
-        }
+        if (col.value === ch) continue
+        const from = Number(col.value)
+        const to = Number(ch)
+        // 最短路径：正向步数 vs 反向步数取小（9→0 走正向 1 格，0→9 走反向 1 格）
+        const forward = (to - from + 10) % 10
+        const backward = forward === 0 ? 0 : 10 - forward
+        const target = forward <= backward ? from + forward : from - backward
+        col.strip?.style.setProperty('--n', String(target))
+        col.value = ch
+        if (target !== to) normalizing.push(col)
       } else if (col.value !== ch) {
         if (col.char) col.char.textContent = ch
         col.value = ch
@@ -288,13 +319,27 @@ export class OASRollingText extends OASElement {
       this.columns.splice(i, 1)
     }
 
-    if (flipping.length > 0) {
+    if (flipping.length > 0 || normalizing.length > 0) {
       const ms = Number(this.resolveDuration().replace('ms', '')) || 600
       this.flipTimer = setTimeout(() => {
         for (const el of flipping) el.classList.remove('flipping')
+        for (const col of normalizing) this.normalizeDigit(col)
         this.flipTimer = null
       }, ms)
     }
+  }
+
+  /**
+   * 数字列回位：把越界瞬态档位（-5…-1 / 10…14）换成等价的常规档位（0…9）。
+   * 两者位移差恰为 10em 的整周期 → 画面完全一致；抑制过渡后瞬时改写，避免动画播完再滚一格。
+   */
+  private normalizeDigit(col: ColumnState): void {
+    const strip = col.strip
+    if (!strip) return
+    strip.style.transitionProperty = 'none'
+    strip.style.setProperty('--n', col.value)
+    void strip.offsetWidth
+    strip.style.removeProperty('transition-property')
   }
 
   protected override update(): void {

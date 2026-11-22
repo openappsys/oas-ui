@@ -13,7 +13,7 @@ description: 断网提示组件，监听 online/offline 事件同步网络状态
 
 ## 基础用法
 
-断网提示条默认固定顶部。下面的交互 demo 用 `block` 形态放在文档流里，并临时改写 `navigator.onLine` 模拟断网/恢复（页面刷新即复原）：
+断网提示条默认固定顶部。下面的交互 demo 用 `block` 形态放在文档流里，并临时改写 `navigator.onLine` 模拟断网/恢复：覆写在本次页面会话内一直有效——SPA 内切到其它文档页会**继续显示断网态**（其它示例实例也随之出现），整页刷新（F5）才复原。仅调试演示用，生产环境请直接依赖浏览器真实网络事件。
 
 <DemoBlock title="模拟断网 / 恢复（block 形态）">
   <div style="display: flex; flex-direction: column; gap: var(--oas-space-2)">

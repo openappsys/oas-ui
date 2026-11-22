@@ -1,4 +1,6 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { devWarn } from '../../shared/dev-warn.js'
+import { isRtl } from '../../shared/direction.js'
 
 /**
  * oas-barrage —— 弹幕（流式轨道 / 速度与密度控制 / 防重叠）。
@@ -25,8 +27,15 @@ import { OASElement } from '@oas-ui/core/oas-element'
  * 事件（bubbles + composed）：
  * - `oas-item-click`：点击弹幕，detail `{ text, key, color }`
  *
- * 无障碍：默认舞台 `aria-hidden="true"`；`accessible` 开启后为 `role="log"` 活区。
- * `prefers-reduced-motion` 下动画时长缩短为瞬时（弹幕直接消失，不横向移动）。
+ * 无障碍：默认舞台 `aria-hidden="true"`（装饰性弹幕，弹幕项不可聚焦）；`accessible` 开启后为
+ * `role="log"` 活区，每条弹幕为 `role="button"` + `tabindex="0"`，Enter / Space 等价点击派发
+ * `oas-item-click`。
+ * `prefers-reduced-motion` 下动画时长缩短为瞬时（弹幕直接消失，不横向移动），JS 离场计时与
+ * 轨道排期同步按同一口径收短，不占用同屏容量。
+ *
+ * RTL：书写方向为 RTL 时切换 `data-rtl`，动画改用镜像关键帧 `oas-barrage-move-rtl`
+ * （自左进场、向右飞出）——`inset-inline-start: 100%` 在 RTL 下贴左缘，原负向平移会让
+ * 弹幕整条飞在舞台左侧外不可见。
  */
 
 const STYLE = `
@@ -86,9 +95,26 @@ const STYLE = `
     transform: translate(calc(-100% - var(--oas-barrage-stage-width, 800px)), -50%);
   }
 }
+/* RTL 镜像：inset-inline-start: 100% 在 RTL 下映射为 right:100%（贴左缘外侧），
+   原始关键帧的负向 x 平移会让弹幕「从左侧进场再往左飞」——整条不可见。
+   镜像关键帧改为右向平移（自左进场、向右飞出），与 LTR 的进场/退场对称。 */
+:host([data-rtl]) .item {
+  animation-name: oas-barrage-move-rtl;
+}
+@keyframes oas-barrage-move-rtl {
+  from {
+    transform: translate(0, -50%);
+  }
+  to {
+    transform: translate(calc(100% + var(--oas-barrage-stage-width, 800px)), -50%);
+  }
+}
 .stage.paused .item {
   animation-play-state: paused;
 }
+/* reduced-motion：动画瞬时收束（弹幕直接消失，不横向漂移）。
+   JS 侧离场/排期计时同步按同一口径收短（见 REDUCED_MOTION_MS），否则在场条目
+   会以秒级时长占据同屏容量（max-active）与轨道排期。 */
 @media (prefers-reduced-motion: reduce) {
   .item {
     animation-duration: 0.01ms !important;
@@ -142,17 +168,36 @@ const PRESET_NAMES = new Set([
 
 const FALLBACK_STAGE_WIDTH = 800
 
+/** reduced-motion 下的离场时长（ms）：与 CSS `animation-duration: 0.01ms !important` 同口径 */
+const REDUCED_MOTION_MS = 20
+
+/** 非法数值属性告警去重（同一属性+原值只报一次，避免排期每次重算刷屏） */
+const warnedNumerics = new Set<string>()
+
+function warnNumeric(attr: string, raw: string, fallback: string): void {
+  const key = `${attr}=${raw}`
+  if (warnedNumerics.has(key)) return
+  warnedNumerics.add(key)
+  devWarn(`[oas-barrage] ${attr}="${raw}" 非法，已回落 ${fallback}`)
+}
+
 /** 轨道数：正整数，非法回落默认 3 */
 export function resolveBarrageTracks(raw: string): number {
   const n = Number.parseInt(raw, 10)
-  if (!Number.isFinite(n) || n <= 0) return 3
+  if (!Number.isFinite(n) || n <= 0) {
+    if (raw.trim() !== '') warnNumeric('tracks', raw, '3（正整数）')
+    return 3
+  }
   return Math.min(20, n)
 }
 
 /** 速度：正数（px/s），非法回落 120 */
 export function resolveBarrageSpeed(raw: string): number {
   const n = Number(raw)
-  if (!Number.isFinite(n) || n <= 0) return 120
+  if (!Number.isFinite(n) || n <= 0) {
+    if (raw.trim() !== '') warnNumeric('speed', raw, '120（正数 px/s）')
+    return 120
+  }
   return n
 }
 
@@ -160,14 +205,20 @@ export function resolveBarrageSpeed(raw: string): number {
 export function resolveBarrageGap(raw: string): number {
   if (raw.trim() === '') return 48
   const n = Number(raw)
-  if (!Number.isFinite(n) || n < 0) return 48
+  if (!Number.isFinite(n) || n < 0) {
+    warnNumeric('gap', raw, '48（非负 px）')
+    return 48
+  }
   return n
 }
 
 /** 同屏上限：0 = 不限；非法/负数回落 0 */
 export function resolveBarrageMaxActive(raw: string): number {
   const n = Number.parseInt(raw, 10)
-  if (!Number.isFinite(n) || n < 0) return 0
+  if (!Number.isFinite(n) || n < 0) {
+    if (raw.trim() !== '') warnNumeric('max-active', raw, '0（0 = 不限）')
+    return 0
+  }
   return n
 }
 
@@ -213,6 +264,7 @@ export class OASBarrage extends OASElement {
   private bind(): void {
     this.stageEl = this.shadow.querySelector<HTMLElement>('.stage')
     this.stageEl?.addEventListener('click', (e) => this.onStageClick(e))
+    this.stageEl?.addEventListener('keydown', (e) => this.onStageKeydown(e as KeyboardEvent))
     if (typeof ResizeObserver !== 'undefined' && this.stageEl) {
       this.resizeObserver = new ResizeObserver(() => this.syncStageWidth())
       this.resizeObserver.observe(this.stageEl)
@@ -285,15 +337,15 @@ export class OASBarrage extends OASElement {
     return resolveBarrageTracks(this.getAttr('tracks', ''))
   }
 
-  private speed(): number {
+  private resolveSpeed(): number {
     return resolveBarrageSpeed(this.getAttr('speed', ''))
   }
 
-  private gap(): number {
+  private resolveGap(): number {
     return resolveBarrageGap(this.getAttr('gap', ''))
   }
 
-  private maxActive(): number {
+  private resolveMaxActive(): number {
     return resolveBarrageMaxActive(this.getAttr('max-active', ''))
   }
 
@@ -327,13 +379,27 @@ export class OASBarrage extends OASElement {
     this.stageEl?.style.setProperty('--oas-barrage-stage-width', `${this.stageWidth()}px`)
   }
 
+  /** 在场条目是否进入读屏（accessible 开启）：决定弹幕项可否 Tab 聚焦 */
+  private isAccessible(): boolean {
+    return this.hasAttribute('accessible')
+  }
+
+  /** reduced-motion：动画被 CSS 压成瞬时，JS 离场/排期计时必须同口径收短，否则容量被空中条目占住 */
+  private prefersReducedMotion(): boolean {
+    try {
+      return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    } catch {
+      return false
+    }
+  }
+
   private pump(): void {
     if (!this.isConnected || this.pausedInternal) return
     if (this.pumpTimer) {
       clearTimeout(this.pumpTimer)
       this.pumpTimer = null
     }
-    const max = this.maxActive()
+    const max = this.resolveMaxActive()
     while (this.queue.length > 0) {
       if (max > 0 && this.active.length >= max) return
       const now = Date.now()
@@ -364,20 +430,22 @@ export class OASBarrage extends OASElement {
   private mount(item: QueuedItem, track: number, now: number): void {
     const trackEl = this.trackEls[track]
     if (!trackEl) return
-    const speed = this.speed()
+    const speed = this.resolveSpeed()
     const el = document.createElement('span')
     el.className = 'item'
     el.setAttribute('part', 'item')
     el.textContent = item.text
     if (item.key) el.dataset.key = item.key
     if (item.color) el.style.setProperty('--oas-barrage-item-color', resolveItemColor(item.color))
+    this.applyItemA11y(el)
     trackEl.appendChild(el)
 
     const width = el.offsetWidth > 0 ? el.offsetWidth : estimateBarrageWidth(item.text)
     const stageWidth = this.stageWidth()
     this.syncStageWidth()
     el.style.setProperty('--oas-barrage-stage-width', `${stageWidth}px`)
-    const duration = ((stageWidth + width) / speed) * 1000
+    const reduced = this.prefersReducedMotion()
+    const duration = reduced ? REDUCED_MOTION_MS : ((stageWidth + width) / speed) * 1000
     el.style.animationDuration = `${duration}ms`
 
     const active: ActiveItem = {
@@ -390,8 +458,31 @@ export class OASBarrage extends OASElement {
     }
     this.active.push(active)
     this.itemByEl.set(el, active)
-    this.trackNextAt[track] = now + ((width + this.gap()) / speed) * 1000
+    // 排期同理：reduced-motion 下条目瞬时消失，轨道无需按物理间距等待
+    this.trackNextAt[track] = now + (reduced ? REDUCED_MOTION_MS : ((width + this.resolveGap()) / speed) * 1000)
     this.armTimer(active, duration)
+  }
+
+  /**
+   * 弹幕项的可交互无障碍形态：
+   * - `accessible` 开启（舞台为 role="log" 活区）→ 项为 `role="button"` + tabindex=0，
+   *   Enter / Space 等价点击派发 `oas-item-click`（键盘可达）；
+   * - 缺省（装饰性弹幕，舞台 aria-hidden）→ 不加 tabindex：aria-hidden 容器内不得含
+   *   可聚焦元素（axe `aria-hidden-focus`），装饰态不提供键盘焦点。
+   */
+  private applyItemA11y(el: HTMLElement): void {
+    if (this.isAccessible()) {
+      el.setAttribute('role', 'button')
+      el.tabIndex = 0
+    } else {
+      el.removeAttribute('tabindex')
+      el.removeAttribute('role')
+    }
+  }
+
+  /** accessible 切换后同步既有在场项的可聚焦形态 */
+  private syncItemsA11y(): void {
+    for (const item of this.active) this.applyItemA11y(item.el)
   }
 
   private armTimer(item: ActiveItem, ms: number): void {
@@ -463,7 +554,20 @@ export class OASBarrage extends OASElement {
   private onStageClick(e: Event): void {
     const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
     if (!target) return
-    const item = this.itemByEl.get(target)
+    this.emitItemClick(target)
+  }
+
+  /** Enter / Space 等价点击（accessible 下弹幕项可聚焦，键盘必须能触发同一条事件） */
+  private onStageKeydown(e: KeyboardEvent): void {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
+    if (!target) return
+    e.preventDefault()
+    this.emitItemClick(target)
+  }
+
+  private emitItemClick(el: HTMLElement): void {
+    const item = this.itemByEl.get(el)
     if (!item) return
     this.emit('item-click', { text: item.text, key: item.key, color: item.color })
   }
@@ -480,12 +584,13 @@ export class OASBarrage extends OASElement {
     } else if (LENGTH_RE.test(heightRaw)) {
       this.style.setProperty('--oas-barrage-height', heightRaw)
     } else {
+      warnNumeric('height', heightRaw, '200px（纯数字按 px 或 CSS 长度）')
       this.style.removeProperty('--oas-barrage-height')
     }
 
     const stage = this.stageEl
     if (stage) {
-      const accessible = this.hasAttribute('accessible')
+      const accessible = this.isAccessible()
       if (accessible) {
         stage.removeAttribute('aria-hidden')
         stage.setAttribute('role', 'log')
@@ -495,7 +600,12 @@ export class OASBarrage extends OASElement {
         stage.removeAttribute('role')
         stage.removeAttribute('aria-live')
       }
+      this.syncItemsA11y()
     }
+
+    // RTL 镜像钩子：仅 toggle 属性，:host([data-rtl]) 就地切换镜像关键帧
+    //（书写方向变化来自 dir 祖先 / config-provider / locale，均会重新进入 update）
+    this.toggleAttribute('data-rtl', isRtl(this))
 
     const paused = this.hasAttribute('paused')
     if (paused !== this.lastPausedAttr) {

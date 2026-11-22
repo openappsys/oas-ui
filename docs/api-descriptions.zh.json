@@ -5251,6 +5251,9 @@
       "--oas-share-sheet-max-height": "面板最大高度",
       "--oas-share-sheet-channel-bg": "渠道图标底色",
       "--oas-share-sheet-channel-color": "渠道图标前景色"
+    },
+    "props": {
+      "channels": "渠道列表（property 通道）：等价 channels 属性的解析结果；赋数组时自动序列化反射回属性"
     }
   },
   "oas-curtain": {

@@ -24,8 +24,28 @@ test('rolling-text 值变化驱动数字列 --n 与完整文本，precision 补�
   const changed = await read()
   expect(changed.sr, 'precision=2 保留两位小数').toMatch(/\.\d{2}$/)
   const digitText = changed.sr!.replace('¥', '').replace('.', '')
-  expect(changed.digits.join(''), '滚轮目标数字与完整文本一致').toBe(digitText)
+  // 最短路径翻滚期间档位可能落在越界瞬态（9→0 落 10、0→9 落 -1），视觉数字 = 档位 mod 10
+  const visual = changed.digits.map((n) => ((Number(n) % 10) + 10) % 10).join('')
+  expect(visual, '滚轮视觉数字与完整文本一致').toBe(digitText)
 
   await page.click('#rt-reset')
   await expect.poll(async () => (await read()).sr).toBe('¥1288.00')
+})
+
+test('rolling-text RTL 宿主下数字列仍按 LTR 排列（123 不反转成 321）', async ({ page }) => {
+  await page.goto('/components/rolling-text.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#rt-demo')
+
+  await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'))
+  const lefts = await page.evaluate(() => {
+    const host = document.querySelector('#rt-demo') as HTMLElement
+    return [...host.shadowRoot!.querySelectorAll<HTMLElement>('.digit-col')].map(
+      (el) => el.getBoundingClientRect().left,
+    )
+  })
+  await page.evaluate(() => document.documentElement.removeAttribute('dir'))
+  expect(lefts.length).toBeGreaterThan(1)
+  for (let i = 1; i < lefts.length; i++) {
+    expect(lefts[i]!, `第 ${i} 列应在第 ${i - 1} 列右侧（列序不随 RTL 反转）`).toBeGreaterThan(lefts[i - 1]!)
+  }
 })

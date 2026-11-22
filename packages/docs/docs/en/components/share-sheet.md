@@ -90,9 +90,15 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `cancel-text` | Cancel button copy; defaults to i18n `shareSheet.cancel` | `string` | — |
-| `channels` | Channel JSON array `[{ key, name, icon? }]`: `icon` is an `oas-icon` name; missing icons fall back to the first character; invalid JSON is ignored with one dev warning | `string` | — |
+| `channels` | Channel JSON array `[{ key, name, icon? }]`: `icon` is an `oas-icon` name; missing icons fall back to the first character; invalid JSON is ignored with one dev warning | `ShareSheetChannel[] \| string` | — |
 | `heading` | Panel heading; defaults to i18n `shareSheet.title` | `string` | — |
 | `open` | Controlled visibility (present = open; host writes are silent) | — | — |
+
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `channels` | Channel list (property channel): equals the parsed channels attribute; assigning an array serializes and reflects it back to the attribute | `ShareSheetChannel[] \| string` | — |
 
 #### Methods
 

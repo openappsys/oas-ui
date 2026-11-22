@@ -170,7 +170,7 @@ export class OASCurtain extends OASElement {
   }
 
   /** 本地记忆键（空值回落默认键） */
-  private storageKey(): string {
+  private resolveStorageKey(): string {
     return this.getAttr('storage-key', '').trim() || 'oas-curtain'
   }
 
@@ -183,7 +183,7 @@ export class OASCurtain extends OASElement {
   private wasDismissed(): boolean {
     if (!this.shouldPersist()) return false
     try {
-      return window.localStorage.getItem(this.storageKey()) === '1'
+      return window.localStorage.getItem(this.resolveStorageKey()) === '1'
     } catch {
       return false
     }
@@ -192,7 +192,7 @@ export class OASCurtain extends OASElement {
   private rememberDismissed(): void {
     if (!this.shouldPersist()) return
     try {
-      window.localStorage.setItem(this.storageKey(), '1')
+      window.localStorage.setItem(this.resolveStorageKey(), '1')
     } catch {
       // 隐私模式 / 禁用存储：忽略持久化失败，不影响本次关闭
     }
@@ -221,7 +221,7 @@ export class OASCurtain extends OASElement {
   /** 清除本地记忆（下次进入重新弹出）；不改变当前显隐 */
   reset(): void {
     try {
-      window.localStorage.removeItem(this.storageKey())
+      window.localStorage.removeItem(this.resolveStorageKey())
     } catch {
       // 同 rememberDismissed：存储不可用不影响当前状态
     }
@@ -244,10 +244,24 @@ export class OASCurtain extends OASElement {
     if (e.key === 'Tab') this.trapFocus(e)
   }
 
+  /**
+   * 可聚焦元素（Tab 循环域）：shadow 面板内（关闭按钮等）+ 扁平化的默认插槽内容。
+   * 插槽里的链接/按钮在 light DOM，`panel.querySelectorAll` 看不到——只查 shadow 时
+   * Tab 会被死死锁在关闭按钮上，宿主编排的弹窗内容键盘不可达。
+   * 顺序即扁平树顺序：关闭按钮在面板最前，插槽内容随后。
+   */
   private getFocusables(): HTMLElement[] {
     const panel = this.panelEl
     if (!panel) return []
-    return [...panel.querySelectorAll<HTMLElement>(FOCUSABLE_RE)]
+    return [...panel.querySelectorAll<HTMLElement>(FOCUSABLE_RE), ...this.querySelectorAll<HTMLElement>(FOCUSABLE_RE)]
+  }
+
+  /** 当前焦点元素：优先 shadow 内部（聚焦在 shadow 内时 document.activeElement 会重定向为宿主） */
+  private activeElement(): HTMLElement | null {
+    const inner = this.shadow.activeElement
+    if (inner instanceof HTMLElement) return inner
+    const outer = document.activeElement
+    return outer instanceof HTMLElement ? outer : null
   }
 
   private trapFocus(e: KeyboardEvent): void {
@@ -255,9 +269,8 @@ export class OASCurtain extends OASElement {
     if (focusables.length === 0) return
     const first = focusables[0]!
     const last = focusables[focusables.length - 1]!
-    const root = this.getRootNode()
-    const active = root instanceof ShadowRoot ? (root.activeElement as HTMLElement | null) : document.activeElement
-    if (e.shiftKey && active === first) {
+    const active = this.activeElement()
+    if (e.shiftKey && (active === first || active === this)) {
       e.preventDefault()
       last.focus()
       return

@@ -5507,6 +5507,9 @@
       "--oas-share-sheet-max-height": "Panel max height",
       "--oas-share-sheet-channel-bg": "Channel icon background",
       "--oas-share-sheet-channel-color": "Channel icon foreground"
+    },
+    "props": {
+      "channels": "Channel list (property channel): equals the parsed channels attribute; assigning an array serializes and reflects it back to the attribute"
     }
   },
   "oas-curtain": {

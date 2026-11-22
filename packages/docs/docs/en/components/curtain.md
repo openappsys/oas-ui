@@ -48,6 +48,17 @@ By default only the close button and Esc exit; `mask-closable` also allows click
   <oas-button id="ct-mask-open" size="small">Open mask-closable curtain</oas-button>
 </DemoBlock>
 
+## No Local Memory
+
+With `persist="false"` a dismissal writes nothing to `localStorage` (it opens every time) — suitable for announcements that need confirmation each visit:
+
+<DemoBlock title="persist=false">
+  <oas-curtain id="ct-nopersist" heading="Always shown" persist="false" auto="false" storage-key="oas-docs-curtain-nopersist">
+    <p style="margin: 0">No local memory on close: reloading the page (or entering again) still opens it.</p>
+  </oas-curtain>
+  <oas-button id="ct-nopersist-open" size="small">Open non-persistent curtain</oas-button>
+</DemoBlock>
+
 ## Methods
 
 See the "Methods" table in the API section below (`show` / `close` / `reset`).
@@ -75,6 +86,9 @@ onMounted(() => {
       if (output) output.textContent = `Closed (${event.detail.reason}); memory: dismissed`
     })
     document.querySelector('#ct-mask-open')?.addEventListener('click', () => document.querySelector('#ct-mask')?.show())
+    document
+      .querySelector('#ct-nopersist-open')
+      ?.addEventListener('click', () => document.querySelector('#ct-nopersist')?.show())
   })
 })
 </script>

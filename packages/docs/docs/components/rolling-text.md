@@ -9,6 +9,7 @@ description: 数字与字符逐位翻滚的文本组件，值变化时按列滚�
 - `value` 取字符串或数字；`precision` 控制小数位数（补零 / 四舍五入）
 - `prefix-text` / `suffix-text` 渲染货币符号、单位等
 - `duration` 控制单列翻滚时长；CSS 变量可进一步定制
+- 数字按**最短路径**翻滚（`9 → 0` 只滚一格，不整轮倒卷）；数字列恒按 LTR 排列，RTL 页面里 `123` 不会显示成 `321`
 - 无障碍：可见列整体 `aria-hidden`，完整文本放进视觉隐藏区；`live` 开启 `polite` 播报
 - `prefers-reduced-motion` 下关闭过渡与翻转动画，直接呈现目标值
 

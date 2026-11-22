@@ -175,3 +175,60 @@ describe('OASShareSheet 交互与事件', () => {
     expect(root.activeElement === first || document.activeElement === first).toBe(true)
   })
 })
+
+describe('OASShareSheet property 通道（channels）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('赋数组 → 反射为 JSON 属性并渲染渠道（不被 update() 覆盖回空态）', () => {
+    const el = mount()
+    el.channels = [
+      { key: 'a', name: '甲' },
+      { key: 'b', name: '乙', icon: 'copy' },
+    ]
+    expect(el.getAttribute('channels')).toBe(
+      JSON.stringify([
+        { key: 'a', name: '甲' },
+        { key: 'b', name: '乙', icon: 'copy' },
+      ]),
+    )
+    expect(channels(el).length).toBe(2)
+    expect(channels(el)[0]!.textContent).toContain('甲')
+    // 后续属性变更触发 update() 不得把数组写入清掉（历史缺陷：字段同名被解析结果覆盖）
+    el.setAttribute('heading', '再同步一次')
+    expect(el.channels.map((c) => c.key)).toEqual(['a', 'b'])
+    expect(channels(el).length).toBe(2)
+  })
+
+  it('赋合法 JSON 字符串走属性通道，getter 读回解析结果', () => {
+    const el = mount()
+    el.channels = JSON.stringify([{ key: 'copy', name: '复制链接', icon: 'copy' }])
+    expect(el.channels).toEqual([{ key: 'copy', name: '复制链接', icon: 'copy' }])
+    expect(channels(el).length).toBe(1)
+  })
+
+  it('赋空数组 → 清空渠道显示空态；非法项被跳过', () => {
+    const el = mount({ channels: CHANNELS })
+    expect(channels(el).length).toBe(3)
+    el.channels = []
+    expect(channels(el).length).toBe(0)
+    expect(el.shadowRoot!.querySelector('.empty')!.textContent).toBe('暂无可分享渠道')
+    el.channels = [
+      { key: '', name: '缺 key' },
+      { key: 'ok', name: '合法' },
+    ]
+    expect(el.channels!.map((c) => c.key)).toEqual(['ok'])
+  })
+
+  it('原型上有 get+set 双通道，实例无同名 own property（框架 property 写入不丢值）', () => {
+    const el = mount()
+    expect(Object.prototype.hasOwnProperty.call(el, 'channels')).toBe(false)
+    const desc = Object.getOwnPropertyDescriptor(OASShareSheet.prototype, 'channels')
+    expect(typeof desc?.get).toBe('function')
+    expect(typeof desc?.set).toBe('function')
+  })
+})

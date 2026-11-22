@@ -181,4 +181,46 @@ describe('OASCurtain 无障碍与内容', () => {
     const root = el.shadowRoot!
     expect(root.activeElement === btn || document.activeElement === btn).toBe(true)
   })
+
+  it('Tab 循环包含插槽内容：末尾前进回关闭按钮、首端倒退到末尾', () => {
+    window.localStorage.setItem('curtain-slot', '1')
+    const el = new OASCurtain()
+    el.setAttribute('storage-key', 'curtain-slot')
+    const link = document.createElement('a')
+    link.href = '#ok'
+    link.textContent = '了解更多'
+    const action = document.createElement('button')
+    action.type = 'button'
+    action.textContent = '开始使用'
+    el.append(link, action)
+    document.body.appendChild(el)
+    el.show()
+
+    const root = el.shadowRoot!
+    // 插槽末尾元素在 Tab 序最末：从它继续 Tab 必须回到关闭按钮，而不是离开对话框
+    action.focus()
+    root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(root.activeElement === closeButton(el) || document.activeElement === closeButton(el)).toBe(true)
+
+    // 关闭按钮在首端：Shift+Tab 必须回到插槽末尾元素
+    closeButton(el).focus()
+    root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
+    expect(document.activeElement === action || root.activeElement === action).toBe(true)
+  })
+
+  it('插槽内的可聚焦元素参与 Tab 域（数量与顺序自检）', () => {
+    window.localStorage.setItem('curtain-slot2', '1')
+    const el = new OASCurtain()
+    el.setAttribute('storage-key', 'curtain-slot2')
+    const link = document.createElement('a')
+    link.href = '#more'
+    link.textContent = '了解更多'
+    el.append(link)
+    document.body.appendChild(el)
+    el.show()
+    // 关闭按钮 + 插槽链接都在域内：从链接 Tab 回绕到关闭按钮（若只查 shadow 则链接不可达）
+    link.focus()
+    el.shadowRoot!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(document.activeElement === closeButton(el) || el.shadowRoot!.activeElement === closeButton(el)).toBe(true)
+  })
 })

@@ -126,4 +126,28 @@ describe('OASOffline 网络事件与自定义文案', () => {
     expect(warn).toHaveBeenCalledTimes(1)
     warn.mockRestore()
   })
+
+  it('重连不叠加 window 监听清理回调（每周期各移除一次）', () => {
+    const add = vi.spyOn(window, 'addEventListener')
+    const remove = vi.spyOn(window, 'removeEventListener')
+    const count = (spy: typeof add, type: string): number => spy.mock.calls.filter((c) => c[0] === type).length
+
+    const el = mount()
+    expect(count(add, 'online')).toBe(1)
+    expect(count(add, 'offline')).toBe(1)
+
+    el.remove()
+    expect(count(remove, 'online')).toBe(1)
+    expect(count(remove, 'offline')).toBe(1)
+
+    // 重新挂载走 onReconnect：监听重挂一次、清理回调同样只注册一次
+    document.body.appendChild(el)
+    expect(count(add, 'online')).toBe(2)
+    el.remove()
+    expect(count(remove, 'online')).toBe(2)
+    expect(count(remove, 'offline')).toBe(2)
+
+    add.mockRestore()
+    remove.mockRestore()
+  })
 })

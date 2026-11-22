@@ -39,13 +39,24 @@ description: 弹幕组件，多条弹幕在轨道上按速度漂过，同轨道�
 
 ## 单轨道
 
-`tracks="1"` 时所有弹幕共用一条轨道，排期保证不重叠；适合窄区域或慢速阅读场景：
+`tracks="1"` 时所有弹幕共用一条轨道，排期保证不重叠；适合窄区域或慢速阅读场景。`gap` 调同轨道相邻弹幕的最小水平间距（前一条完全进场后再留这段空隙）：
 
 > 运行中修改 `tracks` 会让在场与排队弹幕失效并清空（轨道归属重排），建议初始化时定好轨道数。
 
-<DemoBlock title="tracks=1 / speed=80">
-  <oas-barrage id="bg-single" tracks="1" speed="80" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
+<DemoBlock title="tracks=1 / speed=80 / gap=120">
+  <oas-barrage id="bg-single" tracks="1" speed="80" gap="120" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
   <oas-button id="bg-single-add" size="small">再发一条</oas-button>
+</DemoBlock>
+
+## 书写方向（RTL）
+
+RTL 页面（祖先 `dir="rtl"`、`oas-config-provider direction="rtl"` 或阿拉伯语等 RTL 语言包）下弹幕自**左**进场、向右飞出——镜像关键帧由 `data-rtl` 自动切换，与阅读方向一致：
+
+<DemoBlock title="dir=rtl：自左进场、向右飞出">
+  <div dir="rtl" style="display: flex; flex-direction: column; gap: var(--oas-space-2); width: 100%">
+    <oas-barrage id="bg-rtl" tracks="2" speed="90" height="96" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
+    <oas-button id="bg-rtl-add" size="small">发一条（RTL 舞台）</oas-button>
+  </div>
 </DemoBlock>
 
 ## 方法
@@ -60,6 +71,7 @@ onMounted(() => {
     const demo = document.querySelector('#bg-demo')
     const dense = document.querySelector('#bg-dense')
     const single = document.querySelector('#bg-single')
+    const rtl = document.querySelector('#bg-rtl')
     const output = document.querySelector('#bg-output')
     const texts = ['这个组件好用', '轨道防重叠', 'OAS-UI 弹幕', '速度刚刚好', '支持暂停和清空', 'Web Components 原生实现']
     const colors = ['', 'blue', 'green', 'purple', 'orange']
@@ -78,6 +90,10 @@ onMounted(() => {
     document.querySelector('#bg-single-add')?.addEventListener('click', () => {
       i += 1
       add(single, texts[i % texts.length])
+    })
+    document.querySelector('#bg-rtl-add')?.addEventListener('click', () => {
+      i += 1
+      add(rtl, texts[i % texts.length])
     })
     document.querySelector('#bg-clear')?.addEventListener('click', () => demo?.clear())
     document.querySelector('#bg-pause')?.addEventListener('click', (event) => {

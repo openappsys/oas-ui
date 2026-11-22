@@ -39,13 +39,24 @@ Streaming barrage: each item occupies a track and drifts from right to left at a
 
 ## Single Track
 
-With `tracks="1"` all items share one track and scheduling guarantees no overlap — suitable for narrow areas or slower reading:
+With `tracks="1"` all items share one track and scheduling guarantees no overlap — suitable for narrow areas or slower reading. `gap` sets the minimum horizontal gap between consecutive items on the same track (after the previous item has fully entered):
 
 > Changing `tracks` at runtime invalidates and clears on-screen and queued items (track ownership is re-mapped); set the track count at initialization.
 
-<DemoBlock title="tracks=1 / speed=80">
-  <oas-barrage id="bg-single" tracks="1" speed="80" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
+<DemoBlock title="tracks=1 / speed=80 / gap=120">
+  <oas-barrage id="bg-single" tracks="1" speed="80" gap="120" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
   <oas-button id="bg-single-add" size="small">Add another</oas-button>
+</DemoBlock>
+
+## Writing Direction (RTL)
+
+On RTL pages (ancestor `dir="rtl"`, `oas-config-provider direction="rtl"`, or an RTL locale such as Arabic) items enter from the **left** and fly out to the right — the mirrored keyframes switch automatically via `data-rtl`, matching the reading direction:
+
+<DemoBlock title="dir=rtl: enter from the left, exit to the right">
+  <div dir="rtl" style="display: flex; flex-direction: column; gap: var(--oas-space-2); width: 100%">
+    <oas-barrage id="bg-rtl" tracks="2" speed="90" height="96" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
+    <oas-button id="bg-rtl-add" size="small">Add one (RTL stage)</oas-button>
+  </div>
 </DemoBlock>
 
 ## Methods
@@ -60,6 +71,7 @@ onMounted(() => {
     const demo = document.querySelector('#bg-demo')
     const dense = document.querySelector('#bg-dense')
     const single = document.querySelector('#bg-single')
+    const rtl = document.querySelector('#bg-rtl')
     const output = document.querySelector('#bg-output')
     const texts = ['Great component', 'No track overlap', 'OAS-UI barrage', 'Just the right speed', 'Pause and clear', 'Native Web Components']
     const colors = ['', 'blue', 'green', 'purple', 'orange']
@@ -78,6 +90,10 @@ onMounted(() => {
     document.querySelector('#bg-single-add')?.addEventListener('click', () => {
       i += 1
       add(single, texts[i % texts.length])
+    })
+    document.querySelector('#bg-rtl-add')?.addEventListener('click', () => {
+      i += 1
+      add(rtl, texts[i % texts.length])
     })
     document.querySelector('#bg-clear')?.addEventListener('click', () => demo?.clear())
     document.querySelector('#bg-pause')?.addEventListener('click', (event) => {

@@ -89,12 +89,17 @@ describe('OASPageLoading 三种形态', () => {
   })
 
   it('skeleton rows 非法回落 4、越界钳制', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ open: '', mode: 'skeleton' })
     expect(el.shadowRoot!.querySelectorAll('.skeleton .row').length).toBe(4)
     el.setAttribute('rows', '99')
     expect(el.shadowRoot!.querySelectorAll('.skeleton .row').length).toBe(12)
     el.setAttribute('rows', 'abc')
     expect(el.shadowRoot!.querySelectorAll('.skeleton .row').length).toBe(4)
+    // 非法值告警一次（同一值重复设置不刷屏）
+    el.setAttribute('rows', 'abc')
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('rows')).length).toBe(1)
+    warn.mockRestore()
   })
 
   it('切到 skeleton 时才创建骨架，切回 spinner 不销毁状态', () => {

@@ -9,6 +9,7 @@ A display component that rolls digits and characters column by column: each digi
 - `value` accepts a string or number; `precision` sets decimal places (pad / round)
 - `prefix-text` / `suffix-text` render currency symbols, units, etc.
 - `duration` sets the per-column roll duration; CSS variables allow further tuning
+- Digits roll along the **shortest path** (`9 → 0` moves one step, not a full reverse sweep); digit columns always stay LTR, so `123` never renders as `321` on RTL pages
 - Accessibility: the visual columns are `aria-hidden`, with the full text kept in a visually hidden node; `live` enables polite announcements
 - Under `prefers-reduced-motion` transitions and flips are disabled, showing the target value directly
 

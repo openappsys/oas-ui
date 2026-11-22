@@ -90,6 +90,8 @@ export class OASOffline extends OASElement {
 
   /** 当前网络状态；bind() 首帧按 navigator.onLine 初始化，之后由 online/offline 事件驱动 */
   private online = true
+  /** 当前连接周期内是否已注册 window 监听清理（避免重连叠加清理回调） */
+  private windowBound = false
   private textEl: HTMLElement | null = null
 
   private template(): string {
@@ -108,11 +110,14 @@ export class OASOffline extends OASElement {
     this.bindWindow()
   }
 
-  /** window 监听随重连重挂（onCleanup 在断开时统一移除；重复 add 由同 handler 去重） */
+  /** window 监听随重连重挂；清理回调在同一连接周期内只注册一次（onReconnect 重入不叠加） */
   private bindWindow(): void {
     window.addEventListener('online', this.onNetworkChange)
     window.addEventListener('offline', this.onNetworkChange)
+    if (this.windowBound) return
+    this.windowBound = true
     this.onCleanup(() => {
+      this.windowBound = false
       window.removeEventListener('online', this.onNetworkChange)
       window.removeEventListener('offline', this.onNetworkChange)
     })

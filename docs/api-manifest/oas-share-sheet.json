@@ -20,12 +20,17 @@
     },
     {
       "name": "channels",
-      "type": "string",
       "default": "",
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "channels",
+      "type": "ShareSheetChannel[] | string",
+      "api": true
+    }
+  ],
   "methods": [
     {
       "name": "show",

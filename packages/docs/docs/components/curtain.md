@@ -48,6 +48,17 @@ description: 一次性全屏幕帘，首次进入自动弹出、关闭后本地�
   <oas-button id="ct-mask-open" size="small">打开可点遮罩关闭的幕帘</oas-button>
 </DemoBlock>
 
+## 不写本地记忆
+
+`persist="false"` 时关闭不写 `localStorage`（每次进入都会弹出），适合「每次都需要确认」的公告：
+
+<DemoBlock title="persist=false">
+  <oas-curtain id="ct-nopersist" heading="每次都会出现" persist="false" auto="false" storage-key="oas-docs-curtain-nopersist">
+    <p style="margin: 0">关闭后不写本地记忆：刷新页面（或重新进入）仍会弹出。</p>
+  </oas-curtain>
+  <oas-button id="ct-nopersist-open" size="small">打开不记忆的幕帘</oas-button>
+</DemoBlock>
+
 ## 方法
 
 见下方 API 的「方法」表（`show` / `close` / `reset`）。
@@ -75,6 +86,9 @@ onMounted(() => {
       if (output) output.textContent = `已关闭（${event.detail.reason}），本地记忆：已关闭过`
     })
     document.querySelector('#ct-mask-open')?.addEventListener('click', () => document.querySelector('#ct-mask')?.show())
+    document
+      .querySelector('#ct-nopersist-open')
+      ?.addEventListener('click', () => document.querySelector('#ct-nopersist')?.show())
   })
 })
 </script>

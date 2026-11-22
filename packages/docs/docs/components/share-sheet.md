@@ -90,9 +90,15 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `cancel-text` | 取消按钮文案；缺省走 i18n `shareSheet.cancel` | `string` | — |
-| `channels` | 渠道 JSON 数组 `[{ key, name, icon? }]`：`icon` 为 `oas-icon` 图标名，缺省用名称首字符占位；非法 JSON 忽略并 dev 告警一次 | `string` | — |
+| `channels` | 渠道 JSON 数组 `[{ key, name, icon? }]`：`icon` 为 `oas-icon` 图标名，缺省用名称首字符占位；非法 JSON 忽略并 dev 告警一次 | `ShareSheetChannel[] \| string` | — |
 | `heading` | 面板标题；缺省走 i18n `shareSheet.title` | `string` | — |
 | `open` | 受控显隐（在场=展开；宿主直接写入静默） | — | — |
+
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `channels` | 渠道列表（property 通道）：等价 channels 属性的解析结果；赋数组时自动序列化反射回属性 | `ShareSheetChannel[] \| string` | — |
 
 #### 方法
 

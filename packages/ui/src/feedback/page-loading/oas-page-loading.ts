@@ -162,6 +162,7 @@ export type PageLoadingMode = 'spinner' | 'skeleton' | 'progress'
 const MODES: readonly PageLoadingMode[] = ['spinner', 'skeleton', 'progress']
 const warnedModes = new Set<string>()
 const warnedValues = new Set<string>()
+const warnedRows = new Set<string>()
 
 export class OASPageLoading extends OASElement {
   static override get observedAttributes(): string[] {
@@ -250,7 +251,13 @@ export class OASPageLoading extends OASElement {
     const raw = this.getAttr('rows', '').trim()
     if (raw === '') return 4
     const n = Number.parseInt(raw, 10)
-    if (!Number.isFinite(n)) return 4
+    if (!Number.isFinite(n)) {
+      if (!warnedRows.has(raw)) {
+        warnedRows.add(raw)
+        devWarn(`[oas-page-loading] 非法 rows "${raw}"，已回落 4；应为 1–12 的整数行数`)
+      }
+      return 4
+    }
     return Math.min(12, Math.max(1, n))
   }
 

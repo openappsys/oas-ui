@@ -56,8 +56,13 @@ describe('OASRollingText 渲染', () => {
     expect(cols[0]!.querySelector<HTMLElement>('.strip')!.style.getPropertyValue('--n')).toBe('1')
     expect(cols[1]!.querySelector<HTMLElement>('.strip')!.style.getPropertyValue('--n')).toBe('3')
     expect(cols[2]!.querySelector<HTMLElement>('.strip')!.style.getPropertyValue('--n')).toBe('8')
-    // 每列滚轮含 0–9 十位
-    expect(cols[0]!.querySelectorAll('.digit').length).toBe(10)
+    // 滚轮含两个 0–9 周期（20 位）：稳态档位 0–9，两侧预留最短路径瞬态档位（-5…-1 / 10…14）
+    const strip = cols[0]!.querySelectorAll('.digit')
+    expect(strip.length).toBe(20)
+    // 逻辑档位 0 落在第 6 位（STRIP_OFFSET=5），其后为 0,1,2,…
+    expect(strip[5]!.textContent).toBe('0')
+    expect(strip[6]!.textContent).toBe('1')
+    expect(strip[0]!.textContent).toBe('5') // 逻辑 -5
   })
 
   it('小数点 / 负号等非数字渲染为字符列', () => {
@@ -138,7 +143,9 @@ describe('OASRollingText 值变化（逐列翻滚）', () => {
     expect(digits(el).length).toBe(4)
     el.setAttribute('value', '9')
     expect(digits(el).length).toBe(1)
-    expect(digits(el)[0]!.querySelector<HTMLElement>('.strip')!.style.getPropertyValue('--n')).toBe('9')
+    // 1→9 走反向短路径（越界瞬态 -1，翻滚结束归位为 9）；两者视觉同为数字 9
+    const n = Number(digits(el)[0]!.querySelector<HTMLElement>('.strip')!.style.getPropertyValue('--n'))
+    expect(((n % 10) + 10) % 10).toBe(9)
   })
 
   it('数字与字符类型切换时整列替换', () => {
@@ -176,5 +183,52 @@ describe('OASRollingText 值变化（逐列翻滚）', () => {
     expect(digits(el).length).toBe(0)
     expect(chars(el).length).toBe(0)
     expect(srText(el)).toBe('')
+  })
+
+  it('9→0 走最短路径：正向降到越界档位 10，动画结束归位到 0', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '9', duration: '300' })
+    const strip = digits(el)[0]!.querySelector<HTMLElement>('.strip')!
+    el.setAttribute('value', '0')
+    // 正向 1 格（10 = 视觉 0），而不是从 9 倒卷 9 格回 0
+    expect(strip.style.getPropertyValue('--n')).toBe('10')
+    vi.advanceTimersByTime(320)
+    expect(strip.style.getPropertyValue('--n')).toBe('0')
+    expect(strip.style.getPropertyValue('transition-property')).toBe('')
+  })
+
+  it('0→9 走最短路径：反向升到越界档位 -1，动画结束归位到 9', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '0', duration: '300' })
+    const strip = digits(el)[0]!.querySelector<HTMLElement>('.strip')!
+    el.setAttribute('value', '9')
+    expect(strip.style.getPropertyValue('--n')).toBe('-1')
+    vi.advanceTimersByTime(320)
+    expect(strip.style.getPropertyValue('--n')).toBe('9')
+  })
+
+  it('普通回绕（2→9）也取反向短路径（3 格），不回卷 7 格', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '2', duration: '300' })
+    const strip = digits(el)[0]!.querySelector<HTMLElement>('.strip')!
+    el.setAttribute('value', '9')
+    expect(strip.style.getPropertyValue('--n')).toBe('-1')
+    vi.advanceTimersByTime(320)
+    expect(strip.style.getPropertyValue('--n')).toBe('9')
+  })
+
+  it('RTL 宿主下数字列仍按 LTR 排列（123 不反转成 321）', () => {
+    const el = mount({ value: '123' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.columns\s*\{[^}]*direction: ltr/)
+  })
+
+  it('precision 超过 10 位告警一次并按 10 位处理', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    formatRollingValue('1', '12')
+    formatRollingValue('1', '12')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]![0])).toContain('precision')
+    warn.mockRestore()
   })
 })

@@ -236,4 +236,105 @@ describe('OASBarrage 数据与无障碍', () => {
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
     expect(css).toContain('animation-duration: 0.01ms !important')
   })
+
+  it('reduced-motion 下 JS 离场计时与瞬时动画同口径（不占容量）', () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('prefers-reduced-motion'),
+          media: query,
+          onchange: null,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+          dispatchEvent: () => false,
+        }) as unknown as MediaQueryList,
+    )
+    const el = mount({ tracks: '1', 'max-active': '1' })
+    el.add('一')
+    el.add('二')
+    const first = items(el)[0]!
+    // 瞬时动画时长（20ms 级），不是按舞台宽度算出的秒级
+    expect(first.style.animationDuration).toBe('20ms')
+    expect(items(el).length).toBe(1)
+    // 20ms 后第一条离场，容量让给排队项——不再被空中条目占住
+    vi.advanceTimersByTime(30)
+    expect(items(el).length).toBe(1)
+    expect(items(el)[0]!.textContent).toBe('二')
+    matchMedia.mockRestore()
+  })
+})
+
+describe('OASBarrage RTL 与键盘可达', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+    document.documentElement.removeAttribute('dir')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+    document.documentElement.removeAttribute('dir')
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('RTL 下切换 data-rtl 并使用镜像关键帧（弹幕不再飞出左外侧）', () => {
+    document.documentElement.setAttribute('dir', 'rtl')
+    const el = mount({ tracks: '1' })
+    expect(el.hasAttribute('data-rtl')).toBe(true)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([data-rtl]) .item')
+    expect(css).toContain('animation-name: oas-barrage-move-rtl')
+    // 镜像关键帧为正向 x 平移（LTR 为负向）
+    expect(css).toContain('translate(calc(100% + var(--oas-barrage-stage-width, 800px)), -50%)')
+  })
+
+  it('LTR 下无 data-rtl', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-rtl')).toBe(false)
+  })
+
+  it('accessible 开启的弹幕项键盘可达：Enter / Space 派发 oas-item-click', () => {
+    const el = mount({ accessible: '' })
+    el.add('可聚焦', { key: 'k' })
+    const item = items(el)[0]!
+    expect(item.getAttribute('tabindex')).toBe('0')
+    expect(item.getAttribute('role')).toBe('button')
+    const handler = vi.fn()
+    el.addEventListener('oas-item-click', handler)
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    item.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect(handler).toHaveBeenCalledTimes(2)
+    expect(handler.mock.calls[0]![0].detail).toEqual({ text: '可聚焦', key: 'k', color: '' })
+  })
+
+  it('缺省（装饰性 aria-hidden 舞台）弹幕项不进入 Tab 序（axe aria-hidden-focus）', () => {
+    const el = mount()
+    el.add('装饰')
+    const item = items(el)[0]!
+    expect(item.hasAttribute('tabindex')).toBe(false)
+    expect(item.hasAttribute('role')).toBe(false)
+    // 运行中开启 accessible：既有在场项同步可聚焦形态
+    el.setAttribute('accessible', '')
+    expect(item.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('数值属性非法值告警一次并回落默认', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ speed: 'fast', gap: 'wide', tracks: 'lots', 'max-active': 'many', height: 'oops' })
+    // 参数解析在排期/建轨道时消费
+    el.add('一')
+    el.setAttribute('speed', 'fast')
+    el.setAttribute('height', 'oops')
+    expect(el.shadowRoot!.querySelectorAll('.track').length).toBe(3)
+    const messages = warn.mock.calls.map((c) => String(c[0]))
+    expect(messages.filter((m) => m.includes('speed')).length).toBe(1)
+    expect(messages.filter((m) => m.includes('gap')).length).toBe(1)
+    expect(messages.filter((m) => m.includes('tracks')).length).toBe(1)
+    expect(messages.filter((m) => m.includes('max-active')).length).toBe(1)
+    expect(messages.filter((m) => m.includes('height')).length).toBe(1)
+    warn.mockRestore()
+  })
 })

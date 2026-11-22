@@ -13,7 +13,7 @@ Listens to the browser `online` / `offline` events and keeps the network state i
 
 ## Basic Usage
 
-The default bar is fixed to the top. The interactive demo below uses the `block` variant in the document flow and temporarily shadows `navigator.onLine` to simulate offline / reconnect (a page refresh restores it):
+The default bar is fixed to the top. The interactive demo below uses the `block` variant in the document flow and temporarily shadows `navigator.onLine` to simulate offline / reconnect. The override persists for the whole page session — navigating to other docs pages within the SPA **keeps showing the offline state** (other example instances appear as well); only a full reload (F5) restores it. For debugging demos only; production should rely on real browser network events.
 
 <DemoBlock title="Simulate offline / reconnect (block variant)">
   <div style="display: flex; flex-direction: column; gap: var(--oas-space-2)">
