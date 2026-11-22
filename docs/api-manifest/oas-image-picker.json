@@ -1,0 +1,80 @@
+{
+  "className": "OASImagePicker",
+  "sourceFile": "packages/ui/src/form/image-picker/oas-image-picker.ts",
+  "attrs": [
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "accept",
+      "type": "string",
+      "default": "image/*",
+      "observed": true
+    },
+    {
+      "name": "capture",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "files",
+      "type": "File[]",
+      "default": "[]",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "removeAt",
+      "signature": "removeAt(index: number): void",
+      "description": "程序化删除（越界忽略；派发 oas-change）"
+    },
+    {
+      "name": "move",
+      "signature": "move(index: number, delta: number): void",
+      "description": "程序化移动：`delta` 为 ±1（越界忽略；派发 oas-change）"
+    },
+    {
+      "name": "open",
+      "signature": "open(): void",
+      "description": "打开系统文件选择器（需在用户手势中调用）"
+    },
+    {
+      "name": "clear",
+      "signature": "clear(): void",
+      "description": "清空列表（派发 oas-change）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-reject",
+      "detail": "{ files: rejected }"
+    },
+    {
+      "name": "oas-exceed-limit",
+      "detail": "{ count: totalRequested, max }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ files: this.files, count: this.items.length }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}
