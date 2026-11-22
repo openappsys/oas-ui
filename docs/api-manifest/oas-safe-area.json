@@ -1,0 +1,31 @@
+{
+  "className": "OASSafeArea",
+  "sourceFile": "packages/ui/src/layout/safe-area/oas-safe-area.ts",
+  "attrs": [
+    {
+      "name": "position",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-safe-area-size",
+      "default": "var(--oas-safe-area-inset)"
+    }
+  ],
+  "unresolved": []
+}
