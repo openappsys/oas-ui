@@ -41,6 +41,8 @@ description: 弹幕组件，多条弹幕在轨道上按速度漂过，同轨道�
 
 `tracks="1"` 时所有弹幕共用一条轨道，排期保证不重叠；适合窄区域或慢速阅读场景：
 
+> 运行中修改 `tracks` 会让在场与排队弹幕失效并清空（轨道归属重排），建议初始化时定好轨道数。
+
 <DemoBlock title="tracks=1 / speed=80">
   <oas-barrage id="bg-single" tracks="1" speed="80" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
   <oas-button id="bg-single-add" size="small">再发一条</oas-button>

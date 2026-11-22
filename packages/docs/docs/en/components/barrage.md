@@ -41,6 +41,8 @@ Streaming barrage: each item occupies a track and drifts from right to left at a
 
 With `tracks="1"` all items share one track and scheduling guarantees no overlap — suitable for narrow areas or slower reading:
 
+> Changing `tracks` at runtime invalidates and clears on-screen and queued items (track ownership is re-mapped); set the track count at initialization.
+
 <DemoBlock title="tracks=1 / speed=80">
   <oas-barrage id="bg-single" tracks="1" speed="80" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>
   <oas-button id="bg-single-add" size="small">Add another</oas-button>
