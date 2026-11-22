@@ -63,19 +63,25 @@ test('barrage RTL：镜像关键帧生效，弹幕自舞台左侧进场', async 
   await expect(rtl).toHaveAttribute('data-rtl', '')
   await page.click('#bg-rtl-add')
   await expect(rtl.locator('.item')).toHaveCount(1)
+  // 冻结动画后再量几何：动画自挂载即开始跑，高负载下一次 expect 的轮询就可能让它漂出几十像素
+  await rtl.evaluate((el) => (el as HTMLElement).setAttribute('paused', ''))
 
   const geom = await rtl.evaluate((el) => {
     const root = (el as HTMLElement).shadowRoot!
     const item = root.querySelector('.item') as HTMLElement
     const stage = root.querySelector('.stage') as HTMLElement
+    const itemRect = item.getBoundingClientRect()
+    const stageRect = stage.getBoundingClientRect()
     return {
       name: getComputedStyle(item).animationName,
-      itemRight: item.getBoundingClientRect().right,
-      stageLeft: stage.getBoundingClientRect().left,
+      itemRight: itemRect.right,
+      stageLeft: stageRect.left,
+      stageWidth: stageRect.width,
     }
   })
   // LTR 是 oas-barrage-move（负向平移）；RTL 必须换成镜像关键帧，否则弹幕整条飞在舞台左侧外
   expect(geom.name).toBe('oas-barrage-move-rtl')
-  // 进场起点贴舞台左缘外侧（若沿用 LTR 起点会在右缘外侧，差值约一个舞台宽）
-  expect(Math.abs(geom.itemRight - geom.stageLeft)).toBeLessThan(3)
+  // 进场起点落在舞台左半边（自左进场）。沿用 LTR 起点会贴右缘外侧，差值 ≈ 一个舞台宽 + 条目宽
+  expect(geom.stageWidth).toBeGreaterThan(100)
+  expect(geom.itemRight - geom.stageLeft).toBeLessThan(geom.stageWidth / 2)
 })
