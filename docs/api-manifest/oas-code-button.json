@@ -1,0 +1,60 @@
+{
+  "className": "OASCodeButton",
+  "sourceFile": "packages/ui/src/form/code-button/oas-code-button.ts",
+  "attrs": [
+    {
+      "name": "cooldown",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "counting",
+      "type": "boolean",
+      "api": true
+    },
+    {
+      "name": "remaining",
+      "type": "number",
+      "default": "0",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "start",
+      "signature": "start(seconds?: number): void",
+      "description": "启动冷却（秒）；缺省取 cooldown 属性"
+    },
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "结束冷却并复位为空闲态（文案回到「获取验证码」）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-send",
+      "detail": "{ cooldown }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}
