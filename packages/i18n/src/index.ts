@@ -17,6 +17,7 @@
  */
 import { registerDefaultMessages } from './registry.js'
 import { basicMessages } from './slices/basic.js'
+import { commerceMessages } from './slices/commerce.js'
 import { conversationMessages } from './slices/conversation.js'
 import { dataMessages } from './slices/data.js'
 import { feedbackMessages } from './slices/feedback.js'
@@ -27,6 +28,7 @@ import { navigationMessages } from './slices/navigation.js'
 import { workbenchMessages } from './slices/workbench.js'
 
 registerDefaultMessages(basicMessages)
+registerDefaultMessages(commerceMessages)
 registerDefaultMessages(conversationMessages)
 registerDefaultMessages(dataMessages)
 registerDefaultMessages(feedbackMessages)

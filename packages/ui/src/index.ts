@@ -692,6 +692,24 @@ export type {
   PromptInputSuggestionDetail,
 } from './conversation/prompt-input/oas-prompt-input.js'
 
+import './commerce/address/index.js'
+import './commerce/invoice/index.js'
+import './commerce/ecard/index.js'
+import './commerce/category/index.js'
+export { OASAddress } from './commerce/address/index.js'
+export type { AddressEntry, AddressMode, AddressRegion } from './commerce/address/oas-address.js'
+export { OASInvoice } from './commerce/invoice/index.js'
+export type {
+  InvoiceContent,
+  InvoiceSavedTitle,
+  InvoiceType,
+  InvoiceValue,
+} from './commerce/invoice/oas-invoice.js'
+export { OASECard } from './commerce/ecard/index.js'
+export type { ECard, ECardSelection } from './commerce/ecard/oas-ecard.js'
+export { OASCategory } from './commerce/category/index.js'
+export type { CategoryItem, CategoryNode } from './commerce/category/oas-category.js'
+
 import './framework/config-provider/index.js'
 import './framework/app/index.js'
 import './framework/theme-editor/index.js'

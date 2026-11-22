@@ -208,6 +208,16 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
+    text: '电商组件',
+    collapsed: true,
+    items: [
+      { text: 'Address 地址', link: '/components/address' },
+      { text: 'Category 分类', link: '/components/category' },
+      { text: 'ECard 电子卡', link: '/components/ecard' },
+      { text: 'Invoice 发票', link: '/components/invoice' },
+    ],
+  },
+  {
     text: '框架级容器',
     collapsed: true,
     items: [
@@ -227,6 +237,7 @@ const enGroupNames: Record<string, string> = {
   工作台构件: 'Workbench',
   数据展示组件: 'Data Display',
   会话组件: 'Conversation',
+  电商组件: 'Commerce',
   框架级容器: 'Framework Containers',
 }
 

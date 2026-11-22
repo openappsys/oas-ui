@@ -229,6 +229,12 @@ export { OASMessageActions } from './conversation/message-actions/oas-message-ac
 export { OASToolCall } from './conversation/tool-call/oas-tool-call.js'
 export { OASPromptInput } from './conversation/prompt-input/oas-prompt-input.js'
 
+// ---------- commerce ----------
+export { OASAddress } from './commerce/address/oas-address.js'
+export { OASInvoice } from './commerce/invoice/oas-invoice.js'
+export { OASECard } from './commerce/ecard/oas-ecard.js'
+export { OASCategory } from './commerce/category/oas-category.js'
+
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'
 export { OASTrafficLights } from './workbench/titlebar/oas-traffic-lights.js'

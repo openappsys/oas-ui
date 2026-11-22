@@ -35,7 +35,18 @@ const SLICES_DIR = path.join(REPO_ROOT, 'packages', 'i18n', 'src', 'slices')
 const BIOME_BIN = path.join(REPO_ROOT, 'node_modules', '@biomejs', 'biome', 'bin', 'biome')
 
 /** 9 个家族目录（overlay/shared 无 families/*.ts 且零 key，不生成切片） */
-const FAMILIES = ['basic', 'conversation', 'data', 'feedback', 'form', 'framework', 'layout', 'navigation', 'workbench']
+const FAMILIES = [
+  'basic',
+  'commerce',
+  'conversation',
+  'data',
+  'feedback',
+  'form',
+  'framework',
+  'layout',
+  'navigation',
+  'workbench',
+]
 const FAMILY_SET = new Set(FAMILIES)
 /** 死键归属家族 */
 const DEAD_KEY_FAMILY = 'framework'

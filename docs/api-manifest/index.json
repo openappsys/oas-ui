@@ -213,6 +213,10 @@
   "oas-message-actions",
   "oas-tool-call",
   "oas-prompt-input",
+  "oas-address",
+  "oas-invoice",
+  "oas-ecard",
+  "oas-category",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

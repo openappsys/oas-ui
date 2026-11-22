@@ -205,6 +205,13 @@
 - [PromptInput 提示词输入](https://oas-ui.dev/components/prompt-input): 会话输入框：多行自增高、Enter 提交、Shift+Enter 换行、建议项、发送/停止态、附件与页脚插槽。
 - [ToolCall 工具调用](https://oas-ui.dev/components/tool-call): 工具调用卡片：展示名称、摘要、状态、参数和结果；默认折叠，点击头部展开。
 
+## 电商组件
+
+- [Address 地址](https://oas-ui.dev/components/address): 地址簿场景组件，一个组件覆盖三种形态：地址编辑表单、地址列表（默认标记 + 单选）、联系人轻模式（只含姓名与电话，不独立成件）。
+- [Category 分类](https://oas-ui.dev/components/category): 电商分类导航的双栏形态：左侧多级类目树（可展开 / 收起），右侧展示当前类的子类宫格；叶子类目展示商品位。
+- [ECard 电子卡](https://oas-ui.dev/components/ecard): 电子卡 / 储值卡购买面板：卡面单选列表、自定义面额、协议勾选与确认提交。
+- [Invoice 发票](https://oas-ui.dev/components/invoice): 发票信息填写组件：抬头类型切换、抬头与税号校验、发票内容选择、已保存抬头弹层回填。
+
 ## 框架级容器
 
 - [App 消息上下文容器](https://oas-ui.dev/components/app): message / notification / loadingBar 等命令式 API 的宿主容器。app 容器存在时，消息挂载到 app 内（而非 document.body）；可与 config-provider 配套使用。

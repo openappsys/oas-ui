@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 217,
+    "components": 221,
     "whitelist": 175,
-    "noSsr": 42
+    "noSsr": 46
   },
   "components": [
     {
@@ -3641,6 +3641,74 @@
       "hasHydrate": true,
       "unitTest": true,
       "dsdFixture": true,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-address",
+      "family": "commerce",
+      "dir": "commerce/address",
+      "className": "OASAddress",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "commerce 新组件，SSR 白名单化未立项",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-invoice",
+      "family": "commerce",
+      "dir": "commerce/invoice",
+      "className": "OASInvoice",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "commerce 新组件，SSR 白名单化未立项",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-ecard",
+      "family": "commerce",
+      "dir": "commerce/ecard",
+      "className": "OASECard",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "commerce 新组件，SSR 白名单化未立项",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-category",
+      "family": "commerce",
+      "dir": "commerce/category",
+      "className": "OASCategory",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "commerce 新组件，SSR 白名单化未立项",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
       "docsZh": true,
       "docsEn": true
     },

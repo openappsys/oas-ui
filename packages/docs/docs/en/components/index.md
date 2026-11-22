@@ -1,10 +1,10 @@
 ---
-description: OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
+description: OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 ---
 
 # Component Overview
 
-OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -178,6 +178,13 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 - [Marker](/en/components/marker) —— A conversation time/system-event marker: a lightweight text separator for dates, statuses and boundaries, like IM's "Today 10:00" time separator or group-chat "system events"; also fits status separators in AI-style conversations.
 - [MessageRow](/en/components/message-row) —— A conversation message row (layout shell): header/footer slots carry avatar/name, the default slot embeds `oas-bubble`, and the footer carries delivery status/actions; supports alignment direction and grouped clustering.
 - [MessageScroller](/en/components/message-scroller) —— A conversation scroll container (does not own message data): a scroll-intent model — follow new content while the user is at the bottom (AI style), or always pin to the bottom (IM style); built-in jump button; supports prepend position preservation, async-resource position preservation, turn anchoring (AI "back to the last question"), and optional in-viewport visibility tracking.
+
+## Commerce
+
+- [Address](/en/components/address) —— Address book: address editor (contact / region cascade / street address / default flag) + address list (single selection / default badge) + contact-only mode; region data is host-injected.
+- [Category](/en/components/category) —— Linked two-pane category navigation: a multi-level tree on the left, the active category's child grid and product slots on the right, with keyboard tree navigation and controlled highlighting.
+- [ECard](/en/components/ecard) —— E-card / stored-value card purchase: card radio list, custom amount, terms acceptance and confirm; cards and amount bounds are host-injected.
+- [Invoice](/en/components/invoice) —— Invoice information form: personal/company title switching, tax ID validation, invoice content selection and a saved-title picker popup.
 
 ## Framework Containers
 

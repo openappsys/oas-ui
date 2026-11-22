@@ -12,7 +12,18 @@ import { describe, expect, it } from 'vitest'
  */
 const SRC = resolve(import.meta.dirname, '..') // packages/ui/src
 const ICONS = resolve(import.meta.dirname, '../../../icons')
-const FAMILIES = ['basic', 'layout', 'form', 'feedback', 'navigation', 'data', 'conversation', 'workbench', 'framework']
+const FAMILIES = [
+  'basic',
+  'layout',
+  'form',
+  'feedback',
+  'navigation',
+  'data',
+  'conversation',
+  'workbench',
+  'framework',
+  'commerce',
+]
 
 function walk(dir: string, acc: string[] = []): string[] {
   for (const n of readdirSync(dir)) {
