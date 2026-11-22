@@ -593,4 +593,12 @@ export const ko: LocaleMessages = {
   'chipsInput.editLabel': '받는 사람 편집',
   'chipsInput.invalidEmail': '이메일 형식이 올바르지 않습니다',
   'chipsInput.exceedLimit': '최대 {max}개까지 추가할 수 있습니다',
+  // share-sheet (공유 패널)
+  'shareSheet.title': '공유 대상',
+  'shareSheet.cancel': '취소',
+  'shareSheet.close': '닫기',
+  'shareSheet.empty': '공유할 항목이 없습니다',
+  'curtain.close': '닫기',
+  'curtain.label': '안내',
+  'offline.message': '네트워크 연결이 끊어졌습니다. 연결 설정을 확인하세요.',
 }

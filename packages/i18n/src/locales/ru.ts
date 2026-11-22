@@ -594,4 +594,12 @@ export const ru: LocaleMessages = {
   'chipsInput.editLabel': 'Изменить получателя',
   'chipsInput.invalidEmail': 'Неверный адрес электронной почты',
   'chipsInput.exceedLimit': 'Не более {max} получателей',
+  // share-sheet (панель обмена)
+  'shareSheet.title': 'Поделиться в',
+  'shareSheet.cancel': 'Отмена',
+  'shareSheet.close': 'Закрыть',
+  'shareSheet.empty': 'Нет доступных получателей',
+  'curtain.close': 'Закрыть',
+  'curtain.label': 'Уведомление',
+  'offline.message': 'Нет подключения к сети. Проверьте настройки сети.',
 }

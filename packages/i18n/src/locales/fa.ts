@@ -597,4 +597,12 @@ export const fa: LocaleMessages = {
   'chipsInput.editLabel': 'ویرایش گیرنده',
   'chipsInput.invalidEmail': 'ایمیل نامعتبر است',
   'chipsInput.exceedLimit': 'حداکثر {max} گیرنده',
+  // share-sheet (پنل اشتراک‌گذاری)
+  'shareSheet.title': 'اشتراک‌گذاری در',
+  'shareSheet.cancel': 'لغو',
+  'shareSheet.close': 'بستن',
+  'shareSheet.empty': 'مقصد اشتراک‌گذاری موجود نیست',
+  'curtain.close': 'بستن',
+  'curtain.label': 'اطلاعیه',
+  'offline.message': 'اتصال شبکه قطع شده است. تنظیمات شبکه را بررسی کنید.',
 }

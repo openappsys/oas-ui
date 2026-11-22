@@ -57,6 +57,8 @@ import './layout/sidebar/index.js'
 import './layout/container/index.js'
 import './layout/aspect-ratio/index.js'
 import './layout/masonry/index.js'
+import './layout/safe-area/index.js'
+import './layout/status-bar/index.js'
 export { OASScrollArea } from './layout/scroll-area/oas-scroll-area.js'
 export { OASFlex } from './layout/flex/oas-flex.js'
 export { OASSplitter } from './layout/splitter/oas-splitter.js'
@@ -72,6 +74,8 @@ export {
 export { OASContainer } from './layout/container/index.js'
 export { OASAspectRatio } from './layout/aspect-ratio/index.js'
 export { OASMasonry, type MasonryItem } from './layout/masonry/oas-masonry.js'
+export { OASSafeArea } from './layout/safe-area/oas-safe-area.js'
+export { OASStatusBar } from './layout/status-bar/oas-status-bar.js'
 
 import './workbench/titlebar/index.js'
 import './workbench/statusbar/index.js'
@@ -265,6 +269,8 @@ import './feedback/tooltip/index.js'
 import './feedback/popover/contextmenu/index.js'
 import './feedback/popover/index.js'
 import './feedback/hover-card/index.js'
+import './feedback/offline/index.js'
+import './feedback/page-loading/index.js'
 export {
   OASMessage,
   message,
@@ -332,6 +338,13 @@ export { OASResult } from './feedback/result/oas-result.js'
 export { OAStooltip } from './feedback/tooltip/oas-tooltip.js'
 export { OASPopover } from './feedback/popover/oas-popover.js'
 export { OASHoverCard } from './feedback/hover-card/oas-hover-card.js'
+export { OASOffline } from './feedback/offline/oas-offline.js'
+export { OASPageLoading } from './feedback/page-loading/oas-page-loading.js'
+
+import './overlay/share-sheet/index.js'
+import './overlay/curtain/index.js'
+export { OASShareSheet, type ShareSheetChannel } from './overlay/share-sheet/oas-share-sheet.js'
+export { OASCurtain } from './overlay/curtain/oas-curtain.js'
 
 import './navigation/menu/index.js'
 import './navigation/dropdown/index.js'
@@ -471,6 +484,8 @@ import './data/log/index.js'
 import './data/comment/index.js'
 import './data/highlight/index.js'
 import './data/swipe-cell/index.js'
+import './data/rolling-text/index.js'
+import './data/barrage/index.js'
 
 import './conversation/bubble/index.js'
 import './conversation/attachment/index.js'
@@ -640,6 +655,17 @@ export { OASRelativeTime } from './data/relative-time/oas-relative-time.js'
 export { OASStatistic } from './data/statistic/oas-statistic.js'
 export { OASEllipsis } from './data/ellipsis/oas-ellipsis.js'
 export { OASMarquee } from './data/marquee/index.js'
+export { OASRollingText, formatRollingValue } from './data/rolling-text/index.js'
+export type { RollingTextColumn } from './data/rolling-text/oas-rolling-text.js'
+export {
+  OASBarrage,
+  estimateBarrageWidth,
+  resolveBarrageGap,
+  resolveBarrageMaxActive,
+  resolveBarrageSpeed,
+  resolveBarrageTracks,
+} from './data/barrage/index.js'
+export type { BarrageItemDetail, BarrageItemInput, BarrageItemOptions } from './data/barrage/oas-barrage.js'
 export { OASNumberAnimation } from './data/number-animation/index.js'
 export { OASGradientText } from './data/gradient-text/index.js'
 export { OASChart } from './data/chart/oas-chart.js'

@@ -597,4 +597,12 @@ export const uk: LocaleMessages = {
   'chipsInput.editLabel': 'Редагувати отримувача',
   'chipsInput.invalidEmail': 'Неправильна email-адреса',
   'chipsInput.exceedLimit': 'Щонайбільше {max} отримувачів',
+  // share-sheet (панель поширення)
+  'shareSheet.title': 'Поділитися в',
+  'shareSheet.cancel': 'Скасувати',
+  'shareSheet.close': 'Закрити',
+  'shareSheet.empty': 'Немає доступних отримувачів',
+  'curtain.close': 'Закрити',
+  'curtain.label': 'Повідомлення',
+  'offline.message': 'Немає підключення до мережі. Перевірте налаштування мережі.',
 }

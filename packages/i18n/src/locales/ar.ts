@@ -593,4 +593,12 @@ export const ar: LocaleMessages = {
   'chipsInput.editLabel': 'تعديل المستلم',
   'chipsInput.invalidEmail': 'بريد إلكتروني غير صالح',
   'chipsInput.exceedLimit': 'حد أقصى {max} مستلمًا',
+  // share-sheet (لوحة المشاركة)
+  'shareSheet.title': 'مشاركة إلى',
+  'shareSheet.cancel': 'إلغاء',
+  'shareSheet.close': 'إغلاق',
+  'shareSheet.empty': 'لا توجد جهات مشاركة متاحة',
+  'curtain.close': 'إغلاق',
+  'curtain.label': 'تنبيه',
+  'offline.message': 'انقطع الاتصال بالشبكة. تحقق من إعدادات الشبكة.',
 }

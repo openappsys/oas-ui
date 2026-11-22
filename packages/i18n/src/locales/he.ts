@@ -596,4 +596,12 @@ export const he: LocaleMessages = {
   'chipsInput.editLabel': 'ערוך נמען',
   'chipsInput.invalidEmail': 'כתובת אימייל לא תקינה',
   'chipsInput.exceedLimit': 'עד {max} נמענים',
+  // share-sheet (לוח שיתוף)
+  'shareSheet.title': 'שיתוף אל',
+  'shareSheet.cancel': 'ביטול',
+  'shareSheet.close': 'סגור',
+  'shareSheet.empty': 'אין יעדי שיתוף זמינים',
+  'curtain.close': 'סגור',
+  'curtain.label': 'הודעה',
+  'offline.message': 'אין חיבור לרשת. בדוק את הגדרות הרשת.',
 }

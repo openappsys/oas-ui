@@ -593,4 +593,12 @@ export const es: LocaleMessages = {
   'chipsInput.editLabel': 'Editar destinatario',
   'chipsInput.invalidEmail': 'Correo electrónico no válido',
   'chipsInput.exceedLimit': 'Máximo {max} destinatarios',
+  // share-sheet (panel de compartir)
+  'shareSheet.title': 'Compartir en',
+  'shareSheet.cancel': 'Cancelar',
+  'shareSheet.close': 'Cerrar',
+  'shareSheet.empty': 'No hay destinos para compartir',
+  'curtain.close': 'Cerrar',
+  'curtain.label': 'Aviso',
+  'offline.message': 'Sin conexión. Comprueba tu conexión de red.',
 }

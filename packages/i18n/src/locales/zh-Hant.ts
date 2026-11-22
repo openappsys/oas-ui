@@ -598,4 +598,12 @@ export const zhHant: LocaleMessages = {
   'chipsInput.editLabel': '編輯收件人',
   'chipsInput.invalidEmail': '信箱格式不正確',
   'chipsInput.exceedLimit': '最多新增 {max} 個',
+  // share-sheet（分享面板）
+  'shareSheet.title': '分享到',
+  'shareSheet.cancel': '取消',
+  'shareSheet.close': '關閉',
+  'shareSheet.empty': '暫無可分享頻道',
+  'curtain.close': '關閉',
+  'curtain.label': '提示',
+  'offline.message': '網路連線已中斷，請檢查網路設定',
 }

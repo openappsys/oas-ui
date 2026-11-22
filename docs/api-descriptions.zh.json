@@ -5151,5 +5151,185 @@
     "props": {
       "value": "当前值：邮箱字符串数组（写入回写 value attribute，不派发事件）"
     }
+  },
+  "oas-safe-area": {
+    "attrs": {
+      "position": "占位方向：`bottom`（默认，底部手势区）/ `top`（顶部刘海区）",
+      "size": "高度覆盖：纯数字按 px，亦接受 CSS 长度（如 `1rem` / `24px` / `calc(...)`）；缺省读取 `env(safe-area-inset-*)`（不支持时为 0）"
+    },
+    "events": {},
+    "slots": {
+      "": "装饰内容（可选，如状态点）；页面主体内容不要放这里"
+    },
+    "cssVars": {
+      "--oas-safe-area-size": "高度覆盖（`size` 属性写入同一变量）"
+    }
+  },
+  "oas-status-bar": {
+    "attrs": {
+      "height": "高度覆盖：纯数字按 px，亦接受 CSS 长度（如 `44px` / `1.5rem`）；缺省读取 `env(safe-area-inset-top)`",
+      "color": "前景色覆盖（ui-spec §4.1）：11 个预设名取 `--oas-preset-<name>-text` 文字安全档，其余按任意 CSS 色值直接注入；空值恢复 token 默认"
+    },
+    "events": {},
+    "slots": {
+      "": "状态内容（时间 / 电量等，由宿主绘制）"
+    },
+    "cssVars": {
+      "--oas-status-bar-bg": "背景（默认透明，由宿主决定是否铺色）",
+      "--oas-status-bar-color": "前景色（`color` 属性写入同一变量）",
+      "--oas-status-bar-height": "高度覆盖（`height` 属性写入同一变量）"
+    }
+  },
+  "oas-offline": {
+    "attrs": {
+      "variant": "形态：`bar`（默认，固定视口顶部铺满）/ `block`（跟随文档流的提示块）",
+      "message": "提示文案覆盖；缺省走 i18n `offline.message`"
+    },
+    "events": {
+      "oas-offline": "进入断网态时派发（状态真正变化才派发）",
+      "oas-online": "网络恢复时派发（状态真正变化才派发）"
+    },
+    "slots": {},
+    "cssVars": {
+      "--oas-offline-bg": "提示条背景（默认 danger 语义色）",
+      "--oas-offline-color": "提示文字色（默认 `--oas-color-text-on-danger`）"
+    }
+  },
+  "oas-page-loading": {
+    "attrs": {
+      "open": "受控显隐（在场=显示全屏遮罩）；宿主直接移除属性静默，不派发事件",
+      "mode": "形态：`spinner`（默认转菊花）/ `skeleton`（骨架行）/ `progress`（进度条）；非法值回落 spinner",
+      "text": "加载文案覆盖；缺省走 i18n `loading.loading`",
+      "value": "进度百分比（仅 progress 形态）：0–100，越界钳制、非法回落 0",
+      "rows": "骨架行数（仅 skeleton 形态）：正整数，缺省 4，钳制在 1–12"
+    },
+    "events": {
+      "oas-close": "调用 `close()` 关闭时派发"
+    },
+    "slots": {},
+    "methods": {
+      "show": "显示加载态（等价于写入 `open` 属性）",
+      "close": "关闭加载态：移除 `open` 并派发 `oas-close`"
+    },
+    "cssVars": {
+      "--oas-page-loading-mask": "全屏遮罩色",
+      "--oas-page-loading-bg": "面板背景",
+      "--oas-page-loading-color": "面板文字色",
+      "--oas-page-loading-max-width": "面板最大宽度",
+      "--oas-page-loading-shadow": "面板阴影",
+      "--oas-page-loading-blur": "遮罩背景模糊",
+      "--oas-page-loading-spinner-size": "转菊花尺寸",
+      "--oas-page-loading-spinner-color": "转菊花颜色",
+      "--oas-page-loading-spin-duration": "转菊花旋转周期",
+      "--oas-page-loading-skeleton": "骨架行颜色",
+      "--oas-page-loading-pulse-duration": "骨架脉冲周期",
+      "--oas-page-loading-track": "进度轨道颜色",
+      "--oas-page-loading-bar": "进度条颜色"
+    }
+  },
+  "oas-share-sheet": {
+    "attrs": {
+      "open": "受控显隐（在场=展开；宿主直接写入静默）",
+      "heading": "面板标题；缺省走 i18n `shareSheet.title`",
+      "cancel-text": "取消按钮文案；缺省走 i18n `shareSheet.cancel`",
+      "channels": "渠道 JSON 数组 `[{ key, name, icon? }]`：`icon` 为 `oas-icon` 图标名，缺省用名称首字符占位；非法 JSON 忽略并 dev 告警一次"
+    },
+    "events": {
+      "oas-select": "点击渠道时派发，随后自动关闭",
+      "oas-close": "关闭时派发（reason: select / cancel / close / backdrop / esc / api）"
+    },
+    "slots": {},
+    "methods": {
+      "show": "展开面板（写入 `open` 属性）",
+      "close": "收起面板并派发 `oas-close`（reason 默认 `api`）"
+    },
+    "cssVars": {
+      "--oas-share-sheet-mask": "遮罩颜色",
+      "--oas-share-sheet-bg": "面板背景",
+      "--oas-share-sheet-color": "面板文字色",
+      "--oas-share-sheet-columns": "宫格列数",
+      "--oas-share-sheet-max-height": "面板最大高度",
+      "--oas-share-sheet-channel-bg": "渠道图标底色",
+      "--oas-share-sheet-channel-color": "渠道图标前景色"
+    }
+  },
+  "oas-curtain": {
+    "attrs": {
+      "open": "受控显隐（在场=展开；受控优先于自动判定）",
+      "storage-key": "本地记忆键（默认 `oas-curtain`）；同一 key 多实例共享已关闭状态",
+      "persist": "值布尔：缺省/任意非 `\"false\"` = 记住关闭；`\"false\"` = 不写本地记忆、每次进入都弹",
+      "auto": "自动弹出开关：缺省自动判定；`\"false\"` 关闭自动弹出（文档/嵌入手动控制）",
+      "heading": "标题；缺省为空，使用默认插槽承载自定义内容",
+      "mask-closable": "布尔，存在时点击内容区外的遮罩可关闭（默认只能关闭按钮 / Esc）"
+    },
+    "events": {
+      "oas-close": "关闭时派发（reason: button / esc / backdrop / api）"
+    },
+    "slots": {
+      "": "幕帘主体内容"
+    },
+    "methods": {
+      "show": "强制展开（不清理本地记忆）",
+      "close": "关闭并写入本地记忆（persist 生效时），派发 `oas-close`",
+      "reset": "清除本地记忆（不改变当前显隐）"
+    },
+    "cssVars": {
+      "--oas-curtain-bg": "全屏背景",
+      "--oas-curtain-color": "文字色",
+      "--oas-curtain-panel-bg": "内容卡片背景",
+      "--oas-curtain-max-width": "内容卡片最大宽度",
+      "--oas-curtain-duration": "入场淡入时长"
+    }
+  },
+  "oas-rolling-text": {
+    "attrs": {
+      "value": "显示值（字符串；numeric property 赋值会反射到属性）",
+      "precision": "小数位数（0–10）：补零 / 四舍五入；缺省或非法时保留原文本",
+      "prefix-text": "前缀文本（如货币符号）",
+      "suffix-text": "后缀文本（如单位）",
+      "duration": "单列翻滚时长（ms，默认 600）；非法或非正回落默认",
+      "live": "布尔，存在时读屏活区为 `polite`（默认 off，避免频繁播报）"
+    },
+    "events": {},
+    "slots": {},
+    "cssVars": {
+      "--oas-rolling-text-duration": "翻滚时长",
+      "--oas-rolling-text-height": "单列高度",
+      "--oas-rolling-text-font": "字号",
+      "--oas-rolling-text-separator-color": "小数点 / 符号等非数字列颜色"
+    }
+  },
+  "oas-barrage": {
+    "attrs": {
+      "tracks": "轨道数（正整数，默认 3，上限 20）",
+      "speed": "漂移速度（像素/秒，默认 120）",
+      "gap": "同轨道相邻弹幕的最小水平间距（px，默认 48）",
+      "max-active": "同屏最大条数（0 = 不限，默认 0）",
+      "paused": "受控暂停（在场=暂停；CSS 动画与排期计时同时冻结）",
+      "height": "舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px）",
+      "accessible": "布尔，存在时弹幕进入读屏（`role=\"log\"` + `aria-live=\"polite\"`）；缺省 `aria-hidden`"
+    },
+    "events": {
+      "oas-item-click": "点击弹幕时派发"
+    },
+    "slots": {},
+    "methods": {
+      "add": "追加一条弹幕（options: `{ color?, key? }`）",
+      "addBatch": "批量追加（字符串或 `{ text, color?, key? }`）",
+      "pause": "暂停（写入 `paused` 属性）",
+      "resume": "继续（移除 `paused` 属性）",
+      "clear": "清空在场与排队弹幕"
+    },
+    "cssVars": {
+      "--oas-barrage-height": "舞台高度（`height` 属性写入同一变量）",
+      "--oas-barrage-bg": "舞台背景",
+      "--oas-barrage-color": "默认文字色",
+      "--oas-barrage-tracks": "轨道数（组件写入）",
+      "--oas-barrage-font-size": "弹幕字号",
+      "--oas-barrage-item-bg": "弹幕气泡背景",
+      "--oas-barrage-item-color": "弹幕文字色",
+      "--oas-barrage-item-hover-bg": "弹幕悬停背景",
+      "--oas-barrage-stage-width": "舞台宽度（组件写入，供动画位移）"
+    }
   }
 }

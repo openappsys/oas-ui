@@ -597,4 +597,12 @@ export const zhCN = {
   'chipsInput.editLabel': '编辑收件人',
   'chipsInput.invalidEmail': '邮箱格式不正确',
   'chipsInput.exceedLimit': '最多添加 {max} 个',
+  // share-sheet（分享面板）
+  'shareSheet.title': '分享到',
+  'shareSheet.cancel': '取消',
+  'shareSheet.close': '关闭',
+  'shareSheet.empty': '暂无可分享渠道',
+  'curtain.close': '关闭',
+  'curtain.label': '提示',
+  'offline.message': '网络连接已断开，请检查网络设置',
 } as const

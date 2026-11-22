@@ -501,4 +501,12 @@ export const th: LocaleMessages = {
   'chipsInput.editLabel': 'แก้ไขผู้รับ',
   'chipsInput.invalidEmail': 'อีเมลไม่ถูกต้อง',
   'chipsInput.exceedLimit': 'เพิ่มได้สูงสุด {max} รายการ',
+  // share-sheet (แผงแชร์)
+  'shareSheet.title': 'แชร์ไปยัง',
+  'shareSheet.cancel': 'ยกเลิก',
+  'shareSheet.close': 'ปิด',
+  'shareSheet.empty': 'ไม่มีช่องทางแชร์',
+  'curtain.close': 'ปิด',
+  'curtain.label': 'ประกาศ',
+  'offline.message': 'การเชื่อมต่อเครือข่ายขาดหาย โปรดตรวจสอบการตั้งค่าเครือข่าย',
 }

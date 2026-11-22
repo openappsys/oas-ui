@@ -521,4 +521,12 @@ export const en: LocaleMessages = {
   'chipsInput.editLabel': 'Edit recipient',
   'chipsInput.invalidEmail': 'Invalid email address',
   'chipsInput.exceedLimit': 'Up to {max} recipients',
+  // share-sheet (share panel)
+  'shareSheet.title': 'Share to',
+  'shareSheet.cancel': 'Cancel',
+  'shareSheet.close': 'Close',
+  'shareSheet.empty': 'No share targets',
+  'curtain.close': 'Close',
+  'curtain.label': 'Notice',
+  'offline.message': 'You are offline. Check your network connection.',
 }

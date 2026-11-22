@@ -55,6 +55,8 @@ export { OASSidebarDivider } from './layout/sidebar/oas-sidebar-divider.js'
 export { OASContainer } from './layout/container/oas-container.js'
 export { OASAspectRatio } from './layout/aspect-ratio/oas-aspect-ratio.js'
 export { OASMasonry } from './layout/masonry/oas-masonry.js'
+export { OASSafeArea } from './layout/safe-area/oas-safe-area.js'
+export { OASStatusBar } from './layout/status-bar/oas-status-bar.js'
 
 // ---------- form ----------
 export { OASInput } from './form/input/oas-input.js'
@@ -122,6 +124,12 @@ export { OASResult } from './feedback/result/oas-result.js'
 export { OAStooltip } from './feedback/tooltip/oas-tooltip.js'
 export { OASPopover } from './feedback/popover/oas-popover.js'
 export { OASHoverCard } from './feedback/hover-card/oas-hover-card.js'
+export { OASOffline } from './feedback/offline/oas-offline.js'
+export { OASPageLoading } from './feedback/page-loading/oas-page-loading.js'
+
+// ---------- overlay ----------
+export { OASShareSheet } from './overlay/share-sheet/oas-share-sheet.js'
+export { OASCurtain } from './overlay/curtain/oas-curtain.js'
 
 // ---------- navigation ----------
 export { OASMenu } from './navigation/menu/oas-menu.js'
@@ -208,6 +216,8 @@ export { OASRelativeTime } from './data/relative-time/oas-relative-time.js'
 export { OASStatistic } from './data/statistic/oas-statistic.js'
 export { OASEllipsis } from './data/ellipsis/oas-ellipsis.js'
 export { OASMarquee } from './data/marquee/oas-marquee.js'
+export { OASRollingText } from './data/rolling-text/oas-rolling-text.js'
+export { OASBarrage } from './data/barrage/oas-barrage.js'
 export { OASNumberAnimation } from './data/number-animation/oas-number-animation.js'
 export { OASGradientText } from './data/gradient-text/oas-gradient-text.js'
 export { OASChart } from './data/chart/oas-chart.js'

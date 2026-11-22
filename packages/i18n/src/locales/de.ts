@@ -593,4 +593,12 @@ export const de: LocaleMessages = {
   'chipsInput.editLabel': 'Empfänger bearbeiten',
   'chipsInput.invalidEmail': 'Ungültige E-Mail-Adresse',
   'chipsInput.exceedLimit': 'Höchstens {max} Empfänger',
+  // share-sheet (Teilen-Panel)
+  'shareSheet.title': 'Teilen mit',
+  'shareSheet.cancel': 'Abbrechen',
+  'shareSheet.close': 'Schließen',
+  'shareSheet.empty': 'Keine Freigabeziele',
+  'curtain.close': 'Schließen',
+  'curtain.label': 'Hinweis',
+  'offline.message': 'Sie sind offline. Prüfen Sie Ihre Netzwerkverbindung.',
 }

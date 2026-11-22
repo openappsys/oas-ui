@@ -29,9 +29,11 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 - [Grid](/en/components/grid) —— A 24-column grid layout system. Pair it with `oas-grid-item` to divide column widths, with support for gap, offset and a custom total column count; setting `columns` switches to an auto equal-width layout (simple-grid).
 - [Layout](/en/components/layout) —— A classic page skeleton of header + sider + content + footer, used with semantic child components.
 - [Masonry](/en/components/masonry) —— A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.
+- [SafeArea](/en/components/safe-area) — reserves the notch and home-indicator height from `env(safe-area-inset-*)` for embedded mobile hosts, with an explicit `size` override.
 - [ScrollArea](/en/components/scroll-area) —— A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; with `auto-hide` it is only shown while scrolling or hovering, and scroll events are throttled.
 - [Sidebar](/en/components/sidebar) —— A collapsible side bar: on desktop, `collapsed` narrows it to an icon strip; on mobile (narrower than `mobile-breakpoint`, default 768px) it automatically becomes an overlay drawer with a backdrop. Clicking outside, the close button or Esc collapses it.
 - [Splitter](/en/components/splitter) —— A split component that resizes the left/right panel widths, adjustable via mouse drag or arrow keys.
+- [StatusBar](/en/components/status-bar) —— reserves the top status-bar height with `height` / `color` overrides; the slot holds host-drawn status content.
 
 ## Form
 
@@ -78,6 +80,7 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 - [Backdrop](/en/components/backdrop) —— A full-screen semi-transparent overlay with `transparent`/`blur` variants and body scroll locking; the node is automatically unmounted when `open=false`, leaving no orphan DOM.
 - [BottomSheet](/en/components/bottom-sheet) —— feedback Mobile bottom sheet container: close via drag handle / backdrop click / Esc, with safe-area and focus trap built in; `passive` mode serves as a structural placeholder for overlay PC forms.
 - [Confirm](/en/components/confirm) —— Imperative confirmation dialog based on Promises, reusing `oas-modal` under the hood.
+- [Curtain](/en/components/curtain) — a one-time full-screen overlay that opens on first visit and remembers dismissal; `reset()` clears the memory.
 - [Drawer](/en/components/drawer) —— A panel that slides in from the side, often used for filters, details, and similar scenarios.
 - [Empty](/en/components/empty) —— A placeholder for empty data, supporting custom descriptions, custom illustrations with sizing, and hiding the illustration or action area.
 - [HoverCard](/en/components/hover-card) —— A preview card triggered on hover/focus with configurable delay.
@@ -86,11 +89,14 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 - [Modal](/en/components/modal) —— A modal dialog for interrupting flows that require user confirmation or input.
 - [NoticeBar](/en/components/notice-bar) —— A notice bar for the top of a page or inside a section: icon + seamlessly scrolling long text + vertical multi-notice rotation + closable + an action link.
 - [Notification](/en/components/notification) —— Notification cards in the top-right corner, supporting title, description, duration, and type.
+- [Offline](/en/components/offline) — follows online/offline events, shows a bar/block while offline and disappears on reconnect, without a first-frame flash.
+- [PageLoading](/en/components/page-loading) — a full-screen mask with spinner/skeleton/progress modes and `show()` / `close()` programmatic control.
 - [Popconfirm](/en/components/popconfirm) —— Shows a confirmation bubble next to the trigger element, commonly used before destructive actions like deletion.
 - [Popover](/en/components/popover) —— A click-triggered popup panel that can hold a title, body text and arbitrary custom content.
 - [Progress](/en/components/progress) —— Shows task progress, supporting line and circle forms, status colors, and hidden text.
 - [PullRefresh](/en/components/pull-refresh) —— A mobile pull-to-refresh container: pull past the top of the list to reveal the indicator (finger-following resistance curve); releasing past the threshold dispatches oas-refresh and parks; when the host finishes it removes refreshing and the component plays the success copy before bouncing back.
 - [Result](/en/components/result) —— A result feedback page supporting four states: success, error, warning, and info.
+- [ShareSheet](/en/components/share-sheet) — a bottom share panel with a channel grid and cancel action; clicking a channel dispatches `oas-select` and closes automatically.
 - [Skeleton](/en/components/skeleton) —— A placeholder skeleton for loading states, supporting an avatar, title, multiple paragraph rows, and a shimmer animation.
 - [Snackbar](/en/components/snackbar) —— A lightweight feedback bar that slides in from the bottom (or top). The `open` attribute is controlled; it can include an action button and dispatches `oas-close` after 4 seconds by default, leaving dismissal to the host.
 - [Spin](/en/components/spin) —— A loading indicator that can be used standalone or wrap content with an overlaid mask.
@@ -134,6 +140,7 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 
 - [Avatar](/en/components/avatar) —— Displays a user or object avatar, supporting both text-placeholder and image forms.
 - [Barcode](/en/components/barcode) —— A 1D barcode component based on a **pure TypeScript, zero-dependency encoder** (built in-house): 6 symbologies in the first release (CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14), built-in scannability guardrails (quiet-zone floor / fixed white background), inline SVG output, downloadable.
+- [Barrage](/en/components/barrage) — streaming track-based comments with speed control, non-overlapping scheduling, a density cap and pause/clear APIs.
 - [Card](/en/components/card) —— An information container that groups a set of related content.
 - [Carousel](/en/components/carousel) —— Cycles through multiple screens of content in the same viewport, with manual switching and autoplay support.
 
@@ -160,6 +167,7 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 - [QRCode](/en/components/qrcode) —— A QR code component based on a **pure TypeScript, zero-dependency encoder** (built in-house) that outputs inline SVG and is scannable and downloadable.
 - [RelativeTime](/en/components/relative-time) —— Localized relative time (`Intl.RelativeTimeFormat`) backed by a semantic `<time datetime>`; optional `auto-refresh` follows page visibility, and invalid or missing values render a safe empty state.
 - [Resource](/en/components/resource) — Resource lanes + workload histogram: task allocation, capacity and overload highlighting per resource; a pure view layer that does not write schedules back.
+- [RollingText](/en/components/rolling-text) — digits and characters roll column by column on value changes, with prefix/suffix and decimal precision.
 - [Scanner](/en/components/scanner) — Camera scanning: `active` drives getUserMedia + native BarcodeDetector recognition, dispatches `oas-scan` on hit; falls back to manual input when camera or permission is unavailable.
 - [Scheduler](/en/components/scheduler) — Month-view scheduler: event chips in day cells (title + color bar) + events read/write channel + CRUD methods and events, pure UI state.
 - [Signature](/en/components/signature) — Canvas signature pad: pointer stroke capture + two-way `value` + `oas-change`, multi-pointer filtering / single-point rejection, strokes preserved on resize.

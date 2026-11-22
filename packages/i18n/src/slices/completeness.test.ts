@@ -23,6 +23,7 @@ import { formMessages } from './form.js'
 import { frameworkMessages } from './framework.js'
 import { layoutMessages } from './layout.js'
 import { navigationMessages } from './navigation.js'
+import { overlayMessages } from './overlay.js'
 import { workbenchMessages } from './workbench.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -40,6 +41,7 @@ const FAMILY_LIST = [
   'framework',
   'layout',
   'navigation',
+  'overlay',
   'workbench',
 ] as const
 type Family = (typeof FAMILY_LIST)[number]
@@ -53,6 +55,7 @@ const slices: Record<Family, Record<string, string>> = {
   framework: frameworkMessages,
   layout: layoutMessages,
   navigation: navigationMessages,
+  overlay: overlayMessages,
   workbench: workbenchMessages,
 }
 
@@ -453,8 +456,8 @@ describe('i18n 家族切片完备性', () => {
     expect(slices.conversation['promptInput.placeholder']).toBe('输入消息…')
   })
 
-  it('运行时：整包入口下 492 键全部可解析（t() 不回退 raw key）', () => {
-    expect(zhKeys.length).toBe(492)
+  it('运行时：整包入口下 499 键全部可解析（t() 不回退 raw key）', () => {
+    expect(zhKeys.length).toBe(499)
     for (const key of zhKeys) {
       expect(t(key as never), `整包入口下 ${key} 应解析为中文`).not.toBe(key)
     }

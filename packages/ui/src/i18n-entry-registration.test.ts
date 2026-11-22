@@ -35,6 +35,7 @@ import { formMessages } from '@oas-ui/i18n/slices/form'
 import { frameworkMessages } from '@oas-ui/i18n/slices/framework'
 import { layoutMessages } from '@oas-ui/i18n/slices/layout'
 import { navigationMessages } from '@oas-ui/i18n/slices/navigation'
+import { overlayMessages } from '@oas-ui/i18n/slices/overlay'
 import { workbenchMessages } from '@oas-ui/i18n/slices/workbench'
 
 const UI_SRC = dirname(fileURLToPath(import.meta.url)) // packages/ui/src
@@ -48,6 +49,7 @@ const FAMILIES = [
   'framework',
   'layout',
   'navigation',
+  'overlay',
   'workbench',
 ] as const
 type Family = (typeof FAMILIES)[number]
@@ -61,6 +63,7 @@ const SLICES: Record<Family, Record<string, string>> = {
   framework: frameworkMessages,
   layout: layoutMessages,
   navigation: navigationMessages,
+  overlay: overlayMessages,
   workbench: workbenchMessages,
 }
 

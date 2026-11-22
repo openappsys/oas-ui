@@ -38,4 +38,5 @@ export const feedbackMessages: Partial<LocaleMessages> = {
   'pullRefresh.release': '松开立即刷新',
   'pullRefresh.refreshing': '刷新中…',
   'pullRefresh.success': '刷新成功',
+  'offline.message': '网络连接已断开，请检查网络设置',
 }

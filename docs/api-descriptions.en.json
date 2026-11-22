@@ -5407,5 +5407,185 @@
     "props": {
       "value": "Current value: email string array (writing back to the value attribute emits no events)"
     }
+  },
+  "oas-safe-area": {
+    "attrs": {
+      "position": "Placement direction: `bottom` (default, home-indicator area) / `top` (notch area)",
+      "size": "Height override: plain numbers are px, CSS lengths are accepted (`1rem` / `24px` / `calc(...)`); defaults to `env(safe-area-inset-*)` (0 when unsupported)"
+    },
+    "events": {},
+    "slots": {
+      "": "Decorative content (optional, e.g. a status dot); do not put page content here"
+    },
+    "cssVars": {
+      "--oas-safe-area-size": "Height override (the `size` attribute writes the same variable)"
+    }
+  },
+  "oas-status-bar": {
+    "attrs": {
+      "height": "Height override: plain numbers are px, CSS lengths are accepted (`44px` / `1.5rem`); defaults to `env(safe-area-inset-top)`",
+      "color": "Foreground override (ui-spec §4.1): the 11 preset names resolve to `--oas-preset-<name>-text`; any other CSS color is injected as-is; empty restores the token default"
+    },
+    "events": {},
+    "slots": {
+      "": "Status content (time / battery drawn by the host)"
+    },
+    "cssVars": {
+      "--oas-status-bar-bg": "Background (transparent by default; the host decides whether to paint it)",
+      "--oas-status-bar-color": "Foreground color (the `color` attribute writes the same variable)",
+      "--oas-status-bar-height": "Height override (the `height` attribute writes the same variable)"
+    }
+  },
+  "oas-offline": {
+    "attrs": {
+      "variant": "Presentation: `bar` (default, fixed to the top of the viewport) / `block` (in-flow notice block)",
+      "message": "Copy override; defaults to i18n `offline.message`"
+    },
+    "events": {
+      "oas-offline": "Dispatched when entering the offline state (only on real state changes)",
+      "oas-online": "Dispatched when the network recovers (only on real state changes)"
+    },
+    "slots": {},
+    "cssVars": {
+      "--oas-offline-bg": "Notice background (defaults to the danger semantic color)",
+      "--oas-offline-color": "Notice text color (defaults to `--oas-color-text-on-danger`)"
+    }
+  },
+  "oas-page-loading": {
+    "attrs": {
+      "open": "Controlled visibility (present = full-screen mask). Removing it from the host is silent",
+      "mode": "Presentation: `spinner` (default) / `skeleton` / `progress`; invalid falls back to spinner",
+      "text": "Copy override; defaults to i18n `loading.loading`",
+      "value": "Progress percentage (progress mode only): 0–100, clamped; invalid falls back to 0",
+      "rows": "Skeleton row count (skeleton mode only): positive integer, default 4, clamped to 1–12"
+    },
+    "events": {
+      "oas-close": "Dispatched when closed via `close()`"
+    },
+    "slots": {},
+    "methods": {
+      "show": "Show the loading state (same as writing the `open` attribute)",
+      "close": "Close: removes `open` and dispatches `oas-close`"
+    },
+    "cssVars": {
+      "--oas-page-loading-mask": "Full-screen mask color",
+      "--oas-page-loading-bg": "Panel background",
+      "--oas-page-loading-color": "Panel text color",
+      "--oas-page-loading-max-width": "Panel max width",
+      "--oas-page-loading-shadow": "Panel shadow",
+      "--oas-page-loading-blur": "Mask backdrop blur",
+      "--oas-page-loading-spinner-size": "Spinner size",
+      "--oas-page-loading-spinner-color": "Spinner color",
+      "--oas-page-loading-spin-duration": "Spinner rotation period",
+      "--oas-page-loading-skeleton": "Skeleton row color",
+      "--oas-page-loading-pulse-duration": "Skeleton pulse period",
+      "--oas-page-loading-track": "Progress track color",
+      "--oas-page-loading-bar": "Progress bar color"
+    }
+  },
+  "oas-share-sheet": {
+    "attrs": {
+      "open": "Controlled visibility (present = open; host writes are silent)",
+      "heading": "Panel heading; defaults to i18n `shareSheet.title`",
+      "cancel-text": "Cancel button copy; defaults to i18n `shareSheet.cancel`",
+      "channels": "Channel JSON array `[{ key, name, icon? }]`: `icon` is an `oas-icon` name; missing icons fall back to the first character; invalid JSON is ignored with one dev warning"
+    },
+    "events": {
+      "oas-select": "Dispatched when a channel is clicked; the sheet then closes automatically",
+      "oas-close": "Dispatched on close (reason: select / cancel / close / backdrop / esc / api)"
+    },
+    "slots": {},
+    "methods": {
+      "show": "Open the sheet (writes the `open` attribute)",
+      "close": "Close the sheet and dispatch `oas-close` (reason defaults to `api`)"
+    },
+    "cssVars": {
+      "--oas-share-sheet-mask": "Mask color",
+      "--oas-share-sheet-bg": "Panel background",
+      "--oas-share-sheet-color": "Panel text color",
+      "--oas-share-sheet-columns": "Grid column count",
+      "--oas-share-sheet-max-height": "Panel max height",
+      "--oas-share-sheet-channel-bg": "Channel icon background",
+      "--oas-share-sheet-channel-color": "Channel icon foreground"
+    }
+  },
+  "oas-curtain": {
+    "attrs": {
+      "open": "Controlled visibility (present = open; controlled overrides auto-detection)",
+      "storage-key": "Local memory key (default `oas-curtain`); instances share the dismissed state per key",
+      "persist": "Value boolean: absent/any non-`\"false\"` = remember dismissal; `\"false\"` = no local memory, opens every time",
+      "auto": "Auto-open switch: absent = auto-detect; `\"false\"` disables auto-open (manual control in docs/embeds)",
+      "heading": "Heading; empty by default — use the default slot for custom content",
+      "mask-closable": "Boolean; when present, clicking the mask outside the panel closes it (by default only the close button / Esc)"
+    },
+    "events": {
+      "oas-close": "Dispatched on close (reason: button / esc / backdrop / api)"
+    },
+    "slots": {
+      "": "Curtain body content"
+    },
+    "methods": {
+      "show": "Force open (does not clear local memory)",
+      "close": "Close and write local memory (when persist applies), dispatching `oas-close`",
+      "reset": "Clear local memory (does not change current visibility)"
+    },
+    "cssVars": {
+      "--oas-curtain-bg": "Full-screen background",
+      "--oas-curtain-color": "Text color",
+      "--oas-curtain-panel-bg": "Content card background",
+      "--oas-curtain-max-width": "Content card max width",
+      "--oas-curtain-duration": "Fade-in duration"
+    }
+  },
+  "oas-rolling-text": {
+    "attrs": {
+      "value": "Display value (string; numeric property assignments reflect to the attribute)",
+      "precision": "Decimal places (0–10): pad / round; missing or invalid keeps the original text",
+      "prefix-text": "Prefix text (e.g. a currency symbol)",
+      "suffix-text": "Suffix text (e.g. a unit)",
+      "duration": "Per-column roll duration (ms, default 600); invalid or non-positive falls back to the default",
+      "live": "Boolean; when present the screen-reader live region is `polite` (off by default to avoid frequent announcements)"
+    },
+    "events": {},
+    "slots": {},
+    "cssVars": {
+      "--oas-rolling-text-duration": "Roll duration",
+      "--oas-rolling-text-height": "Column height",
+      "--oas-rolling-text-font": "Font size",
+      "--oas-rolling-text-separator-color": "Color of non-digit columns (decimal point / signs)"
+    }
+  },
+  "oas-barrage": {
+    "attrs": {
+      "tracks": "Track count (positive integer, default 3, max 20)",
+      "speed": "Drift speed in pixels per second (default 120)",
+      "gap": "Minimum horizontal gap between items on the same track (px, default 48)",
+      "max-active": "Maximum on-screen items (0 = unlimited, default 0)",
+      "paused": "Controlled pause (present = paused; CSS animations and scheduling timers freeze together)",
+      "height": "Stage height (plain numbers are px, CSS lengths accepted; default 200px)",
+      "accessible": "Boolean; when present the barrage is exposed to screen readers (`role=\"log\"` + `aria-live=\"polite\"`); `aria-hidden` by default"
+    },
+    "events": {
+      "oas-item-click": "Dispatched when an item is clicked"
+    },
+    "slots": {},
+    "methods": {
+      "add": "Append one item (options: `{ color?, key? }`)",
+      "addBatch": "Append many (strings or `{ text, color?, key? }`)",
+      "pause": "Pause (writes the `paused` attribute)",
+      "resume": "Resume (removes the `paused` attribute)",
+      "clear": "Clear on-screen and queued items"
+    },
+    "cssVars": {
+      "--oas-barrage-height": "Stage height (the `height` attribute writes the same variable)",
+      "--oas-barrage-bg": "Stage background",
+      "--oas-barrage-color": "Default text color",
+      "--oas-barrage-tracks": "Track count (written by the component)",
+      "--oas-barrage-font-size": "Barrage font size",
+      "--oas-barrage-item-bg": "Item bubble background",
+      "--oas-barrage-item-color": "Item text color",
+      "--oas-barrage-item-hover-bg": "Item hover background",
+      "--oas-barrage-stage-width": "Stage width (written by the component for the animation distance)"
+    }
   }
 }

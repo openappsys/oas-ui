@@ -32,6 +32,7 @@ const FAMILY_DIR: Record<string, string> = {
   conversation: 'conversation',
   workbench: 'workbench',
   framework: 'framework',
+  overlay: 'overlay',
 }
 
 const FAMILY_FILES = Object.keys(FAMILY_DIR)
@@ -42,8 +43,8 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
   const all = parseComponentImports(indexText)
 
   it('src/index.ts 全量清单可解析且按顶层目录对齐各族', () => {
-    // 162 = 158 组件 + data/table/auto-height（row-auto-height 注册型 L3 能力包，v2.6.6 行高批次入册）+ scanner/signature（P0 批次两新组件）+ chips-input（P1/P2 批新组件）+ password-strength（v2.6.8 新组件）
-    expect(all.length, '全量注册表组件数').toBe(163)
+    // 171 = 163 + 移动端与工具组件批 8 件（layout 2 / feedback 2 / data 2 / overlay 2）
+    expect(all.length, '全量注册表组件数').toBe(171)
     const tops = new Set(all.map((p) => p.split('/')[0]))
     expect(tops).toEqual(new Set(Object.values(FAMILY_DIR)))
     // 每个顶层目录的全部组件都在 index.ts 全量清单里
@@ -51,15 +52,16 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
       const dirComps = all.filter((p) => p.startsWith(`${dir}/`))
       const EXPECTED_PER_DIR: Record<string, number> = {
         basic: 12,
-        layout: 9,
+        layout: 11,
         workbench: 5,
         form: 37,
-        feedback: 24,
+        feedback: 26,
         navigation: 23,
-        // data 42 = 39 组件 + auto-height 能力包（row-auto-height L3，data/table/auto-height）+ scanner/signature（P0 批次）
-        data: 42,
+        // data 44 = 42 + rolling-text / barrage（移动端与工具组件批）
+        data: 44,
         conversation: 8,
         framework: 3,
+        overlay: 2,
       }
       expect(dirComps.length, `${dir} 族注册组件数`).toBe(EXPECTED_PER_DIR[dir])
       // 无空目录；framework 目录即基座三件，其余目录不含基座

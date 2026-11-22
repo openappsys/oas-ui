@@ -52,6 +52,8 @@ import '../data/log/index.js'
 import '../data/comment/index.js'
 import '../data/highlight/index.js'
 import '../data/swipe-cell/index.js'
+import '../data/rolling-text/index.js'
+import '../data/barrage/index.js'
 
 // 唯一透传的 registry API（与全量入口一致）：OASUI.setLocale 切语言；其余 registry API 不进导出面
 export { setLocale } from '@oas-ui/i18n/registry'

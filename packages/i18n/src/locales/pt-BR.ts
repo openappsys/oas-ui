@@ -593,4 +593,12 @@ export const ptBR: LocaleMessages = {
   'chipsInput.editLabel': 'Editar destinatário',
   'chipsInput.invalidEmail': 'E-mail inválido',
   'chipsInput.exceedLimit': 'No máximo {max} destinatários',
+  // share-sheet (painel de compartilhamento)
+  'shareSheet.title': 'Compartilhar em',
+  'shareSheet.cancel': 'Cancelar',
+  'shareSheet.close': 'Fechar',
+  'shareSheet.empty': 'Nenhum destino de compartilhamento',
+  'curtain.close': 'Fechar',
+  'curtain.label': 'Aviso',
+  'offline.message': 'Você está offline. Verifique sua conexão de rede.',
 }

@@ -596,4 +596,12 @@ export const hi: LocaleMessages = {
   'chipsInput.editLabel': 'प्राप्तकर्ता संपादित करें',
   'chipsInput.invalidEmail': 'ईमेल पता मान्य नहीं है',
   'chipsInput.exceedLimit': 'अधिकतम {max} प्राप्तकर्ता',
+  // share-sheet (शेयर पैनल)
+  'shareSheet.title': 'यहाँ साझा करें',
+  'shareSheet.cancel': 'रद्द करें',
+  'shareSheet.close': 'बंद करें',
+  'shareSheet.empty': 'साझा करने के लिए कोई लक्ष्य नहीं',
+  'curtain.close': 'बंद करें',
+  'curtain.label': 'सूचना',
+  'offline.message': 'आप ऑफ़लाइन हैं। अपना नेटवर्क कनेक्शन जाँचें।',
 }

@@ -593,4 +593,12 @@ export const fr: LocaleMessages = {
   'chipsInput.editLabel': 'Modifier le destinataire',
   'chipsInput.invalidEmail': 'Adresse e-mail invalide',
   'chipsInput.exceedLimit': 'Au maximum {max} destinataires',
+  // share-sheet (panneau de partage)
+  'shareSheet.title': 'Partager vers',
+  'shareSheet.cancel': 'Annuler',
+  'shareSheet.close': 'Fermer',
+  'shareSheet.empty': 'Aucune destination de partage',
+  'curtain.close': 'Fermer',
+  'curtain.label': 'Information',
+  'offline.message': 'Vous êtes hors ligne. Vérifiez votre connexion réseau.',
 }

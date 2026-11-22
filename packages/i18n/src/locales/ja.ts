@@ -593,4 +593,12 @@ export const ja: LocaleMessages = {
   'chipsInput.editLabel': '宛先を編集',
   'chipsInput.invalidEmail': 'メールアドレスの形式が正しくありません',
   'chipsInput.exceedLimit': '追加は最大 {max} 件までです',
+  // share-sheet（共有パネル）
+  'shareSheet.title': '共有先',
+  'shareSheet.cancel': 'キャンセル',
+  'shareSheet.close': '閉じる',
+  'shareSheet.empty': '共有できる項目がありません',
+  'curtain.close': '閉じる',
+  'curtain.label': 'お知らせ',
+  'offline.message': 'ネットワークに接続されていません。接続設定を確認してください',
 }
