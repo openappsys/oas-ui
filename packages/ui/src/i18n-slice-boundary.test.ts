@@ -5,7 +5,7 @@
  * - form 族专属 key（form.valueMissing，在 form 切片、不在 data 切片）回退 raw key，
  *   证明切片边界真实生效（若整包 / 其他族切片被意外注册，此断言即红）。
  *
- * 本文件不得 import '@oas-ui/i18n' 整包（其 all-register 会注册全部 9 个家族切片，
+ * 本文件不得 import '@oas-ui/i18n' 整包（其 all-register 会注册全部 10 个家族切片，
  * 污染边界断言）或其他组件入口；t() 取自 @oas-ui/i18n/registry（本身无任何默认文案）。
  *
  * 注：不使用 form.save 之类的非真实 key 做回退断言——缺失 key 无论如何都回退，

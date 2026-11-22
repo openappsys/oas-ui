@@ -11,7 +11,7 @@
  *   供 config-provider 就近注入 locale 时按名查找
  *
  * 默认文案与切片：zh-CN 整包不再静态打进 registry，而是由 `@oas-ui/i18n` 主入口
- * 通过 `./slices/all-register.js` 把 9 个家族切片逐个 registerDefaultMessages() 注册进来；
+ * 通过 `./slices/all-register.js` 把 10 个家族切片逐个 registerDefaultMessages() 注册进来；
  * 组件按需消费时可只注册自己家族的切片（`@oas-ui/i18n/slices/<family>`），按需链不携带整包。
  * `loadLocale('zh-CN')` 仍可整包装载（见函数注释）。`getLocale().messages` 语义为
  * 「已注册的部分默认文案」（整包入口下即全集）。

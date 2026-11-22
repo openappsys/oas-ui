@@ -20,7 +20,7 @@ registerLocale(zhCN)
 setLocale('zh-CN')
 ```
 
-**内置中文默认文案按家族切片分发**：按需引入 `@oas-ui/ui/<族>/<组件>` 时，组件入口会自动注册所属家族的切片（`@oas-ui/i18n/slices/<family>`），宿主无需手动注册中文默认文案；公共入口 `import '@oas-ui/i18n'` 行为不变（导入即全量注册 9 个家族切片：basic / conversation / data / feedback / form / framework / layout / navigation / workbench）。因此 `getLocale().messages` 在按需消费下只包含**已加载的切片**——需要全集兜底时用上面的整包 `import zhCN from '@oas-ui/i18n/zh-CN'` + `registerLocale(zhCN)`，或直接引入公共入口。深度定制/自建组件场景可用 `@oas-ui/i18n/registry`（只含 registry API，无默认文案）+ `<family>Messages` + `registerDefaultMessages` 显式组装。
+**内置中文默认文案按家族切片分发**：按需引入 `@oas-ui/ui/<族>/<组件>` 时，组件入口会自动注册所属家族的切片（`@oas-ui/i18n/slices/<family>`），宿主无需手动注册中文默认文案；公共入口 `import '@oas-ui/i18n'` 行为不变（导入即全量注册 10 个家族切片：basic / conversation / data / feedback / form / framework / layout / navigation / workbench）。因此 `getLocale().messages` 在按需消费下只包含**已加载的切片**——需要全集兜底时用上面的整包 `import zhCN from '@oas-ui/i18n/zh-CN'` + `registerLocale(zhCN)`，或直接引入公共入口。深度定制/自建组件场景可用 `@oas-ui/i18n/registry`（只含 registry API，无默认文案）+ `<family>Messages` + `registerDefaultMessages` 显式组装。
 
 按需动态加载（独立 chunk，调用时才下载；静态子路径 `import ja from '@oas-ui/i18n/ja'` 亦可）：
 
