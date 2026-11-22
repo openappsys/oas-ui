@@ -9,6 +9,25 @@
 | **语言机制去跳转化** | 移除浏览器语言自动跳转（URL 即真源）；显式偏好深链跳转保留；语言提示条 + 导航分段切换器（中/EN）承接引导 | 🚧 已完成，未发布 |
 | **SEO 产物** | sitemap 每 URL 注入 git `<lastmod>`（浅克隆宁缺勿假）+ 补齐 x-default；340 页 frontmatter `description` 全量 | 🚧 已完成，未发布 |
 
+## 未发布（电商组件族 commerce）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **commerce 新族 9 件** | oas-sku / oas-coupon / oas-submit-bar / oas-goods-action / oas-address（含 contact 模式）/ oas-invoice / oas-ecard / oas-category / oas-price，覆盖交易链路业务件 | 📋 待开发（PRD 见「未发布：电商组件族」） |
+
+## 未发布（移动端与工具组件批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **form 族增补 4 件** | oas-number-keyboard（含车牌键盘变体）/ oas-code-button / oas-image-picker / oas-image-cropper | 📋 待开发 |
+| **overlay / data / layout / feedback 增补 8 件** | oas-share-sheet / oas-curtain；oas-rolling-text / oas-barrage；oas-safe-area / oas-status-bar；oas-offline / oas-page-loading | 📋 待开发 |
+
+## 未发布（schema-form）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **schema-form** | JSON 声明式表单渲染层（DSL 并集调研 → 设计稿评审 → 实现）；与 questionnaire 分工 = 字段渲染 vs 流程编排 | 📋 待开发（前置：并集调研） |
+
 ## v2.6.8（table 公共能力补齐批）
 
 | 范围 | 内容 | 状态 |
