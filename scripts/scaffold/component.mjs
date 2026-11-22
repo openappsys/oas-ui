@@ -23,6 +23,7 @@ const GROUPS = new Set([
   'data',
   'conversation',
   'workbench',
+  'commerce',
   'framework',
 ])
 

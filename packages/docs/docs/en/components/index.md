@@ -1,10 +1,10 @@
 ---
-description: OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
+description: OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 ---
 
 # Component Overview
 
-OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -170,6 +170,14 @@ OAS-UI provides 150 framework-agnostic Web Components, organized into 9 groups b
 - [Tree](/en/components/tree) —— Displays hierarchical data with support for selection, expansion, multi-select, lazy loading, and node drag-and-drop.
 - [VirtualList](/en/components/virtual-list) —— Renders large data lists into the viewport window: only visible items (plus a top/bottom buffer) are rendered, with head/tail padding placeholders to support the scroll height, and scroll events throttled via rAF. It is a generic rendering primitive reused by table / tree.
 - [Watermark](/en/components/watermark) —— A container-level watermark layer that sits on top of the content without intercepting any interaction, suitable for preventing sensitive information from leaking.
+
+## Commerce
+
+- [Coupon](/en/components/coupon) —— Coupon card (amount / minimum spend / validity / status colors) plus a selection sheet covering expired, used and not-eligible states.
+- [GoodsAction](/en/components/goods-action) —— Product bottom bar: icon buttons with badges plus main buttons, driven by JSON data.
+- [Price](/en/components/price) —— Price formatting: currency, thousands separators, original price, ranges and trend arrows.
+- [SKU](/en/components/sku) —— Spec groups and SKU matching with sold-out options, path hints and a quantity stepper.
+- [SubmitBar](/en/components/submit-bar) —— Bottom submit bar with an extra area, formatted total and a primary button covering loading, disabled and danger states.
 
 ## Conversation
 

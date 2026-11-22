@@ -14,7 +14,18 @@ import { stripStyleComments, foldStyleComments } from './scripts/strip-css-comme
  * cdn.js（无 OAS_CDN_ENTRY），`build:cdn`（node scripts/build-cdn.mjs）循环 9 族产 dist/cdn/<族>.js。
  */
 
-const FAMILIES = ['basic', 'layout', 'form', 'feedback', 'navigation', 'data', 'conversation', 'workbench', 'framework']
+const FAMILIES = [
+  'basic',
+  'layout',
+  'form',
+  'feedback',
+  'navigation',
+  'data',
+  'conversation',
+  'workbench',
+  'commerce',
+  'framework',
+]
 
 export default defineConfig(() => {
   const family = (process.env.OAS_CDN_ENTRY ?? '').trim()

@@ -8,7 +8,18 @@ import { resolve } from 'node:path'
 const uiRoot = resolve(import.meta.dirname, '..')
 const configFile = resolve(uiRoot, 'vite.cdn.config.ts')
 
-const FAMILIES = ['basic', 'layout', 'form', 'feedback', 'navigation', 'data', 'conversation', 'workbench', 'framework']
+const FAMILIES = [
+  'basic',
+  'layout',
+  'form',
+  'feedback',
+  'navigation',
+  'data',
+  'conversation',
+  'workbench',
+  'commerce',
+  'framework',
+]
 
 for (const family of FAMILIES) {
   process.env.OAS_CDN_ENTRY = family

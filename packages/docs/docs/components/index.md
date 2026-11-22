@@ -1,10 +1,10 @@
 ---
-description: OAS-UI 提供 150 个框架无关的 Web Components 组件，按用途划分为 9 个分组。点击组件名可查看该组件的完整文档与示例。
+description: OAS-UI 提供 155 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 ---
 
 # 组件总览
 
-OAS-UI 提供 150 个框架无关的 Web Components 组件，按用途划分为 9 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 155 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -170,6 +170,14 @@ OAS-UI 提供 150 个框架无关的 Web Components 组件，按用途划分为 
 - [Tree 树](/components/tree) —— 用于展示层级数据，支持选中、展开、多选、懒加载与节点拖拽。
 - [VirtualList 虚拟列表](/components/virtual-list) —— 用于大数据量列表的视口窗口渲染：只渲染可见项（含上下缓冲），首尾 padding 占位撑起滚动高度，滚动事件按 rAF 节流。通用渲染原语，供 table / tree 复用。
 - [Watermark 水印](/components/watermark) —— 容器级水印层，铺在内容之上且不拦截任何交互，适合敏感信息防泄露。
+
+## 电商组件
+
+- [Coupon 优惠券](/components/coupon) —— 券面卡片（面额 / 门槛 / 有效期 / 状态语义色）+ 选择弹层，过期、已使用、未达门槛等不可用态完整覆盖。
+- [GoodsAction 商品导航](/components/goods-action) —— 商品底部导航：icon 按钮组（含角标）+ 主按钮组，JSON 数据驱动。
+- [Price 价格](/components/price) —— 价格格式化：币种 / 千分位 / 划线价 / 区间价 + 涨跌趋势箭头。
+- [SKU 商品规格](/components/sku) —— 规格组与 SKU 组合匹配、缺货置灰、可选路径提示与数量步进。
+- [SubmitBar 结算栏](/components/submit-bar) —— 底部结算栏：扩展区 + 合计金额 + 主按钮（加载 / 禁用 / 危险态）。
 
 ## 会话组件
 

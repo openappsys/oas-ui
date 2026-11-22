@@ -5407,5 +5407,96 @@
     "props": {
       "value": "Current value: email string array (writing back to the value attribute emits no events)"
     }
+  },
+  "oas-price": {
+    "attrs": {
+      "value": "Single price (numeric string); wins over `min` + `max` when both are present",
+      "min": "Range lower bound (effective with `max` when `value` is absent)",
+      "max": "Range upper bound (effective with `min` when `value` is absent)",
+      "original": "Struck-through original price (rendered as `<s>` with an \"Original price\" screen-reader prefix)",
+      "currency": "ISO 4217 currency code, default `CNY`; invalid codes fall back to the default",
+      "locale": "`Intl.NumberFormat` locale; defaults to the document `<html lang>`, then `en`",
+      "precision": "Decimal places (integer 0–20, default 2; invalid values fall back)",
+      "size": "Size step: `sm` / `md` (default) / `lg`",
+      "trend": "Trend direction: `up` / `down`; invalid values render no trend",
+      "trend-value": "Change text (numeric values get a sign and `%`, other text renders as-is)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-submit-bar": {
+    "attrs": {
+      "total": "Total amount (numeric string); omitted renders no amount",
+      "currency": "ISO 4217 currency, default `CNY`",
+      "locale": "Amount formatting locale; defaults to the document `<html lang>`, then `en`",
+      "precision": "Amount decimal places, default 2",
+      "label": "Total label, defaults to the i18n `submitBar.total`",
+      "action-text": "Primary button text; when omitted no button renders (amount + extra area only)",
+      "loading": "Loading: button disabled + spinner + `aria-busy`, no events dispatched",
+      "disabled": "Disables the button (honours config-provider injected disabled)",
+      "danger": "Primary button uses the danger color (destructive main actions)"
+    },
+    "events": {
+      "oas-submit": "Dispatched on primary button click (not loading / disabled) with `{ total, currency }`"
+    },
+    "slots": {
+      "": "Extra content before the total (agreement checkboxes, notes, etc.)",
+      "total": "Overrides the default amount rendering"
+    }
+  },
+  "oas-goods-action": {
+    "attrs": {
+      "items": "Icon button JSON array `[{ key, label?, icon?, badge?, active? }]`; built-in keys (`favorite` / `shop` / `cart`) get default labels and icons",
+      "actions": "Main button JSON array `[{ key, text, primary?, disabled? }]`",
+      "label": "Navigation accessible name, defaults to the i18n `goodsAction.label`",
+      "disabled": "Disables everything (honours config-provider injected disabled)"
+    },
+    "events": {
+      "oas-action-click": "Dispatched when any item is clicked with `{ key, source: 'icon' | 'button' }`"
+    },
+    "slots": {}
+  },
+  "oas-coupon": {
+    "attrs": {
+      "amount": "Face value (number, required in card mode)",
+      "threshold": "Minimum spend (number, 0 or absent = no minimum)",
+      "currency": "ISO 4217 currency, default `CNY`",
+      "locale": "Amount and date formatting locale; defaults to the document `<html lang>`, then `en`",
+      "start": "Validity start (`YYYY-MM-DD`)",
+      "end": "Validity end (`YYYY-MM-DD`)",
+      "validity": "Validity text override (e.g. \"No expiry\"), wins over the formatted start/end",
+      "status": "Status: `available` (default) / `expired` / `used` / `unavailable` (minimum spend unmet, etc.)",
+      "reason": "Reason text shown when `status=\"unavailable\"`",
+      "code": "Coupon identifier returned in event details",
+      "selected": "Selected marker for outer layout composition",
+      "list": "Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form",
+      "trigger-text": "Trigger label (defaults to i18n `coupon.select`; shows the selected amount once picked)",
+      "open": "Sheet open state (controlled; host writes are silent, interaction/imperative changes dispatch `oas-open-change`)"
+    },
+    "events": {
+      "oas-select": "Dispatched when an available coupon is selected with `{ code, coupon }`, then the sheet closes",
+      "oas-open-change": "Dispatched on interaction or imperative open/close with `{ open }` (attribute writes are silent)"
+    },
+    "slots": {},
+    "methods": {
+      "open": "Opens the sheet (no-op when already open) and dispatches `oas-open-change`",
+      "close": "Closes the sheet (no-op when already closed) and dispatches `oas-open-change`"
+    }
+  },
+  "oas-sku": {
+    "attrs": {
+      "specs": "Spec group JSON array `[{ key, label?, values: (string | { value, label? })[] }]`",
+      "skus": "SKU JSON array `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]`",
+      "value": "Selected combination JSON object `{ [specKey]: value }` (controlled; user picks write back)",
+      "quantity": "Quantity (default 1; capped by the matched SKU stock)",
+      "currency": "ISO 4217 currency, default `CNY`",
+      "locale": "Price formatting locale; defaults to the document `<html lang>`, then `en`",
+      "precision": "Price decimal places, default 2",
+      "disabled": "Disables everything (honours config-provider injected disabled)"
+    },
+    "events": {
+      "oas-change": "Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' | 'quantity' }` (sku is the matched object or null)"
+    },
+    "slots": {}
   }
 }
