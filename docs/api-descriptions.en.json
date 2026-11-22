@@ -5569,5 +5569,97 @@
       "oas-select": "Emitted when a product slot is clicked; detail { key, item, path }"
     },
     "slots": {}
+  },
+  "oas-number-keyboard": {
+    "attrs": {
+      "value": "Current value (controlled): keys write back to this attribute and host writes apply immediately",
+      "maxlength": "Max length in characters (province abbreviations count as one); 0 or absent = unlimited",
+      "random": "Shuffle the digit key order (secure keypad); reorders when toggled",
+      "layout": "Keyboard layout: `number` (default) / `plate` (license plate: province + letters + digits)",
+      "disabled": "Disabled: all keys disabled and no events are dispatched",
+      "readonly": "Readonly: keys stay focusable but the value is locked; `oas-done` still fires"
+    },
+    "events": {
+      "oas-input": "A character is appended, `detail: { value, key }`",
+      "oas-delete": "The last character is removed (not emitted when empty), `detail: { value }`",
+      "oas-done": "The done key is pressed, `detail: { value }`"
+    },
+    "slots": {},
+    "methods": {
+      "randomize": "Reshuffle the digit key order (secure keypad refresh)"
+    }
+  },
+  "oas-code-button": {
+    "attrs": {
+      "cooldown": "Cooldown seconds (default 60); invalid/non-positive values fall back with a warning",
+      "disabled": "Disabled: not clickable and no events are dispatched",
+      "loading": "Request in flight: spinner + `aria-busy` + blocks repeated clicks"
+    },
+    "events": {
+      "oas-send": "Fired on click while clickable, `detail: { cooldown }`; call `preventDefault()` to skip the automatic cooldown (host calls `start()` after success)"
+    },
+    "slots": {
+      "": "Custom button content (idle state; the built-in countdown text takes over during cooldown)"
+    },
+    "props": {
+      "counting": "Whether the cooldown is running (read-only)",
+      "remaining": "Remaining cooldown seconds (read-only)"
+    },
+    "methods": {
+      "start": "Start the cooldown (defaults to `cooldown`)",
+      "reset": "End the cooldown immediately and return to idle"
+    }
+  },
+  "oas-image-picker": {
+    "attrs": {
+      "max": "Max image count (default 9); invalid/non-positive values fall back with a warning",
+      "accept": "File type filter (native `accept` syntax, default `image/*`)",
+      "capture": "Passes through native `capture`: opens the camera directly on mobile",
+      "disabled": "Disabled: adding, reordering and removing are all unavailable",
+      "readonly": "Preview only: add entry hidden and action buttons disabled"
+    },
+    "events": {
+      "oas-change": "After the user adds / removes / reorders, `detail: { files, count }`",
+      "oas-exceed-limit": "The selection exceeds the limit, `detail: { count, max }` (extra files dropped; dispatched after `oas-change`)",
+      "oas-reject": "Files filtered out by `accept`, `detail: { files }`"
+    },
+    "slots": {},
+    "props": {
+      "files": "Current image list (`File[]`, controlled): assignment refreshes silently; only user interaction dispatches `oas-change`"
+    },
+    "methods": {
+      "open": "Open the system file picker (requires a user gesture)",
+      "clear": "Clear the list (dispatches `oas-change`)",
+      "removeAt": "Remove the image at `index` (out-of-range ignored, dispatches `oas-change`)",
+      "move": "Move an image by `delta` (±1, out-of-range ignored, dispatches `oas-change`)"
+    }
+  },
+  "oas-image-cropper": {
+    "attrs": {
+      "src": "Image source (`http(s)` / `blob:` / `data:image/*` / relative; executable protocols resolve to empty)",
+      "aspect-ratio": "Crop frame ratio: `1` / `16/9` / `0.75` and so on; absent or 0 = free ratio",
+      "max-zoom": "Max zoom factor (default 3); invalid values fall back",
+      "max-output-size": "Max output long-edge pixels (default 1024); invalid values fall back",
+      "output-type": "Output image type, default `image/png` (`image/jpeg` / `image/webp` also valid)",
+      "disabled": "Disables all interaction (toolbar disabled, crop frame not focusable)"
+    },
+    "events": {
+      "oas-change": "After zoom / rotate / crop-frame adjustment, `detail: { zoom, rotation, frame }`",
+      "oas-crop": "Crop confirmed, `detail: { blob, zoom, rotation, frame }`; `blob` is null when canvas is unavailable",
+      "oas-load": "Image loaded, `detail: { width, height }`",
+      "oas-error": "Image failed to load, `detail: { src }`"
+    },
+    "slots": {},
+    "props": {
+      "zoom": "Current zoom (starts at 1). Writes apply immediately but dispatch **no event** — `oas-change` only reports user interaction, so echoing `el.zoom` back from the handler cannot recurse",
+      "rotation": "Current rotation in degrees (0 / 90 / 180 / 270, read-only)"
+    },
+    "methods": {
+      "setZoom": "Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change` only when the value actually changes)",
+      "rotate": "Rotate by a delta (default +90°, dispatches `oas-change`)",
+      "reset": "Restore initial zoom / rotation / crop frame (dispatches `oas-change`)",
+      "toBlob": "Export the crop as a Blob (null when canvas is unavailable)",
+      "toDataURL": "Export the crop as a dataURL (empty string when canvas is unavailable)"
+    }
   }
 }

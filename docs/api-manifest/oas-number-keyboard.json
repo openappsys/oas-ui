@@ -1,0 +1,62 @@
+{
+  "className": "OASNumberKeyboard",
+  "sourceFile": "packages/ui/src/form/number-keyboard/oas-number-keyboard.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "maxlength",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "random",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "layout",
+      "type": "string",
+      "default": "number",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [
+    {
+      "name": "randomize",
+      "signature": "randomize(): void",
+      "description": "重新洗牌数字键（安全键盘：每次聚焦/提交后可刷新排列）。"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-done",
+      "detail": "{ value: this.getAttr('value') }"
+    },
+    {
+      "name": "oas-input",
+      "detail": "{ value: next, key: char }"
+    },
+    {
+      "name": "oas-delete",
+      "detail": "{ value: next }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

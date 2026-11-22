@@ -1,0 +1,103 @@
+{
+  "className": "OASImageCropper",
+  "sourceFile": "packages/ui/src/form/image-cropper/oas-image-cropper.ts",
+  "attrs": [
+    {
+      "name": "src",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "aspect-ratio",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-zoom",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-output-size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "output-type",
+      "type": "string",
+      "default": "image/png",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "zoom",
+      "type": "number",
+      "default": "1",
+      "api": true
+    },
+    {
+      "name": "rotation",
+      "type": "number",
+      "default": "0",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "setZoom",
+      "signature": "setZoom(value: number): void",
+      "description": "缩放设置（公共方法：夹值；**值有变化才派发** oas-change，已在上/下限时重复调用不产生噪音事件）"
+    },
+    {
+      "name": "rotate",
+      "signature": "rotate(delta: number): void",
+      "description": "旋转（默认 +90°；派发 oas-change）"
+    },
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "恢复初始态（缩放 1 / 不旋转 / 裁剪框重置 / 图片居中；派发 oas-change）"
+    },
+    {
+      "name": "toBlob",
+      "signature": "toBlob(type?: string, quality?: number): Promise<Blob | null>",
+      "description": "导出 Blob（canvas 不可用时返回 null）"
+    },
+    {
+      "name": "toDataURL",
+      "signature": "toDataURL(type?: string, quality?: number): string",
+      "description": "导出 dataURL（canvas 不可用时返回空串）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-load",
+      "detail": "{ width: img.naturalWidth, height: img.naturalHeight }"
+    },
+    {
+      "name": "oas-error",
+      "detail": "{ src: this.lastSrc }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ zoom: this.zoomValue, rotation: this.rotationValue, frame: { ...this.frameRect }, }"
+    },
+    {
+      "name": "oas-crop",
+      "detail": "{ blob, zoom: this.zoomValue, rotation: this.rotationValue, frame: { ...this.frameRect }, }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

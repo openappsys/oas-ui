@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 226,
+    "components": 230,
     "whitelist": 175,
-    "noSsr": 51
+    "noSsr": 55
   },
   "components": [
     {
@@ -1535,6 +1535,74 @@
       "dsdFixture": false,
       "docsZh": false,
       "docsEn": false
+    },
+    {
+      "tag": "oas-number-keyboard",
+      "family": "form",
+      "dir": "form/number-keyboard",
+      "className": "OASNumberKeyboard",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（未发布批新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-code-button",
+      "family": "form",
+      "dir": "form/code-button",
+      "className": "OASCodeButton",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（未发布批新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-image-picker",
+      "family": "form",
+      "dir": "form/image-picker",
+      "className": "OASImagePicker",
+      "ssr": "no-ssr",
+      "reason": "client-only",
+      "parent": null,
+      "note": "File / objectURL 选图仅客户端可用",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-image-cropper",
+      "family": "form",
+      "dir": "form/image-cropper",
+      "className": "OASImageCropper",
+      "ssr": "no-ssr",
+      "reason": "client-only",
+      "parent": null,
+      "note": "canvas 裁剪与舞台测量仅客户端可用",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
     },
     {
       "tag": "oas-message",

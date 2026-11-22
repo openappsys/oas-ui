@@ -1,10 +1,10 @@
 ---
-description: OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
+description: OAS-UI provides 164 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 ---
 
 # Component Overview
 
-OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 164 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -40,6 +40,7 @@ OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups 
 - [Cascader](/en/components/cascader) —— Multi-level linked selection supporting submission at any level and path display.
 - [Checkbox](/en/components/checkbox) —— An enhanced native `<input type="checkbox">` supporting indeterminate state and checkbox groups.
 - [ChipsInput](/en/components/chips-input) —— Recipient/tag-style input: paste auto-split, Enter to commit a chip, Backspace to edit the previous one, inline email validation (`oas-invalid` on invalid), `max` limit, duplicate dedup.
+- [CodeButton](/en/components/code-button) —— Verification-code send button: clicking emits `oas-send`, with built-in cooldown countdown and resend, plus a custom-content slot.
 - [ColorPicker](/en/components/color-picker) —— Click the trigger swatch to open a color panel, supporting preset colors, HSV, and RGB input.
 - [Combobox](/en/components/combobox) —— A filterable single-select combobox whose input is the control: **an always-visible editable input** shows the selected label, typing filters options in real time, and `value` takes `option.value` on selection.
 - [DatePicker](/en/components/date-picker) —— A date picker supporting four types — single date, date range, month, and datetime — with keyboard operation and `Intl.DateTimeFormat` formatting.
@@ -49,10 +50,13 @@ OAS-UI provides 155 framework-agnostic Web Components, organized into 10 groups 
 - [Form](/en/components/form) —— An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 - [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
 - [FormList](/en/components/form#dynamic-field-group-form-list) —— `oas-form-list`: an add/remove group of field rows inside a form; row templates are cloned with field `name` indexed automatically (nested values), validation/submit follow the host form.
+- [ImageCropper](/en/components/image-cropper) —— Image cropping: fixed/free-ratio crop frame, zoom, 90° rotation, exports a Blob / dataURL, usable as an upload pre-step.
+- [ImagePicker](/en/components/image-picker) —— Multi-image picking: click or drag to select, thumbnail grid, reorder and remove, count limit; `files` feeds the upload chain.
 - [Input](/en/components/input) —— An enhanced base input built on the native `<input>` element.
 - [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
 - [Knob](/en/components/knob) —— A rotary control that maps continuous/discrete values to a circular angle, designed for parameter-dense panels (audio/industrial/3D); supports circular + linear drag interactions and double-click reset.
 - [Mentions](/en/components/mentions) —— A mention input component that pops a suggestion overlay when typing `@`, suited for @member / @task scenarios.
+- [NumberKeyboard](/en/components/number-keyboard) —— Numeric keyboard: randomized key order, delete/done keys, license-plate layout (province abbreviation + letters + digits), with physical-keyboard input inside the component.
 - [PasswordStrength](/en/components/password-strength) —— A standalone password-strength meter: `for` association or slot auto-discovery, built-in 0–4 scoring with weak-password penalties, controlled and custom-scorer modes.
 - [Picker](/en/components/picker) — Mobile-style scroll-wheel column selector: independent columns or cascading tree, native inertial scrolling with snap, keyboard accessible, form-associated.
 - [PinInput](/en/components/pin-input) —— A segmented code input supporting keyboard arrow navigation, Backspace fallback, and paste auto-distribution.

@@ -66,6 +66,7 @@
 - [Cascader 级联选择](https://oas-ui.dev/components/cascader): 多级联动选择：支持多选勾选、父子解绑、多选值策略、路径搜索、动态加载、受控开合与标签折叠，键盘可操作。
 - [Checkbox 复选框](https://oas-ui.dev/components/checkbox): 原生 <input type="checkbox"> 增强，支持半选、多选组、全选联动、数量限制与卡片形态。
 - [ChipsInput 收件人输入](https://oas-ui.dev/components/chips-input): 收件人 chips 输入：chip 与无边框输入同居一个控件盒。
+- [CodeButton 验证码按钮](https://oas-ui.dev/components/code-button): 「获取验证码」按钮的完整前端流程：点击 → 派发 oas-send → 进入倒计时冷却 → 冷却结束回到可重发。
 - [ColorPicker 颜色选择器](https://oas-ui.dev/components/color-picker): 触发色块弹出调色面板，支持 2D 饱和度-亮度色域 + hue 竖条选色、预设色、RGB 与 hex 输入、透明度通道、渐变模式（多 stop 编辑）、宽容格式解析、清空与受控开关；面板采用 fixed 视口定位，自动避让边缘翻转，也可 inline 就地渲染。
 - [Combobox 组合框](https://oas-ui.dev/components/combobox): 输入框即控件的可过滤单选组合框：常显可编辑的输入框显示选中项 label，输入实时过滤选项，选中后 value 取 option.value。
 - [DatePicker 日期选择器](https://oas-ui.dev/components/date-picker): 日期选择器，支持 date / daterange / month / monthrange / year / yearrange / datetime / datetimerange / week / quarter 十种类型，键盘可操作，Intl.DateTimeFormat 格式化；触发器为输入框，可直接键入日期或范围（失焦或回车提交，非法输入自动回退）。
@@ -73,10 +74,13 @@
 - [DynamicTags 动态标签](https://oas-ui.dev/components/dynamic-tags): 常驻输入框 + 标签流形态：输入回车/分隔符提交生成标签，支持去重、校验、上限、失焦保存、排序、超量折叠与原位编辑。
 - [Editable 就地编辑](https://oas-ui.dev/components/editable): 点击/回车/空格进入编辑态，Enter 提交、Esc 取消，空值提交默认非破坏；支持多行、图标触发、受控编辑态与提交方式四态组合。
 - [Form 表单](https://oas-ui.dev/components/form): 原生 <form> 增强，支持按 rules 规则对内部字段做校验与提交。
+- [ImageCropper 图片裁剪](https://oas-ui.dev/components/image-cropper): 在舞台内移动 / 缩放裁剪框、缩放与旋转图片（图片由组件 cover 适配舞台，不提供图片平移），确认后拿到裁剪结果。
+- [ImagePicker 图片选择](https://oas-ui.dev/components/image-picker): 多图选择器：点击或拖拽选图 → 缩略图网格 → 排序 / 删除，带数量上限。
 - [Input 输入框](https://oas-ui.dev/components/input): 原生 <input> 增强的基础输入组件。
 - [InputNumber 数字输入框](https://oas-ui.dev/components/input-number): 数字输入组件：内层为文本输入 + 数字键盘（inputmode="decimal"），带步进按钮、范围约束与格式化显示，role="spinbutton" 提供完整的数值 aria 状态。
 - [Knob 旋钮](https://oas-ui.dev/components/knob): 把连续/离散数值编码为圆周角度的旋转输入控件，为参数密集面板（音频/工业/3D）而生：紧凑圆形 + 相对拖拽（无跳变）+ 双极零位。
 - [Mentions 提及](https://oas-ui.dev/components/mentions): 输入 @（或 # 等）触发建议浮层的提及输入组件，适合 @成员 / @任务 / 评论发布等场景。
+- [NumberKeyboard 数字键盘](https://oas-ui.dev/components/number-keyboard): 移动端数字输入辅助件：验证码、金额、车牌号等只需要数字与少量字母的场景。
 - [PasswordStrength 密码强度](https://oas-ui.dev/components/password-strength): 密码强度独立指示条：不包裹输入框，for 精确关联或 slot 自动发现密码输入，与 oas-input / 原生 input 均可组合；内置 0–4 五档评分（长度三档 + 字符类别多样性（含 CJK）− 常见弱口令 / 重复 / 连续字符惩罚）；level 受控、levels 文案覆盖、score-fn 自定义评分 property；4 段分段条全 token 配色（暗色自动正确），默认宽…
 - [Picker 滚轮选择器](https://oas-ui.dev/components/picker): 移动式滚轮列选择器：原生滚动 + 吸附提供惯性手感，滚动/键盘选中落停后回写 value 并派发 oas-change。
 - [PinInput 验证码](https://oas-ui.dev/components/pin-input): 分格验证码输入：字符约束过滤（type / pattern）、分隔符分组、尺寸与形态档位、OTP 短信自动填充、填满自动提交、loading / success 校验反馈；键盘方向键移动、Backspace 回退、粘贴自动分发（含过滤）。

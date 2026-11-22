@@ -8,8 +8,8 @@
     "ratio": 286,
     "exempt": 692,
     "skipped": {
-      "local": 3996,
-      "ci": 4302
+      "local": 4002,
+      "ci": 4308
     }
   },
   "topPairs": [],
@@ -815,6 +815,28 @@
       "skipped": {
         "local": 0,
         "ci": 0
+      }
+    },
+    "image-picker.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
+    },
+    "image-picker.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 3,
+        "ci": 3
       }
     },
     "input.html": {

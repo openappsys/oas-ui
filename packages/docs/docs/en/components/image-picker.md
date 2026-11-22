@@ -1,0 +1,137 @@
+---
+description: "Multi-image picker: click or drag to select, thumbnail grid preview, reorder and remove, count limit (fires exceed-limit), with files exposed as File[] for the upload chain."
+---
+
+# ImagePicker
+
+A multi-image picker: click or drag to select → thumbnail grid → reorder / remove, with a count limit. The component does not upload; `files` is handed to the host's upload chain as `File[]`.
+
+## Basic usage
+
+<DemoBlock title="max=6">
+  <oas-image-picker id="ip-basic" max="6"></oas-image-picker>
+  <p id="ip-basic-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">No images selected yet</p>
+</DemoBlock>
+
+Click “Add image” to pick files, or drop images onto the component. Each thumbnail has move-forward / remove / move-backward actions (keyboard accessible).
+
+## Count limit
+
+Files beyond `max` are dropped and `oas-exceed-limit` is dispatched; once full, the add tile is hidden and the counter shows selected / max.
+
+<DemoBlock title="max=2 (pick 3 to see the feedback)">
+  <oas-image-picker id="ip-limit" max="2"></oas-image-picker>
+  <p id="ip-limit-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Limit: 2 images</p>
+</DemoBlock>
+
+## Readonly and disabled
+
+<DemoBlock title="disabled">
+  <oas-image-picker disabled max="4"></oas-image-picker>
+</DemoBlock>
+
+<DemoBlock title="readonly (preview only)">
+  <oas-image-picker readonly max="4"></oas-image-picker>
+</DemoBlock>
+
+- `disabled`: the add tile and all reorder/remove buttons are disabled
+- `readonly`: the add entry is hidden and action buttons are disabled (for post-submit display)
+
+## Type filtering and capture
+
+`accept` passes through the native type filter (extensions or MIME types, comma separated); filtered-out files dispatch `oas-reject`. `capture` makes mobile browsers open the camera directly.
+
+<DemoBlock title="accept only .jpg / .jpeg + capture">
+  <oas-image-picker id="ip-accept" accept=".jpg,.jpeg" capture max="4"></oas-image-picker>
+  <p id="ip-accept-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Try picking a PNG: it is rejected with feedback</p>
+</DemoBlock>
+
+## Working with the upload chain
+
+`files` is a JS property (not reflected to attributes); host assignment applies silently and dispatches no event, so echo-back in a form is straightforward.
+
+```js
+const picker = document.querySelector('oas-image-picker')
+picker.addEventListener('oas-change', async (e) => {
+  const form = new FormData()
+  for (const file of e.detail.files) form.append('images', file)
+  await fetch('/api/upload', { method: 'POST', body: form })
+})
+
+// Echo existing images (e.g. an edit form)
+picker.files = existingFiles
+```
+
+## Events
+
+| Event | When | detail |
+| --- | --- | --- |
+| `oas-change` | After the user adds / removes / reorders | `{ files, count }` |
+| `oas-exceed-limit` | The selection exceeds the limit (extra files dropped; dispatched after `oas-change`) | `{ count, max }` |
+| `oas-reject` | A file is filtered out by `accept` | `{ files }` |
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const log = (out, text) => {
+    if (out) out.textContent = text
+  }
+
+  const basic = document.getElementById('ip-basic')
+  const basicOut = document.getElementById('ip-basic-out')
+  basic?.addEventListener('oas-change', (e) => {
+    const names = e.detail.files.map((f) => f.name)
+    log(basicOut, names.length ? `Selected ${names.length}: ${names.join(', ')}` : 'No images selected yet')
+  })
+  basic?.addEventListener('oas-exceed-limit', (e) => log(basicOut, `Over the limit: ${e.detail.count} selected, max ${e.detail.max}`))
+  basic?.addEventListener('oas-reject', (e) => log(basicOut, `Ignored ${e.detail.files.length} non-image file(s)`))
+
+  const limit = document.getElementById('ip-limit')
+  const limitOut = document.getElementById('ip-limit-out')
+  limit?.addEventListener('oas-change', (e) => log(limitOut, `Selected ${e.detail.count} / ${limit.getAttribute('max')}`))
+  limit?.addEventListener('oas-exceed-limit', (e) => log(limitOut, `Over the limit (${e.detail.count}); only the first ${e.detail.max} kept`))
+
+  // Type filter: accept=".jpg,.jpeg" rejects everything else
+  const acceptOnly = document.getElementById('ip-accept')
+  const acceptOut = document.getElementById('ip-accept-out')
+  acceptOnly?.addEventListener('oas-change', (e) => log(acceptOut, `Selected ${e.detail.count} .jpg / .jpeg image(s)`))
+  acceptOnly?.addEventListener('oas-reject', (e) => log(acceptOut, `Ignored ${e.detail.files.length} non-jpg file(s)`))
+})
+</script>
+
+## API
+
+### oas-image-picker
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `accept` | File type filter (native `accept` syntax, default `image/*`) | `string` | `image/*` |
+| `capture` | Passes through native `capture`: opens the camera directly on mobile | `boolean` | — |
+| `disabled` | Disabled: adding, reordering and removing are all unavailable | `boolean` | — |
+| `max` | Max image count (default 9); invalid/non-positive values fall back with a warning | `string` | — |
+| `readonly` | Preview only: add entry hidden and action buttons disabled | `boolean` | — |
+
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `files` | Current image list (`File[]`, controlled): assignment refreshes silently; only user interaction dispatches `oas-change` | `File[]` | `[]` |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `removeAt` | `removeAt(index: number): void` | Remove the image at `index` (out-of-range ignored, dispatches `oas-change`) |
+| `move` | `move(index: number, delta: number): void` | Move an image by `delta` (±1, out-of-range ignored, dispatches `oas-change`) |
+| `open` | `open(): void` | Open the system file picker (requires a user gesture) |
+| `clear` | `clear(): void` | Clear the list (dispatches `oas-change`) |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | After the user adds / removes / reorders, `detail: { files, count }` |
+| `oas-exceed-limit` | The selection exceeds the limit, `detail: { count, max }` (extra files dropped; dispatched after `oas-change`) |
+| `oas-reject` | Files filtered out by `accept`, `detail: { files }` |

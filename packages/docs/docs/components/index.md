@@ -1,10 +1,10 @@
 ---
-description: OAS-UI 提供 155 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+description: OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 ---
 
 # 组件总览
 
-OAS-UI 提供 155 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -40,6 +40,7 @@ OAS-UI 提供 155 个框架无关的 Web Components 组件，按用途划分为 
 - [Cascader 级联选择](/components/cascader) —— 多级联动选择，支持任意层级提交与路径回显。
 - [Checkbox 复选框](/components/checkbox) —— 原生 `<input type="checkbox">` 增强，支持半选与多选组。
 - [ChipsInput 标签输入](/components/chips-input) —— 收件人/标签式输入：粘贴自动拆分、Enter 成 chip、Backspace 回编辑、邮箱内联校验（非法红描边 + oas-invalid）、max 上限、重复去重。
+- [CodeButton 验证码按钮](/components/code-button) —— 验证码发送按钮：点击派发 `oas-send`，内置倒计时冷却与重发，支持自定义内容插槽。
 - [ColorPicker 颜色选择器](/components/color-picker) —— 触发色块弹出调色面板，支持预设色、HSV 与 RGB 输入。
 - [Combobox 组合框](/components/combobox) —— 输入框即控件的可过滤单选组合框：**常显可编辑的输入框**显示选中项 label，输入实时过滤选项，选中后 `value` 取 `option.value`。
 - [DatePicker 日期选择](/components/date-picker) —— 日期选择器，支持单日期、日期范围、月份与日期时间四种类型，键盘可操作，`Intl.DateTimeFormat` 格式化。
@@ -49,10 +50,13 @@ OAS-UI 提供 155 个框架无关的 Web Components 组件，按用途划分为 
 - [Form 表单](/components/form) —— 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
 - [FormItem 表单项](/components/form#栅格表单布局) —— `oas-form-item`：label + 控件容器 + 错误提示位，在 `layout="grid"` 的表单内按 `span` 栅格占列。
 - [FormList 动态字段组](/components/form#动态字段组-form-list) —— `oas-form-list`：表单内可增删的字段行组，行模板克隆 + 字段 `name` 自动索引化（嵌套 values），校验/提交随主表。
+- [ImageCropper 图片裁剪](/components/image-cropper) —— 图片裁剪：固定/自由比例裁剪框、缩放、90° 旋转，导出 Blob / dataURL，可作上传前处理。
+- [ImagePicker 图片选择](/components/image-picker) —— 多图选择：点击或拖拽选图、缩略图网格、排序与删除、数量上限，`files` 交给上传链路。
 - [Input 输入框](/components/input) —— 原生 `<input>` 增强的基础输入组件。
 - [InputNumber 数字输入](/components/input-number) —— 原生 `<input type="number">` 增强，带步进按钮并支持范围约束。
 - [Knob 旋钮](/components/knob) —— 把连续/离散值映射为圆周角度的旋钮控件，为参数密集面板（音频/工业/3D）设计；支持圆周 + 直线拖拽两种交互与双击复位。
 - [Mentions 提及](/components/mentions) —— 输入 `@` 触发建议浮层的提及输入组件，适合 @成员 / @任务 等场景。
+- [NumberKeyboard 数字键盘](/components/number-keyboard) —— 数字键盘：随机乱序、完成/删除键、车牌号布局（省份简称 + 字母 + 数字），组件内支持物理键盘输入。
 - [PasswordStrength 密码强度](/components/password-strength) —— 密码强度独立指示条：`for` 关联或 slot 自动发现密码输入，内置 0–4 五档评分与弱口令惩罚，受控/自定义评分双模式。
 - [Picker 滚轮选择器](/components/picker) —— 移动式滚轮列选择：独立多列 / 级联树两形态，原生滚动惯性 + 吸附，键盘可达，form-associated 直接进原生表单。
 - [PinInput 验证码](/components/pin-input) —— 分格验证码输入，支持键盘方向键移动、Backspace 回退、粘贴自动分发。
