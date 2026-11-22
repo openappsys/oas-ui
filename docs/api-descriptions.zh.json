@@ -5233,11 +5233,11 @@
     },
     "slots": {},
     "props": {
-      "zoom": "当前缩放（1 起；写入即生效并派发 `oas-change`）",
+      "zoom": "当前缩放（1 起）。写入即生效但**不派发事件**——`oas-change` 只表达用户交互，宿主在事件里回写 `el.zoom` 不会递归",
       "rotation": "当前旋转角度（0 / 90 / 180 / 270，只读）"
     },
     "methods": {
-      "setZoom": "设置缩放（夹到 `[1, max-zoom]` 并派发 `oas-change`）",
+      "setZoom": "设置缩放（夹到 `[1, max-zoom]`；值有变化才派发 `oas-change`）",
       "rotate": "旋转指定角度（默认 +90° 并派发 `oas-change`）",
       "reset": "恢复初始缩放 / 旋转 / 裁剪框（派发 `oas-change`）",
       "toBlob": "导出裁剪结果 Blob（canvas 不可用时返回 null）",

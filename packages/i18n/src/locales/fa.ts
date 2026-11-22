@@ -620,4 +620,5 @@ export const fa: LocaleMessages = {
   'imageCropper.confirm': 'برش',
   'imageCropper.zoom': 'بزرگ‌نمایی',
   'imageCropper.empty': 'تصویری وجود ندارد',
+  'imageCropper.loadFailed': 'بارگذاری تصویر ناموفق بود',
 }

@@ -616,4 +616,5 @@ export const ko: LocaleMessages = {
   'imageCropper.confirm': '자르기',
   'imageCropper.zoom': '확대/축소',
   'imageCropper.empty': '이미지 없음',
+  'imageCropper.loadFailed': '이미지를 불러오지 못했습니다',
 }

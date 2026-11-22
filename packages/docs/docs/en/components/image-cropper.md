@@ -4,7 +4,7 @@ description: Image cropping with fixed/free-ratio crop frame, zoom, 90° rotatio
 
 # ImageCropper
 
-Drag, zoom and rotate the image inside the stage and adjust the crop frame, then confirm to get the result. Use it standalone (avatar / cover cropping) or as an upload pre-step: pick → crop → upload.
+Move / resize the crop frame and zoom or rotate the image inside the stage (the image is cover-fitted to the stage; no image panning), then confirm to get the result. Use it standalone (avatar / cover cropping) or as an upload pre-step: pick → crop → upload.
 
 ## Basic usage (free ratio)
 
@@ -26,6 +26,25 @@ Drag the crop frame to move it and its corners to resize; the toolbar zooms, rot
 
 <DemoBlock title="aspect-ratio=16/9 (cover)">
   <oas-image-cropper src="/assets/demo-wide-1.svg" aspect-ratio="16/9"></oas-image-cropper>
+</DemoBlock>
+
+## Output options
+
+`max-zoom` caps the zoom factor (shared by the slider and the `+` / `−` buttons), `max-output-size` caps the long edge of the exported image, and `output-type` picks the format (`image/png` / `image/jpeg` / `image/webp`). In the instances below the left one stops at 2×, while the right one exports JPEG with a 640px long-edge cap.
+
+<DemoBlock title="max-zoom=2 · max-output-size=640 · output-type=image/jpeg">
+  <oas-image-cropper id="ic-zoom" src="/assets/demo-wide-2.svg" max-zoom="2"></oas-image-cropper>
+  <oas-image-cropper id="ic-output" src="/assets/demo-wide-2.svg" aspect-ratio="1" max-output-size="640" output-type="image/jpeg"></oas-image-cropper>
+  <p id="ic-output-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Click “Crop” to see the export type and size</p>
+</DemoBlock>
+
+## Load failure
+
+When the image behind `src` cannot be loaded, `oas-error` is dispatched and the stage shows an error message instead of a broken image.
+
+<DemoBlock title="Unavailable src (error state)">
+  <oas-image-cropper id="ic-error" src="/assets/not-found.png"></oas-image-cropper>
+  <p id="ic-error-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Waiting for load…</p>
 </DemoBlock>
 
 ## Working with the upload chain
@@ -94,6 +113,21 @@ onMounted(() => {
     log(evOut, `oas-change: zoom ${Math.round(zoom * 100)}%, rotation ${rotation}°, frame ${Math.round(frame.width)}×${Math.round(frame.height)}`)
   })
   ev?.addEventListener('oas-crop', (e) => log(evOut, `oas-crop: ${e.detail.blob ? 'Blob created' : 'blob unavailable'}`))
+
+  // Output options: export type and pixel size
+  const output = document.getElementById('ic-output')
+  const outputOut = document.getElementById('ic-output-out')
+  output?.addEventListener('oas-crop', (e) => {
+    const { blob, frame } = e.detail
+    const size = blob ? `${blob.type || 'unknown type'} · ${Math.round(blob.size / 1024)} KB` : 'blob unavailable'
+    log(outputOut, `Exported ${size} (frame ${Math.round(frame.width)}×${Math.round(frame.height)} stage px)`)
+  })
+
+  // Load failure state
+  const err = document.getElementById('ic-error')
+  const errOut = document.getElementById('ic-error-out')
+  err?.addEventListener('oas-error', (e) => log(errOut, `oas-error: failed to load ${e.detail.src}`))
+  err?.addEventListener('oas-load', (e) => log(errOut, `oas-load: ${e.detail.width}×${e.detail.height}`))
 })
 </script>
 
@@ -117,13 +151,13 @@ onMounted(() => {
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `rotation` | Current rotation in degrees (0 / 90 / 180 / 270, read-only) | `number` | `0` |
-| `zoom` | Current zoom (starts at 1; writes apply immediately and dispatch `oas-change`) | `number` | `1` |
+| `zoom` | Current zoom (starts at 1). Writes apply immediately but dispatch **no event** — `oas-change` only reports user interaction, so echoing `el.zoom` back from the handler cannot recurse | `number` | `1` |
 
 #### Methods
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `setZoom` | `setZoom(value: number): void` | Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change`) |
+| `setZoom` | `setZoom(value: number): void` | Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change` only when the value actually changes) |
 | `rotate` | `rotate(delta: number): void` | Rotate by a delta (default +90°, dispatches `oas-change`) |
 | `reset` | `reset(): void` | Restore initial zoom / rotation / crop frame (dispatches `oas-change`) |
 | `toBlob` | `toBlob(type?: string, quality?: number): Promise<Blob \| null>` | Export the crop as a Blob (null when canvas is unavailable) |

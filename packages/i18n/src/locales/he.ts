@@ -619,4 +619,5 @@ export const he: LocaleMessages = {
   'imageCropper.confirm': 'חיתוך',
   'imageCropper.zoom': 'זום',
   'imageCropper.empty': 'אין תמונה',
+  'imageCropper.loadFailed': 'טעינת התמונה נכשלה',
 }

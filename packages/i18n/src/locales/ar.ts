@@ -616,4 +616,5 @@ export const ar: LocaleMessages = {
   'imageCropper.confirm': 'قص',
   'imageCropper.zoom': 'التكبير',
   'imageCropper.empty': 'لا توجد صورة',
+  'imageCropper.loadFailed': 'تعذّر تحميل الصورة',
 }

@@ -129,12 +129,45 @@ describe('OASCodeButton', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="spinner"]')!.hidden).toBe(false)
   })
 
-  it('默认插槽覆盖内置文案，倒计时仍走内置文案', () => {
+  it('默认插槽覆盖内置文案，倒计时期间隐藏插槽只显示内置倒计时', () => {
     vi.useFakeTimers()
     const el = mount({ cooldown: '5' }, '<span class="custom">发我</span>')
     expect(el.querySelector('.custom')?.textContent).toBe('发我')
+    const fallback = el.shadowRoot!.querySelector<HTMLElement>('.fallback')!
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot')!
+    // 空闲态：插槽文案可见，内置文案退场
+    expect(el.hasAttribute('data-counting')).toBe(false)
+    expect(slot.hidden).toBe(false)
+    expect(fallback.hidden).toBe(true)
     click(el)
-    expect(labelText(el)).toBe('5 秒后重发')
+    // 冷却态：内置倒计时可见，插槽内容隐藏（两个通道都切）
+    expect(el.hasAttribute('data-counting')).toBe(true)
+    expect(slot.hidden).toBe(true)
+    expect(fallback.hidden).toBe(false)
+    expect(fallback.textContent).toBe('5 秒后重发')
+    vi.advanceTimersByTime(5000)
+    // 冷却结束：回到插槽文案
+    expect(el.hasAttribute('data-counting')).toBe(false)
+    expect(slot.hidden).toBe(false)
+    expect(fallback.hidden).toBe(true)
+  })
+
+  it('无插槽内容时内置文案常显（不因 hidden 逻辑消失）', () => {
+    const el = mount()
+    const fallback = el.shadowRoot!.querySelector<HTMLElement>('.fallback')!
+    expect(fallback.hidden).toBe(false)
+    expect(fallback.textContent).toBe('获取验证码')
+  })
+
+  it('命令式 start() 也算已发送：冷却结束后文案为「重新获取」', () => {
+    vi.useFakeTimers()
+    const el = mount({ cooldown: '2' })
+    expect(labelText(el)).toBe('获取验证码')
+    el.start()
+    expect(labelText(el)).toBe('2 秒后重发')
+    vi.advanceTimersByTime(2000)
+    expect(el.counting).toBe(false)
+    expect(labelText(el)).toBe('重新获取')
   })
 
   it('断开连接清理计时器，重连恢复剩余冷却', () => {

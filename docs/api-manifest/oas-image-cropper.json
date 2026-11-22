@@ -56,7 +56,7 @@
     {
       "name": "setZoom",
       "signature": "setZoom(value: number): void",
-      "description": "缩放设置（公共通道：夹值 + 派发 oas-change）"
+      "description": "缩放设置（公共方法：夹值；**值有变化才派发** oas-change，已在上/下限时重复调用不产生噪音事件）"
     },
     {
       "name": "rotate",

@@ -34,6 +34,9 @@ const DIGITS: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 
 /** 车牌字母（不含 I / O：与车牌号字符集一致） */
 const PLATE_LETTERS: readonly string[] = 'ABCDEFGHJKLMNPQRSTUVWXYZ'.split('')
 
+/** 车牌布局可输入的字符集（数字 + 车牌字母，与屏上按键严格一致——不含 I / O） */
+const PLATE_CHARS = new Set<string>([...DIGITS, ...PLATE_LETTERS])
+
 /** 省份简称（车牌首位） */
 const PROVINCES: readonly string[] = [
   '京',
@@ -290,14 +293,14 @@ export class OASNumberKeyboard extends OASElement {
     }
 
     const disabled = this.injectDisabled()
-    const readonly = this.hasAttr('readonly')
 
     kb.setAttribute('data-layout', layout)
     kb.setAttribute('aria-label', this.t('numberKeyboard.label'))
+    // 容器是 role="group"：aria-readonly 不在该角色的允许属性里（axe aria-allowed-attr 违规）。
+    // 只读语义由「按键不写值」承担，可读名称仍完整——不放非法的 ARIA 状态。
     if (disabled) kb.setAttribute('aria-disabled', 'true')
     else kb.removeAttribute('aria-disabled')
-    if (readonly) kb.setAttribute('aria-readonly', 'true')
-    else kb.removeAttribute('aria-readonly')
+    kb.removeAttribute('aria-readonly')
 
     for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="key"]')) {
       btn.disabled = disabled
@@ -450,16 +453,14 @@ export class OASNumberKeyboard extends OASElement {
     }
     const isSingle = [...e.key].length === 1
     if (!isSingle) return
+    // 物理键盘输入按当前布局的按键字符集过滤（与屏上键严格一致）：
+    // 车牌布局不含 I / O、数字布局只吃数字——屏上打不出的字符不许从物理键盘混进来
+    const upper = e.key.toUpperCase()
     const plate = this.resolveLayout() === 'plate'
-    if (plate && /^[a-zA-Z0-9]$/.test(e.key)) {
-      e.preventDefault()
-      this.appendKey(e.key.toUpperCase())
-      return
-    }
-    if (!plate && /^[0-9]$/.test(e.key)) {
-      e.preventDefault()
-      this.appendKey(e.key)
-    }
+    const allowed = plate ? PLATE_CHARS.has(upper) : /^[0-9]$/.test(e.key)
+    if (!allowed) return
+    e.preventDefault()
+    this.appendKey(upper)
   }
 
   /** 展开/收起省份面板（同一时刻只显示一种按键区） */

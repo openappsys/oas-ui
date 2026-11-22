@@ -5489,11 +5489,11 @@
     },
     "slots": {},
     "props": {
-      "zoom": "Current zoom (starts at 1; writes apply immediately and dispatch `oas-change`)",
+      "zoom": "Current zoom (starts at 1). Writes apply immediately but dispatch **no event** — `oas-change` only reports user interaction, so echoing `el.zoom` back from the handler cannot recurse",
       "rotation": "Current rotation in degrees (0 / 90 / 180 / 270, read-only)"
     },
     "methods": {
-      "setZoom": "Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change`)",
+      "setZoom": "Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change` only when the value actually changes)",
       "rotate": "Rotate by a delta (default +90°, dispatches `oas-change`)",
       "reset": "Restore initial zoom / rotation / crop frame (dispatches `oas-change`)",
       "toBlob": "Export the crop as a Blob (null when canvas is unavailable)",

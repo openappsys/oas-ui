@@ -91,6 +91,14 @@ const STYLE = `
   gap: var(--oas-space-1);
   font-variant-numeric: tabular-nums;
 }
+/* 倒计时期间隐藏自定义插槽内容，只显示内置倒计时文案（避免自定义文案掩盖剩余时间） */
+:host([data-counting]) slot {
+  display: none;
+}
+/* 有插槽内容时空闲态用插槽文案，内置文案以 hidden 退场 */
+.fallback[hidden] {
+  display: none;
+}
 .spinner {
   box-sizing: border-box;
   width: 14px;
@@ -140,6 +148,7 @@ export class OASCodeButton extends OASElement {
 
   private btnEl: HTMLButtonElement | null = null
   private spinnerEl: HTMLElement | null = null
+  private slotEl: HTMLSlotElement | null = null
   private fallbackEl: HTMLElement | null = null
   private announcerEl: HTMLElement | null = null
 
@@ -162,7 +171,7 @@ export class OASCodeButton extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <button class="btn" part="button" type="button"><span class="spinner" part="spinner" aria-hidden="true" hidden></span><span class="label" part="label"><slot><span class="fallback"></span></slot></span></button>
+      <button class="btn" part="button" type="button"><span class="spinner" part="spinner" aria-hidden="true" hidden></span><span class="label" part="label"><slot></slot><span class="fallback"></span></span></button>
       <span class="sr-only" part="announcer" aria-live="polite"></span>
     `
   }
@@ -170,12 +179,29 @@ export class OASCodeButton extends OASElement {
   private bind(): void {
     this.btnEl = this.shadow.querySelector<HTMLButtonElement>('[part="button"]')
     this.spinnerEl = this.shadow.querySelector<HTMLElement>('[part="spinner"]')
+    this.slotEl = this.shadow.querySelector<HTMLSlotElement>('slot')
     this.fallbackEl = this.shadow.querySelector<HTMLElement>('.fallback')
     this.announcerEl = this.shadow.querySelector<HTMLElement>('[part="announcer"]')
     this.btnEl?.addEventListener('click', this.onClick)
+    // 插槽内容后置注入（宿主先连元素后填内容）时同步内置文案显隐
+    this.slotEl?.addEventListener('slotchange', this.onSlotChange)
     // start() 可能在首连前被调用（宿主预启动冷却）：渲染后补起计时器
     if (this.remainingSeconds > 0) this.startTimer()
     this.ensureCleanup()
+  }
+
+  private onSlotChange = (): void => {
+    this.refresh()
+  }
+
+  /** 是否有实际插槽内容（忽略空白文本节点：模板格式化产生的空白不算自定义文案） */
+  private hasSlotted(): boolean {
+    const nodes = this.slotEl?.assignedNodes({ flatten: true }) ?? []
+    return nodes.some(
+      (node) =>
+        node.nodeType === Node.ELEMENT_NODE ||
+        (node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim() !== ''),
+    )
   }
 
   /** 断开清理（幂等：重连后需重新登记） */
@@ -214,7 +240,14 @@ export class OASCodeButton extends OASElement {
 
     if (this.spinnerEl) this.spinnerEl.hidden = !loading
 
-    if (this.fallbackEl) this.fallbackEl.textContent = this.labelText()
+    // 倒计时期间：自定义插槽内容隐藏（:host([data-counting]) slot），内置倒计时文案显示
+    if (counting) this.setAttribute('data-counting', '')
+    else this.removeAttribute('data-counting')
+    if (this.slotEl) this.slotEl.hidden = counting
+    if (this.fallbackEl) {
+      this.fallbackEl.textContent = this.labelText()
+      this.fallbackEl.hidden = !counting && this.hasSlotted()
+    }
   }
 
   /** 当前按钮文案：冷却中显示倒计时，否则按是否发送过区分获取/重新获取 */
@@ -233,10 +266,11 @@ export class OASCodeButton extends OASElement {
     this.start(cooldown)
   }
 
-  /** 启动冷却（秒）；缺省取 cooldown 属性 */
+  /** 启动冷却（秒）；缺省取 cooldown 属性。命令式启动也算「已发送」——冷却结束后文案为「重新获取」 */
   start(seconds?: number): void {
     const total = seconds ?? this.cooldownSeconds()
     if (!Number.isFinite(total) || total <= 0) return
+    this.sentOnce = true
     this.remainingSeconds = Math.round(total)
     this.startTimer()
     this.refresh()

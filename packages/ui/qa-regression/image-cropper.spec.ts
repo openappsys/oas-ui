@@ -59,3 +59,65 @@ test('image-cropper：确认裁剪产出 Blob 并在 demo 中显示尺寸', asyn
   const feedback = await page.evaluate(() => document.querySelector('#ic-free-out')!.textContent ?? '')
   expect(feedback).not.toContain('blob 不可用')
 })
+
+// 回归（history：zoom setter 走 setZoom → 派发 oas-change；宿主在事件里回写 el.zoom 造成同帧同步
+// 递归爆栈）。真实浏览器下复现宿主双向绑定形态：事件回写不得抛错、不得无限派发。
+test('image-cropper：宿主在 oas-change 里回写 el.zoom 不递归爆栈（真实浏览器）', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-event')
+  const result = await page.evaluate(() => {
+    const host = document.querySelector('#ic-event') as HTMLElement & { zoom: number }
+    let calls = 0
+    host.addEventListener('oas-change', (e) => {
+      calls++
+      const detail = (e as CustomEvent<{ zoom: number }>).detail
+      host.zoom = detail.zoom
+    })
+    let error = ''
+    try {
+      const slider = host.shadowRoot!.querySelector<HTMLInputElement>('[part="zoom"]')!
+      slider.value = '2'
+      slider.dispatchEvent(new Event('input', { bubbles: true }))
+      slider.dispatchEvent(new Event('change', { bubbles: true }))
+    } catch (err) {
+      error = String(err)
+    }
+    return { calls, error, zoom: host.zoom }
+  })
+  expect(result.error, '属性回写不得抛错（爆栈会在此暴露）').toBe('')
+  expect(result.zoom).toBe(2)
+  // 用户交互的一次提交只应产生一次 oas-change（回写不再派发）
+  expect(result.calls).toBe(1)
+})
+
+// 回归（history：加载失败只派发 oas-error，舞台残留破图）。错误态必须可见且不留破图。
+test('image-cropper：加载失败显示错误文案且不残留破图', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-error')
+  await page.waitForFunction(() => (document.querySelector('#ic-error-out')?.textContent ?? '').includes('oas-error'), {
+    timeout: 15000,
+  })
+  const state = await page.evaluate(() => {
+    const host = document.querySelector('#ic-error') as HTMLElement & { shadowRoot: ShadowRoot }
+    const root = host.shadowRoot
+    const empty = root.querySelector<HTMLElement>('[part="empty"]')!
+    const img = root.querySelector<HTMLImageElement>('[part="image"]')!
+    const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+    const box = (el: HTMLElement) => el.getBoundingClientRect()
+    const emptyBox = box(empty)
+    return {
+      text: empty.textContent ?? '',
+      emptyVisible: emptyBox.width > 0 && emptyBox.height > 0,
+      state: empty.dataset.state ?? '',
+      imgHidden: img.hidden,
+      frameVisible: box(frame).width > 0 && box(frame).height > 0,
+      stageError: host.shadowRoot!.querySelector<HTMLElement>('[part="stage"]')!.hasAttribute('data-error'),
+    }
+  })
+  expect(state.text).toContain('图片加载失败')
+  expect(state.emptyVisible, '错误文案必须可见').toBe(true)
+  expect(state.state).toBe('error')
+  expect(state.imgHidden, '破图必须隐藏').toBe(true)
+  expect(state.frameVisible, '错误态不显示裁剪框').toBe(false)
+  expect(state.stageError).toBe(true)
+})

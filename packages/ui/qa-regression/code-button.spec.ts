@@ -57,3 +57,39 @@ test('code-button：受控流程拦截 oas-send 后不自动冷却，宿主 star
     { timeout: 5000 },
   )
 })
+
+// 回归（history：文档承诺「倒计时期间仍显示内置倒计时文案」但插槽内容把它盖住，单测只断 .fallback
+// 文本存在 → 假绿）。这里断**可见性**：冷却期插槽内容不可见、内置倒计时可见；冷却结束反过来。
+test('code-button：冷却期隐藏自定义插槽、显示内置倒计时（可见性断言）', async ({ page }) => {
+  await page.goto('/components/code-button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cb-slot')
+
+  const read = () =>
+    page.evaluate(() => {
+      const host = document.querySelector('#cb-slot') as HTMLElement & { shadowRoot: ShadowRoot }
+      const fallback = host.shadowRoot.querySelector<HTMLElement>('.fallback')!
+      const slotted = host.querySelector<HTMLElement>('span')!
+      const visible = (el: HTMLElement): boolean => {
+        const r = el.getBoundingClientRect()
+        return r.width > 0 && r.height > 0
+      }
+      return {
+        slottedVisible: visible(slotted),
+        fallbackVisible: visible(fallback),
+        fallbackText: fallback.textContent ?? '',
+        counting: host.hasAttribute('data-counting'),
+      }
+    })
+
+  const idle = await read()
+  expect(idle.counting, '空闲态不应带 data-counting').toBe(false)
+  expect(idle.slottedVisible, '空闲态显示插槽文案').toBe(true)
+  expect(idle.fallbackVisible, '空闲态内置文案退场').toBe(false)
+
+  await realClick(page, '#cb-slot', '[part="button"]')
+  const cooling = await read()
+  expect(cooling.counting, '冷却期必须有 data-counting（slot 的 CSS 隐藏依赖它）').toBe(true)
+  expect(cooling.slottedVisible, '冷却期插槽内容必须不可见').toBe(false)
+  expect(cooling.fallbackVisible, '冷却期内置倒计时必须可见').toBe(true)
+  expect(cooling.fallbackText).toMatch(/\d+ 秒后重发/)
+})

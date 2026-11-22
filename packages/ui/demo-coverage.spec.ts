@@ -852,6 +852,23 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-tour [part="mask-top"]', 'click', '遮罩点击 → oas-cancel'],
     ['oas-button:has-text("已记忆则不显示") button', 'click', '预置记忆并打开 → oas-dismiss'],
   ],
+  'number-keyboard': [
+    ['#nk-basic [data-key="1"]', 'click', '点数字键 → oas-input（value 写回属性）'],
+    ['#nk-basic [data-action="delete"]', 'click', '删除末位 → oas-delete'],
+    ['#nk-basic [data-action="done"]', 'click', '完成键 → oas-done'],
+  ],
+  // oas-send：冷却期按钮禁用，用 cooldown=3 的实例（点一次即派发）
+  'code-button': [['#cb-fast [part="button"]', 'click', '点发送（cooldown=3）→ oas-send']],
+  'image-picker': [
+    ['#ip-basic input[type="file"]', 'file:svg', '选一张 SVG 图 → oas-change'],
+    ['#ip-basic input[type="file"]', 'file', '非图片文件被 accept 过滤 → oas-reject'],
+    // oas-exceed-limit 由 EXEMPT_EVENTS 统一豁免（需要真选超量文件，qa-regression/image-picker.spec.ts 已固化）
+  ],
+  // oas-load / oas-error 由 demo 图片加载成功与 404 态自动派发；oas-crop 需真点确认按钮
+  'image-cropper': [
+    ['#ic-event [data-act="rotate"]', 'click', '点旋转 → oas-change'],
+    ['#ic-free [data-act="confirm"]', 'click', '点裁剪（#ic-free 已加载图片）→ oas-crop'],
+  ],
 }
 
 /** 真实点击，失败回落 DOM click（隐藏/浮层关闭态下 handler 仍会执行） */

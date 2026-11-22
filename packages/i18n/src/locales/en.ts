@@ -535,8 +535,8 @@ export const en: LocaleMessages = {
   'imagePicker.remove': 'Remove image {index}',
   'imagePicker.limit': 'Up to {max} images',
   'imagePicker.drag': 'Drag images here, or click to select',
-  'imagePicker.movePrev': 'Move image {index} forward',
-  'imagePicker.moveNext': 'Move image {index} backward',
+  'imagePicker.movePrev': 'Move image {index} earlier',
+  'imagePicker.moveNext': 'Move image {index} later',
   'imagePicker.count': '{count} of {max} selected',
   'imageCropper.label': 'Image cropper',
   'imageCropper.rotate': 'Rotate',
@@ -544,4 +544,5 @@ export const en: LocaleMessages = {
   'imageCropper.confirm': 'Crop',
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'No image',
+  'imageCropper.loadFailed': 'Failed to load image',
 }

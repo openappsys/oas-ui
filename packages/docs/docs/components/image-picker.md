@@ -37,6 +37,15 @@ description: 多图选择：点击或拖拽选图、缩略图网格预览、前�
 - `disabled`：添加块与排序/删除按钮全部禁用
 - `readonly`：隐藏添加入口，操作按钮禁用（用于提交后的回显）
 
+## 文件类型过滤与拍照
+
+`accept` 透传原生类型过滤（扩展名或 MIME，逗号分隔），被过滤掉的文件派发 `oas-reject`；`capture` 在场时移动端直接拉起相机。
+
+<DemoBlock title="accept 只收 .jpg / .jpeg + capture">
+  <oas-image-picker id="ip-accept" accept=".jpg,.jpeg" capture max="4"></oas-image-picker>
+  <p id="ip-accept-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">试着选一张 PNG：会被拒绝并提示</p>
+</DemoBlock>
+
 ## 与上传链路配合
 
 `files` 是 JS property（不反射 attribute），宿主赋值静默生效、不派发事件：表单回显时直接赋值即可。
@@ -81,6 +90,12 @@ onMounted(() => {
   const limitOut = document.getElementById('ip-limit-out')
   limit?.addEventListener('oas-change', (e) => log(limitOut, `已选 ${e.detail.count} / ${limit.getAttribute('max')} 张`))
   limit?.addEventListener('oas-exceed-limit', (e) => log(limitOut, `超出上限（${e.detail.count} 张），只保留前 ${e.detail.max} 张`))
+
+  // 类型过滤：accept=".jpg,.jpeg" 会挡掉其他格式
+  const acceptOnly = document.getElementById('ip-accept')
+  const acceptOut = document.getElementById('ip-accept-out')
+  acceptOnly?.addEventListener('oas-change', (e) => log(acceptOut, `已选 ${e.detail.count} 张 .jpg / .jpeg`))
+  acceptOnly?.addEventListener('oas-reject', (e) => log(acceptOut, `已忽略 ${e.detail.files.length} 个非 .jpg / .jpeg 文件`))
 })
 </script>
 

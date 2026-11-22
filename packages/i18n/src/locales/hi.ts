@@ -619,4 +619,5 @@ export const hi: LocaleMessages = {
   'imageCropper.confirm': 'क्रॉप करें',
   'imageCropper.zoom': 'ज़ूम',
   'imageCropper.empty': 'कोई छवि नहीं',
+  'imageCropper.loadFailed': 'छवि लोड नहीं हो सकी',
 }

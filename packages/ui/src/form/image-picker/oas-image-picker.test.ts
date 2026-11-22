@@ -188,4 +188,41 @@ describe('OASImagePicker', () => {
     choose(el, [png('b.png')])
     expect(el.files.map((f) => f.name)).toEqual(['a.png', 'b.png'])
   })
+
+  // —— objectURL 泄漏回归：断开连接必须全量回收，重连懒重建 ——
+  it('断开连接全量回收缩略图 objectURL，重连按 files 懒重建', () => {
+    const created: string[] = []
+    const revoked: string[] = []
+    let seq = 0
+    const origCreate = URL.createObjectURL
+    const origRevoke = URL.revokeObjectURL
+    URL.createObjectURL = (() => {
+      const url = `blob:mock-${++seq}`
+      created.push(url)
+      return url
+    }) as typeof URL.createObjectURL
+    URL.revokeObjectURL = ((url: string) => {
+      revoked.push(url)
+    }) as typeof URL.revokeObjectURL
+    try {
+      const el = mount()
+      el.files = [png('a.png'), png('b.png')]
+      expect(created).toHaveLength(2)
+      expect(revoked).toEqual([])
+
+      el.remove()
+      expect(revoked, '断开连接必须回收全部缩略图 URL').toEqual(created)
+
+      document.body.appendChild(el)
+      // 重连后缩略图懒重建：新 URL 生成并挂到 <img> 上（不残留失效的旧 blob）
+      expect(created).toHaveLength(4)
+      const srcs = [...el.shadowRoot!.querySelectorAll<HTMLImageElement>('[part="thumbnail"]')].map((i) => i.src)
+      expect(srcs).toHaveLength(2)
+      for (const src of srcs) expect(created.slice(2)).toContain(src.replace(/^.*?blob:/, 'blob:'))
+      expect(tiles(el).length).toBe(2)
+    } finally {
+      URL.createObjectURL = origCreate
+      URL.revokeObjectURL = origRevoke
+    }
+  })
 })

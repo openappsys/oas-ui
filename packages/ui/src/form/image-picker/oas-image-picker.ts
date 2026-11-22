@@ -32,7 +32,7 @@ import { devWarn } from '../../shared/dev-warn.js'
  *
  * a11y：网格 `role="list"`，每张缩略图带文件名 alt，操作为原生按钮并带序号可读名称；
  * 计数区 `aria-live="polite"` 播报数量变化。缩略图 URL 由 `URL.createObjectURL` 生成，
- * 文件移出列表时回收。
+ * 文件移出列表时按个回收，组件断开连接时全量回收（重连按 `files` 懒重建）。
  */
 
 const DEFAULT_MAX = 9
@@ -274,11 +274,36 @@ export class OASImagePicker extends OASElement {
     this.pickerEl?.addEventListener('dragover', this.onDragOver)
     this.pickerEl?.addEventListener('dragleave', this.onDragLeave)
     this.pickerEl?.addEventListener('drop', this.onDrop)
+    this.ensureCleanup()
+  }
+
+  /** 断开清理：全量回收缩略图 objectURL（URL 不跟着节点走，重连时按 files 懒重建） */
+  private ensureCleanup(): void {
+    this.onCleanup(() => this.revokeAllUrls())
+  }
+
+  /** 回收全部缩略图 URL 并清空映射（幂等） */
+  private revokeAllUrls(): void {
+    for (const url of this.urls.values()) {
+      try {
+        URL.revokeObjectURL(url)
+      } catch {
+        // 环境不支持 objectURL 时忽略
+      }
+    }
+    this.urls.clear()
   }
 
   protected override render(): void {
     this.shadow.innerHTML = this.template()
     this.bind()
+    this.update()
+  }
+
+  protected override onReconnect(): void {
+    this.bind()
+    // 断开时 URL 已全量回收：清指纹强制重建缩略图（懒重建新 URL），否则残留 <img> 指向已失效的 blob
+    this.lastSig = ''
     this.update()
   }
 

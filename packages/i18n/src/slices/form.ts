@@ -156,4 +156,5 @@ export const formMessages: Partial<LocaleMessages> = {
   'imageCropper.confirm': '裁剪',
   'imageCropper.zoom': '缩放',
   'imageCropper.empty': '暂无图片',
+  'imageCropper.loadFailed': '图片加载失败',
 }

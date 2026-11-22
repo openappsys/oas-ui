@@ -74,7 +74,7 @@
 - [DynamicTags 动态标签](https://oas-ui.dev/components/dynamic-tags): 常驻输入框 + 标签流形态：输入回车/分隔符提交生成标签，支持去重、校验、上限、失焦保存、排序、超量折叠与原位编辑。
 - [Editable 就地编辑](https://oas-ui.dev/components/editable): 点击/回车/空格进入编辑态，Enter 提交、Esc 取消，空值提交默认非破坏；支持多行、图标触发、受控编辑态与提交方式四态组合。
 - [Form 表单](https://oas-ui.dev/components/form): 原生 <form> 增强，支持按 rules 规则对内部字段做校验与提交。
-- [ImageCropper 图片裁剪](https://oas-ui.dev/components/image-cropper): 在舞台内拖动、缩放、旋转图片并调整裁剪框，确认后拿到裁剪结果。
+- [ImageCropper 图片裁剪](https://oas-ui.dev/components/image-cropper): 在舞台内移动 / 缩放裁剪框、缩放与旋转图片（图片由组件 cover 适配舞台，不提供图片平移），确认后拿到裁剪结果。
 - [ImagePicker 图片选择](https://oas-ui.dev/components/image-picker): 多图选择器：点击或拖拽选图 → 缩略图网格 → 排序 / 删除，带数量上限。
 - [Input 输入框](https://oas-ui.dev/components/input): 原生 <input> 增强的基础输入组件。
 - [InputNumber 数字输入框](https://oas-ui.dev/components/input-number): 数字输入组件：内层为文本输入 + 数字键盘（inputmode="decimal"），带步进按钮、范围约束与格式化显示，role="spinbutton" 提供完整的数值 aria 状态。

@@ -4,7 +4,7 @@ description: 图片裁剪：固定/自由比例裁剪框、缩放、90° 旋转�
 
 # ImageCropper 图片裁剪
 
-在舞台内拖动、缩放、旋转图片并调整裁剪框，确认后拿到裁剪结果。可独立使用（头像/封面裁剪），也可作为上传链路的前处理：选图 → 裁剪 → 上传。
+在舞台内移动 / 缩放裁剪框、缩放与旋转图片（图片由组件 cover 适配舞台，不提供图片平移），确认后拿到裁剪结果。可独立使用（头像/封面裁剪），也可作为上传链路的前处理：选图 → 裁剪 → 上传。
 
 ## 基础用法（自由比例）
 
@@ -26,6 +26,25 @@ description: 图片裁剪：固定/自由比例裁剪框、缩放、90° 旋转�
 
 <DemoBlock title="aspect-ratio=16/9（封面比例）">
   <oas-image-cropper src="/assets/demo-wide-1.svg" aspect-ratio="16/9"></oas-image-cropper>
+</DemoBlock>
+
+## 输出参数
+
+`max-zoom` 限制放大倍数（滑块与 `+` / `−` 按钮共用上界），`max-output-size` 限制导出图最长边像素，`output-type` 选择导入格式（`image/png` / `image/jpeg` / `image/webp`）。下面的实例：左侧只能放到 2 倍；右侧导出 JPEG 且最长边最多 640px。
+
+<DemoBlock title="max-zoom=2 · max-output-size=640 · output-type=image/jpeg">
+  <oas-image-cropper id="ic-zoom" src="/assets/demo-wide-2.svg" max-zoom="2"></oas-image-cropper>
+  <oas-image-cropper id="ic-output" src="/assets/demo-wide-2.svg" aspect-ratio="1" max-output-size="640" output-type="image/jpeg"></oas-image-cropper>
+  <p id="ic-output-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">点「裁剪」看导出类型与尺寸</p>
+</DemoBlock>
+
+## 加载失败
+
+`src` 指向的图片加载不出来时派发 `oas-error`，舞台显示错误文案而不是残留破图。
+
+<DemoBlock title="src 不可用（错误态）">
+  <oas-image-cropper id="ic-error" src="/assets/not-found.png"></oas-image-cropper>
+  <p id="ic-error-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">等待加载…</p>
 </DemoBlock>
 
 ## 与上传链路配合
@@ -94,6 +113,21 @@ onMounted(() => {
     log(evOut, `oas-change：缩放 ${Math.round(zoom * 100)}%，旋转 ${rotation}°，裁剪框 ${Math.round(frame.width)}×${Math.round(frame.height)}`)
   })
   ev?.addEventListener('oas-crop', (e) => log(evOut, `oas-crop：${e.detail.blob ? '已生成 Blob' : 'blob 不可用'}`))
+
+  // 输出参数：导出类型与像素尺寸
+  const output = document.getElementById('ic-output')
+  const outputOut = document.getElementById('ic-output-out')
+  output?.addEventListener('oas-crop', (e) => {
+    const { blob, frame } = e.detail
+    const size = blob ? `${blob.type || '未知类型'} · ${Math.round(blob.size / 1024)} KB` : 'blob 不可用'
+    log(outputOut, `导出 ${size}（裁剪框 ${Math.round(frame.width)}×${Math.round(frame.height)} 舞台 px）`)
+  })
+
+  // 加载失败态
+  const err = document.getElementById('ic-error')
+  const errOut = document.getElementById('ic-error-out')
+  err?.addEventListener('oas-error', (e) => log(errOut, `oas-error：${e.detail.src} 加载失败`))
+  err?.addEventListener('oas-load', (e) => log(errOut, `oas-load：${e.detail.width}×${e.detail.height}`))
 })
 </script>
 
@@ -117,13 +151,13 @@ onMounted(() => {
 | Property | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `rotation` | 当前旋转角度（0 / 90 / 180 / 270，只读） | `number` | `0` |
-| `zoom` | 当前缩放（1 起；写入即生效并派发 `oas-change`） | `number` | `1` |
+| `zoom` | 当前缩放（1 起）。写入即生效但**不派发事件**——`oas-change` 只表达用户交互，宿主在事件里回写 `el.zoom` 不会递归 | `number` | `1` |
 
 #### 方法
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `setZoom` | `setZoom(value: number): void` | 设置缩放（夹到 `[1, max-zoom]` 并派发 `oas-change`） |
+| `setZoom` | `setZoom(value: number): void` | 设置缩放（夹到 `[1, max-zoom]`；值有变化才派发 `oas-change`） |
 | `rotate` | `rotate(delta: number): void` | 旋转指定角度（默认 +90° 并派发 `oas-change`） |
 | `reset` | `reset(): void` | 恢复初始缩放 / 旋转 / 裁剪框（派发 `oas-change`） |
 | `toBlob` | `toBlob(type?: string, quality?: number): Promise<Blob \| null>` | 导出裁剪结果 Blob（canvas 不可用时返回 null） |

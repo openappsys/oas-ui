@@ -616,4 +616,5 @@ export const ptBR: LocaleMessages = {
   'imageCropper.confirm': 'Recortar',
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'Nenhuma imagem',
+  'imageCropper.loadFailed': 'Falha ao carregar a imagem',
 }

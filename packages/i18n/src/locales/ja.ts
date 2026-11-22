@@ -616,4 +616,5 @@ export const ja: LocaleMessages = {
   'imageCropper.confirm': '切り抜く',
   'imageCropper.zoom': 'ズーム',
   'imageCropper.empty': '画像がありません',
+  'imageCropper.loadFailed': '画像を読み込めませんでした',
 }

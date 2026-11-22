@@ -37,6 +37,15 @@ Files beyond `max` are dropped and `oas-exceed-limit` is dispatched; once full, 
 - `disabled`: the add tile and all reorder/remove buttons are disabled
 - `readonly`: the add entry is hidden and action buttons are disabled (for post-submit display)
 
+## Type filtering and capture
+
+`accept` passes through the native type filter (extensions or MIME types, comma separated); filtered-out files dispatch `oas-reject`. `capture` makes mobile browsers open the camera directly.
+
+<DemoBlock title="accept only .jpg / .jpeg + capture">
+  <oas-image-picker id="ip-accept" accept=".jpg,.jpeg" capture max="4"></oas-image-picker>
+  <p id="ip-accept-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Try picking a PNG: it is rejected with feedback</p>
+</DemoBlock>
+
 ## Working with the upload chain
 
 `files` is a JS property (not reflected to attributes); host assignment applies silently and dispatches no event, so echo-back in a form is straightforward.
@@ -81,6 +90,12 @@ onMounted(() => {
   const limitOut = document.getElementById('ip-limit-out')
   limit?.addEventListener('oas-change', (e) => log(limitOut, `Selected ${e.detail.count} / ${limit.getAttribute('max')}`))
   limit?.addEventListener('oas-exceed-limit', (e) => log(limitOut, `Over the limit (${e.detail.count}); only the first ${e.detail.max} kept`))
+
+  // Type filter: accept=".jpg,.jpeg" rejects everything else
+  const acceptOnly = document.getElementById('ip-accept')
+  const acceptOut = document.getElementById('ip-accept-out')
+  acceptOnly?.addEventListener('oas-change', (e) => log(acceptOut, `Selected ${e.detail.count} .jpg / .jpeg image(s)`))
+  acceptOnly?.addEventListener('oas-reject', (e) => log(acceptOut, `Ignored ${e.detail.files.length} non-jpg file(s)`))
 })
 </script>
 

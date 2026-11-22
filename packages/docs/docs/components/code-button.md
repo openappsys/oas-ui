@@ -43,7 +43,7 @@ description: 验证码发送按钮：点击派发可拦截的 oas-send，内置�
 插槽内容用于空闲态；进入倒计时后仍显示内置倒计时文案（避免自定义文案掩盖剩余时间）。
 
 <DemoBlock title="默认插槽">
-  <oas-code-button cooldown="5"><span>发送到手机</span></oas-code-button>
+  <oas-code-button id="cb-slot" cooldown="5"><span>发送到手机</span></oas-code-button>
 </DemoBlock>
 
 ## 事件

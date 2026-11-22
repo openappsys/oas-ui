@@ -218,4 +218,76 @@ describe('OASImageCropper', () => {
     expect(el.zoom).toBe(3)
     expect(warn).toHaveBeenCalled()
   })
+
+  // —— 双向绑定死循环（Critical 回归）：宿主在 oas-change 里回写 zoom 不得递归 ——
+  it('宿主在 oas-change 里回写 el.zoom 不会递归爆栈（property 写入静默）', () => {
+    const el = mount()
+    let calls = 0
+    el.addEventListener('oas-change', (e) => {
+      calls++
+      el.zoom = (e as CustomEvent<{ zoom: number }>).detail.zoom
+    })
+    expect(() => el.setZoom(2)).not.toThrow()
+    expect(calls).toBe(1)
+    expect(el.zoom).toBe(2)
+  })
+
+  it('property 通道静默：el.zoom 写入不派发 oas-change；setZoom 值未变也不派发', () => {
+    const el = mount()
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    el.zoom = 1.5
+    expect(el.zoom).toBe(1.5)
+    expect(fired).toBe(0)
+    el.setZoom(1.5)
+    expect(fired).toBe(0)
+    el.setZoom(2)
+    expect(fired).toBe(1)
+    // 已在上限：重复放大不产生噪音事件
+    el.setZoom(99)
+    expect(el.zoom).toBe(3)
+    const atMax = fired
+    el.setZoom(99)
+    expect(fired).toBe(atMax)
+  })
+
+  // —— 输出来源（Minor 回归）：oas-load / oas-error 与错误视觉态 ——
+  it('图片加载成功派发 oas-load（含原始尺寸）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    const events: unknown[] = []
+    el.addEventListener('oas-load', (e) => events.push((e as CustomEvent).detail))
+    const img = image(el)
+    Object.defineProperty(img, 'naturalWidth', { value: 800, configurable: true })
+    Object.defineProperty(img, 'naturalHeight', { value: 600, configurable: true })
+    img.dispatchEvent(new Event('load'))
+    expect(events).toEqual([{ width: 800, height: 600 }])
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="empty"]')!.hidden).toBe(true)
+  })
+
+  it('图片加载失败派发 oas-error 并显示错误态（破图不留在舞台）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    const events: unknown[] = []
+    el.addEventListener('oas-error', (e) => events.push((e as CustomEvent).detail))
+    image(el).dispatchEvent(new Event('error'))
+    expect(events).toEqual([{ src: 'data:image/png;base64,AAAA' }])
+    const empty = el.shadowRoot!.querySelector<HTMLElement>('[part="empty"]')!
+    expect(empty.hidden).toBe(false)
+    expect(empty.textContent).toBe('图片加载失败')
+    expect(empty.dataset.state).toBe('error')
+    expect(image(el).hidden).toBe(true)
+    // 换新的 src（加载成功）后错误态清除
+    el.setAttribute('src', 'data:image/png;base64,BBBB')
+    expect(empty.hidden).toBe(true)
+    expect(empty.dataset.state).toBeUndefined()
+  })
+
+  it('collision-guard：私有解析方法不与 attribute camelCase 撞名', () => {
+    const proto = OASImageCropper.prototype as unknown as Record<string, unknown>
+    for (const name of ['maxZoom', 'maxOutputSize', 'outputType']) {
+      expect(
+        proto[name],
+        `${name} 不得作为实例成员存在（撞 max-zoom / max-output-size / output-type 的 camelCase）`,
+      ).toBeUndefined()
+    }
+  })
 })

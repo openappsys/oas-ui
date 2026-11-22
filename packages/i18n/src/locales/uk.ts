@@ -620,4 +620,5 @@ export const uk: LocaleMessages = {
   'imageCropper.confirm': 'Обрізати',
   'imageCropper.zoom': 'Масштаб',
   'imageCropper.empty': 'Немає зображення',
+  'imageCropper.loadFailed': 'Не вдалося завантажити зображення',
 }

@@ -43,7 +43,7 @@ Clicking starts the cooldown immediately (60 seconds by default); while cooling 
 Slot content is used for the idle state; during the countdown the built-in countdown text is still shown (so custom copy cannot hide the remaining time).
 
 <DemoBlock title="default slot">
-  <oas-code-button cooldown="5"><span>Send to phone</span></oas-code-button>
+  <oas-code-button id="cb-slot" cooldown="5"><span>Send to phone</span></oas-code-button>
 </DemoBlock>
 
 ## Events

@@ -621,4 +621,5 @@ export const zhHant: LocaleMessages = {
   'imageCropper.confirm': '裁剪',
   'imageCropper.zoom': '縮放',
   'imageCropper.empty': '尚無圖片',
+  'imageCropper.loadFailed': '圖片載入失敗',
 }

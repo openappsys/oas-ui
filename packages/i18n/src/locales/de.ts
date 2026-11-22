@@ -616,4 +616,5 @@ export const de: LocaleMessages = {
   'imageCropper.confirm': 'Zuschneiden',
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'Kein Bild',
+  'imageCropper.loadFailed': 'Bild konnte nicht geladen werden',
 }

@@ -5,8 +5,12 @@ import { devWarn } from '../../shared/dev-warn.js'
 /**
  * oas-image-cropper —— 图片裁剪（form 族）。
  *
- * 舞台内显示待裁剪图片，用户拖动/缩放/旋转图片并调整裁剪框，通过 `toBlob()` / `toDataURL()`
- * 或确认按钮拿到结果。可独立使用，也可作为上传链路的前处理（选图 → 裁剪 → 上传）。
+ * 舞台内显示待裁剪图片；用户拖动裁剪框移动位置、拖四角改大小，工具栏缩放 / 旋转图片，
+ * 通过 `toBlob()` / `toDataURL()` 或确认按钮拿到结果。可独立使用，也可作为上传链路的前处理
+ * （选图 → 裁剪 → 上传）。
+ *
+ * 交互边界：裁剪框可在舞台内移动 / 缩放；图片可缩放（1 ~ max-zoom）与 90° 旋转；**不提供图片平移**
+ * （图片始终 cover 舞台居中，平移会暴露舞台底色）。
  *
  * 属性（kebab-case）：
  * - `src`：图片地址（`http(s)` / `blob:` / 相对路径；`javascript:` 等可执行协议回落空）
@@ -17,7 +21,8 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `disabled`：禁用全部交互（工具栏禁用、裁剪框不可聚焦）
  *
  * Property（仅 JS）：
- * - `zoom`：当前缩放（1 起，写入即生效，越界夹到 `[1, max-zoom]`）
+ * - `zoom`：当前缩放（1 起；写入即生效、**不派发事件**——程序化写入与用户交互事件分离，
+ *   宿主在 `oas-change` 里回写 `el.zoom` 不会递归；越界夹到 `[1, max-zoom]`）
  * - `rotation`：当前旋转角度（只读，0/90/180/270）
  *
  * 事件（bubbles + composed）：
@@ -98,7 +103,8 @@ const STYLE = `
   touch-action: none;
   user-select: none;
 }
-.stage[data-empty] .frame {
+.stage[data-empty] .frame,
+.stage[data-error] .frame {
   display: none;
 }
 .image {
@@ -167,6 +173,11 @@ const STYLE = `
 }
 .empty[hidden] {
   display: none;
+}
+/* 加载失败态：破图不留在舞台上，改为错误文案（弱化色仍可读，走 danger 文字 token） */
+.empty[data-state='error'] {
+  color: var(--oas-color-danger-text);
+  font-size: var(--oas-font-size-sm);
 }
 .toolbar {
   display: flex;
@@ -269,15 +280,21 @@ export class OASImageCropper extends OASElement {
   private lastAspectKey: string | null = null
   private lastSrc = ''
   private loaded = false
+  /** 当前 src 加载失败（破图）——舞台显示错误文案而不是残留空图 */
+  private failed = false
   private drag: DragState | null = null
 
-  /** @apiProperty 当前缩放（写入即生效；越界夹到 [1, max-zoom] 并派发 oas-change） */
+  /** @apiProperty 当前缩放（写入即静默生效，越界夹到 [1, max-zoom]；不派发事件） */
   get zoom(): number {
     return this.zoomValue
   }
 
+  /**
+   * 程序化写入缩放：静默生效（与 slider 的 value 通道一致——`oas-change` 只表达用户交互）。
+   * 宿主在 `oas-change` 里回写 `el.zoom = e.detail.zoom` 时不会再派发，避免同步递归爆栈。
+   */
   set zoom(value: number) {
-    this.setZoom(value)
+    this.applyZoom(value)
   }
 
   /** @apiProperty 当前旋转角度（0 / 90 / 180 / 270） */
@@ -300,7 +317,7 @@ export class OASImageCropper extends OASElement {
           </div>
         </div>
         <div class="toolbar" part="toolbar" role="group" aria-label="">
-          <button class="ctrl" part="control" type="button" data-act="zoom-out">−</button>
+          <button class="ctrl" part="control" type="button" data-act="zoom-out">-</button>
           <input class="zoom-range" part="zoom" type="range" min="1" max="3" step="0.01">
           <button class="ctrl" part="control" type="button" data-act="zoom-in">+</button>
           <span class="zoom-value" part="zoom-value"></span>
@@ -376,6 +393,7 @@ export class OASImageCropper extends OASElement {
     if (src !== this.lastSrc) {
       this.lastSrc = src
       this.loaded = false
+      this.failed = false
       this.zoomValue = 1
       this.rotationValue = 0
       this.offset = { x: 0, y: 0 }
@@ -384,11 +402,8 @@ export class OASImageCropper extends OASElement {
         else this.imgEl.removeAttribute('src')
       }
     }
-    if (this.imgEl) this.imgEl.hidden = !hasImage
-    if (this.emptyEl) {
-      this.emptyEl.hidden = hasImage
-      this.emptyEl.textContent = this.t('imageCropper.empty')
-    }
+    if (this.imgEl) this.imgEl.hidden = !hasImage || this.failed
+    this.syncEmptyState()
     if (hasImage) stage.removeAttribute('data-empty')
     else stage.setAttribute('data-empty', '')
 
@@ -408,7 +423,7 @@ export class OASImageCropper extends OASElement {
     this.frameEl?.setAttribute('aria-label', this.t('imageCropper.label'))
     if (this.frameEl) this.frameEl.tabIndex = disabled ? -1 : 0
 
-    const maxZoom = this.maxZoom()
+    const maxZoom = this.resolveMaxZoom()
     if (this.zoomRangeEl) {
       this.zoomRangeEl.max = String(maxZoom)
       this.zoomRangeEl.value = String(this.zoomValue)
@@ -545,13 +560,40 @@ export class OASImageCropper extends OASElement {
     const img = this.imgEl
     if (!img) return
     this.loaded = true
+    this.failed = false
+    img.hidden = false
+    this.syncEmptyState()
     this.syncImage()
     this.emit('load', { width: img.naturalWidth, height: img.naturalHeight })
   }
 
   private onImageError = (): void => {
     this.loaded = false
+    this.failed = true
+    if (this.imgEl) this.imgEl.hidden = true
+    this.syncEmptyState()
     this.emit('error', { src: this.lastSrc })
+  }
+
+  /**
+   * 空态 / 错误态显隐与文案：
+   * - 无 `src` → 空态（「暂无图片」）
+   * - 有 `src` 但加载失败 → 错误态（「图片加载失败」，破图不留在舞台上）
+   * - 加载成功 → 两态都隐藏
+   */
+  private syncEmptyState(): void {
+    const empty = this.emptyEl
+    if (!empty) return
+    const hasImage = this.lastSrc !== ''
+    empty.hidden = hasImage && !this.failed
+    empty.textContent = this.failed ? this.t('imageCropper.loadFailed') : this.t('imageCropper.empty')
+    if (this.failed) empty.dataset.state = 'error'
+    else delete empty.dataset.state
+    // 错误态隐藏裁剪框：没有可用图片时框架无意义，也避免遮罩盖住错误文案
+    if (this.stageEl) {
+      if (this.failed) this.stageEl.setAttribute('data-error', '')
+      else this.stageEl.removeAttribute('data-error')
+    }
   }
 
   private onPointerDown = (e: Event): void => {
@@ -684,17 +726,23 @@ export class OASImageCropper extends OASElement {
     this.emitChange()
   }
 
-  /** 缩放设置（公共通道：夹值 + 派发 oas-change） */
+  /** 缩放设置（公共方法：夹值；**值有变化才派发** oas-change，已在上/下限时重复调用不产生噪音事件） */
   setZoom(value: number): void {
-    const next = clamp(Number(value), 1, this.maxZoom())
-    this.applyZoom(next)
-    this.emitChange()
+    if (this.applyZoom(value)) this.emitChange()
   }
 
-  private applyZoom(value: number): void {
-    this.zoomValue = clamp(Number(value), 1, this.maxZoom())
-    if (this.zoomRangeEl) this.zoomRangeEl.value = String(this.zoomValue)
+  /**
+   * 写入缩放（夹值 + 同步滑块与图片），返回是否真的发生变化。
+   * 本方法**不派发事件**：`oas-change` 只表达用户交互，property 通道（`el.zoom = n`）静默生效——
+   * 否则宿主「监听 oas-change → 回写 el.zoom」是同帧同步递归，直接爆栈。
+   */
+  private applyZoom(value: number): boolean {
+    const next = clamp(Number(value), 1, this.resolveMaxZoom())
+    const changed = next !== this.zoomValue
+    this.zoomValue = next
+    if (this.zoomRangeEl) this.zoomRangeEl.value = String(next)
     this.syncImage()
+    return changed
   }
 
   /** 旋转（默认 +90°；派发 oas-change） */
@@ -761,7 +809,7 @@ export class OASImageCropper extends OASElement {
     const scale = this.fitScale() * this.zoomValue
     const ratio = scale > 0 ? 1 / scale : 1
     const longest = Math.max(this.frameRect.width, this.frameRect.height) * ratio
-    const cap = this.maxOutputSize()
+    const cap = this.resolveMaxOutputSize()
     return longest > cap ? (ratio * cap) / longest : ratio
   }
 
@@ -769,9 +817,9 @@ export class OASImageCropper extends OASElement {
   async toBlob(type?: string, quality?: number): Promise<Blob | null> {
     const canvas = this.renderCanvas()
     if (!canvas || typeof canvas.toBlob !== 'function') return null
-    const outputType = this.outputType(type)
+    const mime = this.resolveOutputType(type)
     return await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((blob) => resolve(blob), outputType, quality)
+      canvas.toBlob((blob) => resolve(blob), mime, quality)
     })
   }
 
@@ -779,10 +827,11 @@ export class OASImageCropper extends OASElement {
   toDataURL(type?: string, quality?: number): string {
     const canvas = this.renderCanvas()
     if (!canvas || typeof canvas.toDataURL !== 'function') return ''
-    return canvas.toDataURL(this.outputType(type), quality)
+    return canvas.toDataURL(this.resolveOutputType(type), quality)
   }
 
-  private outputType(explicit?: string): string {
+  /** 输出 MIME：显式参数 > `output-type` 属性 > 默认 png；非法值回落并单次告警 */
+  private resolveOutputType(explicit?: string): string {
     const raw = (explicit ?? this.getAttr('output-type', 'image/png') ?? '').toLowerCase()
     if (VALID_OUTPUT_TYPES.has(raw)) return raw
     if (explicit === undefined) {
@@ -805,7 +854,8 @@ export class OASImageCropper extends OASElement {
     return value
   }
 
-  private maxZoom(): number {
+  /** `max-zoom`：默认 3，非法/≤1 回落默认并单次告警（方法名带 resolve 前缀，避开 attribute camelCase 撞名） */
+  private resolveMaxZoom(): number {
     const raw = this.getAttr('max-zoom', '')
     if (raw === '') return DEFAULT_MAX_ZOOM
     const n = Number(raw)
@@ -816,7 +866,8 @@ export class OASImageCropper extends OASElement {
     return n
   }
 
-  private maxOutputSize(): number {
+  /** `max-output-size`：默认 1024，非法回落默认并单次告警（resolve 前缀避开 attribute camelCase 撞名） */
+  private resolveMaxOutputSize(): number {
     const raw = this.getAttr('max-output-size', '')
     if (raw === '') return DEFAULT_MAX_OUTPUT
     const n = Number(raw)

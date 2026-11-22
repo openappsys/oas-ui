@@ -524,4 +524,5 @@ export const th: LocaleMessages = {
   'imageCropper.confirm': 'ครอบตัด',
   'imageCropper.zoom': 'ซูม',
   'imageCropper.empty': 'ไม่มีรูปภาพ',
+  'imageCropper.loadFailed': 'โหลดรูปภาพไม่สำเร็จ',
 }

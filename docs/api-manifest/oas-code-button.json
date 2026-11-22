@@ -36,7 +36,7 @@
     {
       "name": "start",
       "signature": "start(seconds?: number): void",
-      "description": "启动冷却（秒）；缺省取 cooldown 属性"
+      "description": "启动冷却（秒）；缺省取 cooldown 属性。命令式启动也算「已发送」——冷却结束后文案为「重新获取」"
     },
     {
       "name": "reset",

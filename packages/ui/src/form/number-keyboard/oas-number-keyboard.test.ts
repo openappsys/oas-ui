@@ -163,7 +163,7 @@ describe('OASNumberKeyboard', () => {
     expect(el.getAttribute('value')).toBe('1')
   })
 
-  it('readonly 保持可聚焦但拦截输入（aria-readonly 同步）', () => {
+  it('readonly 保持可聚焦但拦截输入（不暴露非法 aria-readonly）', () => {
     const el = mount({ readonly: '', value: '1' })
     let detail: unknown
     el.addEventListener('oas-input', (e) => (detail = (e as CustomEvent).detail))
@@ -171,7 +171,8 @@ describe('OASNumberKeyboard', () => {
     press(keyOf(el, '2'))
     expect(el.getAttribute('value')).toBe('1')
     expect(detail).toBeUndefined()
-    expect(el.shadowRoot!.querySelector('[part="keyboard"]')!.getAttribute('aria-readonly')).toBe('true')
+    // 容器 role="group" 不允许 aria-readonly（axe aria-allowed-attr 违规）：只读语义靠不写值表达
+    expect(el.shadowRoot!.querySelector('[part="keyboard"]')!.hasAttribute('aria-readonly')).toBe(false)
   })
 
   it('物理键盘：数字/字母输入追加，Backspace 删除', () => {
@@ -182,6 +183,16 @@ describe('OASNumberKeyboard', () => {
     expect(el.getAttribute('value')).toBe('A1')
     physical(el, 'Backspace')
     expect(el.getAttribute('value')).toBe('A')
+  })
+
+  it('车牌布局物理输入按屏上字符集过滤：I / O 与其他字符被忽略', () => {
+    const el = mount({ layout: 'plate' })
+    physical(el, 'i')
+    physical(el, 'O')
+    physical(el, '-')
+    expect(el.getAttribute('value') ?? '').toBe('')
+    physical(el, 'b')
+    expect(el.getAttribute('value')).toBe('B')
   })
 
   it('数字布局下字母键被忽略', () => {

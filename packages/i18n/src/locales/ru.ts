@@ -617,4 +617,5 @@ export const ru: LocaleMessages = {
   'imageCropper.confirm': 'Обрезать',
   'imageCropper.zoom': 'Масштаб',
   'imageCropper.empty': 'Нет изображения',
+  'imageCropper.loadFailed': 'Не удалось загрузить изображение',
 }
