@@ -142,4 +142,71 @@ describe('OASCategory', () => {
     expect(el.shadowRoot!.querySelector('.node[data-key="apple"]')!.textContent).toContain('苹果')
     expect(el.shadowRoot!.querySelector('.node[data-key="apple"]')!.getAttribute('aria-selected')).toBe('true')
   })
+
+  it('子级树项归属 role=group（父项展开时分组包裹，层级不变）', () => {
+    const el = mount({ categories: CATEGORIES, 'active-key': 'phone' })
+    const tree = q<HTMLElement>(el, '.tree')
+    expect(tree.getAttribute('role')).toBe('tree')
+    const group = tree.querySelector<HTMLElement>(':scope > .node-group')
+    expect(group, '根级展开的子项必须包在 role=group 内').not.toBe(null)
+    expect(group!.getAttribute('role')).toBe('group')
+    expect([...group!.querySelectorAll(':scope > .node')].map((n) => (n as HTMLElement).dataset.key)).toEqual([
+      'phone',
+      'audio',
+    ])
+    // 深层子项再套一层 group
+    const nested = group!.querySelector<HTMLElement>(':scope > .node-group')
+    expect(nested, '已展开的子级也要分组').not.toBe(null)
+    expect(nodes(el).map((n) => n.getAttribute('data-level'))).toEqual(['1', '2', '3', '3', '2', '1'])
+  })
+
+  it('property 通道：categories 收数组与 JSON 字符串，均反射 attribute 并渲染', () => {
+    const el = mount()
+    el.categories = [{ key: 'k1', label: '甲类', children: [{ key: 'k2', label: '乙类' }] }]
+    expect(JSON.parse(el.getAttribute('categories')!)).toMatchObject([{ key: 'k1', label: '甲类' }])
+    expect(el.categories).toMatchObject([{ key: 'k1', label: '甲类' }])
+    expect(nodes(el).map((n) => n.textContent!.replace('›', ''))).toEqual(['甲类', '乙类'])
+
+    el.categories = JSON.stringify([{ key: 'k3', label: '丙类' }])
+    expect(nodes(el).map((n) => n.textContent)).toEqual(['丙类'])
+    expect(el.getAttribute('categories')).toBe('[{"key":"k3","label":"丙类"}]')
+  })
+
+  it('撞名回归：宿主写入 activeKey property 不遮蔽内部方法，后续 update 不崩', () => {
+    const el = mount({ categories: CATEGORIES })
+    // 框架按「key in el」写入 property（修复前 activeKey 是原型方法，被 own property 遮蔽后 update() TypeError）
+    ;(el as unknown as Record<string, unknown>)['activeKey'] = 'phone'
+    expect(() => el.setAttribute('active-key', 'phone')).not.toThrow()
+    expect(el.getAttribute('active-key')).toBe('phone')
+    expect(el.shadowRoot!.querySelector('.node[data-key="phone"]')).not.toBe(null)
+  })
+
+  it('键盘激活重建树后焦点仍留在同一节点（键盘导航不被打断）', () => {
+    const el = mount({ categories: CATEGORIES })
+    const first = nodes(el)[0]!
+    first.focus()
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('active-key')).toBe('digital')
+    expect((el.shadowRoot!.activeElement as HTMLElement | null)?.dataset.key).toBe('digital')
+  })
+
+  it('返回上级后面板重建仍保留焦点（无返回钮时交给左侧树当前项）', () => {
+    const el = mount({ categories: CATEGORIES, 'active-key': 'phone' })
+    const back = q<HTMLButtonElement>(el, '.back')
+    back.focus()
+    back.click()
+    expect(el.getAttribute('active-key')).toBe('digital')
+    const focused = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(focused?.dataset.key, '根层没有返回钮 → 焦点回到左侧树当前项').toBe('digital')
+  })
+
+  it('宫格进入子类后面板重建仍是可见焦点（落到返回钮）', () => {
+    const el = mount({ categories: CATEGORIES })
+    const tile = el.shadowRoot!.querySelector<HTMLElement>('.tile[data-key="audio"]')!
+    tile.focus()
+    tile.click()
+    expect(el.getAttribute('active-key')).toBe('audio')
+    const focused = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(focused?.classList.contains('back'), '进入子类后焦点不得丢到 body').toBe(true)
+  })
 })

@@ -67,3 +67,58 @@ test('address 表单校验：失败时错误可见、成功时提交反馈可见
   const submitted = await page.evaluate(() => document.getElementById('address-validate-info')!.textContent)
   expect(submitted).toContain('校验通过')
 })
+
+// 修复回归：地区必填曾因 fieldOf('region') 返回 null 而静默——错误文案与 aria 标记都不可见，
+// 用户只看到「点了保存没反应」
+test('address 地区必填：错误文案与 aria-invalid 可见（注入 regions 时）', async ({ page }) => {
+  await page.goto('/components/address.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-address')
+
+  const result = await page.evaluate(() => {
+    const el = document.createElement('oas-address')
+    el.id = 'address-region-probe'
+    el.setAttribute('regions', '[{"name":"浙江省","children":[{"name":"杭州市","children":[{"name":"西湖区"}]}]}]')
+    document.getElementById('address-validate-demo')!.parentElement!.appendChild(el)
+    const root = el.shadowRoot!
+    root.querySelector<HTMLInputElement>('input[name="name"]')!.value = '张三'
+    root.querySelector<HTMLInputElement>('input[name="phone"]')!.value = '13800000000'
+    root.querySelector<HTMLButtonElement>('button[type="submit"]')!.click()
+    const error = root.querySelector<HTMLElement>('.region-group > .field > .error')!
+    const province = root.querySelector<HTMLSelectElement>('.province')!
+    return {
+      fieldInvalid: root.querySelector<HTMLElement>('.region-group > .field')!.hasAttribute('data-invalid'),
+      errorVisible: !error.hidden && error.textContent.length > 0,
+      ariaInvalid: province.getAttribute('aria-invalid'),
+      describedBy: province.getAttribute('aria-describedby') === error.id && error.id !== '',
+      focused: root.activeElement === province,
+    }
+  })
+  expect(result.fieldInvalid).toBe(true)
+  expect(result.errorVisible, '地区必填错误必须可见（曾静默）').toBe(true)
+  expect(result.ariaInvalid).toBe('true')
+  expect(result.describedBy, 'aria-describedby 必须指向错误文案').toBe(true)
+  expect(result.focused, '首个错误字段应获得焦点').toBe(true)
+})
+
+test('address 只读态：字段禁编辑但仍可聚焦复制，提交按钮禁用', async ({ page }) => {
+  await page.goto('/components/address.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-address')
+
+  const state = await page.evaluate(() => {
+    const els = [...document.querySelectorAll<HTMLElement>('oas-address')]
+    const ro = els.find((el) => el.hasAttribute('readonly'))!
+    const root = ro.shadowRoot!
+    const input = root.querySelector<HTMLInputElement>('input[name="name"]')!
+    input.focus()
+    return {
+      disabled: input.disabled,
+      focused: root.activeElement === input,
+      submitDisabled: root.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled,
+      value: input.value.length > 0,
+    }
+  })
+  expect(state.disabled, 'readonly 不置 disabled（仍可聚焦复制）').toBe(false)
+  expect(state.focused).toBe(true)
+  expect(state.submitDisabled).toBe(true)
+  expect(state.value, '只读态应按 value 预填').toBe(true)
+})

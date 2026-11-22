@@ -190,6 +190,85 @@ const CONTRACT: ContractEntry[] = [
       stringProbe: [{ prop: 'items', raw: '["probe-a","probe-b"]', identity: true, text: 'probe-a' }],
     },
   },
+  // commerce 族：数据属性都设计了 get+set 双通道（setter 把数组/字符串反射成 JSON attribute）。
+  // SPA 下 Vue 按「key in el」走 property 赋值 → setter 必须存在且反射，渲染必须真的落地；
+  // attribute 通道同时做逐实例基线比对（反射失效会让 attribute 凭空消失，这里能抓到）。
+  {
+    page: 'address',
+    tag: 'oas-address',
+    attrContract: { mode: 'json-or-scalar', value: 'object', items: 'array', regions: 'array' },
+    propContract: {
+      attrs: ['value', 'items', 'regions'],
+      renderedSel: 'input[name="name"], [part="card"]',
+      stringProbe: [
+        { prop: 'value', raw: '{"name":"Probe A","phone":"13800000000"}', kind: 'object' },
+        {
+          prop: 'items',
+          raw: '[{"id":"probe-a","name":"Probe Address","phone":"13800000000","isDefault":true}]',
+          identity: true,
+          text: 'Probe Address',
+        },
+        { prop: 'regions', raw: '[{"name":"Probe Province","children":[{"name":"Probe City"}]}]', identity: true },
+      ],
+    },
+  },
+  {
+    page: 'category',
+    tag: 'oas-category',
+    attrContract: { categories: 'array', 'active-key': 'json-or-scalar' },
+    propContract: {
+      attrs: ['categories'],
+      renderedSel: '.node',
+      mode: 'when-data',
+      probe: 'categories',
+      stringProbe: [
+        {
+          prop: 'categories',
+          raw: '[{"key":"probe-cat","label":"Probe Category"}]',
+          identity: true,
+          text: 'Probe Category',
+        },
+      ],
+    },
+  },
+  {
+    page: 'ecard',
+    tag: 'oas-ecard',
+    attrContract: { cards: 'array', 'selected-id': 'json-or-scalar' },
+    propContract: {
+      attrs: ['cards'],
+      renderedSel: '[part="card"]',
+      stringProbe: [
+        {
+          prop: 'cards',
+          raw: '[{"id":"probe-card","name":"Probe Card","value":100,"faceValue":"100 USD"}]',
+          identity: true,
+          text: 'Probe Card',
+        },
+      ],
+    },
+  },
+  {
+    page: 'invoice',
+    tag: 'oas-invoice',
+    attrContract: { type: 'json-or-scalar', contents: 'array', 'save-titles': 'array' },
+    propContract: {
+      attrs: ['contents', 'saveTitles'],
+      renderedSel: '[role="option"]',
+      mode: 'when-data',
+      probe: 'saveTitles',
+      stringProbe: [
+        { prop: 'contents', raw: '[{"value":"probe","label":"Probe Content"}]', identity: true },
+        {
+          prop: 'saveTitles',
+          accessor: 'saveTitles',
+          raw: '[{"id":"probe-t","type":"personal","title":"Probe Title"}]',
+          identity: true,
+          text: 'Probe Title',
+        },
+      ],
+    },
+  },
 ]
 
 test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖 __vnode）', async ({ page }) => {

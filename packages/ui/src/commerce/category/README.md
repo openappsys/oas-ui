@@ -32,3 +32,15 @@
 | --- | --- |
 | `oas-change` | `{ key, path, node }` — 左侧选中 / 右侧进入子类 |
 | `oas-select` | `{ key, item, path }` — 点击商品位 |
+
+## property 通道
+
+`categories` 另有同名 get/set：赋数组时序列化后反射成 attribute（读取返回解析后的节点数组），
+字符串原样写入。宿主框架的静态数据绑定因此不必手写 `JSON.stringify`，SPA 下也不会因
+「`'categories' in el` 为真但无 setter」而丢数据。
+
+- 命名纪律：attribute 的 camelCase 不得与实例方法/字段同名（`active-key` 的解析方法叫
+  `resolveActiveKey`，不叫 `activeKey`）——同名会被 property 写入遮蔽，`update()` 直接 TypeError。
+- 无障碍：树子级挂在 `role="group"` 容器里（ARIA tree 模式），重建树/面板后保留焦点；
+  收起箭头在 `:dir(rtl)` 下镜像 180°。
+

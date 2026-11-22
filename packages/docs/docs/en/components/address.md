@@ -40,6 +40,18 @@ Address-book component covering three shapes in one element: an address editor, 
   <oas-address mode="contact" value='{"name":"Wang Wu","phone":"13700000000"}'></oas-address>
 </DemoBlock>
 
+## Preselected address
+
+`selected-id` controls the selected item. When the selected item is removed from `items`, the component falls back to the `isDefault` / first item and emits `oas-select` so the host can follow.
+
+<DemoBlock title="Second item preselected">
+  <oas-address
+    mode="list"
+    selected-id="a2"
+    items='[{"id":"a1","name":"Zhang San","phone":"13800000000","province":"Zhejiang","city":"Hangzhou","district":"Xihu","detail":"100 Wensan Road","isDefault":true},{"id":"a2","name":"Li Si","phone":"13900000000","province":"Jiangsu","city":"Nanjing","district":"Xuanwu","detail":"8 Zhongshan Road"}]'
+  ></oas-address>
+</DemoBlock>
+
 ## Validation
 
 Saving validates: name required, phone required and well-formed, all three region levels required when region data is injected, and street address required. Failure emits `oas-invalid` (`detail { fields }`) and focuses the first invalid field.
@@ -47,7 +59,7 @@ Saving validates: name required, phone required and well-formed, all three regio
 <DemoBlock title="Validation feedback">
   <oas-space direction="vertical" size="small" style="width: 100%">
     <oas-address id="address-validate-demo"></oas-address>
-    <oas-tag type="warning" id="address-validate-info">Waiting for submit</oas-tag>
+    <oas-tag type="primary" id="address-validate-info">Waiting for submit</oas-tag>
   </oas-space>
 </DemoBlock>
 
@@ -69,6 +81,7 @@ The component **does not bundle** region data; `regions` is the only contract (J
 - Node fields: `name` (required; display and submitted value), optional `code`, recursive `children` (three levels are used)
 - When absent or invalid, region selects stay empty and are skipped in validation; the street address still works
 - Changing a parent resets its children; `value` restores selections by name level by level
+- The same-named property channel works too: `value` / `items` / `regions` accept objects or arrays directly (serialized and reflected into the JSON attributes; the getters return the parsed form)
 
 ## Accessibility
 
@@ -79,6 +92,14 @@ The component **does not bundle** region data; `regions` is the only contract (J
 <DemoBlock title="Disabled">
   <oas-address
     disabled
+    regions='[{"name":"Zhejiang","children":[{"name":"Hangzhou","children":[{"name":"Xihu"}]}]}]'
+  ></oas-address>
+</DemoBlock>
+
+<DemoBlock title="Read-only">
+  <oas-address
+    readonly
+    value='{"name":"Zhang San","phone":"13800000000","province":"Zhejiang","city":"Hangzhou","district":"Xihu","detail":"100 Wensan Road"}'
     regions='[{"name":"Zhejiang","children":[{"name":"Hangzhou","children":[{"name":"Xihu"}]}]}]'
   ></oas-address>
 </DemoBlock>
@@ -111,12 +132,12 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disables all inputs and actions (including list selection and add) | `boolean` | — |
-| `items` | Address list data (mode=list): JSON array [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]; the isDefault item is preselected | `string` | `[]` |
+| `items` | Address list data (mode=list): JSON array [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]; the isDefault item is preselected | `AddressEntry[] \| string` | `[]` |
 | `mode` | Shape: edit (default, address editor) / list (address list with single selection and default badge) / contact (contact-only mode, name and phone only) | `string` | `edit` |
 | `readonly` | Read-only: focusable and copyable, but cannot edit / submit / select | `boolean` | — |
-| `regions` | Region data (host-injected contract): JSON array [{ name, code?, children? }], up to three levels; the component ships no administrative-division dataset | `string` | — |
+| `regions` | Region data (host-injected contract): JSON array [{ name, code?, children? }], up to three levels; the component ships no administrative-division dataset | `AddressRegion[] \| string` | — |
 | `selected-id` | Selected list id (controlled); defaults to the isDefault item, otherwise the first item | `string` | — |
-| `value` | Controlled address value (JSON object): { id?, name, phone, province?, city?, district?, detail?, isDefault? }; prefills edit mode and only name / phone in contact mode | `string` | — |
+| `value` | Controlled address value (JSON object): { id?, name, phone, province?, city?, district?, detail?, isDefault? }; prefills edit mode and only name / phone in contact mode | `AddressEntry \| string` | — |
 
 #### Events
 

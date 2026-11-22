@@ -54,11 +54,27 @@ description: "电子卡 / 储值卡：卡面列表选择、自定义面额输入
   </oas-ecard>
 </DemoBlock>
 
+## 货币符号
+
+`currency` 只影响自定义面额输入框的前缀（默认 `¥`），提交金额仍是纯数值，跨境场景可直接换符号。
+
+<DemoBlock title="自定义货币符号">
+  <oas-ecard
+    selected-id="custom"
+    currency="$"
+    amount="120"
+    min-amount="10"
+    max-amount="2000"
+    cards='[{"id":"c100","name":"Gift Card","value":100,"faceValue":"100 USD"}]'
+  ></oas-ecard>
+</DemoBlock>
+
 ## 数据契约
 
 - `cards`：`[{ "id": string, "name": string, "value": number, "faceValue": string, "price"?: string, "description"?: string, "disabled"?: boolean }]`
 - `selected-id`：卡 id 或 `custom`（自定义面额）；缺省选第一张可用卡，无可用卡时回落到 `custom`
 - `amount`：自定义面额（字符串，提交时转数值）；`min-amount` 默认 `1`，`max-amount` 默认 `10000`；`currency` 控制自定义面额输入框前缀符号（默认 `¥`）
+- 同名 property 通道同效：`cards` 可直接赋数组（序列化后反射为 JSON attribute，读取时返回解析结果），框架绑定无需手写 `JSON.stringify`
 
 ## 无障碍
 
@@ -70,6 +86,13 @@ description: "电子卡 / 储值卡：卡面列表选择、自定义面额输入
   <oas-ecard
     disabled
     cards='[{"id":"c100","name":"电子礼品卡","value":100,"faceValue":"100 元"}]'
+  ></oas-ecard>
+</DemoBlock>
+
+<DemoBlock title="只读态">
+  <oas-ecard
+    readonly
+    cards='[{"id":"c100","name":"电子礼品卡","value":100,"faceValue":"100 元","price":"95 元"}]'
   ></oas-ecard>
 </DemoBlock>
 
@@ -97,7 +120,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `agreed` | 是否已勾选协议（受控布尔属性；点击复选框时回写并派发 oas-change） | `boolean` | — |
 | `amount` | 自定义面额（字符串，提交时转数值） | `string` | — |
-| `cards` | 卡面数据（宿主注入）：JSON 数组 [{ id, name, value, faceValue, price?, description?, disabled? }]；value 为提交金额，faceValue / price 为展示文案 | `string` | — |
+| `cards` | 卡面数据（宿主注入）：JSON 数组 [{ id, name, value, faceValue, price?, description?, disabled? }]；value 为提交金额，faceValue / price 为展示文案 | `ECard[] \| string` | `[]` |
 | `currency` | 自定义面额前缀货币符号（默认 ¥；仅影响自定义面额输入框展示） | `string` | `¥` |
 | `disabled` | 禁用卡面 / 面额 / 协议与确认按钮 | `boolean` | — |
 | `max-amount` | 自定义面额上限（整数，默认 10000） | `string` | `10000` |

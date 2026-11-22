@@ -61,6 +61,22 @@ The confirm button is always clickable and validates card / amount / terms on cl
 - `cards`: `[{ "id": string, "name": string, "value": number, "faceValue": string, "price"?: string, "description"?: string, "disabled"?: boolean }]`
 - `selected-id`: a card id or `custom`; absent picks the first enabled card, no enabled card falls back to `custom`
 - `amount`: custom amount (string, converted to number on submit); `min-amount` defaults to `1`, `max-amount` to `10000`; `currency` sets the custom amount prefix (default `¥`)
+- The same-named property channel works too: `cards` accepts an array directly (serialized and reflected into the JSON attribute; the getter returns the parsed form)
+
+## Currency symbol
+
+`currency` only changes the custom amount prefix (default `¥`); the submitted amount stays numeric, so cross-border flows just swap the symbol.
+
+<DemoBlock title="Custom currency symbol">
+  <oas-ecard
+    selected-id="custom"
+    currency="$"
+    amount="120"
+    min-amount="10"
+    max-amount="2000"
+    cards='[{"id":"c100","name":"Gift Card","value":100,"faceValue":"100 USD"}]'
+  ></oas-ecard>
+</DemoBlock>
 
 ## Accessibility
 
@@ -72,6 +88,13 @@ The confirm button is always clickable and validates card / amount / terms on cl
   <oas-ecard
     disabled
     cards='[{"id":"c100","name":"Gift card","value":100,"faceValue":"$100"}]'
+  ></oas-ecard>
+</DemoBlock>
+
+<DemoBlock title="Read-only">
+  <oas-ecard
+    readonly
+    cards='[{"id":"c100","name":"Gift card","value":100,"faceValue":"$100","price":"$95"}]'
   ></oas-ecard>
 </DemoBlock>
 
@@ -99,7 +122,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `agreed` | Whether the terms are accepted (controlled boolean attribute; toggling writes it back and emits oas-change) | `boolean` | — |
 | `amount` | Custom amount (string, converted to number on submit) | `string` | — |
-| `cards` | Card data (host-injected): JSON array [{ id, name, value, faceValue, price?, description?, disabled? }]; value is the submitted amount, faceValue / price are display strings | `string` | — |
+| `cards` | Card data (host-injected): JSON array [{ id, name, value, faceValue, price?, description?, disabled? }]; value is the submitted amount, faceValue / price are display strings | `ECard[] \| string` | `[]` |
 | `currency` | Currency symbol prefix for the custom amount input (default ¥; display only) | `string` | `¥` |
 | `disabled` | Disables cards / amount / terms and the confirm button | `boolean` | — |
 | `max-amount` | Custom amount upper bound (integer, default 10000) | `string` | `10000` |

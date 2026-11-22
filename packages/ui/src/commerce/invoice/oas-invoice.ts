@@ -27,6 +27,16 @@ export interface InvoiceValue {
 
 const TAX_ID_RE = /^[A-Za-z0-9]{15,20}$/
 
+/**
+ * 分段控件方向键映射：返回 1（下一项）/ -1（上一项）/ 0（非方向键）。
+ * LTR 下 `→` 前进、`←` 后退；RTL 视觉顺序镜像，两者互换。
+ */
+export function segmentedStep(key: string, rtl: boolean): 1 | -1 | 0 {
+  if (key === 'ArrowRight') return rtl ? -1 : 1
+  if (key === 'ArrowLeft') return rtl ? 1 : -1
+  return 0
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -176,6 +186,11 @@ const STYLE = `
   background: var(--oas-color-bg-elevated);
   box-shadow: var(--oas-shadow-lg);
 }
+/* 视口下缘空间不足时向上翻转（openPicker 做空间检测后写 data-placement） */
+.picker[data-placement='up'] {
+  inset-block-start: auto;
+  inset-block-end: calc(100% + var(--oas-space-1));
+}
 .picker[hidden] {
   display: none;
 }
@@ -249,6 +264,21 @@ const STYLE = `
   border-color: var(--oas-color-border);
   color: var(--oas-color-text-disabled);
 }
+:host([disabled]) .input,
+:host([disabled]) .select {
+  cursor: not-allowed;
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+}
+/* readonly 文本控件保持正常可读色：只读语义是「可聚焦复制、不可编辑」，不是禁用 */
+:host([readonly]) .input {
+  cursor: default;
+}
+:host([readonly]) .select {
+  cursor: not-allowed;
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+}
 :host([disabled]) .saved-trigger,
 :host([readonly]) .saved-trigger {
   cursor: not-allowed;
@@ -274,8 +304,8 @@ export class OASInvoice extends OASElement {
   private picker: HTMLElement | null = null
   private pickerList: HTMLElement | null = null
   private readonly uid = `oas-invoice-${++invoiceUid}`
-  private contents: InvoiceContent[] = []
-  private savedTitles: InvoiceSavedTitle[] = []
+  private contentItems: InvoiceContent[] = []
+  private savedTitleItems: InvoiceSavedTitle[] = []
   private contentsSignature = ''
   private savedSignature = ''
   private open = false
@@ -283,6 +313,24 @@ export class OASInvoice extends OASElement {
   private appliedTitle = '__initial__'
   private appliedTax = '__initial__'
   private appliedContent = '__initial__'
+
+  /** 发票内容选项（property 通道读端）：已解析并过滤的选项数组 */
+  get contents(): InvoiceContent[] {
+    return this.contentItems
+  }
+  /** 发票内容选项（property 通道写端）：数组序列化、字符串原样反射到 contents attribute */
+  set contents(value: InvoiceContent[] | string) {
+    this.setAttribute('contents', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 已保存抬头（property 通道读端） */
+  get saveTitles(): InvoiceSavedTitle[] {
+    return this.savedTitleItems
+  }
+  /** 已保存抬头（property 通道写端）：数组序列化、字符串原样反射到 save-titles attribute */
+  set saveTitles(value: InvoiceSavedTitle[] | string) {
+    this.setAttribute('save-titles', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   private template(): string {
     return `
@@ -412,14 +460,31 @@ export class OASInvoice extends OASElement {
       this.taxInput.value = taxId
     }
     const content = this.getAttr('content', '')
-    if (this.contentSelect && content !== this.appliedContent) {
-      this.appliedContent = content
-      if (content !== '') this.contentSelect.value = content
-      else this.appliedContent = this.contentSelect.value
-    }
+    if (this.contentSelect && content !== this.appliedContent) this.applyContentValue(content)
 
     this.applyDisabled()
     if (this.disabledOrReadonly()) this.closePicker()
+  }
+
+  /**
+   * 受控 content 回写：值不在 options 里时浏览器会把它置空（下拉无选中项），
+   * dev 环境告警并回落到首项，同时把 attribute 同步成首项，避免宿主与组件状态长期不一致。
+   */
+  private applyContentValue(content: string): void {
+    if (!this.contentSelect) return
+    const exists = content !== '' && this.contentItems.some((item) => item.value === content)
+    if (exists) {
+      this.appliedContent = content
+      this.contentSelect.value = content
+      return
+    }
+    if (content !== '' && this.contentItems.length > 0) {
+      devWarn(`[oas-invoice] content="${content}" 不在 contents 选项中，已回落到首项「${this.contentItems[0]!.value}」`)
+    }
+    const fallback = this.contentItems[0]?.value ?? ''
+    this.appliedContent = fallback
+    this.contentSelect.value = fallback
+    if (fallback !== '' && this.getAttr('content', '') !== fallback) this.setAttribute('content', fallback)
   }
 
   /** 抬头类型分段控件：role=radiogroup + 两项 role=radio，键盘左右切换 */
@@ -464,42 +529,57 @@ export class OASInvoice extends OASElement {
   }
 
   private onTypeKey(e: KeyboardEvent): void {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    // RTL：视觉顺序镜像，方向键语义随之互换（segmentedStep 单一真源，单测覆盖两向）
+    const step = segmentedStep(e.key, this.isRtl())
+    if (step === 0) return
     e.preventDefault()
     if (this.disabledOrReadonly()) return
-    const next: InvoiceType = this.getAttr('type', 'personal') === 'personal' ? 'company' : 'personal'
+    const options: InvoiceType[] = ['personal', 'company']
+    const current = options.indexOf(this.getAttr('type', 'personal') === 'company' ? 'company' : 'personal')
+    const next = options[(current + step + options.length) % options.length]!
+    if (next === options[current]) return
     this.selectType(next)
     this.shadow.querySelector<HTMLButtonElement>(`.segment[data-value="${next}"]`)?.focus()
+  }
+
+  /** 宿主方向（RTL 镜像判定；happy-dom 等环境取不到 computed direction 时兜底 ltr） */
+  private isRtl(): boolean {
+    try {
+      return getComputedStyle(this).direction === 'rtl'
+    } catch {
+      return false
+    }
   }
 
   private parseContents(): void {
     const raw = this.getAttr('contents', '')
     if (raw === this.contentsSignature) return
     this.contentsSignature = raw
-    this.contents = parseJsonArray<InvoiceContent>(raw, () =>
+    this.contentItems = parseJsonArray<InvoiceContent>(raw, () =>
       devWarn('[oas-invoice] contents 不是合法 JSON 数组，已按空选项渲染'),
     ).filter((c) => c && typeof c.value === 'string' && typeof c.label === 'string')
   }
 
   private syncContents(): void {
     if (!this.contentField || !this.contentSelect) return
-    this.contentField.hidden = this.contents.length === 0
-    if (this.contents.length === 0) return
-    const signature = this.contents.map((c) => `${c.value}:${c.label}`).join('|')
+    this.contentField.hidden = this.contentItems.length === 0
+    if (this.contentItems.length === 0) return
+    const signature = this.contentItems.map((c) => `${c.value}:${c.label}`).join('|')
     if (this.contentSelect.dataset.signature === signature) return
     this.contentSelect.dataset.signature = signature
     this.contentSelect.replaceChildren()
-    for (const option of this.contents) {
+    for (const option of this.contentItems) {
       const el = document.createElement('option')
       el.value = option.value
       el.textContent = option.label
       this.contentSelect.appendChild(el)
     }
-    // 选项重建后按属性恢复选中值（否则会被浏览器重置到第一项）
+    // 选项重建后按属性恢复选中值（否则会被浏览器重置到第一项）；
+    // 属性值不在新选项里时同样走 applyContentValue 的告警 + 回落路径
     const current = this.getAttr('content', '')
     if (current !== '') {
-      this.contentSelect.value = current
       this.appliedContent = current
+      this.applyContentValue(current)
     }
   }
 
@@ -507,16 +587,16 @@ export class OASInvoice extends OASElement {
     const raw = this.getAttr('save-titles', '')
     if (raw === this.savedSignature) return
     this.savedSignature = raw
-    this.savedTitles = parseJsonArray<InvoiceSavedTitle>(raw, () =>
+    this.savedTitleItems = parseJsonArray<InvoiceSavedTitle>(raw, () =>
       devWarn('[oas-invoice] save-titles 不是合法 JSON 数组，已按空列表渲染'),
     ).filter((t) => t && typeof t.title === 'string')
   }
 
   private syncSaved(): void {
     if (!this.savedWrap || !this.pickerList) return
-    this.savedWrap.hidden = this.savedTitles.length === 0
+    this.savedWrap.hidden = this.savedTitleItems.length === 0
     this.pickerList.replaceChildren()
-    this.savedTitles.forEach((title, index) => {
+    this.savedTitleItems.forEach((title, index) => {
       const id = this.savedId(title)
       const li = document.createElement('li')
       li.className = 'option'
@@ -538,12 +618,12 @@ export class OASInvoice extends OASElement {
       if (index === this.activeIndex) li.setAttribute('data-active', '')
       this.pickerList!.appendChild(li)
     })
-    if (this.savedTitles.length === 0) {
-      const empty = this.shadow.querySelector<HTMLElement>('.empty')
-      if (empty) {
-        empty.textContent = this.t('invoice.noSaved')
-        empty.hidden = false
-      }
+    // 空态显隐必须双向同步：save-titles 从 0 涨到 N 时，只隐藏入口不够——
+    // 残留 visible 的 .empty 会在弹层里挂在选项下方（看起来像「有数据却提示无数据」）
+    const empty = this.shadow.querySelector<HTMLElement>('.empty')
+    if (empty) {
+      empty.textContent = this.t('invoice.noSaved')
+      empty.hidden = this.savedTitleItems.length > 0
     }
   }
 
@@ -558,10 +638,32 @@ export class OASInvoice extends OASElement {
     this.open = true
     this.picker.hidden = false
     this.savedTrigger.setAttribute('aria-expanded', 'true')
-    this.activeIndex = this.savedTitles.length > 0 ? 0 : -1
+    this.activeIndex = this.savedTitleItems.length > 0 ? 0 : -1
     this.syncActive()
+    this.placePicker()
     const first = this.pickerList?.querySelector<HTMLElement>('[role="option"]')
     first?.focus()
+  }
+
+  /**
+   * 弹层空间检测：视口下缘放不下弹层且上方更宽裕时向上翻转（写 data-placement，
+   * CSS 按 `[data-placement='up']` 走 inset-block-end）。视口/尺寸拿不到（SSR、happy-dom）时
+   * 保持默认向下，不做无依据翻转。
+   */
+  private placePicker(): void {
+    if (!this.picker || !this.savedTrigger) return
+    const trigger = this.savedTrigger.getBoundingClientRect()
+    const popup = this.picker.getBoundingClientRect()
+    const viewport = window.innerHeight || document.documentElement.clientHeight || 0
+    if (viewport === 0 || popup.height === 0) {
+      this.picker.removeAttribute('data-placement')
+      return
+    }
+    const below = viewport - trigger.bottom
+    const above = trigger.top
+    const flipUp = below < popup.height && above > below
+    if (flipUp) this.picker.setAttribute('data-placement', 'up')
+    else this.picker.removeAttribute('data-placement')
   }
 
   private closePicker(): void {
@@ -586,24 +688,24 @@ export class OASInvoice extends OASElement {
       this.savedTrigger?.focus()
       return
     }
-    if (this.savedTitles.length === 0) return
+    if (this.savedTitleItems.length === 0) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const delta = e.key === 'ArrowDown' ? 1 : -1
-      this.activeIndex = (this.activeIndex + delta + this.savedTitles.length) % this.savedTitles.length
+      this.activeIndex = (this.activeIndex + delta + this.savedTitleItems.length) % this.savedTitleItems.length
       this.syncActive()
       this.pickerList?.querySelectorAll<HTMLElement>('[role="option"]')[this.activeIndex]?.focus()
       return
     }
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      const title = this.savedTitles[this.activeIndex]
+      const title = this.savedTitleItems[this.activeIndex]
       if (title) this.pickSaved(this.savedId(title))
     }
   }
 
   private pickSaved(id: string): void {
-    const title = this.savedTitles.find((t) => this.savedId(t) === id)
+    const title = this.savedTitleItems.find((t) => this.savedId(t) === id)
     if (!title) return
     this.setAttribute('type', title.type)
     this.setAttribute('title', title.title)
@@ -683,10 +785,22 @@ export class OASInvoice extends OASElement {
     return this.hasAttr('readonly')
   }
 
+  /** 仅 readonly（无 disabled / 继承禁用）：文本控件走原生 readOnly —— 可聚焦复制、不可编辑 */
+  private isReadonlyOnly(): boolean {
+    return this.hasAttr('readonly') && !this.hasAttr('disabled') && !this.injectDisabled()
+  }
+
   private applyDisabled(): void {
     const locked = this.disabledOrReadonly()
-    if (this.titleInput) this.titleInput.disabled = locked
-    if (this.taxInput) this.taxInput.disabled = locked
+    const readonlyOnly = this.isReadonlyOnly()
+    if (this.titleInput) {
+      this.titleInput.disabled = locked && !readonlyOnly
+      this.titleInput.readOnly = readonlyOnly
+    }
+    if (this.taxInput) {
+      this.taxInput.disabled = locked && !readonlyOnly
+      this.taxInput.readOnly = readonlyOnly
+    }
     if (this.contentSelect) this.contentSelect.disabled = locked
     if (this.savedTrigger) this.savedTrigger.disabled = locked
     const submit = this.shadow.querySelector<HTMLButtonElement>('button[type="submit"]')

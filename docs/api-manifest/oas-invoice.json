@@ -28,13 +28,11 @@
     },
     {
       "name": "contents",
-      "type": "string",
       "default": "",
       "observed": true
     },
     {
       "name": "save-titles",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -49,7 +47,18 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "contents",
+      "type": "InvoiceContent[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "saveTitles",
+      "type": "InvoiceSavedTitle[] | string",
+      "default": "[]"
+    }
+  ],
   "methods": [],
   "events": [
     {

@@ -66,6 +66,7 @@ When `categories` is absent, invalid JSON or an empty array, an empty state is r
 - `key` is required and must be unique (falls back to `id` / `label` / `name` when absent)
 - `children` are subcategories with no depth limit; `items` are product slots (`label` + optional `meta`)
 - `active-key` is controlled: writing it from outside expands its path; absent selects the first root
+- The same-named property channel works too: `categories` accepts an array directly (serialized and reflected into the JSON attribute; the getter returns the parsed nodes)
 
 <script setup>
 import { onMounted } from 'vue'
@@ -90,7 +91,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `active-key` | Active category key (controlled); writing it expands its path, absent selects the first root | `string` | — |
-| `categories` | Category tree (host-injected): JSON array [{ key?, id?, label?, name?, children?, items? }]; keys are globally unique, children are recursive, items are product slots [{ key, label, meta? }] | `string` | — |
+| `categories` | Category tree (host-injected): JSON array [{ key?, id?, label?, name?, children?, items? }]; keys are globally unique, children are recursive, items are product slots [{ key, label, meta? }] | `CategoryNode[] \| string` | `[]` |
 
 #### Events
 

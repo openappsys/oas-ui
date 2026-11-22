@@ -65,6 +65,8 @@ description: "发票信息表单：个人 / 企业抬头切换、税号校验、
 - `contents`：`[{ "value": string, "label": string }]`，缺省 / 非法时不渲染内容字段
 - `save-titles`：`[{ "id"?: string, "type": "personal" | "company", "title": string, "taxId"?: string }]`，缺省 / 非法时隐藏入口
 - 提交值：`{ type, title, taxId, content }`，经 `oas-submit` 的 `detail.value` 返回
+- 同名 property 通道同效：`contents` / `saveTitles` 可直接赋数组（序列化后反射为 JSON attribute，读取时返回解析结果）
+- `content` 不在 `contents` 选项内时（选项被宿主替换过），dev 环境告警并回落到首项、同步写回 attribute
 
 ## 无障碍
 
@@ -74,6 +76,16 @@ description: "发票信息表单：个人 / 企业抬头切换、税号校验、
 
 <DemoBlock title="禁用态">
   <oas-invoice disabled title="张三" type="personal"></oas-invoice>
+</DemoBlock>
+
+<DemoBlock title="只读态">
+  <oas-invoice
+    readonly
+    type="company"
+    title="杭州示例科技有限公司"
+    tax-id="91330100MA2AB1234X"
+    contents='[{"value":"goods","label":"商品明细"},{"value":"services","label":"服务费"}]'
+  ></oas-invoice>
 </DemoBlock>
 
 <script setup>
@@ -104,10 +116,10 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `content` | 发票内容选中值（受控）；需与 contents 的 value 对应 | `string` | — |
-| `contents` | 发票内容选项（宿主注入）：JSON 数组 [{ value, label }]；缺省或非法时不渲染内容字段 | `string` | — |
+| `contents` | 发票内容选项（宿主注入）：JSON 数组 [{ value, label }]；缺省或非法时不渲染内容字段 | `InvoiceContent[] \| string` | `[]` |
 | `disabled` | 禁用全部输入、弹层入口与提交 | `boolean` | — |
 | `readonly` | 只读：可聚焦与复制，不可编辑 / 选择 / 提交 | `boolean` | — |
-| `save-titles` | 已保存抬头（宿主注入）：JSON 数组 [{ id?, type, title, taxId? }]；缺省或非法时隐藏弹层入口 | `string` | — |
+| `save-titles` | 已保存抬头（宿主注入）：JSON 数组 [{ id?, type, title, taxId? }]；缺省或非法时隐藏弹层入口 | `InvoiceSavedTitle[] \| string` | `[]` |
 | `tax-id` | 纳税人识别号（受控）；企业抬头下校验 15–20 位字母或数字 | `string` | — |
 | `title` | 发票抬头（受控）；输入时派发 oas-change，提交成功后回写 | `string` | — |
 | `type` | 抬头类型：personal（默认）/ company；企业抬头显示并校验税号 | `string` | `personal` |

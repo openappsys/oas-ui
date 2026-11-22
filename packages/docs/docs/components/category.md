@@ -66,6 +66,7 @@ description: "分类选择：左类右品双栏联动，左侧多级类目树、
 - `key` 必填且全局唯一（缺省回落 `id` / `label` / `name`）
 - `children` 为子类目，层级不限；`items` 为商品位（`label` + 可选 `meta`）
 - `active-key` 受控：外部写入会自动展开其路径；未指定时选中第一个根类目
+- 同名 property 通道同效：`categories` 可直接赋数组（序列化后反射为 JSON attribute，读取时返回解析后的节点数组）
 
 <script setup>
 import { onMounted } from 'vue'
@@ -90,7 +91,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `active-key` | 当前激活类目 key（受控）；外部写入会自动展开其路径，缺省选第一个根类目 | `string` | — |
-| `categories` | 类目树（宿主注入）：JSON 数组 [{ key?, id?, label?, name?, children?, items? }]；key 全局唯一，children 可递归，items 为商品位 [{ key, label, meta? }] | `string` | — |
+| `categories` | 类目树（宿主注入）：JSON 数组 [{ key?, id?, label?, name?, children?, items? }]；key 全局唯一，children 可递归，items 为商品位 [{ key, label, meta? }] | `CategoryNode[] \| string` | `[]` |
 
 #### 事件
 

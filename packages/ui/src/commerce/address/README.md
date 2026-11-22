@@ -31,3 +31,16 @@
 | `oas-invalid` | `{ fields }` — 校验失败 |
 | `oas-select` | `{ id, item }` — 列表选中 |
 | `oas-add` | 无 — 列表新增入口 |
+
+## property 通道
+
+`value` / `items` / `regions` 另有同名 get/set：赋对象/数组时序列化后反射成 attribute（读取返回
+归一化后的对象/数组），字符串原样写入——框架静态数据绑定无需手写 `JSON.stringify`。
+
+- 选中项被宿主从 `items` 删掉时，`selected-id` 回落到 `isDefault` / 首项并派发 `oas-select`。
+- readonly 走原生 `readOnly`（可聚焦复制、不可编辑），只有 `disabled` 才是禁用。
+- contact 轻模式没有提交按钮，输入框 Enter 的隐式提交被拦截（不会冒出无按钮可触发的 `oas-invalid`）。
+- 隐藏分区（list 模式的表单、contact 模式的地区组）除 `hidden` 外还挂 `inert`：隐藏控件不该被
+  键盘 / 读屏触达，也避免无障碍静态扫描把它们当成「有文字但取不到配色」的噪声。
+- 电话校验：`+` 仅首位，总长 6–20 且至少 6 位数字（纯符号串不通过）。
+

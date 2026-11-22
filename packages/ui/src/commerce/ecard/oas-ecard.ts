@@ -77,7 +77,9 @@ const STYLE = `
 }
 .card[data-selected] {
   border-color: var(--oas-color-primary);
-  background: color-mix(in srgb, var(--oas-color-primary) 6%, var(--oas-color-bg));
+  /* 选中态不叠色底：primary 6% 混色会把次要文字压到 WCAG 4.44（AA 4.5 不达标），
+     改为主色描边 + 内环双重强调，文字仍在纯底色上 */
+  box-shadow: inset 0 0 0 1px var(--oas-color-primary);
 }
 .card[data-disabled] {
   cursor: not-allowed;
@@ -250,9 +252,18 @@ export class OASECard extends OASElement {
   private agreementText: HTMLElement | null = null
   private confirmBtn: HTMLButtonElement | null = null
   private readonly uid = `oas-ecard-${++ecardUid}`
-  private cards: ECard[] = []
+  private cardItems: ECard[] = []
   private cardsSignature = ''
   private renderedCardsSignature: string | null = null
+
+  /** 卡面数据（property 通道读端）：已解析并过滤的卡面数组 */
+  get cards(): ECard[] {
+    return this.cardItems
+  }
+  /** 卡面数据（property 通道写端）：数组序列化、字符串原样反射到 cards attribute */
+  set cards(value: ECard[] | string) {
+    this.setAttribute('cards', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   private template(): string {
     return `
@@ -352,7 +363,7 @@ export class OASECard extends OASElement {
     const raw = this.getAttr('cards', '')
     if (raw === this.cardsSignature) return
     this.cardsSignature = raw
-    this.cards = parseJsonArray<ECard>(raw, () => devWarn('[oas-ecard] cards 不是合法 JSON 数组，已按空列表渲染'))
+    this.cardItems = parseJsonArray<ECard>(raw, () => devWarn('[oas-ecard] cards 不是合法 JSON 数组，已按空列表渲染'))
       .filter((c) => c && typeof c.id === 'string' && typeof c.name === 'string')
       .map((c) => ({ ...c, value: Number(c.value) }))
       .filter((c) => Number.isFinite(c.value))
@@ -364,9 +375,9 @@ export class OASECard extends OASElement {
     if (this.renderedCardsSignature !== signature) {
       this.renderedCardsSignature = signature
       this.cardsEl.replaceChildren()
-      for (const card of this.cards) this.cardsEl.appendChild(this.buildCard(card))
+      for (const card of this.cardItems) this.cardsEl.appendChild(this.buildCard(card))
     }
-    if (this.emptyEl) this.emptyEl.hidden = this.cards.length > 0
+    if (this.emptyEl) this.emptyEl.hidden = this.cardItems.length > 0
   }
 
   private buildCard(card: ECard): HTMLElement {
@@ -413,16 +424,21 @@ export class OASECard extends OASElement {
     return label
   }
 
-  private selectedId(): string {
+  /**
+   * 当前选中卡 id（`selected-id` 的解析结果）。
+   * 命名刻意避开 `selectedId`：attribute 的 camelCase 与实例方法同名时，宿主框架按
+   * 「key in el」写 property 会遮蔽方法，update() 里调用直接 TypeError（撞名守卫覆盖）。
+   */
+  private selectedIdOf(): string {
     const own = this.getAttr('selected-id', '')
     if (own === CUSTOM_ID) return CUSTOM_ID
-    if (own !== '' && this.cards.some((c) => c.id === own && !c.disabled)) return own
-    const first = this.cards.find((c) => !c.disabled)
+    if (own !== '' && this.cardItems.some((c) => c.id === own && !c.disabled)) return own
+    const first = this.cardItems.find((c) => !c.disabled)
     return first ? first.id : CUSTOM_ID
   }
 
   private isCustom(): boolean {
-    return this.selectedId() === CUSTOM_ID
+    return this.selectedIdOf() === CUSTOM_ID
   }
 
   private select(id: string): void {
@@ -430,7 +446,7 @@ export class OASECard extends OASElement {
       this.syncSelection()
       return
     }
-    const card = this.cards.find((c) => c.id === id)
+    const card = this.cardItems.find((c) => c.id === id)
     if (card?.disabled) {
       this.syncSelection()
       return
@@ -447,7 +463,7 @@ export class OASECard extends OASElement {
   /** 选中态增量同步：卡片高亮 / radio checked / 自定义面额区显隐 */
   private syncSelection(): void {
     if (!this.cardsEl) return
-    const selected = this.selectedId()
+    const selected = this.selectedIdOf()
     const custom = selected === CUSTOM_ID
     for (const card of this.cardsEl.querySelectorAll<HTMLElement>('.card')) {
       const on = card.dataset.id === selected
@@ -474,18 +490,20 @@ export class OASECard extends OASElement {
 
   private currentAmount(): number {
     if (!this.isCustom()) {
-      const card = this.cards.find((c) => c.id === this.selectedId())
+      const card = this.cardItems.find((c) => c.id === this.selectedIdOf())
       return card?.value ?? 0
     }
     return Number(this.amountInput?.value ?? '')
   }
 
-  private minAmount(): number {
+  /** 自定义面额下限（`min-amount` 解析；命名避开 minAmount 撞名，见 selectedIdOf 注释） */
+  private resolveMinAmount(): number {
     const n = Number(this.getAttr('min-amount', '1'))
     return Number.isFinite(n) && n >= 0 ? n : 1
   }
 
-  private maxAmount(): number {
+  /** 自定义面额上限（`max-amount` 解析；命名避开 maxAmount 撞名，见 selectedIdOf 注释） */
+  private resolveMaxAmount(): number {
     const n = Number(this.getAttr('max-amount', '10000'))
     return Number.isFinite(n) && n > 0 ? n : 10000
   }
@@ -495,8 +513,8 @@ export class OASECard extends OASElement {
     const errors: string[] = []
     if (this.isCustom()) {
       const amount = Number(this.amountInput?.value ?? '')
-      const min = this.minAmount()
-      const max = this.maxAmount()
+      const min = this.resolveMinAmount()
+      const max = this.resolveMaxAmount()
       if (!Number.isInteger(amount) || amount < min || amount > max) {
         errors.push('amount')
         this.setError(this.customRow, this.t('ecard.invalidAmount', { min, max }))
@@ -516,10 +534,10 @@ export class OASECard extends OASElement {
       this.emit('invalid', { fields: errors })
       return
     }
-    const card = this.cards.find((c) => c.id === this.selectedId()) ?? null
+    const card = this.cardItems.find((c) => c.id === this.selectedIdOf()) ?? null
     const selection: ECardSelection = {
       card,
-      cardId: this.selectedId(),
+      cardId: this.selectedIdOf(),
       amount: this.currentAmount(),
       custom: this.isCustom(),
       agreed: true,
@@ -528,10 +546,10 @@ export class OASECard extends OASElement {
   }
 
   private emitChange(): void {
-    const card = this.cards.find((c) => c.id === this.selectedId()) ?? null
+    const card = this.cardItems.find((c) => c.id === this.selectedIdOf()) ?? null
     this.emit('change', {
       card,
-      cardId: this.selectedId(),
+      cardId: this.selectedIdOf(),
       amount: this.currentAmount(),
       custom: this.isCustom(),
       agreed: this.hasAttr('agreed'),

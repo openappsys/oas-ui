@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASAddress } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASAddress {
@@ -208,8 +208,147 @@ describe('OASAddress', () => {
     expect(fired).toBe(false)
   })
 
+  it('readonly 用原生 readOnly（可聚焦复制），提交与新增仍禁用', () => {
+    const el = mount({ readonly: '', value: VALUE })
+    const name = q<HTMLInputElement>(el, 'input[name="name"]')
+    expect(name.readOnly).toBe(true)
+    expect(name.disabled, 'readonly 不得等于 disabled（否则无法聚焦复制）').toBe(false)
+    expect(q<HTMLTextAreaElement>(el, 'textarea[name="detail"]').readOnly).toBe(true)
+    expect(q<HTMLButtonElement>(el, 'button[type="submit"]').disabled).toBe(true)
+    expect(name.hasAttribute('aria-disabled')).toBe(false)
+    // 只读仍拦截提交
+    let fired = false
+    el.addEventListener('oas-submit', () => (fired = true))
+    q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+    expect(fired).toBe(false)
+  })
+
   it('非法 regions JSON 不抛异常，按空数据渲染', () => {
     const el = mount({ regions: '{bad' })
     expect(q<HTMLSelectElement>(el, '.province').options.length).toBe(1)
+  })
+
+  it('地区必填校验：错误可见 + aria-invalid 落在三级下拉上（不再静默）', () => {
+    const el = mount({ regions: REGIONS })
+    q<HTMLInputElement>(el, 'input[name="name"]').value = '张三'
+    q<HTMLInputElement>(el, 'input[name="phone"]').value = '13800000000'
+    let fields: string[] = []
+    el.addEventListener('oas-invalid', (e) => (fields = (e as CustomEvent).detail.fields))
+    q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+    expect(fields).toContain('region')
+    const field = el.shadowRoot!.querySelector<HTMLElement>('.region-group > .field')!
+    expect(field.hasAttribute('data-invalid')).toBe(true)
+    const error = field.querySelector<HTMLElement>('.error')!
+    expect(error.hidden).toBe(false)
+    expect(error.textContent).toBe('该项为必填项')
+    const province = q<HTMLSelectElement>(el, '.province')
+    expect(province.getAttribute('aria-invalid')).toBe('true')
+    expect(province.getAttribute('aria-describedby')).toBe(error.id)
+
+    // 选全三级后错误清除
+    province.value = '浙江省'
+    province.dispatchEvent(new Event('change'))
+    expect(field.hasAttribute('data-invalid')).toBe(false)
+    expect(province.hasAttribute('aria-invalid')).toBe(false)
+  })
+
+  it('电话格式收紧：纯符号串 / 加号不在首位 / 数字不足 6 位均判非法', () => {
+    const el = mount({})
+    const phone = q<HTMLInputElement>(el, 'input[name="phone"]')
+    const name = q<HTMLInputElement>(el, 'input[name="name"]')
+    name.value = '张三'
+    let fields: string[] = []
+    el.addEventListener('oas-invalid', (e) => (fields = (e as CustomEvent).detail.fields))
+    for (const bad of ['------', '+', '12-34', '++13800000000', '138+00000000']) {
+      fields = []
+      phone.value = bad
+      q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+      expect(fields, `${bad} 不应通过电话格式校验`).toContain('phone')
+    }
+    for (const ok of ['13800000000', '+86 138 0000 0000', '021-12345678']) {
+      fields = []
+      phone.value = ok
+      q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+      expect(fields, `${ok} 应通过电话格式校验`).toEqual([])
+    }
+  })
+
+  it('非法 mode 告警一次并按 edit 渲染（不随 update 刷屏）', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ mode: 'weird' })
+      el.setAttribute('value', JSON.stringify({ name: '张三', phone: '13800000000' }))
+      el.setAttribute('items', '[]')
+      expect(el.getAttribute('data-mode')).toBe('edit')
+      const hits = spy.mock.calls.filter((call) => String(call[0]).includes('mode="weird"'))
+      expect(hits.length).toBe(1)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('property 通道：value / items / regions 收数组对象与 JSON 字符串，均反射 attribute', () => {
+    const el = mount()
+    el.regions = [{ name: '探针省', children: [{ name: '探针市', children: [{ name: '探针区' }] }] }]
+    el.value = { name: '张三', phone: '13800000000', province: '探针省' }
+    expect(JSON.parse(el.getAttribute('regions')!)).toEqual([
+      { name: '探针省', children: [{ name: '探针市', children: [{ name: '探针区' }] }] },
+    ])
+    expect(JSON.parse(el.getAttribute('value')!)).toMatchObject({ name: '张三', phone: '13800000000' })
+    expect(el.regions).toEqual([{ name: '探针省', children: [{ name: '探针市', children: [{ name: '探针区' }] }] }])
+    expect(el.value).toMatchObject({ name: '张三', phone: '13800000000' })
+    expect(q<HTMLInputElement>(el, 'input[name="name"]').value).toBe('张三')
+    expect([...q<HTMLSelectElement>(el, '.province').options].map((o) => o.value)).toEqual(['', '探针省'])
+
+    el.items = JSON.stringify([{ id: 'x1', name: '李四', phone: '13900000000' }])
+    expect(el.items).toMatchObject([{ id: 'x1', name: '李四' }])
+    expect(el.getAttribute('items')).toBe('[{"id":"x1","name":"李四","phone":"13900000000"}]')
+  })
+
+  it('选中项被宿主删除后 selected-id 回落 default / 首项并派发 oas-select', () => {
+    const el = mount({
+      mode: 'list',
+      items: JSON.stringify([
+        { id: 'a1', name: '张三', phone: '13800000000', isDefault: true },
+        { id: 'a2', name: '李四', phone: '13900000000' },
+      ]),
+      'selected-id': 'a2',
+    })
+    expect(el.shadowRoot!.querySelector('.card[data-id="a2"]')!.hasAttribute('data-selected')).toBe(true)
+    let detail: { id: string; item: { name: string } | null } | null = null
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    // 宿主删掉 a2：只剩 a1（default）
+    el.setAttribute('items', JSON.stringify([{ id: 'a1', name: '张三', phone: '13800000000', isDefault: true }]))
+    expect(el.getAttribute('selected-id')).toBe('a1')
+    expect(detail).toMatchObject({ id: 'a1', item: { name: '张三' } })
+    expect(el.shadowRoot!.querySelector('.card[data-id="a1"]')!.getAttribute('data-selected')).toBe('')
+  })
+
+  it('contact 模式 Enter 隐式提交被拦截（无提交按钮契约）', () => {
+    const el = mount({ mode: 'contact', value: JSON.stringify({ name: '王五', phone: '13700000000' }) })
+    let submitted = false
+    let invalidated = false
+    el.addEventListener('oas-submit', () => (submitted = true))
+    el.addEventListener('oas-invalid', () => (invalidated = true))
+    q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+    expect(submitted).toBe(false)
+    expect(invalidated).toBe(false)
+  })
+
+  it('分区显隐与 inert 同步：隐藏分区不可聚焦，切回后恢复', () => {
+    const el = mount({ mode: 'list', items: '[]' })
+    const form = q<HTMLFormElement>(el, 'form')
+    expect(form.hidden).toBe(true)
+    expect(form.hasAttribute('inert'), '隐藏表单必须 inert（防键盘/读屏可达）').toBe(true)
+
+    el.setAttribute('mode', 'edit')
+    expect(form.hidden).toBe(false)
+    expect(form.hasAttribute('inert'), '可见表单不得残留 inert').toBe(false)
+    expect(q<HTMLElement>(el, '.region-group').hasAttribute('inert')).toBe(false)
+
+    // contact：地区/详细地址/保存按钮整组隐藏并 inert，联系人分区可见
+    el.setAttribute('mode', 'contact')
+    expect(q<HTMLElement>(el, '.region-group').hasAttribute('inert')).toBe(true)
+    expect(q<HTMLElement>(el, '.contact-group').hasAttribute('inert')).toBe(false)
   })
 })

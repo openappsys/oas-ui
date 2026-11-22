@@ -10,13 +10,11 @@
     },
     {
       "name": "value",
-      "type": "string",
       "default": "",
       "observed": true
     },
     {
       "name": "items",
-      "type": "string",
       "default": "[]",
       "observed": true
     },
@@ -28,7 +26,6 @@
     },
     {
       "name": "regions",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -43,7 +40,20 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "value",
+      "type": "AddressEntry | string"
+    },
+    {
+      "name": "items",
+      "type": "AddressEntry[] | string"
+    },
+    {
+      "name": "regions",
+      "type": "AddressRegion[] | string"
+    }
+  ],
   "methods": [],
   "events": [
     {
@@ -63,7 +73,7 @@
     },
     {
       "name": "oas-select",
-      "detail": "{ id, item }"
+      "detail": "{ id: fallback, item } | { id, item }"
     }
   ],
   "slots": [],

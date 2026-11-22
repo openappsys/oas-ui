@@ -73,3 +73,34 @@ test('invoice 企业抬头：税号非法时错误可见，修正后提交成功
   const submitted = await page.evaluate(() => document.getElementById('invoice-company-info')!.textContent)
   expect(submitted).toContain('已提交')
 })
+
+// 修复回归：弹层曾固定向下展开——触发器贴近视口下缘时弹层被裁出屏幕，选项不可见不可点
+test('invoice 已保存抬头弹层：视口下缘空间不足时向上翻转', async ({ page }) => {
+  await page.goto('/components/invoice.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-invoice#invoice-saved-demo')
+
+  const state = await page.evaluate(async () => {
+    const el = document.querySelector<HTMLElement>('oas-invoice#invoice-saved-demo')!
+    // 把整个组件固定到视口底部：触发器随之贴底，下方放不下 18rem 高的弹层
+    el.style.position = 'fixed'
+    el.style.insetInlineStart = '0'
+    el.style.insetBlockEnd = '0'
+    el.style.zIndex = '1'
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const trigger = el.shadowRoot!.querySelector<HTMLButtonElement>('.saved-trigger')!
+    trigger.click()
+    const picker = el.shadowRoot!.querySelector<HTMLElement>('.picker')!
+    const box = picker.getBoundingClientRect()
+    const tBox = trigger.getBoundingClientRect()
+    return {
+      placement: picker.getAttribute('data-placement'),
+      pickerAboveTrigger: box.bottom <= tBox.top + 2,
+      triggerNearBottom: window.innerHeight - tBox.bottom < 80,
+      inViewport: box.bottom <= window.innerHeight + 1 && box.top >= 0,
+    }
+  })
+  expect(state.triggerNearBottom, '前置条件：触发器应贴近视口下缘').toBe(true)
+  expect(state.placement, '空间不足时必须向上翻转').toBe('up')
+  expect(state.pickerAboveTrigger, '弹层应渲染在触发器上方').toBe(true)
+  expect(state.inViewport, '弹层不得溢出视口').toBe(true)
+})

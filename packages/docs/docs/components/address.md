@@ -40,6 +40,18 @@ description: "地址簿：地址编辑表单（联系人 / 省市区三级联动
   <oas-address mode="contact" value='{"name":"王五","phone":"13700000000"}'></oas-address>
 </DemoBlock>
 
+## 指定选中地址
+
+`selected-id` 受控选中项：传入列表外的 id 也不会崩，选中项被宿主从 `items` 中删掉时组件回落到 `isDefault` / 首项并派发 `oas-select`（宿主可据此同步自身状态）。
+
+<DemoBlock title="默认选中第二项">
+  <oas-address
+    mode="list"
+    selected-id="a2"
+    items='[{"id":"a1","name":"张三","phone":"13800000000","province":"浙江省","city":"杭州市","district":"西湖区","detail":"文三路 100 号","isDefault":true},{"id":"a2","name":"李四","phone":"13900000000","province":"江苏省","city":"南京市","district":"玄武区","detail":"中山路 8 号"}]'
+  ></oas-address>
+</DemoBlock>
+
 ## 校验
 
 保存时校验：姓名必填、电话必填且格式合法、注入地区数据时三级地区完整、详细地址必填。失败派发 `oas-invalid`（detail `{ fields }`）并聚焦首个错误字段。
@@ -47,7 +59,7 @@ description: "地址簿：地址编辑表单（联系人 / 省市区三级联动
 <DemoBlock title="校验反馈">
   <oas-space direction="vertical" size="small" style="width: 100%">
     <oas-address id="address-validate-demo"></oas-address>
-    <oas-tag type="warning" id="address-validate-info">等待提交</oas-tag>
+    <oas-tag type="primary" id="address-validate-info">等待提交</oas-tag>
   </oas-space>
 </DemoBlock>
 
@@ -69,6 +81,7 @@ description: "地址簿：地址编辑表单（联系人 / 省市区三级联动
 - 节点字段：`name`（必填，展示与提交值）、`code`（可选稳定标识）、`children`（可递归，组件取三级）
 - 未注入或 JSON 非法时地区下拉为空且不参与校验，详细地址照常可填
 - 切换上级自动重置下级；`value` 回填时按名称逐级匹配
+- 同名 property 通道同效：`value` / `items` / `regions` 可直接赋对象或数组（组件序列化后反射为 JSON attribute，读取时返回解析结果），框架绑定无需手写 `JSON.stringify`
 
 ## 无障碍
 
@@ -79,6 +92,14 @@ description: "地址簿：地址编辑表单（联系人 / 省市区三级联动
 <DemoBlock title="禁用态">
   <oas-address
     disabled
+    regions='[{"name":"浙江省","children":[{"name":"杭州市","children":[{"name":"西湖区"}]}]}]'
+  ></oas-address>
+</DemoBlock>
+
+<DemoBlock title="只读态">
+  <oas-address
+    readonly
+    value='{"name":"张三","phone":"13800000000","province":"浙江省","city":"杭州市","district":"西湖区","detail":"文三路 100 号"}'
     regions='[{"name":"浙江省","children":[{"name":"杭州市","children":[{"name":"西湖区"}]}]}]'
   ></oas-address>
 </DemoBlock>
@@ -111,12 +132,12 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 禁用全部输入与操作（含列表单选与新增） | `boolean` | — |
-| `items` | 地址列表数据（mode=list）：JSON 数组 [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]；isDefault 项优先预选 | `string` | `[]` |
+| `items` | 地址列表数据（mode=list）：JSON 数组 [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]；isDefault 项优先预选 | `AddressEntry[] \| string` | `[]` |
 | `mode` | 形态：edit（默认，地址编辑）/ list（地址列表，单选 + 默认标记）/ contact（联系人轻模式，仅姓名与电话） | `string` | `edit` |
 | `readonly` | 只读：可聚焦与复制，不可编辑 / 提交 / 选择 | `boolean` | — |
-| `regions` | 省市区数据（宿主注入契约）：JSON 数组 [{ name, code?, children? }]，最多三级；组件不内置行政区划数据 | `string` | — |
+| `regions` | 省市区数据（宿主注入契约）：JSON 数组 [{ name, code?, children? }]，最多三级；组件不内置行政区划数据 | `AddressRegion[] \| string` | — |
 | `selected-id` | 列表选中项 id（受控）；缺省选 isDefault 项，否则选第一项 | `string` | — |
-| `value` | 受控地址值（JSON 对象）：{ id?, name, phone, province?, city?, district?, detail?, isDefault? }；编辑模式用于预填，联系人模式只用 name / phone | `string` | — |
+| `value` | 受控地址值（JSON 对象）：{ id?, name, phone, province?, city?, district?, detail?, isDefault? }；编辑模式用于预填，联系人模式只用 name / phone | `AddressEntry \| string` | — |
 
 #### 事件
 

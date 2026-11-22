@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASInvoice } from './index.js'
+import { segmentedStep } from './oas-invoice.js'
 
 function mount(attrs: Record<string, string> = {}): OASInvoice {
   const el = new OASInvoice()
@@ -170,5 +171,102 @@ describe('OASInvoice', () => {
     const el = mount({ contents: '{oops', 'save-titles': 'nope' })
     expect(q<HTMLElement>(el, '.content-field').hidden).toBe(true)
     expect(q<HTMLElement>(el, '.saved').hidden).toBe(true)
+  })
+
+  it('readonly 用原生 readOnly（可聚焦复制），内容选择与提交仍禁用', () => {
+    const el = mount({ readonly: '', contents: CONTENTS, title: '张三' })
+    const title = q<HTMLInputElement>(el, 'input[name="title"]')
+    expect(title.readOnly).toBe(true)
+    expect(title.disabled, 'readonly 不得等于 disabled（否则无法聚焦复制）').toBe(false)
+    expect(title.value).toBe('张三')
+    expect(q<HTMLSelectElement>(el, 'select[name="content"]').disabled).toBe(true)
+    expect(q<HTMLButtonElement>(el, '.submit').disabled).toBe(true)
+    let fired = false
+    el.addEventListener('oas-submit', () => (fired = true))
+    q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+    expect(fired).toBe(false)
+  })
+
+  it('property 通道：contents / savedTitles 收数组与 JSON 字符串，均反射 attribute', () => {
+    const el = mount()
+    el.contents = [{ value: 'probe', label: '探针内容' }]
+    expect(el.getAttribute('contents')).toBe('[{"value":"probe","label":"探针内容"}]')
+    expect(el.contents).toEqual([{ value: 'probe', label: '探针内容' }])
+    expect([...q<HTMLSelectElement>(el, 'select[name="content"]').options].map((o) => o.value)).toEqual(['probe'])
+
+    el.saveTitles = JSON.stringify([{ id: 't9', type: 'personal', title: '探针抬头' }])
+    expect(el.getAttribute('save-titles')).toBe('[{"id":"t9","type":"personal","title":"探针抬头"}]')
+    expect(el.saveTitles).toEqual([{ id: 't9', type: 'personal', title: '探针抬头' }])
+    expect(q<HTMLElement>(el, '.saved').hidden).toBe(false)
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(1)
+  })
+
+  it('save-titles 从 0 涨到 N：空态文案隐藏（不得残留在弹层里）', () => {
+    const el = mount({ contents: CONTENTS })
+    expect(q<HTMLElement>(el, '.empty').hidden).toBe(false)
+    el.saveTitles = [{ id: 's1', type: 'personal', title: '张三' }]
+    expect(q<HTMLElement>(el, '.empty').hidden).toBe(true)
+    q<HTMLButtonElement>(el, '.saved-trigger').click()
+    expect(q<HTMLElement>(el, '.empty').hidden, '弹层里不该出现「暂无已保存抬头」').toBe(true)
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(1)
+  })
+
+  it('content 值不在 contents 选项中：devWarn 回落首项并同步 attribute', () => {
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ contents: CONTENTS, content: 'not-in-options' })
+      const select = q<HTMLSelectElement>(el, 'select[name="content"]')
+      expect(select.value).toBe('goods')
+      expect(el.getAttribute('content')).toBe('goods')
+      expect(spy.mock.calls.some((call) => String(call[0]).includes('not-in-options'))).toBe(true)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('弹层空间不足时向上翻转（视口下缘检测 → data-placement=up）', () => {
+    const el = mount({ 'save-titles': SAVED })
+    const trigger = q<HTMLButtonElement>(el, '.saved-trigger')
+    const picker = q<HTMLElement>(el, '.picker')
+    const rect = (top: number, height: number): DOMRect =>
+      ({
+        top,
+        bottom: top + height,
+        height,
+        left: 0,
+        right: 100,
+        width: 100,
+        x: 0,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect
+    expect(window.innerHeight).toBeGreaterThan(300)
+    // 触发器贴近视口底部：下方空间不足、上方更宽裕 → 向上
+    trigger.getBoundingClientRect = () => rect(window.innerHeight - 40, 32)
+    picker.getBoundingClientRect = () => rect(0, 200)
+    trigger.click()
+    expect(picker.getAttribute('data-placement')).toBe('up')
+    trigger.click() // 关闭
+    expect(picker.hidden).toBe(true)
+
+    // 上方充裕（视口中部）→ 保持向下
+    trigger.getBoundingClientRect = () => rect(120, 32)
+    trigger.click()
+    expect(picker.hasAttribute('data-placement')).toBe(false)
+  })
+
+  it('RTL：方向键语义随 direction 互换（segmentedStep 单一真源）', () => {
+    expect(segmentedStep('ArrowRight', false)).toBe(1)
+    expect(segmentedStep('ArrowLeft', false)).toBe(-1)
+    expect(segmentedStep('ArrowRight', true)).toBe(-1)
+    expect(segmentedStep('ArrowLeft', true)).toBe(1)
+    expect(segmentedStep('Enter', true)).toBe(0)
+
+    // 组件内：RTL 下 ArrowLeft = 下一项（两项组内等价于切到另一项），且焦点跟随
+    const el = mount()
+    const group = q<HTMLElement>(el, '.segmented')
+    group.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(el.getAttribute('type')).toBe('company')
+    expect((el.shadowRoot!.activeElement as HTMLElement | null)?.dataset.value).toBe('company')
   })
 })

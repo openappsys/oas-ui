@@ -4,7 +4,6 @@
   "attrs": [
     {
       "name": "cards",
-      "type": "string",
       "default": "",
       "observed": true
     },
@@ -54,7 +53,13 @@
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "cards",
+      "type": "ECard[] | string",
+      "default": "[]"
+    }
+  ],
   "methods": [],
   "events": [
     {
@@ -66,7 +71,7 @@
     },
     {
       "name": "oas-change",
-      "detail": "{ card, cardId: this.selectedId(), amount: this.currentAmount(), custom: this.isCustom(), agreed: this.hasAttr('agreed'), }"
+      "detail": "{ card, cardId: this.selectedIdOf(), amount: this.currentAmount(), custom: this.isCustom(), agreed: this.hasAttr('agreed'), }"
     }
   ],
   "slots": [

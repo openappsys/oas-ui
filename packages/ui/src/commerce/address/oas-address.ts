@@ -26,8 +26,12 @@ export interface AddressEntry {
 export type AddressMode = 'edit' | 'list' | 'contact'
 
 const VALID_MODES: readonly string[] = ['edit', 'list', 'contact']
-/** 常规电话格式：允许数字、加号、连字符与空格，6–20 位（移动端场景不锁国家码） */
-const PHONE_RE = /^[0-9+\-\s]{6,20}$/
+/**
+ * 常规电话格式门（移动端场景不锁国家码）：`+` 仅可在首位，允许数字 / 空格 / 连字符，
+ * 总长 6–20；数字位数另由 isValidPhone 要求 ≥6（纯符号串如 `------` 不得通过）。
+ */
+const PHONE_RE = /^\+?[0-9][0-9\s-]{5,19}$/
+const PHONE_MIN_DIGITS = 6
 const MAX_REGION_DEPTH = 3
 
 const STYLE = `
@@ -102,11 +106,14 @@ const STYLE = `
 }
 :host([disabled]) .input,
 :host([disabled]) .select,
-:host([readonly]) .input,
 :host([readonly]) .select {
   cursor: not-allowed;
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
+}
+/* readonly 文本控件保持正常可读色：只读语义是「可聚焦复制、不可编辑」，不是禁用 */
+:host([readonly]) .input {
+  cursor: default;
 }
 .field[data-invalid] .input,
 .field[data-invalid] .select {
@@ -194,7 +201,9 @@ const STYLE = `
 }
 .card[data-selected] {
   border-color: var(--oas-color-primary);
-  background: color-mix(in srgb, var(--oas-color-primary) 6%, var(--oas-color-bg));
+  /* 选中态不叠色底：primary 6% 混色会把次要文字压到 WCAG 4.44（AA 4.5 不达标），
+     改为主色描边 + 内环双重强调，文字仍在纯底色上 */
+  box-shadow: inset 0 0 0 1px var(--oas-color-primary);
 }
 .card input {
   accent-color: var(--oas-color-primary);
@@ -226,7 +235,8 @@ const STYLE = `
   padding-inline: var(--oas-space-1);
   border-radius: var(--oas-radius-sm);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, var(--oas-color-bg));
-  color: var(--oas-color-primary);
+  /* 文字用加深档 token：primary 原色压在 12% 混色底上感知对比度 59.5（门禁 <60 不达标） */
+  color: var(--oas-color-primary-text);
   font-size: var(--oas-font-size-xs);
   line-height: 1.5;
 }
@@ -298,8 +308,38 @@ export class OASAddress extends OASElement {
   /** 当前编辑草稿（受控 value 属性在外部变化时覆盖；用户输入只改草稿不反写属性） */
   private draft: AddressEntry = { name: '', phone: '' }
   private appliedValueSignature = ''
-  private itemsSignature = ''
+  private renderedListSignature = ''
   private regionsSignature = ''
+  private itemsSignature = ''
+  private itemsCache: AddressEntry[] = []
+  private warnedMode = ''
+
+  /** 受控地址值（property 通道读端）：已归一化的地址对象 */
+  get value(): AddressEntry {
+    return this.parseValue(this.getAttr('value', ''))
+  }
+  /** 受控地址值（property 通道写端）：对象序列化、字符串原样反射到 value attribute */
+  set value(value: AddressEntry | string) {
+    this.setAttribute('value', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 地址列表数据（property 通道读端）：已解析的地址数组 */
+  get items(): AddressEntry[] {
+    return this.parseItems()
+  }
+  /** 地址列表数据（property 通道写端）：数组序列化、字符串原样反射到 items attribute */
+  set items(value: AddressEntry[] | string) {
+    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 省市区数据（property 通道读端）：已解析的三级节点数组 */
+  get regions(): AddressRegion[] {
+    return this.parseRegions()
+  }
+  /** 省市区数据（property 通道写端）：数组序列化、字符串原样反射到 regions attribute */
+  set regions(value: AddressRegion[] | string) {
+    this.setAttribute('regions', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   private template(): string {
     return `
@@ -393,18 +433,21 @@ export class OASAddress extends OASElement {
 
   protected override update(): void {
     if (!this.form) return
-    const mode: AddressMode = (
-      VALID_MODES.includes(this.getAttr('mode', 'edit')) ? this.getAttr('mode', 'edit') : 'edit'
-    ) as AddressMode
+    const mode: AddressMode = this.currentMode()
     this.setAttribute('data-mode', mode)
+    // 模式显隐（先算出显隐，占位提示只在可见字段上设置：隐藏字段的 placeholder 不展示，
+    // 却会被无障碍静态扫描当成「有文字但取不到配色的节点」，制造无意义噪声）
+    const showForm = mode !== 'list'
+    const showContactOnly = mode === 'contact'
+    const showDetail = showForm && !showContactOnly
 
     // 静态文案（locale 切换时 update() 会自动重刷）
     this.setLabel('input[name="name"]', this.t('address.name'))
     this.setLabel('input[name="phone"]', this.t('address.phone'))
     this.setLabel('textarea[name="detail"]', this.t('address.detail'))
-    this.setPlaceholder(this.nameInput, this.t('address.namePlaceholder'))
-    this.setPlaceholder(this.phoneInput, this.t('address.phonePlaceholder'))
-    this.setPlaceholder(this.detailInput, this.t('address.detailPlaceholder'))
+    this.setPlaceholder(this.nameInput, showForm ? this.t('address.namePlaceholder') : '')
+    this.setPlaceholder(this.phoneInput, showForm ? this.t('address.phonePlaceholder') : '')
+    this.setPlaceholder(this.detailInput, showDetail ? this.t('address.detailPlaceholder') : '')
     const regionLabel = this.shadow.querySelector<HTMLElement>('.region-group > .field > .label')
     if (regionLabel) regionLabel.textContent = this.t('address.region')
     this.contactGroup?.setAttribute('aria-label', this.t('address.contact'))
@@ -422,24 +465,43 @@ export class OASAddress extends OASElement {
       this.districtSelect.setAttribute('aria-label', `${this.t('address.region')} ${this.t('address.select')}`)
     this.list?.setAttribute('aria-label', this.t('address.listLabel'))
 
-    // 模式显隐
-    const showForm = mode !== 'list'
-    const showContactOnly = mode === 'contact'
-    if (this.form) this.form.hidden = !showForm
-    if (this.list) this.list.hidden = showForm
-    if (this.addBtn) this.addBtn.hidden = showForm
-    if (this.emptyEl) this.emptyEl.hidden = showForm
-    if (this.contactGroup) this.contactGroup.hidden = !showForm
-    if (this.regionGroup) this.regionGroup.hidden = !showForm || showContactOnly
-    if (this.detailField) this.detailField.hidden = !showForm || showContactOnly
-    if (this.defaultField) this.defaultField.hidden = !showForm || showContactOnly
-    if (this.actions) this.actions.hidden = !showForm || showContactOnly
+    if (this.form) this.setSectionHidden(this.form, !showForm)
+    if (this.list) this.setSectionHidden(this.list, showForm)
+    if (this.addBtn) this.setSectionHidden(this.addBtn, showForm)
+    if (this.emptyEl) this.setSectionHidden(this.emptyEl, showForm)
+    if (this.contactGroup) this.setSectionHidden(this.contactGroup, !showForm)
+    if (this.regionGroup) this.setSectionHidden(this.regionGroup, !showDetail)
+    if (this.detailField) this.setSectionHidden(this.detailField, !showDetail)
+    if (this.defaultField) this.setSectionHidden(this.defaultField, !showDetail)
+    if (this.actions) this.setSectionHidden(this.actions, !showDetail)
 
     this.applyDisabled()
     this.parseRegions()
     this.syncRegions()
     this.applyValue()
     if (mode === 'list') this.renderList()
+  }
+
+  /**
+   * 分区显隐同步：`hidden` 之外再挂 `inert`。隐藏分区里的输入框既不该被键盘聚焦 / 朗读，
+   * 也会被无障碍静态扫描当作「有文字但取不到配色」的噪声节点（多形态组件一页会堆到十几条）。
+   * 两个状态由同一个布尔驱动，不会出现「可见却被 inert」。
+   */
+  private setSectionHidden(el: HTMLElement | null, hidden: boolean): void {
+    if (!el) return
+    el.hidden = hidden
+    el.toggleAttribute('inert', hidden)
+  }
+
+  /** 形态解析（非法值回落 edit，并只告警一次——反复 update 不刷屏） */
+  private currentMode(): AddressMode {
+    const raw = this.getAttr('mode', 'edit')
+    if (VALID_MODES.includes(raw)) return raw as AddressMode
+    if (this.warnedMode !== raw) {
+      this.warnedMode = raw
+      devWarn(`[oas-address] mode="${raw}" 不是合法形态（edit / list / contact），已按 edit 渲染`)
+    }
+    return 'edit'
   }
 
   /** 用户输入通道：只更新草稿 + 派发 change，不反写 value 属性（受控语义由宿主决定） */
@@ -473,6 +535,9 @@ export class OASAddress extends OASElement {
   /** 表单提交：校验通过派发 oas-submit，否则标记字段并派发 oas-invalid */
   private submit(): void {
     if (this.isLocked()) return
+    // contact 轻模式没有提交按钮（契约只有姓名 + 电话 + 输入即 change），
+    // 输入框里按 Enter 触发的隐式提交必须拦住，否则会冒出一条无按钮可触发的 oas-invalid
+    if (this.currentMode() === 'contact') return
     const errors: string[] = []
     const name = this.nameInput?.value.trim() ?? ''
     const phone = this.phoneInput?.value.trim() ?? ''
@@ -486,7 +551,7 @@ export class OASAddress extends OASElement {
     if (phone === '') {
       errors.push('phone')
       this.setFieldError('phone', this.t('address.required'))
-    } else if (!PHONE_RE.test(phone)) {
+    } else if (!isValidPhone(phone)) {
       errors.push('phone')
       this.setFieldError('phone', this.t('address.invalidPhone'))
     }
@@ -618,18 +683,27 @@ export class OASAddress extends OASElement {
     return true
   }
 
-  /** 列表模式：items 签名变化才重建；选中态增量同步（选中变化不重建，避免抢焦点） */
+  /** 地址列表数据（items attribute 解析缓存：property 读端与列表渲染共用同一份） */
+  private parseItems(): AddressEntry[] {
+    const raw = this.getAttr('items', '[]')
+    if (raw === this.itemsSignature) return this.itemsCache
+    this.itemsSignature = raw
+    this.itemsCache = parseJsonArray<AddressEntry>(raw, () =>
+      devWarn('[oas-address] items 不是合法 JSON 数组，已按空列表渲染'),
+    ).filter((item) => item && typeof item === 'object')
+    return this.itemsCache
+  }
+
+  /** 列表模式：items / 文案签名变化才重建；选中态增量同步（选中变化不重建，避免抢焦点） */
   private renderList(): void {
     if (!this.list) return
-    const raw = this.getAttr('items', '[]')
-    const signature = `${raw}|${this.t('address.defaultBadge')}|${this.hasAttr('disabled') || this.hasAttr('readonly') ? 'd' : ''}`
-    if (signature !== this.itemsSignature) {
-      this.itemsSignature = signature
-      const items = parseJsonArray<AddressEntry>(raw, () =>
-        devWarn('[oas-address] items 不是合法 JSON 数组，已按空列表渲染'),
-      )
+    const items = this.parseItems()
+    const signature = `${this.itemsSignature}|${this.t('address.defaultBadge')}|${this.hasAttr('disabled') || this.hasAttr('readonly') ? 'd' : ''}`
+    if (signature !== this.renderedListSignature) {
+      this.renderedListSignature = signature
       this.list.replaceChildren()
       for (const item of items) this.list.appendChild(this.buildCard(item))
+      this.reconcileSelected(items)
     }
     this.syncCards()
     const empty = this.emptyEl
@@ -639,8 +713,23 @@ export class OASAddress extends OASElement {
     }
   }
 
+  /**
+   * 宿主删掉选中项后自愈：selected-id 指向不存在的项时回落到 default / 首项并派发 oas-select，
+   * 避免宿主界面停在「一个已经不存在的地址」上（attribute 同步写回，受控侧可感知）。
+   */
+  private reconcileSelected(items: AddressEntry[]): void {
+    const own = this.getAttr('selected-id', '')
+    if (own === '') return
+    if (items.some((item) => this.idOf(item) === own)) return
+    const fallback = this.fallbackSelectedId(items)
+    if (fallback === '' || fallback === own) return
+    this.setAttribute('selected-id', fallback)
+    const item = items.find((entry) => this.idOf(entry) === fallback) ?? null
+    this.emit('select', { id: fallback, item })
+  }
+
   private buildCard(item: AddressEntry): HTMLLabelElement {
-    const id = String(item.id ?? `${item.name}-${item.phone}`)
+    const id = this.idOf(item)
     const selected = id === this.currentSelectedId()
     const card = document.createElement('label')
     card.className = 'card'
@@ -713,11 +802,20 @@ export class OASAddress extends OASElement {
   private currentSelectedId(): string {
     const own = this.getAttr('selected-id', '')
     if (own !== '') return own
-    const items = parseJsonArray<AddressEntry>(this.getAttr('items', '[]'))
-    const def = items.find((i) => i.isDefault)
-    if (def) return String(def.id ?? `${def.name}-${def.phone}`)
+    return this.fallbackSelectedId(this.parseItems())
+  }
+
+  /** 同 id 派生规则（渲染 / 回落 / 选中同步共用一份，避免三处各写一套） */
+  private idOf(item: AddressEntry): string {
+    return String(item.id ?? `${item.name}-${item.phone}`)
+  }
+
+  /** selected-id 缺省（或被宿主删项）时的回落项：isDefault 优先，否则首项 */
+  private fallbackSelectedId(items: AddressEntry[]): string {
+    const def = items.find((item) => item.isDefault)
+    if (def) return this.idOf(def)
     const first = items[0]
-    return first ? String(first.id ?? `${first.name}-${first.phone}`) : ''
+    return first ? this.idOf(first) : ''
   }
 
   private isLocked(): boolean {
@@ -726,18 +824,28 @@ export class OASAddress extends OASElement {
     return this.hasAttr('readonly')
   }
 
+  /** 仅 readonly（没有 disabled / 继承禁用）：文本控件走原生 readOnly —— 可聚焦复制、不可编辑 */
+  private isReadonlyOnly(): boolean {
+    return this.hasAttr('readonly') && !this.hasAttr('disabled') && !this.injectDisabled()
+  }
+
   private applyDisabled(): void {
     const locked = this.isLocked()
-    if (this.nameInput) this.nameInput.disabled = locked
-    if (this.phoneInput) this.phoneInput.disabled = locked
-    if (this.detailInput) this.detailInput.disabled = locked
+    const readonlyOnly = this.isReadonlyOnly()
+    const textControls = [this.nameInput, this.phoneInput, this.detailInput]
+    for (const control of textControls) {
+      if (!control) continue
+      control.disabled = locked && !readonlyOnly
+      control.readOnly = readonlyOnly
+    }
     if (this.defaultInput) this.defaultInput.disabled = locked
     if (this.addBtn) this.addBtn.disabled = locked
     const submitBtn = this.shadow.querySelector<HTMLButtonElement>('button[type="submit"]')
     if (submitBtn) submitBtn.disabled = locked
     if (this.form) {
       this.form.querySelectorAll('input, textarea, select, button').forEach((el) => {
-        if (locked) el.setAttribute('aria-disabled', 'true')
+        const keepsFocusable = readonlyOnly && textControls.includes(el as HTMLInputElement)
+        if (locked && !keepsFocusable) el.setAttribute('aria-disabled', 'true')
         else el.removeAttribute('aria-disabled')
       })
     }
@@ -754,7 +862,12 @@ export class OASAddress extends OASElement {
     if (el) el.placeholder = text
   }
 
+  /**
+   * 字段名 → 字段容器。region 是「三级下拉」这一组的校验单元（无单个 input），
+   * 必须与 name/phone/detail 同等对待——否则 setFieldError 静默 return，地区必填错误永远不可见。
+   */
   private fieldOf(name: string): HTMLElement | null {
+    if (name === 'region') return this.regionGroup?.querySelector<HTMLElement>('.field') ?? null
     const el =
       name === 'name'
         ? this.nameInput
@@ -766,25 +879,29 @@ export class OASAddress extends OASElement {
     return el?.closest<HTMLElement>('.field') ?? null
   }
 
+  /** 字段内的可校验控件（region 组是多个 select，全部标记 aria-invalid / describedby） */
+  private controlsOf(field: HTMLElement): Array<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> {
+    return [...field.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('.input, .select')]
+  }
+
   private setFieldError(name: string, message: string): void {
     const field = this.fieldOf(name)
     if (!field) return
     field.setAttribute('data-invalid', '')
     const error = field.querySelector<HTMLElement>('.error')
-    const input = field.querySelector<HTMLInputElement | HTMLTextAreaElement>('.input')
     if (error) {
       error.textContent = message
       error.hidden = false
-    }
-    input?.setAttribute('aria-invalid', 'true')
-    if (error) {
       if (!error.id) error.id = `${this.uid}-${name}-error`
-      input?.setAttribute('aria-describedby', error.id)
+    }
+    for (const control of this.controlsOf(field)) {
+      control.setAttribute('aria-invalid', 'true')
+      if (error) control.setAttribute('aria-describedby', error.id)
     }
   }
 
   private clearFieldError(name: string): void {
-    const field = name === 'region' ? this.regionGroup?.querySelector<HTMLElement>('.field') : this.fieldOf(name)
+    const field = this.fieldOf(name)
     if (!field) return
     field.removeAttribute('data-invalid')
     const error = field.querySelector<HTMLElement>('.error')
@@ -792,8 +909,14 @@ export class OASAddress extends OASElement {
       error.hidden = true
       error.textContent = ''
     }
-    field.querySelector('.input')?.removeAttribute('aria-invalid')
+    for (const control of this.controlsOf(field)) control.removeAttribute('aria-invalid')
   }
+}
+
+/** 电话有效：格式门 + 数字位数下限（纯符号串不得通过：`^[0-9+\-\s]{6,20}$` 曾让 `------` 合法） */
+function isValidPhone(phone: string): boolean {
+  if (!PHONE_RE.test(phone)) return false
+  return phone.replace(/\D/g, '').length >= PHONE_MIN_DIGITS
 }
 
 /** 填充 select：首项为占位（空值）；value 匹配项设为选中 */

@@ -25,3 +25,15 @@
 | `oas-title-select` | `{ id, value }` |
 | `oas-invalid` | `{ fields }` |
 | `oas-submit` | `{ value }` |
+
+## property 通道
+
+`contents` / `saveTitles` 另有同名 get/set：赋数组时序列化后反射成 attribute（读取返回解析后的
+数组），字符串原样写入——框架静态数据绑定无需手写 `JSON.stringify`。
+
+- `content` 值不在 `contents` 选项里（宿主替换过选项）时，dev 环境告警并回落首项、同步写回 attribute。
+- `save-titles` 从 0 涨到 N 时 `.empty` 空态同步隐藏（否则弹层里会残留「暂无已保存抬头」）。
+- 弹层做了视口空间检测：下缘放不下且上方更宽裕时 `data-placement="up"` 向上翻转。
+- 类型切换的方向键按 `direction` 取符号（`segmentedStep`）：RTL 下 `←` 是下一项。
+- readonly 走原生 `readOnly`（可聚焦复制），只有 `disabled` 才是禁用。
+

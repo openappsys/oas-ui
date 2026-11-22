@@ -137,4 +137,33 @@ describe('OASECard', () => {
     expect(el.shadowRoot!.querySelectorAll('.cards .card').length).toBe(0)
     expect(q<HTMLElement>(el, '.empty').hidden).toBe(false)
   })
+
+  it('property 通道：cards 收数组与 JSON 字符串，均反射 attribute 并渲染', () => {
+    const el = mount()
+    el.cards = [{ id: 'p1', name: '探针卡', value: 200, faceValue: '200 元' }]
+    expect(el.getAttribute('cards')).toBe('[{"id":"p1","name":"探针卡","value":200,"faceValue":"200 元"}]')
+    expect(el.cards).toMatchObject([{ id: 'p1', name: '探针卡', value: 200 }])
+    expect(q<HTMLElement>(el, '.cards .card-name').textContent).toBe('探针卡')
+
+    el.cards = JSON.stringify([{ id: 'p2', name: '字符串卡', value: 50, faceValue: '50 元' }])
+    expect(el.cards).toMatchObject([{ id: 'p2', name: '字符串卡' }])
+    expect(el.shadowRoot!.querySelectorAll('.cards .card').length).toBe(1)
+    expect(el.shadowRoot!.querySelector('.cards .card-name')!.textContent).toBe('字符串卡')
+  })
+
+  it('撞名回归：宿主写入 selectedId / minAmount / maxAmount property 后 update 与提交不崩', () => {
+    const el = mount({ cards: CARDS, 'selected-id': 'custom', 'min-amount': '10', 'max-amount': '1000' })
+    const host = el as unknown as Record<string, unknown>
+    // 修复前这三个名字是原型方法，被 own property 遮蔽后 update()/submit() 内部调用 TypeError
+    host['selectedId'] = 'c500'
+    host['minAmount'] = 1
+    host['maxAmount'] = 99
+    expect(() => el.setAttribute('selected-id', 'custom')).not.toThrow()
+    q<HTMLInputElement>(el, '.amount-input').value = '5'
+    let fields: string[] = []
+    el.addEventListener('oas-invalid', (e) => (fields = (e as CustomEvent).detail.fields))
+    expect(() => q<HTMLButtonElement>(el, '.confirm').click()).not.toThrow()
+    expect(fields).toContain('amount')
+    expect(q<HTMLElement>(el, '.custom-group .error').textContent).toBe('请输入 10–1000 之间的整数面额')
+  })
 })

@@ -24,3 +24,15 @@
 | `oas-change` | `{ card, cardId, amount, custom, agreed }` |
 | `oas-submit` | `{ card, cardId, amount, custom, agreed }` |
 | `oas-invalid` | `{ fields }` |
+
+## property 通道
+
+`cards` 另有同名 get/set：赋数组时序列化后反射成 attribute（读取返回解析后的卡面数组），
+字符串原样写入——框架静态数据绑定无需手写 `JSON.stringify`。
+
+- 命名纪律：attribute 的 camelCase 不得与实例方法同名（`selected-id` / `min-amount` /
+  `max-amount` 的解析方法分别叫 `selectedIdOf` / `resolveMinAmount` / `resolveMaxAmount`），
+  否则宿主 property 写入会遮蔽方法，`update()` / `submit()` 直接 TypeError。
+- 选中态只用「主色描边 + 1px 内环」，不叠色底：primary 6% 混色会把次要文字压到 WCAG 4.44
+  （AA 4.5 不达标）。
+

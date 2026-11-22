@@ -66,6 +66,12 @@ const STYLE = `
   margin: 0;
   padding: 0;
 }
+/* 子级分组（role=group）：与 .tree 同列同间隙，视觉与扁平结构一致、a11y 树语义正确 */
+.node-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
 .node {
   display: flex;
   align-items: center;
@@ -120,6 +126,10 @@ const STYLE = `
 }
 .node[aria-expanded='false'] .chevron {
   transform: rotate(0deg);
+}
+/* RTL：折叠态收起方向镜像（'›' 转 180° 指向左侧）；展开态（向下）与语言方向无关 */
+:host(:dir(rtl)) .node[aria-expanded='false'] .chevron {
+  transform: rotate(180deg);
 }
 .node-label {
   overflow: hidden;
@@ -248,6 +258,15 @@ export class OASCategory extends OASElement {
   private treeSignature = ''
   private appliedActive = ''
 
+  /** 类目树（property 通道读端）：与 categories attribute 同源，返回已解析并过滤的节点数组 */
+  get categories(): CategoryNode[] {
+    return this.roots
+  }
+  /** 类目树（property 通道写端）：数组直接序列化、字符串原样写入 attribute（本库数据属性双通道约定） */
+  set categories(value: CategoryNode[] | string) {
+    this.setAttribute('categories', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
   private template(): string {
     return `
       <style>${STYLE}</style>
@@ -271,7 +290,7 @@ export class OASCategory extends OASElement {
     this.panel?.addEventListener('click', (e) => {
       const back = (e.target as Element | null)?.closest<HTMLElement>('.back')
       if (back) {
-        const parent = this.flat.get(this.activeKey())?.parent
+        const parent = this.flat.get(this.resolveActiveKey())?.parent
         if (parent) this.activate(parent, false)
         return
       }
@@ -291,7 +310,7 @@ export class OASCategory extends OASElement {
     this.tree.setAttribute('role', 'tree')
     this.tree.setAttribute('aria-label', this.t('category.label'))
     this.parseCategories()
-    const active = this.activeKey()
+    const active = this.resolveActiveKey()
 
     // 外部 active-key 变化时展开其路径（首次或宿主改写）；内部点击由 activate 自己维护
     if (active !== this.appliedActive) {
@@ -335,7 +354,12 @@ export class OASCategory extends OASElement {
     return String(node.label ?? node.name ?? node.key ?? node.id ?? '')
   }
 
-  private activeKey(): string {
+  /**
+   * 当前激活类目 key（attribute 通道读端，兼作内部解析）。
+   * 命名刻意避开 `activeKey`：`active-key` 的 camelCase 一旦与实例方法同名，宿主框架按
+   * 「key in el」写入 property 会遮蔽方法，update() 调用直接 TypeError（撞名守卫覆盖）。
+   */
+  private resolveActiveKey(): string {
     const own = this.getAttr('active-key', '')
     if (own !== '' && this.flat.has(own)) return own
     const first = this.roots[0]
@@ -352,14 +376,21 @@ export class OASCategory extends OASElement {
 
   private renderTree(): void {
     if (!this.tree) return
-    const active = this.activeKey()
+    const active = this.resolveActiveKey()
     const focus = this.flat.has(this.focusKey) ? this.focusKey : active
     const signature = `${this.categoriesSignature}|${active}|${focus}|${[...this.expanded].sort().join(',')}`
     if (signature === this.treeSignature) return
     this.treeSignature = signature
 
+    // 重建前的树内焦点（键盘导航/点击后 active 变化会重建树，焦点不能丢到 body）
+    const focusedNode = this.shadow.activeElement
+    const focusedKey =
+      focusedNode instanceof HTMLElement && focusedNode.classList.contains('node')
+        ? (focusedNode.dataset.key ?? '')
+        : ''
+
     this.tree.replaceChildren()
-    const walk = (nodes: CategoryNode[], level: number): void => {
+    const walk = (nodes: CategoryNode[], level: number, parent: HTMLElement): void => {
       for (const node of nodes) {
         const key = this.keyOf(node)
         if (!this.flat.has(key)) continue
@@ -386,17 +417,28 @@ export class OASCategory extends OASElement {
         label.className = 'node-label'
         label.textContent = this.labelOf(node)
         btn.appendChild(label)
-        this.tree!.appendChild(btn)
+        parent.appendChild(btn)
 
-        if (hasChildren && isExpanded) walk(this.childrenOf(node), level + 1)
+        if (hasChildren && isExpanded) {
+          // 子级挂 role=group：treeitem 的子项应归属分组（ARIA tree 模式），扁平追加会被读屏当成同级
+          const group = document.createElement('div')
+          group.className = 'node-group'
+          group.setAttribute('role', 'group')
+          walk(this.childrenOf(node), level + 1, group)
+          parent.appendChild(group)
+        }
       }
     }
-    walk(this.roots, 1)
+    walk(this.roots, 1, this.tree)
+
+    if (focusedKey) this.tree.querySelector<HTMLElement>(`.node[data-key="${cssEscape(focusedKey)}"]`)?.focus()
   }
 
   private renderPanel(active: string): void {
     if (!this.panel) return
     const entry = this.flat.get(active)
+    // 面板每次 update 都会重建（内容随激活类目变化），先记下焦点归属再重建
+    const focusHint = this.capturePanelFocus()
     this.panel.replaceChildren()
     if (!entry) {
       const empty = document.createElement('p')
@@ -404,6 +446,7 @@ export class OASCategory extends OASElement {
       empty.setAttribute('part', 'empty')
       empty.textContent = this.t('category.empty')
       this.panel.appendChild(empty)
+      this.restorePanelFocus(focusHint, active)
       return
     }
 
@@ -457,6 +500,39 @@ export class OASCategory extends OASElement {
       empty.textContent = this.t('category.empty')
       this.panel.appendChild(empty)
     }
+    this.restorePanelFocus(focusHint, active)
+  }
+
+  /** 重建前的面板焦点归属：返回钮 / 宫格项（key 记下来，重建后按同 key 找回） */
+  private capturePanelFocus(): string {
+    const activeEl = this.shadow.activeElement
+    if (!(activeEl instanceof HTMLElement) || !this.panel?.contains(activeEl)) return ''
+    if (activeEl.classList.contains('back')) return 'back'
+    if (activeEl.classList.contains('tile')) return `tile:${activeEl.dataset.key ?? ''}`
+    return ''
+  }
+
+  /**
+   * 重建后还原焦点：返回钮还在就还给返回钮；上级无返回钮（根层）时聚焦左侧树当前项。
+   * 宫格项：同 key 项还在就还给它，否则（进入子类）落到返回钮，再退到首项/树节点。
+   */
+  private restorePanelFocus(hint: string, active: string): void {
+    if (hint === '') return
+    if (hint === 'back') {
+      const back = this.panel?.querySelector<HTMLElement>('.back')
+      if (back) {
+        back.focus()
+        return
+      }
+      this.tree?.querySelector<HTMLElement>(`.node[data-key="${cssEscape(active)}"]`)?.focus()
+      return
+    }
+    if (!hint.startsWith('tile:')) return
+    const key = hint.slice('tile:'.length)
+    const tile = this.panel?.querySelector<HTMLElement>(`.tile[data-key="${cssEscape(key)}"]`)
+    const back = this.panel?.querySelector<HTMLElement>('.back')
+    const next = tile ?? back ?? this.panel?.querySelector<HTMLElement>('.tile')
+    next?.focus()
   }
 
   private appendGrid(titleText: string, rows: Array<{ key: string; label: string; meta: string }>): void {
@@ -499,7 +575,7 @@ export class OASCategory extends OASElement {
       this.activate(key, false)
       return
     }
-    const activeEntry = this.flat.get(this.activeKey())
+    const activeEntry = this.flat.get(this.resolveActiveKey())
     const item = this.itemsOf(activeEntry?.node).find((i) => String(i.key ?? i.id ?? i.label ?? i.name ?? '') === key)
     if (!item) return
     this.emit('select', { key, item, path: activeEntry?.path ?? [] })

@@ -65,6 +65,8 @@ The type switch is a radio group (`role="radiogroup"`) supporting `←` / `→`.
 - `contents`: `[{ "value": string, "label": string }]`; the content field is hidden when absent or invalid
 - `save-titles`: `[{ "id"?: string, "type": "personal" | "company", "title": string, "taxId"?: string }]`; the entry is hidden when absent or invalid
 - Submitted value: `{ type, title, taxId, content }` via `detail.value` of `oas-submit`
+- The same-named property channels work too: `contents` / `saveTitles` accept arrays directly (serialized and reflected into the JSON attributes)
+- When `content` is not among the `contents` options (host replaced them), dev builds warn and fall back to the first option, writing it back to the attribute
 
 ## Accessibility
 
@@ -74,6 +76,16 @@ The type switch is a radio group (`role="radiogroup"`) supporting `←` / `→`.
 
 <DemoBlock title="Disabled">
   <oas-invoice disabled title="Zhang San" type="personal"></oas-invoice>
+</DemoBlock>
+
+<DemoBlock title="Read-only">
+  <oas-invoice
+    readonly
+    type="company"
+    title="Hangzhou Example Technology Co., Ltd."
+    tax-id="91330100MA2AB1234X"
+    contents='[{"value":"goods","label":"Goods"},{"value":"services","label":"Services"}]'
+  ></oas-invoice>
 </DemoBlock>
 
 <script setup>
@@ -104,10 +116,10 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `content` | Selected invoice content (controlled); must match a value in contents | `string` | — |
-| `contents` | Invoice content options (host-injected): JSON array [{ value, label }]; the content field is hidden when absent or invalid | `string` | — |
+| `contents` | Invoice content options (host-injected): JSON array [{ value, label }]; the content field is hidden when absent or invalid | `InvoiceContent[] \| string` | `[]` |
 | `disabled` | Disables all inputs, the popup entry and submit | `boolean` | — |
 | `readonly` | Read-only: focusable and copyable, but cannot edit / select / submit | `boolean` | — |
-| `save-titles` | Saved titles (host-injected): JSON array [{ id?, type, title, taxId? }]; the popup entry is hidden when absent or invalid | `string` | — |
+| `save-titles` | Saved titles (host-injected): JSON array [{ id?, type, title, taxId? }]; the popup entry is hidden when absent or invalid | `InvoiceSavedTitle[] \| string` | `[]` |
 | `tax-id` | Tax ID (controlled); validated as 15–20 letters or digits for company titles | `string` | — |
 | `title` | Invoice title (controlled); typing emits oas-change and a successful submit writes it back | `string` | — |
 | `type` | Title type: personal (default) / company; company shows and validates the tax ID | `string` | `personal` |
