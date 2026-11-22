@@ -98,6 +98,10 @@ export { OASEditable } from './form/editable/oas-editable.js'
 export { OASSegmented } from './form/segmented/oas-segmented.js'
 export { OASSwatch } from './form/swatch/oas-swatch.js'
 export { OASSwatchGroup } from './form/swatch/oas-swatch-group.js'
+export { OASNumberKeyboard } from './form/number-keyboard/oas-number-keyboard.js'
+export { OASCodeButton } from './form/code-button/oas-code-button.js'
+export { OASImagePicker } from './form/image-picker/oas-image-picker.js'
+export { OASImageCropper } from './form/image-cropper/oas-image-cropper.js'
 
 // ---------- feedback ----------
 export { OASMessage } from './feedback/message/oas-message.js'

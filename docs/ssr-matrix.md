@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：217
+- 组件：221
 - SSR 白名单：175
-- 有意不 SSR：42
+- 有意不 SSR：46
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -98,6 +98,10 @@
 | `oas-segmented` | form | `form/segmented` | ✅ 白名单 | — | — | `@oas-ui/ui/form/segmented` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-swatch` | form | `form/swatch` | ✅ 白名单 | — | — | `@oas-ui/ui/form/swatch` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-swatch-group` | form | `form/swatch` | ⛔ 不 SSR | subcomponent | oas-swatch | — | ✅ | ✅ | — | — | —/— |
+| `oas-number-keyboard` | form | `form/number-keyboard` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-code-button` | form | `form/code-button` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-image-picker` | form | `form/image-picker` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-image-cropper` | form | `form/image-cropper` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-message` | feedback | `feedback/message` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |
 | `oas-notification` | feedback | `feedback/notification` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |
 | `oas-toast` | feedback | `feedback/toast` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |

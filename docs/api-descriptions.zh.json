@@ -5151,5 +5151,97 @@
     "props": {
       "value": "当前值：邮箱字符串数组（写入回写 value attribute，不派发事件）"
     }
+  },
+  "oas-number-keyboard": {
+    "attrs": {
+      "value": "当前值（受控）：按键写回本属性，宿主改写即时同步",
+      "maxlength": "长度上限（按字符计数，支持中文省份简称）；缺省 0 = 不限",
+      "random": "数字键随机乱序（安全键盘）；切换时重新排列",
+      "layout": "键盘布局：`number`（默认）/ `plate`（车牌号：省份简称 + 字母 + 数字）",
+      "disabled": "禁用：按键全部禁用且不派发事件",
+      "readonly": "只读：按键可聚焦但不改动值，`oas-done` 仍可派发"
+    },
+    "events": {
+      "oas-input": "追加一个字符，`detail: { value, key }`",
+      "oas-delete": "删除末位（值为空时不派发），`detail: { value }`",
+      "oas-done": "点击完成键，`detail: { value }`"
+    },
+    "slots": {},
+    "methods": {
+      "randomize": "重新洗牌数字键顺序（安全键盘刷新）"
+    }
+  },
+  "oas-code-button": {
+    "attrs": {
+      "cooldown": "冷却秒数（默认 60）；非法/非正数回落默认并告警",
+      "disabled": "禁用：不可点击且不派发事件",
+      "loading": "请求进行中：spinner + `aria-busy` + 阻止重复点击"
+    },
+    "events": {
+      "oas-send": "可点击时点击派发，`detail: { cooldown }`；可 `preventDefault()` 拦截自动冷却（宿主请求成功后再 `start()`）"
+    },
+    "slots": {
+      "": "自定义按钮内容（空闲态生效；倒计时期间显示内置倒计时文案）"
+    },
+    "props": {
+      "counting": "是否处于冷却中（只读）",
+      "remaining": "剩余冷却秒数（只读）"
+    },
+    "methods": {
+      "start": "启动冷却（缺省取 `cooldown`）",
+      "reset": "立即结束冷却并回到空闲态"
+    }
+  },
+  "oas-image-picker": {
+    "attrs": {
+      "max": "数量上限（默认 9）；非法/非正数回落默认并告警",
+      "accept": "文件类型过滤（原生 `accept` 语法，默认 `image/*`）",
+      "capture": "透传原生 `capture`：移动端直接拉起相机",
+      "disabled": "禁用：添加、排序、删除全部不可用",
+      "readonly": "只读预览：隐藏添加入口，操作按钮禁用"
+    },
+    "events": {
+      "oas-change": "用户新增 / 删除 / 排序后派发，`detail: { files, count }`",
+      "oas-exceed-limit": "选择总数超过上限，`detail: { count, max }`（超出部分丢弃；在 `oas-change` 之后派发）",
+      "oas-reject": "文件被 `accept` 过滤，`detail: { files }`"
+    },
+    "slots": {},
+    "props": {
+      "files": "当前图片列表（`File[]`，受控）：赋值即刷新且不派发事件；用户交互才派发 `oas-change`"
+    },
+    "methods": {
+      "open": "打开系统文件选择器（需在用户手势中调用）",
+      "clear": "清空列表（派发 `oas-change`）",
+      "removeAt": "删除指定图片（越界忽略，派发 `oas-change`）",
+      "move": "前后移动图片（`delta` 为 ±1，越界忽略，派发 `oas-change`）"
+    }
+  },
+  "oas-image-cropper": {
+    "attrs": {
+      "src": "图片地址（`http(s)` / `blob:` / `data:image/*` / 相对路径；可执行协议回落空）",
+      "aspect-ratio": "裁剪框比例：`1` / `16/9` / `0.75` 等；缺省或 0 为自由比例",
+      "max-zoom": "最大缩放倍数（默认 3）；非法值回落",
+      "max-output-size": "输出最长边像素上限（默认 1024）；非法值回落",
+      "output-type": "输出图片类型，默认 `image/png`（可选 `image/jpeg` / `image/webp`）",
+      "disabled": "禁用全部交互（工具栏禁用、裁剪框不可聚焦）"
+    },
+    "events": {
+      "oas-change": "缩放 / 旋转 / 裁剪框调整后派发，`detail: { zoom, rotation, frame }`",
+      "oas-crop": "确认裁剪，`detail: { blob, zoom, rotation, frame }`；canvas 不可用时 `blob` 为 null",
+      "oas-load": "图片加载成功，`detail: { width, height }`",
+      "oas-error": "图片加载失败，`detail: { src }`"
+    },
+    "slots": {},
+    "props": {
+      "zoom": "当前缩放（1 起；写入即生效并派发 `oas-change`）",
+      "rotation": "当前旋转角度（0 / 90 / 180 / 270，只读）"
+    },
+    "methods": {
+      "setZoom": "设置缩放（夹到 `[1, max-zoom]` 并派发 `oas-change`）",
+      "rotate": "旋转指定角度（默认 +90° 并派发 `oas-change`）",
+      "reset": "恢复初始缩放 / 旋转 / 裁剪框（派发 `oas-change`）",
+      "toBlob": "导出裁剪结果 Blob（canvas 不可用时返回 null）",
+      "toDataURL": "导出裁剪结果 dataURL（canvas 不可用时返回空串）"
+    }
   }
 }
