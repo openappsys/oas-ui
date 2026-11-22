@@ -1,0 +1,67 @@
+{
+  "className": "OASRollingText",
+  "sourceFile": "packages/ui/src/data/rolling-text/oas-rolling-text.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "prefix-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "suffix-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "live",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "string | number"
+    }
+  ],
+  "methods": [],
+  "events": [],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-rolling-text-font",
+      "default": "var(--oas-font-size-xl)"
+    },
+    {
+      "name": "--oas-rolling-text-height",
+      "default": "1em"
+    },
+    {
+      "name": "--oas-rolling-text-duration",
+      "default": "var(--oas-transition-base)"
+    },
+    {
+      "name": "--oas-rolling-text-separator-color",
+      "default": "var(--oas-color-text-primary)"
+    }
+  ],
+  "unresolved": []
+}
