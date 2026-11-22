@@ -8,6 +8,7 @@
 - **语言提示条（LangHint）**：浏览器语言与页面语言明显不匹配时（zh 页浏览器无 zh / en 页浏览器含 zh）置顶提示另一语言版本，可关闭且持久、点击即显式切换；绘制前内联脚本预布局让位，无 CLS；暗色固定品牌蓝保证对比度。
 - **sitemap 增强**：每条 URL 注入 `<lastmod>`（git 最后提交时间；浅克隆/无 git 环境整段跳过，宁缺勿假）并补齐 `x-default` alternate（修复同组共享 links 数组导致每组第二语言被跳过的问题）。
 - **页面级 meta description**：全部 170×2 文档页写入 frontmatter `description`，meta/og:description 不再全站回退同一句话；`llms-full.txt` 拼接时剥离 frontmatter 块防渲染噪声。
+- **结构化数据扩展**：全部文档页注入 `BreadcrumbList`（层级取自侧栏结构，中英各自语言）；组件页追加独立 `SoftwareApplication` 条目（名称/描述随语言、版本取构建期包版本）；修复英文页 `og:image:alt` 硬编码中文的问题，补 `max-image-preview:large`。
 
 ## [2.6.8] - 2026-11-18
 

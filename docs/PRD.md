@@ -14,6 +14,7 @@
 - **D3 分段切换器**：桌面导航栏「中 / EN」分段控件替换默认语言下拉（永久可见、深链互指、点击写偏好）；移动端隐藏，汉堡菜单语言入口保留。
 - **D4 sitemap lastmod + x-default 修复**：git 提交时间注入 `<lastmod>`（浅克隆宁缺勿假）；修复同组共享 links 数组导致第二语言缺 x-default。
 - **D5 页面级 description**：170×2 文档页 frontmatter `description` 全量覆盖；llms-full 拼接剥离 frontmatter。
+- **D6 结构化数据**：全站 `BreadcrumbList`（侧栏层级映射）；组件页独立 `SoftwareApplication`；OG alt 随语言、`max-image-preview:large`。
 
 验收：homepage.spec.ts 语言机制用例（无跳转/提示条四向/切换器/移动入口/SEO 产物）全绿；sitemap 340 条 lastmod + x-default 实测；交叉评审收口。
 

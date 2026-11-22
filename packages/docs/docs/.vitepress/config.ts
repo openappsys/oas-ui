@@ -34,6 +34,73 @@ const versionNav = (prefix = ''): DefaultTheme.NavItem[] => [
     ],
   },
 ]
+
+/** 指南根级侧栏条目（中英各一份）。themeConfig.sidebar 与面包屑 JSON-LD 映射共用，防漂移。 */
+const guideItemsZh: DefaultTheme.SidebarItem[] = [
+  { text: '快速开始', link: '/guide/getting-started' },
+  { text: '项目愿景', link: '/guide/vision' },
+  { text: '主题与自定义', link: '/guide/theming' },
+  { text: '皮肤画廊', link: '/guide/skins' },
+  { text: '磨砂玻璃画廊', link: '/guide/glass' },
+  { text: '设计 Token', link: '/guide/tokens' },
+  { text: '无障碍（A11y）', link: '/guide/accessibility' },
+  { text: '框架接入（React、Vue 等）', link: '/guide/frameworks' },
+  { text: '集成 FAQ', link: '/guide/faq' },
+  { text: '场景方案', link: '/guide/recipes' },
+  { text: '导航形态组合', link: '/guide/navigation-patterns' },
+  { text: '服务端窗口取数', link: '/guide/windowed-data' },
+  { text: 'AI 会话接入', link: '/guide/ai-chat' },
+  { text: '资源管理示例', link: '/guide/resource-management' },
+  { text: 'SSR 边界策略', link: '/guide/ssr' },
+  { text: '组件总览', link: '/components/' },
+  { text: '更新记录', link: '/changelog' },
+]
+const guideItemsEn: DefaultTheme.SidebarItem[] = [
+  { text: 'Getting Started', link: '/en/guide/getting-started' },
+  { text: 'Vision', link: '/en/guide/vision' },
+  { text: 'Theming', link: '/en/guide/theming' },
+  { text: 'Skin Gallery', link: '/en/guide/skins' },
+  { text: 'Frosted Glass Gallery', link: '/en/guide/glass' },
+  { text: 'Design Tokens', link: '/en/guide/tokens' },
+  { text: 'Accessibility (A11y)', link: '/en/guide/accessibility' },
+  { text: 'Framework Integration (React, Vue, etc.)', link: '/en/guide/frameworks' },
+  { text: 'Integration FAQ', link: '/en/guide/faq' },
+  { text: 'Scenarios', link: '/en/guide/recipes' },
+  { text: 'Navigation patterns', link: '/en/guide/navigation-patterns' },
+  { text: 'Server-side windowed data', link: '/en/guide/windowed-data' },
+  { text: 'AI chat integration', link: '/en/guide/ai-chat' },
+  { text: 'Resource management example', link: '/en/guide/resource-management' },
+  { text: 'SSR Strategy', link: '/en/guide/ssr' },
+  { text: 'Overview', link: '/en/components/' },
+  { text: 'Changelog', link: '/en/changelog' },
+]
+
+/**
+ * 由侧栏结构推导 链接 → {group, item} 映射（面包屑 JSON-LD 用），支持嵌套 items 递归。
+ * 键统一为无前后斜杠的 docs 相对路径（en 前缀已剥），与 transformHead 中 crumbPath 同形。
+ */
+function buildCrumbMap(groups: DefaultTheme.SidebarItem[]): Map<string, { group: string; item: string }> {
+  const map = new Map<string, { group: string; item: string }>()
+  const walk = (items: DefaultTheme.SidebarItem[] | undefined, group: string): void => {
+    for (const it of items ?? []) {
+      if (it.items) walk(it.items, it.text || group)
+      else if (it.link && it.text) {
+        map.set(it.link.replace(/^\//, '').replace(/\/$/, ''), { group, item: it.text })
+      }
+    }
+  }
+  walk(groups, '')
+  return map
+}
+const crumbMapZh = buildCrumbMap([
+  { text: '指南', items: guideItemsZh },
+  ...componentSidebar,
+])
+const crumbMapEn = buildCrumbMap([
+  { text: 'Guide', items: guideItemsEn },
+  ...enComponentSidebar,
+])
+
 /** 自定义元素标签清单（API 生成物）；Preflight 原生 reset 需要显式排除这些宿主。 */
 const OAS_TAGS = JSON.parse(
   readFileSync(join(DOCS_DIR, '../../..', 'docs/api-manifest/index.json'), 'utf8'),
@@ -335,6 +402,53 @@ gtag('config', 'G-RXS142HBXF');`,
           ],
         }),
       ])
+    } else {
+      // 结构化数据：面包屑（全部文档页，层级取自侧栏结构映射）；组件页追加 SoftwareApplication
+      const crumbSrc = en ? rel.slice(EN_PREFIX.length) : rel
+      const crumbPath = crumbSrc.replace(/\.md$/, '').replace(/(^|\/)index$/, '$1').replace(/\/$/, '')
+      const crumb = (en ? crumbMapEn : crumbMapZh).get(crumbPath)
+      if (crumb) {
+        const localeRoot = en ? '/en/' : '/'
+        head.push([
+          'script',
+          { type: 'application/ld+json' },
+          JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: en ? 'Home' : '首页',
+                item: SITE_URL + localeRoot,
+              },
+              { '@type': 'ListItem', position: 2, name: crumb.group },
+              { '@type': 'ListItem', position: 3, name: crumb.item, item: canonical },
+            ],
+          }),
+        ])
+        // 组件页：独立 SoftwareApplication 条目（名称/描述随语言，版本取构建期包版本）
+        if (crumbPath.startsWith('components/')) {
+          head.push([
+            'script',
+            { type: 'application/ld+json' },
+            JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'SoftwareApplication',
+              name: crumb.item,
+              alternateName: `oas-${crumbPath.slice('components/'.length).replace(/\//g, '-')}`,
+              applicationCategory: 'DeveloperApplication',
+              operatingSystem: 'Web',
+              description,
+              softwareVersion: VERSION,
+              url: canonical,
+              license: 'https://opensource.org/license/mit',
+              offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+              isPartOf: { '@type': 'SoftwareApplication', name: SITE_NAME, url: SITE_URL + localeRoot },
+            }),
+          ])
+        }
+      }
     }
     return head
   },
@@ -411,25 +525,7 @@ gtag('config', 'G-RXS142HBXF');`,
       {
         text: '指南',
         collapsed: false,
-        items: [
-          { text: '快速开始', link: '/guide/getting-started' },
-          { text: '项目愿景', link: '/guide/vision' },
-          { text: '主题与自定义', link: '/guide/theming' },
-          { text: '皮肤画廊', link: '/guide/skins' },
-          { text: '磨砂玻璃画廊', link: '/guide/glass' },
-          { text: '设计 Token', link: '/guide/tokens' },
-          { text: '无障碍（A11y）', link: '/guide/accessibility' },
-          { text: '框架接入（React、Vue 等）', link: '/guide/frameworks' },
-          { text: '集成 FAQ', link: '/guide/faq' },
-      { text: '场景方案', link: '/guide/recipes' },
-          { text: '导航形态组合', link: '/guide/navigation-patterns' },
-          { text: '服务端窗口取数', link: '/guide/windowed-data' },
-          { text: 'AI 会话接入', link: '/guide/ai-chat' },
-          { text: '资源管理示例', link: '/guide/resource-management' },
-          { text: 'SSR 边界策略', link: '/guide/ssr' },
-          { text: '组件总览', link: '/components/' },
-          { text: '更新记录', link: '/changelog' },
-        ],
+        items: guideItemsZh,
       },
       ...componentSidebar,
     ],
@@ -486,25 +582,7 @@ gtag('config', 'G-RXS142HBXF');`,
           {
             text: 'Guide',
             collapsed: false,
-            items: [
-              { text: 'Getting Started', link: '/en/guide/getting-started' },
-              { text: 'Vision', link: '/en/guide/vision' },
-              { text: 'Theming', link: '/en/guide/theming' },
-              { text: 'Skin Gallery', link: '/en/guide/skins' },
-              { text: 'Frosted Glass Gallery', link: '/en/guide/glass' },
-              { text: 'Design Tokens', link: '/en/guide/tokens' },
-              { text: 'Accessibility (A11y)', link: '/en/guide/accessibility' },
-              { text: 'Framework Integration (React, Vue, etc.)', link: '/en/guide/frameworks' },
-              { text: 'Integration FAQ', link: '/en/guide/faq' },
-      { text: 'Scenarios', link: '/en/guide/recipes' },
-              { text: 'Navigation patterns', link: '/en/guide/navigation-patterns' },
-              { text: 'Server-side windowed data', link: '/en/guide/windowed-data' },
-              { text: 'AI chat integration', link: '/en/guide/ai-chat' },
-              { text: 'Resource management example', link: '/en/guide/resource-management' },
-              { text: 'SSR Strategy', link: '/en/guide/ssr' },
-              { text: 'Overview', link: '/en/components/' },
-              { text: 'Changelog', link: '/en/changelog' },
-            ],
+            items: guideItemsEn,
           },
           ...enComponentSidebar,
         ],
