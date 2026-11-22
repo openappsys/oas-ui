@@ -692,6 +692,35 @@ export type {
   PromptInputSuggestionDetail,
 } from './conversation/prompt-input/oas-prompt-input.js'
 
+import './commerce/price/index.js'
+import './commerce/submit-bar/index.js'
+import './commerce/goods-action/index.js'
+import './commerce/coupon/index.js'
+import './commerce/sku/index.js'
+export { OASPrice } from './commerce/price/oas-price.js'
+export { OASSubmitBar } from './commerce/submit-bar/oas-submit-bar.js'
+export type { SubmitBarDetail } from './commerce/submit-bar/oas-submit-bar.js'
+export { OASGoodsAction } from './commerce/goods-action/oas-goods-action.js'
+export type {
+  GoodsActionButton,
+  GoodsActionDetail,
+  GoodsActionItem,
+} from './commerce/goods-action/oas-goods-action.js'
+export { OASCoupon } from './commerce/coupon/oas-coupon.js'
+export type {
+  CouponData,
+  CouponOpenChangeDetail,
+  CouponSelectDetail,
+  CouponStatus,
+} from './commerce/coupon/oas-coupon.js'
+export { OASSku } from './commerce/sku/oas-sku.js'
+export type {
+  SkuChangeDetail,
+  SkuItem,
+  SkuSpecGroup,
+  SkuSpecValue,
+} from './commerce/sku/oas-sku.js'
+
 import './framework/config-provider/index.js'
 import './framework/app/index.js'
 import './framework/theme-editor/index.js'

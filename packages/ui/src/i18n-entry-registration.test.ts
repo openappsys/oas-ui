@@ -28,6 +28,7 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { basicMessages } from '@oas-ui/i18n/slices/basic'
+import { commerceMessages } from '@oas-ui/i18n/slices/commerce'
 import { conversationMessages } from '@oas-ui/i18n/slices/conversation'
 import { dataMessages } from '@oas-ui/i18n/slices/data'
 import { feedbackMessages } from '@oas-ui/i18n/slices/feedback'
@@ -41,6 +42,7 @@ const UI_SRC = dirname(fileURLToPath(import.meta.url)) // packages/ui/src
 
 const FAMILIES = [
   'basic',
+  'commerce',
   'conversation',
   'data',
   'feedback',
@@ -54,6 +56,7 @@ type Family = (typeof FAMILIES)[number]
 
 const SLICES: Record<Family, Record<string, string>> = {
   basic: basicMessages,
+  commerce: commerceMessages,
   conversation: conversationMessages,
   data: dataMessages,
   feedback: feedbackMessages,
@@ -64,7 +67,7 @@ const SLICES: Record<Family, Record<string, string>> = {
   workbench: workbenchMessages,
 }
 
-/** 全量 key 全集（9 个切片并集；completeness 测试已保证并集 === zh-CN 全集） */
+/** 全量 key 全集（10 个切片并集；completeness 测试已保证并集 === zh-CN 全集） */
 const ALL_KEYS: ReadonlySet<string> = new Set(FAMILIES.flatMap((family) => Object.keys(SLICES[family])))
 
 /** helper 白名单：零注册（路径相对 UI_SRC，不含 index.ts） */

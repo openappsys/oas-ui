@@ -213,6 +213,11 @@
   "oas-message-actions",
   "oas-tool-call",
   "oas-prompt-input",
+  "oas-price",
+  "oas-submit-bar",
+  "oas-goods-action",
+  "oas-coupon",
+  "oas-sku",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

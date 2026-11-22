@@ -1,0 +1,69 @@
+{
+  "className": "OASSku",
+  "sourceFile": "packages/ui/src/commerce/sku/oas-sku.ts",
+  "attrs": [
+    {
+      "name": "specs",
+      "observed": true
+    },
+    {
+      "name": "skus",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "quantity",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "CNY",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "specs",
+      "type": "SkuSpecGroup[] | string"
+    },
+    {
+      "name": "skus",
+      "type": "SkuItem[] | string"
+    },
+    {
+      "name": "value",
+      "type": "Record<string, string> | string"
+    },
+    {
+      "name": "quantity",
+      "type": "number | string"
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: { ...this.selected }, quantity: qty, sku, change: 'quantity', } satisfies SkuChangeDetail | { value: { ...this.selected }, quantity, sku, change, } satisfies SkuChangeDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

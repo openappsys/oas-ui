@@ -190,6 +190,56 @@ const CONTRACT: ContractEntry[] = [
       stringProbe: [{ prop: 'items', raw: '["probe-a","probe-b"]', identity: true, text: 'probe-a' }],
     },
   },
+  // commerce 族：JSON 数据属性同时是 get+set 访问器（SPA 客户端渲染时框架按「key in el」走
+  // property 赋值——无 setter 时静态 JSON 数据静默丢失，面板整块空白）。逐实例断言 setter 在场、
+  // 无 own property 遮蔽、注入合法 JSON 字符串后数据落地且渲染出注入文本。
+  {
+    page: 'coupon',
+    tag: 'oas-coupon',
+    attrContract: { list: 'array' },
+    propContract: {
+      attrs: ['list', 'open'],
+      renderedSel: '[part="coupon"]',
+      mode: 'when-data',
+      probe: 'list',
+      stringProbe: [{ prop: 'list', raw: '[{"code":"probe-a","amount":30,"validity":"Probe A"}]', text: 'Probe A' }],
+    },
+  },
+  {
+    page: 'goods-action',
+    tag: 'oas-goods-action',
+    attrContract: { items: 'array', actions: 'array' },
+    propContract: {
+      attrs: ['items', 'actions'],
+      renderedSel: '[part="icon-button"], [part="button"]',
+      stringProbe: [
+        { prop: 'items', raw: '[{"key":"probe-a","label":"Probe A"}]', text: 'Probe A' },
+        { prop: 'actions', raw: '[{"key":"probe-x","text":"Probe X"}]', text: 'Probe X' },
+      ],
+    },
+  },
+  {
+    page: 'sku',
+    tag: 'oas-sku',
+    attrContract: { specs: 'array', skus: 'array', value: 'object' },
+    propContract: {
+      attrs: ['specs', 'skus', 'value', 'quantity'],
+      renderedSel: '[part="option"]',
+      mode: 'when-data',
+      probe: 'specs',
+      // 注入值带引号（6" x）：同时压住「规格值拼进 querySelector」的注入面回归
+      stringProbe: [
+        { prop: 'specs', raw: '[{"key":"probe","label":"Probe","values":["Probe A","6\\" x"]}]', text: 'Probe A' },
+      ],
+    },
+  },
+  // price / submit-bar：纯 scalar 属性（无 JSON 数据通道），按 attribute 契约核逐实例存活
+  { page: 'price', tag: 'oas-price', attrContract: { value: 'json-or-scalar', currency: 'json-or-scalar' } },
+  {
+    page: 'submit-bar',
+    tag: 'oas-submit-bar',
+    attrContract: { total: 'json-or-scalar', currency: 'json-or-scalar', precision: 'json-or-scalar' },
+  },
 ]
 
 test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖 __vnode）', async ({ page }) => {

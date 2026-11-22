@@ -194,6 +194,17 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
+    text: '电商组件',
+    collapsed: true,
+    items: [
+      { text: 'Coupon 优惠券', link: '/components/coupon' },
+      { text: 'GoodsAction 商品导航', link: '/components/goods-action' },
+      { text: 'Price 价格', link: '/components/price' },
+      { text: 'SKU 商品规格', link: '/components/sku' },
+      { text: 'SubmitBar 结算栏', link: '/components/submit-bar' },
+    ],
+  },
+  {
     text: '会话组件',
     collapsed: true,
     items: [
@@ -226,6 +237,7 @@ const enGroupNames: Record<string, string> = {
   导航组件: 'Navigation',
   工作台构件: 'Workbench',
   数据展示组件: 'Data Display',
+  电商组件: 'Commerce',
   会话组件: 'Conversation',
   框架级容器: 'Framework Containers',
 }

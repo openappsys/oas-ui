@@ -1,0 +1,43 @@
+{
+  "className": "OASGoodsAction",
+  "sourceFile": "packages/ui/src/commerce/goods-action/oas-goods-action.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "observed": true
+    },
+    {
+      "name": "actions",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "GoodsActionItem[] | string"
+    },
+    {
+      "name": "actions",
+      "type": "GoodsActionButton[] | string"
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-action-click",
+      "detail": "{ key, source } satisfies GoodsActionDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

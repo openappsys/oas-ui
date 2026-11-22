@@ -1,4 +1,4 @@
-import { alertCirclePath, arrowDownPath, arrowLeftPath, arrowRightPath, arrowUpPath, calendarPath, checkCirclePath, checkPath, chevronDownPath, chevronLeftPath, chevronRightPath, chevronUpPath, clockPath, closeCirclePath, closePath, copyPath, downloadPath, editPath, errorPath, externalLinkPath, eyePath, filterPath, formPath, gearPath, heartPath, infoPath, languagePath, loadingPath, lockPath, mailPath, menuPath, minusPath, moreVerticalPath, morePath, organizationPath, plusPath, refreshPath, searchPath, sortPath, starFilledPath, starPath, translatePath, trashPath, treePath, uploadPath, userPath, warningPath } from './icons/index.js'
+import { alertCirclePath, arrowDownPath, arrowLeftPath, arrowRightPath, arrowUpPath, calendarPath, cartPath, checkCirclePath, checkPath, chevronDownPath, chevronLeftPath, chevronRightPath, chevronUpPath, clockPath, closeCirclePath, closePath, copyPath, downloadPath, editPath, errorPath, externalLinkPath, eyePath, filterPath, formPath, gearPath, heartPath, infoPath, languagePath, loadingPath, lockPath, mailPath, menuPath, minusPath, moreVerticalPath, morePath, organizationPath, plusPath, refreshPath, searchPath, sortPath, starFilledPath, starPath, translatePath, trashPath, treePath, uploadPath, userPath, warningPath } from './icons/index.js'
 
 export const iconRegistry = {
   'alert-circle': alertCirclePath,
@@ -7,6 +7,7 @@ export const iconRegistry = {
   'arrow-right': arrowRightPath,
   'arrow-up': arrowUpPath,
   'calendar': calendarPath,
+  'cart': cartPath,
   'check-circle': checkCirclePath,
   'check': checkPath,
   'chevron-down': chevronDownPath,
@@ -59,6 +60,7 @@ export const iconNames: readonly IconName[] = [
   "arrow-right",
   "arrow-up",
   "calendar",
+  "cart",
   "check-circle",
   "check",
   "chevron-down",

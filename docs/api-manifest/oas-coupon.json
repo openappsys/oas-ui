@@ -1,0 +1,107 @@
+{
+  "className": "OASCoupon",
+  "sourceFile": "packages/ui/src/commerce/coupon/oas-coupon.ts",
+  "attrs": [
+    {
+      "name": "amount",
+      "observed": true
+    },
+    {
+      "name": "threshold",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "CNY",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "start",
+      "observed": true
+    },
+    {
+      "name": "end",
+      "observed": true
+    },
+    {
+      "name": "validity",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "available",
+      "observed": true
+    },
+    {
+      "name": "reason",
+      "observed": true
+    },
+    {
+      "name": "code",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "list",
+      "observed": true
+    },
+    {
+      "name": "trigger-text",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "list",
+      "type": "CouponData[] | string"
+    },
+    {
+      "name": "open",
+      "type": "boolean | string"
+    }
+  ],
+  "methods": [
+    {
+      "name": "openOverlay",
+      "signature": "openOverlay(): void",
+      "description": "命令式打开（幂等；派发 open-change）"
+    },
+    {
+      "name": "closeOverlay",
+      "signature": "closeOverlay(): void",
+      "description": "命令式关闭（幂等；派发 open-change）"
+    },
+    {
+      "name": "clearSelection",
+      "signature": "clearSelection(): void",
+      "description": "清空已选券（静默：不派发事件；供宿主重置选择状态）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-open-change",
+      "detail": "{ open: true } satisfies CouponOpenChangeDetail | { open: false } satisfies CouponOpenChangeDetail"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ code: coupon.code, coupon } satisfies CouponSelectDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

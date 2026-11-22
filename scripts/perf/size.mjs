@@ -551,6 +551,7 @@ if (importViolations.length) {
 {
   const CDN_SLICE_FAMILIES = [
     'basic',
+    'commerce',
     'conversation',
     'data',
     'feedback',
@@ -579,7 +580,7 @@ if (importViolations.length) {
     fail = true
     console.error(`FAIL [CDN 默认文案] ${missing.join('；')}`)
   } else {
-    console.log('PASS [CDN 默认文案] 9 个家族切片的文案均在 dist/cdn.js')
+    console.log('PASS [CDN 默认文案] 10 个家族切片的文案均在 dist/cdn.js')
   }
 }
 

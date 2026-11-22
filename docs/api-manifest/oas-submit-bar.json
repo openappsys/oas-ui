@@ -1,0 +1,72 @@
+{
+  "className": "OASSubmitBar",
+  "sourceFile": "packages/ui/src/commerce/submit-bar/oas-submit-bar.ts",
+  "attrs": [
+    {
+      "name": "total",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "CNY",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "type": "string",
+      "default": "2",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "action-text",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "danger",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-submit",
+      "detail": "{ total: this.totalValue(), currency: this.getAttr('currency', 'CNY').trim().toUpperCase() || 'CNY', } satisfies SubmitBarDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "total"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-submit-bar-height",
+      "default": "var(--oas-control-height-xl, 48px)"
+    }
+  ],
+  "unresolved": []
+}

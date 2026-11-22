@@ -1,0 +1,70 @@
+{
+  "className": "OASPrice",
+  "sourceFile": "packages/ui/src/commerce/price/oas-price.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "observed": true
+    },
+    {
+      "name": "original",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "PriceSize",
+      "observed": true
+    },
+    {
+      "name": "trend",
+      "observed": true
+    },
+    {
+      "name": "trend-value",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-price-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-price-original-color",
+      "default": "var(--oas-color-text-secondary)"
+    },
+    {
+      "name": "--oas-price-up-color",
+      "default": "var(--oas-color-danger-text)"
+    },
+    {
+      "name": "--oas-price-down-color",
+      "default": "var(--oas-color-success-text)"
+    }
+  ],
+  "unresolved": []
+}
