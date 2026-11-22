@@ -1,0 +1,84 @@
+{
+  "className": "OASECard",
+  "sourceFile": "packages/ui/src/commerce/ecard/oas-ecard.ts",
+  "attrs": [
+    {
+      "name": "cards",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "selected-id",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "amount",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "min-amount",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "max-amount",
+      "type": "string",
+      "default": "10000",
+      "observed": true
+    },
+    {
+      "name": "agreed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "¥",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-invalid",
+      "detail": "{ fields: errors }"
+    },
+    {
+      "name": "oas-submit"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ card, cardId: this.selectedId(), amount: this.currentAmount(), custom: this.isCustom(), agreed: this.hasAttr('agreed'), }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "agreement"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-ecard-width",
+      "default": "100%"
+    }
+  ],
+  "unresolved": []
+}
