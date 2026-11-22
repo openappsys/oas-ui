@@ -689,4 +689,12 @@ export const zhHant: LocaleMessages = {
   'imageCropper.zoom': '縮放',
   'imageCropper.empty': '尚無圖片',
   'imageCropper.loadFailed': '圖片載入失敗',
+  // share-sheet（分享面板）
+  'shareSheet.title': '分享到',
+  'shareSheet.cancel': '取消',
+  'shareSheet.close': '關閉',
+  'shareSheet.empty': '暫無可分享頻道',
+  'curtain.close': '關閉',
+  'curtain.label': '提示',
+  'offline.message': '網路連線已中斷，請檢查網路設定',
 }

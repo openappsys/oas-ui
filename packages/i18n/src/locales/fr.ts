@@ -684,4 +684,12 @@ export const fr: LocaleMessages = {
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'Aucune image',
   'imageCropper.loadFailed': "Échec du chargement de l'image",
+  // share-sheet (panneau de partage)
+  'shareSheet.title': 'Partager vers',
+  'shareSheet.cancel': 'Annuler',
+  'shareSheet.close': 'Fermer',
+  'shareSheet.empty': 'Aucune destination de partage',
+  'curtain.close': 'Fermer',
+  'curtain.label': 'Information',
+  'offline.message': 'Vous êtes hors ligne. Vérifiez votre connexion réseau.',
 }

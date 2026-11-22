@@ -1,0 +1,88 @@
+{
+  "className": "OASShareSheet",
+  "sourceFile": "packages/ui/src/overlay/share-sheet/oas-share-sheet.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "heading",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "cancel-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "channels",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "channels",
+      "type": "ShareSheetChannel[] | string",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "show",
+      "signature": "show(): void",
+      "description": "命令式展开（与写入 open 属性等价）"
+    },
+    {
+      "name": "close",
+      "signature": "close(reason: CloseReason): void",
+      "description": "命令式收起；reason 透出到 oas-close，便于宿主区分来源"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-close",
+      "detail": "key === undefined ? { reason } : { reason, key }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ key: channel.key, name: channel.name, channel }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-share-sheet-mask",
+      "default": "var(--oas-color-overlay)"
+    },
+    {
+      "name": "--oas-share-sheet-max-height",
+      "default": "80vh"
+    },
+    {
+      "name": "--oas-share-sheet-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-share-sheet-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-share-sheet-columns",
+      "default": "4"
+    },
+    {
+      "name": "--oas-share-sheet-channel-bg",
+      "default": "var(--oas-color-bg-elevated)"
+    },
+    {
+      "name": "--oas-share-sheet-channel-color",
+      "default": "var(--oas-color-text-primary)"
+    }
+  ],
+  "unresolved": []
+}

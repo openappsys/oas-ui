@@ -684,4 +684,12 @@ export const ja: LocaleMessages = {
   'imageCropper.zoom': 'ズーム',
   'imageCropper.empty': '画像がありません',
   'imageCropper.loadFailed': '画像を読み込めませんでした',
+  // share-sheet（共有パネル）
+  'shareSheet.title': '共有先',
+  'shareSheet.cancel': 'キャンセル',
+  'shareSheet.close': '閉じる',
+  'shareSheet.empty': '共有できる項目がありません',
+  'curtain.close': '閉じる',
+  'curtain.label': 'お知らせ',
+  'offline.message': 'ネットワークに接続されていません。接続設定を確認してください',
 }

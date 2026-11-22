@@ -11,7 +11,7 @@ import { stripStyleComments, foldStyleComments } from './scripts/strip-css-comme
  * - 浏览器直连 unpkg 可用，普通 <script> 标签即可（IIFE 自执行注册，无需 type=module）
  *
  * 构建驱动：packages/ui/package.json `build` 内两段——`vite build --config vite.cdn.config.ts` 产全量
- * cdn.js（无 OAS_CDN_ENTRY），`build:cdn`（node scripts/build-cdn.mjs）循环 10 族产 dist/cdn/<族>.js。
+ * cdn.js（无 OAS_CDN_ENTRY），`build:cdn`（node scripts/build-cdn.mjs）循环 11 族产 dist/cdn/<族>.js。
  */
 
 const FAMILIES = [
@@ -25,6 +25,7 @@ const FAMILIES = [
   'workbench',
   'commerce',
   'framework',
+  'overlay',
 ]
 
 export default defineConfig(() => {

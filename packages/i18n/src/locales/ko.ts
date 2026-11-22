@@ -684,4 +684,12 @@ export const ko: LocaleMessages = {
   'imageCropper.zoom': '확대/축소',
   'imageCropper.empty': '이미지 없음',
   'imageCropper.loadFailed': '이미지를 불러오지 못했습니다',
+  // share-sheet (공유 패널)
+  'shareSheet.title': '공유 대상',
+  'shareSheet.cancel': '취소',
+  'shareSheet.close': '닫기',
+  'shareSheet.empty': '공유할 항목이 없습니다',
+  'curtain.close': '닫기',
+  'curtain.label': '안내',
+  'offline.message': '네트워크 연결이 끊어졌습니다. 연결 설정을 확인하세요.',
 }

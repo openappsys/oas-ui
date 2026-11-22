@@ -684,4 +684,12 @@ export const ptBR: LocaleMessages = {
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'Nenhuma imagem',
   'imageCropper.loadFailed': 'Falha ao carregar a imagem',
+  // share-sheet (painel de compartilhamento)
+  'shareSheet.title': 'Compartilhar em',
+  'shareSheet.cancel': 'Cancelar',
+  'shareSheet.close': 'Fechar',
+  'shareSheet.empty': 'Nenhum destino de compartilhamento',
+  'curtain.close': 'Fechar',
+  'curtain.label': 'Aviso',
+  'offline.message': 'Você está offline. Verifique sua conexão de rede.',
 }

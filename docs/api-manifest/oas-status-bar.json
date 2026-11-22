@@ -1,0 +1,41 @@
+{
+  "className": "OASStatusBar",
+  "sourceFile": "packages/ui/src/layout/status-bar/oas-status-bar.ts",
+  "attrs": [
+    {
+      "name": "height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-status-bar-height",
+      "default": "env(safe-area-inset-top, 0px)"
+    },
+    {
+      "name": "--oas-status-bar-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-status-bar-bg",
+      "default": "transparent"
+    }
+  ],
+  "unresolved": []
+}

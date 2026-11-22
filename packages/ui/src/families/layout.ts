@@ -18,6 +18,8 @@ import '../layout/sidebar/index.js'
 import '../layout/container/index.js'
 import '../layout/aspect-ratio/index.js'
 import '../layout/masonry/index.js'
+import '../layout/safe-area/index.js'
+import '../layout/status-bar/index.js'
 
 // 唯一透传的 registry API（与全量入口一致）：OASUI.setLocale 切语言；其余 registry API 不进导出面
 export { setLocale } from '@oas-ui/i18n/registry'

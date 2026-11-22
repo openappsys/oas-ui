@@ -688,4 +688,12 @@ export const fa: LocaleMessages = {
   'imageCropper.zoom': 'بزرگ‌نمایی',
   'imageCropper.empty': 'تصویری وجود ندارد',
   'imageCropper.loadFailed': 'بارگذاری تصویر ناموفق بود',
+  // share-sheet (پنل اشتراک‌گذاری)
+  'shareSheet.title': 'اشتراک‌گذاری در',
+  'shareSheet.cancel': 'لغو',
+  'shareSheet.close': 'بستن',
+  'shareSheet.empty': 'مقصد اشتراک‌گذاری موجود نیست',
+  'curtain.close': 'بستن',
+  'curtain.label': 'اطلاعیه',
+  'offline.message': 'اتصال شبکه قطع شده است. تنظیمات شبکه را بررسی کنید.',
 }

@@ -25,6 +25,7 @@ import { formMessages } from './slices/form.js'
 import { frameworkMessages } from './slices/framework.js'
 import { layoutMessages } from './slices/layout.js'
 import { navigationMessages } from './slices/navigation.js'
+import { overlayMessages } from './slices/overlay.js'
 import { workbenchMessages } from './slices/workbench.js'
 
 registerDefaultMessages(basicMessages)
@@ -36,6 +37,7 @@ registerDefaultMessages(formMessages)
 registerDefaultMessages(frameworkMessages)
 registerDefaultMessages(layoutMessages)
 registerDefaultMessages(navigationMessages)
+registerDefaultMessages(overlayMessages)
 registerDefaultMessages(workbenchMessages)
 
 export { canonicalizeLocale, normalizeLocaleTag } from './locale-name.js'

@@ -1,4 +1,59 @@
 {
+  "oas-action-bar": {
+    "attrs": {
+      "theme": "表体：charcoal（默认，恒深表面）/ dark（恒深·深档）/ light（主题本色）；恒深表面走 --oas-color-ink* 语义 token，不随宿主主题翻转；非法值回落 charcoal 并告警一次（同值去重）"
+    },
+    "events": {},
+    "slots": {
+      "": "命令区（oas-action-bar-button 或任意命令控件）",
+      "start": "前部命令区",
+      "center": "读数井区（oas-action-bar-well + 井子件；自动推到书写方向远端）",
+      "end": "末端区"
+    }
+  },
+  "oas-action-bar-button": {
+    "attrs": {
+      "value": "命令标识（oas-action detail 携带）",
+      "active": "选中态（受控显示——宿主监听 oas-action 回写，组件不自切）",
+      "active-tint": "选中高亮色：11 预设名解析为 --oas-preset-*，任意 CSS 色值原样注入（如录音红 #e11d48）；文字对比度由宿主负责",
+      "plain": "组内无填充（选中只着色不加底）",
+      "disabled": "原生禁用透传（禁点、禁聚焦，aria-disabled 同步）"
+    },
+    "events": {
+      "oas-action": "点击时派发；detail { value, active }——active 为点击时刻状态；bubbles + composed"
+    },
+    "slots": {
+      "": "按钮内容"
+    }
+  },
+  "oas-action-bar-well": {
+    "attrs": {
+      "max-width": "井最大宽度（number，px；默认 320；非法值忽略，负值 clamp 到 0）"
+    },
+    "events": {},
+    "slots": {
+      "": "井内容（oas-statistic-well / oas-task-progress-well 或宿主自定义读数）"
+    }
+  },
+  "oas-address": {
+    "attrs": {
+      "mode": "形态：edit（默认，地址编辑）/ list（地址列表，单选 + 默认标记）/ contact（联系人轻模式，仅姓名与电话）",
+      "value": "受控地址值（JSON 对象）：{ id?, name, phone, province?, city?, district?, detail?, isDefault? }；编辑模式用于预填，联系人模式只用 name / phone",
+      "items": "地址列表数据（mode=list）：JSON 数组 [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]；isDefault 项优先预选",
+      "selected-id": "列表选中项 id（受控）；缺省选 isDefault 项，否则选第一项",
+      "regions": "省市区数据（宿主注入契约）：JSON 数组 [{ name, code?, children? }]，最多三级；组件不内置行政区划数据",
+      "disabled": "禁用全部输入与操作（含列表单选与新增）",
+      "readonly": "只读：可聚焦与复制，不可编辑 / 提交 / 选择"
+    },
+    "events": {
+      "oas-add": "列表模式点击「新增地址」时派发，无 detail",
+      "oas-change": "字段输入或地区选择变化时派发，detail { field, value }（value 为当前地址草稿）",
+      "oas-invalid": "提交校验失败时派发，detail { fields }（字段名数组），同时标记错误并聚焦首个错误字段",
+      "oas-submit": "编辑模式校验通过时派发，detail { value }（完整地址对象）",
+      "oas-select": "列表模式选中地址项时派发，detail { id, item }"
+    },
+    "slots": {}
+  },
   "oas-affix": {
     "attrs": {
       "append-to": "传送目标容器选择器（CSS 选择器）；吸附时内容节点传送到目标容器内（fixed 仍相对视口，可绕开 overflow 祖先裁切），解除吸附移回原位；无匹配时告警一次并回落不传送",
@@ -44,19 +99,6 @@
       "description": "描述富内容插槽，有内容时覆盖 description 属性文案",
       "icon": "图标插槽，覆盖 type 默认图标"
     }
-  },
-  "oas-index-bar": {
-    "attrs": {
-      "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「字母索引导航」",
-      "sections": "分节列表 JSON：`[{ key, title?, items: [{ label, value? }] }]`；字母侧栏从 sections 自动派生（key 唯一，重复保留首个），`title` 缺省回退 `key`，条目 `value` 缺省回退 `label`",
-      "height": "列表区固定高度（px），超出时列表内部滚动；缺省时列表自适应内容高、滚动联动监听视口",
-      "sticky": "分节头吸顶（默认 true）；显式 `sticky=\"false\"` 关闭"
-    },
-    "events": {
-      "oas-item-click": "点击列表条目，`detail: { value, label, section }`（`section` 为分节 key）",
-      "oas-change": "当前高亮字母变化（点按/拖拽跳转或滚动联动），`detail: { key }`；初始渲染不派发"
-    },
-    "slots": {}
   },
   "oas-anchor": {
     "attrs": {
@@ -106,6 +148,17 @@
       "": "被标记的目标内容（如多级标题）"
     }
   },
+  "oas-app": {
+    "attrs": {
+      "message": "message 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`closable`/`pauseOnHover`/`placement`/`offset`/`max`/`showProgress`/`showIcon`/`mask`/`repeatNum`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警",
+      "notification": "notification 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`showProgress`/`progressPosition`/`scrollable`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警",
+      "toast": "toast 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`position`/`closable`/`priority`/`max`/`politeness`/`variant`/`showProgress`/`progressRing`/`swipeDirection`/`grouping`/`stacked`/`pauseOnHover`/`pauseOnFocus`/`pauseOnWindowBlur`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警"
+    },
+    "events": {},
+    "slots": {
+      "": "子树（命令式消息栈挂载到本容器内，而非 document.body）"
+    }
+  },
   "oas-app-bar": {
     "attrs": {
       "heading": "标题文本（属性通道；富内容改用 title 插槽，会被插槽覆盖）",
@@ -138,15 +191,31 @@
       "": "保持宽高比的内容"
     }
   },
-  "oas-app": {
+  "oas-attachment": {
     "attrs": {
-      "message": "message 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`closable`/`pauseOnHover`/`placement`/`offset`/`max`/`showProgress`/`showIcon`/`mask`/`repeatNum`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警",
-      "notification": "notification 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`showProgress`/`progressPosition`/`scrollable`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警",
-      "toast": "toast 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`position`/`closable`/`priority`/`max`/`politeness`/`variant`/`showProgress`/`progressRing`/`swipeDirection`/`grouping`/`stacked`/`pauseOnHover`/`pauseOnFocus`/`pauseOnWindowBlur`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警"
+      "name": "文件名（title 通道；缺省只渲染 media 不报错）",
+      "detail": "次级元数据（类型 · 大小）；error 态缺省时显示 locale 错误文案（「上传失败」），显式给值则保留宿主文案",
+      "state": "上传状态机：idle / uploading / processing / error / done（默认 done；uploading/processing 反射 aria-busy）",
+      "progress": "上传进度 0–100（越界自动收敛到 0/100；仅 uploading 态渲染底部细进度条 role=progressbar）",
+      "size": "三档尺寸：default（默认）/ sm（接受 small 别名）/ xs，逐档收内边距与媒体",
+      "orientation": "排布方向：horizontal（默认）/ vertical（图上文下，窄栏场景）",
+      "href": "有值则整卡为可点触发器（a[part=trigger]），点击派发 oas-open；宿主 preventDefault 可接管并阻断默认导航",
+      "downloadable": "布尔在场：显示内置下载按钮（点击派发 oas-download，下载动作由宿主接管）",
+      "removable": "布尔在场：显示内置删除按钮（点击派发 oas-remove；组件默认不自移除，删除决策在宿主）"
     },
-    "events": {},
+    "events": {
+      "oas-open": "点击 href 整卡触发器时派发，detail { href }；cancelable——宿主 preventDefault 后组件同步阻断链接默认导航",
+      "oas-download": "点击内置下载按钮时派发，detail { name }",
+      "oas-remove": "点击内置删除按钮时派发，detail { name }；默认不自移除"
+    },
     "slots": {
-      "": "子树（命令式消息栈挂载到本容器内，而非 document.body）"
+      "actions": "追加自定义操作区（内置下载/删除按钮之后）",
+      "media": "媒体槽（图标/缩略图），放内容即覆盖内置缺省图形"
+    }
+  },
+  "oas-attachment-group": {
+    "slots": {
+      "": "附件卡片序列（oas-attachment 或任意卡片；横向溢出时吸附滚动 + 边缘渐隐）"
     }
   },
   "oas-auto-complete": {
@@ -315,6 +384,59 @@
       "--oas-badge-outline": "outline 描边形态的边框与文字色（`color` 为语义色/预设名时组件注入 `-text` 安全档；缺省回落徽标底色）"
     }
   },
+  "oas-barcode": {
+    "attrs": {
+      "aria-label": "图形元素（svg，`role=\"img\"`）可访问名称，缺省走 i18n",
+      "value": "条码内容（空值走空态占位）",
+      "format": "码制：`code128`（默认，auto A/B/C 子集自动切换）/ `gs1-128` / `ean13` / `ean8` / `upce` / `upca` / `code39` / `codabar` / `msi` / `itf14`（非法值回退 code128）",
+      "bar-width": "条宽 X-dimension（px，默认 2，下限 clamp ≥1）",
+      "height": "条高（px，默认 100，不含文字区与护条延伸）",
+      "display-value": "人读文字显隐（默认显示；显式 `\"false\"` 关闭）",
+      "text-position": "人读文字位置：`bottom`（默认）/ `top`",
+      "font-size": "人读文字字号（px，默认 16）",
+      "text-margin": "文字与条间距（px，默认 4）",
+      "margin": "左右静区（px，缺省即 `10 × bar-width`——默认即可扫）；显式值低于 `10 × bar-width` 时收敛到下限并 console.warn 一次（可扫性护栏）",
+      "color": "条色（默认固定深色 `#18181b`——与固定白底配套保证 dark 可扫；`--oas-barcode-color` 变量或预设名/任意色值覆盖）",
+      "bg-color": "静区底色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-barcode-bg` 变量可覆盖）"
+    },
+    "events": {
+      "oas-invalid": "非法输入渲染错误占位时派发，detail { reason }：`charset`（字符集不符）/ `length`（位数不符）/ `checksum`（校验位不符）；同一非法输入只派发一次"
+    },
+    "slots": {}
+  },
+  "oas-barrage": {
+    "attrs": {
+      "tracks": "轨道数（正整数，默认 3，上限 20）",
+      "speed": "漂移速度（像素/秒，默认 120）",
+      "gap": "同轨道相邻弹幕的最小水平间距（px，默认 48）",
+      "max-active": "同屏最大条数（0 = 不限，默认 0）",
+      "paused": "受控暂停（在场=暂停；CSS 动画与排期计时同时冻结）",
+      "height": "舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px）",
+      "accessible": "布尔，存在时弹幕进入读屏（`role=\"log\"` + `aria-live=\"polite\"`）；缺省 `aria-hidden`"
+    },
+    "events": {
+      "oas-item-click": "点击弹幕时派发"
+    },
+    "slots": {},
+    "methods": {
+      "add": "追加一条弹幕（options: `{ color?, key? }`）",
+      "addBatch": "批量追加（字符串或 `{ text, color?, key? }`）",
+      "pause": "暂停（写入 `paused` 属性）",
+      "resume": "继续（移除 `paused` 属性）",
+      "clear": "清空在场与排队弹幕"
+    },
+    "cssVars": {
+      "--oas-barrage-height": "舞台高度（`height` 属性写入同一变量）",
+      "--oas-barrage-bg": "舞台背景",
+      "--oas-barrage-color": "默认文字色",
+      "--oas-barrage-tracks": "轨道数（组件写入）",
+      "--oas-barrage-font-size": "弹幕字号",
+      "--oas-barrage-item-bg": "弹幕气泡背景",
+      "--oas-barrage-item-color": "弹幕文字色",
+      "--oas-barrage-item-hover-bg": "弹幕悬停背景",
+      "--oas-barrage-stage-width": "舞台宽度（组件写入，供动画位移）"
+    }
+  },
   "oas-bottom-navigation": {
     "attrs": {
       "aria-label": "导航地标的可访问名（转发到内部 `role=\"navigation\"` 容器；同页多个实例时用于区分 landmark，缺省用内置文案）",
@@ -407,6 +529,23 @@
       "": "分隔符内容：任意节点（文本 / 图标 / 内联元素）"
     }
   },
+  "oas-bubble": {
+    "attrs": {
+      "loading": "打字中态（布尔在场）：内容切换为三点打字指示，宿主元素反射 aria-busy（AI「正在输入」场景）",
+      "reactions": "表情回应条 JSON 数组，每项 { emoji, count?, active?, label? }（emoji 必填）；空数组/非法 JSON 不渲染反应条",
+      "reactions-side": "反应条纵向位置：bottom（默认，气泡下方）/ top（气泡上方）",
+      "reactions-align": "反应条横向对齐：start / end；缺省跟随气泡 align",
+      "align": "方向：start（对方，默认）/ end（我方）——逻辑属性实现（align-self 镜像），RTL 自动镜像；显式设置时优先于容器 text-align 的继承反射",
+      "streaming": "流式追加态（布尔在场）：内容保持可见，宿主反射 aria-busy；内容区 aria-live=off，避免逐 token 播报，终态由外部 status 区播报",
+      "tail": "尾巴方向：none（默认，无尾巴）/ auto（跟随 align：start 侧或 end 侧）/ start / end——底部外角弧形小尾巴，指向发送者；实底变体绘制，outline 退化为底部外角收小圆角，muted / ghost 不画。分组时只给同一发送者连续消息的最后一条加"
+    },
+    "events": {
+      "oas-reaction": "点击某条反应时派发，detail { emoji, count, active, index }（反应数据仍由宿主拥有，组件只派发意图）"
+    },
+    "slots": {
+      "": "气泡内容"
+    }
+  },
   "oas-button": {
     "attrs": {
       "active": "选中态（受控）：布尔属性在场即选中，宿主监听 oas-click 回写（组件不自切）；选中视觉与 button-group 选中项同挂点（aria-pressed），配 active-tint 自定义选中色",
@@ -479,6 +618,11 @@
     "slots": {
       "": "按钮组成员（`oas-button`）"
     }
+  },
+  "oas-button-group-separator": {
+    "attrs": {},
+    "events": {},
+    "slots": {}
   },
   "oas-calendar": {
     "attrs": {
@@ -619,6 +763,17 @@
       "value": "当前值：单选取选中路径数组，`multiple` 时取选中路径集合数组"
     }
   },
+  "oas-category": {
+    "attrs": {
+      "categories": "类目树（宿主注入）：JSON 数组 [{ key?, id?, label?, name?, children?, items? }]；key 全局唯一，children 可递归，items 为商品位 [{ key, label, meta? }]",
+      "active-key": "当前激活类目 key（受控）；外部写入会自动展开其路径，缺省选第一个根类目"
+    },
+    "events": {
+      "oas-change": "左侧选中类目或从右侧进入子类时派发，detail { key, path, node }（path 为根到当前类的 key 数组）",
+      "oas-select": "点击商品位时派发，detail { key, item, path }"
+    },
+    "slots": {}
+  },
   "oas-chart": {
     "attrs": {
       "aria-label": "图表描述（缺省按类型走 locale）",
@@ -667,6 +822,57 @@
       "description": "辅助文本分发通道（优先于 description 属性）"
     }
   },
+  "oas-checkbox-group": {
+    "attrs": {
+      "value": "组值（JSON 字符串数组，选中项的 value 集合）",
+      "disabled": "禁用整组（下发子项，不覆盖子项自身显式 disabled）",
+      "options": "数据通道：JSON `[{ label, value, disabled?, description?, checkAll? }]`，显式设置时数据驱动优先于子元素声明式",
+      "direction": "布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行）",
+      "max": "选中数量上限：达上限后未选项置灰拦截并派发 oas-exceed-limit，已选项仍可取消",
+      "min": "选中数量下限：达下限后已选项拦截取消，未选项不受影响",
+      "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
+      "status": "校验态（下发子项）：`error` / `warning` / `success`",
+      "readonly": "只读（下发子项）：可聚焦不切换"
+    },
+    "events": {
+      "oas-change": "组值变化，`detail: { value: string[] }`（含全选联动与数量限制内的变化）",
+      "oas-exceed-limit": "达 max 上限后的越界勾选尝试，`detail: { value, max }`",
+      "oas-limit-blocked": "组级数量限制拦截信号（min/max 统一出口），`detail: { value, limit: 'min' | 'max', min?, max? }`；max 场景同时派发 oas-exceed-limit 兼容旧监听",
+      "oas-focus": "组内任一子项获得焦点（子项间转移不误报）",
+      "oas-blur": "焦点离开组时派发"
+    },
+    "slots": {
+      "": "声明式子项通道（`<oas-checkbox>` 子元素；options 显式时让位）",
+      "label": "组标题（渲染进 legend）"
+    },
+    "props": {
+      "value": "当前值：勾选值字符串数组（等价读 `value` 属性 JSON 解析）"
+    }
+  },
+  "oas-chips-input": {
+    "attrs": {
+      "value": "邮箱 chip 数组（property 或 JSON attribute）",
+      "max": "chip 数量上限，超出派发 oas-exceed-limit 且不再新增",
+      "placeholder": "输入框占位符（缺省走 i18n 文案）",
+      "disabled": "禁用",
+      "readonly": "只读（chip 仅展示，不可增删改）",
+      "size": "尺寸档位 small / medium / large",
+      "name": "表单字段名（oas-form 收集的字段键；组件非 form-associated，不进原生 FormData 提交）"
+    },
+    "events": {
+      "oas-change": "chip 增删改后派发，`detail: { value, trigger }`，trigger ∈ add | remove | edit | paste",
+      "oas-add": "新增 chip 时派发，`detail: { value, index }`",
+      "oas-remove": "删除 chip 时派发，`detail: { value, index }`",
+      "oas-invalid": "chip 邮箱校验非法时派发（幂等：仅用户交互路径；不拦截提交语义），`detail: { value, index }`",
+      "oas-exceed-limit": "超出 max 上限时派发且不再新增，`detail: { value, max }`",
+      "oas-focus": "输入框聚焦时派发",
+      "oas-blur": "输入框失焦时派发"
+    },
+    "slots": {},
+    "props": {
+      "value": "当前值：邮箱字符串数组（写入回写 value attribute，不派发事件）"
+    }
+  },
   "oas-code": {
     "attrs": {
       "code": "源代码原文",
@@ -689,6 +895,27 @@
       "oas-copy-error": "复制失败，`detail: { text }`"
     },
     "slots": {}
+  },
+  "oas-code-button": {
+    "attrs": {
+      "cooldown": "冷却秒数（默认 60）；非法/非正数回落默认并告警",
+      "disabled": "禁用：不可点击且不派发事件",
+      "loading": "请求进行中：spinner + `aria-busy` + 阻止重复点击"
+    },
+    "events": {
+      "oas-send": "可点击时点击派发，`detail: { cooldown }`；可 `preventDefault()` 拦截自动冷却（宿主请求成功后再 `start()`）"
+    },
+    "slots": {
+      "": "自定义按钮内容（空闲态生效；倒计时期间显示内置倒计时文案）"
+    },
+    "props": {
+      "counting": "是否处于冷却中（只读）",
+      "remaining": "剩余冷却秒数（只读）"
+    },
+    "methods": {
+      "start": "启动冷却（缺省取 `cooldown`）",
+      "reset": "立即结束冷却并回到空闲态"
+    }
   },
   "oas-collapse": {
     "attrs": {
@@ -726,6 +953,22 @@
       "extra": "面板头右侧操作区（内部点击不触发展开收起）",
       "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）",
       "": "面板内容"
+    }
+  },
+  "oas-collapsible": {
+    "attrs": {
+      "open": "展开态（受控开关）：属性缺席 = 非受控自管（首帧由 default-open 播种）；属性在场 = 受控（值非 \"false\" 为展开、\"false\" 为收起），点击翻转后写回属性并派发事件（乐观更新）",
+      "default-open": "非受控初始展开（值语义：非 \"false\" 为展开，兼容框架布尔绑定序列化出的 \"false\" 在场写法）：首帧初值，之后组件自管，不写回属性；open 属性在场时失效（进入受控）",
+      "header": "触发器文案（渲染进触发按钮；富内容用 slot=\"header\"，插槽优先）",
+      "disabled": "禁用触发器：不可聚焦、不可点击、不派发事件；config-provider 全局禁用注入同样生效"
+    },
+    "events": {
+      "oas-toggle": "开合状态变化后派发，detail { open }（受控与非受控模式均派发）"
+    },
+    "slots": {
+      "": "折叠体内容",
+      "header": "触发器富内容插槽，覆盖 header 属性文案",
+      "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）"
     }
   },
   "oas-color-picker": {
@@ -798,18 +1041,6 @@
       "value": "当前值：单选为选中值字符串（无选中时键入草稿兜底）；`multiple` 时为选中值数组"
     }
   },
-  "oas-compact": {
-    "attrs": {
-      "block": "宽度 100%（撑满父容器）",
-      "disabled": "透传全组禁用",
-      "vertical": "纵向贴合（相邻处上下 -1px 重叠，圆角方向改上下）",
-      "aria-label": "组可访问名称覆盖：组件默认 role=group + i18n 默认名称（locale `compact.group`），设置该属性覆盖"
-    },
-    "events": {},
-    "slots": {
-      "": "相邻表单控件（`oas-button` / `oas-input` / `oas-input-number` / `oas-select`）"
-    }
-  },
   "oas-command": {
     "attrs": {
       "items": "命令项 JSON（根页；子页由 item.page 提供，声明式多级由 item.children 提供，含 icon / shortcut / description / children / page / view / forceMount / separator 字段；children: [] + levelLoader 组合为动态子级占位）",
@@ -847,6 +1078,24 @@
       "levelLoader": "动态子级加载器（property 函数通道，`(ctx: { path: string[], index: number }) => CommandItem[] | Promise<CommandItem[]>`）：声明式 children 优先；`children: []` 的项进入时按路径调用（结果按路径缓存，同 path 不重复调用，换 loader 自动清空）；Promise 期间当前级显示加载态，抛错/返回非数组显示错误行 + 重试"
     }
   },
+  "oas-command-item": {
+    "attrs": {
+      "value": "选中值（子元素声明式通道的数据载体字段）",
+      "group": "分组名（可选），同组项渲染分组标题",
+      "disabled": "禁用该项（Enter/点击不可选，方向键跳过）",
+      "icon": "项图标：SVG path d 字符串或完整 `<svg>` 标记",
+      "shortcut": "快捷键标注（右对齐 kbd），如 `meta+p` / `ctrl+shift+s`",
+      "description": "副标题（description）",
+      "view": "视图插槽名：选中进入 `<slot name=\"view-{view}\">`（面板内嵌视图）",
+      "force-mount": "忽略过滤强制显示（创建型入口）",
+      "separator": "渲染为分隔行（不可导航/不可选中）",
+      "keywords": "搜索关键词（逗号分隔字符串，trim 去空后解析为 string[]），参与 label 之外的匹配"
+    },
+    "events": {},
+    "slots": {
+      "": "命令项 label 内容（默认插槽文本）；直接子元素 `<oas-command-item>` 递归为 `page` 子页"
+    }
+  },
   "oas-comment": {
     "attrs": {
       "align": "时间与操作区对齐：`left`（默认）/ `right`（逻辑属性实现，RTL 自动翻转）",
@@ -871,6 +1120,18 @@
       "time": "时间",
       "quote": "引文区（正文前，次级文本色 + 左侧色边）",
       "reply": "回复目标区（作者行下，「回复 @某人」场景）"
+    }
+  },
+  "oas-compact": {
+    "attrs": {
+      "block": "宽度 100%（撑满父容器）",
+      "disabled": "透传全组禁用",
+      "vertical": "纵向贴合（相邻处上下 -1px 重叠，圆角方向改上下）",
+      "aria-label": "组可访问名称覆盖：组件默认 role=group + i18n 默认名称（locale `compact.group`），设置该属性覆盖"
+    },
+    "events": {},
+    "slots": {
+      "": "相邻表单控件（`oas-button` / `oas-input` / `oas-input-number` / `oas-select`）"
     }
   },
   "oas-config-provider": {
@@ -982,6 +1243,62 @@
       "title": "数值上方标题（分发时优先于 `title` 属性文本）"
     }
   },
+  "oas-coupon": {
+    "attrs": {
+      "amount": "券面额（数字，卡片模式必填）",
+      "threshold": "使用门槛（数字，0 或缺省 = 无门槛）",
+      "currency": "ISO 4217 币种，默认 `CNY`",
+      "locale": "金额与日期格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
+      "start": "有效期开始（`YYYY-MM-DD`）",
+      "end": "有效期结束（`YYYY-MM-DD`）",
+      "validity": "有效期文案覆盖（如「长期有效」），优先于 start/end 格式化结果",
+      "status": "状态：`available`（默认）/ `expired` / `used` / `unavailable`（未达门槛等）",
+      "reason": "不可用原因文案（`status=\"unavailable\"` 时展示）",
+      "code": "券标识（事件 detail 回传）",
+      "selected": "选中态标记（供外层组合排版）",
+      "list": "选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态",
+      "trigger-text": "触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额）",
+      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）"
+    },
+    "events": {
+      "oas-select": "选中可用券时派发，detail `{ code, coupon }`，随后关闭弹层",
+      "oas-open-change": "交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发）"
+    },
+    "slots": {},
+    "methods": {
+      "openOverlay": "命令式打开弹层（已打开则忽略），派发 `oas-open-change`",
+      "closeOverlay": "命令式关闭弹层（已关闭则忽略），派发 `oas-open-change`",
+      "clearSelection": "清空已选券与触发按钮上的面额（静默，不派发事件）"
+    }
+  },
+  "oas-curtain": {
+    "attrs": {
+      "open": "受控显隐（在场=展开；受控优先于自动判定）",
+      "storage-key": "本地记忆键（默认 `oas-curtain`）；同一 key 多实例共享已关闭状态",
+      "persist": "值布尔：缺省/任意非 `\"false\"` = 记住关闭；`\"false\"` = 不写本地记忆、每次进入都弹",
+      "auto": "自动弹出开关：缺省自动判定；`\"false\"` 关闭自动弹出（文档/嵌入手动控制）",
+      "heading": "标题；缺省为空，使用默认插槽承载自定义内容",
+      "mask-closable": "布尔，存在时点击内容区外的遮罩可关闭（默认只能关闭按钮 / Esc）"
+    },
+    "events": {
+      "oas-close": "关闭时派发（reason: button / esc / backdrop / api）"
+    },
+    "slots": {
+      "": "幕帘主体内容"
+    },
+    "methods": {
+      "show": "强制展开（不清理本地记忆）",
+      "close": "关闭并写入本地记忆（persist 生效时），派发 `oas-close`",
+      "reset": "清除本地记忆（不改变当前显隐）"
+    },
+    "cssVars": {
+      "--oas-curtain-bg": "全屏背景",
+      "--oas-curtain-color": "文字色",
+      "--oas-curtain-panel-bg": "内容卡片背景",
+      "--oas-curtain-max-width": "内容卡片最大宽度",
+      "--oas-curtain-duration": "入场淡入时长"
+    }
+  },
   "oas-date-picker": {
     "attrs": {
       "clearable": "可清除：有值时显示清除钮，点击清空并派发 `oas-clear` + `oas-change`（空值）",
@@ -1058,6 +1375,41 @@
     "slots": {
       "": "字段内容",
       "label": "label 富内容（图标+文字等；与 label 属性互斥，slot 优先）"
+    }
+  },
+  "oas-diff-viewer": {
+    "attrs": {
+      "aria-label": "差异表格的可读名称（默认「差异对比」）",
+      "context": "折叠时每侧保留的未修改行数（默认 3；0 只保留变更行本身）",
+      "height": "视口高度（px，默认 480）",
+      "ignore-whitespace": "比较前归一空白（连续空白折叠、行首尾裁剪），显示仍为原文",
+      "max-edits": "行级编辑距离上限（默认 1000）；超出时降级为整块替换并提示",
+      "mode": "视图模式：`unified`（行内，默认）/ `split`（并排）",
+      "new-label": "并排视图新文本列头文案（默认「修改后」）",
+      "new-text": "新文本（attribute 通道；SSR/DSD 可用）",
+      "old-label": "并排视图旧文本列头文案（默认「修改前」）",
+      "old-text": "旧文本（attribute 通道；SSR/DSD 可用）",
+      "row-height": "固定行高（px，默认 22，最小 12）",
+      "show-line-numbers": "行号开关；`false` 隐藏行号单元格",
+      "split-min-width": "并排视图最小容器宽度（px，默认 640）；不足时自动降级行内",
+      "toolbar": "工具栏开关；`false` 隐藏统计与批量按钮",
+      "virtual": "虚拟滚动：默认自动（对齐行超过 virtual-threshold 时启用），`true` 强制开启，`false` 关闭",
+      "virtual-threshold": "自动启用虚拟滚动的对齐行数阈值（默认 2000）",
+      "wrap": "长行折行；折行时退出虚拟滚动，行高随内容自适应"
+    },
+    "props": {
+      "newText": "新文本 property；写入反射 `new-text` 属性",
+      "oldText": "旧文本 property；写入反射 `old-text` 属性",
+      "stats": "差异统计（只读）：`{ added, removed, unchanged, hunks }`"
+    },
+    "events": {
+      "oas-diff-change": "数据更新后派发，`detail: { added, removed, unchanged, hunks }`",
+      "oas-hunk-toggle": "折叠块展开/收起后派发，`detail: { index, expanded, start, count }`"
+    },
+    "methods": {
+      "expandAll": "展开全部未修改区块",
+      "collapseAll": "收起全部未修改区块",
+      "scrollToChange": "滚动到指定变更块并聚焦其首行；越界返回 false"
     }
   },
   "oas-divider": {
@@ -1265,6 +1617,27 @@
       "value": "当前值：标签字符串数组"
     }
   },
+  "oas-ecard": {
+    "attrs": {
+      "cards": "卡面数据（宿主注入）：JSON 数组 [{ id, name, value, faceValue, price?, description?, disabled? }]；value 为提交金额，faceValue / price 为展示文案",
+      "selected-id": "选中卡 id（受控）或 custom（自定义面额）；缺省选第一张可用卡，无可用卡回落 custom",
+      "amount": "自定义面额（字符串，提交时转数值）",
+      "min-amount": "自定义面额下限（整数，默认 1）",
+      "max-amount": "自定义面额上限（整数，默认 10000）",
+      "agreed": "是否已勾选协议（受控布尔属性；点击复选框时回写并派发 oas-change）",
+      "disabled": "禁用卡面 / 面额 / 协议与确认按钮",
+      "readonly": "只读：不可选择、输入、勾选或提交",
+      "currency": "自定义面额前缀货币符号（默认 ¥；仅影响自定义面额输入框展示）"
+    },
+    "events": {
+      "oas-invalid": "提交校验失败时派发，detail { fields }（card / amount / agreement）",
+      "oas-submit": "校验通过时派发，detail { card, cardId, amount, custom, agreed }",
+      "oas-change": "选择卡种、输入自定义面额或勾选协议时派发，detail { card, cardId, amount, custom, agreed }"
+    },
+    "slots": {
+      "agreement": "自定义协议文案（覆盖默认文本，可放协议链接）"
+    }
+  },
   "oas-editable": {
     "attrs": {
       "disabled": "禁用",
@@ -1397,6 +1770,36 @@
       "action": "group 模式子钮（自定义通道，与 actions 二选一）：自填 light DOM 元素/组件（button/a/oas-button/自定义元素），适合自定义视觉、框架响应式内容、每钮不同行为等数据通道无法表达的场景；可带 label（气泡文本）与 badge 属性；默认圆形形态经 ::slotted 承载（best-effort，可被宿主页 CSS 覆盖），标准圆形子钮推荐用 actions；点击自动收起并回焦主钮"
     }
   },
+  "oas-floating-panel": {
+    "attrs": {
+      "open": "打开态（唯一状态源）；show()/close() 只写该属性，宿主直接写属性静默吸收（不派发 oas-open-change）",
+      "rect": "位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整）；property 同时接受对象与同格式字符串",
+      "panel-title": "标题文本（title 插槽覆盖）；避开原生 title 属性",
+      "movable": "标题栏拖动；框体聚焦时方向键移动（8px/步）",
+      "resizable": "八向缩放手柄（四边 + 四角）；框体聚焦时 Shift + 方向键缩放",
+      "boundary": "交互边界：viewport（默认）或 CSS 选择器；只夹取拖动/缩放/键盘，不改写宿主写入的坐标",
+      "boundary-padding": "边界内缩像素（非负；非法回落 0）",
+      "min": "最小尺寸 宽,高（缺省 160,96；非正/非法（含 0）视为未提供，回落缺省；min > max 时以 min 为准）",
+      "max": "最大尺寸 宽,高（缺省不限制）",
+      "initial-focus": "打开时聚焦的选择器（light DOM 或 shadow 内；找不到回退面板框体）"
+    },
+    "events": {
+      "oas-before-close": "关闭请求（关闭钮 / Esc / close()）前派发，可取消（preventDefault 保持打开且不派发 open-change）；detail { reason, source }",
+      "oas-open-change": "组件内部动作改变开合态时派发；detail { open, reason, source }（外部写 open 属性静默吸收）",
+      "oas-move": "指针或键盘移动提交时派发；detail { rect, source }（source = pointer | keyboard；零位移不派发）",
+      "oas-resize": "指针或键盘缩放提交时派发；detail { rect, source, edge }",
+      "oas-activate": "面板置前时派发；detail { rect, source }（source = pointer | api）"
+    },
+    "slots": {
+      "": "面板内容",
+      "title": "标题富内容通道（覆盖 panel-title 文本，仍参与 aria-labelledby；清空后回落 i18n 名称）"
+    },
+    "methods": {
+      "show": "打开面板（写 open 属性；已打开时仅置前，不重复派发 oas-open-change）",
+      "close": "关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件）；before-close 处理器内重入 close() 不重复派发并返回 false",
+      "bringToFront": "族内置前并把本面板 Esc 层提到栈顶；已是最前时不重复派发 oas-activate"
+    }
+  },
   "oas-footer": {
     "attrs": {},
     "events": {},
@@ -1442,6 +1845,126 @@
     "slots": {
       "": "字段控件"
     }
+  },
+  "oas-form-list": {
+    "attrs": {
+      "name": "字段组根路径（裸字段名自动前缀为 `name.N.字段名`）",
+      "min": "最少行数（自动补足）",
+      "max": "最多行数（到顶禁用添加）",
+      "disabled": "冻结增删"
+    },
+    "events": {
+      "oas-add": "添加行时派发，`detail: { index }`",
+      "oas-remove": "删除行时派发，`detail: { index }`（剩余行重编号，值随行保留）"
+    },
+    "slots": {
+      "": "行模板（首个无 slot 属性的 template 元素；字段 name 用 `{index}` 占位或自动索引化）"
+    }
+  },
+  "oas-gantt": {
+    "attrs": {
+      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, baselines?（[{ id, start, end?, progress? }] 多基线，与单 baseline 并存时优先）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate?, effort?（工时估算，天，可小数，纯展示不参与排程） }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
+      "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
+      "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
+      "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
+      "dates-readonly": "禁改期/拉伸（进度仍可拖）",
+      "progress-readonly": "禁改进度（改期仍可拖）",
+      "show-today": "今日线（默认开；false 关闭）",
+      "weekends": "周末列高亮（默认开；day/hour 档生效；false 关闭）",
+      "holidays": "假日列表（JSON [\"YYYY-MM-DD\",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过",
+      "workdays": "工作日周几（JSON [0-6]，0=周日…6=周六；opt-in，缺省/空=不限制）：auto-schedule 前推结果吸附到下一个工作日（叠加 holidays）",
+      "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导（week 档对齐用）",
+      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
+      "height": "组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-gantt-height。高度挂在内部画布（.gantt）上——宿主自身 height 内联只框定外盒，内部画布高度仍由 height 属性 / --oas-gantt-height 决定（不会被宿主内联 height 拉伸）；整体调高请用 height 属性或 --oas-gantt-height。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-gantt-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-gantt-height 完全不受影响",
+      "row-height": "行高 px（默认 36，下限 20）",
+      "label-position": "任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none",
+      "snap": "拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度）",
+      "show-baseline": "基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条（baseline.progress 渲染进度覆盖层），title 标差值（比基线晚/早 N 天或一致）",
+      "creatable": "行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮",
+      "auto-schedule": "依赖联动排程（布尔，默认关）：日期变更（拖拽/键盘/updateTask/updateTasks）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟不提前、保持工期），跳过 disabled 与摘要行，成环安全；派发 oas-reschedule",
+      "show-critical-path": "关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据",
+      "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；本地跨全量能力（auto-schedule / 关键路径）在部分数据上会算错，已跳过并 devWarn。非 windowed 行为不变",
+      "total": "windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式）",
+      "window-start": "windowed 模式下切片首行的绝对行号（相对全量）",
+      "range-start": "宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度）",
+      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用",
+      "stripe": "行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹",
+      "show-float": "显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn",
+      "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 `__oas_project__:<project>`），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
+      "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿",
+      "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks（内容有变）会清空历史，语义相同的回写（含键序差异）不清空",
+      "resources": "逐资源日历（JSON [{ id, name?, workdays?, holidays?, shifts? }]）：与 GanttTask.resources 配合；多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次；hour 档 auto-schedule 吸附到首个带班次资源的窗口，日级只消费 workdays/holidays",
+      "group-by-resource": "按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先",
+      "show-effort": "工时列（布尔，默认关）：行标签区变两列（名称 | 工时），工时右对齐、列头 i18n gantt.effort；单元格可读名 i18n gantt.effortValue（「工时 N 天」带单位文案）。GanttTask.effort 缺失/负数/非有限显示空（清洗层与 costRate 同口径丢弃），超大值转科学计数。列宽 token --oas-gantt-effort-width（缺省 56px）；关闭时不出节点，单列形态不变",
+      "task-columns": "任务网格面板（JSON 数组，默认关）：行标签区声明式多列 [{ key, title?, width?, align? }]——key 指向 GanttTask 任意字段（含自定义字段透传，任务名经 {\"key\":\"name\"} 进网格）；title 缺省用 key；width 为 px（缺省按剩余宽度均分 flex:1）；align 取 left（默认）/center/right（right 以 inline-end 落地，RTL 自动镜像）。取值纯展示：undefined/null 空串、数字转字符串、对象 JSON.stringify。与 template[slot=\"row\"] 同开时模板优先（task-columns 忽略并 devWarn 一次）；与 show-effort 同开时网格优先（effort 列不单独渲染，保留须声明 {\"key\":\"effort\"}）。非法 JSON / 零有效列 devWarn 一次并回落单列形态；[] 显式清空静默回落。缺省（本属性与 checkable 都没有）单列形态逐节点不变",
+      "checkable": "复选列（布尔，默认关；配合 task-columns）：网格最左 32px 复选列（token --oas-gantt-check-width，part check-cell），列头三态全选/半选/全不选（role=checkbox + aria-checked，可读名 i18n gantt.selectAll）；行复选与 selection property 双向同步——勾选写选中集合并派发 oas-selection-change（与点行/框选同一契约，不新增事件名）。windowed 模式下全选只作用于当前已装载切片（列头 title 说明 + devWarn 一次）。单独开启（无 task-columns）不生效",
+      "show-status-line": "状态线 + 计划进度刻度（布尔，默认关）：① 时间轴上按 status-date 渲染竖直进度线（token --oas-gantt-status-line-color，缺省 warning 色族；关闭态不解析 status-date——默认路径零新增开销）；② 每个任务条内按计划进度画窄竖刻度并写 data-plan-ratio（0-1 两位精度）——计划进度为**含端日粒度**口径：status 日与 start 的日历日差含当日、clamp 到工期（与 computeEvm 的 planned 同构）；里程碑按二值（未到 0/已到 1），summary 不画；只画刻度，不染色不告警",
+      "status-date": "状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值）",
+      "baseline-id": "多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一）",
+      "hover": "行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`\"false\"` 关闭",
+      "pool": "资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；超配自动排程避让由 levelConflicts() 方法承载（手动触发，见组件方法）",
+      "show-resource-load": "资源负荷面板（布尔，默认关）：图表下方渲染按时间轴对齐的负荷桶条（每资源一行，行高 token --oas-gantt-load-row-height；行名列宽与左侧列表同 token --oas-gantt-list-width）。负荷口径：桶内覆盖日数逐任务累计（任务∩桶求交，日精度含端；里程碑按点计 0 天、summary 不参与），负荷% = 覆盖日数/桶天数，>100%（同资源任务交叠超配）走 danger 通道 --oas-gantt-load-over-bg，≤100% 走 primary 族 --oas-gantt-load-bg（暗色变体随 token）。粒度随 scale 映射（hour/day→日桶、week→周桶（锚定周起始）、month/quarter/year→月桶），与图表时间轴同步缩放/平移（复用 update 时轴参数不重算；滚动平移经 syncHeaderOffset 同款 rect 差公式，RTL 同式）。负荷基于全量数据签名缓存（数据/轴/池变化重算，虚拟行窗口不影响）；空数据/无资源引用走 i18n 空态。ARIA：面板 role=\"img\" + aria-label 摘要（资源数 · 峰值最高的资源与百分比），不进 Tab 序。pool 开启时行名取池名称、关时取 id。windowed 切片上跳过渲染并 devWarn（全量统计口径）。纯函数实现见 shared/resource-load.ts（data/resource/load helper 入口共用）"
+    },
+    "events": {
+      "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
+      "oas-task-add": "命令式新增任务后派发（addTask / duplicateTask / creatable 行内新建），detail: { id, task }（id 为新任务 id）",
+      "oas-task-click": "点击任务条/里程碑时派发，detail: { id, task }",
+      "oas-task-dblclick": "双击任务条时派发，detail: { id, task }——宿主接编辑表单",
+      "oas-task-change": "拖拽/拉伸/键盘改期收口（pointerup）时派发，detail: { id, task, oldStart, oldEnd, start, end }；零位移不派发",
+      "oas-progress-change": "拖进度手柄收口时派发，detail: { id, task, progress }",
+      "oas-tasks-change": "任务数据变化（程序写 tasks / updateTask / 拖拽写回）时派发，detail: { tasks }",
+      "oas-expand-change": "行树折叠/展开时派发，detail: { id, expanded }",
+      "oas-scale-change": "scale 属性变化时派发，detail: { scale }；首次吸收不派发",
+      "oas-task-render": "每条任务渲染后派发，detail: { task, element }——宿主可改写条内 DOM",
+      "oas-reparent": "行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号）",
+      "oas-dependencies-change": "连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务）",
+      "oas-selection-change": "多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组）",
+      "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发",
+      "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发",
+      "oas-history-change": "history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear）",
+      "oas-resource-conflict": "pool 开启时资源超配检测结果派发（幂等：同一快照不重复派发，数据/池变化重算后签名变化才发，消解发空数组），detail: { conflicts }（[{ taskA, taskB, resourceId, overlapStart, overlapEnd }]，taskA 在 tasks 输入序在前，交叠区间为日精度含端日期）",
+      "oas-level": "超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change；reassign 模式下 moved 条目带 resources（改派后的完整资源数组）"
+    },
+    "slots": {
+      "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
+      "template[slot=\"task\"]": "任务条标签模板（克隆进条身，[data-task-name] 节点自动填任务名）",
+      "template[slot=\"tooltip\"]": "悬停浮层模板（[data-task-name] / [data-task-range] / [data-task-progress] 绑定点）",
+      "template[slot=\"row\"]": "行名列自定义模板（每行克隆进 .name；[data-task-name] 自动填任务名；可内含控件以渲染/编辑负责人等自定义字段，行拖拽与选中不会劫持其中控件）"
+    },
+    "props": {
+      "tasks": "甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change）",
+      "selection": "选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代）",
+      "resourcePool": "资源池实例（实例隔离通道，JS-only property）：`el.resourcePool = createResourcePool()` 后池消费面（tooltip 资源名 / 超配冲突 / 负荷面板）改取该实例，写后立即重算（无需手动 update）；写 `null` / 非实例值恢复共享单例 `getSharedResourcePool()`（默认通道，向后兼容）；读为当前生效池"
+    },
+    "cssVars": {
+      "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）",
+      "--oas-gantt-critical-color": "关键路径高亮色（默认 --oas-color-danger）",
+      "--oas-gantt-conflict-color": "违约（负总时差）高亮色（默认 --oas-color-danger）",
+      "--oas-gantt-deadline-color": "截止日标记颜色（默认 --oas-color-danger）",
+      "--oas-gantt-effort-width": "工时列宽（show-effort，默认 56px；表头与行内单元格共用）",
+      "--oas-gantt-check-width": "复选列宽（task-columns + checkable 任务网格，默认 32px；表头复选格与行复选格共用）",
+      "--oas-gantt-status-line-color": "状态线/计划进度刻度颜色（show-status-line，默认 --oas-color-warning）",
+      "--oas-gantt-load-row-height": "负荷面板行高（show-resource-load，默认 24px）",
+      "--oas-gantt-load-max-height": "负荷面板行区最大高度（show-resource-load，超出纵向滚动；默认 240px，数据不截断）",
+      "--oas-gantt-load-bg": "负荷桶条底色（≤100%，缺省 primary 45% 混底色；暗色变体随 token）",
+      "--oas-gantt-load-over-bg": "负荷桶条超配色（>100%，缺省 danger；暗色变体随 token）",
+      "--oas-gantt-lane-load-width": "泳道内嵌负荷缩略条宽度（group-by-resource 泳道摘要行行尾概览条）｜缺省 72px"
+    },
+    "methods": {
+      "levelConflicts": "超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；候选日历不可排也跳过——改派后的探测任务日历 days 空集 = 永不可排，shifts:[] / workdays 交集空的资源时间空闲也不会被选中；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。"
+    }
+  },
+  "oas-goods-action": {
+    "attrs": {
+      "items": "icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射",
+      "actions": "主按钮 JSON 数组 `[{ key, text, primary?, disabled? }]`",
+      "label": "导航区可访问名称，缺省走 i18n `goodsAction.label`",
+      "disabled": "全局禁用（兼容 config-provider 注入禁用）"
+    },
+    "events": {
+      "oas-action-click": "任一项点击派发，detail `{ key, source: 'icon' | 'button' }`"
+    },
+    "slots": {}
   },
   "oas-gradient-text": {
     "attrs": {
@@ -1496,6 +2019,18 @@
     "events": {},
     "slots": {
       "": "顶部内容"
+    }
+  },
+  "oas-highlight": {
+    "attrs": {
+      "text": "原文文本",
+      "highlight": "关键词：空格多词或 JSON 数组；解析失败回退空白分隔",
+      "case-sensitive": "大小写敏感（缺省不敏感）",
+      "whole-word": "整词匹配（缺省否；Unicode 字母/数字词边界）",
+      "accent-sensitive": "重音敏感（缺省 NFD 折叠重音）"
+    },
+    "events": {
+      "oas-count": "内容重算后派发，`detail: { count, matches }`"
     }
   },
   "oas-hover-card": {
@@ -1588,6 +2123,34 @@
       "template[slot=\"toolbar\"]": "自定义预览工具栏内容：克隆进浮层工具栏区并替换默认按钮组（缺席维持默认）；克隆完成与每次打开预览派发 oas-toolbar-render（detail { element, actions }），actions 命令：zoomIn/zoomOut/rotateLeft/rotateRight/flipX/flipY/download/close/prev/next（单图模式 prev/next 无效）"
     }
   },
+  "oas-image-cropper": {
+    "attrs": {
+      "src": "图片地址（`http(s)` / `blob:` / `data:image/*` / 相对路径；可执行协议回落空）",
+      "aspect-ratio": "裁剪框比例：`1` / `16/9` / `0.75` 等；缺省或 0 为自由比例",
+      "max-zoom": "最大缩放倍数（默认 3）；非法值回落",
+      "max-output-size": "输出最长边像素上限（默认 1024）；非法值回落",
+      "output-type": "输出图片类型，默认 `image/png`（可选 `image/jpeg` / `image/webp`）",
+      "disabled": "禁用全部交互（工具栏禁用、裁剪框不可聚焦）"
+    },
+    "events": {
+      "oas-change": "缩放 / 旋转 / 裁剪框调整后派发，`detail: { zoom, rotation, frame }`",
+      "oas-crop": "确认裁剪，`detail: { blob, zoom, rotation, frame }`；canvas 不可用时 `blob` 为 null",
+      "oas-load": "图片加载成功，`detail: { width, height }`",
+      "oas-error": "图片加载失败，`detail: { src }`"
+    },
+    "slots": {},
+    "props": {
+      "zoom": "当前缩放（1 起）。写入即生效但**不派发事件**——`oas-change` 只表达用户交互，宿主在事件里回写 `el.zoom` 不会递归",
+      "rotation": "当前旋转角度（0 / 90 / 180 / 270，只读）"
+    },
+    "methods": {
+      "setZoom": "设置缩放（夹到 `[1, max-zoom]`；值有变化才派发 `oas-change`）",
+      "rotate": "旋转指定角度（默认 +90° 并派发 `oas-change`）",
+      "reset": "恢复初始缩放 / 旋转 / 裁剪框（派发 `oas-change`）",
+      "toBlob": "导出裁剪结果 Blob（canvas 不可用时返回 null）",
+      "toDataURL": "导出裁剪结果 dataURL（canvas 不可用时返回空串）"
+    }
+  },
   "oas-image-group": {
     "attrs": {
       "current": "当前图集索引（可选受控）：属性在场时受控——点击按 current 起开、内部翻页反射回该属性、外部改属性驱动预览跳图；缺席时不造属性，仅派发 oas-change",
@@ -1601,6 +2164,43 @@
       "template[slot=\"toolbar\"]": "透传共享预览宿主：自定义共享预览浮层的工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道，同 oas-image）",
       "": "图集成员（`oas-image`）"
     }
+  },
+  "oas-image-picker": {
+    "attrs": {
+      "max": "数量上限（默认 9）；非法/非正数回落默认并告警",
+      "accept": "文件类型过滤（原生 `accept` 语法，默认 `image/*`）",
+      "capture": "透传原生 `capture`：移动端直接拉起相机",
+      "disabled": "禁用：添加、排序、删除全部不可用",
+      "readonly": "只读预览：隐藏添加入口，操作按钮禁用"
+    },
+    "events": {
+      "oas-change": "用户新增 / 删除 / 排序后派发，`detail: { files, count }`",
+      "oas-exceed-limit": "选择总数超过上限，`detail: { count, max }`（超出部分丢弃；在 `oas-change` 之后派发）",
+      "oas-reject": "文件被 `accept` 过滤，`detail: { files }`"
+    },
+    "slots": {},
+    "props": {
+      "files": "当前图片列表（`File[]`，受控）：赋值即刷新且不派发事件；用户交互才派发 `oas-change`"
+    },
+    "methods": {
+      "open": "打开系统文件选择器（需在用户手势中调用）",
+      "clear": "清空列表（派发 `oas-change`）",
+      "removeAt": "删除指定图片（越界忽略，派发 `oas-change`）",
+      "move": "前后移动图片（`delta` 为 ±1，越界忽略，派发 `oas-change`）"
+    }
+  },
+  "oas-index-bar": {
+    "attrs": {
+      "aria-label": "宿主可访问名，优先命名内部 navigation landmark；空值回退默认「字母索引导航」",
+      "sections": "分节列表 JSON：`[{ key, title?, items: [{ label, value? }] }]`；字母侧栏从 sections 自动派生（key 唯一，重复保留首个），`title` 缺省回退 `key`，条目 `value` 缺省回退 `label`",
+      "height": "列表区固定高度（px），超出时列表内部滚动；缺省时列表自适应内容高、滚动联动监听视口",
+      "sticky": "分节头吸顶（默认 true）；显式 `sticky=\"false\"` 关闭"
+    },
+    "events": {
+      "oas-item-click": "点击列表条目，`detail: { value, label, section }`（`section` 为分节 key）",
+      "oas-change": "当前高亮字母变化（点按/拖拽跳转或滚动联动），`detail: { key }`；初始渲染不派发"
+    },
+    "slots": {}
   },
   "oas-input": {
     "attrs": {
@@ -1712,17 +2312,81 @@
       "value": "当前值：实时解析后的数字串（空值 / 非法键入为空串）"
     }
   },
-  "oas-kbd": {
+  "oas-inspector": {
     "attrs": {
-      "keys": "空格分隔的按键序列，如 `\"ctrl shift k\"`",
-      "variant": "形态：`raised`（默认，立体键帽）/ `outline`（描边）/ `subtle`（浅底）/ `plain`（纯文字）；非法值回落 `raised` 并告警",
-      "size": "尺寸档位：`small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警",
-      "color": "自定义颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，键帽底色染浅 + 描边跟随"
+      "side": "栏位方向：right（默认）/ left（仅分隔线方向语义钩子，定位由宿主布局决定）；非法值回落 right 并告警一次",
+      "active-tab": "当前 tab（配合 oas-inspector-tabs 使用；属性即状态）",
+      "density": "密度档：default（默认，行高 28px）/ compact（行高 24px、间距收窄，token 通道下发子件）；非法值回落 default 并告警一次",
+      "empty": "无选中态：默认插槽隐藏、empty 插槽（缺省内置文案「未选中对象」）显示",
+      "label": "可访问名称（缺省走 i18n「属性面板」）"
     },
     "events": {},
     "slots": {
-      "": "按键内容（文本 / 图标等）"
+      "": "分节 / 内容区（oas-inspector-section 等）",
+      "tabs": "tab 条通道（oas-inspector-tabs）",
+      "header": "顶部区",
+      "footer": "底部区",
+      "empty": "无选中态内容（覆盖内置文案）"
     }
+  },
+  "oas-inspector-row": {
+    "attrs": {
+      "label": "标签文本（空时标签区隐藏）",
+      "value": "只读值（键值行；表格数字体对齐）",
+      "mixed": "多选混合态：显示「混合值」内置文案，value 让位",
+      "reset": "显示行级复位钮，点击派发 oas-row-reset"
+    },
+    "events": {
+      "oas-row-reset": "点击行级复位钮时派发；detail { label }；bubbles + composed"
+    },
+    "slots": {
+      "": "控件通道（有分发内容即为控件行 50/50 分栏；无则为只读键值行；表单控件由宿主放入并自带可访问名）"
+    }
+  },
+  "oas-inspector-section": {
+    "attrs": {
+      "heading": "分节标题（折叠钮 aria-label 同源）",
+      "name": "分节名（oas-toggle detail 携带；缺省空串）",
+      "collapsible": "启用折叠（缺省纯标题不可折叠）",
+      "open": "展开状态（属性即状态——点击切换并反射，宿主可监听 oas-toggle 协调）",
+      "default-open": "初始默认展开（非受控便利：无 open 属性时首帧写入 open）"
+    },
+    "events": {
+      "oas-toggle": "点击折叠钮时派发；detail { name, open }；bubbles + composed"
+    },
+    "slots": {
+      "": "分节内容",
+      "extra": "标题行末端操作区（与折叠点击解耦）"
+    }
+  },
+  "oas-inspector-tabs": {
+    "attrs": {
+      "items": "JSON [{ label, value, disabled? }]（attribute 声明式通道）；非法 JSON 渲染为空并告警一次",
+      "value": "当前 tab（属性即状态——切换后组件更新并反射，宿主可监听 oas-change 协调）"
+    },
+    "events": {
+      "oas-change": "选中 tab 变化时派发；detail { value }；bubbles + composed"
+    },
+    "slots": {}
+  },
+  "oas-invoice": {
+    "attrs": {
+      "type": "抬头类型：personal（默认）/ company；企业抬头显示并校验税号",
+      "title": "发票抬头（受控）；输入时派发 oas-change，提交成功后回写",
+      "tax-id": "纳税人识别号（受控）；企业抬头下校验 15–20 位字母或数字",
+      "content": "发票内容选中值（受控）；需与 contents 的 value 对应",
+      "contents": "发票内容选项（宿主注入）：JSON 数组 [{ value, label }]；缺省或非法时不渲染内容字段",
+      "save-titles": "已保存抬头（宿主注入）：JSON 数组 [{ id?, type, title, taxId? }]；缺省或非法时隐藏弹层入口",
+      "disabled": "禁用全部输入、弹层入口与提交",
+      "readonly": "只读：可聚焦与复制，不可编辑 / 选择 / 提交"
+    },
+    "events": {
+      "oas-change": "字段或抬头类型变化时派发，detail { field, value }（field：type / title / taxId / content / saved）",
+      "oas-title-select": "从已保存抬头弹层选择时派发，detail { id, value }（value 已回填到当前表单）",
+      "oas-invalid": "提交校验失败时派发，detail { fields }，同时标记错误并聚焦首个错误字段",
+      "oas-submit": "校验通过时派发，detail { value }（{ type, title, taxId, content }）"
+    },
+    "slots": {}
   },
   "oas-json-viewer": {
     "attrs": {
@@ -1775,6 +2439,37 @@
       "--oas-json-viewer-height": "视口高度（默认 360px；未设置 height 属性时生效）",
       "--oas-json-viewer-row-height": "行高（默认 24px，支持 CSS 长度；未设置 row-height/compact 时生效）",
       "--oas-json-viewer-font-size": "代码字号（默认 12px）"
+    }
+  },
+  "oas-kanban": {
+    "attrs": {
+      "columns": "列定义（JSON 数组 [{ key, title, limit?, summary? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制；列可带可选 `color`：仅作列头顶部 3px 强调条（不改变列宽/布局）；列可带可选 `summary`（数值）：列底渲染合计行（label 走 i18n kanban.total），缺席/非有限数值不渲染，数值随宿主数据更新重新渲染",
+      "cards": "卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）；卡片可带可选 `color`（CSS 颜色或 token）：仅作卡片左侧 3px 强调条（绝对定位、不改变布局），用于优先级/分类；缺省无强调",
+      "empty-column-text": "空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译）",
+      "swimlane-by": "泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构",
+      "collapsible": "列折叠（布尔属性，默认关——默认外观零变化）：开启后普通模式列头出现折叠按钮，点击把列折叠为窄条（纵向列名 + 卡片数），点击窄条展开；折叠状态在数据变化时保留；折叠列不接受拖入；泳道模式下不提供列折叠（带矩阵无窄条形态）",
+      "card-estimate": "列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先）",
+      "collapsed-columns": "宿主受控折叠集合（JSON 字符串数组，列 key）：宿主写属性 → 解析进折叠集合并重建（受控写回，与 collapsible 搭配；collapsible 关闭或泳道模式下无效果）；用户折叠/展开交互只派发 oas-collapse-change、不写回本属性（受控输入通道，宿主监听事件自行决定是否回写以实现完全受控）；非法 JSON/非数组静默回退空集并告警一次"
+    },
+    "events": {
+      "oas-change": "拖拽换列/列内排序/触屏菜单移动落定后派发（拖回原位不派发）。detail { id, from, to, index }——from/to 为列 key，index 为落点在目标列的插入位（移除移动卡后的口径，宿主对目标列数组 splice(index, 0, card) 即可复现）；多选拖拽移动全部选中卡时派发一条，detail 加 ids（全部选中卡 id，按数据序，id 为首枚）；跨泳道落定加 swimlane { from, to }（泳道字段值变化）",
+      "oas-column-reorder": "列重排落定后派发（列头手柄拖拽 / 键盘 ←/→ / 触屏左移右移按钮；原位零操作不派发）。detail { from, to, keys }——from 为移动列原位次，to 为重排后新位次，keys 为重排后的列 key 全序；组件同时把新列序回写 columns attribute（卡片数据不动）",
+      "oas-collapse-change": "列折叠/展开后派发（点击列头折叠按钮或折叠窄条）。detail { columnId, collapsed }——columnId 为列 key，collapsed 为切换后的折叠状态（true=已折叠、false=已展开）；合计值变化不派发事件（走既有数据通道随数据更新重渲染）"
+    },
+    "props": {
+      "renderCard": "自定义卡片渲染函数 (card) => Node | string（property 通道，函数不可序列化不进 attribute/SSR）。返回 Node 直接挂载；返回字符串按纯文本渲染（防注入）。在场时卡片数据不反射回 cards 属性（宿主持有数据），拖拽与移动菜单照常派发 oas-change。置 null 恢复默认 title 渲染"
+    }
+  },
+  "oas-kbd": {
+    "attrs": {
+      "keys": "空格分隔的按键序列，如 `\"ctrl shift k\"`",
+      "variant": "形态：`raised`（默认，立体键帽）/ `outline`（描边）/ `subtle`（浅底）/ `plain`（纯文字）；非法值回落 `raised` 并告警",
+      "size": "尺寸档位：`small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警",
+      "color": "自定义颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，键帽底色染浅 + 描边跟随"
+    },
+    "events": {},
+    "slots": {
+      "": "按键内容（文本 / 图标等）"
     }
   },
   "oas-knob": {
@@ -1876,25 +2571,6 @@
       "": "链接内容（文本 / 图标等）"
     }
   },
-  "oas-kanban": {
-    "attrs": {
-      "columns": "列定义（JSON 数组 [{ key, title, limit?, summary? }]；property 同名数组通道同效，setter 反射回 attribute）。limit 为 WIP 限制：列卡片数超限时列头计数转 warning 色 + data-over-limit 标记（提示语义非阻断，拖入照常落定），缺省/0/负数 = 不限制；列可带可选 `color`：仅作列头顶部 3px 强调条（不改变列宽/布局）；列可带可选 `summary`（数值）：列底渲染合计行（label 走 i18n kanban.total），缺席/非有限数值不渲染，数值随宿主数据更新重新渲染",
-      "cards": "卡片数据（JSON 数组 [{ id, column, title, ...任意字段 }]，column 为所属列 key）。拖拽落定后组件把新分组/顺序回写本属性（非受控回写 + attribute 反射）；renderCard 函数在场时不回写（数据由宿主持有）；卡片可带可选 `color`（CSS 颜色或 token）：仅作卡片左侧 3px 强调条（绝对定位、不改变布局），用于优先级/分类；缺省无强调",
-      "empty-column-text": "空列/空泳道单元格占位文案覆盖（默认走 i18n kanban.emptyColumn，随 locale 翻译）",
-      "swimlane-by": "泳道字段 key：按该字段值把看板横向分带（带头 = 折叠箭头 + 字段值 + 计数，默认全展开，折叠状态在数据变化时保留）；字段值缺失/空归「（空）」带；跨带拖拽 = 改泳道字段值；不带属性 = 普通列结构",
-      "collapsible": "列折叠（布尔属性，默认关——默认外观零变化）：开启后普通模式列头出现折叠按钮，点击把列折叠为窄条（纵向列名 + 卡片数），点击窄条展开；折叠状态在数据变化时保留；折叠列不接受拖入；泳道模式下不提供列折叠（带矩阵无窄条形态）",
-      "card-estimate": "列体虚拟化的未实测卡片预估步进（px，默认 68）：数值 ≤0 / 非法回落 68；实测后由 ResizeObserver 逐步修正。仅当属性缺席时读取 CSS 变量 --oas-kanban-card-step 作为兜底（属性优先）",
-      "collapsed-columns": "宿主受控折叠集合（JSON 字符串数组，列 key）：宿主写属性 → 解析进折叠集合并重建（受控写回，与 collapsible 搭配；collapsible 关闭或泳道模式下无效果）；用户折叠/展开交互只派发 oas-collapse-change、不写回本属性（受控输入通道，宿主监听事件自行决定是否回写以实现完全受控）；非法 JSON/非数组静默回退空集并告警一次"
-    },
-    "events": {
-      "oas-change": "拖拽换列/列内排序/触屏菜单移动落定后派发（拖回原位不派发）。detail { id, from, to, index }——from/to 为列 key，index 为落点在目标列的插入位（移除移动卡后的口径，宿主对目标列数组 splice(index, 0, card) 即可复现）；多选拖拽移动全部选中卡时派发一条，detail 加 ids（全部选中卡 id，按数据序，id 为首枚）；跨泳道落定加 swimlane { from, to }（泳道字段值变化）",
-      "oas-column-reorder": "列重排落定后派发（列头手柄拖拽 / 键盘 ←/→ / 触屏左移右移按钮；原位零操作不派发）。detail { from, to, keys }——from 为移动列原位次，to 为重排后新位次，keys 为重排后的列 key 全序；组件同时把新列序回写 columns attribute（卡片数据不动）",
-      "oas-collapse-change": "列折叠/展开后派发（点击列头折叠按钮或折叠窄条）。detail { columnId, collapsed }——columnId 为列 key，collapsed 为切换后的折叠状态（true=已折叠、false=已展开）；合计值变化不派发事件（走既有数据通道随数据更新重渲染）"
-    },
-    "props": {
-      "renderCard": "自定义卡片渲染函数 (card) => Node | string（property 通道，函数不可序列化不进 attribute/SSR）。返回 Node 直接挂载；返回字符串按纯文本渲染（防注入）。在场时卡片数据不反射回 cards 属性（宿主持有数据），拖拽与移动菜单照常派发 oas-change。置 null 恢复默认 title 渲染"
-    }
-  },
   "oas-list": {
     "attrs": {
       "bordered": "是否显示整体边框",
@@ -1958,6 +2634,21 @@
       "image": "方形缩略图位（尺寸与头像同档联动 sm 24 / md 32 / lg 40，小圆角裁剪填充）；无内容时隐藏"
     }
   },
+  "oas-loading-bar": {
+    "attrs": {
+      "local": "局部模式标记（布尔）：命令式 API 传 `to` 容器时自动打上，组件内据此切换为容器内绝对定位；不接受选择器/元素——挂载目标由命令式 `to` 选项决定",
+      "position": "显示位置：top（默认）/bottom",
+      "reverse": "方向反转（RTL 场景进度从右往左）",
+      "speed": "推进速度基准（ms，默认 200），start(speed) 可覆盖",
+      "status": "当前状态（活动态查询）：组件仅在错误终态写入 `error`，其余时刻移除该属性（不写 `loading`/`finish`）"
+    },
+    "events": {
+      "oas-error": "error() 错误收尾时派发",
+      "oas-finish": "finish() 完成收尾时派发",
+      "oas-start": "批次首个会话的 start() 时派发（并发批次的后续 start() 不再派发）"
+    },
+    "slots": {}
+  },
   "oas-log": {
     "attrs": {
       "auto-scroll": "追加后自动滚动到底（仅贴底时滚动）",
@@ -1977,6 +2668,18 @@
       "oas-search": "搜索过滤结果上报：keyword 或数据变化时派发（同状态去重），`detail: { keyword, matched, total }`（matched=命中行数、total=总行数，过滤窗口为当前已加载行）"
     },
     "slots": {}
+  },
+  "oas-marker": {
+    "attrs": {
+      "variant": "变体：default（小号次级文字，默认）/ border（描边胶囊行）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；空内容时 default/border 整件隐藏、separator 保留分隔线本体",
+      "status": "语义状态档：info / success / warning / danger——文字、描边与分隔线取语义色 token（暗色自动适配；不改 ARIA role，流式播报仍由宿主声明）",
+      "shimmer": "布尔在场：流式微光（文本渐变扫过；prefers-reduced-motion 降级为静态文字）"
+    },
+    "events": {},
+    "slots": {
+      "": "文字内容",
+      "icon": "装饰图标槽（包裹层 aria-hidden；流式/进度状态由宿主直接写 role=status，组件不重复转发）"
+    }
   },
   "oas-marquee": {
     "attrs": {
@@ -2076,6 +2779,23 @@
     },
     "slots": {}
   },
+  "oas-menu-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "分隔线数据载体（无属性，宿主解析为 `type: \"divider\"`）"
+    }
+  },
+  "oas-menu-group": {
+    "attrs": {
+      "label": "分组标题（组标题小字、次要色、不可点）",
+      "value": "radio 组 id（组内点选只更新该组选中值）"
+    },
+    "events": {},
+    "slots": {
+      "": "组内菜单项：子元素 `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` 平铺同层"
+    }
+  },
   "oas-menu-item": {
     "attrs": {
       "value": "选中值（子元素声明式通道的数据载体字段）",
@@ -2094,23 +2814,6 @@
     "slots": {
       "": "菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` 递归为子菜单 children",
       "template[slot=\"leading\"]": "前置媒体模板（或直接子元素加 slot=\"leading\"）：头像/色块等任意前置内容，渲染在 label 前、优先于 icon 图标；loading 态由 spinner 替换；仅子元素声明式通道可用（items JSON 不支持）"
-    }
-  },
-  "oas-menu-group": {
-    "attrs": {
-      "label": "分组标题（组标题小字、次要色、不可点）",
-      "value": "radio 组 id（组内点选只更新该组选中值）"
-    },
-    "events": {},
-    "slots": {
-      "": "组内菜单项：子元素 `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` 平铺同层"
-    }
-  },
-  "oas-menu-divider": {
-    "attrs": {},
-    "events": {},
-    "slots": {
-      "": "分隔线数据载体（无属性，宿主解析为 `type: \"divider\"`）"
     }
   },
   "oas-menubar": {
@@ -2140,6 +2843,23 @@
       "end": "栏尾装饰位（如头像）：`<div slot=\"end\">` 有内容时显示，键盘导航跳过"
     }
   },
+  "oas-menubar-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "分隔线数据载体（无属性，宿主解析为 `type: \"divider\"`）"
+    }
+  },
+  "oas-menubar-group": {
+    "attrs": {
+      "label": "分组标题（组标题小字、次要色、不可点）",
+      "value": "radio 组 id（组内点选只更新该组选中值）"
+    },
+    "events": {},
+    "slots": {
+      "": "组内菜单项：子元素 `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` 平铺同层"
+    }
+  },
   "oas-menubar-item": {
     "attrs": {
       "value": "选中值（子元素声明式通道的数据载体字段）",
@@ -2159,23 +2879,6 @@
     "events": {},
     "slots": {
       "": "菜单栏项 label 内容（默认插槽文本）；直接子元素 `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` 递归为子菜单 children"
-    }
-  },
-  "oas-menubar-group": {
-    "attrs": {
-      "label": "分组标题（组标题小字、次要色、不可点）",
-      "value": "radio 组 id（组内点选只更新该组选中值）"
-    },
-    "events": {},
-    "slots": {
-      "": "组内菜单项：子元素 `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` 平铺同层"
-    }
-  },
-  "oas-menubar-divider": {
-    "attrs": {},
-    "events": {},
-    "slots": {
-      "": "分隔线数据载体（无属性，宿主解析为 `type: \"divider\"`）"
     }
   },
   "oas-message": {
@@ -2202,6 +2905,53 @@
       "content": "正文富内容插槽"
     },
     "cssVars": {}
+  },
+  "oas-message-actions": {
+    "attrs": {
+      "actions": "操作项 JSON：[{ key, label, title?, disabled?, active?, tone? }]",
+      "message-id": "消息 id，随 oas-action detail 回传",
+      "align": "对齐：start（默认）/ end",
+      "disabled": "禁用全部操作",
+      "label": "操作组 aria-label（可选）"
+    },
+    "events": {
+      "oas-action": "点击操作时派发，detail: { key, messageId }"
+    }
+  },
+  "oas-message-row": {
+    "attrs": {
+      "align": "方向：start（对方，默认）/ end（我方）——逻辑属性实现（row-reverse + 逻辑对齐），RTL 自动镜像",
+      "status": "发送状态便利属性：sending / sent / delivered / read / error——渲染可见小字 + 装饰图标（文案走 locale，语义不单靠颜色；error 追加 danger 色作增强）；非法值/缺省不渲染状态区",
+      "grouped": "布尔在场：与上一条同发送者的连续消息（宿主声明），行间距收拢（走 --oas-message-gap）"
+    },
+    "events": {},
+    "slots": {
+      "": "消息内容（放 oas-bubble）",
+      "avatar": "头像槽（底对齐，长消息贴底）",
+      "header": "头部槽（发送者名/时间）",
+      "footer": "尾部槽（操作/附加元数据，随方向对齐）"
+    }
+  },
+  "oas-message-scroller": {
+    "attrs": {
+      "auto-scroll": "AI 式底部跟随（布尔在场，默认关）：仅当读者在底部（near-bottom ≤ edge-threshold）时跟随流式增长，上翻阅读不打扰",
+      "pin-to-bottom": "IM 式始终钉底（布尔在场）：新内容总是滚到底、读者上翻也拉回；与 auto-scroll 同时在场时优先",
+      "default-position": "打开位置：start（顶部）/ end（底部，默认；非法值回退 end）/ last-anchor（定位到最后一个 anchor 标记消息顶部——AI 场景「回到最后提问位置」；无锚点回退 end）",
+      "edge-threshold": "底部判定阈值 px（默认 8）——距底 ≤ 阈值即视为在底部（near-bottom 检测）",
+      "label": "viewport 可读名称覆盖（缺省走 locale「消息列表」；读入渲染后从宿主移除——原生全局属性吸收惯例）",
+      "preserve-scroll-on-prepend": "顶部插入历史时补偿 scrollTop 保持阅读位置（缺省开启；显式 =\"false\" 关闭）——按插入前首节点位移精确结算（同帧 append+prepend 混合只结算顶部插入量），补偿后锁定保位锚：历史内异步资源（图片等）撑高上方内容时按锚点视口位移持续补偿（message-id 优先重查）",
+      "turn-anchor": "轮次锚定（布尔在场）：把一次提问+回答作为锚定单元——锚点贴视口顶时把最后 anchor 标记消息钉在视口顶 prev-peek 处，回答在锚下方流入；读者在底部延续贴底跟随，上翻即静止（绝不逆着读者意图移动）",
+      "prev-peek": "轮次锚定对齐时锚顶上方露出的语境 px（默认 64；非法/负值回退 64）",
+      "track-visible": "布尔在场：开启可见性通道（oas-visible-change 事件 + visibleMessageIds / currentAnchorId getter）；未开启零计算（pay-for-use）"
+    },
+    "events": {
+      "oas-scroll-state": "滚动位置跨过判定线时派发，detail { atBottom, atTop, canScrollStart, canScrollEnd }；首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到",
+      "oas-visible-change": "track-visible 开启时可见集变化派发，detail { visibleMessageIds, currentAnchorId }（供大纲/搜索定位等）"
+    },
+    "slots": {
+      "": "消息行列表（oas-message-row / oas-marker 等；行上的 anchor / message-id 属性为 scroller 协作标记）",
+      "button": "自定义跳底按钮内容（替换内置箭头图形；显隐与点击仍由组件裁决——缺省为内置按钮 part=button）"
+    }
   },
   "oas-modal": {
     "attrs": {
@@ -2259,34 +3009,17 @@
       "media": "媒体区插槽（图标 / 插图 / 缩略图等富媒体），正文顶部居中；有内容才显示，无内容不占位"
     }
   },
-  "oas-notification": {
+  "oas-music-well": {
     "attrs": {
-      "description": "描述内容",
-      "duration": "自动关闭时长（ms），`0` 表示不自动关闭",
-      "progress-position": "进度条位置：`bottom`（默认）/ `top`",
-      "scrollable": "描述内容超长时卡片内滚动，默认开启；传 `false` 关闭",
-      "show-progress": "显示自动关闭倒计时进度条（动画时长与 `duration` 同步）",
-      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
-      "type": "通知类型：`info`/`success`/`warning`/`error`",
-      "closable": "是否显示关闭按钮（默认 true；false 隐藏关闭钮）",
-      "size": "尺寸档（配套 --oas-notification-width 变量）",
-      "pause-on-hover": "悬停暂停计时与进度条（默认开，mouseenter/leave 通道）；移出恢复剩余时长"
+      "label": "读数标签（空时隐藏）",
+      "bars": "当前小节（1 起；与 beats 共同决定「小节.节拍」位置段，双缺整段隐藏）",
+      "beats": "当前节拍（1 起；与 bars 共同决定「小节.节拍」位置段，双缺整段隐藏）",
+      "tempo": "速度 BPM（非法值忽略该段）",
+      "meter": "拍号（如 4/4，原样显示；空时隐藏）",
+      "detail": "补充信息（与自动 BPM/拍号文本拼段；空时隐藏）"
     },
-    "events": {
-      "oas-click": "通知体点击时派发（「点击查看详情」场景）",
-      "oas-close": "通知关闭时派发，detail { source }：auto（时长到期）/ button（点击关闭钮）/ destroy（编程式销毁）/ evict（超上限被挤出）"
-    },
-    "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
-      "close-icon": "自定义关闭图标，覆盖默认 ✕",
-      "content": "正文富内容插槽",
-      "footer": "底部操作区插槽（操作按钮/辅助行）",
-      "icon": "图标插槽，覆盖 type 默认图标"
-    },
-    "cssVars": {
-      "--oas-notification-progress-color": "倒计时进度条颜色",
-      "--oas-notification-width": "卡片宽度（尺寸档位内部引用）"
-    }
+    "events": {},
+    "slots": {}
   },
   "oas-navigation-menu": {
     "attrs": {
@@ -2361,6 +3094,35 @@
       "icon": "图标插槽，覆盖默认/type 图标"
     }
   },
+  "oas-notification": {
+    "attrs": {
+      "description": "描述内容",
+      "duration": "自动关闭时长（ms），`0` 表示不自动关闭",
+      "progress-position": "进度条位置：`bottom`（默认）/ `top`",
+      "scrollable": "描述内容超长时卡片内滚动，默认开启；传 `false` 关闭",
+      "show-progress": "显示自动关闭倒计时进度条（动画时长与 `duration` 同步）",
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
+      "type": "通知类型：`info`/`success`/`warning`/`error`",
+      "closable": "是否显示关闭按钮（默认 true；false 隐藏关闭钮）",
+      "size": "尺寸档（配套 --oas-notification-width 变量）",
+      "pause-on-hover": "悬停暂停计时与进度条（默认开，mouseenter/leave 通道）；移出恢复剩余时长"
+    },
+    "events": {
+      "oas-click": "通知体点击时派发（「点击查看详情」场景）",
+      "oas-close": "通知关闭时派发，detail { source }：auto（时长到期）/ button（点击关闭钮）/ destroy（编程式销毁）/ evict（超上限被挤出）"
+    },
+    "slots": {
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "close-icon": "自定义关闭图标，覆盖默认 ✕",
+      "content": "正文富内容插槽",
+      "footer": "底部操作区插槽（操作按钮/辅助行）",
+      "icon": "图标插槽，覆盖 type 默认图标"
+    },
+    "cssVars": {
+      "--oas-notification-progress-color": "倒计时进度条颜色",
+      "--oas-notification-width": "卡片宽度（尺寸档位内部引用）"
+    }
+  },
   "oas-number-animation": {
     "attrs": {
       "active": "受控播放：缺省即播；`\"false\"` 停帧，改回 `\"true\"` 从当前值续动到目标",
@@ -2375,6 +3137,40 @@
       "oas-finish": "动画抵达目标时派发一次，detail `{ value: 目标值 }`"
     },
     "slots": {}
+  },
+  "oas-number-keyboard": {
+    "attrs": {
+      "value": "当前值（受控）：按键写回本属性，宿主改写即时同步",
+      "maxlength": "长度上限（按字符计数，支持中文省份简称）；缺省 0 = 不限",
+      "random": "数字键随机乱序（安全键盘）；切换时重新排列",
+      "layout": "键盘布局：`number`（默认）/ `plate`（车牌号：省份简称 + 字母 + 数字）",
+      "disabled": "禁用：按键全部禁用且不派发事件",
+      "readonly": "只读：按键可聚焦但不改动值，`oas-done` 仍可派发"
+    },
+    "events": {
+      "oas-input": "追加一个字符，`detail: { value, key }`",
+      "oas-delete": "删除末位（值为空时不派发），`detail: { value }`",
+      "oas-done": "点击完成键，`detail: { value }`"
+    },
+    "slots": {},
+    "methods": {
+      "randomize": "重新洗牌数字键顺序（安全键盘刷新）"
+    }
+  },
+  "oas-offline": {
+    "attrs": {
+      "variant": "形态：`bar`（默认，固定视口顶部铺满）/ `block`（跟随文档流的提示块）",
+      "message": "提示文案覆盖；缺省走 i18n `offline.message`"
+    },
+    "events": {
+      "oas-offline": "进入断网态时派发（状态真正变化才派发）",
+      "oas-online": "网络恢复时派发（状态真正变化才派发）"
+    },
+    "slots": {},
+    "cssVars": {
+      "--oas-offline-bg": "提示条背景（默认 danger 语义色）",
+      "--oas-offline-color": "提示文字色（默认 `--oas-color-text-on-danger`）"
+    }
   },
   "oas-option": {
     "attrs": {
@@ -2410,6 +3206,38 @@
       "footer": "底部操作区（无内容时不渲染）",
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
       "subtitle": "副标题富内容插槽，有内容时覆盖 subtitle 属性文案"
+    }
+  },
+  "oas-page-loading": {
+    "attrs": {
+      "open": "受控显隐（在场=显示全屏遮罩）；宿主直接移除属性静默，不派发事件",
+      "mode": "形态：`spinner`（默认转菊花）/ `skeleton`（骨架行）/ `progress`（进度条）；非法值回落 spinner",
+      "text": "加载文案覆盖；缺省走 i18n `loading.loading`",
+      "value": "进度百分比（仅 progress 形态）：0–100，越界钳制、非法回落 0",
+      "rows": "骨架行数（仅 skeleton 形态）：正整数，缺省 4，钳制在 1–12"
+    },
+    "events": {
+      "oas-close": "调用 `close()` 关闭时派发"
+    },
+    "slots": {},
+    "methods": {
+      "show": "显示加载态（等价于写入 `open` 属性）",
+      "close": "关闭加载态：移除 `open` 并派发 `oas-close`"
+    },
+    "cssVars": {
+      "--oas-page-loading-mask": "全屏遮罩色",
+      "--oas-page-loading-bg": "面板背景",
+      "--oas-page-loading-color": "面板文字色",
+      "--oas-page-loading-max-width": "面板最大宽度",
+      "--oas-page-loading-shadow": "面板阴影",
+      "--oas-page-loading-blur": "遮罩背景模糊",
+      "--oas-page-loading-spinner-size": "转菊花尺寸",
+      "--oas-page-loading-spinner-color": "转菊花颜色",
+      "--oas-page-loading-spin-duration": "转菊花旋转周期",
+      "--oas-page-loading-skeleton": "骨架行颜色",
+      "--oas-page-loading-pulse-duration": "骨架脉冲周期",
+      "--oas-page-loading-track": "进度轨道颜色",
+      "--oas-page-loading-bar": "进度条颜色"
     }
   },
   "oas-pagination": {
@@ -2477,6 +3305,38 @@
       "": "段落内容"
     }
   },
+  "oas-password-strength": {
+    "attrs": {
+      "for": "精确关联的密码输入 id（同根节点内查找；可为原生 input[type=password] 或 oas-input 等承载 password 输入的组件）；设置后优先于 slot 自动发现",
+      "level": "受控分数（0–4）：在场时停止自动计算、不派发事件（值由宿主给）；移除恢复自动；越界钳制 0–4，非法值按 0 并一次性告警",
+      "levels": "五档文案覆盖：JSON 数组（5 个非空字符串，索引 0–4 对应档位）；缺省走 locale `passwordStrength.*`；非法回落并一次性告警",
+      "show-label": "显示当前档位文案"
+    },
+    "events": {
+      "oas-score-change": "分数变化时派发（仅自动/自定义评分模式；受控 `level` 不派发），`detail: { score, label }`"
+    },
+    "slots": {
+      "": "自动发现区：缺省在此查找第一个 `[type=password]` 输入（原生 input 或承载组件）并自动绑定"
+    },
+    "props": {
+      "scoreFn": "自定义评分函数 `(password: string) => 0–4`：设置后完全接管内置评分；置 null 恢复。受控 `level` 在场时不参与"
+    }
+  },
+  "oas-picker": {
+    "attrs": {
+      "columns": "独立多列数据（JSON 数组 [{ key?, label?, items: [{ label, value?, disabled? }] }]；与 options 互斥且优先）",
+      "disabled": "整件禁用（滚轮不响应、值不变）",
+      "item-height": "行高 px（正整数，非法回落默认）",
+      "options": "级联树数据（JSON [{ label, value?, children: [...] }]）；列数随选中路径派生，父列变更重建子列并复位首可用项",
+      "value": "各列选中值（JSON 数组，项 value 缺省回退 label）；落停回写反射，程序性写入只滚动不派发事件",
+      "visible-count": "可见行数（≥3，偶数自动归奇）",
+      "name": "原生表单字段名（form-associated：FormData 提交的键，值为 JSON 数组字符串）",
+      "required": "必填标记（驱动原生校验链 valueMissing：未选 = 未填）"
+    },
+    "events": {
+      "oas-change": "滚动/键盘选中落停后派发（程序性 value 写入不派发）。detail { value, labels, columnIndex }——value/labels 为全列当前口径，columnIndex 为本次变更列"
+    }
+  },
   "oas-pin-input": {
     "attrs": {
       "aria-invalid": "校验失败态（同步到容器与各格，标 danger）",
@@ -2509,23 +3369,6 @@
     "slots": {},
     "props": {
       "value": "当前值：各格字符拼接字符串；property 与 `value` 属性同源（setter 写回 attribute、属性改动即时同步各格），会反射到 attribute"
-    }
-  },
-  "oas-password-strength": {
-    "attrs": {
-      "for": "精确关联的密码输入 id（同根节点内查找；可为原生 input[type=password] 或 oas-input 等承载 password 输入的组件）；设置后优先于 slot 自动发现",
-      "level": "受控分数（0–4）：在场时停止自动计算、不派发事件（值由宿主给）；移除恢复自动；越界钳制 0–4，非法值按 0 并一次性告警",
-      "levels": "五档文案覆盖：JSON 数组（5 个非空字符串，索引 0–4 对应档位）；缺省走 locale `passwordStrength.*`；非法回落并一次性告警",
-      "show-label": "显示当前档位文案"
-    },
-    "events": {
-      "oas-score-change": "分数变化时派发（仅自动/自定义评分模式；受控 `level` 不派发），`detail: { score, label }`"
-    },
-    "slots": {
-      "": "自动发现区：缺省在此查找第一个 `[type=password]` 输入（原生 input 或承载组件）并自动绑定"
-    },
-    "props": {
-      "scoreFn": "自定义评分函数 `(password: string) => 0–4`：设置后完全接管内置评分；置 null 恢复。受控 `level` 在场时不参与"
     }
   },
   "oas-popconfirm": {
@@ -2626,6 +3469,22 @@
       "content": "面板内容（与默认插槽等价，具名便于显式指定）"
     }
   },
+  "oas-price": {
+    "attrs": {
+      "value": "单值价格（数字字符串）；与 `min`+`max` 同在场时单值优先",
+      "min": "区间价下端（与 `max` 同在场且 `value` 缺省时生效）",
+      "max": "区间价上端（与 `min` 同在场且 `value` 缺省时生效）",
+      "original": "划线原价（渲染为 `<s>`，读屏带「原价」前缀）",
+      "currency": "ISO 4217 币种代码，默认 `CNY`；非法代码回落默认",
+      "locale": "`Intl.NumberFormat` locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
+      "precision": "小数位（0–20 整数，默认 2；非法值回退默认）",
+      "size": "字号档：`sm` / `md`（默认）/ `lg`",
+      "trend": "趋势方向：`up` / `down`；非法值不渲染趋势",
+      "trend-value": "涨跌幅文本（纯数值自动补正负号与 `%`，其余原样渲染）"
+    },
+    "events": {},
+    "slots": {}
+  },
   "oas-progress": {
     "attrs": {
       "no-text": "隐藏右侧/圆心百分比文本",
@@ -2653,6 +3512,38 @@
     "events": {},
     "slots": {
       "": "自定义文本：line 右侧 / text-inside 条内 / 圆心；优先于状态图标与内置百分比"
+    }
+  },
+  "oas-prompt-input": {
+    "attrs": {
+      "value": "当前文本（property 双通道；attribute 作为初始值）",
+      "placeholder": "占位文案（缺省 i18n promptInput.placeholder）",
+      "disabled": "禁用输入与提交",
+      "readonly": "只读（可聚焦/复制，不可修改）",
+      "loading": "生成中；发送钮切换为停止",
+      "maxlength": "最大字符数",
+      "rows": "初始行数（1+，自增高上限 160px）",
+      "suggestions": "建议项 JSON：字符串或 { label?, value } 数组",
+      "submit-on-enter": "Enter 提交（默认 true；false 时仅按钮提交，Shift+Enter 始终换行）",
+      "clear-on-submit": "提交后清空（默认 true）"
+    },
+    "props": {
+      "value": "当前文本（读写）"
+    },
+    "events": {
+      "oas-submit": "提交时派发，detail: { value }",
+      "oas-stop": "loading 时点击停止派发",
+      "oas-suggestion-select": "点击建议项时派发，detail: { value, label }"
+    },
+    "slots": {
+      "prefix": "输入框前置内容",
+      "actions": "发送钮前的操作区",
+      "footer": "输入框底部说明/工具行"
+    },
+    "methods": {
+      "submit": "提交当前文本；空值/禁用/loading 返回 false",
+      "stop": "停止生成（仅 loading 时派发 oas-stop）",
+      "focusInput": "聚焦内部 textarea"
     }
   },
   "oas-pull-refresh": {
@@ -2694,40 +3585,41 @@
       "template[slot=\"status\"]": "自定义状态覆盖层内容（缺省为各状态内建遮罩）"
     }
   },
-  "oas-barcode": {
+  "oas-questionnaire": {
     "attrs": {
-      "aria-label": "图形元素（svg，`role=\"img\"`）可访问名称，缺省走 i18n",
-      "value": "条码内容（空值走空态占位）",
-      "format": "码制：`code128`（默认，auto A/B/C 子集自动切换）/ `gs1-128` / `ean13` / `ean8` / `upce` / `upca` / `code39` / `codabar` / `msi` / `itf14`（非法值回退 code128）",
-      "bar-width": "条宽 X-dimension（px，默认 2，下限 clamp ≥1）",
-      "height": "条高（px，默认 100，不含文字区与护条延伸）",
-      "display-value": "人读文字显隐（默认显示；显式 `\"false\"` 关闭）",
-      "text-position": "人读文字位置：`bottom`（默认）/ `top`",
-      "font-size": "人读文字字号（px，默认 16）",
-      "text-margin": "文字与条间距（px，默认 4）",
-      "margin": "左右静区（px，缺省即 `10 × bar-width`——默认即可扫）；显式值低于 `10 × bar-width` 时收敛到下限并 console.warn 一次（可扫性护栏）",
-      "color": "条色（默认固定深色 `#18181b`——与固定白底配套保证 dark 可扫；`--oas-barcode-color` 变量或预设名/任意色值覆盖）",
-      "bg-color": "静区底色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-barcode-bg` 变量可覆盖）"
+      "animated": "题目切换过渡（opt-in，存在且非 `\"false\"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像",
+      "current": "当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取",
+      "finish-text": "末步主按钮文案（覆盖 locale 缺省「完成」）",
+      "hide-header": "隐藏内置步骤头（宿主自组合）",
+      "hide-nav": "隐藏内置导航区（宿主自组合）",
+      "linear": "线性模式（默认开，`linear=\"false\"` 关闭）：未来步头部禁点；关闭后任意步可点（仍走 oas-before-change 拦截）",
+      "next-text": "「下一步」按钮文案（覆盖 locale 缺省）",
+      "prev-text": "「上一步」按钮文案（覆盖 locale 缺省）",
+      "progress": "进度区显隐（`progress=\"false\"` 隐藏）",
+      "progress-variant": "进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both`",
+      "shortcuts": "键盘快捷导航（opt-in，存在且非 `\"false\"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标）",
+      "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + 告警一次（同值去重））",
+      "skip-text": "「跳过本步」按钮文案（覆盖 locale 缺省）",
+      "steps": "步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]`",
+      "validation": "单步校验门控（默认开，`validation=\"false\"` 纯导航；`submit()` 不受此开关影响、始终重校）"
     },
     "events": {
-      "oas-invalid": "非法输入渲染错误占位时派发，detail { reason }：`charset`（字符集不符）/ `length`（位数不符）/ `checksum`（校验位不符）；同一非法输入只派发一次"
+      "oas-before-change": "跳步前（按钮 / 头部点击 / next / prev / goto / 跳过）可取消；`detail: { index, key?, from }`，`preventDefault()` 否决本次跳转",
+      "oas-change": "切步成功后；`detail: { index, key? }`",
+      "oas-step-validate": "单步校验结束时；`detail: { index, key?, valid, errors }`",
+      "oas-skip": "跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复）",
+      "oas-submit": "末步完成（全部参与步校验通过）；`detail: { values }`（跨步汇总值，仅参与步——hidden / 已跳过步不计入）",
+      "oas-values-change": "内层 oas-form 值变化事件自然冒泡转发（`detail: { name, value, values }`，values 为该步快照）；跨步汇总视图用 getValues()"
     },
-    "slots": {}
-  },
-  "oas-scanner": {
-    "attrs": {
-      "active": "开启相机扫码（在场即请求 getUserMedia 并开始预览）；无 BarcodeDetector / 权限被拒 / 相机错误时自动降级手动输入模式",
-      "manual": "强制显示手动输入行（无相机、无权限或出错时也会自动进入该模式）",
-      "aria-label": "组件可访问名称，缺省走 i18n"
+    "slots": {
+      "step-<key>": "步骤内容面板（有 key 的步骤）；面板内建议放一个 `<oas-form>` 承载该步字段与校验规则",
+      "step-<index>": "步骤内容面板（无 key 的步骤按数组下标关联）"
     },
-    "events": {
-      "oas-scan": "识别到码值时派发，detail { value, format? }；连续相同指纹不重复派发，命中后节流自动继续",
-      "oas-error": "相机或识别能力不可用时派发，detail { code }：`not-supported`（无 BarcodeDetector）/ `permission`（权限被拒）/ `camera`（相机错误）；派发后自动降级手动输入模式"
-    },
-    "slots": {},
-    "methods": {
-      "start": "开启相机扫描（等价于置位 `active` 属性）",
-      "stop": "停止相机并释放媒体流（等价于移除 `active` 属性）"
+    "cssVars": {
+      "--oas-questionnaire-anim-duration": "切步动画时长（animated 开启时生效）",
+      "--oas-questionnaire-nav-gap": "导航区按钮间距",
+      "--oas-questionnaire-progress-bg": "进度条轨道底色",
+      "--oas-questionnaire-progress-bar-bg": "进度条填充色"
     }
   },
   "oas-radio": {
@@ -2756,6 +3648,27 @@
     },
     "props": {
       "value": "提交值（属性缺省回落 `on`；与 `checked` 分立，对齐原生 radio.value）"
+    }
+  },
+  "oas-radio-group": {
+    "attrs": {
+      "value": "组值（选中项的 value）",
+      "disabled": "禁用整组（下发子项，不覆盖子项自身显式 disabled）",
+      "options": "数据通道：JSON `[{ label, value, disabled?, description? }]`，显式设置时数据驱动优先于子元素声明式",
+      "direction": "布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行）",
+      "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
+      "status": "校验态（下发子项）：`error` / `warning` / `success`；单项显式 status 优先",
+      "readonly": "只读（下发子项）：可聚焦、方向键不切换",
+      "required": "组级必选校验（form-associated valueMissing，reset 恢复基线）"
+    },
+    "events": {
+      "oas-change": "组值变化，`detail: { value }`（点击与方向键选中都触发）",
+      "oas-focus": "组内任一子项获得焦点（子项间转移不误报）",
+      "oas-blur": "焦点离开组时派发"
+    },
+    "slots": {
+      "": "声明式子项通道（`<oas-radio>` 子元素；options 显式时让位）",
+      "label": "组标题（渲染进 legend）"
     }
   },
   "oas-rate": {
@@ -2793,6 +3706,55 @@
       "value": "当前值：评分分值（number）"
     }
   },
+  "oas-relative-time": {
+    "attrs": {
+      "value": "目标时刻：epoch 毫秒数字串或 ISO 8601（纯数字一律按 epoch 毫秒解析，写年份请用 `2026-01-01`）；无偏移的 ISO 按运行环境本地时区解析、date-only 按 UTC，`datetime` 输出恒为 UTC；property 另接受 `number` / `Date`",
+      "locale": "相对时间 locale（如 `zh-CN` / `en-US`）；非法或不支持时安全回落 provider → 全局 i18n → `en-US`（全局默认 `zh-CN`，`en-US` 仅为兜底）",
+      "numeric": "Intl 数字模式：`auto`（默认，语义化「刚刚 / 昨天」）/ `always`（始终数字）；其他值按 auto",
+      "auto-refresh": "按单位节流自动刷新（秒级 1s、其余 30s）；`\"false\"` 或缺失关闭；页面隐藏暂停、断开清理、重连恢复"
+    },
+    "props": {
+      "value": "目标时刻 property 通道：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空（走空态）；读取返回 value attribute 原文（string）",
+      "locale": "相对时间 locale property 通道：写入回写 `locale` attribute、`null` 移除属性（回落 provider → 全局 i18n → `en-US`）；读取返回 attribute 原文（string）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-resource": {
+    "attrs": {
+      "resources": "资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills?, costRate? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。`costRate` 为小时费率（纯展示；`show-cost` 开启时参与行头成本合计 Σ(天数 × 8h × costRate)，缺失/非法该行不显示成本）。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色",
+      "tasks": "资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级",
+      "scale": "直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day",
+      "height": "组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响",
+      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
+      "capacity": "资源未声明 capacity 时的缺省容量（默认 1）",
+      "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；负载/超载统计仅基于已装载切片（全量统计由宿主负责）并 devWarn；缺 range-start / range-end 时时间轴回落「已装载任务」派生并 devWarn。非 windowed 行为不变",
+      "total": "windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式）",
+      "window-start": "windowed 模式下切片首行（资源）的绝对行号（相对全量）",
+      "range-start": "宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导",
+      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn",
+      "show-load-values": "负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述",
+      "show-overload-badge": "泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge",
+      "show-skills": "泳道行头名称旁技能 chip（布尔，默认关）：以弱底圆角小标签展示 ResourceItem.skills（清洗：非数组未声明、非字符串/空白项丢弃、去重、trim）；渲染上限 8 个防挤占行头，全量经容器 title 悬浮可见（数据层保全量，reassign 匹配不受影响）；单行省略不撑行高，RTL 视觉镜像随 direction 自动翻转",
+      "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中",
+      "header-sticky": "泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky=\"false\"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL）",
+      "heatmap": "负载热力图（布尔，默认关）：按 load/capacity 渲染低/中/高/超载热力格，表头显示图例，每格 title 为日期与 load/capacity",
+      "skill-matrix": "技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化",
+      "show-cost": "泳道成本合计（布尔，默认关）：行头显示「成本 Σ(任务天数 × 8h × costRate)」两位小数（无货币符号，单位由宿主 CSS/文案自定）；天数按任务与**求交窗口**的相交日历日数计——有 range-start/range-end 托管时用轴端点（成本不随刻度档漂移），否则用任务推导轴全域；costRate 缺失/非法的 lane 不显示。合计随数据/日期窗口在 update 时重算，滚动可视列窗口不触发",
+      "hover": "泳道行与负载直方图行 hover 底色开关（默认开）：鼠标移入泳道或直方图行时整行点亮（含行头），颜色走 `--oas-resource-row-hover-bg`（缺省 `--oas-color-bg-hover`，与条 hover 色独立）；`\"false\"` 关闭"
+    },
+    "events": {
+      "oas-task-click": "点击资源泳道内的任务条时派发，detail: { id, task, resourceId }",
+      "oas-overload": "超载态变化时派发（每次更新至多一次；同一超载态不重复派发），detail: { overloads: [{ resourceId, period, load, capacity }] }（period 为档起始日）；无超载不派发",
+      "oas-tasks-change": "程序写 tasks property 时派发，detail: { tasks }。**windowed 下 detail.tasks 仅为已装载切片**：宿主须按 id 合并回全量，不得整体替换",
+      "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发",
+      "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发"
+    },
+    "props": {
+      "resources": "资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留",
+      "tasks": "资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change"
+    }
+  },
   "oas-result": {
     "attrs": {
       "description": "描述文案",
@@ -2808,6 +3770,107 @@
       "description": "描述富内容插槽，有内容时覆盖 description 属性文案",
       "": "内容区（错误详情清单等），置于描述与 extra 操作区之间"
     }
+  },
+  "oas-rolling-text": {
+    "attrs": {
+      "value": "显示值（字符串；numeric property 赋值会反射到属性）",
+      "precision": "小数位数（0–10）：补零 / 四舍五入；缺省或非法时保留原文本",
+      "prefix-text": "前缀文本（如货币符号）",
+      "suffix-text": "后缀文本（如单位）",
+      "duration": "单列翻滚时长（ms，默认 600）；非法或非正回落默认",
+      "live": "布尔，存在时读屏活区为 `polite`（默认 off，避免频繁播报）"
+    },
+    "events": {},
+    "slots": {},
+    "cssVars": {
+      "--oas-rolling-text-duration": "翻滚时长",
+      "--oas-rolling-text-height": "单列高度",
+      "--oas-rolling-text-font": "字号",
+      "--oas-rolling-text-separator-color": "小数点 / 符号等非数字列颜色"
+    }
+  },
+  "oas-safe-area": {
+    "attrs": {
+      "position": "占位方向：`bottom`（默认，底部手势区）/ `top`（顶部刘海区）",
+      "size": "高度覆盖：纯数字按 px，亦接受 CSS 长度（如 `1rem` / `24px` / `calc(...)`）；缺省读取 `env(safe-area-inset-*)`（不支持时为 0）"
+    },
+    "events": {},
+    "slots": {
+      "": "装饰内容（可选，如状态点）；页面主体内容不要放这里"
+    },
+    "cssVars": {
+      "--oas-safe-area-size": "高度覆盖（`size` 属性写入同一变量）"
+    }
+  },
+  "oas-scanner": {
+    "attrs": {
+      "active": "开启相机扫码（在场即请求 getUserMedia 并开始预览）；无 BarcodeDetector / 权限被拒 / 相机错误时自动降级手动输入模式",
+      "manual": "强制显示手动输入行（无相机、无权限或出错时也会自动进入该模式）",
+      "aria-label": "组件可访问名称，缺省走 i18n"
+    },
+    "events": {
+      "oas-scan": "识别到码值时派发，detail { value, format? }；连续相同指纹不重复派发，命中后节流自动继续",
+      "oas-error": "相机或识别能力不可用时派发，detail { code }：`not-supported`（无 BarcodeDetector）/ `permission`（权限被拒）/ `camera`（相机错误）；派发后自动降级手动输入模式"
+    },
+    "slots": {},
+    "methods": {
+      "start": "开启相机扫描（等价于置位 `active` 属性）",
+      "stop": "停止相机并释放媒体流（等价于移除 `active` 属性）"
+    }
+  },
+  "oas-scheduler": {
+    "attrs": {
+      "events": "日程事件（JSON）：[{ id?, date: YYYY-MM-DD, endDate?, title, color?, start?, end?, repeat? { freq, interval?, until?, count?, byDay? }, resource? }]——日格渲染事件芯片，>2 合并 +N 条；endDate 支持跨日全天，repeat 支持 count/byDay",
+      "page-show-date": "面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份",
+      "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导",
+      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
+      "resources": "资源列表（JSON）：[{ id, title, color?, group? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行；group 非空时自动插入分组标题行",
+      "show-now": "当前时间线（默认开；false 关闭）：week/day 视图与资源单日视图在今天的时间区渲染 now 线",
+      "conflict-check": "同日定时事件冲突校验（布尔，默认关）：对单日定时事件做同日同时段重叠检测——重叠时刻块加 .conflict 虚线 danger 描边与 scheduler.conflict 可读提示，并派发 oas-event-conflict；判定为半开区间（首尾相接不算，与车道判据同构）、全日历口径（不限当前视图）；repeat 不展开 occurrence、跨日定时/全天事件不参与；冲突标记只是视觉提示，不阻断拖拽/缩放写入",
+      "view": "视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵；`'resource-timeline'` 资源时间轴（行 = 资源、横向连续日轴跨多天、事件 = 跨列连续横条；轴 = 当前周或 range 托管跨度）",
+      "start-hour": "时间轴起始小时（0-23，默认 8）",
+      "end-hour": "时间轴结束小时（>start-hour 且 <=24，默认 20）",
+      "timezone": "时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地",
+      "windowed": "服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行；需要时宿主可提供保留 id `__unassigned__`",
+      "total": "windowed 模式下的资源行总数（正数才生效）；用于 aria-rowcount 与绝对行号",
+      "window-start": "windowed 模式下切片首行的绝对行号（相对全量）",
+      "secondary-timezone": "第二时区（IANA）：在 day/week/资源单日时间刻度追加第二时区标签；非法值忽略并 devWarn",
+      "range-start": "宿主托管的时间范围起点（ISO 日期，含端）；与 range-end 一起启用 oas-range-request 托管",
+      "range-end": "宿主托管的时间范围终点（ISO 日期，含端）；当前视图可见范围未被覆盖时派发 oas-range-request"
+    },
+    "events": {
+      "oas-create": "在时间格空白处拖出 >=15 分钟区间时派发，detail: { date, start, end, resource? }——组件不自动建事件，宿主接后自行 addEvent；位移不足视作 oas-day-click",
+      "oas-day-click": "点击空白日格时派发，detail: { date, resource? }（资源视图带资源行 id）——宿主接新增表单",
+      "oas-event-click": "点击事件芯片时派发，detail: { id, event }（不触发日格点击）",
+      "oas-event-conflict": "conflict-check 开启时冲突快照派发（update() 内同步派发、首帧即发，宿主须先挂监听再写数据；监听后挂时移除再补回 conflict-check 即重置签名通道重发。幂等：同一数据快照不重复派发，签名变化才逐 id 重发，冲突消解向相关 id 发空数组），detail: { id, conflicts }（conflicts 为与该事件同日同时段重叠的事件 id 列表）",
+      "oas-events-change": "events 数据变化（set/addEvent/updateEvent/removeEvent/undo）时派发，detail: { events }",
+      "oas-view-change": "视图切换（month/week/day/agenda）时派发，detail: { view }；属性首次吸收不派发",
+      "oas-remind": "事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器）",
+      "oas-window-request": "windowed 模式下可视资源行窗口未被已装载切片覆盖时派发，detail: { start, end, reason }（绝对行号、半开区间；同一窗口不重复派发）",
+      "oas-range-request": "宿主托管日期窗口：当前视图可见范围未被 range-start/range-end 覆盖时派发，detail: { startMs, endMs, reason }；无 range-* 时不派发"
+    },
+    "props": {
+      "events": "日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change）",
+      "resources": "资源列表（`SchedulerResource[]`）：`el.resources` 读（拷贝）；`el.resources = [...]` 写（同步 resources 属性 + 重渲染）",
+      "canUndo": "是否有可撤销的单步事件变更（只读；配合 `undo()`）"
+    },
+    "methods": {
+      "undo": "撤销最近一次 updateEvent（含拖拽移动、时间块双缘缩放、跨日条终点缩放、时刻块键盘改期/缩放）；无快照返回 false，成功回写并派发 oas-events-change"
+    }
+  },
+  "oas-scope-bar": {
+    "attrs": {
+      "disabled": "整组禁用（叠加最近 oas-toolbar 的 disabled）",
+      "items": "选项 JSON（property 赋值单向反射 attribute）",
+      "label": "无障碍组名（`role=\"group\"` 的 `aria-label`，按语言由宿主传入）",
+      "multiple": "多选模式（每个药丸独立切换）",
+      "size": "尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar 的 size",
+      "value": "当前值：单选为字符串；多选为 JSON 数组字符串"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value: string | string[] }`"
+    },
+    "slots": {}
   },
   "oas-scroll-area": {
     "attrs": {
@@ -2826,20 +3889,6 @@
     "slots": {
       "": "可滚动内容"
     }
-  },
-  "oas-scope-bar": {
-    "attrs": {
-      "disabled": "整组禁用（叠加最近 oas-toolbar 的 disabled）",
-      "items": "选项 JSON（property 赋值单向反射 attribute）",
-      "label": "无障碍组名（`role=\"group\"` 的 `aria-label`，按语言由宿主传入）",
-      "multiple": "多选模式（每个药丸独立切换）",
-      "size": "尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar 的 size",
-      "value": "当前值：单选为字符串；多选为 JSON 数组字符串"
-    },
-    "events": {
-      "oas-change": "切换，`detail: { value: string | string[] }`"
-    },
-    "slots": {}
   },
   "oas-segmented": {
     "attrs": {
@@ -2928,6 +3977,35 @@
       "value": "当前值：单选取选中值字符串，`multiple` 时取选中值数组（等价读 `value` 属性）"
     }
   },
+  "oas-share-sheet": {
+    "attrs": {
+      "open": "受控显隐（在场=展开；宿主直接写入静默）",
+      "heading": "面板标题；缺省走 i18n `shareSheet.title`",
+      "cancel-text": "取消按钮文案；缺省走 i18n `shareSheet.cancel`",
+      "channels": "渠道 JSON 数组 `[{ key, name, icon? }]`：`icon` 为 `oas-icon` 图标名，缺省用名称首字符占位；非法 JSON 忽略并 dev 告警一次"
+    },
+    "events": {
+      "oas-select": "点击渠道时派发，随后自动关闭",
+      "oas-close": "关闭时派发（reason: select / cancel / close / backdrop / esc / api）"
+    },
+    "slots": {},
+    "methods": {
+      "show": "展开面板（写入 `open` 属性）",
+      "close": "收起面板并派发 `oas-close`（reason 默认 `api`）"
+    },
+    "cssVars": {
+      "--oas-share-sheet-mask": "遮罩颜色",
+      "--oas-share-sheet-bg": "面板背景",
+      "--oas-share-sheet-color": "面板文字色",
+      "--oas-share-sheet-columns": "宫格列数",
+      "--oas-share-sheet-max-height": "面板最大高度",
+      "--oas-share-sheet-channel-bg": "渠道图标底色",
+      "--oas-share-sheet-channel-color": "渠道图标前景色"
+    },
+    "props": {
+      "channels": "渠道列表（property 通道）：等价 channels 属性的解析结果；赋数组时自动序列化反射回属性"
+    }
+  },
   "oas-sidebar": {
     "attrs": {
       "collapsed": "受控折叠，收窄为图标条（存在即折叠）",
@@ -3008,6 +4086,25 @@
       "": "侧边内容"
     }
   },
+  "oas-signature": {
+    "attrs": {
+      "value": "签名图像（PNG dataURL），双通道可受控",
+      "pen-size": "笔迹粗细（px，默认 2）",
+      "pen-color": "笔迹颜色（11 预设名或 CSS 色值，缺省跟随主题文字色）",
+      "height": "画布高度（px，默认 160）",
+      "disabled": "禁用（拦截笔画）",
+      "readonly": "只读（拦截笔画，保留笔迹展示）",
+      "clearable": "显示清空按钮"
+    },
+    "events": {
+      "oas-change": "笔画结束或清空时派发（同值幂等去重）"
+    },
+    "slots": {},
+    "methods": {
+      "clear": "清空画布与笔迹，value 归空并按指纹派发 oas-change",
+      "toDataURL": "当前画布 PNG dataURL；空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串"
+    }
+  },
   "oas-skeleton": {
     "attrs": {
       "active": "是否启用流光动画",
@@ -3024,6 +4121,32 @@
     "slots": {
       "": "真实内容出口：loading=\"false\" 时渲染（骨架与内容常驻 shadow DOM，按 loading 切换 hidden）"
     }
+  },
+  "oas-skeleton-item": {
+    "attrs": {
+      "type": "形态：`text`（默认）/ `title` / `avatar` / `button` / `input` / `image` / `rect`；非法值回落 text",
+      "width": "宽度（CSS 值），覆盖各 type 默认宽",
+      "height": "高度（CSS 值），覆盖各 type 默认高",
+      "effect": "动效：`sheen` / `pulse` / `none`（缺省），语义同 oas-skeleton"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-sku": {
+    "attrs": {
+      "specs": "规格组 JSON 数组 `[{ key, label?, values: (string | { value, label? })[] }]`",
+      "skus": "SKU JSON 数组 `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]`",
+      "value": "选中组合 JSON 对象 `{ [specKey]: value }`（受控；用户选择回写）",
+      "quantity": "数量（默认 1；上限 = 匹配 sku 库存）",
+      "currency": "ISO 4217 币种，默认 `CNY`",
+      "locale": "价格格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
+      "precision": "价格小数位，默认 2",
+      "disabled": "全禁用（兼容 config-provider 注入禁用）"
+    },
+    "events": {
+      "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）"
+    },
+    "slots": {}
   },
   "oas-slider": {
     "attrs": {
@@ -3221,6 +4344,79 @@
       "value": "自定义数值呈现（如组合 `oas-number-animation` 动画值；分发时不渲染 Intl 格式化文本）"
     }
   },
+  "oas-statistic-well": {
+    "attrs": {
+      "label": "读数标签（空时隐藏）",
+      "value": "读数数值（表格数字体对齐）",
+      "detail": "补充信息（空时隐藏）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-status-bar": {
+    "attrs": {
+      "height": "高度覆盖：纯数字按 px，亦接受 CSS 长度（如 `44px` / `1.5rem`）；缺省读取 `env(safe-area-inset-top)`",
+      "color": "前景色覆盖（ui-spec §4.1）：11 个预设名取 `--oas-preset-<name>-text` 文字安全档，其余按任意 CSS 色值直接注入；空值恢复 token 默认"
+    },
+    "events": {},
+    "slots": {
+      "": "状态内容（时间 / 电量等，由宿主绘制）"
+    },
+    "cssVars": {
+      "--oas-status-bar-bg": "背景（默认透明，由宿主决定是否铺色）",
+      "--oas-status-bar-color": "前景色（`color` 属性写入同一变量）",
+      "--oas-status-bar-height": "高度覆盖（`height` 属性写入同一变量）"
+    }
+  },
+  "oas-statusbar": {
+    "attrs": {
+      "label": "可访问名称（缺省走 i18n「状态栏」）"
+    },
+    "events": {},
+    "slots": {
+      "": "左段状态单元格（与整个工作区相关的聚合状态）",
+      "end": "右段状态单元格（次要/上下文项，自动推到书写方向远端）"
+    }
+  },
+  "oas-statusbar-item": {
+    "attrs": {
+      "value": "数值/状态值（表格数字体呈现）",
+      "label": "文本标签",
+      "icon": "内置图标名（@oas-ui/icons 内置图标；未知名不渲染）",
+      "button": "渲染为原生 button（可点、键盘可达）；缺省为只读 div 语义",
+      "status": "语义色档：default（默认）/ info / warning / error / progress——warning/error 用底色醒目（仅特殊且必要场景慎用），info/progress 只着文字色；非法值回落 default 并告警一次",
+      "spinning": "后台活动旋转指示（prefers-reduced-motion 停转）"
+    },
+    "events": {
+      "oas-item-click": "button 模式点击时派发；detail { value, label }；bubbles + composed（容器与宿主均可监听）"
+    },
+    "slots": {}
+  },
+  "oas-stepper": {
+    "attrs": {
+      "clickable": "步骤可点击跳步（默认 true；`clickable=\"false\"` 关闭：点击/键盘静默，键盘仍可移动焦点）",
+      "current": "当前步骤索引（0 起，双向：点击跳步写回、外部设置即时同步 aria-selected 与面板显隐）；非法值回落 0，越界夹取",
+      "direction": "方向：`horizontal`（默认，横向排列）/ `vertical`（纵向排列，指示器左/标题右）",
+      "linear": "线性模式：仅允许跳转 `index <= current` 的步骤（未来步 `aria-disabled` + 视觉弱化，点击/键盘静默）",
+      "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警，同值去重）",
+      "steps": "步骤数据 JSON `[{ title, description?, icon?, disabled?, status? }]`（语义对齐 oas-steps 的 StepItem 减去面板无关项）；非法/空回落 `[]`"
+    },
+    "events": {
+      "oas-change": "可点击跳步时触发（点击步骤 / 键盘 Enter/Space）；`detail: { index }`（0 起，bubbles + composed，写回 current）"
+    },
+    "slots": {
+      "": "内容面板投影区（`<oas-stepper-panel>` 直接子元素）；面板按 value 关联步骤序号，仅 current 匹配者可见"
+    }
+  },
+  "oas-stepper-panel": {
+    "attrs": {
+      "value": "关联步骤序号字符串（如 `value=\"0\"`）；仅 `current` 匹配的面板可见（hidden 由 oas-stepper 驱动）"
+    },
+    "events": {},
+    "slots": {
+      "": "面板内容（默认插槽）"
+    }
+  },
   "oas-steps": {
     "attrs": {
       "arrow": "箭头分格形态（横向专用）：每项 clip-path 箭头分格（首项平头、相邻凹凸衔接），激活主色填充 / 完成浅主色 / 等待灰，连接线隐藏（布尔，存在即开启；与 simple 互斥，simple 优先；navigation 下忽略）",
@@ -3252,6 +4448,83 @@
       "--oas-steps-arrow-gap": "箭头段间距；`0` 时首尾咬合",
       "--oas-steps-arrow-item-bg-{1..8}": "按段覆盖背景色（按 DOM 位置生效，非数据索引）；超过 8 段回落状态色",
       "--oas-steps-item-bg": "当前状态的段背景色（按状态 color-mix）"
+    }
+  },
+  "oas-submit-bar": {
+    "attrs": {
+      "total": "合计金额（数字字符串）；缺省不渲染金额",
+      "currency": "ISO 4217 币种，默认 `CNY`",
+      "locale": "金额格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
+      "precision": "金额小数位，默认 2",
+      "label": "合计标签，缺省走 i18n `submitBar.total`",
+      "action-text": "主按钮文本；缺省不渲染按钮（仅合计 + 扩展区，可作通用底栏）",
+      "loading": "加载中：按钮禁用 + spinner + `aria-busy`，不派发事件",
+      "disabled": "禁用按钮（兼容 config-provider 注入禁用）",
+      "danger": "主按钮采用危险色（删除 / 取消类主操作）"
+    },
+    "events": {
+      "oas-submit": "主按钮点击派发（非 loading / disabled），detail `{ total, currency }`"
+    },
+    "slots": {
+      "": "合计左侧扩展内容（协议勾选、备注入口等）",
+      "total": "覆盖默认金额展示（自定义价格排版）"
+    }
+  },
+  "oas-swatch": {
+    "attrs": {
+      "color": "填充色（CSS 色值或 11 预设名，颜色统一协议）",
+      "size": "边长档位：`xs` / `small` / `medium`（默认）/ `large` / `xl`",
+      "shape": "形状：`square` / `rounded`（默认）/ `circle`",
+      "nothing": "无色/透明指示（棋盘格底，不依赖 color）",
+      "mixed": "混色指示（多色拼贴，多值合并场景）",
+      "disabled": "禁用（不可点、不可聚焦）",
+      "selected": "受控选中态（选中外环描边；组内由 oas-swatch-group 统一驱动）",
+      "label": "可访问名（缺省 i18n swatch.color + 色值）",
+      "aria-label": "可访问名覆盖（宿主直写优先级最高）"
+    },
+    "events": {
+      "oas-click": "点击，`detail: { color }`（组内由组拦截后派发组级 oas-change）"
+    },
+    "slots": {},
+    "cssVars": {},
+    "props": {
+      "value": "当前值：色块颜色标识（即 `color` 属性）"
+    }
+  },
+  "oas-swatch-group": {
+    "attrs": {
+      "value": "当前值：单选为子件 color 值；多选逗号分隔多个选中值",
+      "multiple": "多选模式（checkbox 语义）",
+      "disabled": "禁用整组（透传子件）",
+      "aria-label": "组可访问名（缺省走 locale 兜底）"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value: string | string[] }`"
+    },
+    "slots": {
+      "": "色板子件（`<oas-swatch>`）"
+    },
+    "cssVars": {},
+    "props": {
+      "value": "当前值：单选取选中 color 字符串，`multiple` 时取 color 数组"
+    }
+  },
+  "oas-swipe-cell": {
+    "attrs": {
+      "disabled": "全禁手势",
+      "open": "打开态（可读写；任一侧开着即为真；程序性变化派发 oas-open / oas-close）",
+      "open-side": "当前/目标开侧：`start` / `end`；与 `open` 同设即开该侧，读取反映当前开侧",
+      "threshold": "释放吸附阈值（px）；位移超过则吸附到开态，否则回弹关",
+      "side": "actions 挂侧：`end`（默认，inline-end——LTR 右/RTL 左，向 inline-start 滑开）/ `start`（inline-start，向 inline-end 滑开——LTR 右滑）；与书写方向正交，RTL 自动镜像；同项有 `actions-start` 时忽略"
+    },
+    "events": {
+      "oas-open": "落定开态时派发（手势或程序性 open 变化），`detail: { side }` 告知开侧",
+      "oas-close": "落定关态时派发（手势、外点、滚动、Esc 或程序性 open 变化）"
+    },
+    "slots": {
+      "": "内容层（列表项主体）；组件不改动其语义",
+      "actions": "操作按钮组（置于 inline-end 侧；role=group + aria-label）",
+      "actions-start": "另一侧操作按钮组（置于 inline-start 侧，右滑露出；与 actions 同项互斥开合）"
     }
   },
   "oas-switch": {
@@ -3530,6 +4803,17 @@
       "": "多个 `<oas-tag checkable value=\"x\">` 子签"
     }
   },
+  "oas-task-progress-well": {
+    "attrs": {
+      "label": "任务名（空时隐藏）",
+      "progress": "进度 0-100（受控显示——宿主驱动，组件不自涨；越界 clamp、非法回落 0）；到 100 保留完成态，组件不自行移除",
+      "detail": "补充信息（速度/剩余时间等；空时隐藏）"
+    },
+    "events": {
+      "oas-cancel": "点击取消钮时派发；detail { label }；组件只发事件不移除自身，宿主决定后续"
+    },
+    "slots": {}
+  },
   "oas-text": {
     "attrs": {
       "copyable": "显示复制按钮，点击复制文本内容",
@@ -3720,6 +5004,28 @@
       "": "标题内容"
     }
   },
+  "oas-titlebar": {
+    "attrs": {
+      "size": "高度档：compact（默认，34px）/ large（68px，控件保持紧凑）；非法值回落 compact 并告警一次（同值去重）",
+      "drag": "整栏设为窗口拖动区（写 -webkit-app-region: drag + data-tauri-drag-region，Electron/Tauri 宿主生效；纯 Web 下无害空操作）；枚举式自动 no-drag 常用交互子件，未枚举的宿主子件用 [data-no-drag] 显式退出",
+      "title": "居中标题文本（slot=\"title\" 有内容时覆盖）。原生全局属性同名——渲染进标题区后即从宿主吸收移除（防原生 tooltip 重复干扰），渲染由组件内缓存驱动；清空/重设请显式写 title 属性",
+      "subtitle": "副标题 / 文档状态（已编辑时间等）",
+      "editable": "文档井标题可编辑：Enter 或失焦提交（派发 oas-title-change 并更新吸收缓存），Esc 取消回滚；编辑中外部重写 title 即终止编辑",
+      "window-actions": "内建窗口操作钮子集（逗号分隔：minimize,maximize,close）；点击派发 oas-window-action，组件不执行窗口操作",
+      "leading-inset": "安全区：leading 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-leading-inset）",
+      "trailing-inset": "安全区：trailing 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-trailing-inset）"
+    },
+    "events": {
+      "oas-title-change": "文档井提交（Enter/失焦）且值有变化时派发；detail { title }，吸收缓存同步更新（title 属性不常驻宿主）",
+      "oas-window-action": "点击内建窗口操作钮时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API"
+    },
+    "slots": {
+      "leading": "标题前置自定义区（品牌 / macOS 交通灯由宿主传入）",
+      "center": "中央交互内容通道（有内容时覆盖标题/文档井，如文档标签组合）",
+      "title": "标题富内容通道（覆盖 title 属性文本）",
+      "trailing": "末端自定义区（窗口操作钮之外）"
+    }
+  },
   "oas-toast": {
     "attrs": {
       "closable": "是否显示关闭按钮（loading 态强制不可关）",
@@ -3773,18 +5079,6 @@
       "value": "当前值：值标识字符串（按下态为独立 `pressed` 属性）"
     }
   },
-  "oas-toggle-item": {
-    "attrs": {
-      "disabled": "禁用该项（点击不可选，方向键跳过）",
-      "value": "选项值（子元素声明式通道的数据载体字段）",
-      "icon": "图标（oas-icon 图标名）；label 可省（纯图标项）",
-      "aria-label": "该项可访问名（纯图标项必填语义；缺省由图标名派生）"
-    },
-    "events": {},
-    "slots": {
-      "": "按钮文案（默认插槽文本）"
-    }
-  },
   "oas-toggle-group": {
     "attrs": {
       "disabled": "禁用整个切换组（自身显式禁用，或经 config-provider 全局禁用注入继承）",
@@ -3811,50 +5105,33 @@
       "value": "当前值：单选取选中值字符串，`multiple` 时取选中值数组"
     }
   },
-  "oas-tooltip": {
+  "oas-toggle-item": {
     "attrs": {
-      "append-to": "浮层挂载点：`body` 或 CSS 选择器。把浮层移入目标容器的独立 shadow（样式作用域保真），脱离 `overflow: hidden` / transform 等裁剪上下文；挂载期间 `::part(tip)` 无法从宿主穿透，定制走 CSS 变量或类选择器",
-      "arrow": "是否显示箭头（默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留）",
-      "arrow-point-at-center": "箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心）",
-      "arrow-position": "箭头形态：`center`（默认，箭头在面板边缘居中）/ `merge`（仅 `*-start`/`*-end` placement 生效，直角三角与面板角共边融合：直角贴角点、直角边与面板两边共线，尖端正交指向锚点，通用形态）",
-      "auto-adjust-overflow": "视口边缘自动翻转与避让（默认 true；`\"false\"` 关闭，保持声明 placement，可能溢出视口）",
-      "auto-close": "打开后自动关闭时长（ms），`0` 或缺省不自动关闭",
-      "close-delay": "隐藏延迟（ms，默认 0）：mouseleave/focusout 后延迟关闭",
-      "collision-padding": "视口边缘避让边距（px，默认 4）：浮层被视口夹取时与边缘保留的距离",
-      "color": "颜色变体：语义色 `primary`/`success`/`warning`/`danger`、11 预设名（如 `magenta`、`blue`）或任意 CSS 色值；全部走 token（含 dark 变体），箭头底色同步",
-      "content": "提示内容文本（`slot=\"content\"` 富内容存在时优先于属性文本）",
-      "disabled": "禁用：tooltip 不显示（hover / 受控 open 均不生效）",
-      "fresh": "内容新鲜度（默认 true）：关闭期间内容变化也即时同步；`\"false\"` 时关闭期间冻结内容，再次打开才更新",
-      "interactive": "浮层可悬停：鼠标移入浮层不关闭（`pointer-events: auto`），浮层内链接可达",
-      "max-width": "浮层最大宽度（数字补 px 或 CSS 长度，默认走 `--oas-tooltip-max-width` token 240px）",
-      "offset": "主轴距离（px，默认 10）：浮层与锚点沿主轴的间隔",
-      "open": "受控显示（布尔属性，存在即显示）",
-      "open-delay": "显示延迟（ms，默认 0）：mouseenter/focusin 后延迟打开；`skip-delay-duration` 命中时跳过",
-      "placement": "浮层位置（12 向：top/bottom/left/right × start/center/end）",
-      "skidding": "交叉轴偏移（px，默认 0）：top/bottom 系列沿水平轴（正右负左）、left/right 系列沿垂直轴（正下负上）",
-      "skip-delay-duration": "全局延迟组阈值（ms，默认 300）：某 tooltip 关闭后这段时间内打开下一个 tooltip 时跳过 open-delay 立即显示（连续悬停响应连贯）；`\"0\"` 关闭该行为",
-      "touch-delay": "touch 长按触发时长（ms，默认 500）：`trigger` 含 `touch` 时 pointerdown 长按到点打开，提前抬手/移出取消",
-      "trigger": "触发方式（空格分隔多选）：`hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`，默认 `hover focus touch`；`manual` 全受控",
-      "trigger-keys": "指定按键（空格分隔，如 `F1`）：焦点在触发元素上时按该键打开",
-      "virtual": "虚拟触发模式：不绑定宿主触发元素，`open` 完全受外部控制，位置由 `virtual-anchor` 或 `virtual-x`/`virtual-y` 指定（适合图表点位、拖拽中的浮层提示）",
-      "virtual-anchor": "虚拟锚点元素选择器（如 `#chart-point-1`），tooltip 按该元素矩形定位；与 `virtual-x`/`virtual-y` 二选一，坐标优先",
-      "virtual-x": "虚拟锚点视口 X 坐标（px，如鼠标 `clientX`），与 `virtual-y` 同时设置时按坐标定位",
-      "virtual-y": "虚拟锚点视口 Y 坐标（px，如鼠标 `clientY`），与 `virtual-x` 同时设置时按坐标定位",
-      "a11y": "a11y 关联模式：`description`（默认，触发元素挂 `aria-describedby` 指向浮层）/ `label`（挂 `aria-labelledby` 作可访问名）；关闭时还原宿主原值",
-      "arrow-offset": "箭头贴边内缩量（px，默认 4）：仅 `arrow-position=\"side\"` 生效（center/merge 忽略）",
-      "close-on-scroll": "页面滚动即关闭（打开期间监听，首个滚动命中直接关；resize 只重定位不关）",
-      "collision-boundary": "碰撞边界元素选择器：翻转/夹取判定边界从视口换成该元素矩形（property 通道 `collisionBoundaryEl` 优先）",
-      "fallback-axis-side": "主轴两侧都放不下时的跨轴回退：`start`（转交叉轴起点侧 left/top）/ `end`（right/bottom）；默认 `none` 不跨轴（维持对侧翻转 + 视口夹取）",
-      "fallback-placements": "自定义回退序列（空格/逗号分隔的 12 向 placement）：请求位放不下按序列逐项 fit，首个 fit 者胜出，全不 fit 取序列末位夹取兜底；未设置走默认主轴翻转",
-      "follow-cursor": "跟随光标：打开后以光标坐标（0 尺寸点位）定位，光标移动 rAF 节流跟随",
-      "width": "浮层宽度：数字（px）/ `\"trigger\"`（与触发元素同宽）/ 任意 CSS 值；仍受 `--oas-tooltip-max-width`（默认 240px）封顶"
+      "disabled": "禁用该项（点击不可选，方向键跳过）",
+      "value": "选项值（子元素声明式通道的数据载体字段）",
+      "icon": "图标（oas-icon 图标名）；label 可省（纯图标项）",
+      "aria-label": "该项可访问名（纯图标项必填语义；缺省由图标名派生）"
+    },
+    "events": {},
+    "slots": {
+      "": "按钮文案（默认插槽文本）"
+    }
+  },
+  "oas-tool-call": {
+    "attrs": {
+      "name": "工具名",
+      "summary": "一行摘要",
+      "status": "状态：running / success / error",
+      "args": "参数文本或 JSON（按文本展示）",
+      "result": "结果文本或 JSON（按文本展示）",
+      "open": "初始展开",
+      "collapsible": "是否可折叠；false 时强制展开"
     },
     "events": {
-      "oas-open-change": "内部交互导致的开合派发，`detail: { open, source, reason }`；宿主直接写 open 属性静默不回派；公开 setOpen() 未传 source 时兜底 source='attribute'"
+      "oas-toggle": "展开/折叠时派发，detail: { open, name }"
     },
     "slots": {
-      "": "触发元素（hover/focus 触发）；`virtual` 虚拟模式下可省略",
-      "content": "富内容（存在时优先于 `content` 属性文本显示）"
+      "icon": "工具图标"
     }
   },
   "oas-toolbar": {
@@ -3911,6 +5188,52 @@
     "events": {},
     "slots": {
       "": "按钮文案（默认插槽文本）"
+    }
+  },
+  "oas-tooltip": {
+    "attrs": {
+      "append-to": "浮层挂载点：`body` 或 CSS 选择器。把浮层移入目标容器的独立 shadow（样式作用域保真），脱离 `overflow: hidden` / transform 等裁剪上下文；挂载期间 `::part(tip)` 无法从宿主穿透，定制走 CSS 变量或类选择器",
+      "arrow": "是否显示箭头（默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留）",
+      "arrow-point-at-center": "箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心）",
+      "arrow-position": "箭头形态：`center`（默认，箭头在面板边缘居中）/ `merge`（仅 `*-start`/`*-end` placement 生效，直角三角与面板角共边融合：直角贴角点、直角边与面板两边共线，尖端正交指向锚点，通用形态）",
+      "auto-adjust-overflow": "视口边缘自动翻转与避让（默认 true；`\"false\"` 关闭，保持声明 placement，可能溢出视口）",
+      "auto-close": "打开后自动关闭时长（ms），`0` 或缺省不自动关闭",
+      "close-delay": "隐藏延迟（ms，默认 0）：mouseleave/focusout 后延迟关闭",
+      "collision-padding": "视口边缘避让边距（px，默认 4）：浮层被视口夹取时与边缘保留的距离",
+      "color": "颜色变体：语义色 `primary`/`success`/`warning`/`danger`、11 预设名（如 `magenta`、`blue`）或任意 CSS 色值；全部走 token（含 dark 变体），箭头底色同步",
+      "content": "提示内容文本（`slot=\"content\"` 富内容存在时优先于属性文本）",
+      "disabled": "禁用：tooltip 不显示（hover / 受控 open 均不生效）",
+      "fresh": "内容新鲜度（默认 true）：关闭期间内容变化也即时同步；`\"false\"` 时关闭期间冻结内容，再次打开才更新",
+      "interactive": "浮层可悬停：鼠标移入浮层不关闭（`pointer-events: auto`），浮层内链接可达",
+      "max-width": "浮层最大宽度（数字补 px 或 CSS 长度，默认走 `--oas-tooltip-max-width` token 240px）",
+      "offset": "主轴距离（px，默认 10）：浮层与锚点沿主轴的间隔",
+      "open": "受控显示（布尔属性，存在即显示）",
+      "open-delay": "显示延迟（ms，默认 0）：mouseenter/focusin 后延迟打开；`skip-delay-duration` 命中时跳过",
+      "placement": "浮层位置（12 向：top/bottom/left/right × start/center/end）",
+      "skidding": "交叉轴偏移（px，默认 0）：top/bottom 系列沿水平轴（正右负左）、left/right 系列沿垂直轴（正下负上）",
+      "skip-delay-duration": "全局延迟组阈值（ms，默认 300）：某 tooltip 关闭后这段时间内打开下一个 tooltip 时跳过 open-delay 立即显示（连续悬停响应连贯）；`\"0\"` 关闭该行为",
+      "touch-delay": "touch 长按触发时长（ms，默认 500）：`trigger` 含 `touch` 时 pointerdown 长按到点打开，提前抬手/移出取消",
+      "trigger": "触发方式（空格分隔多选）：`hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`，默认 `hover focus touch`；`manual` 全受控",
+      "trigger-keys": "指定按键（空格分隔，如 `F1`）：焦点在触发元素上时按该键打开",
+      "virtual": "虚拟触发模式：不绑定宿主触发元素，`open` 完全受外部控制，位置由 `virtual-anchor` 或 `virtual-x`/`virtual-y` 指定（适合图表点位、拖拽中的浮层提示）",
+      "virtual-anchor": "虚拟锚点元素选择器（如 `#chart-point-1`），tooltip 按该元素矩形定位；与 `virtual-x`/`virtual-y` 二选一，坐标优先",
+      "virtual-x": "虚拟锚点视口 X 坐标（px，如鼠标 `clientX`），与 `virtual-y` 同时设置时按坐标定位",
+      "virtual-y": "虚拟锚点视口 Y 坐标（px，如鼠标 `clientY`），与 `virtual-x` 同时设置时按坐标定位",
+      "a11y": "a11y 关联模式：`description`（默认，触发元素挂 `aria-describedby` 指向浮层）/ `label`（挂 `aria-labelledby` 作可访问名）；关闭时还原宿主原值",
+      "arrow-offset": "箭头贴边内缩量（px，默认 4）：仅 `arrow-position=\"side\"` 生效（center/merge 忽略）",
+      "close-on-scroll": "页面滚动即关闭（打开期间监听，首个滚动命中直接关；resize 只重定位不关）",
+      "collision-boundary": "碰撞边界元素选择器：翻转/夹取判定边界从视口换成该元素矩形（property 通道 `collisionBoundaryEl` 优先）",
+      "fallback-axis-side": "主轴两侧都放不下时的跨轴回退：`start`（转交叉轴起点侧 left/top）/ `end`（right/bottom）；默认 `none` 不跨轴（维持对侧翻转 + 视口夹取）",
+      "fallback-placements": "自定义回退序列（空格/逗号分隔的 12 向 placement）：请求位放不下按序列逐项 fit，首个 fit 者胜出，全不 fit 取序列末位夹取兜底；未设置走默认主轴翻转",
+      "follow-cursor": "跟随光标：打开后以光标坐标（0 尺寸点位）定位，光标移动 rAF 节流跟随",
+      "width": "浮层宽度：数字（px）/ `\"trigger\"`（与触发元素同宽）/ 任意 CSS 值；仍受 `--oas-tooltip-max-width`（默认 240px）封顶"
+    },
+    "events": {
+      "oas-open-change": "内部交互导致的开合派发，`detail: { open, source, reason }`；宿主直接写 open 属性静默不回派；公开 setOpen() 未传 source 时兜底 source='attribute'"
+    },
+    "slots": {
+      "": "触发元素（hover/focus 触发）；`virtual` 虚拟模式下可省略",
+      "content": "富内容（存在时优先于 `content` 属性文本显示）"
     }
   },
   "oas-tour": {
@@ -3977,6 +5300,15 @@
       "actions": "自定义动作区（替换整个内置按钮区；有内容时隐藏内置 prev/skip/next 按钮）"
     }
   },
+  "oas-traffic-lights": {
+    "attrs": {
+      "disabled": "全禁：三点均不可点（原生 disabled + 半透明）"
+    },
+    "events": {
+      "oas-window-action": "点击交通灯时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API"
+    },
+    "slots": {}
+  },
   "oas-transfer": {
     "attrs": {
       "data": "数据（JSON attribute 声明式通道，property 赋值单向反射，[{ key, label, disabled }]）",
@@ -4009,6 +5341,19 @@
     "props": {
       "value": "当前值：目标侧 key 数组"
     }
+  },
+  "oas-transport-well": {
+    "attrs": {
+      "label": "读数标签（空时隐藏）",
+      "frames": "当前帧（受控显示——键盘 seek 只发事件，宿主回写驱动读数推进；非法回落 0、负值 clamp 0、超 duration 压到尾帧）",
+      "frame-rate": "帧率 fps（时间码换算基准；缺省/非法时时间码退化为原始帧数显示）",
+      "duration": "总帧数（可选——决定「/总时长」段、seek 上界与 aria-valuemax）",
+      "detail": "补充信息（分辨率/色彩空间等，与自动帧率文本拼段；空时隐藏）"
+    },
+    "events": {
+      "oas-seek": "键盘 seek（←/→ ±1 帧、↑/↓ ±1 秒、Home/End 首/尾帧，RTL 镜像水平方向）时派发；detail { frames }（提议值已 clamp）；受控显示——组件不自改 frames，宿主回写"
+    },
+    "slots": {}
   },
   "oas-tree": {
     "attrs": {
@@ -4242,1168 +5587,6 @@
     },
     "slots": {
       "": "被水印覆盖的内容"
-    }
-  },
-  "oas-button-group-separator": {
-    "attrs": {},
-    "events": {},
-    "slots": {}
-  },
-  "oas-command-item": {
-    "attrs": {
-      "value": "选中值（子元素声明式通道的数据载体字段）",
-      "group": "分组名（可选），同组项渲染分组标题",
-      "disabled": "禁用该项（Enter/点击不可选，方向键跳过）",
-      "icon": "项图标：SVG path d 字符串或完整 `<svg>` 标记",
-      "shortcut": "快捷键标注（右对齐 kbd），如 `meta+p` / `ctrl+shift+s`",
-      "description": "副标题（description）",
-      "view": "视图插槽名：选中进入 `<slot name=\"view-{view}\">`（面板内嵌视图）",
-      "force-mount": "忽略过滤强制显示（创建型入口）",
-      "separator": "渲染为分隔行（不可导航/不可选中）",
-      "keywords": "搜索关键词（逗号分隔字符串，trim 去空后解析为 string[]），参与 label 之外的匹配"
-    },
-    "events": {},
-    "slots": {
-      "": "命令项 label 内容（默认插槽文本）；直接子元素 `<oas-command-item>` 递归为 `page` 子页"
-    }
-  },
-  "oas-questionnaire": {
-    "attrs": {
-      "animated": "题目切换过渡（opt-in，存在且非 `\"false\"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像",
-      "current": "当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取",
-      "finish-text": "末步主按钮文案（覆盖 locale 缺省「完成」）",
-      "hide-header": "隐藏内置步骤头（宿主自组合）",
-      "hide-nav": "隐藏内置导航区（宿主自组合）",
-      "linear": "线性模式（默认开，`linear=\"false\"` 关闭）：未来步头部禁点；关闭后任意步可点（仍走 oas-before-change 拦截）",
-      "next-text": "「下一步」按钮文案（覆盖 locale 缺省）",
-      "prev-text": "「上一步」按钮文案（覆盖 locale 缺省）",
-      "progress": "进度区显隐（`progress=\"false\"` 隐藏）",
-      "progress-variant": "进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both`",
-      "shortcuts": "键盘快捷导航（opt-in，存在且非 `\"false\"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标）",
-      "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + 告警一次（同值去重））",
-      "skip-text": "「跳过本步」按钮文案（覆盖 locale 缺省）",
-      "steps": "步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]`",
-      "validation": "单步校验门控（默认开，`validation=\"false\"` 纯导航；`submit()` 不受此开关影响、始终重校）"
-    },
-    "events": {
-      "oas-before-change": "跳步前（按钮 / 头部点击 / next / prev / goto / 跳过）可取消；`detail: { index, key?, from }`，`preventDefault()` 否决本次跳转",
-      "oas-change": "切步成功后；`detail: { index, key? }`",
-      "oas-step-validate": "单步校验结束时；`detail: { index, key?, valid, errors }`",
-      "oas-skip": "跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复）",
-      "oas-submit": "末步完成（全部参与步校验通过）；`detail: { values }`（跨步汇总值，仅参与步——hidden / 已跳过步不计入）",
-      "oas-values-change": "内层 oas-form 值变化事件自然冒泡转发（`detail: { name, value, values }`，values 为该步快照）；跨步汇总视图用 getValues()"
-    },
-    "slots": {
-      "step-<key>": "步骤内容面板（有 key 的步骤）；面板内建议放一个 `<oas-form>` 承载该步字段与校验规则",
-      "step-<index>": "步骤内容面板（无 key 的步骤按数组下标关联）"
-    },
-    "cssVars": {
-      "--oas-questionnaire-anim-duration": "切步动画时长（animated 开启时生效）",
-      "--oas-questionnaire-nav-gap": "导航区按钮间距",
-      "--oas-questionnaire-progress-bg": "进度条轨道底色",
-      "--oas-questionnaire-progress-bar-bg": "进度条填充色"
-    }
-  },
-  "oas-stepper": {
-    "attrs": {
-      "clickable": "步骤可点击跳步（默认 true；`clickable=\"false\"` 关闭：点击/键盘静默，键盘仍可移动焦点）",
-      "current": "当前步骤索引（0 起，双向：点击跳步写回、外部设置即时同步 aria-selected 与面板显隐）；非法值回落 0，越界夹取",
-      "direction": "方向：`horizontal`（默认，横向排列）/ `vertical`（纵向排列，指示器左/标题右）",
-      "linear": "线性模式：仅允许跳转 `index <= current` 的步骤（未来步 `aria-disabled` + 视觉弱化，点击/键盘静默）",
-      "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警，同值去重）",
-      "steps": "步骤数据 JSON `[{ title, description?, icon?, disabled?, status? }]`（语义对齐 oas-steps 的 StepItem 减去面板无关项）；非法/空回落 `[]`"
-    },
-    "events": {
-      "oas-change": "可点击跳步时触发（点击步骤 / 键盘 Enter/Space）；`detail: { index }`（0 起，bubbles + composed，写回 current）"
-    },
-    "slots": {
-      "": "内容面板投影区（`<oas-stepper-panel>` 直接子元素）；面板按 value 关联步骤序号，仅 current 匹配者可见"
-    }
-  },
-  "oas-stepper-panel": {
-    "attrs": {
-      "value": "关联步骤序号字符串（如 `value=\"0\"`）；仅 `current` 匹配的面板可见（hidden 由 oas-stepper 驱动）"
-    },
-    "events": {},
-    "slots": {
-      "": "面板内容（默认插槽）"
-    }
-  },
-  "oas-loading-bar": {
-    "attrs": {
-      "local": "局部模式标记（布尔）：命令式 API 传 `to` 容器时自动打上，组件内据此切换为容器内绝对定位；不接受选择器/元素——挂载目标由命令式 `to` 选项决定",
-      "position": "显示位置：top（默认）/bottom",
-      "reverse": "方向反转（RTL 场景进度从右往左）",
-      "speed": "推进速度基准（ms，默认 200），start(speed) 可覆盖",
-      "status": "当前状态（活动态查询）：组件仅在错误终态写入 `error`，其余时刻移除该属性（不写 `loading`/`finish`）"
-    },
-    "events": {
-      "oas-error": "error() 错误收尾时派发",
-      "oas-finish": "finish() 完成收尾时派发",
-      "oas-start": "批次首个会话的 start() 时派发（并发批次的后续 start() 不再派发）"
-    },
-    "slots": {}
-  },
-  "oas-skeleton-item": {
-    "attrs": {
-      "type": "形态：`text`（默认）/ `title` / `avatar` / `button` / `input` / `image` / `rect`；非法值回落 text",
-      "width": "宽度（CSS 值），覆盖各 type 默认宽",
-      "height": "高度（CSS 值），覆盖各 type 默认高",
-      "effect": "动效：`sheen` / `pulse` / `none`（缺省），语义同 oas-skeleton"
-    },
-    "events": {},
-    "slots": {}
-  },
-  "oas-checkbox-group": {
-    "attrs": {
-      "value": "组值（JSON 字符串数组，选中项的 value 集合）",
-      "disabled": "禁用整组（下发子项，不覆盖子项自身显式 disabled）",
-      "options": "数据通道：JSON `[{ label, value, disabled?, description?, checkAll? }]`，显式设置时数据驱动优先于子元素声明式",
-      "direction": "布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行）",
-      "max": "选中数量上限：达上限后未选项置灰拦截并派发 oas-exceed-limit，已选项仍可取消",
-      "min": "选中数量下限：达下限后已选项拦截取消，未选项不受影响",
-      "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
-      "status": "校验态（下发子项）：`error` / `warning` / `success`",
-      "readonly": "只读（下发子项）：可聚焦不切换"
-    },
-    "events": {
-      "oas-change": "组值变化，`detail: { value: string[] }`（含全选联动与数量限制内的变化）",
-      "oas-exceed-limit": "达 max 上限后的越界勾选尝试，`detail: { value, max }`",
-      "oas-limit-blocked": "组级数量限制拦截信号（min/max 统一出口），`detail: { value, limit: 'min' | 'max', min?, max? }`；max 场景同时派发 oas-exceed-limit 兼容旧监听",
-      "oas-focus": "组内任一子项获得焦点（子项间转移不误报）",
-      "oas-blur": "焦点离开组时派发"
-    },
-    "slots": {
-      "": "声明式子项通道（`<oas-checkbox>` 子元素；options 显式时让位）",
-      "label": "组标题（渲染进 legend）"
-    },
-    "props": {
-      "value": "当前值：勾选值字符串数组（等价读 `value` 属性 JSON 解析）"
-    }
-  },
-  "oas-radio-group": {
-    "attrs": {
-      "value": "组值（选中项的 value）",
-      "disabled": "禁用整组（下发子项，不覆盖子项自身显式 disabled）",
-      "options": "数据通道：JSON `[{ label, value, disabled?, description? }]`，显式设置时数据驱动优先于子元素声明式",
-      "direction": "布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行）",
-      "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
-      "status": "校验态（下发子项）：`error` / `warning` / `success`；单项显式 status 优先",
-      "readonly": "只读（下发子项）：可聚焦、方向键不切换",
-      "required": "组级必选校验（form-associated valueMissing，reset 恢复基线）"
-    },
-    "events": {
-      "oas-change": "组值变化，`detail: { value }`（点击与方向键选中都触发）",
-      "oas-focus": "组内任一子项获得焦点（子项间转移不误报）",
-      "oas-blur": "焦点离开组时派发"
-    },
-    "slots": {
-      "": "声明式子项通道（`<oas-radio>` 子元素；options 显式时让位）",
-      "label": "组标题（渲染进 legend）"
-    }
-  },
-  "oas-swatch": {
-    "attrs": {
-      "color": "填充色（CSS 色值或 11 预设名，颜色统一协议）",
-      "size": "边长档位：`xs` / `small` / `medium`（默认）/ `large` / `xl`",
-      "shape": "形状：`square` / `rounded`（默认）/ `circle`",
-      "nothing": "无色/透明指示（棋盘格底，不依赖 color）",
-      "mixed": "混色指示（多色拼贴，多值合并场景）",
-      "disabled": "禁用（不可点、不可聚焦）",
-      "selected": "受控选中态（选中外环描边；组内由 oas-swatch-group 统一驱动）",
-      "label": "可访问名（缺省 i18n swatch.color + 色值）",
-      "aria-label": "可访问名覆盖（宿主直写优先级最高）"
-    },
-    "events": {
-      "oas-click": "点击，`detail: { color }`（组内由组拦截后派发组级 oas-change）"
-    },
-    "slots": {},
-    "cssVars": {},
-    "props": {
-      "value": "当前值：色块颜色标识（即 `color` 属性）"
-    }
-  },
-  "oas-swatch-group": {
-    "attrs": {
-      "value": "当前值：单选为子件 color 值；多选逗号分隔多个选中值",
-      "multiple": "多选模式（checkbox 语义）",
-      "disabled": "禁用整组（透传子件）",
-      "aria-label": "组可访问名（缺省走 locale 兜底）"
-    },
-    "events": {
-      "oas-change": "切换，`detail: { value: string | string[] }`"
-    },
-    "slots": {
-      "": "色板子件（`<oas-swatch>`）"
-    },
-    "cssVars": {},
-    "props": {
-      "value": "当前值：单选取选中 color 字符串，`multiple` 时取 color 数组"
-    }
-  },
-  "oas-swipe-cell": {
-    "attrs": {
-      "disabled": "全禁手势",
-      "open": "打开态（可读写；任一侧开着即为真；程序性变化派发 oas-open / oas-close）",
-      "open-side": "当前/目标开侧：`start` / `end`；与 `open` 同设即开该侧，读取反映当前开侧",
-      "threshold": "释放吸附阈值（px）；位移超过则吸附到开态，否则回弹关",
-      "side": "actions 挂侧：`end`（默认，inline-end——LTR 右/RTL 左，向 inline-start 滑开）/ `start`（inline-start，向 inline-end 滑开——LTR 右滑）；与书写方向正交，RTL 自动镜像；同项有 `actions-start` 时忽略"
-    },
-    "events": {
-      "oas-open": "落定开态时派发（手势或程序性 open 变化），`detail: { side }` 告知开侧",
-      "oas-close": "落定关态时派发（手势、外点、滚动、Esc 或程序性 open 变化）"
-    },
-    "slots": {
-      "": "内容层（列表项主体）；组件不改动其语义",
-      "actions": "操作按钮组（置于 inline-end 侧；role=group + aria-label）",
-      "actions-start": "另一侧操作按钮组（置于 inline-start 侧，右滑露出；与 actions 同项互斥开合）"
-    }
-  },
-  "oas-highlight": {
-    "attrs": {
-      "text": "原文文本",
-      "highlight": "关键词：空格多词或 JSON 数组；解析失败回退空白分隔",
-      "case-sensitive": "大小写敏感（缺省不敏感）",
-      "whole-word": "整词匹配（缺省否；Unicode 字母/数字词边界）",
-      "accent-sensitive": "重音敏感（缺省 NFD 折叠重音）"
-    },
-    "events": {
-      "oas-count": "内容重算后派发，`detail: { count, matches }`"
-    }
-  },
-  "oas-form-list": {
-    "attrs": {
-      "name": "字段组根路径（裸字段名自动前缀为 `name.N.字段名`）",
-      "min": "最少行数（自动补足）",
-      "max": "最多行数（到顶禁用添加）",
-      "disabled": "冻结增删"
-    },
-    "events": {
-      "oas-add": "添加行时派发，`detail: { index }`",
-      "oas-remove": "删除行时派发，`detail: { index }`（剩余行重编号，值随行保留）"
-    },
-    "slots": {
-      "": "行模板（首个无 slot 属性的 template 元素；字段 name 用 `{index}` 占位或自动索引化）"
-    }
-  },
-  "oas-scheduler": {
-    "attrs": {
-      "events": "日程事件（JSON）：[{ id?, date: YYYY-MM-DD, endDate?, title, color?, start?, end?, repeat? { freq, interval?, until?, count?, byDay? }, resource? }]——日格渲染事件芯片，>2 合并 +N 条；endDate 支持跨日全天，repeat 支持 count/byDay",
-      "page-show-date": "面板月锚点（受控）：yyyy-MM-dd，变化时重锚定显示月份",
-      "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导",
-      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
-      "resources": "资源列表（JSON）：[{ id, title, color?, group? }]——资源视图按资源分组；事件 resource 缺省或指向未知 id 时归「未分配」行；group 非空时自动插入分组标题行",
-      "show-now": "当前时间线（默认开；false 关闭）：week/day 视图与资源单日视图在今天的时间区渲染 now 线",
-      "conflict-check": "同日定时事件冲突校验（布尔，默认关）：对单日定时事件做同日同时段重叠检测——重叠时刻块加 .conflict 虚线 danger 描边与 scheduler.conflict 可读提示，并派发 oas-event-conflict；判定为半开区间（首尾相接不算，与车道判据同构）、全日历口径（不限当前视图）；repeat 不展开 occurrence、跨日定时/全天事件不参与；冲突标记只是视觉提示，不阻断拖拽/缩放写入",
-      "view": "视图：month（默认）/ week / day / agenda / resource / resource-week；周/日视图为时刻表 + 事件块定位，无 start 的事件进全天行；agenda 为 28 天时序清单；resource 为单日资源横向时间轴、resource-week 为周 × 资源矩阵；`'resource-timeline'` 资源时间轴（行 = 资源、横向连续日轴跨多天、事件 = 跨列连续横条；轴 = 当前周或 range 托管跨度）",
-      "start-hour": "时间轴起始小时（0-23，默认 8）",
-      "end-hour": "时间轴结束小时（>start-hour 且 <=24，默认 20）",
-      "timezone": "时区（IANA，如 Asia/Shanghai；空串=本地）：影响标题/列头日期格式化与「今天」标记（经 Intl timeZone）；非法时区回落本地",
-      "windowed": "服务端资源行窗口模式（布尔，默认关）：resource / resource-week 的 resources 只承载 [window-start, window-start + resources.length) 切片；可视窗口未覆盖时派发 oas-window-request（绝对行号、半开区间），回填后更新 window-start。windowed 下不自动追加「未分配」行；需要时宿主可提供保留 id `__unassigned__`",
-      "total": "windowed 模式下的资源行总数（正数才生效）；用于 aria-rowcount 与绝对行号",
-      "window-start": "windowed 模式下切片首行的绝对行号（相对全量）",
-      "secondary-timezone": "第二时区（IANA）：在 day/week/资源单日时间刻度追加第二时区标签；非法值忽略并 devWarn",
-      "range-start": "宿主托管的时间范围起点（ISO 日期，含端）；与 range-end 一起启用 oas-range-request 托管",
-      "range-end": "宿主托管的时间范围终点（ISO 日期，含端）；当前视图可见范围未被覆盖时派发 oas-range-request"
-    },
-    "events": {
-      "oas-create": "在时间格空白处拖出 >=15 分钟区间时派发，detail: { date, start, end, resource? }——组件不自动建事件，宿主接后自行 addEvent；位移不足视作 oas-day-click",
-      "oas-day-click": "点击空白日格时派发，detail: { date, resource? }（资源视图带资源行 id）——宿主接新增表单",
-      "oas-event-click": "点击事件芯片时派发，detail: { id, event }（不触发日格点击）",
-      "oas-event-conflict": "conflict-check 开启时冲突快照派发（update() 内同步派发、首帧即发，宿主须先挂监听再写数据；监听后挂时移除再补回 conflict-check 即重置签名通道重发。幂等：同一数据快照不重复派发，签名变化才逐 id 重发，冲突消解向相关 id 发空数组），detail: { id, conflicts }（conflicts 为与该事件同日同时段重叠的事件 id 列表）",
-      "oas-events-change": "events 数据变化（set/addEvent/updateEvent/removeEvent/undo）时派发，detail: { events }",
-      "oas-view-change": "视图切换（month/week/day/agenda）时派发，detail: { view }；属性首次吸收不派发",
-      "oas-remind": "事件提醒到点时派发，detail: { id, event }（start - remind 分钟，组件内置定时器）",
-      "oas-window-request": "windowed 模式下可视资源行窗口未被已装载切片覆盖时派发，detail: { start, end, reason }（绝对行号、半开区间；同一窗口不重复派发）",
-      "oas-range-request": "宿主托管日期窗口：当前视图可见范围未被 range-start/range-end 覆盖时派发，detail: { startMs, endMs, reason }；无 range-* 时不派发"
-    },
-    "props": {
-      "events": "日程事件（`SchedulerEvent[]`）：`el.events` 读（含自动 id 的拷贝）；`el.events = [...]` 写（同步 events 属性 + 重渲染 + 派发 oas-events-change）",
-      "resources": "资源列表（`SchedulerResource[]`）：`el.resources` 读（拷贝）；`el.resources = [...]` 写（同步 resources 属性 + 重渲染）",
-      "canUndo": "是否有可撤销的单步事件变更（只读；配合 `undo()`）"
-    },
-    "methods": {
-      "undo": "撤销最近一次 updateEvent（含拖拽移动、时间块双缘缩放、跨日条终点缩放、时刻块键盘改期/缩放）；无快照返回 false，成功回写并派发 oas-events-change"
-    }
-  },
-  "oas-gantt": {
-    "attrs": {
-      "tasks": "甘特任务（JSON）：[{ id?, name, start, end?, type?, progress?, parent?, children?, dependencies?, color?, disabled?, expanded?, baseline?（start/end?/progress?）, baselines?（[{ id, start, end?, progress? }] 多基线，与单 baseline 并存时优先）, resources?, deadline?, deadlines?, constraint?（asap/snet/mso/fnlt）, constraintDate?, effort?（工时估算，天，可小数，纯展示不参与排程） }]——扁平 parent 指针为主，嵌套 children 自动拍平；type:\"milestone\" 显式优先（带 end 也按里程碑渲染，end 忽略），有子任务时恒为摘要；无 end 亦推导为里程碑；start 晚于 end 自动交换",
-      "scale": "时间刻度：hour / day（默认）/ week / month / quarter / year；非法值回落 day",
-      "expanded": "已展开集合（JSON 数组，受控）：属性缺席缺省全展开；显式 [] 全收起；点折叠钮写回",
-      "readonly": "整图只读（禁改期/禁进度，不渲染拖拽手柄）",
-      "dates-readonly": "禁改期/拉伸（进度仍可拖）",
-      "progress-readonly": "禁改进度（改期仍可拖）",
-      "show-today": "今日线（默认开；false 关闭）",
-      "weekends": "周末列高亮（默认开；day/hour 档生效；false 关闭）",
-      "holidays": "假日列表（JSON [\"YYYY-MM-DD\",…]）：对应列高亮（优先于周末底色）；假日恒为非工作日（与 workdays 是否开启无关），auto-schedule 前推时跳过",
-      "workdays": "工作日周几（JSON [0-6]，0=周日…6=周六；opt-in，缺省/空=不限制）：auto-schedule 前推结果吸附到下一个工作日（叠加 holidays）",
-      "first-day-of-week": "周起始日（0-6）；缺省按 locale 推导（week 档对齐用）",
-      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
-      "height": "组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-gantt-height。高度挂在内部画布（.gantt）上——宿主自身 height 内联只框定外盒，内部画布高度仍由 height 属性 / --oas-gantt-height 决定（不会被宿主内联 height 拉伸）；整体调高请用 height 属性或 --oas-gantt-height。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-gantt-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-gantt-height 完全不受影响",
-      "row-height": "行高 px（默认 36，下限 20）",
-      "label-position": "任务条标签位置：inside 条内 / right 条旁 / left 条左；缺省 none（行名列已承载名称，条旁不再重复渲染）；非法值回落 none",
-      "snap": "拖拽吸附当前刻度（默认开；false 按像素比例平移并保留时间精度）",
-      "show-baseline": "基线对比（布尔，默认关）：任务带 baseline 时在实际条下渲染基线条（baseline.progress 渲染进度覆盖层），title 标差值（比基线晚/早 N 天或一致）",
-      "creatable": "行内新建（布尔，默认关）：开启后行尾出「＋」（摘要行加子级、叶子行加同级后继）、双击空白区按落点日期建任务，新建后进入行内重命名；只读/任务级禁用行不出按钮",
-      "auto-schedule": "依赖联动排程（布尔，默认关）：日期变更（拖拽/键盘/updateTask/updateTasks）或依赖增改后，按 FS/SS/FF/SF 沿依赖图对后继做最小前推（只推迟不提前、保持工期），跳过 disabled 与摘要行，成环安全；派发 oas-reschedule",
-      "show-critical-path": "关键路径（布尔，默认关）：在依赖图与工期上算总时差，时差为 0 的任务加 .critical 高亮（颜色走 --oas-gantt-critical-color）；只读展示不改数据",
-      "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；本地跨全量能力（auto-schedule / 关键路径）在部分数据上会算错，已跳过并 devWarn。非 windowed 行为不变",
-      "total": "windowed 模式下的全量行（任务）数；为 0 或非法时 windowed 不生效（回落本地模式）",
-      "window-start": "windowed 模式下切片首行的绝对行号（相对全量）",
-      "range-start": "宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后轴范围不再由数据推导，配合 range-end 支撑窗口化（切片不含完整日期跨度）",
-      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用",
-      "stripe": "行斑马纹（布尔，默认关）：按**绝对行号**奇偶给行加底色（虚拟化/窗口化滚动稳定，不随 DOM 顺序跳变）；颜色走 `--oas-gantt-row-stripe-bg`（缺省 `--oas-color-bg-hover`）；选中/周末假日等背景覆盖条纹",
-      "show-float": "显示总浮时/自由浮时（布尔，默认关）：仅在依赖图完整时计算，条上显示「总浮时/自由浮时」标签并写入 data-total-float/data-free-float（单位为天）；摘要不参与，windowed 模式跳过并 devWarn",
-      "group-by-project": "按任务 project 自动生成项目根摘要（行 id 为 `__oas_project__:<project>`），原任务数组不变；windowed 模式要求宿主自行展平，不做自动分组",
-      "show-variance": "任务带 baseline 时在行名后显示 Δ±Nd 偏差徽标，并写入 data-start-delta/data-end-delta/data-duration-delta/data-progress-delta；正值标红、负值标绿",
-      "history": "内建撤销/重做（布尔，默认关）：记录任务提交快照（最多 100 步），配合 undo()/redo()/canUndo/canRedo/clearHistory()；外部整体重写 tasks（内容有变）会清空历史，语义相同的回写（含键序差异）不清空",
-      "resources": "逐资源日历（JSON [{ id, name?, workdays?, holidays?, shifts? }]）：与 GanttTask.resources 配合；多资源 workdays 取交集、holidays 取并集；shifts: [] 表示无可用班次；hour 档 auto-schedule 吸附到首个带班次资源的窗口，日级只消费 workdays/holidays",
-      "group-by-resource": "按任务首个 resources 生成资源摘要泳道（资源名取 resources.name，缺省用 id）；多资源任务只出现在首个资源下，未分配任务保持顶层；与 group-by-project 同时开启时资源泳道优先",
-      "show-effort": "工时列（布尔，默认关）：行标签区变两列（名称 | 工时），工时右对齐、列头 i18n gantt.effort；单元格可读名 i18n gantt.effortValue（「工时 N 天」带单位文案）。GanttTask.effort 缺失/负数/非有限显示空（清洗层与 costRate 同口径丢弃），超大值转科学计数。列宽 token --oas-gantt-effort-width（缺省 56px）；关闭时不出节点，单列形态不变",
-      "task-columns": "任务网格面板（JSON 数组，默认关）：行标签区声明式多列 [{ key, title?, width?, align? }]——key 指向 GanttTask 任意字段（含自定义字段透传，任务名经 {\"key\":\"name\"} 进网格）；title 缺省用 key；width 为 px（缺省按剩余宽度均分 flex:1）；align 取 left（默认）/center/right（right 以 inline-end 落地，RTL 自动镜像）。取值纯展示：undefined/null 空串、数字转字符串、对象 JSON.stringify。与 template[slot=\"row\"] 同开时模板优先（task-columns 忽略并 devWarn 一次）；与 show-effort 同开时网格优先（effort 列不单独渲染，保留须声明 {\"key\":\"effort\"}）。非法 JSON / 零有效列 devWarn 一次并回落单列形态；[] 显式清空静默回落。缺省（本属性与 checkable 都没有）单列形态逐节点不变",
-      "checkable": "复选列（布尔，默认关；配合 task-columns）：网格最左 32px 复选列（token --oas-gantt-check-width，part check-cell），列头三态全选/半选/全不选（role=checkbox + aria-checked，可读名 i18n gantt.selectAll）；行复选与 selection property 双向同步——勾选写选中集合并派发 oas-selection-change（与点行/框选同一契约，不新增事件名）。windowed 模式下全选只作用于当前已装载切片（列头 title 说明 + devWarn 一次）。单独开启（无 task-columns）不生效",
-      "show-status-line": "状态线 + 计划进度刻度（布尔，默认关）：① 时间轴上按 status-date 渲染竖直进度线（token --oas-gantt-status-line-color，缺省 warning 色族；关闭态不解析 status-date——默认路径零新增开销）；② 每个任务条内按计划进度画窄竖刻度并写 data-plan-ratio（0-1 两位精度）——计划进度为**含端日粒度**口径：status 日与 start 的日历日差含当日、clamp 到工期（与 computeEvm 的 planned 同构）；里程碑按二值（未到 0/已到 1），summary 不画；只画刻度，不染色不告警",
-      "status-date": "状态基准日（'YYYY-MM-DD'，hour 档可带时刻）：show-status-line 的取数基准；非法/缺省回落当天（SSR 下为服务器当天，需快照确定性的宿主请显式传值）",
-      "baseline-id": "多基线选择（配合 GanttTask.baselines）：指定渲染/差异取哪条基线；缺省取 baselines[0]；未命中回落第一条并 devWarn 一次。单 baseline 字段等价 [{ id: 'default', ... }]（清洗层归一）",
-      "hover": "行 hover 底色开关（默认开）：鼠标移入行名或任务条时整行点亮（行名 + 时间轴同底色），颜色走 `--oas-gantt-row-hover-bg`（缺省 `--oas-color-bg-hover`，与斑马纹独立）；`\"false\"` 关闭",
-      "pool": "资源池模式（布尔，默认关）：开启后任务 resources 引用共享资源池（@oas-ui/ui/data/resource/pool 的 getSharedResourcePool()）——tooltip 悬停条追加池内资源名称与费率（costRate，池外 id 忽略）；并对同资源任务做跨任务超配检测：时间区间交叠（半开区间相切不算；里程碑按点处理、summary 不参与）的任务条与左侧行名加 .conflict 标记，冲突对经 oas-resource-conflict 事件派发。池登记变化不自动通知组件——宿主改池后须触发重算（如重写 tasks）；windowed 切片上跳过检测并 devWarn；负荷可视化见 show-resource-load（负荷% >100% 与本检测同语义）；超配自动排程避让由 levelConflicts() 方法承载（手动触发，见组件方法）",
-      "show-resource-load": "资源负荷面板（布尔，默认关）：图表下方渲染按时间轴对齐的负荷桶条（每资源一行，行高 token --oas-gantt-load-row-height；行名列宽与左侧列表同 token --oas-gantt-list-width）。负荷口径：桶内覆盖日数逐任务累计（任务∩桶求交，日精度含端；里程碑按点计 0 天、summary 不参与），负荷% = 覆盖日数/桶天数，>100%（同资源任务交叠超配）走 danger 通道 --oas-gantt-load-over-bg，≤100% 走 primary 族 --oas-gantt-load-bg（暗色变体随 token）。粒度随 scale 映射（hour/day→日桶、week→周桶（锚定周起始）、month/quarter/year→月桶），与图表时间轴同步缩放/平移（复用 update 时轴参数不重算；滚动平移经 syncHeaderOffset 同款 rect 差公式，RTL 同式）。负荷基于全量数据签名缓存（数据/轴/池变化重算，虚拟行窗口不影响）；空数据/无资源引用走 i18n 空态。ARIA：面板 role=\"img\" + aria-label 摘要（资源数 · 峰值最高的资源与百分比），不进 Tab 序。pool 开启时行名取池名称、关时取 id。windowed 切片上跳过渲染并 devWarn（全量统计口径）。纯函数实现见 shared/resource-load.ts（data/resource/load helper 入口共用）"
-    },
-    "events": {
-      "oas-reschedule": "依赖联动排程改动了后继任务时派发（auto-schedule 开启），detail: { ids }（被联动改动的任务 id）",
-      "oas-task-add": "命令式新增任务后派发（addTask / duplicateTask / creatable 行内新建），detail: { id, task }（id 为新任务 id）",
-      "oas-task-click": "点击任务条/里程碑时派发，detail: { id, task }",
-      "oas-task-dblclick": "双击任务条时派发，detail: { id, task }——宿主接编辑表单",
-      "oas-task-change": "拖拽/拉伸/键盘改期收口（pointerup）时派发，detail: { id, task, oldStart, oldEnd, start, end }；零位移不派发",
-      "oas-progress-change": "拖进度手柄收口时派发，detail: { id, task, progress }",
-      "oas-tasks-change": "任务数据变化（程序写 tasks / updateTask / 拖拽写回）时派发，detail: { tasks }",
-      "oas-expand-change": "行树折叠/展开时派发，detail: { id, expanded }",
-      "oas-scale-change": "scale 属性变化时派发，detail: { scale }；首次吸收不派发",
-      "oas-task-render": "每条任务渲染后派发，detail: { task, element }——宿主可改写条内 DOM",
-      "oas-reparent": "行拖拽改父子 / 重排收口时派发，detail: { id, parent, index }（parent 为 null 表示根级，index 为同级序号）",
-      "oas-dependencies-change": "连线拖拽建依赖 / 选中删除收口时派发，detail: { taskId, dependencies }（taskId 为依赖变化的后继任务）",
-      "oas-selection-change": "多选集合变化（点击 / 键盘 / property 写入）时派发，detail: { ids }（选中的任务 id 数组）",
-      "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发",
-      "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发",
-      "oas-history-change": "history 开启后，每次可撤销提交/撤销/重做/清空时派发，detail: { canUndo, canRedo, action }（action: change/undo/redo/clear）",
-      "oas-resource-conflict": "pool 开启时资源超配检测结果派发（幂等：同一快照不重复派发，数据/池变化重算后签名变化才发，消解发空数组），detail: { conflicts }（[{ taskA, taskB, resourceId, overlapStart, overlapEnd }]，taskA 在 tasks 输入序在前，交叠区间为日精度含端日期）",
-      "oas-level": "超配避让应用前派发（levelConflicts 有实际移动时；零移动零事件），detail: { moved, unresolved, truncated }（moved 为被移动任务终态 [{ id, start, end }]，已随本次调用应用；unresolved 为终检残留冲突对；truncated 为达 maxIter 截断）。事件序：oas-level → oas-tasks-change；reassign 模式下 moved 条目带 resources（改派后的完整资源数组）"
-    },
-    "slots": {
-      "template[slot=\"empty\"]": "空数据态内容（缺省「暂无任务」）",
-      "template[slot=\"task\"]": "任务条标签模板（克隆进条身，[data-task-name] 节点自动填任务名）",
-      "template[slot=\"tooltip\"]": "悬停浮层模板（[data-task-name] / [data-task-range] / [data-task-progress] 绑定点）",
-      "template[slot=\"row\"]": "行名列自定义模板（每行克隆进 .name；[data-task-name] 自动填任务名；可内含控件以渲染/编辑负责人等自定义字段，行拖拽与选中不会劫持其中控件）"
-    },
-    "props": {
-      "tasks": "甘特任务（`GanttTask[]`）：`el.tasks` 读（拷贝，嵌套输入已拍平为 parent 指针）；`el.tasks = [...]` 写（同步 tasks 属性 + 重渲染 + 派发 oas-tasks-change）",
-      "selection": "选中任务 id 集合（`string[]`）：`el.selection` 读（拷贝）；`el.selection = [...]` 写（重渲染选中态 + 派发 oas-selection-change）；`removeTasks(ids)` 批量删除（连同后代）",
-      "resourcePool": "资源池实例（实例隔离通道，JS-only property）：`el.resourcePool = createResourcePool()` 后池消费面（tooltip 资源名 / 超配冲突 / 负荷面板）改取该实例，写后立即重算（无需手动 update）；写 `null` / 非实例值恢复共享单例 `getSharedResourcePool()`（默认通道，向后兼容）；读为当前生效池"
-    },
-    "cssVars": {
-      "--oas-gantt-baseline-color": "基线条颜色（默认半透明次要文字色）",
-      "--oas-gantt-critical-color": "关键路径高亮色（默认 --oas-color-danger）",
-      "--oas-gantt-conflict-color": "违约（负总时差）高亮色（默认 --oas-color-danger）",
-      "--oas-gantt-deadline-color": "截止日标记颜色（默认 --oas-color-danger）",
-      "--oas-gantt-effort-width": "工时列宽（show-effort，默认 56px；表头与行内单元格共用）",
-      "--oas-gantt-check-width": "复选列宽（task-columns + checkable 任务网格，默认 32px；表头复选格与行复选格共用）",
-      "--oas-gantt-status-line-color": "状态线/计划进度刻度颜色（show-status-line，默认 --oas-color-warning）",
-      "--oas-gantt-load-row-height": "负荷面板行高（show-resource-load，默认 24px）",
-      "--oas-gantt-load-max-height": "负荷面板行区最大高度（show-resource-load，超出纵向滚动；默认 240px，数据不截断）",
-      "--oas-gantt-load-bg": "负荷桶条底色（≤100%，缺省 primary 45% 混底色；暗色变体随 token）",
-      "--oas-gantt-load-over-bg": "负荷桶条超配色（>100%，缺省 danger；暗色变体随 token）",
-      "--oas-gantt-lane-load-width": "泳道内嵌负荷缩略条宽度（group-by-resource 泳道摘要行行尾概览条）｜缺省 72px"
-    },
-    "methods": {
-      "levelConflicts": "超配自动排程避让（pool opt-in 手动触发）：对池内资源冲突整体后移受害者至无冲突或达 maxIter（缺省 500，截断如实返回不静默）。受害者排序：disabled / 资源日历 days 空集 / constraint=mso 永不让位，有 deadline 者后让位（都有按最晚 deadline 后让位），startMs 晚者先让位，输入序靠后者先让位；day 步进保墙钟、保工期，收敛后工作日吸附并复检续迭代。返回 { moved, unresolved, truncated, skipped }，moved 已应用（零移动 = 零写入零事件零 history，幂等）；守卫（pool 关 / windowed / readonly / dates-readonly）devWarn + 空结果模式 `options.mode`（缺省 `'shift'`）：`'reassign'` 改派受害者——日期不动，冲突资源替换给整段无冲突的池内资源（目标判据与检测同源：改派后目标不得产生新冲突；候选日历不可排也跳过——改派后的探测任务日历 days 空集 = 永不可排，shifts:[] / workdays 交集空的资源时间空闲也不会被选中；多资源任务只替换冲突 id；找不到目标该对如实回报 unresolved，不退化顺延；每次成功改派计一步）；非法值按 shift 处理并 devWarn 一次。reassign 下 moved 条目带改派后的完整 resources 数组，经 updateTasks 一次提交（一条 undo 同时还原日期与分配）。"
-    }
-  },
-  "oas-picker": {
-    "attrs": {
-      "columns": "独立多列数据（JSON 数组 [{ key?, label?, items: [{ label, value?, disabled? }] }]；与 options 互斥且优先）",
-      "disabled": "整件禁用（滚轮不响应、值不变）",
-      "item-height": "行高 px（正整数，非法回落默认）",
-      "options": "级联树数据（JSON [{ label, value?, children: [...] }]）；列数随选中路径派生，父列变更重建子列并复位首可用项",
-      "value": "各列选中值（JSON 数组，项 value 缺省回退 label）；落停回写反射，程序性写入只滚动不派发事件",
-      "visible-count": "可见行数（≥3，偶数自动归奇）",
-      "name": "原生表单字段名（form-associated：FormData 提交的键，值为 JSON 数组字符串）",
-      "required": "必填标记（驱动原生校验链 valueMissing：未选 = 未填）"
-    },
-    "events": {
-      "oas-change": "滚动/键盘选中落停后派发（程序性 value 写入不派发）。detail { value, labels, columnIndex }——value/labels 为全列当前口径，columnIndex 为本次变更列"
-    }
-  },
-  "oas-bubble": {
-    "attrs": {
-      "loading": "打字中态（布尔在场）：内容切换为三点打字指示，宿主元素反射 aria-busy（AI「正在输入」场景）",
-      "reactions": "表情回应条 JSON 数组，每项 { emoji, count?, active?, label? }（emoji 必填）；空数组/非法 JSON 不渲染反应条",
-      "reactions-side": "反应条纵向位置：bottom（默认，气泡下方）/ top（气泡上方）",
-      "reactions-align": "反应条横向对齐：start / end；缺省跟随气泡 align",
-      "align": "方向：start（对方，默认）/ end（我方）——逻辑属性实现（align-self 镜像），RTL 自动镜像；显式设置时优先于容器 text-align 的继承反射",
-      "streaming": "流式追加态（布尔在场）：内容保持可见，宿主反射 aria-busy；内容区 aria-live=off，避免逐 token 播报，终态由外部 status 区播报",
-      "tail": "尾巴方向：none（默认，无尾巴）/ auto（跟随 align：start 侧或 end 侧）/ start / end——底部外角弧形小尾巴，指向发送者；实底变体绘制，outline 退化为底部外角收小圆角，muted / ghost 不画。分组时只给同一发送者连续消息的最后一条加"
-    },
-    "events": {
-      "oas-reaction": "点击某条反应时派发，detail { emoji, count, active, index }（反应数据仍由宿主拥有，组件只派发意图）"
-    },
-    "slots": {
-      "": "气泡内容"
-    }
-  },
-  "oas-attachment": {
-    "attrs": {
-      "name": "文件名（title 通道；缺省只渲染 media 不报错）",
-      "detail": "次级元数据（类型 · 大小）；error 态缺省时显示 locale 错误文案（「上传失败」），显式给值则保留宿主文案",
-      "state": "上传状态机：idle / uploading / processing / error / done（默认 done；uploading/processing 反射 aria-busy）",
-      "progress": "上传进度 0–100（越界自动收敛到 0/100；仅 uploading 态渲染底部细进度条 role=progressbar）",
-      "size": "三档尺寸：default（默认）/ sm（接受 small 别名）/ xs，逐档收内边距与媒体",
-      "orientation": "排布方向：horizontal（默认）/ vertical（图上文下，窄栏场景）",
-      "href": "有值则整卡为可点触发器（a[part=trigger]），点击派发 oas-open；宿主 preventDefault 可接管并阻断默认导航",
-      "downloadable": "布尔在场：显示内置下载按钮（点击派发 oas-download，下载动作由宿主接管）",
-      "removable": "布尔在场：显示内置删除按钮（点击派发 oas-remove；组件默认不自移除，删除决策在宿主）"
-    },
-    "events": {
-      "oas-open": "点击 href 整卡触发器时派发，detail { href }；cancelable——宿主 preventDefault 后组件同步阻断链接默认导航",
-      "oas-download": "点击内置下载按钮时派发，detail { name }",
-      "oas-remove": "点击内置删除按钮时派发，detail { name }；默认不自移除"
-    },
-    "slots": {
-      "actions": "追加自定义操作区（内置下载/删除按钮之后）",
-      "media": "媒体槽（图标/缩略图），放内容即覆盖内置缺省图形"
-    }
-  },
-  "oas-message-scroller": {
-    "attrs": {
-      "auto-scroll": "AI 式底部跟随（布尔在场，默认关）：仅当读者在底部（near-bottom ≤ edge-threshold）时跟随流式增长，上翻阅读不打扰",
-      "pin-to-bottom": "IM 式始终钉底（布尔在场）：新内容总是滚到底、读者上翻也拉回；与 auto-scroll 同时在场时优先",
-      "default-position": "打开位置：start（顶部）/ end（底部，默认；非法值回退 end）/ last-anchor（定位到最后一个 anchor 标记消息顶部——AI 场景「回到最后提问位置」；无锚点回退 end）",
-      "edge-threshold": "底部判定阈值 px（默认 8）——距底 ≤ 阈值即视为在底部（near-bottom 检测）",
-      "label": "viewport 可读名称覆盖（缺省走 locale「消息列表」；读入渲染后从宿主移除——原生全局属性吸收惯例）",
-      "preserve-scroll-on-prepend": "顶部插入历史时补偿 scrollTop 保持阅读位置（缺省开启；显式 =\"false\" 关闭）——按插入前首节点位移精确结算（同帧 append+prepend 混合只结算顶部插入量），补偿后锁定保位锚：历史内异步资源（图片等）撑高上方内容时按锚点视口位移持续补偿（message-id 优先重查）",
-      "turn-anchor": "轮次锚定（布尔在场）：把一次提问+回答作为锚定单元——锚点贴视口顶时把最后 anchor 标记消息钉在视口顶 prev-peek 处，回答在锚下方流入；读者在底部延续贴底跟随，上翻即静止（绝不逆着读者意图移动）",
-      "prev-peek": "轮次锚定对齐时锚顶上方露出的语境 px（默认 64；非法/负值回退 64）",
-      "track-visible": "布尔在场：开启可见性通道（oas-visible-change 事件 + visibleMessageIds / currentAnchorId getter）；未开启零计算（pay-for-use）"
-    },
-    "events": {
-      "oas-scroll-state": "滚动位置跨过判定线时派发，detail { atBottom, atTop, canScrollStart, canScrollEnd }；首帧（初始定位后）广播一次初始态——宿主监听晚于 upgrade 也能收到",
-      "oas-visible-change": "track-visible 开启时可见集变化派发，detail { visibleMessageIds, currentAnchorId }（供大纲/搜索定位等）"
-    },
-    "slots": {
-      "": "消息行列表（oas-message-row / oas-marker 等；行上的 anchor / message-id 属性为 scroller 协作标记）",
-      "button": "自定义跳底按钮内容（替换内置箭头图形；显隐与点击仍由组件裁决——缺省为内置按钮 part=button）"
-    }
-  },
-  "oas-marker": {
-    "attrs": {
-      "variant": "变体：default（小号次级文字，默认）/ border（描边胶囊行）/ separator（两侧伸缩线 + 中间文字，时间戳分隔主形态）；空内容时 default/border 整件隐藏、separator 保留分隔线本体",
-      "status": "语义状态档：info / success / warning / danger——文字、描边与分隔线取语义色 token（暗色自动适配；不改 ARIA role，流式播报仍由宿主声明）",
-      "shimmer": "布尔在场：流式微光（文本渐变扫过；prefers-reduced-motion 降级为静态文字）"
-    },
-    "events": {},
-    "slots": {
-      "": "文字内容",
-      "icon": "装饰图标槽（包裹层 aria-hidden；流式/进度状态由宿主直接写 role=status，组件不重复转发）"
-    }
-  },
-  "oas-message-row": {
-    "attrs": {
-      "align": "方向：start（对方，默认）/ end（我方）——逻辑属性实现（row-reverse + 逻辑对齐），RTL 自动镜像",
-      "status": "发送状态便利属性：sending / sent / delivered / read / error——渲染可见小字 + 装饰图标（文案走 locale，语义不单靠颜色；error 追加 danger 色作增强）；非法值/缺省不渲染状态区",
-      "grouped": "布尔在场：与上一条同发送者的连续消息（宿主声明），行间距收拢（走 --oas-message-gap）"
-    },
-    "events": {},
-    "slots": {
-      "": "消息内容（放 oas-bubble）",
-      "avatar": "头像槽（底对齐，长消息贴底）",
-      "header": "头部槽（发送者名/时间）",
-      "footer": "尾部槽（操作/附加元数据，随方向对齐）"
-    }
-  },
-  "oas-action-bar": {
-    "attrs": {
-      "theme": "表体：charcoal（默认，恒深表面）/ dark（恒深·深档）/ light（主题本色）；恒深表面走 --oas-color-ink* 语义 token，不随宿主主题翻转；非法值回落 charcoal 并告警一次（同值去重）"
-    },
-    "events": {},
-    "slots": {
-      "": "命令区（oas-action-bar-button 或任意命令控件）",
-      "start": "前部命令区",
-      "center": "读数井区（oas-action-bar-well + 井子件；自动推到书写方向远端）",
-      "end": "末端区"
-    }
-  },
-  "oas-action-bar-button": {
-    "attrs": {
-      "value": "命令标识（oas-action detail 携带）",
-      "active": "选中态（受控显示——宿主监听 oas-action 回写，组件不自切）",
-      "active-tint": "选中高亮色：11 预设名解析为 --oas-preset-*，任意 CSS 色值原样注入（如录音红 #e11d48）；文字对比度由宿主负责",
-      "plain": "组内无填充（选中只着色不加底）",
-      "disabled": "原生禁用透传（禁点、禁聚焦，aria-disabled 同步）"
-    },
-    "events": {
-      "oas-action": "点击时派发；detail { value, active }——active 为点击时刻状态；bubbles + composed"
-    },
-    "slots": {
-      "": "按钮内容"
-    }
-  },
-  "oas-action-bar-well": {
-    "attrs": {
-      "max-width": "井最大宽度（number，px；默认 320；非法值忽略，负值 clamp 到 0）"
-    },
-    "events": {},
-    "slots": {
-      "": "井内容（oas-statistic-well / oas-task-progress-well 或宿主自定义读数）"
-    }
-  },
-  "oas-inspector": {
-    "attrs": {
-      "side": "栏位方向：right（默认）/ left（仅分隔线方向语义钩子，定位由宿主布局决定）；非法值回落 right 并告警一次",
-      "active-tab": "当前 tab（配合 oas-inspector-tabs 使用；属性即状态）",
-      "density": "密度档：default（默认，行高 28px）/ compact（行高 24px、间距收窄，token 通道下发子件）；非法值回落 default 并告警一次",
-      "empty": "无选中态：默认插槽隐藏、empty 插槽（缺省内置文案「未选中对象」）显示",
-      "label": "可访问名称（缺省走 i18n「属性面板」）"
-    },
-    "events": {},
-    "slots": {
-      "": "分节 / 内容区（oas-inspector-section 等）",
-      "tabs": "tab 条通道（oas-inspector-tabs）",
-      "header": "顶部区",
-      "footer": "底部区",
-      "empty": "无选中态内容（覆盖内置文案）"
-    }
-  },
-  "oas-inspector-row": {
-    "attrs": {
-      "label": "标签文本（空时标签区隐藏）",
-      "value": "只读值（键值行；表格数字体对齐）",
-      "mixed": "多选混合态：显示「混合值」内置文案，value 让位",
-      "reset": "显示行级复位钮，点击派发 oas-row-reset"
-    },
-    "events": {
-      "oas-row-reset": "点击行级复位钮时派发；detail { label }；bubbles + composed"
-    },
-    "slots": {
-      "": "控件通道（有分发内容即为控件行 50/50 分栏；无则为只读键值行；表单控件由宿主放入并自带可访问名）"
-    }
-  },
-  "oas-inspector-section": {
-    "attrs": {
-      "heading": "分节标题（折叠钮 aria-label 同源）",
-      "name": "分节名（oas-toggle detail 携带；缺省空串）",
-      "collapsible": "启用折叠（缺省纯标题不可折叠）",
-      "open": "展开状态（属性即状态——点击切换并反射，宿主可监听 oas-toggle 协调）",
-      "default-open": "初始默认展开（非受控便利：无 open 属性时首帧写入 open）"
-    },
-    "events": {
-      "oas-toggle": "点击折叠钮时派发；detail { name, open }；bubbles + composed"
-    },
-    "slots": {
-      "": "分节内容",
-      "extra": "标题行末端操作区（与折叠点击解耦）"
-    }
-  },
-  "oas-inspector-tabs": {
-    "attrs": {
-      "items": "JSON [{ label, value, disabled? }]（attribute 声明式通道）；非法 JSON 渲染为空并告警一次",
-      "value": "当前 tab（属性即状态——切换后组件更新并反射，宿主可监听 oas-change 协调）"
-    },
-    "events": {
-      "oas-change": "选中 tab 变化时派发；detail { value }；bubbles + composed"
-    },
-    "slots": {}
-  },
-  "oas-statistic-well": {
-    "attrs": {
-      "label": "读数标签（空时隐藏）",
-      "value": "读数数值（表格数字体对齐）",
-      "detail": "补充信息（空时隐藏）"
-    },
-    "events": {},
-    "slots": {}
-  },
-  "oas-statusbar": {
-    "attrs": {
-      "label": "可访问名称（缺省走 i18n「状态栏」）"
-    },
-    "events": {},
-    "slots": {
-      "": "左段状态单元格（与整个工作区相关的聚合状态）",
-      "end": "右段状态单元格（次要/上下文项，自动推到书写方向远端）"
-    }
-  },
-  "oas-statusbar-item": {
-    "attrs": {
-      "value": "数值/状态值（表格数字体呈现）",
-      "label": "文本标签",
-      "icon": "内置图标名（@oas-ui/icons 内置图标；未知名不渲染）",
-      "button": "渲染为原生 button（可点、键盘可达）；缺省为只读 div 语义",
-      "status": "语义色档：default（默认）/ info / warning / error / progress——warning/error 用底色醒目（仅特殊且必要场景慎用），info/progress 只着文字色；非法值回落 default 并告警一次",
-      "spinning": "后台活动旋转指示（prefers-reduced-motion 停转）"
-    },
-    "events": {
-      "oas-item-click": "button 模式点击时派发；detail { value, label }；bubbles + composed（容器与宿主均可监听）"
-    },
-    "slots": {}
-  },
-  "oas-task-progress-well": {
-    "attrs": {
-      "label": "任务名（空时隐藏）",
-      "progress": "进度 0-100（受控显示——宿主驱动，组件不自涨；越界 clamp、非法回落 0）；到 100 保留完成态，组件不自行移除",
-      "detail": "补充信息（速度/剩余时间等；空时隐藏）"
-    },
-    "events": {
-      "oas-cancel": "点击取消钮时派发；detail { label }；组件只发事件不移除自身，宿主决定后续"
-    },
-    "slots": {}
-  },
-  "oas-transport-well": {
-    "attrs": {
-      "label": "读数标签（空时隐藏）",
-      "frames": "当前帧（受控显示——键盘 seek 只发事件，宿主回写驱动读数推进；非法回落 0、负值 clamp 0、超 duration 压到尾帧）",
-      "frame-rate": "帧率 fps（时间码换算基准；缺省/非法时时间码退化为原始帧数显示）",
-      "duration": "总帧数（可选——决定「/总时长」段、seek 上界与 aria-valuemax）",
-      "detail": "补充信息（分辨率/色彩空间等，与自动帧率文本拼段；空时隐藏）"
-    },
-    "events": {
-      "oas-seek": "键盘 seek（←/→ ±1 帧、↑/↓ ±1 秒、Home/End 首/尾帧，RTL 镜像水平方向）时派发；detail { frames }（提议值已 clamp）；受控显示——组件不自改 frames，宿主回写"
-    },
-    "slots": {}
-  },
-  "oas-music-well": {
-    "attrs": {
-      "label": "读数标签（空时隐藏）",
-      "bars": "当前小节（1 起；与 beats 共同决定「小节.节拍」位置段，双缺整段隐藏）",
-      "beats": "当前节拍（1 起；与 bars 共同决定「小节.节拍」位置段，双缺整段隐藏）",
-      "tempo": "速度 BPM（非法值忽略该段）",
-      "meter": "拍号（如 4/4，原样显示；空时隐藏）",
-      "detail": "补充信息（与自动 BPM/拍号文本拼段；空时隐藏）"
-    },
-    "events": {},
-    "slots": {}
-  },
-  "oas-titlebar": {
-    "attrs": {
-      "size": "高度档：compact（默认，34px）/ large（68px，控件保持紧凑）；非法值回落 compact 并告警一次（同值去重）",
-      "drag": "整栏设为窗口拖动区（写 -webkit-app-region: drag + data-tauri-drag-region，Electron/Tauri 宿主生效；纯 Web 下无害空操作）；枚举式自动 no-drag 常用交互子件，未枚举的宿主子件用 [data-no-drag] 显式退出",
-      "title": "居中标题文本（slot=\"title\" 有内容时覆盖）。原生全局属性同名——渲染进标题区后即从宿主吸收移除（防原生 tooltip 重复干扰），渲染由组件内缓存驱动；清空/重设请显式写 title 属性",
-      "subtitle": "副标题 / 文档状态（已编辑时间等）",
-      "editable": "文档井标题可编辑：Enter 或失焦提交（派发 oas-title-change 并更新吸收缓存），Esc 取消回滚；编辑中外部重写 title 即终止编辑",
-      "window-actions": "内建窗口操作钮子集（逗号分隔：minimize,maximize,close）；点击派发 oas-window-action，组件不执行窗口操作",
-      "leading-inset": "安全区：leading 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-leading-inset）",
-      "trailing-inset": "安全区：trailing 端原生控件防压（CSS 长度；亦可直接覆写 --oas-titlebar-trailing-inset）"
-    },
-    "events": {
-      "oas-title-change": "文档井提交（Enter/失焦）且值有变化时派发；detail { title }，吸收缓存同步更新（title 属性不常驻宿主）",
-      "oas-window-action": "点击内建窗口操作钮时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API"
-    },
-    "slots": {
-      "leading": "标题前置自定义区（品牌 / macOS 交通灯由宿主传入）",
-      "center": "中央交互内容通道（有内容时覆盖标题/文档井，如文档标签组合）",
-      "title": "标题富内容通道（覆盖 title 属性文本）",
-      "trailing": "末端自定义区（窗口操作钮之外）"
-    }
-  },
-  "oas-collapsible": {
-    "attrs": {
-      "open": "展开态（受控开关）：属性缺席 = 非受控自管（首帧由 default-open 播种）；属性在场 = 受控（值非 \"false\" 为展开、\"false\" 为收起），点击翻转后写回属性并派发事件（乐观更新）",
-      "default-open": "非受控初始展开（值语义：非 \"false\" 为展开，兼容框架布尔绑定序列化出的 \"false\" 在场写法）：首帧初值，之后组件自管，不写回属性；open 属性在场时失效（进入受控）",
-      "header": "触发器文案（渲染进触发按钮；富内容用 slot=\"header\"，插槽优先）",
-      "disabled": "禁用触发器：不可聚焦、不可点击、不派发事件；config-provider 全局禁用注入同样生效"
-    },
-    "events": {
-      "oas-toggle": "开合状态变化后派发，detail { open }（受控与非受控模式均派发）"
-    },
-    "slots": {
-      "": "折叠体内容",
-      "header": "触发器富内容插槽，覆盖 header 属性文案",
-      "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）"
-    }
-  },
-  "oas-attachment-group": {
-    "slots": {
-      "": "附件卡片序列（oas-attachment 或任意卡片；横向溢出时吸附滚动 + 边缘渐隐）"
-    }
-  },
-  "oas-traffic-lights": {
-    "attrs": {
-      "disabled": "全禁：三点均不可点（原生 disabled + 半透明）"
-    },
-    "events": {
-      "oas-window-action": "点击交通灯时派发；detail { action }（minimize/maximize/close）；组件只发事件，宿主接 Electron/Tauri API"
-    },
-    "slots": {}
-  },
-  "oas-resource": {
-    "attrs": {
-      "resources": "资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills?, costRate? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。`costRate` 为小时费率（纯展示；`show-cost` 开启时参与行头成本合计 Σ(天数 × 8h × costRate)，缺失/非法该行不显示成本）。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色",
-      "tasks": "资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级",
-      "scale": "直方图 period 粒度与时间轴刻度：day（默认）/ week / month；非法回落 day",
-      "height": "组件高度 px（默认 320；接受纯数字或 Npx）：映射到自定义属性 --oas-resource-height（宿主自身 height 内联始终优先，组件不覆盖宿主内联）。height 属性在场且为合法值（>0 纯数字或 Npx）时组件接管该变量，写入宿主内联并覆盖宿主自己设置的 --oas-resource-height；空串/空白按未设置处理；非法值不写该变量、仅清除本实例此前写入的值，宿主 token 不受影响；属性移除后组件写入的值归零清除，高度回落 token 缺省 320 或宿主 CSS，宿主原先内联设置的值不恢复；从未设置 height 属性时组件不写该变量，宿主内联或 class 规则设置的 --oas-resource-height 完全不受影响",
-      "locale": "本地化（覆盖 config-provider 注入与全局 locale）",
-      "capacity": "资源未声明 capacity 时的缺省容量（默认 1）",
-      "windowed": "服务端行窗口模式（布尔，默认关）：与 total / window-start 配合，宿主只喂可视窗口切片（按绝对行号渲染），期望行区间未被已装载覆盖时派发 oas-window-request 由宿主回填；负载/超载统计仅基于已装载切片（全量统计由宿主负责）并 devWarn；缺 range-start / range-end 时时间轴回落「已装载任务」派生并 devWarn。非 windowed 行为不变",
-      "total": "windowed 模式下的全量资源行数；为 0 或非法时 windowed 不生效（回落本地模式）",
-      "window-start": "windowed 模式下切片首行（资源）的绝对行号（相对全量）",
-      "range-start": "宿主托管时间轴起点（ISO 日期 YYYY-MM-DD）：提供后 period 范围不再由已装载任务推导",
-      "range-end": "宿主托管时间轴终点（ISO 日期 YYYY-MM-DD，含当日）：与 range-start 成对使用；只有其一 / 颠倒 / 非法时忽略托管并 devWarn",
-      "show-load-values": "负载直方图柱顶显示该档负载数字（布尔，默认关）：仅 load > 0 显示，超载档数字用 `text-on-primary`（浅色主题白字/暗色主题深字，压在 danger 柱身上保证对比）；数字为视觉冗余（aria-hidden），读屏仍读列的负载描述",
-      "show-overload-badge": "泳道行头显示「超载 N 档」徽标（布尔，默认关）：仅该资源存在超载档时显示，文案走 i18n resource.overBadge",
-      "show-skills": "泳道行头名称旁技能 chip（布尔，默认关）：以弱底圆角小标签展示 ResourceItem.skills（清洗：非数组未声明、非字符串/空白项丢弃、去重、trim）；渲染上限 8 个防挤占行头，全量经容器 title 悬浮可见（数据层保全量，reassign 匹配不受影响）；单行省略不撑行高，RTL 视觉镜像随 direction 自动翻转",
-      "bar-label": "任务条内显示任务名（布尔，默认关）：单行省略，窄条自动裁切；不改变 aria-label 与点击/拖拽命中",
-      "header-sticky": "泳道表头纵向吸顶（默认开）：滚动泳道时周/日刻度保持可见；`header-sticky=\"false\"` 关闭（表头随内容滚动）。角落名列在横向滚动时始终贴边（LTR/RTL）",
-      "heatmap": "负载热力图（布尔，默认关）：按 load/capacity 渲染低/中/高/超载热力格，表头显示图例，每格 title 为日期与 load/capacity",
-      "skill-matrix": "技能矩阵视图（布尔，默认关）：行=资源、列=技能并集，✓ 表示具备；无虚拟化",
-      "show-cost": "泳道成本合计（布尔，默认关）：行头显示「成本 Σ(任务天数 × 8h × costRate)」两位小数（无货币符号，单位由宿主 CSS/文案自定）；天数按任务与**求交窗口**的相交日历日数计——有 range-start/range-end 托管时用轴端点（成本不随刻度档漂移），否则用任务推导轴全域；costRate 缺失/非法的 lane 不显示。合计随数据/日期窗口在 update 时重算，滚动可视列窗口不触发",
-      "hover": "泳道行与负载直方图行 hover 底色开关（默认开）：鼠标移入泳道或直方图行时整行点亮（含行头），颜色走 `--oas-resource-row-hover-bg`（缺省 `--oas-color-bg-hover`，与条 hover 色独立）；`\"false\"` 关闭"
-    },
-    "events": {
-      "oas-task-click": "点击资源泳道内的任务条时派发，detail: { id, task, resourceId }",
-      "oas-overload": "超载态变化时派发（每次更新至多一次；同一超载态不重复派发），detail: { overloads: [{ resourceId, period, load, capacity }] }（period 为档起始日）；无超载不派发",
-      "oas-tasks-change": "程序写 tasks property 时派发，detail: { tasks }。**windowed 下 detail.tasks 仅为已装载切片**：宿主须按 id 合并回全量，不得整体替换",
-      "oas-window-request": "windowed 模式下期望行窗口未被已装载区间覆盖时派发，detail: { start, end, reason }（半开区间、绝对行号；reason 为 init / scroll / resize / data）；同一期望区间不重复派发",
-      "oas-range-request": "宿主托管时间范围（range-start/range-end）且可视时间窗接近轴端点时派发，detail: { startMs, endMs, reason }（期望的相邻范围）；同一期望范围不重复派发"
-    },
-    "props": {
-      "resources": "资源列表（JSON [{ id, name, capacity?, workdays?, holidays?, capacityOverrides?, skills? }]）。`workdays` 编号 0=周日…6=周六，`[]` 表示全不可用；未声明 `workdays` 且 `holidays` / `capacityOverrides` 为空时，capacity = 每档（period）可并行任务数（旧语义）；否则按逐日容量求和，非空 `capacityOverrides` 优先于 `workdays` / `holidays`，可写小数但任务按整日计数（0.5 日无法容纳整日任务）；空 `holidays` / `capacityOverrides` 视为未声明。`skills` 为技能标签。资源可带可选 `color`（CSS 颜色或 token，如 `var(--oas-color-success)`）：用于该泳道任务条与负载柱着色，缺省走 `--oas-resource-bar-bg` / `--oas-resource-load-bg` 的统一色；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染，含不可序列化自定义键时 attribute 仅丢弃该键，property 读回仍完整保留",
-      "tasks": "资源任务（JSON [{ id, name, start, end, resources?, priority?, requiredSkills?, project? }]）；start/end 仅日精度 YYYY-MM-DD（end 含当日；带时刻输入按当日处理），resources 为分配的资源 id 数组（指向不存在资源的分配忽略）。priority 数值越小越优先；requiredSkills 在 reassign 时要求目标资源全部具备；project 配合 levelResources({ projectOrder }) 做跨项目优先级；property 读为拷贝：嵌套 plain object / array 深拷贝——循环安全；同一引用在单次读取结果内保持共享；Date 按值复制（不保持共享）；类实例 / Set 等奇异对象按引用；写同步 attribute + 重渲染 + 派发 oas-tasks-change"
-    }
-  },
-  "oas-prompt-input": {
-    "attrs": {
-      "value": "当前文本（property 双通道；attribute 作为初始值）",
-      "placeholder": "占位文案（缺省 i18n promptInput.placeholder）",
-      "disabled": "禁用输入与提交",
-      "readonly": "只读（可聚焦/复制，不可修改）",
-      "loading": "生成中；发送钮切换为停止",
-      "maxlength": "最大字符数",
-      "rows": "初始行数（1+，自增高上限 160px）",
-      "suggestions": "建议项 JSON：字符串或 { label?, value } 数组",
-      "submit-on-enter": "Enter 提交（默认 true；false 时仅按钮提交，Shift+Enter 始终换行）",
-      "clear-on-submit": "提交后清空（默认 true）"
-    },
-    "props": {
-      "value": "当前文本（读写）"
-    },
-    "events": {
-      "oas-submit": "提交时派发，detail: { value }",
-      "oas-stop": "loading 时点击停止派发",
-      "oas-suggestion-select": "点击建议项时派发，detail: { value, label }"
-    },
-    "slots": {
-      "prefix": "输入框前置内容",
-      "actions": "发送钮前的操作区",
-      "footer": "输入框底部说明/工具行"
-    },
-    "methods": {
-      "submit": "提交当前文本；空值/禁用/loading 返回 false",
-      "stop": "停止生成（仅 loading 时派发 oas-stop）",
-      "focusInput": "聚焦内部 textarea"
-    }
-  },
-  "oas-message-actions": {
-    "attrs": {
-      "actions": "操作项 JSON：[{ key, label, title?, disabled?, active?, tone? }]",
-      "message-id": "消息 id，随 oas-action detail 回传",
-      "align": "对齐：start（默认）/ end",
-      "disabled": "禁用全部操作",
-      "label": "操作组 aria-label（可选）"
-    },
-    "events": {
-      "oas-action": "点击操作时派发，detail: { key, messageId }"
-    }
-  },
-  "oas-tool-call": {
-    "attrs": {
-      "name": "工具名",
-      "summary": "一行摘要",
-      "status": "状态：running / success / error",
-      "args": "参数文本或 JSON（按文本展示）",
-      "result": "结果文本或 JSON（按文本展示）",
-      "open": "初始展开",
-      "collapsible": "是否可折叠；false 时强制展开"
-    },
-    "events": {
-      "oas-toggle": "展开/折叠时派发，detail: { open, name }"
-    },
-    "slots": {
-      "icon": "工具图标"
-    }
-  },
-  "oas-diff-viewer": {
-    "attrs": {
-      "aria-label": "差异表格的可读名称（默认「差异对比」）",
-      "context": "折叠时每侧保留的未修改行数（默认 3；0 只保留变更行本身）",
-      "height": "视口高度（px，默认 480）",
-      "ignore-whitespace": "比较前归一空白（连续空白折叠、行首尾裁剪），显示仍为原文",
-      "max-edits": "行级编辑距离上限（默认 1000）；超出时降级为整块替换并提示",
-      "mode": "视图模式：`unified`（行内，默认）/ `split`（并排）",
-      "new-label": "并排视图新文本列头文案（默认「修改后」）",
-      "new-text": "新文本（attribute 通道；SSR/DSD 可用）",
-      "old-label": "并排视图旧文本列头文案（默认「修改前」）",
-      "old-text": "旧文本（attribute 通道；SSR/DSD 可用）",
-      "row-height": "固定行高（px，默认 22，最小 12）",
-      "show-line-numbers": "行号开关；`false` 隐藏行号单元格",
-      "split-min-width": "并排视图最小容器宽度（px，默认 640）；不足时自动降级行内",
-      "toolbar": "工具栏开关；`false` 隐藏统计与批量按钮",
-      "virtual": "虚拟滚动：默认自动（对齐行超过 virtual-threshold 时启用），`true` 强制开启，`false` 关闭",
-      "virtual-threshold": "自动启用虚拟滚动的对齐行数阈值（默认 2000）",
-      "wrap": "长行折行；折行时退出虚拟滚动，行高随内容自适应"
-    },
-    "props": {
-      "newText": "新文本 property；写入反射 `new-text` 属性",
-      "oldText": "旧文本 property；写入反射 `old-text` 属性",
-      "stats": "差异统计（只读）：`{ added, removed, unchanged, hunks }`"
-    },
-    "events": {
-      "oas-diff-change": "数据更新后派发，`detail: { added, removed, unchanged, hunks }`",
-      "oas-hunk-toggle": "折叠块展开/收起后派发，`detail: { index, expanded, start, count }`"
-    },
-    "methods": {
-      "expandAll": "展开全部未修改区块",
-      "collapseAll": "收起全部未修改区块",
-      "scrollToChange": "滚动到指定变更块并聚焦其首行；越界返回 false"
-    }
-  },
-  "oas-relative-time": {
-    "attrs": {
-      "value": "目标时刻：epoch 毫秒数字串或 ISO 8601（纯数字一律按 epoch 毫秒解析，写年份请用 `2026-01-01`）；无偏移的 ISO 按运行环境本地时区解析、date-only 按 UTC，`datetime` 输出恒为 UTC；property 另接受 `number` / `Date`",
-      "locale": "相对时间 locale（如 `zh-CN` / `en-US`）；非法或不支持时安全回落 provider → 全局 i18n → `en-US`（全局默认 `zh-CN`，`en-US` 仅为兜底）",
-      "numeric": "Intl 数字模式：`auto`（默认，语义化「刚刚 / 昨天」）/ `always`（始终数字）；其他值按 auto",
-      "auto-refresh": "按单位节流自动刷新（秒级 1s、其余 30s）；`\"false\"` 或缺失关闭；页面隐藏暂停、断开清理、重连恢复"
-    },
-    "props": {
-      "value": "目标时刻 property 通道：`number` 为 epoch 毫秒、`Date` 自动写回 ISO attribute、`null` 清空（走空态）；读取返回 value attribute 原文（string）",
-      "locale": "相对时间 locale property 通道：写入回写 `locale` attribute、`null` 移除属性（回落 provider → 全局 i18n → `en-US`）；读取返回 attribute 原文（string）"
-    },
-    "events": {},
-    "slots": {}
-  },
-  "oas-floating-panel": {
-    "attrs": {
-      "open": "打开态（唯一状态源）；show()/close() 只写该属性，宿主直接写属性静默吸收（不派发 oas-open-change）",
-      "rect": "位置与尺寸 x,y,width,height（相对宿主锚点的像素坐标；缺省 48,48,420,300；输出取整）；property 同时接受对象与同格式字符串",
-      "panel-title": "标题文本（title 插槽覆盖）；避开原生 title 属性",
-      "movable": "标题栏拖动；框体聚焦时方向键移动（8px/步）",
-      "resizable": "八向缩放手柄（四边 + 四角）；框体聚焦时 Shift + 方向键缩放",
-      "boundary": "交互边界：viewport（默认）或 CSS 选择器；只夹取拖动/缩放/键盘，不改写宿主写入的坐标",
-      "boundary-padding": "边界内缩像素（非负；非法回落 0）",
-      "min": "最小尺寸 宽,高（缺省 160,96；非正/非法（含 0）视为未提供，回落缺省；min > max 时以 min 为准）",
-      "max": "最大尺寸 宽,高（缺省不限制）",
-      "initial-focus": "打开时聚焦的选择器（light DOM 或 shadow 内；找不到回退面板框体）"
-    },
-    "events": {
-      "oas-before-close": "关闭请求（关闭钮 / Esc / close()）前派发，可取消（preventDefault 保持打开且不派发 open-change）；detail { reason, source }",
-      "oas-open-change": "组件内部动作改变开合态时派发；detail { open, reason, source }（外部写 open 属性静默吸收）",
-      "oas-move": "指针或键盘移动提交时派发；detail { rect, source }（source = pointer | keyboard；零位移不派发）",
-      "oas-resize": "指针或键盘缩放提交时派发；detail { rect, source, edge }",
-      "oas-activate": "面板置前时派发；detail { rect, source }（source = pointer | api）"
-    },
-    "slots": {
-      "": "面板内容",
-      "title": "标题富内容通道（覆盖 panel-title 文本，仍参与 aria-labelledby；清空后回落 i18n 名称）"
-    },
-    "methods": {
-      "show": "打开面板（写 open 属性；已打开时仅置前，不重复派发 oas-open-change）",
-      "close": "关闭请求：先派发可取消 oas-before-close；被 preventDefault 时返回 false 且保持打开（零属性写入、零 open-change）。返回是否已关闭——本来已关闭直接返回 true（不派发事件）；before-close 处理器内重入 close() 不重复派发并返回 false",
-      "bringToFront": "族内置前并把本面板 Esc 层提到栈顶；已是最前时不重复派发 oas-activate"
-    }
-  },
-  "oas-signature": {
-    "attrs": {
-      "value": "签名图像（PNG dataURL），双通道可受控",
-      "pen-size": "笔迹粗细（px，默认 2）",
-      "pen-color": "笔迹颜色（11 预设名或 CSS 色值，缺省跟随主题文字色）",
-      "height": "画布高度（px，默认 160）",
-      "disabled": "禁用（拦截笔画）",
-      "readonly": "只读（拦截笔画，保留笔迹展示）",
-      "clearable": "显示清空按钮"
-    },
-    "events": {
-      "oas-change": "笔画结束或清空时派发（同值幂等去重）"
-    },
-    "slots": {},
-    "methods": {
-      "clear": "清空画布与笔迹，value 归空并按指纹派发 oas-change",
-      "toDataURL": "当前画布 PNG dataURL；空画布（无笔迹且无外部图像）或无 canvas 环境时返回空串"
-    }
-  },
-  "oas-chips-input": {
-    "attrs": {
-      "value": "邮箱 chip 数组（property 或 JSON attribute）",
-      "max": "chip 数量上限，超出派发 oas-exceed-limit 且不再新增",
-      "placeholder": "输入框占位符（缺省走 i18n 文案）",
-      "disabled": "禁用",
-      "readonly": "只读（chip 仅展示，不可增删改）",
-      "size": "尺寸档位 small / medium / large",
-      "name": "表单字段名（oas-form 收集的字段键；组件非 form-associated，不进原生 FormData 提交）"
-    },
-    "events": {
-      "oas-change": "chip 增删改后派发，`detail: { value, trigger }`，trigger ∈ add | remove | edit | paste",
-      "oas-add": "新增 chip 时派发，`detail: { value, index }`",
-      "oas-remove": "删除 chip 时派发，`detail: { value, index }`",
-      "oas-invalid": "chip 邮箱校验非法时派发（幂等：仅用户交互路径；不拦截提交语义），`detail: { value, index }`",
-      "oas-exceed-limit": "超出 max 上限时派发且不再新增，`detail: { value, max }`",
-      "oas-focus": "输入框聚焦时派发",
-      "oas-blur": "输入框失焦时派发"
-    },
-    "slots": {},
-    "props": {
-      "value": "当前值：邮箱字符串数组（写入回写 value attribute，不派发事件）"
-    }
-  },
-  "oas-price": {
-    "attrs": {
-      "value": "单值价格（数字字符串）；与 `min`+`max` 同在场时单值优先",
-      "min": "区间价下端（与 `max` 同在场且 `value` 缺省时生效）",
-      "max": "区间价上端（与 `min` 同在场且 `value` 缺省时生效）",
-      "original": "划线原价（渲染为 `<s>`，读屏带「原价」前缀）",
-      "currency": "ISO 4217 币种代码，默认 `CNY`；非法代码回落默认",
-      "locale": "`Intl.NumberFormat` locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
-      "precision": "小数位（0–20 整数，默认 2；非法值回退默认）",
-      "size": "字号档：`sm` / `md`（默认）/ `lg`",
-      "trend": "趋势方向：`up` / `down`；非法值不渲染趋势",
-      "trend-value": "涨跌幅文本（纯数值自动补正负号与 `%`，其余原样渲染）"
-    },
-    "events": {},
-    "slots": {}
-  },
-  "oas-submit-bar": {
-    "attrs": {
-      "total": "合计金额（数字字符串）；缺省不渲染金额",
-      "currency": "ISO 4217 币种，默认 `CNY`",
-      "locale": "金额格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
-      "precision": "金额小数位，默认 2",
-      "label": "合计标签，缺省走 i18n `submitBar.total`",
-      "action-text": "主按钮文本；缺省不渲染按钮（仅合计 + 扩展区，可作通用底栏）",
-      "loading": "加载中：按钮禁用 + spinner + `aria-busy`，不派发事件",
-      "disabled": "禁用按钮（兼容 config-provider 注入禁用）",
-      "danger": "主按钮采用危险色（删除 / 取消类主操作）"
-    },
-    "events": {
-      "oas-submit": "主按钮点击派发（非 loading / disabled），detail `{ total, currency }`"
-    },
-    "slots": {
-      "": "合计左侧扩展内容（协议勾选、备注入口等）",
-      "total": "覆盖默认金额展示（自定义价格排版）"
-    }
-  },
-  "oas-goods-action": {
-    "attrs": {
-      "items": "icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射",
-      "actions": "主按钮 JSON 数组 `[{ key, text, primary?, disabled? }]`",
-      "label": "导航区可访问名称，缺省走 i18n `goodsAction.label`",
-      "disabled": "全局禁用（兼容 config-provider 注入禁用）"
-    },
-    "events": {
-      "oas-action-click": "任一项点击派发，detail `{ key, source: 'icon' | 'button' }`"
-    },
-    "slots": {}
-  },
-  "oas-coupon": {
-    "attrs": {
-      "amount": "券面额（数字，卡片模式必填）",
-      "threshold": "使用门槛（数字，0 或缺省 = 无门槛）",
-      "currency": "ISO 4217 币种，默认 `CNY`",
-      "locale": "金额与日期格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
-      "start": "有效期开始（`YYYY-MM-DD`）",
-      "end": "有效期结束（`YYYY-MM-DD`）",
-      "validity": "有效期文案覆盖（如「长期有效」），优先于 start/end 格式化结果",
-      "status": "状态：`available`（默认）/ `expired` / `used` / `unavailable`（未达门槛等）",
-      "reason": "不可用原因文案（`status=\"unavailable\"` 时展示）",
-      "code": "券标识（事件 detail 回传）",
-      "selected": "选中态标记（供外层组合排版）",
-      "list": "选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态",
-      "trigger-text": "触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额）",
-      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）"
-    },
-    "events": {
-      "oas-select": "选中可用券时派发，detail `{ code, coupon }`，随后关闭弹层",
-      "oas-open-change": "交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发）"
-    },
-    "slots": {},
-    "methods": {
-      "openOverlay": "命令式打开弹层（已打开则忽略），派发 `oas-open-change`",
-      "closeOverlay": "命令式关闭弹层（已关闭则忽略），派发 `oas-open-change`",
-      "clearSelection": "清空已选券与触发按钮上的面额（静默，不派发事件）"
-    }
-  },
-  "oas-sku": {
-    "attrs": {
-      "specs": "规格组 JSON 数组 `[{ key, label?, values: (string | { value, label? })[] }]`",
-      "skus": "SKU JSON 数组 `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]`",
-      "value": "选中组合 JSON 对象 `{ [specKey]: value }`（受控；用户选择回写）",
-      "quantity": "数量（默认 1；上限 = 匹配 sku 库存）",
-      "currency": "ISO 4217 币种，默认 `CNY`",
-      "locale": "价格格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
-      "precision": "价格小数位，默认 2",
-      "disabled": "全禁用（兼容 config-provider 注入禁用）"
-    },
-    "events": {
-      "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）"
-    },
-    "slots": {}
-  },
-  "oas-address": {
-    "attrs": {
-      "mode": "形态：edit（默认，地址编辑）/ list（地址列表，单选 + 默认标记）/ contact（联系人轻模式，仅姓名与电话）",
-      "value": "受控地址值（JSON 对象）：{ id?, name, phone, province?, city?, district?, detail?, isDefault? }；编辑模式用于预填，联系人模式只用 name / phone",
-      "items": "地址列表数据（mode=list）：JSON 数组 [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]；isDefault 项优先预选",
-      "selected-id": "列表选中项 id（受控）；缺省选 isDefault 项，否则选第一项",
-      "regions": "省市区数据（宿主注入契约）：JSON 数组 [{ name, code?, children? }]，最多三级；组件不内置行政区划数据",
-      "disabled": "禁用全部输入与操作（含列表单选与新增）",
-      "readonly": "只读：可聚焦与复制，不可编辑 / 提交 / 选择"
-    },
-    "events": {
-      "oas-add": "列表模式点击「新增地址」时派发，无 detail",
-      "oas-change": "字段输入或地区选择变化时派发，detail { field, value }（value 为当前地址草稿）",
-      "oas-invalid": "提交校验失败时派发，detail { fields }（字段名数组），同时标记错误并聚焦首个错误字段",
-      "oas-submit": "编辑模式校验通过时派发，detail { value }（完整地址对象）",
-      "oas-select": "列表模式选中地址项时派发，detail { id, item }"
-    },
-    "slots": {}
-  },
-  "oas-invoice": {
-    "attrs": {
-      "type": "抬头类型：personal（默认）/ company；企业抬头显示并校验税号",
-      "title": "发票抬头（受控）；输入时派发 oas-change，提交成功后回写",
-      "tax-id": "纳税人识别号（受控）；企业抬头下校验 15–20 位字母或数字",
-      "content": "发票内容选中值（受控）；需与 contents 的 value 对应",
-      "contents": "发票内容选项（宿主注入）：JSON 数组 [{ value, label }]；缺省或非法时不渲染内容字段",
-      "save-titles": "已保存抬头（宿主注入）：JSON 数组 [{ id?, type, title, taxId? }]；缺省或非法时隐藏弹层入口",
-      "disabled": "禁用全部输入、弹层入口与提交",
-      "readonly": "只读：可聚焦与复制，不可编辑 / 选择 / 提交"
-    },
-    "events": {
-      "oas-change": "字段或抬头类型变化时派发，detail { field, value }（field：type / title / taxId / content / saved）",
-      "oas-title-select": "从已保存抬头弹层选择时派发，detail { id, value }（value 已回填到当前表单）",
-      "oas-invalid": "提交校验失败时派发，detail { fields }，同时标记错误并聚焦首个错误字段",
-      "oas-submit": "校验通过时派发，detail { value }（{ type, title, taxId, content }）"
-    },
-    "slots": {}
-  },
-  "oas-ecard": {
-    "attrs": {
-      "cards": "卡面数据（宿主注入）：JSON 数组 [{ id, name, value, faceValue, price?, description?, disabled? }]；value 为提交金额，faceValue / price 为展示文案",
-      "selected-id": "选中卡 id（受控）或 custom（自定义面额）；缺省选第一张可用卡，无可用卡回落 custom",
-      "amount": "自定义面额（字符串，提交时转数值）",
-      "min-amount": "自定义面额下限（整数，默认 1）",
-      "max-amount": "自定义面额上限（整数，默认 10000）",
-      "agreed": "是否已勾选协议（受控布尔属性；点击复选框时回写并派发 oas-change）",
-      "disabled": "禁用卡面 / 面额 / 协议与确认按钮",
-      "readonly": "只读：不可选择、输入、勾选或提交",
-      "currency": "自定义面额前缀货币符号（默认 ¥；仅影响自定义面额输入框展示）"
-    },
-    "events": {
-      "oas-invalid": "提交校验失败时派发，detail { fields }（card / amount / agreement）",
-      "oas-submit": "校验通过时派发，detail { card, cardId, amount, custom, agreed }",
-      "oas-change": "选择卡种、输入自定义面额或勾选协议时派发，detail { card, cardId, amount, custom, agreed }"
-    },
-    "slots": {
-      "agreement": "自定义协议文案（覆盖默认文本，可放协议链接）"
-    }
-  },
-  "oas-category": {
-    "attrs": {
-      "categories": "类目树（宿主注入）：JSON 数组 [{ key?, id?, label?, name?, children?, items? }]；key 全局唯一，children 可递归，items 为商品位 [{ key, label, meta? }]",
-      "active-key": "当前激活类目 key（受控）；外部写入会自动展开其路径，缺省选第一个根类目"
-    },
-    "events": {
-      "oas-change": "左侧选中类目或从右侧进入子类时派发，detail { key, path, node }（path 为根到当前类的 key 数组）",
-      "oas-select": "点击商品位时派发，detail { key, item, path }"
-    },
-    "slots": {}
-  },
-  "oas-number-keyboard": {
-    "attrs": {
-      "value": "当前值（受控）：按键写回本属性，宿主改写即时同步",
-      "maxlength": "长度上限（按字符计数，支持中文省份简称）；缺省 0 = 不限",
-      "random": "数字键随机乱序（安全键盘）；切换时重新排列",
-      "layout": "键盘布局：`number`（默认）/ `plate`（车牌号：省份简称 + 字母 + 数字）",
-      "disabled": "禁用：按键全部禁用且不派发事件",
-      "readonly": "只读：按键可聚焦但不改动值，`oas-done` 仍可派发"
-    },
-    "events": {
-      "oas-input": "追加一个字符，`detail: { value, key }`",
-      "oas-delete": "删除末位（值为空时不派发），`detail: { value }`",
-      "oas-done": "点击完成键，`detail: { value }`"
-    },
-    "slots": {},
-    "methods": {
-      "randomize": "重新洗牌数字键顺序（安全键盘刷新）"
-    }
-  },
-  "oas-code-button": {
-    "attrs": {
-      "cooldown": "冷却秒数（默认 60）；非法/非正数回落默认并告警",
-      "disabled": "禁用：不可点击且不派发事件",
-      "loading": "请求进行中：spinner + `aria-busy` + 阻止重复点击"
-    },
-    "events": {
-      "oas-send": "可点击时点击派发，`detail: { cooldown }`；可 `preventDefault()` 拦截自动冷却（宿主请求成功后再 `start()`）"
-    },
-    "slots": {
-      "": "自定义按钮内容（空闲态生效；倒计时期间显示内置倒计时文案）"
-    },
-    "props": {
-      "counting": "是否处于冷却中（只读）",
-      "remaining": "剩余冷却秒数（只读）"
-    },
-    "methods": {
-      "start": "启动冷却（缺省取 `cooldown`）",
-      "reset": "立即结束冷却并回到空闲态"
-    }
-  },
-  "oas-image-picker": {
-    "attrs": {
-      "max": "数量上限（默认 9）；非法/非正数回落默认并告警",
-      "accept": "文件类型过滤（原生 `accept` 语法，默认 `image/*`）",
-      "capture": "透传原生 `capture`：移动端直接拉起相机",
-      "disabled": "禁用：添加、排序、删除全部不可用",
-      "readonly": "只读预览：隐藏添加入口，操作按钮禁用"
-    },
-    "events": {
-      "oas-change": "用户新增 / 删除 / 排序后派发，`detail: { files, count }`",
-      "oas-exceed-limit": "选择总数超过上限，`detail: { count, max }`（超出部分丢弃；在 `oas-change` 之后派发）",
-      "oas-reject": "文件被 `accept` 过滤，`detail: { files }`"
-    },
-    "slots": {},
-    "props": {
-      "files": "当前图片列表（`File[]`，受控）：赋值即刷新且不派发事件；用户交互才派发 `oas-change`"
-    },
-    "methods": {
-      "open": "打开系统文件选择器（需在用户手势中调用）",
-      "clear": "清空列表（派发 `oas-change`）",
-      "removeAt": "删除指定图片（越界忽略，派发 `oas-change`）",
-      "move": "前后移动图片（`delta` 为 ±1，越界忽略，派发 `oas-change`）"
-    }
-  },
-  "oas-image-cropper": {
-    "attrs": {
-      "src": "图片地址（`http(s)` / `blob:` / `data:image/*` / 相对路径；可执行协议回落空）",
-      "aspect-ratio": "裁剪框比例：`1` / `16/9` / `0.75` 等；缺省或 0 为自由比例",
-      "max-zoom": "最大缩放倍数（默认 3）；非法值回落",
-      "max-output-size": "输出最长边像素上限（默认 1024）；非法值回落",
-      "output-type": "输出图片类型，默认 `image/png`（可选 `image/jpeg` / `image/webp`）",
-      "disabled": "禁用全部交互（工具栏禁用、裁剪框不可聚焦）"
-    },
-    "events": {
-      "oas-change": "缩放 / 旋转 / 裁剪框调整后派发，`detail: { zoom, rotation, frame }`",
-      "oas-crop": "确认裁剪，`detail: { blob, zoom, rotation, frame }`；canvas 不可用时 `blob` 为 null",
-      "oas-load": "图片加载成功，`detail: { width, height }`",
-      "oas-error": "图片加载失败，`detail: { src }`"
-    },
-    "slots": {},
-    "props": {
-      "zoom": "当前缩放（1 起）。写入即生效但**不派发事件**——`oas-change` 只表达用户交互，宿主在事件里回写 `el.zoom` 不会递归",
-      "rotation": "当前旋转角度（0 / 90 / 180 / 270，只读）"
-    },
-    "methods": {
-      "setZoom": "设置缩放（夹到 `[1, max-zoom]`；值有变化才派发 `oas-change`）",
-      "rotate": "旋转指定角度（默认 +90° 并派发 `oas-change`）",
-      "reset": "恢复初始缩放 / 旋转 / 裁剪框（派发 `oas-change`）",
-      "toBlob": "导出裁剪结果 Blob（canvas 不可用时返回 null）",
-      "toDataURL": "导出裁剪结果 dataURL（canvas 不可用时返回空串）"
     }
   }
 }

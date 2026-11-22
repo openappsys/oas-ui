@@ -1,0 +1,40 @@
+{
+  "className": "OASOffline",
+  "sourceFile": "packages/ui/src/feedback/offline/oas-offline.ts",
+  "attrs": [
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-online"
+    },
+    {
+      "name": "oas-offline"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-offline-bg",
+      "default": "var(--oas-color-danger)"
+    },
+    {
+      "name": "--oas-offline-color",
+      "default": "var(--oas-color-text-on-danger)"
+    }
+  ],
+  "unresolved": []
+}

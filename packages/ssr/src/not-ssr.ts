@@ -125,6 +125,14 @@ export const NOT_SSR: readonly NotSsrEntry[] = [
   { tag: 'oas-code-button', reason: 'pending', note: 'SSR 白名单化未立项（未发布批新组件，先登记 pending）' },
   { tag: 'oas-image-picker', reason: 'client-only', note: 'File / objectURL 选图仅客户端可用' },
   { tag: 'oas-image-cropper', reason: 'client-only', note: 'canvas 裁剪与舞台测量仅客户端可用' },
+  { tag: 'oas-share-sheet', reason: 'client-only', note: '受控浮层与焦点管理依赖客户端交互' },
+  { tag: 'oas-curtain', reason: 'client-only', note: '首次弹出判定依赖 localStorage' },
+  { tag: 'oas-offline', reason: 'client-only', note: '依赖 navigator.onLine 与 online/offline 事件' },
+  { tag: 'oas-page-loading', reason: 'pending', note: 'SSR 白名单化未立项（移动端与工具组件批先登记 pending）' },
+  { tag: 'oas-rolling-text', reason: 'pending', note: 'SSR 白名单化未立项（移动端与工具组件批先登记 pending）' },
+  { tag: 'oas-barrage', reason: 'client-only', note: '轨道排期依赖 DOM 测量与计时器' },
+  { tag: 'oas-safe-area', reason: 'pending', note: 'SSR 白名单化未立项（移动端与工具组件批先登记 pending）' },
+  { tag: 'oas-status-bar', reason: 'pending', note: 'SSR 白名单化未立项（移动端与工具组件批先登记 pending）' },
 ]
 
 export const NOT_SSR_TAGS: ReadonlySet<string> = new Set(NOT_SSR.map((entry) => entry.tag))

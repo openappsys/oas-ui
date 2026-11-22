@@ -685,4 +685,12 @@ export const ru: LocaleMessages = {
   'imageCropper.zoom': 'Масштаб',
   'imageCropper.empty': 'Нет изображения',
   'imageCropper.loadFailed': 'Не удалось загрузить изображение',
+  // share-sheet (панель обмена)
+  'shareSheet.title': 'Поделиться в',
+  'shareSheet.cancel': 'Отмена',
+  'shareSheet.close': 'Закрыть',
+  'shareSheet.empty': 'Нет доступных получателей',
+  'curtain.close': 'Закрыть',
+  'curtain.label': 'Уведомление',
+  'offline.message': 'Нет подключения к сети. Проверьте настройки сети.',
 }

@@ -23,6 +23,7 @@ const FAMILIES = [
   'workbench',
   'framework',
   'commerce',
+  'overlay',
 ]
 
 function walk(dir: string, acc: string[] = []): string[] {

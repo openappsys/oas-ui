@@ -687,4 +687,12 @@ export const hi: LocaleMessages = {
   'imageCropper.zoom': 'ज़ूम',
   'imageCropper.empty': 'कोई छवि नहीं',
   'imageCropper.loadFailed': 'छवि लोड नहीं हो सकी',
+  // share-sheet (शेयर पैनल)
+  'shareSheet.title': 'यहाँ साझा करें',
+  'shareSheet.cancel': 'रद्द करें',
+  'shareSheet.close': 'बंद करें',
+  'shareSheet.empty': 'साझा करने के लिए कोई लक्ष्य नहीं',
+  'curtain.close': 'बंद करें',
+  'curtain.label': 'सूचना',
+  'offline.message': 'आप ऑफ़लाइन हैं। अपना नेटवर्क कनेक्शन जाँचें।',
 }

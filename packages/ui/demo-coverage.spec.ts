@@ -131,6 +131,7 @@ const EXEMPT_EVENTS = new Set([
   'oas-rows-request', // table：row-model="server" 需宿主监听取数回填才触发（通用探针不可达；qa-regression/table-server.spec.ts 已固化真实请求链路）
   'oas-rows-error', // table：server 行模型失败反馈需宿主 reportRowsError 通知（通用探针不可达；qa-regression/table-server.spec.ts 已固化失败链路）
   'oas-range-request', // gantt/resource：宿主托管时间范围时滚到轴端才触发（通用探针不可达；qa-regression/gantt.spec.ts 与 resource.spec.ts 已固化真实链路）
+  'oas-item-click', // barrage：弹幕项随时间漂移，通用探针（click 首元素）命中窗口不稳定——qa-regression/barrage.spec.ts 先暂停再点项固化真实点击链路。同名事件另见 index-bar / statusbar，二者在 COMPONENT_STEPS 中有显式点击步骤（豁免不影响其覆盖）
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求
@@ -905,6 +906,15 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'image-cropper': [
     ['#ic-event [data-act="rotate"]', 'click', '点旋转 → oas-change'],
     ['#ic-free [data-act="confirm"]', 'click', '点裁剪（#ic-free 已加载图片）→ oas-crop'],
+  ],
+  // 需「先打开受控浮层再点内部」的事件：通用探针只点宿主按钮，渠道/关闭钮够不到
+  'share-sheet': [
+    ['#ss-open', 'domclick', '打开分享面板（show() 幂等，通用探针已打开也不重复开合）'],
+    ['oas-share-sheet[open] [part="channel"]', 'domclick', '点首个渠道 → oas-select + oas-close{reason:select}'],
+  ],
+  curtain: [
+    ['#ct-open', 'domclick', '打开幕帘'],
+    ['oas-curtain[open] [part="close"]', 'domclick', '点关闭钮 → oas-close{reason:button}'],
   ],
 }
 

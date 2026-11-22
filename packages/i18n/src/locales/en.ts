@@ -612,4 +612,12 @@ export const en: LocaleMessages = {
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'No image',
   'imageCropper.loadFailed': 'Failed to load image',
+  // share-sheet (share panel)
+  'shareSheet.title': 'Share to',
+  'shareSheet.cancel': 'Cancel',
+  'shareSheet.close': 'Close',
+  'shareSheet.empty': 'No share targets',
+  'curtain.close': 'Close',
+  'curtain.label': 'Notice',
+  'offline.message': 'You are offline. Check your network connection.',
 }

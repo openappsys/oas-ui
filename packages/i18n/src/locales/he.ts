@@ -687,4 +687,12 @@ export const he: LocaleMessages = {
   'imageCropper.zoom': 'זום',
   'imageCropper.empty': 'אין תמונה',
   'imageCropper.loadFailed': 'טעינת התמונה נכשלה',
+  // share-sheet (לוח שיתוף)
+  'shareSheet.title': 'שיתוף אל',
+  'shareSheet.cancel': 'ביטול',
+  'shareSheet.close': 'סגור',
+  'shareSheet.empty': 'אין יעדי שיתוף זמינים',
+  'curtain.close': 'סגור',
+  'curtain.label': 'הודעה',
+  'offline.message': 'אין חיבור לרשת. בדוק את הגדרות הרשת.',
 }

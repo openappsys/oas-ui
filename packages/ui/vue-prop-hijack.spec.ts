@@ -162,6 +162,24 @@ const CONTRACT: ContractEntry[] = [
     },
   },
   {
+    page: 'share-sheet',
+    tag: 'oas-share-sheet',
+    // channels 是设计内 get+set 双通道：attribute 声明 JSON，框架按「key in el」走 property
+    // 赋值（数组或 JSON 字符串）。历史缺陷是同名实例字段被 update() 的解析结果覆盖 → 空态。
+    propContract: {
+      attrs: ['channels'],
+      renderedSel: 'button.channel',
+      stringProbe: [
+        {
+          prop: 'channels',
+          raw: '[{"key":"probe-a","name":"Probe A"},{"key":"probe-b","name":"Probe B","icon":"copy"}]',
+          identity: true,
+          text: 'Probe A',
+        },
+      ],
+    },
+  },
+  {
     page: 'list',
     tag: 'oas-list',
     // 虚拟模式行在内嵌 oas-virtual-list 的 [part="item"]；普通数据模式为 oas-list-item[data-index]

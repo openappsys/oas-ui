@@ -1,10 +1,10 @@
 ---
-description: OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+description: OAS-UI 提供 172 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 ---
 
 # 组件总览
 
-OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 172 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -29,9 +29,11 @@ OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 
 - [Grid 栅格](/components/grid) —— 24 栅格布局系统，配合 `oas-grid-item` 划分列宽，支持间距、偏移与自定义总列数；设置 `columns` 后切换为自动等分布局（simple-grid）。
 - [Layout 布局](/components/layout) —— 经典的顶部 + 侧栏 + 内容 + 底部页面骨架，配合语义化子组件使用。
 - [Masonry 瀑布流](/components/masonry) —— 基于 CSS columns 的瀑布流布局容器，子项自动均分到各列且不被拆分。
+- [SafeArea 安全区占位](/components/safe-area) —— 移动端嵌入宿主时按 `env(safe-area-inset-*)` 预留刘海/底部手势区高度，`size` 可显式覆盖。
 - [ScrollArea 滚动区域](/components/scroll-area) —— 包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，`auto-hide` 时仅在滚动/悬停时显示，滚动事件节流派发。
 - [Sidebar 侧栏](/components/sidebar) —— 可折叠侧栏：桌面端 `collapsed` 收窄为图标条，移动端（窄于 `mobile-breakpoint`，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。
 - [Splitter 分割面板](/components/splitter) —— 可调整左右面板宽度的分割组件，支持鼠标拖拽与键盘方向键调整。
+- [StatusBar 状态栏占位](/components/status-bar) —— 预留顶部状态栏高度，`height` / `color` 覆盖尺寸与前景色，插槽放宿主绘制的状态内容。
 
 ## 表单组件
 
@@ -82,6 +84,7 @@ OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 
 - [Backdrop 遮罩](/components/backdrop) —— 全屏半透明遮罩，支持 `transparent`/`blur` 变体与 body 滚动锁定；`open=false` 时自动卸载节点，不留孤儿 DOM。
 - [BottomSheet 底部抽屉](/components/bottom-sheet) —— feedback 移动端底部抽屉承载件：下滑把手/点遮罩/Esc 关闭、safe-area 与焦点陷阱内置，`passive` 模式作浮层 PC 形态结构占位。
 - [Confirm 确认框](/components/confirm) —— 命令式确认对话框，基于 Promise，底层复用 `oas-modal`。
+- [Curtain 幕帘](/components/curtain) —— 一次性全屏浮层，首次进入自动弹出、关闭后本地记忆不再打扰，支持 `reset()` 清除记忆。
 - [Drawer 抽屉](/components/drawer) —— 从侧边滑出的面板，常用于筛选条件、详情信息等场景。
 - [Empty 空状态](/components/empty) —— 空数据时的占位展示，支持自定义描述、自定义插画与尺寸、隐藏插画与操作区。
 - [HoverCard 悬停卡片](/components/hover-card) —— hover / 聚焦触发，可配置延迟的预览卡片。
@@ -90,11 +93,14 @@ OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 
 - [Modal 对话框](/components/modal) —— 模态对话框，用于需要用户确认或输入的中断场景。
 - [NoticeBar 通告栏](/components/notice-bar) —— 页面顶部/区块内通告条：图标 + 超长横向滚动文本 + 多条纵向轮播 + 可关闭 + action 链接。
 - [Notification 通知](/components/notification) —— 右上角通知卡片，支持标题、描述、时长与类型。
+- [Offline 断网提示](/components/offline) —— 监听 online/offline 事件，断网显示提示条/块、恢复自动消失，首帧按 `navigator.onLine` 判定不闪。
+- [PageLoading 整页加载](/components/page-loading) —— 全屏遮罩 + 转菊花/骨架/进度三形态，`show()` / `close()` 编程控制并派发 `oas-close`。
 - [Popconfirm 气泡确认](/components/popconfirm) —— 在触发元素旁显示确认气泡，常用于删除等危险操作前的二次确认。
 - [Popover 气泡卡片](/components/popover) —— 点击触发，可承载标题、正文与自定义内容的浮层面板。
 - [Progress 进度条](/components/progress) —— 显示任务执行进度，支持线形与圆环两种形态、状态色与隐藏文字。
 - [PullRefresh 下拉刷新](/components/pull-refresh) —— 移动端下拉刷新容器：列表滚到顶部继续下拉露出指示区（阻力曲线跟手），过阈值释放派发 oas-refresh 并停驻；宿主完成后移除 refreshing，组件播成功文案回弹复位。
 - [Result 结果页](/components/result) —— 操作结果反馈页，支持成功、失败、警告、信息四种状态。
+- [ShareSheet 分享面板](/components/share-sheet) —— 底部弹出宫格渠道 + 取消，点击渠道派发 `oas-select` 后自动关闭，支持标题/取消文案覆盖。
 - [Skeleton 骨架屏](/components/skeleton) —— 加载时的占位骨架，支持头像、标题、多行段落与流光动画。
 - [Snackbar 消息条](/components/snackbar) —— 底部（或顶部）弹出的轻量反馈条，`open` 属性受控，可带操作按钮，默认 4 秒后派发 `oas-close` 由外部负责关闭。
 - [Spin 加载中](/components/spin) —— 加载指示器，可单独使用，也可包裹内容并叠加遮罩。
@@ -138,6 +144,7 @@ OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 
 
 - [Avatar 头像](/components/avatar) —— 用于展示用户或对象头像，支持文字占位与图片两种形态。
 - [Barcode 条码](/components/barcode) —— 基于**纯 TypeScript 零依赖编码器**（自研）的一维条码组件，第一期 6 码制（CODE128/EAN-13/EAN-8/UPC-A/CODE39/ITF-14），可扫性约束内建（静区护栏/固定白底），输出内联 SVG，可下载。
+- [Barrage 弹幕](/components/barrage) —— 流式轨道弹幕，按速度漂过、同轨道防重叠，`max-active` 控制密度，`pause()` / `clear()` 控制。
 - [Card 卡片](/components/card) —— 用于承载一组相关内容的信息容器。
 - [Carousel 轮播](/components/carousel) —— 用于在同一可视区域循环展示多屏内容，支持手动切换与自动播放。
 
@@ -164,6 +171,7 @@ OAS-UI 提供 164 个框架无关的 Web Components 组件，按用途划分为 
 - [QRCode 二维码](/components/qrcode) —— 基于**纯 TypeScript 零依赖编码器**（自研）的二维码组件，输出内联 SVG，可扫码、可下载。
 - [RelativeTime 相对时间](/components/relative-time) —— 本地化相对时间展示（`Intl.RelativeTimeFormat`），内层 `<time datetime>` 语义；可选 `auto-refresh` 按页面可见性自动刷新，非法/缺失值渲染安全空态。
 - [Resource 资源负载](/components/resource) —— 资源泳道 + 负载直方图：按资源展示任务分配、容量与超载高亮，纯视图层，不自动回写排程。
+- [RollingText 翻滚文本](/components/rolling-text) —— 数字/字符逐位翻滚，值变化按列滚动，支持前缀后缀与小数精度。
 - [Scanner 扫码器](/components/scanner) —— 相机扫码：active 驱动 getUserMedia + 原生 BarcodeDetector 识别，命中派 oas-scan；无相机/无权限自动降级手动输入。
 - [Scheduler 日程](/components/scheduler) —— 月视图日程组件：日格事件芯片（标题 + 色条）+ events 读写通道 + CRUD 方法与事件，纯 UI 态。
 - [Signature 签名板](/components/signature) —— canvas 签名板：pointer 笔迹捕获 + value 双通道受控 + oas-change，多指过滤/单点不成笔，resize 保留笔迹。

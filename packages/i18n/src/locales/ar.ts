@@ -684,4 +684,12 @@ export const ar: LocaleMessages = {
   'imageCropper.zoom': 'التكبير',
   'imageCropper.empty': 'لا توجد صورة',
   'imageCropper.loadFailed': 'تعذّر تحميل الصورة',
+  // share-sheet (لوحة المشاركة)
+  'shareSheet.title': 'مشاركة إلى',
+  'shareSheet.cancel': 'إلغاء',
+  'shareSheet.close': 'إغلاق',
+  'shareSheet.empty': 'لا توجد جهات مشاركة متاحة',
+  'curtain.close': 'إغلاق',
+  'curtain.label': 'تنبيه',
+  'offline.message': 'انقطع الاتصال بالشبكة. تحقق من إعدادات الشبكة.',
 }

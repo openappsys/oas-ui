@@ -3,10 +3,10 @@
  *
  * 五道防线：
  * 1. 生成物漂移：子进程跑生成器 --check（重新生成 ↔ 入库文件逐字节一致）；
- * 2. 防丢键：10 个切片的 key 并集 === zh-CN 全集（值也逐一相等）；
+ * 2. 防丢键：11 个切片的 key 并集 === zh-CN 全集（值也逐一相等）；
  * 3. 消费面：ui 源码里出现的每个 key 字面量（含模板点分前缀展开），都在其所在家族的切片里；
  * 4. 跨家族/死键：跨家族 key 在每个消费族切片里都存在；死键清单固定且只归 framework；
- * 5. 定点键 + 运行时：三个空串陷阱键在对应切片里；整包入口的 581 键全部可解析。
+ * 5. 定点键 + 运行时：三个空串陷阱键在对应切片里；整包入口的 588 键全部可解析。
  */
 import { spawnSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
@@ -24,6 +24,7 @@ import { formMessages } from './form.js'
 import { frameworkMessages } from './framework.js'
 import { layoutMessages } from './layout.js'
 import { navigationMessages } from './navigation.js'
+import { overlayMessages } from './overlay.js'
 import { workbenchMessages } from './workbench.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -42,6 +43,7 @@ const FAMILY_LIST = [
   'framework',
   'layout',
   'navigation',
+  'overlay',
   'workbench',
 ] as const
 type Family = (typeof FAMILY_LIST)[number]
@@ -56,6 +58,7 @@ const slices: Record<Family, Record<string, string>> = {
   framework: frameworkMessages,
   layout: layoutMessages,
   navigation: navigationMessages,
+  overlay: overlayMessages,
   workbench: workbenchMessages,
 }
 
@@ -397,7 +400,7 @@ describe('i18n 家族切片完备性', () => {
     expect(res.status, `--check 应退出 0；输出：${res.stdout}\n${res.stderr}`).toBe(0)
   })
 
-  it('防丢键：10 个切片的 key 并集 === zh-CN 全集，且值与 zh-CN 逐一相等', () => {
+  it('防丢键：11 个切片的 key 并集 === zh-CN 全集，且值与 zh-CN 逐一相等', () => {
     const union = new Set<string>()
     for (const family of FAMILY_LIST) {
       // 跨家族 key 会出现在多个切片（设计如此）；仅禁止同一切片内重复
@@ -456,8 +459,8 @@ describe('i18n 家族切片完备性', () => {
     expect(slices.conversation['promptInput.placeholder']).toBe('输入消息…')
   })
 
-  it('运行时：整包入口下 581 键全部可解析（t() 不回退 raw key）', () => {
-    expect(zhKeys.length).toBe(581)
+  it('运行时：整包入口下 588 键全部可解析（t() 不回退 raw key）', () => {
+    expect(zhKeys.length).toBe(588)
     for (const key of zhKeys) {
       expect(t(key as never), `整包入口下 ${key} 应解析为中文`).not.toBe(key)
     }

@@ -684,4 +684,12 @@ export const de: LocaleMessages = {
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'Kein Bild',
   'imageCropper.loadFailed': 'Bild konnte nicht geladen werden',
+  // share-sheet (Teilen-Panel)
+  'shareSheet.title': 'Teilen mit',
+  'shareSheet.cancel': 'Abbrechen',
+  'shareSheet.close': 'Schließen',
+  'shareSheet.empty': 'Keine Freigabeziele',
+  'curtain.close': 'Schließen',
+  'curtain.label': 'Hinweis',
+  'offline.message': 'Sie sind offline. Prüfen Sie Ihre Netzwerkverbindung.',
 }

@@ -10,10 +10,10 @@
  * - 字面量内容恰好等于某个 zh-CN key 才算命中（任意上下文，不限 t(）；
  * - 有插值的模板字面量取首个静态段，按其点分前缀（`messageRow.status.${x}` → `messageRow`、
  *   `barcode.invalid${x}` → `barcode`）展开；该前缀必须是 key 的合法点分前缀，否则忽略；
- * - 家族 = 文件相对 packages/ui/src 的首段目录（10 个家族目录之一）；
+ * - 家族 = 文件相对 packages/ui/src 的首段目录（11 个家族目录之一）；
  * - 跨家族 key（≥2 个家族引用）重复写入每个消费族的切片；
  * - 未被任何家族引用的 key（死键）全部归 framework，并在报告里列出，禁止静默丢键；
- * - 非 9 家族目录（shared/overlay/families/根文件）出现 key 引用 → 报错退出（需人工决策归属）。
+ * - 非 11 家族目录（shared/families/根文件）出现 key 引用 → 报错退出（需人工决策归属）。
  *
  * 用法：
  *   node scripts/i18n/gen-slices.mjs            # 生成 / 覆盖切片（输出摘要报告）
@@ -34,7 +34,7 @@ const UI_SRC = path.join(REPO_ROOT, 'packages', 'ui', 'src')
 const SLICES_DIR = path.join(REPO_ROOT, 'packages', 'i18n', 'src', 'slices')
 const BIOME_BIN = path.join(REPO_ROOT, 'node_modules', '@biomejs', 'biome', 'bin', 'biome')
 
-/** 10 个家族目录（overlay/shared 无 families/*.ts 且零 key，不生成切片） */
+/** 11 个家族目录（shared 无 families/*.ts 且零 key，不生成切片） */
 const FAMILIES = [
   'basic',
   'commerce',
@@ -45,6 +45,7 @@ const FAMILIES = [
   'framework',
   'layout',
   'navigation',
+  'overlay',
   'workbench',
 ]
 const FAMILY_SET = new Set(FAMILIES)
@@ -478,7 +479,7 @@ function main() {
   const { keys, values, owners, sliceOwners, deadKeys, crossKeys, outsideRefs } = analyze(entries)
 
   if (outsideRefs.size > 0) {
-    console.error('== 错误：非 9 家族目录（shared/overlay/families/根文件）出现了 key 引用，需人工决策归属 ==')
+    console.error('== 错误：非家族目录（shared/families 根文件等）出现了 key 引用，需人工决策归属 ==')
     for (const [k, files] of outsideRefs) console.error(`  ${k} ← ${[...new Set(files)].join(', ')}`)
     process.exitCode = 1
     return

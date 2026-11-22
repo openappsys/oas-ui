@@ -55,9 +55,11 @@
 - [Grid 栅格](https://oas-ui.dev/components/grid): 24 栅格布局系统，配合 oas-grid-item 划分列宽，支持间距、偏移与自定义总列数；设置 columns 后切换为自动等分布局（simple-grid）。
 - [Layout 布局](https://oas-ui.dev/components/layout): 经典的顶部 + 侧栏 + 内容 + 底部页面骨架，配合语义化子组件使用。
 - [Masonry 瀑布流](https://oas-ui.dev/components/masonry): 基于 CSS columns 的瀑布流布局容器，子项自动均分到各列且不被拆分。
+- [SafeArea 安全区占位](https://oas-ui.dev/components/safe-area): 移动端嵌入宿主（WebView / 全屏 H5）时，刘海屏与底部手势区会遮挡内容。oas-safe-area 读取 env(safe-area-inset-top) / env(safe-area-inset-bottom) 占出对应高度，作为布局占位件插在页面首/尾即可。
 - [ScrollArea 滚动区域](https://oas-ui.dev/components/scroll-area): 包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，type 控制滚动条显示时机（auto / always / scroll / hover），滚动事件节流派发。
 - [Sidebar 侧栏](https://oas-ui.dev/components/sidebar): 可折叠侧栏：桌面端 collapsed 收窄为图标条，移动端（窄于 mobile-breakpoint，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。
 - [Splitter 分割面板](https://oas-ui.dev/components/splitter): 可调整面板尺寸的分割组件，支持鼠标拖拽、键盘方向键、双击复位、折叠、延迟渲染、多面板与自定义手柄。
+- [StatusBar 状态栏占位](https://oas-ui.dev/components/status-bar): 为嵌入移动宿主的页面预留顶部状态栏高度（env(safe-area-inset-top)），并提供高度与前景色覆盖。
 
 ## 表单组件
 
@@ -106,6 +108,7 @@
 - [Backdrop 遮罩](https://oas-ui.dev/components/backdrop): 全屏半透明遮罩，支持内容插槽、颜色/浓度/模糊定制、淡入淡出动画与生命周期事件；open=false 时播完退场动画后自动卸载节点，不留孤儿 DOM。
 - [BottomSheet 底部抽屉](https://oas-ui.dev/components/bottom-sheet): 移动端底部抽屉承载件：底部升起面板 + 拖拽把手 + 遮罩，下滑把手/点遮罩/Esc 三种关闭手势，safe-area 刘海屏手势区与焦点陷阱内置；passive 被动透传模式可作浮层组件 PC 形态的结构占位。
 - [Confirm 确认框](https://oas-ui.dev/components/confirm): 命令式确认对话框，基于 Promise，底层复用 oas-modal。
+- [Curtain 幕帘](https://oas-ui.dev/components/curtain): 进入页面后一次性展示的全屏浮层：首次进入自动弹出，用户关闭后写入本地记忆，之后不再打扰。
 - [Drawer 抽屉](https://oas-ui.dev/components/drawer): 从屏幕边缘滑出的浮层面板，常用于筛选条件、详情信息、表单编辑等场景。
 - [Empty 空状态](https://oas-ui.dev/components/empty): 空数据时的占位展示，支持标题、富内容描述、图标型媒体、两套内置插画、尺寸档位、横向布局与容器变体。
 - [HoverCard 悬停卡片](https://oas-ui.dev/components/hover-card): hover / 聚焦触发，浮层可悬停不闪关的富内容预览卡片。
@@ -114,11 +117,14 @@
 - [Modal 对话框](https://oas-ui.dev/components/modal): 模态对话框，用于需要用户确认或输入的中断场景。
 - [NoticeBar 通告栏](https://oas-ui.dev/components/notice-bar): 页面顶部/区块内的通告条：图标 + 文本 + 可关闭 + action 链接。
 - [Notification 通知](https://oas-ui.dev/components/notification): 四角定位的通知卡片，支持标题、描述、时长、类型、悬停暂停、优先级抢占与栈治理（折叠计数/层叠悬停展开）。
+- [Offline 断网提示](https://oas-ui.dev/components/offline): 监听浏览器 online / offline 事件同步网络状态：断网时显示提示，恢复后自动消失。
+- [PageLoading 整页加载](https://oas-ui.dev/components/page-loading): 整页加载态：全屏遮罩盖住页面，内置三种形态——spinner 转菊花（默认）、skeleton 骨架行、progress 进度条。
 - [Popconfirm 气泡确认](https://oas-ui.dev/components/popconfirm): 在触发元素旁显示确认气泡，常用于删除等危险操作前的二次确认。
 - [Popover 气泡卡片](https://oas-ui.dev/components/popover): 点击 / 悬停 / 聚焦触发，可承载标题、正文与自定义内容的浮层面板。
 - [Progress 进度条](https://oas-ui.dev/components/progress): 显示任务执行进度，支持线形 / 圆环 / 仪表盘三种形态、状态色、不确定态、自定义颜色与文本、条纹、步进分段、缓冲段等能力。
 - [PullRefresh 下拉刷新](https://oas-ui.dev/components/pull-refresh): 移动端下拉刷新容器组件：默认插槽为滚动内容（列表等），容器自身为滚动盒（高度由宿主约束）。
 - [Result 结果页](https://oas-ui.dev/components/result): 操作结果反馈页，支持成功、失败、警告、信息与 403/404/500 错误页状态，标题/描述双通道、内容区、自定义图标与尺寸档位。
+- [ShareSheet 分享面板](https://oas-ui.dev/components/share-sheet): 底部升起的分享面板：标题 + 宫格渠道 + 取消按钮。
 - [Skeleton 骨架屏](https://oas-ui.dev/components/skeleton): 加载时的占位骨架：整组段落组合（头像/标题/行）与单形状占位块（oas-skeleton-item）两种用法，支持受控加载切换、三档动效、列表份数、逐行宽度与防闪烁延迟。
 - [Snackbar 消息条](https://oas-ui.dev/components/snackbar): 底部（或顶部）居中的轻量反馈条。open 属性受控，多条自动纵向堆叠（每方向最多 3 条）；悬停/聚焦/页面隐藏时暂停计时并按剩余时长续走；oas-close 事件以 detail.reason 区分关闭途径（timeout / escape / close / swipe / evict / group），由外部负责移除 open。
 - [Spin 加载中](https://oas-ui.dev/components/spin): 加载指示器，可单独使用，也可包裹内容并叠加遮罩；支持文案、进度、全屏与自定义指示器。
@@ -162,6 +168,7 @@
 
 - [Avatar 头像](https://oas-ui.dev/components/avatar): 用于展示用户或对象头像，支持文字占位与图片两种形态。
 - [Barcode 条码](https://oas-ui.dev/components/barcode): 基于纯 TypeScript 零依赖编码器（自研）的一维条码组件，覆盖 10 码制（CODE128 / GS1-128 / EAN-13 / EAN-8 / UPC-E / UPC-A / CODE39 / Codabar / MSI / ITF-14），输出内联 SVG，可扫码、可下载。
+- [Barrage 弹幕](https://oas-ui.dev/components/barrage): 流式弹幕：每条弹幕占一个轨道、从右向左匀速漂过；同一轨道按「前一条完全进场 + 最小间距」排期，避免追尾重叠；max-active 控制同屏密度，超出的进入队列。
 - [Card 卡片](https://oas-ui.dev/components/card): 用于承载一组相关内容的信息容器。
 - [Carousel 轮播](https://oas-ui.dev/components/carousel): 用于在同一可视区域循环展示多屏内容，支持手动切换与自动播放。
 - [Chart 图表](https://oas-ui.dev/components/chart): 自研 SVG 图表组件（零第三方图表引擎），支持折线 / 柱状 / 横向条形 / 饼图 / 面积 / 环形 / 堆叠柱状 / 雷达 / 极坐标面积九型，外加系列级组合图与双轴。
@@ -187,6 +194,7 @@
 - [QRCode 二维码](https://oas-ui.dev/components/qrcode): 基于纯 TypeScript 零依赖编码器（自研）的二维码组件，输出内联 SVG，可扫码、可下载。
 - [RelativeTime 相对时间](https://oas-ui.dev/components/relative-time): 把 epoch 毫秒 / ISO 8601 / Date 渲染为本地化相对时间，内层使用语义化 <time datetime>；可选 auto-refresh 自动刷新，页面隐藏时暂停。
 - [Resource 资源负载](https://oas-ui.dev/components/resource): 资源负载 / 泳道视图（新组件，data 族）：给定资源与任务（任务带分配的资源），渲染资源泳道（每资源一行，行内显示其被分配的任务条，共享时间轴）与负载直方图（按刻度档统计每资源并行任务数，超过容量高亮）。
+- [RollingText 翻滚文本](https://oas-ui.dev/components/rolling-text): 数字 / 字符逐位滚动的展示组件：每个字符占一列，数字列是 0–9 的纵向滚轮，值变化时按目标位翻滚；小数点、负号、字母等非数字列做纵向翻转替换。
 - [Scanner 扫码器](https://oas-ui.dev/components/scanner): 调用设备相机实时扫码识别的组件。
 - [Scheduler 日程调度](https://oas-ui.dev/components/scheduler): 月视图日程组件：日格内渲染事件芯片（标题 + 色条），events 读/写通道 + addEvent / updateEvent / removeEvent CRUD 方法；点事件芯片派发 oas-event-click、点日格派发 oas-day-click（宿主接编辑器），数据经 CRUD 方法变更时派发 oas-events-change（外部 setAttribute('events'…
 - [Signature 签名板](https://oas-ui.dev/components/signature): canvas 笔迹捕获的签名板组件：pointer 事件覆盖 mouse/pen/touch，DPR 高清渲染，笔色跟随主题 token（暗色自动翻转），容器 resize 笔迹保留，value（PNG dataURL）双通道受控。

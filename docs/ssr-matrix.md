@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：230
+- 组件：238
 - SSR 白名单：175
-- 有意不 SSR：55
+- 有意不 SSR：63
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -41,6 +41,8 @@
 | `oas-container` | layout | `layout/container` | ✅ 白名单 | — | — | `@oas-ui/ui/layout/container` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-aspect-ratio` | layout | `layout/aspect-ratio` | ✅ 白名单 | — | — | `@oas-ui/ui/layout/aspect-ratio` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-masonry` | layout | `layout/masonry` | ✅ 白名单 | — | — | `@oas-ui/ui/layout/masonry` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-safe-area` | layout | `layout/safe-area` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-status-bar` | layout | `layout/status-bar` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-titlebar` | workbench | `workbench/titlebar` | ✅ 白名单 | — | — | `@oas-ui/ui/workbench/titlebar` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-traffic-lights` | workbench | `workbench/titlebar` | ✅ 白名单 | — | — | `@oas-ui/ui/workbench/titlebar` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-statusbar` | workbench | `workbench/statusbar` | ✅ 白名单 | — | — | `@oas-ui/ui/workbench/statusbar` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
@@ -124,6 +126,10 @@
 | `oas-tooltip` | feedback | `feedback/tooltip` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/tooltip` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-popover` | feedback | `feedback/popover` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/popover` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-hover-card` | feedback | `feedback/hover-card` | ✅ 白名单 | — | — | `@oas-ui/ui/feedback/hover-card` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-offline` | feedback | `feedback/offline` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-page-loading` | feedback | `feedback/page-loading` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-share-sheet` | overlay | `overlay/share-sheet` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-curtain` | overlay | `overlay/curtain` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-menu` | navigation | `navigation/menu` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/menu` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-menu-item` | navigation | `navigation/menu` | ⛔ 不 SSR | subcomponent | oas-menu | — | — | — | — | — | —/— |
 | `oas-menu-group` | navigation | `navigation/menu` | ⛔ 不 SSR | subcomponent | oas-menu | — | — | — | — | — | —/— |
@@ -217,6 +223,8 @@
 | `oas-comment` | data | `data/comment` | ✅ 白名单 | — | — | `@oas-ui/ui/data/comment` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-highlight` | data | `data/highlight` | ✅ 白名单 | — | — | `@oas-ui/ui/data/highlight` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-swipe-cell` | data | `data/swipe-cell` | ✅ 白名单 | — | — | `@oas-ui/ui/data/swipe-cell` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-rolling-text` | data | `data/rolling-text` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-barrage` | data | `data/barrage` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-bubble` | conversation | `conversation/bubble` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/bubble` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-attachment` | conversation | `conversation/attachment` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/attachment` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-attachment-group` | conversation | `conversation/attachment` | ✅ 白名单 | — | — | `@oas-ui/ui/conversation/attachment` | ✅ | ✅ | ✅ | ✅ | —/— |

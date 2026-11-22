@@ -684,4 +684,12 @@ export const es: LocaleMessages = {
   'imageCropper.zoom': 'Zoom',
   'imageCropper.empty': 'Sin imagen',
   'imageCropper.loadFailed': 'No se pudo cargar la imagen',
+  // share-sheet (panel de compartir)
+  'shareSheet.title': 'Compartir en',
+  'shareSheet.cancel': 'Cancelar',
+  'shareSheet.close': 'Cerrar',
+  'shareSheet.empty': 'No hay destinos para compartir',
+  'curtain.close': 'Cerrar',
+  'curtain.label': 'Aviso',
+  'offline.message': 'Sin conexión. Comprueba tu conexión de red.',
 }

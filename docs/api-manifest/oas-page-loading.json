@@ -1,0 +1,109 @@
+{
+  "className": "OASPageLoading",
+  "sourceFile": "packages/ui/src/feedback/page-loading/oas-page-loading.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "rows",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [
+    {
+      "name": "show",
+      "signature": "show(): void",
+      "description": "命令式显示（与写入 open 属性等价）"
+    },
+    {
+      "name": "close",
+      "signature": "close(): void",
+      "description": "命令式关闭：移除 open 并派发 oas-close（宿主仅写属性时静默）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-close",
+      "detail": "{ mode: this.resolveMode() }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-page-loading-mask",
+      "default": "var(--oas-color-overlay)"
+    },
+    {
+      "name": "--oas-page-loading-blur",
+      "default": "none"
+    },
+    {
+      "name": "--oas-page-loading-max-width",
+      "default": "360px"
+    },
+    {
+      "name": "--oas-page-loading-bg",
+      "default": "var(--oas-color-bg)"
+    },
+    {
+      "name": "--oas-page-loading-color",
+      "default": "var(--oas-color-text-primary)"
+    },
+    {
+      "name": "--oas-page-loading-shadow",
+      "default": "0 8px 32px color-mix(in srgb, var(--oas-color-overlay) 28%, transparent)"
+    },
+    {
+      "name": "--oas-page-loading-spinner-size",
+      "default": "32px"
+    },
+    {
+      "name": "--oas-page-loading-spinner-color",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-page-loading-spin-duration",
+      "default": "0.9s"
+    },
+    {
+      "name": "--oas-page-loading-skeleton",
+      "default": "color-mix(in srgb, var(--oas-color-text-primary) 10%, transparent)"
+    },
+    {
+      "name": "--oas-page-loading-pulse-duration",
+      "default": "1.4s"
+    },
+    {
+      "name": "--oas-page-loading-track",
+      "default": "color-mix(in srgb, var(--oas-color-text-primary) 12%, transparent)"
+    },
+    {
+      "name": "--oas-page-loading-bar",
+      "default": "var(--oas-color-primary)"
+    }
+  ],
+  "unresolved": []
+}

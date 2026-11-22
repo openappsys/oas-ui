@@ -689,4 +689,12 @@ export const zhCN = {
   'imageCropper.zoom': '缩放',
   'imageCropper.empty': '暂无图片',
   'imageCropper.loadFailed': '图片加载失败',
+  // share-sheet（分享面板）
+  'shareSheet.title': '分享到',
+  'shareSheet.cancel': '取消',
+  'shareSheet.close': '关闭',
+  'shareSheet.empty': '暂无可分享渠道',
+  'curtain.close': '关闭',
+  'curtain.label': '提示',
+  'offline.message': '网络连接已断开，请检查网络设置',
 } as const
