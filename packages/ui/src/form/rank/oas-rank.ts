@@ -450,6 +450,7 @@ export class OASRank extends OASElement {
   /** 同步提示 / 错误文案 / 按钮只读态（不重建 DOM） */
   private refresh(): void {
     const min = this.minRankLimit()
+    this.warnUnreachableMin(min)
     const count = this.rankedKeys().length
     const errorText = this.invalidActive && min !== null ? this.t('rank.minRanks', { min }) : ''
     if (this.hintEl) {
@@ -637,6 +638,17 @@ export class OASRank extends OASElement {
       return null
     }
     return value
+  }
+
+  /**
+   * 下限可达性提示：`min-ranks` 超过可加入的选项总数（选项不足或被禁用）时，校验永远不可能通过。
+   * 只告警一次、不拦截渲染——数据可能后续补齐，交互与展示仍按真实数据工作。
+   */
+  private warnUnreachableMin(min: number | null): void {
+    if (min === null || this.optionSnapshot.length === 0) return
+    const total = this.optionSnapshot.filter((option) => option.disabled !== true).length
+    if (min <= total) return
+    warnOnce(`[oas-rank] min-ranks=${min} 超过可加入的选项总数 ${total}，下限不可达（仅告警，不拦截渲染）`)
   }
 
   /** 属性值解析：非法 JSON 视为空（裸 key 容忍只在 property 通道，避免坏属性凭空选中） */

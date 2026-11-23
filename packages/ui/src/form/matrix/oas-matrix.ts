@@ -372,8 +372,27 @@ export class OASMatrix extends OASElement {
 
     this.syncHint()
     this.syncStates()
+    // 值引用了不存在的列 key：UI 上无勾选，必须让调用方知道（首次交互回写时会自然丢弃）
+    this.warnUnknownColumns()
     // 已显示错误时随选择变化静默复检：补满即消失，持续缺失则保持最新文案
     if (this.invalidActive) this.applyValidation(this.missingInfo(), false)
+  }
+
+  /**
+   * 未知列 key 告警：`value` 指向 `columns` 里不存在的列（幽灵列）——不渲染勾选、不计作答，
+   * 首次交互后的回写会把它丢弃。同一条文案只提示一次（warnOnce）。
+   */
+  private warnUnknownColumns(): void {
+    if (this.columnSnapshot.length === 0) return
+    const columnKeys = new Set(this.columnSnapshot.map((column) => column.key))
+    const unknown: string[] = []
+    for (const entry of Object.values(this.value)) {
+      for (const key of Array.isArray(entry) ? entry : [entry]) {
+        if (!columnKeys.has(key) && !unknown.includes(key)) unknown.push(key)
+      }
+    }
+    if (unknown.length === 0) return
+    warnOnce(`[oas-matrix] value 引用了不存在的列 key（${unknown.join(' / ')}），不渲染且不计入作答；首次交互后丢弃`)
   }
 
   /** 重建列头与各行（rows/columns/mode/label 变化时） */
@@ -674,13 +693,16 @@ export class OASMatrix extends OASElement {
     const value = this.value
     const rows = this.rows
     const columns = this.columns
+    const columnKeys = new Set(columns.map((column) => column.key))
     const answerable = rows.filter((row) => !row.disabled && columns.some((column) => !column.disabled))
     if (answerable.length === 0) return null
+    // 列 key 必须真实存在于 columns：value 里的幽灵列在 UI 上没有勾选，
+    // 若判真就是「required 放行但用户看不到答案」（checkbox 的数组逐项校验，未知项不算作答）
     const answered = (rowKey: string): boolean => {
       const entry = value[rowKey]
       return this.modeName() === 'radio'
-        ? typeof entry === 'string' && entry !== ''
-        : Array.isArray(entry) && entry.length > 0
+        ? typeof entry === 'string' && columnKeys.has(entry)
+        : Array.isArray(entry) && entry.some((key) => columnKeys.has(key))
     }
     if (scope === 'table') {
       return answerable.some((row) => answered(row.key))

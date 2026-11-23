@@ -120,3 +120,18 @@ test('rank：min-ranks 下限校验显示错误，补足后自动消失', async 
   const passed = await page.evaluate(() => document.querySelector('#rk-min-out')!.textContent ?? '')
   expect(passed).toContain('校验通过')
 })
+
+test('rank：带 name 内嵌 oas-form 时值进表单快照（注册链生效）', async ({ page }) => {
+  await page.goto('/components/rank.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#rk-form')
+  const values = await page.evaluate(() => {
+    const form = document.querySelector('#rk-form') as HTMLElement & { getValues: () => Record<string, string> }
+    const rank = document.createElement('oas-rank')
+    rank.setAttribute('name', 'ranking')
+    rank.setAttribute('options', '[{"key":"apple","label":"苹果"},{"key":"banana","label":"香蕉"}]')
+    rank.setAttribute('value', '["banana","apple"]')
+    form.appendChild(rank)
+    return form.getValues()
+  })
+  expect(values.ranking, 'rank 必须被 collectFields 收集（value 通道 JSON 串）').toBe('["banana","apple"]')
+})

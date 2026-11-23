@@ -134,10 +134,12 @@ describe('OASRank', () => {
     expect(el.value).toEqual(['b'])
   })
 
-  it('value 属性去重保序，未知 key 保留原值但不渲染', () => {
+  it('value 属性去重保序，未知 key 首屏保留原值但不渲染，首次交互后丢弃', () => {
     const el = mount({ options: OPTIONS, value: '["b","b","ghost","a"]' })
     expect(el.value).toEqual(['b', 'ghost', 'a'])
     expect(rankedLabels(el).map((button) => button.textContent)).toEqual(['香蕉', '苹果'])
+    optionOf(el, 'c').click()
+    expect(el.value, '交互回写只保留已知项').toEqual(['b', 'a', 'c'])
   })
 
   it('min-ranks validate 失败：派发 oas-invalid、可视化错误、data-invalid', () => {
@@ -170,6 +172,26 @@ describe('OASRank', () => {
     const el = mount({ options: OPTIONS, 'min-ranks': '0' })
     expect(el.validate()).toBe(true)
     expect(warn.mock.calls.filter((call) => String(call[0]).includes('非法 min-ranks'))).toHaveLength(1)
+  })
+
+  it('min-ranks 超过可加入总数：告警一次，渲染与交互不受影响', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ options: OPTIONS, 'min-ranks': '5' })
+    expect(options(el), '下限不可达不拦截渲染').toHaveLength(3)
+    optionOf(el, 'a').click()
+    expect(el.value).toEqual(['a'])
+    // 后续 update / refresh 不重复告警
+    el.setAttribute('label', '排序题')
+    expect(warn.mock.calls.filter((call) => String(call[0]).includes('下限不可达'))).toHaveLength(1)
+
+    document.body.innerHTML = ''
+    const opts = JSON.stringify([
+      { key: 'a', label: 'A' },
+      { key: 'b', label: 'B', disabled: true },
+    ])
+    mount({ options: opts, 'min-ranks': '2' })
+    // 禁用项不计入可选总数：2 > 1 仍不可达
+    expect(warn.mock.calls.filter((call) => String(call[0]).includes('可加入的选项总数 1'))).toHaveLength(1)
   })
 
   it('禁用选项不可加入；禁用组全部不可操作', () => {

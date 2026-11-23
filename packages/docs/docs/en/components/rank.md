@@ -73,7 +73,7 @@ Option-level `disabled` cannot be added; group-level `disabled` blocks everythin
 
 ## Inside oas-form (generic form scenario)
 
-A ranking question is not a native form control: `oas-form` does not collect its value, so the host reads `value` (or listens to `oas-change`) and merges it into the submitted data. The example validates the ranking in `oas-submit` before merging.
+A ranking question is registered in the `oas-form` collection chain (the `value` channel; the form value is a JSON array of keys), so a named ranking question submits with the form and participates in `initial-values` / `reset`. The example below validates it first and then merges its `value` into the submitted data.
 
 <DemoBlock title="Ranking inside a form">
   <oas-form id="rk-form" style="width: 100%; max-width: 520px">

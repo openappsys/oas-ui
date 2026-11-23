@@ -106,3 +106,43 @@ test('matrix：必答校验失败显示错误、补满后自动消失（可见�
   const passed = await page.evaluate(() => document.querySelector('#mx-required-out')!.textContent ?? '')
   expect(passed).toContain('校验通过')
 })
+
+test('matrix：幽灵列 key 判未答（UI 无勾选时 required 不放行）', async ({ page }) => {
+  await page.goto('/components/matrix.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#mx-required')
+  // 幽灵列：speed 指向不存在的列 key，quality 正常作答——修复前 speed 会被判已答（required 放行但 UI 无勾选）
+  await page.evaluate(() => {
+    document.querySelector('#mx-required')!.setAttribute('value', '{"speed":"ghostCol","quality":"ok"}')
+  })
+  await realClick(page, '#mx-required-submit', 'button')
+
+  const state = await page.evaluate(() => {
+    const host = document.querySelector('#mx-required') as HTMLElement
+    const root = host.shadowRoot!
+    return {
+      invalid: host.hasAttribute('data-invalid'),
+      checked: root.querySelectorAll<HTMLInputElement>('input:checked').length,
+      feedback: document.querySelector('#mx-required-out')!.textContent ?? '',
+    }
+  })
+  expect(state.invalid, '幽灵列不得让必答通过').toBe(true)
+  expect(state.checked, '幽灵列在 UI 上没有勾选').toBe(1) // 只有 quality 的 ok
+  expect(state.feedback).toContain('speed')
+  expect(state.feedback).not.toContain('quality')
+})
+
+test('matrix：带 name 内嵌 oas-form 时值进表单快照（注册链生效）', async ({ page }) => {
+  await page.goto('/components/matrix.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#mx-form')
+  const values = await page.evaluate(() => {
+    const form = document.querySelector('#mx-form') as HTMLElement & { getValues: () => Record<string, string> }
+    const matrix = document.createElement('oas-matrix')
+    matrix.setAttribute('name', 'review')
+    matrix.setAttribute('rows', '[{"key":"speed"}]')
+    matrix.setAttribute('columns', '[{"key":"good"}]')
+    matrix.setAttribute('value', '{"speed":"good"}')
+    form.appendChild(matrix)
+    return form.getValues()
+  })
+  expect(values.review, 'matrix 必须被 collectFields 收集（value 通道 JSON 串）').toBe('{"speed":"good"}')
+})

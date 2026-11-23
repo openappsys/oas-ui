@@ -4,6 +4,8 @@ import { OASFormItem } from '../form-item/index.js'
 import { OASInput } from '../input/index.js'
 import { OASCheckboxGroup } from '../checkbox/index.js'
 import { OASTimePicker } from '../time-picker/index.js'
+import { OASMatrix } from '../matrix/index.js'
+import { OASRank } from '../rank/index.js'
 
 /** 挂一个带 form-item 的表单：字段 name 用 bracket 语法的行级路径场景。
  * 显式构造元素（而非 innerHTML 解析）——happy-dom 下解析式创建的自定义元素升级时机不稳定，
@@ -210,5 +212,44 @@ describe('FORM_CONTROLS 注册补漏（checkbox-group / time-picker）', () => {
     document.body.appendChild(form)
     expect(form.getValues()).toEqual({ at: '09:30:00' })
     expect(new OASTimePicker()).toBeInstanceOf(OASTimePicker)
+  })
+})
+
+describe('FORM_CONTROLS 注册补漏（matrix / rank）', () => {
+  const ROWS = JSON.stringify([
+    { key: 'speed', label: '响应速度' },
+    { key: 'quality', label: '内容质量' },
+  ])
+  const COLUMNS = JSON.stringify([
+    { key: 'bad', label: '差' },
+    { key: 'good', label: '好' },
+  ])
+  const OPTIONS = JSON.stringify([
+    { key: 'a', label: '苹果' },
+    { key: 'b', label: '香蕉' },
+  ])
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('oas-matrix 带 name 的值进表单快照（value 属性 JSON 串契约）', () => {
+    const form = new OASForm()
+    form.innerHTML = `<oas-matrix name="grid" rows='${ROWS}' columns='${COLUMNS}' value='{"speed":"good"}'></oas-matrix>`
+    document.body.appendChild(form)
+    expect(form.getValues()).toEqual({ grid: '{"speed":"good"}' })
+    expect(new OASMatrix()).toBeInstanceOf(OASMatrix)
+  })
+
+  it('oas-rank 的值随 initial-values 回写，并在快照中按 JSON 串收集', () => {
+    const form = new OASForm()
+    form.setAttribute('initial-values', JSON.stringify({ order: ['b', 'a'] }))
+    form.innerHTML = `<oas-rank name="order" options='${OPTIONS}' value=""></oas-rank>`
+    document.body.appendChild(form)
+    expect(form.getValues()).toEqual({ order: '["b","a"]' })
+    expect(new OASRank()).toBeInstanceOf(OASRank)
   })
 })

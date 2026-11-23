@@ -272,10 +272,46 @@ describe('OASMatrix', () => {
     expect(event!.detail).toMatchObject({ value: {} })
   })
 
-  it('未知 value key 不渲染勾选、也不参与必答判定', () => {
+  it('未知 value key 不渲染勾选、也不参与必答判定；首次交互后丢弃', () => {
     const el = mount({ rows: ROWS, columns: COLUMNS, required: '', value: '{"ghost":"bad"}' })
     expect(inputs(el, 0).every((input) => !input.checked)).toBe(true)
     expect(el.validate()).toBe(false)
+    pick(el, 0, 0)
+    expect(el.value, '交互回写按已渲染控件收敛：未知行 key 不再保留').toEqual({ speed: 'bad' })
+  })
+
+  it('幽灵列 key（不在 columns 内）不计作答：required 拦截、告警一次、首次交互后丢弃', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ rows: ROWS, columns: COLUMNS, required: '', value: '{"speed":"ghostCol"}' })
+    const details: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-invalid', (event) => details.push((event as CustomEvent).detail))
+    expect(
+      inputs(el, 0).every((input) => !input.checked),
+      '幽灵列在 UI 上没有可勾选的控件',
+    ).toBe(true)
+    expect(el.validate(), 'UI 无勾选时 required 不得放行').toBe(false)
+    expect((details[0]!.missingRows as string[]).sort()).toEqual(['quality', 'speed'])
+    // 同一配置重复渲染（label 变化触发 update）不重复告警
+    el.setAttribute('label', '重复渲染')
+    expect(warn.mock.calls.filter((call) => String(call[0]).includes('不存在的列 key'))).toHaveLength(1)
+    pick(el, 0, 1)
+    pick(el, 1, 2)
+    expect(el.value, '首次交互回写后幽灵列被丢弃').toEqual({ speed: 'ok', quality: 'good' })
+    expect(el.validate()).toBe(true)
+  })
+
+  it('checkbox 数组内的幽灵列同样不计作答', () => {
+    const el = mount({
+      rows: ROWS,
+      columns: COLUMNS,
+      mode: 'checkbox',
+      required: '',
+      value: '{"speed":["ghostCol"]}',
+    })
+    expect(inputs(el, 0).every((input) => !input.checked)).toBe(true)
+    expect(el.validate()).toBe(false)
+    pick(el, 0, 0)
+    expect(el.value).toEqual({ speed: ['bad'] })
   })
 
   it('mode 非法值回落 radio 并告警一次', () => {

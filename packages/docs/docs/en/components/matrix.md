@@ -76,7 +76,7 @@ Each row accepts multiple options. `required-scope="table"` means at least one r
 
 ## Inside oas-form (generic form scenario)
 
-A matrix is not a native form control: `oas-form` only collects registered named controls, so the host reads `value` (or listens to `oas-change`) and merges it into the submitted data. The example validates the matrix in `oas-submit` and merges its value.
+A matrix is registered in the `oas-form` collection chain (the `value` channel; the form value is a JSON string), so a named matrix submits with the form and participates in `initial-values` / `reset`. The example below validates the matrix itself and merges its `value` — per-row required errors only show after `validate()`.
 
 <DemoBlock title="Matrix inside a form">
   <oas-form id="mx-form" style="width: 100%; max-width: 620px">

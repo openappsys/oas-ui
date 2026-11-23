@@ -53,6 +53,13 @@ describe('默认 widget 映射表（V1 冻结）', () => {
     expect(warnings.join()).toContain('不在内置控件表内')
   })
 
+  it('matrix / rank 在已知控件表内（值收集走 FORM_CONTROLS，指定时不告警）', () => {
+    const warnings: string[] = []
+    expect(resolve({ type: 'string' }, { widget: 'oas-matrix' }, warnings)?.tag).toBe('oas-matrix')
+    expect(resolve({ type: 'string' }, { widget: 'oas-rank' }, warnings)?.tag).toBe('oas-rank')
+    expect(warnings).toEqual([])
+  })
+
   it('未知 format 告警并按普通文本渲染', () => {
     const warnings: string[] = []
     expect(resolve({ type: 'string', format: 'ipv4' }, {}, warnings)?.tag).toBe('oas-input')

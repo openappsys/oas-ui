@@ -73,7 +73,7 @@ description: 排序题：点击或键盘把选项加入排名序列，已选项�
 
 ## 与 oas-form 组合（通用表单场景）
 
-排序题不是原生表单控件：`oas-form` 不收集它的值，宿主读取 `value`（或监听 `oas-change`）后合并进提交数据。示例在 `oas-submit` 中先 `validate()` 再合并。
+排序题已注册进 `oas-form` 的收集链（`value` 通道，表单值为 key 数组的 JSON 串）：带 `name` 时随表单提交，`initial-values` / `reset` 同样作用于它。下例演示宿主先 `validate()` 再把 `value` 合并进提交数据。
 
 <DemoBlock title="表单内嵌排序题">
   <oas-form id="rk-form" style="width: 100%; max-width: 520px">

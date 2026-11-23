@@ -23,6 +23,8 @@ export const KNOWN_WIDGETS = new Set([
   'oas-slider',
   'oas-rate',
   'oas-pin-input',
+  'oas-matrix',
+  'oas-rank',
 ])
 
 /** 透传给控件的展示态属性白名单（避免把任意键写进 DOM） */
