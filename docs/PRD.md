@@ -5,6 +5,30 @@
 
 ---
 
+## 未发布：schema-form V2 与组件完善批（用户批 2026-11-23：①+② 全做、分三批）
+
+### 批 1：schema-form V2 · 数组体系（设计稿先行 + 评审后实现）
+
+- **array-table 行内编辑表格件** 📋：Formily ArrayTable 派——单元格常驻编辑器（form-item 渲染既有 form 控件，零 table 全家桶依赖），行操作列 = 增/删/复制/上移/下移；`ui:widget: 'array-table'` 承接对象数组；与 oas-table 全功能表明确不混用（轻量表单场景）。
+- **对象数组复制/排序** 📋：form-list 行操作补 复制（深拷贝行值插入）/ 上移 / 下移，与 array-table 行操作列同语义同事件。
+- **结构重建行数快照** 📋：schema/uiSchema 变化触发重建时，快照各数组当前行数、重建后按快照恢复（超出初始长度的行空值填充）——「行数快照 > 初始长度」优先级进契约。
+
+### 批 2：schema-form V2 · 数据流（设计稿先行 + 评审后实现）
+
+- **convertValue / transform 值变换双钩子** 📋：对齐入向/出向语义（convert = 外部值→组件值，initialValues/受控写时应用；transform = 提交值→外部值，submit/detail 前应用）；可序列化纪律——schema 写函数名、宿主函数注册表承载。
+- **远程数据源（内建窄面）** 📋：仅异步选项加载——select/radio/checkbox 的 options 支持 `source` 函数名返回 Promise，内建 loading / 错误态 / 去抖；不做通用网络请求层（通用场景走自定义 widget 通道）。
+- **表达式函数库扩充** 📋：扩至约 20 个——文本（join/split/substring/replace/trim）+ 数学（round/abs/floor/ceil）+ 日期最小集（formatDate/dateAdd）。
+
+### 批 3：新组件完善批（PRD 条目即实现依据）
+
+- **oas-image-cropper 图片平移** 📋：激活 offset——拖拽图片移动、缩放以光标为中心、「图片恒覆盖裁剪框」边界约束。
+- **oas-sku 弹层形态** 📋：底部弹层 = 内嵌面板响应式变体（`layout="popup"` 或窄屏自动切换，走 bottom-sheet 协议），一件两态。
+- **oas-drag 惯性** 📋：rAF 滑行衰减，reduced-motion 复用瞬停降级。
+- **oas-coupon 层叠协议** 📋：接入 overlay-stack（body 滚动锁 + Esc 走层栈，对齐 modal）。
+- **oas-barrage 重连计时** 📋：断连重连按剩余时间 epoch 重算重排。
+
+---
+
 ## v2.6.9：文档站语言机制 SEO 改造
 
 **语言切换机制去跳转化，SEO 最优化**：任何 URL 对爬虫与用户呈现一致语言（URL 即真源），不再按浏览器语言自动改写。细分需求：
