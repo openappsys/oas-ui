@@ -82,6 +82,10 @@ const STYLE = `
   cursor: grabbing;
   transition: none;
 }
+/* 整宿主拖拽形态给可拖动光标；手柄形态由手柄区承担该提示 */
+:host(:not([data-has-handle]):not([disabled])) {
+  cursor: grab;
+}
 :host(:not([data-dragging])) {
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
 }
@@ -254,6 +258,7 @@ export class OASDrag extends OASElement {
     this.reducedMotion = this.prefersReducedMotion()
     this.hasHandle = this.handleNodes().length > 0
     this.handleEl!.hidden = !this.hasHandle
+    this.toggleAttribute('data-has-handle', this.hasHandle)
     this.toggleAttribute('disabled', disabled)
     this.toggleAttribute('data-reduced-motion', this.reducedMotion)
 

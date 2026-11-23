@@ -208,6 +208,7 @@ describe('OAS drag 自由拖拽浮块', () => {
     const handle = el.querySelector('.grip')!
     const button = el.querySelector('.call')!
     expect(el.shadowRoot!.querySelector<HTMLElement>('.handle')!.hidden).toBe(false)
+    expect(el.hasAttribute('data-has-handle'), '手柄形态需要标记（样式据此决定光标与焦点策略）').toBe(true)
 
     button.dispatchEvent(pointer('pointerdown', 100, 100))
     button.dispatchEvent(pointer('pointermove', 160, 100))
