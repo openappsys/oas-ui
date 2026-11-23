@@ -171,6 +171,20 @@ describe('OASFormList 增删行', () => {
     expect(removeBtn(el, 0).getAttribute('aria-label')).toBe('删除成员')
   })
 
+  it('remove-text 运行时变更：既有行的可访问名跟着刷新（不重连、不加行）', () => {
+    const el = makeList({ min: '2', 'remove-text': '删除成员' }, '<oas-input name="users.{index}.name"></oas-input>')
+    expect(removeBtn(el, 0).getAttribute('aria-label')).toBe('删除成员')
+    expect(removeBtn(el, 1).getAttribute('aria-label')).toBe('删除成员')
+    el.setAttribute('remove-text', '移除这一项')
+    expect(removeBtn(el, 0).getAttribute('aria-label')).toBe('移除这一项')
+    expect(removeBtn(el, 1).getAttribute('aria-label')).toBe('移除这一项')
+    // 移除属性回落到 i18n 默认文案（两个按钮同时更新）
+    el.removeAttribute('remove-text')
+    const fallback = removeBtn(el, 0).getAttribute('aria-label')
+    expect(fallback).not.toBe('移除这一项')
+    expect(removeBtn(el, 1).getAttribute('aria-label')).toBe(fallback)
+  })
+
   it('collision-guard：私有解析方法不与 attribute camelCase 撞名（addText / removeText）', () => {
     // 框架按「key in el」走 property 写入时，同名实例方法会被 own property 遮蔽 → this.addText() TypeError
     const proto = OASFormList.prototype as unknown as Record<string, unknown>
