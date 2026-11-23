@@ -36,6 +36,14 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "layout",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "observed": true
     }
   ],
   "props": [
@@ -54,10 +62,30 @@
     {
       "name": "quantity",
       "type": "number | string"
+    },
+    {
+      "name": "open",
+      "type": "boolean | string",
+      "api": true
     }
   ],
-  "methods": [],
+  "methods": [
+    {
+      "name": "openOverlay",
+      "signature": "openOverlay(): void",
+      "description": "命令式打开弹层（幂等；非 popup 形态只告警一次，不产生幽灵 open 态）"
+    },
+    {
+      "name": "closeOverlay",
+      "signature": "closeOverlay(): void",
+      "description": "命令式关闭弹层（幂等）"
+    }
+  ],
   "events": [
+    {
+      "name": "oas-open-change",
+      "detail": "{ open: false } satisfies SkuOpenChangeDetail | { open: true } satisfies SkuOpenChangeDetail"
+    },
     {
       "name": "oas-change",
       "detail": "{ value: { ...this.selected }, quantity: qty, sku, change: 'quantity', } satisfies SkuChangeDetail | { value: { ...this.selected }, quantity, sku, change, } satisfies SkuChangeDetail"

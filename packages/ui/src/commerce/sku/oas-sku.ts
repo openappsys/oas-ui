@@ -4,9 +4,17 @@ import { parseJsonArray } from '../../shared/json-array.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { safeUrl } from '../../shared/safe-url.js'
 import '../price/index.js'
+import '../../feedback/bottom-sheet/index.js'
 
 /**
- * oas-sku —— 商品规格选择（commerce 族，桌面内嵌面板形态）。
+ * oas-sku —— 商品规格选择（commerce 族）。
+ *
+ * 两种承载形态共用同一份面板（**同一 DOM 节点复用，不复制**）：
+ * - `layout="embedded"`（宽屏缺省）：内嵌面板，随页面排版；
+ * - `layout="popup"`：面板挂进 `oas-bottom-sheet`，由底部抽屉承载（Esc / 遮罩 / 下滑关闭
+ *   走 bottom-sheet 协议：容器只派发 `oas-close`，宿主（本组件）据此收起）。
+ * 缺省 `layout` 按视口自动：宽度 ≤480px 用 popup，否则 embedded；显式写死的值不被视口覆盖，
+ * 视口越界变化即时重判（无需刷新）。
  *
  * 数据契约：
  * - `specs`：JSON 数组 `[{ key, label?, values: (string | { value, label? })[] }]`
@@ -21,20 +29,31 @@ import '../price/index.js'
  * - 无 `skus` 数据时不做库存约束（全部可选）；有数据但全无库存时全部置灰
  *
  * 属性（kebab-case）：上列数据属性 + `currency`（默认 CNY）/ `locale` / `precision`（默认 2）/
- * `disabled`（全禁用，兼容 config-provider 注入禁用）
+ * `disabled`（全禁用，兼容 config-provider 注入禁用）/ `layout`（`embedded` | `popup`，缺省按视口自动）/
+ * `open`（弹层开合，受控；仅 popup 形态生效）
  *
- * property 通道：`specs` / `skus` / `value` / `quantity` 四个数据属性同时是读+写访问器
- * （setter 接受数组 / 对象或 JSON 字符串并反射 attribute），供框架把模板静态属性直接写成
- * property 时走同一份数据入口。
+ * property 通道：`specs` / `skus` / `value` / `quantity` / `open` 同时是读+写访问器
+ * （setter 接受数组 / 对象 / 布尔或 JSON 字符串并反射 attribute），供框架把模板静态属性
+ * 直接写成 property 时走同一份数据入口。
+ *
+ * 方法：
+ * - `openOverlay()` / `closeOverlay()`：命令式开合弹层（幂等；派发 `oas-open-change`；
+ *   非 popup 形态调用只 devWarn 一次，不产生幽灵 open 态）
  *
  * 事件（bubbles + composed）：
  * - `oas-change`：规格或数量变化，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`
  *   （`sku` 为完整匹配对象或 `null`；程序性写入属性不回派事件）
+ * - `oas-open-change`：交互 / 命令式开合弹层，detail `{ open }`（受控属性写入静默不派发）
+ * - `oas-close`：由承载件 `oas-bottom-sheet` 冒泡出的关闭请求（下滑 / 遮罩 / Esc），
+ *   detail `{ reason }`；本组件收到后自动收起
  *
  * a11y：每组 `fieldset` + `legend` 组织，选项为原生 radio（方向键/空格原生可用）；
  * 缺货选项 `disabled` 且文本含「缺货」；数量按 spinbutton 语义（number input + 加减按钮，
- * 均带 i18n 名称），价格变化区 `aria-live="polite"`。
+ * 均带 i18n 名称），价格变化区 `aria-live="polite"`。弹层形态下焦点移入与 Tab 循环由
+ * `oas-bottom-sheet` 统一承载（打开即聚焦面板首个可聚焦控件）。
  */
+
+export type SkuLayout = 'embedded' | 'popup'
 
 export interface SkuSpecValue {
   value: string
@@ -63,6 +82,10 @@ export interface SkuChangeDetail {
   change: 'spec' | 'quantity'
 }
 
+export interface SkuOpenChangeDetail {
+  open: boolean
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -84,6 +107,16 @@ const STYLE = `
 }
 .panel[hidden] {
   display: none;
+}
+/*
+ * 弹层形态：面板搬到 bottom-sheet 的默认 slot 里，容器（抽屉）负责表面 / 圆角 / 安全区——
+ * 面板自身去掉卡片外观，避免「卡片套卡片」的双层描边与双重内边距。
+ */
+:host([data-layout-popup]) .panel {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 .media {
   display: none;
@@ -299,6 +332,17 @@ const STYLE = `
 
 const DEFAULTS = { quantity: 1, precision: 2 }
 
+/** 窄视口断点：缺省 layout 在 ≤480px 时自动切换底部弹层形态 */
+const NARROW_QUERY = '(max-width: 480px)'
+const LAYOUT_ONLY_WARN = '[oas-sku] openOverlay() / closeOverlay() 仅在 layout="popup"（或窄屏自动弹层）形态生效'
+
+const warned = new Set<string>()
+function warnOnce(message: string): void {
+  if (warned.has(message)) return
+  warned.add(message)
+  devWarn(message)
+}
+
 /** 规格组归一：仅保留 key 非空、values 合法的组 */
 function normalizeGroups(raw: unknown[]): SkuSpecGroup[] {
   const out: SkuSpecGroup[] = []
@@ -366,9 +410,10 @@ function normalizeSkus(raw: unknown[]): SkuItem[] {
 
 export class OASSku extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['specs', 'skus', 'value', 'quantity', 'currency', 'locale', 'precision', 'disabled']
+    return ['specs', 'skus', 'value', 'quantity', 'currency', 'locale', 'precision', 'disabled', 'layout', 'open']
   }
 
+  private panelHostEl: HTMLElement | null = null
   private panelEl: HTMLElement | null = null
   private mediaEl: HTMLElement | null = null
   private thumbEl: HTMLImageElement | null = null
@@ -379,6 +424,11 @@ export class OASSku extends OASElement {
   private qtyInputEl: HTMLInputElement | null = null
   private minusEl: HTMLButtonElement | null = null
   private plusEl: HTMLButtonElement | null = null
+  private sheetEl: HTMLElement | null = null
+  /** 当前生效形态（每次 update 重判，视口越界即时切换） */
+  private layoutValue: SkuLayout = 'embedded'
+  /** 视口条件变化监听释放（onCleanup 兜底） */
+  private releaseViewportWatch: (() => void) | null = null
 
   /** 选中组合（单一事实源；value 属性是受控镜像） */
   private selected: Record<string, string> = {}
@@ -425,10 +475,20 @@ export class OASSku extends OASElement {
     this.setAttribute('quantity', String(value))
   }
 
+  /** @apiProperty 弹层开合（受控：读写即反射 `open` attribute，静默不派发事件；仅 popup 形态生效） */
+  get open(): boolean {
+    return this.hasAttribute('open')
+  }
+  set open(value: boolean | string) {
+    // presence 语义：静态 `<oas-sku open>` 经框架 property 通道写入的是空串，空串视为打开
+    const on = value !== false && value !== 'false' && value != null
+    this.toggleAttribute('open', on)
+  }
+
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="panel">
+      <div class="panel-host" part="panel-host"><div class="panel">
         <div class="media" part="media" hidden><img class="thumb" part="image" alt=""></div>
         <div class="summary" part="summary" aria-live="polite">
           <oas-price class="price" part="price" hidden></oas-price>
@@ -443,11 +503,13 @@ export class OASSku extends OASElement {
             <button class="step plus" part="plus" type="button">+</button>
           </div>
         </div>
-      </div>
+      </div></div>
+      <oas-bottom-sheet part="sheet" hidden></oas-bottom-sheet>
     `
   }
 
   private bind(): void {
+    this.panelHostEl = this.shadow.querySelector<HTMLElement>('[part="panel-host"]')
     this.panelEl = this.shadow.querySelector<HTMLElement>('.panel')
     this.mediaEl = this.shadow.querySelector<HTMLElement>('[part="media"]')
     this.thumbEl = this.shadow.querySelector<HTMLImageElement>('[part="image"]')
@@ -458,11 +520,21 @@ export class OASSku extends OASElement {
     this.qtyInputEl = this.shadow.querySelector<HTMLInputElement>('[part="quantity-input"]')
     this.minusEl = this.shadow.querySelector<HTMLButtonElement>('[part="minus"]')
     this.plusEl = this.shadow.querySelector<HTMLButtonElement>('[part="plus"]')
+    // 弹层承载件：只有关闭请求（下滑 / 遮罩 / Esc）走协议，开合由本组件决定
+    this.sheetEl = this.shadow.querySelector<HTMLElement>('oas-bottom-sheet')
+    this.sheetEl?.addEventListener('oas-close', this.onSheetClose)
 
     this.groupsEl?.addEventListener('change', this.onSpecChange)
     this.qtyInputEl?.addEventListener('change', this.onQuantityInput)
     this.minusEl?.addEventListener('click', this.onMinus)
     this.plusEl?.addEventListener('click', this.onPlus)
+
+    this.watchViewport()
+    this.onCleanup(() => {
+      this.releaseViewportWatch?.()
+      this.releaseViewportWatch = null
+      this.sheetEl?.removeEventListener('oas-close', this.onSheetClose)
+    })
   }
 
   protected override render(): void {
@@ -473,6 +545,105 @@ export class OASSku extends OASElement {
 
   protected override onReconnect(): void {
     this.bind()
+  }
+
+  // -------------------------------------------------------------------------
+  // 形态（内嵌 / 底部弹层）
+  // -------------------------------------------------------------------------
+
+  /** 视口是否窄屏（≤480px）：缺省 layout 据此自动切弹层 */
+  private narrowViewport(): boolean {
+    if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia === 'function') {
+      try {
+        return window.matchMedia(NARROW_QUERY).matches
+      } catch {
+        return false
+      }
+    }
+    return typeof window.innerWidth === 'number' && window.innerWidth <= 480
+  }
+
+  /**
+   * 生效形态：显式 `layout` 优先（embedded / popup），缺省按视口自动；
+   * 非法值告警一次回落 embedded（不静默改语义）。
+   */
+  private resolveLayout(): SkuLayout {
+    const raw = this.getAttr('layout').trim()
+    if (raw === '') return this.narrowViewport() ? 'popup' : 'embedded'
+    if (raw === 'embedded' || raw === 'popup') return raw
+    warnOnce(`[oas-sku] 非法 layout "${raw}"，已回落 embedded；合法值：embedded / popup`)
+    return 'embedded'
+  }
+
+  /** 订阅视口条件变化（越界才触发，非每帧）：窄屏 ↔ 宽屏即时重判形态 */
+  private watchViewport(): void {
+    if (this.releaseViewportWatch) return
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    let mql: MediaQueryList
+    try {
+      mql = window.matchMedia(NARROW_QUERY)
+    } catch {
+      return
+    }
+    const handler = (): void => this.update()
+    mql.addEventListener('change', handler)
+    this.releaseViewportWatch = () => mql.removeEventListener('change', handler)
+  }
+
+  /**
+   * 形态同步：同一份面板节点在「内嵌容器」与「bottom-sheet 默认 slot」之间搬移
+   * （内容复用不复制——选中态 / 焦点 / 已输入数量都跟着走）。
+   */
+  private syncLayout(): void {
+    const layout = this.resolveLayout()
+    this.layoutValue = layout
+    const popup = layout === 'popup'
+    this.toggleAttribute('data-layout-popup', popup)
+
+    const panel = this.panelEl
+    const sheet = this.sheetEl
+    const host = this.panelHostEl
+    if (!panel || !sheet || !host) return
+    if (popup) {
+      if (panel.parentElement !== sheet) sheet.appendChild(panel)
+      sheet.removeAttribute('hidden')
+      sheet.toggleAttribute('open', this.hasAttribute('open'))
+    } else {
+      if (panel.parentElement !== host) host.appendChild(panel)
+      // 内嵌形态不留幽灵弹层：收起并隐藏承载件（空 dialog 不进读屏树）
+      sheet.removeAttribute('open')
+      sheet.setAttribute('hidden', '')
+    }
+  }
+
+  /** bottom-sheet 关闭请求（下滑 / 遮罩 / Esc）：按协议由宿主收起并回派 open 变化 */
+  private onSheetClose = (): void => {
+    if (!this.hasAttribute('open')) return
+    this.removeAttribute('open')
+    this.emit('open-change', { open: false } satisfies SkuOpenChangeDetail)
+  }
+
+  /** 命令式打开弹层（幂等；非 popup 形态只告警一次，不产生幽灵 open 态） */
+  openOverlay(): void {
+    if (this.resolveLayout() !== 'popup') {
+      warnOnce(LAYOUT_ONLY_WARN)
+      return
+    }
+    if (this.hasAttribute('open')) return
+    this.setAttribute('open', '')
+    this.emit('open-change', { open: true } satisfies SkuOpenChangeDetail)
+  }
+
+  /** 命令式关闭弹层（幂等） */
+  closeOverlay(): void {
+    if (this.resolveLayout() !== 'popup') {
+      warnOnce(LAYOUT_ONLY_WARN)
+      return
+    }
+    if (!this.hasAttribute('open')) return
+    this.removeAttribute('open')
+    this.emit('open-change', { open: false } satisfies SkuOpenChangeDetail)
   }
 
   // -------------------------------------------------------------------------
@@ -798,6 +969,7 @@ export class OASSku extends OASElement {
   protected override update(): void {
     const groups = this.parseSpecs()
     const skus = this.parseSkus()
+    this.syncLayout()
     if (this.qtyLabelEl) {
       this.qtyLabelEl.textContent = this.t('sku.quantityLabel')
       if (!this.qtyLabelEl.id)

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OASSku, type SkuItem, type SkuSpecGroup } from './index.js'
 
 const SPECS = JSON.stringify([
@@ -291,4 +291,159 @@ describe('oas-sku', () => {
       document.documentElement.lang = original
     }
   })
+
+  // ---------------------------------------------------------------------------
+  // 弹层形态（layout=embedded|popup）：同一面板两种承载，走 bottom-sheet 协议
+  // ---------------------------------------------------------------------------
+
+  it('缺省 layout=embedded：面板在自身 shadow 内，不进入 bottom-sheet', () => {
+    const el = mount({ specs: SPECS, skus: SKUS })
+    const panel = part(el, 'panel')!
+    const host = part(el, 'panel-host')!
+    const sheet = el.shadowRoot!.querySelector<HTMLElement>('oas-bottom-sheet')!
+    expect(panel.parentElement).toBe(host)
+    expect(sheet.contains(panel)).toBe(false)
+    expect(sheet.hasAttribute('open')).toBe(false)
+    expect(sheet.hidden, '内嵌形态承载件隐藏（空 dialog 不进读屏树）').toBe(true)
+    expect(el.hasAttribute('data-layout-popup')).toBe(false)
+  })
+
+  it('layout="popup"：同一面板节点移入 oas-bottom-sheet（内容复用不复制）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const panel = part(el, 'panel')!
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    expect(panel.parentElement, '面板挂进 sheet 的 light DOM（默认 slot）').toBe(sheet)
+    expect(el.shadowRoot!.querySelectorAll('[part="panel"]')).toHaveLength(1)
+    expect(el.hasAttribute('data-layout-popup')).toBe(true)
+    // 面板内容照常可用（组与数量控件都在）
+    expect(groups(el)).toHaveLength(2)
+    expect(part(el, 'quantity-input')).not.toBeNull()
+  })
+
+  it('弹层开合：open 属性驱动 sheet，close 事件按 bottom-sheet 协议回写并派发 oas-open-change', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    const events: Array<{ open: boolean }> = []
+    el.addEventListener('oas-open-change', (e) => events.push((e as CustomEvent<{ open: boolean }>).detail))
+    expect(sheet.hasAttribute('open')).toBe(false)
+
+    el.openOverlay()
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(sheet.hasAttribute('open')).toBe(true)
+    expect(events).toEqual([{ open: true }])
+    // 幂等：重复打开不再派发
+    el.openOverlay()
+    expect(events).toHaveLength(1)
+
+    // bottom-sheet 的关闭请求（Esc / 遮罩 / 下滑）→ 宿主移除 open
+    sheet.dispatchEvent(new CustomEvent('oas-close', { detail: { reason: 'esc' }, bubbles: true, composed: true }))
+    expect(el.hasAttribute('open'), '收到关闭请求后必须收起').toBe(false)
+    expect(sheet.hasAttribute('open')).toBe(false)
+    expect(events).toEqual([{ open: true }, { open: false }])
+
+    // property 通道：写入静默反射 attribute
+    el.open = true
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(sheet.hasAttribute('open')).toBe(true)
+    el.open = false
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(events).toHaveLength(2)
+  })
+
+  it('打开时焦点移入弹层面板（bottom-sheet 协议）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    el.openOverlay()
+    // bottom-sheet 打开即聚焦面板首个可聚焦控件，焦点落在面板内部
+    const active = el.shadowRoot!.activeElement as HTMLElement | null
+    expect(active).not.toBeNull()
+    expect(part(el, 'panel')!.contains(active), '焦点必须进入面板（Tab 循环以面板为范围）').toBe(true)
+  })
+
+  it('窄屏自动切换弹层形态（≤480px），宽屏回落内嵌；layout="embedded" 强制内嵌', () => {
+    const viewport = stubViewport(false)
+    try {
+      const wide = mount({ specs: SPECS, skus: SKUS })
+      const wideSheet = wide.shadowRoot!.querySelector('oas-bottom-sheet')!
+      expect(wideSheet.contains(part(wide, 'panel'))).toBe(false)
+
+      viewport.setNarrow(true)
+      // 条件越界即时重判形态（不刷新、不需要重挂）
+      expect(wideSheet.contains(part(wide, 'panel')), '窄屏应自动切到弹层承载').toBe(true)
+      expect(wide.hasAttribute('data-layout-popup')).toBe(true)
+
+      const forced = mount({ specs: SPECS, skus: SKUS, layout: 'embedded' })
+      const forcedSheet = forced.shadowRoot!.querySelector('oas-bottom-sheet')!
+      expect(forcedSheet.contains(part(forced, 'panel')), '显式 embedded 不被窄屏覆盖').toBe(false)
+
+      viewport.setNarrow(false)
+      expect(wideSheet.contains(part(wide, 'panel')), '回到宽屏应恢复内嵌').toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('layout 非法值回落 embedded 并告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'sheet' })
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    expect(sheet.contains(part(el, 'panel'))).toBe(false)
+    el.setAttribute('quantity', '2')
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('layout')).length).toBe(1)
+    warn.mockRestore()
+  })
+
+  it('内嵌形态调用开合命令式方法只告警一次，不产生幽灵 open 态', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ specs: SPECS, skus: SKUS })
+    let events = 0
+    el.addEventListener('oas-open-change', () => events++)
+    el.openOverlay()
+    el.closeOverlay()
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(events).toBe(0)
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('layout'))).toHaveLength(1)
+    warn.mockRestore()
+  })
+
+  it('切换 layout 复用同一面板节点（选中态与数量不丢）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, value: JSON.stringify({ color: '蓝', size: 'M' }), quantity: '2' })
+    const panel = part(el, 'panel')!
+    el.setAttribute('layout', 'popup')
+    expect(part(el, 'panel')).toBe(panel)
+    expect(optionInput(el, 0, '蓝').checked).toBe(true)
+    expect((part(el, 'quantity-input') as HTMLInputElement).value).toBe('2')
+    el.setAttribute('layout', 'embedded')
+    expect(part(el, 'panel')).toBe(panel)
+    expect(optionInput(el, 1, 'M').checked).toBe(true)
+  })
 })
+
+/** 视口桩：窄屏判定走 matchMedia('(max-width: 480px)')，可即时切换并触发 change */
+function stubViewport(initialNarrow: boolean): { setNarrow: (narrow: boolean) => void } {
+  let narrow = initialNarrow
+  const listeners = new Set<() => void>()
+  const matchMedia = (query: string): MediaQueryList =>
+    ({
+      get matches() {
+        return query.includes('max-width: 480px') ? narrow : false
+      },
+      media: query,
+      onchange: null,
+      addEventListener: (type: string, cb: () => void) => {
+        if (type === 'change') listeners.add(cb)
+      },
+      removeEventListener: (type: string, cb: () => void) => {
+        if (type === 'change') listeners.delete(cb)
+      },
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList
+  vi.stubGlobal('matchMedia', matchMedia)
+  return {
+    setNarrow(value: boolean): void {
+      narrow = value
+      for (const cb of [...listeners]) cb()
+    },
+  }
+}

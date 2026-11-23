@@ -4337,12 +4337,23 @@
       "currency": "ISO 4217 currency, default `CNY`",
       "locale": "Price formatting locale; defaults to the document `<html lang>`, then `en`",
       "precision": "Price decimal places, default 2",
-      "disabled": "Disables everything (honours config-provider injected disabled)"
+      "disabled": "Disables everything (honours config-provider injected disabled)",
+      "layout": "Carrier form: `embedded` (inline panel) / `popup` (bottom sheet, bottom-sheet protocol); defaults to viewport-based (sheet at ≤480px); invalid values warn and fall back to embedded",
+      "open": "Sheet open state (controlled: host writes apply silently; popup form only). Interactive and `openOverlay()` / `closeOverlay()` changes dispatch `oas-open-change`"
     },
     "events": {
-      "oas-change": "Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' | 'quantity' }` (sku is the matched object or null)"
+      "oas-change": "Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' | 'quantity' }` (sku is the matched object or null)",
+      "oas-open-change": "Sheet open state changed (interactive / imperative), `detail: { open }`; attribute writes stay silent",
+      "oas-close": "Close request bubbled from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component collapses itself"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "open": "Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only)"
+    },
+    "methods": {
+      "openOverlay": "Open the sheet imperatively (idempotent; dispatches `oas-open-change`; warns once on the inline form)",
+      "closeOverlay": "Close the sheet imperatively (idempotent; dispatches `oas-open-change`; warns once on the inline form)"
+    }
   },
   "oas-slider": {
     "attrs": {

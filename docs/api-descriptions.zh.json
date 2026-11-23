@@ -4142,12 +4142,23 @@
       "currency": "ISO 4217 币种，默认 `CNY`",
       "locale": "价格格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
       "precision": "价格小数位，默认 2",
-      "disabled": "全禁用（兼容 config-provider 注入禁用）"
+      "disabled": "全禁用（兼容 config-provider 注入禁用）",
+      "layout": "承载形态：`embedded`（内嵌面板）/ `popup`（底部弹层，走 bottom-sheet 协议）；缺省按视口自动（≤480px 弹层）；非法值告警回落 embedded",
+      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；仅 popup 形态生效）。交互与 `openOverlay()` / `closeOverlay()` 改变时派发 `oas-open-change`"
     },
     "events": {
-      "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）"
+      "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）",
+      "oas-open-change": "弹层开合变化（交互 / 命令式），`detail: { open }`；受控属性写入不派发",
+      "oas-close": "由承载件 `oas-bottom-sheet` 冒泡出的关闭请求（下滑 / 遮罩 / Esc），`detail: { reason }`；组件收到后自动收起"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "open": "弹层开合（受控：读写即反射 `open` attribute，静默不派发事件；仅 popup 形态生效）"
+    },
+    "methods": {
+      "openOverlay": "命令式打开弹层（幂等；派发 `oas-open-change`；非 popup 形态只告警一次）",
+      "closeOverlay": "命令式关闭弹层（幂等；派发 `oas-open-change`；非 popup 形态只告警一次）"
+    }
   },
   "oas-slider": {
     "attrs": {
