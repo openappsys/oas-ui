@@ -13,11 +13,35 @@
 - **对象数组复制/排序** 📋：form-list 行操作补 复制（深拷贝行值插入）/ 上移 / 下移，与 array-table 行操作列同语义同事件。
 - **结构重建行数快照** 📋：schema/uiSchema 变化触发重建时，快照各数组当前行数、重建后按快照恢复（超出初始长度的行空值填充）——「行数快照 > 初始长度」优先级进契约。
 
+#### 批 1 设计稿（评审稿 v1，2026-11-24）
+
+**array-table 架构选择（核心决策）**：不做独立表格状态机——每单元格 = 该字段的 `oas-form-item` + 编辑器，`name = <arrayPath>.<index>.<field>` 走内核收集。收益：校验 / 受控 / 快照回填 / 错误注入 / SSR 白名单**零新增通道**，全部继承内核（与 V1「薄渲染层」纪律一致）；渲染层只做「行 × 列的二维布局 + 行操作」。
+
+- **列定义**：来自 `items.properties`（数据 schema 权威）+ uiSchema 列级注解（`width` / `align` / `widget` 覆盖 / 列隐藏）；表头文案 = 字段 `title` → key。
+- **行操作列**（表格尾列，内建）：增（末尾插行，新行字段填 schema `default` 或空）/ 删（立即删，`oas-change` 上报）/ 复制（深拷贝当前行值插入下一行）/ 上移 / 下移；按钮可访问名走 i18n `schemaForm.rowAdd/rowRemove/rowDuplicate/rowUp/rowDown`；`minItems` 下限禁用删、`maxItems` 上限禁用增（既有数组级校验承接超限报错）。
+- **校验呈现**：单元格级错误在单元格下方（form-item error 位，继承）；数组级错误在表格下方（既有 `part="array-error"` 通道）。
+- **键盘 / a11y**：原生 `table` 语义（th/td + 列头 scope）；行内 Tab 自然序；行操作钮在单元格 Tab 序末尾；不实现表格内方向键漫游（Tab 足够，对齐 Formily 默认）。
+- **与 form-list 关系**：同一对象数组的两种 `ui:widget`，值契约 / 校验 / 事件完全同构，宿主可切换不丢数据。
+- **V2 明确不做**：列宽拖拽、列排序、分页、虚拟滚动（大数组用 form-list）、单元格合并——这些是 oas-table 的场景，array-table 只服务表单内编辑。
+
+**form-list 行操作**：行尾操作区（内建三钮 + part 暴露）——复制 = 取 `getValues()` 行子树深拷贝插入下一行（后续行走既有 index 重编号）；上移/下移 = 相邻行值交换（不重排 DOM，焦点跟随行身份不丢）。事件统一 `oas-change`，detail 增 `op: 'duplicate' | 'move'`（`from/to`），与 add/remove 同通道。
+
+**结构重建行数快照**：rebuild 前记录每个数组容器的当前行数（内存态，不序列化）；重建后建行数 = 快照行数（快照缺席回落既有「初始数组长度」逻辑）；行值回填仍走 initialValues 逐字段——快照只管「行数」这个事实，不管值。断连重连同口径（onReconnect 不丢快照）。与 C-3 已修的「快照回填走 writer」正交：一个管行数，一个管值。
+
 ### 批 2：schema-form V2 · 数据流（设计稿先行 + 评审后实现）
 
-- **convertValue / transform 值变换双钩子** 📋：对齐入向/出向语义（convert = 外部值→组件值，initialValues/受控写时应用；transform = 提交值→外部值，submit/detail 前应用）；可序列化纪律——schema 写函数名、宿主函数注册表承载。
-- **远程数据源（内建窄面）** 📋：仅异步选项加载——select/radio/checkbox 的 options 支持 `source` 函数名返回 Promise，内建 loading / 错误态 / 去抖；不做通用网络请求层（通用场景走自定义 widget 通道）。
-- **表达式函数库扩充** 📋：扩至约 20 个——文本（join/split/substring/replace/trim）+ 数学（round/abs/floor/ceil）+ 日期最小集（formatDate/dateAdd）。
+#### 批 2 设计稿（评审稿 v1，2026-11-24）
+
+**convertValue / transform 双钩子**（对齐 Pro Components 入向/出向语义）：
+- `convert`（入向）：外部值 → 组件值——应用于 `initialValues` 回填与受控 `values` 写入之后、写组件之前（每字段一次，投影归一之前还是之后？——**之后**：convert 拿到的是 schema 类型语义值（数字/布尔已投影），输出仍须符合 schema type，写入前再字符串化）。
+- `transform`（出向）：提交值 → 外部值——应用于 `getValues()` / `oas-submit.detail.values` / `oas-values-change.detail` 出口（投影归一之后的值 → 宿主期望形态）。
+- 可序列化纪律：schema/uiSchema 写**函数名**（`"ui:convert": "moneyToCents"`），宿主经 `registerSchemaConverter(name, fn)` / `registerSchemaTransformer(name, fn)` 注册（与 registerExprFunction 同轨注册表）；未注册函数名 = 编译期 devWarn + 该字段钩子不生效（不静默）。
+- 钩子签名：`(value, fieldPath, wholeValues) => value`；抛错按「钩子不存在」同口径（devWarn + 回落恒等）。
+- V2 边界：不做异步钩子（远程换算归宿主函数内自己起异步再 setValues）。
+
+**异步选项加载（内建窄面）**：`ui:options.source = "<函数名>"`——宿主 `registerExprFunction` 同轨注册 `() => Promise<Option[]>`；组件内建：挂载/reload 时调用一次、loading 态（选项区 spinner）、失败态（可重试按钮 + 错误文案 i18n）、去抖（同一字段并发取最新）、值不在新选项集时告警保留。仅 select / radio / checkbox（含组）承接；不做通用 fetch/url 配置（网络层不进库，通用场景走自定义 widget）。`reloadOptions(path)` 方法供宿主手动刷新。
+
+**表达式函数库扩充（→ 20）**：新增 11 个——文本 `join(arr, sep)` / `split(s, sep)` / `substring(s, start, end?)` / `replace(s, from, to)` / `trim(s)`；数学 `round(n, digits?)` / `abs(n)` / `floor(n)` / `ceil(n)`；日期 `formatDate(ts, fmt?)`（yyyy-MM-dd HH:mm 冻结子集）/ `dateAdd(ts, n, unit)`（day/hour/minute 冻结三单位）/ `now()`。参数与边界口径各补单测；文档函数表全量列 signatures。
 
 ### 批 3：新组件完善批（PRD 条目即实现依据）
 
