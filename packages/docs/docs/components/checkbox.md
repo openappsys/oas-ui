@@ -156,6 +156,16 @@ checkbox 的「按钮形态」（按钮外观、点击即为选中态的多选�
 
 `options` JSON 属性与子元素声明式双通道并存：`options` 显式时数据驱动优先（渲染进组件内部，声明式子项让位）。字段：`label` / `value` / `disabled` / `description` / `checkAll`。
 
+## 加载态
+
+<DemoBlock title="加载态（loading）">
+  <oas-checkbox-group loading options="[]">
+    <span slot="label">通知方式（选项加载中）</span>
+  </oas-checkbox-group>
+</DemoBlock>
+
+`loading` 表示选项正在异步加载（`oas-schema-form` 的 `options.source` 加载期间自动置位）：选项区显示 spinner + 「加载中…」文案，`aria-busy` 同步到组容器（读屏可感知）；加载完成写入 `options` 并移除该属性即回到常态。
+
 ## 数量限制
 
 <DemoBlock title="数量限制（max / min）">
@@ -351,6 +361,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `direction` | 布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行） | `string` | `vertical` |
 | `disabled` | 禁用整组（下发子项，不覆盖子项自身显式 disabled） | `boolean` | — |
+| `loading` | 加载态（异步选项加载中）：选项区显示 spinner + 文案，`aria-busy` 同步到组容器；向后兼容增量 | `boolean` | — |
 | `max` | 选中数量上限：达上限后未选项置灰拦截并派发 oas-exceed-limit，已选项仍可取消 | — | — |
 | `min` | 选中数量下限：达下限后已选项拦截取消，未选项不受影响 | — | — |
 | `options` | 数据通道：JSON `[{ label, value, disabled?, description?, checkAll? }]`，显式设置时数据驱动优先于子元素声明式 | `CheckboxOption[] \| string` | — |

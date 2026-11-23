@@ -468,6 +468,56 @@ describe('OASCheckboxGroup 组级能力', () => {
   })
 })
 
+describe('OASCheckboxGroup loading / 空态', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountGroup(attrs: Record<string, string> = {}, html = ''): OASCheckboxGroup {
+    const el = new OASCheckboxGroup()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = html
+    document.body.appendChild(el)
+    return el
+  }
+
+  function status(el: OASCheckboxGroup): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.status')!
+  }
+
+  it('loading：行为可观测（spinner + 文案 + fieldset aria-busy），移除后状态块隐藏', () => {
+    const el = mountGroup({ loading: '' }, '<oas-checkbox value="a">A</oas-checkbox>')
+    const box = status(el)
+    expect(box.hidden).toBe(false)
+    expect(box.querySelector('.spinner')!.getAttribute('aria-hidden')).toBe('true')
+    expect(box.textContent).toBe('加载中…')
+    expect(el.shadowRoot!.querySelector('fieldset')!.hasAttribute('aria-busy')).toBe(true)
+    el.removeAttribute('loading')
+    expect(box.hidden).toBe(true)
+    expect(el.shadowRoot!.querySelector('fieldset')!.hasAttribute('aria-busy')).toBe(false)
+  })
+
+  it('空态：无可选项显示默认空态文案（独立使用不受容器抑制影响）', () => {
+    const el = mountGroup({ options: '[]' })
+    expect(status(el).hidden).toBe(false)
+    expect(status(el).textContent).toBe('暂无数据')
+  })
+
+  it('data-suppress-empty（容器接管空态）：空态文案让位，加载态 spinner 不受影响', () => {
+    // 容器标记在建元素时即写入（schema-form 渲染路径），故按「挂载前带标记」构造
+    const el = mountGroup({ options: '[]', 'data-suppress-empty': '' })
+    expect(status(el).hidden).toBe(true)
+    expect(status(el).textContent).toBe('')
+    // 抑制只针对空态：loading 仍给可见反馈（schema-form 加载中同样要看得到 spinner）
+    el.setAttribute('loading', '')
+    expect(status(el).hidden).toBe(false)
+    expect(status(el).textContent).toBe('加载中…')
+  })
+})
+
 describe('OASCheckboxGroup 全选联动（check-all）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

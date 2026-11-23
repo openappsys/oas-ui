@@ -9,6 +9,12 @@
       "observed": true
     },
     {
+      "name": "rows",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "min",
       "type": "string",
       "default": "0",
@@ -33,13 +39,39 @@
     },
     {
       "name": "remove-text",
-      "type": "string",
-      "default": "",
+      "observed": true
+    },
+    {
+      "name": "duplicate-text",
+      "observed": true
+    },
+    {
+      "name": "move-up-text",
+      "observed": true
+    },
+    {
+      "name": "move-down-text",
       "observed": true
     }
   ],
-  "props": [],
-  "methods": [],
+  "props": [
+    {
+      "name": "rowCount",
+      "type": "number"
+    }
+  ],
+  "methods": [
+    {
+      "name": "setRowCount",
+      "signature": "setRowCount(count: number): void",
+      "description": "行数收敛到指定值（程序化：受控数组缩容 / 行值内层数组对齐用）："
+    },
+    {
+      "name": "insertRowAt",
+      "signature": "insertRowAt(index: number): boolean",
+      "description": "在第 `index` 位插入一行（复制行用），返回是否插入。"
+    }
+  ],
   "events": [
     {
       "name": "oas-add",
@@ -48,6 +80,14 @@
     {
       "name": "oas-remove",
       "detail": "{ index }"
+    },
+    {
+      "name": "oas-duplicate",
+      "detail": "{ from: index, to: target }"
+    },
+    {
+      "name": "oas-move",
+      "detail": "{ from, to }"
     }
   ],
   "slots": [

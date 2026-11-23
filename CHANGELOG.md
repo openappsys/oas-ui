@@ -1,5 +1,31 @@
 # Changelog
 
+## [未发布]
+
+### 新增
+
+**schema-form V2 批 1：数组体系**
+
+- **oas-array-table（form 族，行内编辑表格容器）**：对象数组用 `uiSchema.widget: 'array-table'` 渲染成行内编辑表格——**行模板仍由 schema-form 渲染**（每个单元格是一个 `form-item`，`data-schema-key` / 行内字段名 / 行容器 `[data-oas-form-list-item]` 契约齐全），表格只多做 ARIA 表格语义（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 二维布局 + 表头 + 行操作列（增 / 删 / 复制 / 上移 / 下移，可访问名走 i18n 且可用 `*-text` 覆盖）。列定义来自 `items.properties` 声明顺序 + 列级注解 `width`（数字 px / 字符串轨道）/ `align` / `hidden`（隐藏视觉但保留单元格与值）；`hidden` 列同列头一起不占轨道；零行时隐藏表头显示表体空态。行 wrapper 与单元格在 light DOM（主表只收集 light DOM），几何以行内样式承载（shadow 样式够不到 light DOM，表头与行用同一份轨道串保证对齐）；不使用原生 `<table>`（slot 产不出 `td`）。name 重编号与 form-list 共用同一实现（`form/shared/list-row-ops`）。
+- **行操作契约（两种容器同源）**：复制 = 内核 `getValues()` 行子树深拷贝插到下一行（`upload` 跳过——文件体不可序列化）；上移 / 下移 = 相邻行值交换（DOM 顺序不动）；值读写走内核通道 `readFormControlValue` / `writeFormControlValue`（未注册 writer 的 tag 回落 `value` 属性，否则写入静默丢失）；操作后按行位置重聚焦（边界处该按钮已禁用则退到反向按钮，焦点不丢）+ `aria-live="polite"` 播报；`oas-form-list` 行尾补 复制 / 上移 / 下移 三钮（`part="duplicate" / "move-up" / "move-down"`），数组行操作不再只有删除。事件保留 `oas-add` / `oas-remove`（`{ index }`），新增 `oas-duplicate` / `oas-move`（`{ from, to }`）——**不引入 `oas-change` 的 `op` 字段**（已发布契约不变）。
+- **行操作值同步与错误清理**：行操作改值但不派发 `oas-values-change`；schema-form 在 `oas-add/remove/duplicate/move` 里重索引 / 重挂规则 / 清「数组级 + 该数组字段级」错误视觉（重编号后旧 name 的红字不再错位）/ 刷新脏态与联动效果，受控模式下并把内核当前值当作新的 `appliedValues` 基线（宿主随后写同值不会把行操作结果冲掉）。
+- **`min` 一物二用拆分（缺陷修复）**：`oas-form-list` 新增 `rows`（初始渲染行数），`min` / `max` 恢复为删行下界 / 增行上界（未提供 `rows` 时 `min` 兼作初始行数，既有用法不变）；schema-form 改为按数组长度下发 `rows`，不再下发 `min`——「初始 1 行的唯一行删不掉」消失，`minItems` 违规由数组级校验报错。`rows` 缺省为 0 行（独立使用时行为不变）。
+- **结构重建行数快照**：`schema` / `uiSchema` 变化触发的重建，按重建前 DOM 行数恢复（超出初始长度的行空值填充，快照在 rebuild 内局部捕获，不建常驻 map）；`initialValues` 改写与受控 `values` 写入触发的重建忽略快照，`reset()` 走 bypass（行数回初始长度）。
+- **受控缩容同批修**：受控 `values` 变短时按值长度收敛行数（旧行为只增不减，宿主删行会留空行）；容器新增 `setRowCount(count)` / `insertRowAt(index)` / 只读 `rowCount`。
+- **断开重连缺陷修复（oas-form-list / oas-array-table）**：重连不再清空行记录（行 wrapper 留在 light DOM），否则会按初始行数再建一遍导致行数翻倍；重连补挂模板观察器，交互与「晚注入模板」恢复。
+- **内核增量（向后兼容）**：`oas-form` 导出 `readFormControlValue(element)`——与 `collectFields` 同一条读值通道（复合控件的值不在 `value` 属性上），供行容器做值搬运。
+- i18n `schemaForm.*` 新增 11 键（16 语言 × 全量）；单测新增 40（array-table 16 / form-list 7 / schema-form 数组体系 14 / 编译层 3）；zh/en 文档新增「行内编辑表格」段与 demo，form 页 form-list 说明同步行数拆分与行操作。
+
+**schema-form V2 批 2：数据流**
+
+- **值变换双钩子 `convert` / `transform`（独立注册表）**：`registerSchemaConverter(name, fn)` / `registerSchemaTransformer(name, fn)`，签名 `(value, fieldPath, wholeValues) => value`；**入向 convert** 只作用于 `initialValues` 回填与受控 `values` / `setValues()` 写入（键入交互 / 快照回填 / schema `default` 不经过，空串不调用，钩子抛错或未注册 → devWarn + 恒等回落）；**出向 transform** 由组件监听内核 `oas-submit` / `oas-validate-fail` / `oas-values-change` **就地改写 `detail.values` / `detail.value`**（不停冒泡、`target` 不变），并作用于公开 `getValues()`；内部脏态 / 快照 / 受控写基线一律走内核原始值（出向变换不影响「改没改」判定）。注册表与表达式函数库**分立**（表达式不能调用值变换，也避免命名撞车）；只对叶子字段生效（容器节点声明告警忽略，数组行用 `users[].price` 通配）。
+- **表达式宿主优先（修正）**：宿主函数与内置同名时**宿主实现生效 + devWarn 一次**（此前内置优先、宿主被静默遮蔽）。
+- **表达式函数库 10 新增（合计 20）**：文本 `join(arr, sep)` / `split(s, sep)`（空串 → 空数组）/ `substring(s, start, end?)`（负数按 0 截断）/ `replace(s, from, to)`（替换全部字面量，空匹配串按无操作）/ `trim(s)`；数学 `round(n, digits?)`（digits 截断到 0-10）/ `abs` / `floor` / `ceil`（非数值得 `NaN`，与算术同口径）；日期 `formatDate(ts, fmt?)`（冻结 token `yyyy MM dd HH mm ss`、本地时区、未知 token 原样输出 + devWarn 一次、非法输入得 `null`）/ `dateAdd(ts, n, unit)`（单位冻结 `day / hour / minute`，未知单位原值返回）。**不做 `now()`**。每个函数带签名与边界单测。
+- **异步选项窄面 `options.source` / `options.sourceDeps`**：`registerSchemaOptionSource(name, (values, path) => Promise<Option[]>)`；依赖值变化自动重载（未变化不重复请求）；三通道优先级 `enum/const` > `options.options` > `options.source`（并存 devWarn 一次）；竞态按字段路径 seq 守卫 + 重建期间同名/同路径/同依赖值去重 + 卸载/重连丢弃（代次 + `isConnected`）；`reloadOptions(path?)` 手动刷新（强制新请求）；失败态 = 控件下方状态块（错误文案 + `part="options-retry"` 重试按钮，i18n），空结果 = 空态文案；声明 source 且默认映射为纯文本输入时自动改用 `oas-select`；SSR 首帧无选项按空态渲染（无骨架，文档写明）。
+- **`oas-radio-group` / `oas-checkbox-group` 新增 `loading` 布尔属性（向后兼容增量）**：选项区 spinner + `aria-busy`，无选项时显示空态文案；`oas-select` 沿用既有 `loading`（schema-form 注入 `loading-text` i18n 文案）。
+- **表达式预算档重实测**：新增 10 函数 + devWarn 通道后 `form/schema-form/expr` 链实测 gzip 3.56 KB（前档 3.4 KB / 实测 2.90 KB），按实测上浮重定档 4.0 KB（详见 `docs/perf-baseline.md` §4 与 `scripts/perf/size.mjs` basis）。
+- i18n `schemaForm.*` 新增 5 键（options 加载 / 失败 / 失败提示 / 重试 / 空态，16 语言）；单测新增 26（值变换与数据流 19 / 表达式函数 7 组）；zh/en 文档新增「值变换」「异步选项」段与 demo，表达式函数清单更新为 20。
+
 ## [2.6.9] - 2026-11-23
 
 ### 新增

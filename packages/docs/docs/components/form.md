@@ -62,13 +62,13 @@ description: 原生 <form> 增强，支持按 rules 规则对内部字段做校�
 
 ### 动态字段组 form-list
 
-> `oas-form-list` 在表单内维护一组可增删的字段行：在组件内放一个 `<template>` 作为行模板，克隆出的行内字段 `name` 自动索引化，两种写法——模板里用 `{index}` 占位（`name="users.{index}.name"`），或给组件设 `name="users"` 并在模板里写裸 `name`（自动前缀为 `users.N.字段名`）。`min` / `max` 约束行数（不足 `min` 自动补行；调小 `min` 不会删已有行，非法 `max` 按无上限处理），每行带删除按钮，删除后剩余行自动重新编号、已填值随行保留。字段留在 light DOM，校验 / 提交 / `oas-values-change` 全部随主表；组件派发 `oas-add` / `oas-remove`（`detail: { index }`）。
+> `oas-form-list` 在表单内维护一组可增删的字段行：在组件内放一个 `<template>` 作为行模板，克隆出的行内字段 `name` 自动索引化，两种写法——模板里用 `{index}` 占位（`name="users.{index}.name"`），或给组件设 `name="users"` 并在模板里写裸 `name`（自动前缀为 `users.N.字段名`）。行数两个来源分开：`rows` 只决定**初始渲染行数**，`min` / `max` 是**删行下界 / 增行上界**（未提供 `rows` 时 `min` 兼作初始行数，兼容既有用法；删行下界默认 0——`minItems` 违规交给校验层报错，不再锁住唯一行）。每行行尾是操作区：复制 / 上移 / 下移 / 删除（`part` 分别是 `duplicate` / `move-up` / `move-down` / `remove`，可访问名走 i18n，也可用 `duplicate-text` / `move-up-text` / `move-down-text` / `remove-text` 覆盖）。复制是值深拷贝插到下一行、上移下移是**值交换**（DOM 顺序不动），操作后焦点按行位置回归并用 `aria-live` 播报；删除后剩余行自动重新编号、已填值随行保留。字段留在 light DOM，校验 / 提交 / `oas-values-change` 全部随主表；组件派发 `oas-add` / `oas-remove`（`detail: { index }`）与 `oas-duplicate` / `oas-move`（`detail: { from, to }`）。
 
 <DemoBlock title="动态字段组 form-list">
   <oas-form id="form-list-demo" style="width: 420px">
     <oas-space direction="vertical" style="width: 100%">
       <oas-form-item label="家庭成员" help="添加几行成员，提交后组装进 values.members 数组">
-        <oas-form-list id="form-list-demo-list" name="members" min="1" max="4"></oas-form-list>
+        <oas-form-list id="form-list-demo-list" name="members" rows="1" max="4"></oas-form-list>
       </oas-form-item>
       <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
     </oas-space>
@@ -451,6 +451,12 @@ onMounted(() => {
   })
   formListForm?.addEventListener('oas-remove', (e) => {
     listOut.textContent = `oas-remove：已删除第 ${e.detail.index + 1} 行（剩余行已重新编号）`
+  })
+  formListForm?.addEventListener('oas-duplicate', (e) => {
+    listOut.textContent = `oas-duplicate：第 ${e.detail.from + 1} 行复制到第 ${e.detail.to + 1} 行`
+  })
+  formListForm?.addEventListener('oas-move', (e) => {
+    listOut.textContent = `oas-move：第 ${e.detail.from + 1} 行移动到第 ${e.detail.to + 1} 行`
   })
 
   // 原生表单集成：FormData 读取 + reset

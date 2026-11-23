@@ -4,6 +4,24 @@
 自动索引化（`users.{index}.name` 或给组件设 `name="users"` + 裸字段名自动加前缀），行删除后
 剩余行重新编号、已填值随行保留。字段留在 light DOM，校验 / 提交 / `oas-values-change` 随主表走。
 
+## 行数与行操作（V2 批 1）
+
+- **行数两个来源**：`rows` 只决定初始渲染行数，`min` / `max` 是删行下界 / 增行上界。未提供 `rows`
+  时 `min` 兼作初始行数（既有用法不变）；删行下界默认 0——`minItems` 违规交给校验层报错，不再
+  「初始 1 行的唯一行删不掉」。
+- **行操作区**（行尾）：复制 / 上移 / 下移 / 删除，`part` 分别为 `duplicate` / `move-up` /
+  `move-down` / `remove`，可访问名走 `schemaForm.rowDuplicate` 等 i18n 键，也可用
+  `duplicate-text` / `move-up-text` / `move-down-text` / `remove-text` 覆盖。
+- **语义**：复制 = 内核 `getValues()` 行子树深拷贝插到下一行（upload 跳过——文件体不可序列化）；
+  上移 / 下移 = 相邻两行**值交换**（DOM 顺序不动）。值读写都走内核通道
+  （`readFormControlValue` / `writeFormControlValue`，未注册 writer 时回落 `value` 属性）。
+  操作后按行位置重聚焦（边界处退到反向按钮）+ `aria-live` 播报。
+- **事件**：`oas-add` / `oas-remove` `{ index }`，`oas-duplicate` / `oas-move` `{ from, to }`。
+- **程序化接口**：`rowCount` 只读、`setRowCount(n)` 收敛行数（增补 / 缩减，不派发事件，
+  受控数组缩容与行值内层数组对齐用）、`insertRowAt(index)` 插行。
+- **断开重连**：行记录不随断开清理（行 wrapper 留在 light DOM），重连只重挂观察器——否则会按
+  初始行数再建一遍（行数翻倍）。
+
 完整用法与取值口径见文档站 form 页的 `oas-form-list` 说明段（本组件无独立文档页）。
 
 ## 定版前评审记档（不修项）

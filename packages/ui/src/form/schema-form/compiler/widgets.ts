@@ -27,6 +27,9 @@ export const KNOWN_WIDGETS = new Set([
   // 数据驱动的题型控件：`rows` / `columns` / `options` 经 uiSchema 数据通道透传为 JSON attribute
   'oas-matrix',
   'oas-rank',
+  // 行内编辑表格：容器级 widget，由计划层建 array 节点（不参与 resolveWidget 的字段映射），
+  // 登记在此仅为「已知 widget」口径统一（误用在非对象数组上会告警回落，不静默失效）
+  'array-table',
 ])
 
 /** 透传给控件的展示态属性白名单（避免把任意键写进 DOM） */
@@ -72,6 +75,8 @@ function toStringProps(
   const acceptsColumns = requestedWidget === 'oas-matrix' || getCustomWidget(requestedWidget) !== null
   for (const [key, value] of Object.entries(options)) {
     if (key === 'className' || key === 'style') continue
+    // 异步选项通道（`source` / `sourceDeps`）由计划层消费，不下发为控件属性
+    if (key === 'source' || key === 'sourceDeps') continue
     if (key === 'options') {
       if (Array.isArray(value)) props.options = JSON.stringify(value)
       continue
@@ -157,8 +162,9 @@ export function resolveWidget(
 
   if (requestedWidget !== '') {
     if (requestedWidget === 'array-table') {
+      // 容器级 widget：只有「对象数组」节点能承接（计划层拦截），落到字段上按默认映射渲染
       warnings.push(
-        `uiSchema.widget "array-table" 为 V2 能力（行内编辑表格），本版未实现，按默认映射渲染（${path || '(root)'}）`,
+        `uiSchema.widget "array-table" 仅适用于对象数组（array of object），已回落默认映射（${path || '(root)'}）`,
       )
     } else if (!KNOWN_WIDGETS.has(requestedWidget)) {
       const registered = getCustomWidget(requestedWidget)

@@ -51,14 +51,18 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
 本字段用 `$self`。语法冻结：值（字符串 / 数字 / `true/false/null`）、比较 `== != > >= < <=`
 （两侧同为数字按数值、其余按字符串）、逻辑 `&& || !` + 括号、算术 `+ - * / %`（仅数值，非数值操作数
 得 `NaN`（运行时），`NaN` 参与比较恒为假）、成员 `in` / `contains()`、函数库
-`iif / empty / len / sum / min / max / lower / upper / concat`（`iif` 惰性求值；字符串拼接用
-`concat(...strings)`，`+` 只做数值加法）。
+`iif / empty / len / sum / min / max / lower / upper / concat / join / split / substring / replace / trim /
+round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性求值；字符串拼接用
+`concat(...strings)`，`+` 只做数值加法；`formatDate` 冻结 token 表 `yyyy MM dd HH mm ss`、本地时区、
+未知 token 原样输出并开发期告警；`dateAdd` 单位冻结 `day / hour / minute`；**不提供 `now()`**——
+非确定性与 reaction 静态重算模型冲突，需要当前时间请走受控值）。
 **赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则 / 属性访问链一律编译期报错**；语法错 / 未知字段 /
 未知函数只影响该条 reaction（开发期告警并降级），其余联动照常生效。表达式轨与 `whenSchema` 表达力不同，
 不宣称等价——需要复用 JSON Schema 语义时用 `whenSchema`。
 
 宿主函数：`registerExprFunction(name, fn)` 注册后可在表达式里按函数名调用；因依赖不可静态提取，
 用到宿主函数的 reaction 按**全量重算**（其余表达式仍走依赖图定向刷新）。注册需发生在设置 schema 之前。
+**宿主优先**：与内置同名时宿主实现生效并开发期告警一次（不再被内置静默遮蔽）。
 
 <DemoBlock title="when 表达式：套餐 + 人数决定发票字段可见与备注必填">
   <oas-schema-form id="sf-expr" style="width: 100%; max-width: 640px"></oas-schema-form>
@@ -102,6 +106,38 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
   <oas-space style="margin-top: 12px; display: flex">
     <oas-button id="sf-array-nested-error-submit" type="primary">submit()</oas-button>
   </oas-space>
+</DemoBlock>
+
+## 行内编辑表格（array-table）
+
+对象数组还可以用 `uiSchema.widget: 'array-table'` 渲染成行内编辑表格：**行内容仍由本组件渲染**
+（每个单元格是一个 `form-item`，值收集 / 校验 / 联动 / 错误注入全部照常），表格只多做二维布局、表头
+与行操作列——所以它与 `oas-form-list` 是同一套值语义的两种排版。
+
+- 列定义来自 `items.properties` 的声明顺序；列级注解写在 `users[].字段` 上：`width`（数字按 px，
+  字符串按 grid 轨道原样，如 `'2fr'`）、`align`（`left` / `center` / `right`）、`hidden`（隐藏视觉但
+  **保留单元格与值**）；`widget` 覆盖同样作用于列内的单元格。
+- **单元格不渲染自己的标签**（列头已承载标签），必填字段的 `*` 上移到列头；控件宽度被 `max-width: 100%`
+  约束在单元格内（固定像素宽度的控件不会溢出到行操作列）。
+- 行操作列（表格尾列）：删除 / 复制 / 上移 / 下移；末尾追加行走表格下方的按钮。语义与 `oas-form-list`
+  行尾操作完全一致（值深拷贝 / 值交换、焦点按行位回归、`aria-live` 播报）。
+- 事件：`oas-add` / `oas-remove`（`detail: { index }`）、`oas-duplicate` / `oas-move`（`detail: { from, to }`）。
+- 行操作会改值但**不派发 `oas-values-change`**（事件契约不变）；组件在同一轮里刷新 `dirty`、联动效果与
+  受控写基线，宿主只需在自己的 `values` 里跟进（受控模式下组件也不会把行操作结果冲掉）。
+- 结构重建（`schema` / `uiSchema` 变化）按**行数快照**恢复行数；`initialValues` 改写与 `reset()`
+  则回到初始行数。两个 widget 互相切换不丢数据。
+- 表格语义用 ARIA（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 承载几何，不使用原生
+  `<table>`（slot 产不出 `td`，行内容必须留在 light DOM 才能被主表收集）。
+- 与全功能 `oas-table` 的分工：本 widget 面向轻量表单场景，不做列宽拖拽 / 列排序 / 分页 / 虚拟滚动 /
+  跨行粘贴 / 批量操作 / 单元格合并。
+
+<DemoBlock title="行内编辑表格：列级注解 + 行操作（复制 / 上移 / 下移 / 删除）">
+  <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-table-values">getValues()</oas-button>
+    <oas-button id="sf-table-submit" type="primary">submit()</oas-button>
+  </oas-space>
+  <span id="sf-table-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 布局：栅格 / 分组 / 标签页
@@ -164,6 +200,52 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
 <DemoBlock title="自定义 widget：五档评分控件（自定义元素 + reader/writer）">
   <oas-schema-form id="sf-widget" style="width: 100%; max-width: 640px"></oas-schema-form>
   <span id="sf-widget-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 值变换（convert / transform）
+
+值在两个方向上各有一道钩子（**裸键**，注册名由宿主注册；不写函数体，schema 只引用名字）：
+
+- `convert`（入向）：`initialValues` 回填、受控 `values`、`setValues()` 三条入向通道在**写入组件前**换算一次；
+  键入交互、结构重建的快照回填、schema `default` 都不经过（否则会二次换算）。空串不调用。
+- `transform`（出向）：`getValues()`、`oas-submit` / `oas-validate-fail` / `oas-values-change` 的载荷
+  （**就地改写 `detail.values` / `detail.value`**，不停冒泡、`target` 不变）统一换回宿主语义。
+- 签名 `(value, fieldPath, wholeValues) => value`；只对**叶子字段**生效（容器节点上写会告警忽略）；
+  数组行用通配路径声明（`users[].price`）。钩子抛错或未注册 → 开发期告警 + 恒等回落，不静默改值。
+- 内部脏态 / 快照 / 受控写基线一律走内核原始值——出向变换只影响对外的读数与事件，不影响「改没改」的判定。
+- 注册：`registerSchemaConverter(name, fn)` / `registerSchemaTransformer(name, fn)`（独立注册表，不与表达式
+  函数库同表——表达式不该能调用值变换，也避免命名撞车）。
+
+<DemoBlock title="值变换：宿主给「元」，组件按「分」收集（convert 入 / transform 出）">
+  <oas-schema-form id="sf-transform" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-transform-submit" type="primary">submit()</oas-button>
+    <oas-button id="sf-transform-values">getValues()</oas-button>
+  </oas-space>
+  <span id="sf-transform-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 异步选项（options.source）
+
+选项型字段（`oas-select` / `oas-radio-group` / `oas-checkbox-group`）的选项可以来自异步函数：
+
+- `options.source = '<函数名>'`：宿主用 `registerSchemaOptionSource(name, (values, path) => Promise<Option[]>)`
+  注册；`Option` 即 `{ label, value, disabled?, description? }`（与静态 `options` 同型）。
+- `options.sourceDeps = ['<路径>']`：声明值依赖，依赖值变化自动重载（「A 变 → 重载 B 的选项」），
+  未变化不重复请求。
+- **三通道优先级**：`enum` / `const`（数据 schema）> `options.options`（静态列表）> `options.source`；
+  多通道并存时高优先级胜出并开发期告警一次（另一通道不被静默丢弃）。
+- **竞态**：按字段路径做请求序号守卫（晚到的旧响应丢弃）+ 结构重建期间同名/同路径/同依赖值的请求去重 +
+  卸载/重连后丢弃。失败态 = 控件下方状态块（错误文案 + 「重试」按钮，i18n）；空结果 = 空态文案；
+  加载中由控件自身 `loading` 承载（`oas-select` 沿用既有 `loading`，`oas-radio-group` / `oas-checkbox-group`
+  用新增的 `loading` 布尔属性显示 spinner）。`reloadOptions(path?)` 供宿主手动刷新。
+- 默认映射落到纯文本输入时，声明了 `options.source` 的字段自动改用 `oas-select`（选项通道需要选项型控件）。
+- SSR 首帧没有选项：按空态渲染（无骨架占位），数据在客户端挂载后异步补齐。
+
+<DemoBlock title="异步选项：省份 → 城市（sourceDeps 联动）+ 失败重试">
+  <oas-schema-form id="sf-options" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-button id="sf-options-reload" style="margin-top: 12px">reloadOptions()</oas-button>
+  <span id="sf-options-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 题型控件（matrix / rank）经 uiSchema 配置
@@ -375,6 +457,56 @@ onMounted(() => {
       out.textContent = `oas-submit：${JSON.stringify(e.detail.values)}`
     })
     document.getElementById('sf-array-required-submit')?.addEventListener('click', () => arrayRequired.submit())
+  })
+
+  // ---- 行内编辑表格（array-table）----
+  onUpgraded(document.getElementById('sf-table'), () => {
+    const table = document.getElementById('sf-table')
+    table.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: '成员（行内编辑表格）',
+          items: {
+            type: 'object',
+            required: ['nick'],
+            properties: {
+              nick: { type: 'string', title: '昵称' },
+              age: { type: 'integer', title: '年龄' },
+              role: { type: 'string', title: '角色', enum: ['dev', 'ops', 'pm'] },
+            },
+          },
+        },
+      },
+    }
+    table.uiSchema = {
+      users: { widget: 'array-table' },
+      'users[].nick': { width: 160, align: 'left' },
+      'users[].age': { width: 96, align: 'right' },
+    }
+    table.initialValues = {
+      users: [
+        { nick: '张三', age: 28, role: 'dev' },
+        { nick: '李四', age: 32, role: 'ops' },
+      ],
+    }
+    const tableOut = document.getElementById('sf-table-output')
+    const reportTable = (label) => {
+      tableOut.textContent = `${label}：${JSON.stringify(table.getValues())}（dirty=${table.dirty}）`
+    }
+    table.addEventListener('oas-duplicate', (e) => reportTable(`oas-duplicate 第 ${e.detail.from + 1} → ${e.detail.to + 1} 行`))
+    table.addEventListener('oas-move', (e) => reportTable(`oas-move 第 ${e.detail.from + 1} → ${e.detail.to + 1} 行`))
+    table.addEventListener('oas-remove', (e) => reportTable(`oas-remove 第 ${e.detail.index + 1} 行`))
+    table.addEventListener('oas-add', () => reportTable('oas-add 末尾追加'))
+    document.getElementById('sf-table-values')?.addEventListener('click', () => reportTable('getValues()'))
+    document.getElementById('sf-table-submit')?.addEventListener('click', () => table.submit())
+    table.addEventListener('oas-submit', (e) => {
+      tableOut.textContent = `oas-submit：${JSON.stringify(e.detail.values)}`
+    })
+    table.addEventListener('oas-validate-fail', (e) => {
+      tableOut.textContent = `oas-validate-fail：${Object.entries(e.detail.errors).map(([k, v]) => `${k}=${v}`).join('；')}`
+    })
   })
 
   // ---- 布局 ----
@@ -593,6 +725,88 @@ onMounted(() => {
     document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty 检查'))
   })
 
+  // ---- 值变换（convert / transform）----
+  onUpgraded(document.getElementById('sf-transform'), () => {
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaConverter, registerSchemaTransformer }) => {
+      // 注册幂等：重复注册同一名字只覆盖实现，返回的注销函数此处不调用（页面级共享）
+      registerSchemaConverter('yuanToCents', (value) => String(Math.round(Number(value) * 100)))
+      registerSchemaTransformer('centsToYuan', (value) => (Number(value) / 100).toFixed(2))
+      const transform = document.getElementById('sf-transform')
+      transform.schema = {
+        type: 'object',
+        properties: {
+          price: { type: 'number', title: '金额（元）' },
+          vip: { type: 'boolean', title: '会员价' },
+        },
+      }
+      transform.uiSchema = { price: { convert: 'yuanToCents', transform: 'centsToYuan' } }
+      transform.initialValues = { price: 19.9, vip: true }
+      const out = document.getElementById('sf-transform-output')
+      document.getElementById('sf-transform-submit')?.addEventListener('click', () => transform.submit())
+      document.getElementById('sf-transform-values')?.addEventListener('click', () => {
+        out.textContent = `getValues()（出向 transform 后）：${JSON.stringify(transform.getValues())}`
+      })
+      transform.addEventListener('oas-submit', (e) => {
+        out.textContent = `oas-submit（transform 后）：${JSON.stringify(e.detail.values)}`
+      })
+    })
+  })
+
+  // ---- 异步选项（options.source / sourceDeps）----
+  onUpgraded(document.getElementById('sf-options'), () => {
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaOptionSource }) => {
+      let flakyAttempt = 0
+      const wait = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 350))
+      registerSchemaOptionSource('provinces', () =>
+        wait([
+          { label: '浙江', value: 'zj' },
+          { label: '江苏', value: 'js' },
+        ]),
+      )
+      registerSchemaOptionSource('cities', (values) => {
+        const map = {
+          zj: [
+            { label: '杭州', value: 'hz' },
+            { label: '宁波', value: 'nb' },
+          ],
+          js: [
+            { label: '南京', value: 'nj' },
+            { label: '苏州', value: 'sz' },
+          ],
+        }
+        return wait(map[values.province] ?? [])
+      })
+      // 首次失败、重试成功：演示失败态（错误文案 + 重试按钮）
+      registerSchemaOptionSource('flakyPlans', () => {
+        flakyAttempt += 1
+        return flakyAttempt === 1 ? Promise.reject(new Error('demo network error')) : wait([{ label: '标准版', value: 'std' }])
+      })
+      const options = document.getElementById('sf-options')
+      options.schema = {
+        type: 'object',
+        properties: {
+          province: { type: 'string', title: '省份（异步选项）' },
+          city: { type: 'string', title: '城市（依赖省份）' },
+          plan: { type: 'string', title: '套餐（首次加载失败，可重试）' },
+        },
+      }
+      options.uiSchema = {
+        province: { options: { source: 'provinces' } },
+        city: { options: { source: 'cities', sourceDeps: ['province'] } },
+        plan: { options: { source: 'flakyPlans' } },
+      }
+      const out = document.getElementById('sf-options-output')
+      out.textContent = '省份与套餐正在异步加载（select loading 态）；城市在选中省份后加载。'
+      document.getElementById('sf-options-reload')?.addEventListener('click', () => {
+        options.reloadOptions()
+        out.textContent = 'reloadOptions()：已重新请求全部选项源'
+      })
+      options.addEventListener('oas-values-change', (e) => {
+        out.textContent = `当前值：${JSON.stringify(e.detail.values)}`
+      })
+    })
+  })
+
   // ---- 题型控件（matrix / rank）：数据经 uiSchema.options 透传 ----
   onUpgraded(document.getElementById('sf-question-types'), () => {
     const types = document.getElementById('sf-question-types')
@@ -727,7 +941,7 @@ onMounted(() => {
 | `layout` | 透传给内层 oas-form 的布局（`grid` 时字段按 `layout.span` 占列）。 | — | — |
 | `schema` | 数据 schema（JSON Schema 子集）。property（对象，推荐）与 attribute（JSON 字符串）双通道；attribute 在 property 之后变化即失效（防 attr/prop 漂移）。 | `unknown` | — |
 | `size` | 透传给内层 oas-form 的尺寸档位。 | — | — |
-| `ui-schema` | UI 注解层（裸键：`widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`）。属性双通道；编译期校验每个路径必须存在于数据 schema。 | `unknown` | — |
+| `ui-schema` | UI 注解层（裸键：`widget` / `layout` / `options` / `reactions` / `keepValueOnHidden` / `convert` / `transform` / 列级 `width` / `align` / `hidden`）。属性双通道；编译期校验每个路径必须存在于数据 schema。 | `unknown` | — |
 | `validate-trigger` | 透传给内层 oas-form 的字段校验触发时机（input / change / blur）。 | — | — |
 | `values` | 受控值（V1b）：property（对象）与 attribute（JSON 字符串）双通道。挂载时作为基线，之后按叶子路径 diff 写（不重建 DOM、不打断焦点）；值树在恰为已渲染字段名的节点整值下发（数组值字段如 `array of enum` → `oas-checkbox-group` 直接写 `["a","b"]`，对象数组容器键照常下钻到行字段）；宿主写不派发 `oas-values-change`（防回环）；与 `initialValues` 同时提供时本属性优先。 | `Record<string, unknown> \| string` | — |
 
@@ -737,7 +951,8 @@ onMounted(() => {
 | --- | --- | --- |
 | `submit` | `submit(): void` | 提交：联动求值 → 内核字段校验 → 数组级校验并注入错误 → 委托内核提交（时序对齐设计稿：先内核、后数组级；oas-submit / oas-validate-fail 由内核派发并穿出，失败载荷含字段错误 ∪ 数组级错误）。 |
 | `validate` | `validate(): Promise<boolean>` | 校验：联动求值 → 内核字段校验 → 数组级校验（错误并集），返回是否全部通过。 |
-| `getValues` | `getValues(): Record<string, unknown>` | 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）。 |
+| `getValues` | `getValues(): Record<string, unknown>` | 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）；配置了 `transform` 的字段按出向变换换回宿主语义。 |
+| `reloadOptions` | `reloadOptions(path?: string): void` | 手动重载异步选项（`options.source`）：省略 path = 全部重载；与自动加载共用竞态守卫（seq / 去重 / 卸载丢弃），手动调用强制发起新请求。 |
 | `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道（V1b）：按嵌套路径写字段值（走内核 `oas-form.setValues` 与控件 writer 注册表）；路径恰为已渲染字段名时整值写入（数组值字段不按下标拆路径），容器键照常下钻；只写已渲染字段、不派发事件、不重建 DOM；未渲染路径跳过（数组行数由 form-list 维护）。 |
 | `setErrors` | `setErrors(list: FormError[]): void` | 注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载。 |
 | `clearErrors` | `clearErrors(paths?: string[]): void` | 清除注入错误（省略 paths = 清全部）；受影响字段回落规则错误。 |

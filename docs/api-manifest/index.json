@@ -72,6 +72,7 @@
   "oas-form",
   "oas-form-item",
   "oas-form-list",
+  "oas-array-table",
   "oas-questionnaire",
   "oas-schema-form",
   "oas-calendar",

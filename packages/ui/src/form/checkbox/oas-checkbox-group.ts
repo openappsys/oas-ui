@@ -52,6 +52,35 @@ legend {
 .options {
   display: contents;
 }
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+.status[hidden] {
+  display: none;
+}
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--oas-color-border);
+  border-top-color: var(--oas-color-primary);
+  animation: oas-status-spin 0.8s linear infinite;
+}
+@keyframes oas-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
 :host([data-options-mode]) .slot-items {
   display: none;
 }
@@ -59,7 +88,7 @@ legend {
 
 export class OASCheckboxGroup extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'disabled', 'options', 'direction', 'max', 'min', 'size', 'status', 'readonly']
+    return ['value', 'disabled', 'options', 'loading', 'direction', 'max', 'min', 'size', 'status', 'readonly']
   }
 
   /**
@@ -113,6 +142,7 @@ export class OASCheckboxGroup extends OASElement {
       <fieldset part="group">
         <legend part="legend"><slot name="label"></slot></legend>
         <slot class="slot-items" part="items"></slot>
+        <div class="status" part="status" role="status" aria-live="polite" hidden></div>
         <div class="options" part="options"></div>
       </fieldset>
     `
@@ -157,6 +187,36 @@ export class OASCheckboxGroup extends OASElement {
     this.setAttribute('data-direction', direction === 'horizontal' ? 'horizontal' : 'vertical')
     this.syncOptionsMode()
     this.collect()
+    this.syncLoading()
+  }
+
+  /**
+   * loading / 空态承载（`loading` 布尔属性，向后兼容增量）：异步选项加载期间显示 spinner + 文案，
+   * 组内无可选项时显示空态；`aria-busy` 同步到 fieldset，读屏可感知加载中。
+   *
+   * `data-suppress-empty`（容器内部标记，非公开 API）：外层表单容器已用 `part="options-status"`
+   * 给出空态提示时抑制组内同一文案，避免双份提示；组独立使用时无该标记，空态照常显示。
+   */
+  private syncLoading(): void {
+    const loading = this.hasAttr('loading')
+    const fieldset = this.shadow.querySelector('fieldset')
+    fieldset?.toggleAttribute('aria-busy', loading)
+    const status = this.shadow.querySelector<HTMLElement>('.status')
+    if (!status) return
+    const empty = !loading && !this.hasAttribute('data-suppress-empty') && this.items.length === 0
+    status.hidden = !loading && !empty
+    if (loading) {
+      status.textContent = ''
+      const spinner = document.createElement('span')
+      spinner.className = 'spinner'
+      spinner.setAttribute('aria-hidden', 'true')
+      const text = document.createElement('span')
+      text.textContent = this.t('loading.loading')
+      status.appendChild(spinner)
+      status.appendChild(text)
+      return
+    }
+    status.textContent = empty ? this.t('empty.noData') : ''
   }
 
   /** options 数据通道：属性在场时渲染 shadow 子项（原文未变跳过重建）；缺席时清空让位 light 声明式 */

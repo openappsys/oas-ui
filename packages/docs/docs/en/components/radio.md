@@ -193,6 +193,16 @@ Defaults to `direction="vertical"` (stacked); `horizontal` lays items out in a r
 
 The `options` JSON attribute and declarative child elements form dual channels: when `options` is explicit, data-driven rendering wins (rendered internally; declarative children step aside). Fields: `label` / `value` / `disabled` / `description`. Data-driven items participate in keyboard navigation as usual.
 
+## Loading State
+
+<DemoBlock title="Loading state (loading)">
+  <oas-radio-group loading options="[]">
+    <span slot="label">Delivery method (options loading)</span>
+  </oas-radio-group>
+</DemoBlock>
+
+`loading` marks options as being fetched asynchronously (`oas-schema-form` sets it automatically while an `options.source` request is in flight): a spinner plus the "Loading…" text appears in the options area, and `aria-busy` is mirrored onto the group container for screen readers. Write the loaded `options` and remove the attribute to return to normal.
+
 ## Card Variant
 
 <DemoBlock title="Card variant (variant=card)">
@@ -334,6 +344,7 @@ The current value is available through the public `value` property for read/writ
 | --- | --- | --- | --- |
 | `direction` | Layout direction: `vertical` (default) / `horizontal` (row layout with wrapping) | `string` | `vertical` |
 | `disabled` | Disable the whole group (cascades to items without overriding their own explicit disabled) | `boolean` | — |
+| `loading` | Loading state for async options: shows a spinner and text in the options area and syncs `aria-busy` on the group container; backward-compatible addition | `boolean` | — |
 | `options` | Data channel: JSON `[{ label, value, disabled?, description? }]`; when explicit, data-driven rendering wins over declarative children | `RadioOption[] \| string` | — |
 | `readonly` | Readonly (cascades to items): focusable, arrow keys do not switch | `boolean` | — |
 | `required` | Group-level required validation via the form-associated chain (valueMissing); reset restores the baseline | `boolean` | — |

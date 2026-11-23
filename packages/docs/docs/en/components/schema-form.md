@@ -58,8 +58,12 @@ are re-evaluated.
 (string / number / `true/false/null`), comparisons `== != > >= < <=` (numeric when both sides are numbers,
 otherwise string comparison), logic `&& || !` with parentheses, arithmetic `+ - * / %` (numbers only — a
 non-numeric operand yields `NaN` at runtime, and `NaN` comparisons are always false), membership `in` /
-`contains()`, and the function library `iif / empty / len / sum / min / max / lower / upper / concat`
-(`iif` is lazy; concatenate strings with `concat(...strings)` — `+` is numeric addition only).
+`contains()`, and a function library of 20: `iif / empty / len / sum / min / max / lower / upper / concat /
+join / split / substring / replace / trim / round / abs / floor / ceil / formatDate / dateAdd` (`iif` is lazy;
+concatenate strings with `concat(...strings)` — `+` is numeric addition only; `formatDate` freezes the tokens
+`yyyy MM dd HH mm ss`, uses the local timezone, prints unknown tokens verbatim with a dev warning; `dateAdd`
+supports `day / hour / minute`; **there is no `now()`** — non-determinism conflicts with the static
+recomputation model, feed the current time through a controlled value instead).
 **Assignments / statements / loops / arrow functions / template strings / regex literals / property access
 chains are compile-time errors**; syntax errors, unknown fields and unknown functions only disable that single
 reaction (dev warning) while the rest keep working. The two tracks differ in expressiveness — they are not
@@ -68,6 +72,8 @@ advertised as equivalent; prefer `whenSchema` when you want JSON Schema semantic
 Host functions: after `registerExprFunction(name, fn)` you can call the function by name. Their dependencies
 cannot be extracted statically, so reactions using host functions **recompute on every value change**
 (everything else still uses the directed dependency graph). Register before setting the schema.
+**Host first**: when a host function shares a name with a built-in, the host implementation wins (with a
+one-time dev warning) instead of being silently shadowed.
 
 <DemoBlock title="when expression: plan + seats drive invoice visibility and note requirement">
   <oas-schema-form id="sf-expr" style="width: 100%; max-width: 640px"></oas-schema-form>
@@ -112,6 +118,43 @@ are injected into the array path and rendered below the list as `part="array-err
   <oas-space style="margin-top: 12px; display: flex">
     <oas-button id="sf-array-nested-error-submit" type="primary">submit()</oas-button>
   </oas-space>
+</DemoBlock>
+
+## Inline-edit table (`array-table`)
+
+Object arrays can also render as an inline-edit table with `uiSchema.widget: 'array-table'`. Row content is
+still rendered by this component (each cell is a `form-item`, so value collection / validation / reactions /
+error injection all work unchanged); the table only adds the two-dimensional layout, the header row and the
+row-action column — it is the same value semantics as `oas-form-list` in a different presentation.
+
+- Columns come from the declaration order of `items.properties`. Column-level annotations live on
+  `users[].field`: `width` (numbers are px, strings are used as grid tracks such as `'2fr'`), `align`
+  (`left` / `center` / `right`), `hidden` (visually hidden but the cell and its value are kept); a `widget`
+  override also applies to cells.
+- **Cells do not render their own label** (the header carries it) and the `*` of required fields moves to the
+  header; widget widths are constrained to the cell with `max-width: 100%` (fixed-width controls never spill
+  into the action column).
+- The action column holds remove / duplicate / move-up / move-down; the add button appends below the table.
+  Semantics match `oas-form-list` row operations (deep copy / value swap, focus returns by row position,
+  `aria-live` announcements).
+- Events: `oas-add` / `oas-remove` (`detail: { index }`), `oas-duplicate` / `oas-move` (`detail: { from, to }`).
+- Row operations change values but do **not** emit `oas-values-change` (contract preserved); the component
+  refreshes `dirty`, reactions and the controlled write baseline in the same turn, so the host only needs to
+  follow along in its own `values` (a controlled host write will not roll the operation back).
+- Structure changes (`schema` / `uiSchema`) restore the current row counts; rewriting `initialValues` and
+  `reset()` go back to the initial row count. Switching between the two widgets keeps the data.
+- Table semantics use ARIA (`role="table"` / `columnheader` / `row` / `cell`) plus CSS grid for geometry; no
+  native `<table>` (slots cannot produce `td`, and row content must stay in light DOM for the form kernel).
+- Division of labour with the full-featured `oas-table`: this widget targets lightweight forms and does not do
+  column resizing / reordering / paging / virtual scrolling / cross-row paste / bulk operations / cell merging.
+
+<DemoBlock title="Inline-edit table: column annotations + row actions (duplicate / move / remove)">
+  <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-table-values">getValues()</oas-button>
+    <oas-button id="sf-table-submit" type="primary">submit()</oas-button>
+  </oas-space>
+  <span id="sf-table-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Layout: grid / group / tabs
@@ -180,6 +223,63 @@ kernel's only value-collection extension point), so `reader` / `writer` must fol
 <DemoBlock title="Custom widget: five-level score control (custom element + reader/writer)">
   <oas-schema-form id="sf-widget" style="width: 100%; max-width: 640px"></oas-schema-form>
   <span id="sf-widget-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## Value transforms (`convert` / `transform`)
+
+Both directions have a hook (bare keys; the host registers implementations and the schema only references the
+name):
+
+- `convert` (inbound): applied once **before writing into the component** on the three inbound channels —
+  `initialValues` backfill, controlled `values`, `setValues()`. Typing, snapshot restore after a structure
+  change and schema `default` never pass through it (otherwise values would be converted twice). Empty values
+  are not passed to the hook.
+- `transform` (outbound): applied to `getValues()` and to the `oas-submit` / `oas-validate-fail` /
+  `oas-values-change` payloads (**`detail.values` / `detail.value` are rewritten in place**, bubbling continues,
+  `target` unchanged).
+- Signature `(value, fieldPath, wholeValues) => value`; only **leaf fields** are eligible (declaring it on a
+  container warns and is ignored); array rows use wildcard paths (`users[].price`). A throwing or unregistered
+  hook produces a dev warning and falls back to identity — values are never silently rewritten.
+- Internal dirty state / snapshots / controlled write baseline always use the raw kernel values, so outbound
+  transforms never change the "has it been edited" verdict.
+- Register with `registerSchemaConverter(name, fn)` / `registerSchemaTransformer(name, fn)` (separate registry —
+  expression functions must not be able to call value transforms, and names cannot collide).
+
+<DemoBlock title="Value transforms: host passes yuan, the component collects cents (convert in / transform out)">
+  <oas-schema-form id="sf-transform" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-transform-submit" type="primary">submit()</oas-button>
+    <oas-button id="sf-transform-values">getValues()</oas-button>
+  </oas-space>
+  <span id="sf-transform-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## Async options (`options.source`)
+
+Options of option widgets (`oas-select` / `oas-radio-group` / `oas-checkbox-group`) can come from an async
+function:
+
+- `options.source = '<name>'`: register it with
+  `registerSchemaOptionSource(name, (values, path) => Promise<Option[]>)`; `Option` is
+  `{ label, value, disabled?, description? }` (same shape as the static `options` channel).
+- `options.sourceDeps = ['<path>']`: declare value dependencies; when one of them changes the options reload
+  automatically ("A changes → reload B"), otherwise no request is made.
+- **Channel priority**: `enum` / `const` (data schema) > `options.options` (static list) > `options.source`;
+  when several channels are declared the higher one wins with a one-time dev warning (the other channel is not
+  silently dropped).
+- **Races**: a per-field request sequence guard discards stale responses, identical requests during a rebuild are
+  de-duplicated, and responses landing after unmount are dropped. Failure shows a status block below the widget
+  (message + retry button, i18n); an empty result shows an empty-state text; loading is carried by the widgets'
+  `loading` state (`oas-select` reuses its existing `loading`, `oas-radio-group` / `oas-checkbox-group` gained a
+  `loading` boolean attribute that renders a spinner). `reloadOptions(path?)` lets the host refresh manually.
+- When the default mapping would be a plain text input, a field declaring `options.source` is upgraded to
+  `oas-select` (an options channel needs an option widget).
+- The first SSR frame has no options: it renders the empty state (no skeleton), and data arrives after mount.
+
+<DemoBlock title="Async options: province → city (sourceDeps) + failure retry">
+  <oas-schema-form id="sf-options" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-button id="sf-options-reload" style="margin-top: 12px">reloadOptions()</oas-button>
+  <span id="sf-options-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Question widgets (matrix / rank) via uiSchema
@@ -387,6 +487,56 @@ onMounted(() => {
       out.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
     })
     document.getElementById('sf-array-required-submit')?.addEventListener('click', () => arrayRequired.submit())
+  })
+
+  // ---- inline-edit table (array-table) ----
+  onUpgraded(document.getElementById('sf-table'), () => {
+    const table = document.getElementById('sf-table')
+    table.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: 'Members (inline-edit table)',
+          items: {
+            type: 'object',
+            required: ['nick'],
+            properties: {
+              nick: { type: 'string', title: 'Nickname' },
+              age: { type: 'integer', title: 'Age' },
+              role: { type: 'string', title: 'Role', enum: ['dev', 'ops', 'pm'] },
+            },
+          },
+        },
+      },
+    }
+    table.uiSchema = {
+      users: { widget: 'array-table' },
+      'users[].nick': { width: 160, align: 'left' },
+      'users[].age': { width: 96, align: 'right' },
+    }
+    table.initialValues = {
+      users: [
+        { nick: 'Alice', age: 28, role: 'dev' },
+        { nick: 'Bob', age: 32, role: 'ops' },
+      ],
+    }
+    const tableOut = document.getElementById('sf-table-output')
+    const reportTable = (label) => {
+      tableOut.textContent = `${label}: ${JSON.stringify(table.getValues())} (dirty=${table.dirty})`
+    }
+    table.addEventListener('oas-duplicate', (e) => reportTable(`oas-duplicate row ${e.detail.from + 1} → ${e.detail.to + 1}`))
+    table.addEventListener('oas-move', (e) => reportTable(`oas-move row ${e.detail.from + 1} → ${e.detail.to + 1}`))
+    table.addEventListener('oas-remove', (e) => reportTable(`oas-remove row ${e.detail.index + 1}`))
+    table.addEventListener('oas-add', () => reportTable('oas-add appended'))
+    document.getElementById('sf-table-values')?.addEventListener('click', () => reportTable('getValues()'))
+    document.getElementById('sf-table-submit')?.addEventListener('click', () => table.submit())
+    table.addEventListener('oas-submit', (e) => {
+      tableOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+    })
+    table.addEventListener('oas-validate-fail', (e) => {
+      tableOut.textContent = `oas-validate-fail: ${Object.entries(e.detail.errors).map(([k, v]) => `${k}=${v}`).join('; ')}`
+    })
   })
 
   onUpgraded(document.getElementById('sf-layout'), () => {
@@ -601,6 +751,89 @@ onMounted(() => {
     document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty check'))
   })
 
+  // ---- value transforms (convert / transform) ----
+  onUpgraded(document.getElementById('sf-transform'), () => {
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaConverter, registerSchemaTransformer }) => {
+      registerSchemaConverter('yuanToCents', (value) => String(Math.round(Number(value) * 100)))
+      registerSchemaTransformer('centsToYuan', (value) => (Number(value) / 100).toFixed(2))
+      const transform = document.getElementById('sf-transform')
+      transform.schema = {
+        type: 'object',
+        properties: {
+          price: { type: 'number', title: 'Amount (yuan)' },
+          vip: { type: 'boolean', title: 'Member price' },
+        },
+      }
+      transform.uiSchema = { price: { convert: 'yuanToCents', transform: 'centsToYuan' } }
+      transform.initialValues = { price: 19.9, vip: true }
+      const out = document.getElementById('sf-transform-output')
+      document.getElementById('sf-transform-submit')?.addEventListener('click', () => transform.submit())
+      document.getElementById('sf-transform-values')?.addEventListener('click', () => {
+        out.textContent = `getValues() (after transform): ${JSON.stringify(transform.getValues())}`
+      })
+      transform.addEventListener('oas-submit', (e) => {
+        out.textContent = `oas-submit (after transform): ${JSON.stringify(e.detail.values)}`
+      })
+    })
+  })
+
+  // ---- async options (options.source / sourceDeps) ----
+  onUpgraded(document.getElementById('sf-options'), () => {
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaOptionSource }) => {
+      let flakyAttempt = 0
+      const wait = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 350))
+      registerSchemaOptionSource('provinces', () =>
+        wait([
+          { label: 'Zhejiang', value: 'zj' },
+          { label: 'Jiangsu', value: 'js' },
+        ]),
+      )
+      registerSchemaOptionSource('cities', (values) => {
+        const map = {
+          zj: [
+            { label: 'Hangzhou', value: 'hz' },
+            { label: 'Ningbo', value: 'nb' },
+          ],
+          js: [
+            { label: 'Nanjing', value: 'nj' },
+            { label: 'Suzhou', value: 'sz' },
+          ],
+        }
+        return wait(map[values.province] ?? [])
+      })
+      // fails once, then succeeds: demonstrates the failure state + retry button
+      registerSchemaOptionSource('flakyPlans', () => {
+        flakyAttempt += 1
+        return flakyAttempt === 1
+          ? Promise.reject(new Error('demo network error'))
+          : wait([{ label: 'Standard', value: 'std' }])
+      })
+      const options = document.getElementById('sf-options')
+      options.schema = {
+        type: 'object',
+        properties: {
+          province: { type: 'string', title: 'Province (async options)' },
+          city: { type: 'string', title: 'City (depends on province)' },
+          plan: { type: 'string', title: 'Plan (fails on first load, retryable)' },
+        },
+      }
+      options.uiSchema = {
+        province: { options: { source: 'provinces' } },
+        city: { options: { source: 'cities', sourceDeps: ['province'] } },
+        plan: { options: { source: 'flakyPlans' } },
+      }
+      const out = document.getElementById('sf-options-output')
+      out.textContent = 'Province and plan are loading (select loading); city loads after a province is chosen.'
+      document.getElementById('sf-options-reload')?.addEventListener('click', () => {
+        options.reloadOptions()
+        out.textContent = 'reloadOptions(): every option source re-requested'
+      })
+      options.addEventListener('oas-values-change', (e) => {
+        out.textContent = `Current values: ${JSON.stringify(e.detail.values)}`
+      })
+    })
+  })
+
   // ---- question widgets (matrix / rank): data travels through uiSchema.options ----
   onUpgraded(document.getElementById('sf-question-types'), () => {
     const types = document.getElementById('sf-question-types')
@@ -735,7 +968,7 @@ onMounted(() => {
 | `layout` | Forwarded to the inner oas-form layout (with `grid`, fields occupy columns by `layout.span`). | — | — |
 | `schema` | Data schema (a JSON Schema subset). Dual channel: property (object, preferred) and attribute (JSON string); an attribute changed after the property invalidates the property (drift guard). | `unknown` | — |
 | `size` | Forwarded to the inner oas-form size. | — | — |
-| `ui-schema` | UI annotation layer (bare keys: `widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`). Dual channel; every path is verified against the data schema at compile time. | `unknown` | — |
+| `ui-schema` | UI annotation layer (bare keys: `widget` / `layout` / `options` / `reactions` / `keepValueOnHidden` / `convert` / `transform` / column-level `width` / `align` / `hidden`). Dual channel; every path is verified against the data schema at compile time. | `unknown` | — |
 | `validate-trigger` | Forwarded to the inner oas-form field validation trigger (input / change / blur). | — | — |
 | `values` | Controlled values (V1b): object property plus JSON-string attribute channel. Acts as the baseline on mount, then each change is written as a leaf-level diff (no DOM rebuild, no focus loss); a node that exactly matches a rendered field name is written as a whole value (array-valued fields such as `array of enum` → `oas-checkbox-group` take `["a","b"]` directly, while object-array container keys still descend to row fields); host writes never emit `oas-values-change` (no echo loop); wins over `initialValues` when both are provided. | `Record<string, unknown> \| string` | — |
 
@@ -745,7 +978,8 @@ onMounted(() => {
 | --- | --- | --- |
 | `submit` | `submit(): void` | Submit: evaluates reactions, runs kernel field validation, then array-level validation and injects its errors, and finally delegates to the kernel (design order: kernel first, array-level second; oas-submit / oas-validate-fail are dispatched by the kernel and bubble out, failure payload = field errors ∪ array-level errors). |
 | `validate` | `validate(): Promise<boolean>` | Validate: reactions → kernel field validation → array-level validation (union of errors); returns whether everything passes. |
-| `getValues` | `getValues(): Record<string, unknown>` | Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings). |
+| `getValues` | `getValues(): Record<string, unknown>` | Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings); fields configured with `transform` are mapped back to host semantics. |
+| `reloadOptions` | `reloadOptions(path?: string): void` | Manually reload async options (`options.source`): omit the path to reload everything. Shares the race guards with automatic loading (sequence / de-duplication / drop after unmount); a manual call always starts a fresh request. |
 | `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel (V1b): writes field values by nested path through the kernel `oas-form.setValues` and the control writer registry; a path that exactly matches a rendered field name is written as a whole value (array-valued fields are not split into index paths), container keys still descend; only rendered fields are written, no events are emitted and no DOM is rebuilt; unrendered paths are skipped (row count stays with form-list). |
 | `setErrors` | `setErrors(list: FormError[]): void` | Inject errors (for server validation). Path normalization and precedence are handled by the form kernel. |
 | `clearErrors` | `clearErrors(paths?: string[]): void` | Clear injected errors (omit paths to clear all); affected fields fall back to rule errors. |

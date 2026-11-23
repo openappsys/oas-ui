@@ -80,7 +80,12 @@
     {
       "name": "getValues",
       "signature": "getValues(): Record<string, unknown>",
-      "description": "全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）"
+      "description": "全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）；出向变换在此应用"
+    },
+    {
+      "name": "reloadOptions",
+      "signature": "reloadOptions(path?: string): void",
+      "description": "手动重载异步选项（`options.source`）：省略 path = 全部重载。"
     },
     {
       "name": "setValues",
@@ -100,7 +105,7 @@
     {
       "name": "reset",
       "signature": "reset(): void",
-      "description": "重置：回初始值、清错误、数组行数回初始长度（不派发事件）"
+      "description": "重置：回初始值、清错误、数组行数回初始长度（不派发事件；行数快照在此 bypass）"
     }
   ],
   "events": [],

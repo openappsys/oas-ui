@@ -50,6 +50,16 @@ export interface UiNode {
   reactions?: unknown[]
   /** visible:false 时保留值（默认卸载并清值） */
   keepValueOnHidden?: boolean
+  /** 入向值变换注册名（仅 initialValues 回填与受控写通道） */
+  convert?: string
+  /** 出向值变换注册名（提交/校验/值变化载荷与 getValues） */
+  transform?: string
+  /** array-table 列宽（数字按 px，字符串按 grid 轨道原样） */
+  width?: number | string
+  /** array-table 列对齐 */
+  align?: 'left' | 'center' | 'right'
+  /** array-table 列隐藏（保留单元格与值，只隐藏视觉） */
+  hidden?: boolean
   [key: string]: unknown
 }
 
@@ -128,6 +138,8 @@ export interface FieldPlan extends NodeBase {
   rules: FieldRules
   /** 数组内字段：隐藏时保留键位（空串）而非删键 */
   inArrayRow: boolean
+  /** 异步选项源（`options.source` + `options.sourceDeps`；三通道优先级判定后仅保留可行通道） */
+  optionsSource?: { name: string; deps: string[] }
 }
 
 export interface GroupPlan extends NodeBase {
@@ -149,12 +161,27 @@ export interface ArrayRules {
 
 export interface ArrayPlan extends NodeBase {
   kind: 'array'
-  /** form-list 的 name（根数组 `users`，嵌套数组 `matrix.{index}`） */
+  /** form-list / array-table 的 name（根数组 `users`，嵌套数组 `matrix`——运行时由外层容器加前缀） */
   name: string
   items: JsonSchema
   /** 行内子节点（name 为裸相对名，由 form-list 自动加前缀） */
   children: PlanNode[]
   arrayRules: ArrayRules
+  /** `uiSchema.widget: 'array-table'`：行内编辑表格（容器换 oas-array-table，其余机制同构） */
+  table?: boolean
+  /** 表格列定义（顺序 = 单元格顺序，来自 items.properties + 列级 uiSchema 注解） */
+  columns?: TableColumn[]
+}
+
+/** array-table 列定义（列级注解：`width` / `align` / `hidden`，`widget` 覆盖走既有字段通道） */
+export interface TableColumn {
+  key: string
+  label: string
+  width?: number | string
+  align?: 'left' | 'center' | 'right'
+  hidden?: boolean
+  /** 必填（items.required 命中）：单元格自身不渲染标签，必填标记由列头 `*` 承担 */
+  required?: boolean
 }
 
 export type PlanNode = FieldPlan | GroupPlan | TabsPlan | ArrayPlan
@@ -164,7 +191,19 @@ export interface CompileResult {
   /** schema `default` 汇总出的嵌套初始值（宿主 initialValues 优先） */
   defaults: Record<string, unknown>
   reactions: CompiledReaction[]
+  /** 值变换钩子（uiSchema `convert` / `transform` 注册名；path 含 `[]` 通配，运行时按具体路径匹配） */
+  transforms: ValueTransformPlan[]
   warnings: string[]
   /** 编译失败（schema 非法 / 循环 $ref）时的可展示原因；plan 为空 */
   error?: string
+}
+
+/** 单个字段的值变换钩子（注册名，运行时查 convert/transform 独立注册表） */
+export interface ValueTransformPlan {
+  /** 绝对路径（数组行内为 `users.[].price` 形式，运行时按具体路径匹配） */
+  path: string
+  /** 入向：宿主值 → 组件值 */
+  convert?: string
+  /** 出向：组件值 → 宿主值 */
+  transform?: string
 }

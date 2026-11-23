@@ -127,7 +127,7 @@ describe('expr 比较 / 逻辑 / 算术', () => {
   })
 })
 
-describe('expr 冻结函数库（9 个）', () => {
+describe('expr 冻结函数库（20 个）', () => {
   it('iif 惰性：未命中的分支不求值（会抛错的宿主函数也不触发）', () => {
     const boom = vi.fn(() => {
       throw new Error('boom')
@@ -187,6 +187,71 @@ describe('expr 冻结函数库（9 个）', () => {
     expect(compileError('min()')).toContain('参数个数')
     expect(compileError("empty('a', 'b')")).toContain('参数个数')
   })
+
+  // ---- V2 扩充的 10 个函数（签名 + 边界）----
+  it('join / split：通配数组拼接与按分隔符切分', () => {
+    expect(run("join({tags}, ',')", { tags: ['a', 'b'] })).toBe('a,b')
+    expect(run("join({nums}, '-')", { nums: [1, 2] })).toBe('1-2')
+    // 非数组按单值处理（与 sum 的宽容口径一致）
+    expect(run("join('a', ',')")).toBe('a')
+    expect(run("join({missing}, ',')")).toBe('')
+    expect(run("split('a,b,c', ',')", {})).toEqual(['a', 'b', 'c'])
+    // 空串不产生空分段（无分段即空数组）
+    expect(run("split('', ',')")).toEqual([])
+    expect(run("split('abc', 'b')")).toEqual(['a', 'c'])
+    expect(run("len(split('a,b', ','))")).toBe(2)
+  })
+
+  it('substring / replace / trim：文本处理边界', () => {
+    expect(run("substring('abcdef', 2)")).toBe('cdef')
+    expect(run("substring('abcdef', 1, 3)")).toBe('bc')
+    expect(run("substring('abc', 5)")).toBe('')
+    // 负数按下标 0 截断（substring 语义）
+    expect(run("substring('abc', -2, 2)")).toBe('ab')
+    expect(run('substring({missing}, 0, 2)')).toBe('')
+    // replace 替换全部字面量匹配（非正则）
+    expect(run("replace('a-b-c', '-', '/')")).toBe('a/b/c')
+    expect(run("replace('abc', '', 'x')")).toBe('abc')
+    expect(run("trim('  a b  ')")).toBe('a b')
+    expect(run('trim({missing})')).toBe('')
+  })
+
+  it('round / abs / floor / ceil：数学边界（非数值得 NaN）', () => {
+    expect(run('round(1.4)')).toBe(1)
+    expect(run('round(1.5)')).toBe(2)
+    expect(run('round(1.2345, 2)')).toBe(1.23)
+    expect(run('round(1234, -1)')).toBe(1234) // digits 负值按 0 截断
+    expect(run('round(-1.5)')).toBe(-1)
+    expect(run('abs(-3)')).toBe(3)
+    expect(run('abs(3)')).toBe(3)
+    expect(run('floor(1.9)')).toBe(1)
+    expect(run('floor(-1.1)')).toBe(-2)
+    expect(run('ceil(1.1)')).toBe(2)
+    expect(run('ceil(-1.9)')).toBe(-1)
+    expect(Number.isNaN(run("abs('a')") as number)).toBe(true)
+    expect(Number.isNaN(run('round({missing})') as number)).toBe(true)
+  })
+
+  it('formatDate：冻结 token 表 + 本地时区 + 未知 token 原样输出', () => {
+    const local = new Date(2026, 10, 24, 9, 5, 7) // 本地时区 2026-11-24 09:05:07
+    expect(run('formatDate({ts}, "yyyy-MM-dd")', { ts: local.getTime() })).toBe('2026-11-24')
+    expect(run('formatDate({ts}, "HH:mm:ss")', { ts: local.getTime() })).toBe('09:05:07')
+    expect(run('formatDate({ts})', { ts: local.getTime() })).toBe('2026-11-24')
+    // 未知 token 原样输出（不抛错、不静默吞掉）
+    expect(run('formatDate({ts}, "yyyy/MM/dd E")', { ts: local.getTime() })).toBe('2026/11/24 E')
+    // 非法输入 → null（与「读不到」同口径，不会得到 Invalid Date 字符串）
+    expect(run('formatDate("not-a-date")')).toBeNull()
+    expect(run('formatDate({missing})')).toBeNull()
+  })
+
+  it('dateAdd：单位冻结 day / hour / minute，未知单位按原值返回', () => {
+    const base = new Date(2026, 10, 24, 9, 0, 0).getTime()
+    expect(run('dateAdd({ts}, 1, "day")', { ts: base })).toBe(base + 86_400_000)
+    expect(run('dateAdd({ts}, -2, "hour")', { ts: base })).toBe(base - 7_200_000)
+    expect(run('dateAdd({ts}, 30, "minute")', { ts: base })).toBe(base + 1_800_000)
+    expect(run('dateAdd({ts}, 1, "week")', { ts: base })).toBe(base)
+    expect(run('dateAdd("not-a-date", 1, "day")')).toBeNull()
+  })
 })
 
 describe('expr 排除项一律编译期报错', () => {
@@ -204,10 +269,26 @@ describe('expr 排除项一律编译期报错', () => {
   })
 
   it('未知函数 / 未知字段（提供存在性校验时）报错', () => {
+    // now() 是明确不做项（非确定性与 reaction 静态重算模型冲突）
     expect(compileError('now()')).toContain('未知函数')
-    expect(compileError('trim("a")')).toContain('未知函数')
+    expect(compileError('unknownFn("a")')).toContain('未知函数')
     const result = compileExpression('{unknown} == 1', { exists: (path) => path !== 'unknown' })
     expect(result.error).toContain('未知字段')
+  })
+
+  it('宿主函数与内置同名：宿主优先（不再被内置静默遮蔽）', () => {
+    const restore = registerExprFunction('trim', (...args) => `host:${String(args[0])}`)
+    try {
+      const result = compileExpression('trim(" x ") == "host: x "')
+      expect(result.error).toBeNull()
+      expect(result.dynamic, '宿主函数按全量重算').toBe(true)
+      expect(evaluateExpression(result.program!, { values: {} })).toBe(true)
+    } finally {
+      restore()
+    }
+    // 注销后回落内置实现
+    const builtin = compileExpression('trim("  x  ") == "x"')
+    expect(evaluateExpression(builtin.program!, { values: {} })).toBe(true)
   })
 
   it('语法错（未闭合 / 多余内容 / 缺括号）报错', () => {

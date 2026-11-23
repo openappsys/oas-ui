@@ -9,9 +9,13 @@ import {
   compileSchema,
   createReactionEngine,
   deepEqual,
+  getConverter,
+  getOptionSource,
+  getTransformer,
   isEmptyValue,
   joinDslPath,
   parseDslPath,
+  pathDependencyMatches,
   pathPatternMatches,
   projectValue,
   projectValues,
@@ -26,6 +30,8 @@ import {
   type ReactionEffectsMap,
   type ReactionEngine,
   type TabsPlan,
+  type ValueHook,
+  type ValueTransformPlan,
 } from './compiler/index.js'
 
 /**
@@ -148,6 +154,38 @@ const STYLE = `
 .empty[hidden] {
   display: none;
 }
+/* ---- 异步选项状态块（失败 + 重试 / 空态）：挂在控件所在 form-item 内 ---- */
+.options-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oas-space-2);
+  margin-top: var(--oas-space-1);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.options-status-message {
+  color: var(--oas-color-danger);
+}
+.options-retry {
+  appearance: none;
+  border: 1px solid var(--oas-color-border);
+  background: transparent;
+  color: var(--oas-color-primary);
+  cursor: pointer;
+  height: var(--oas-control-height-sm);
+  padding: 0 var(--oas-space-2);
+  border-radius: var(--oas-radius-sm);
+  font: inherit;
+  font-size: var(--oas-font-size-sm);
+}
+.options-retry:hover {
+  background: var(--oas-color-bg-hover);
+}
+.options-retry:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
 @media (forced-colors: active) {
   .tab:focus-visible {
     outline: 1px solid CanvasText;
@@ -210,10 +248,17 @@ export class OASSchemaForm extends OASElement {
   private renderedKey: string | null = null
   /** 上次重建时的初始值通道身份（仅当它变化时，初始值才允许覆盖快照里的用户编辑） */
   private renderedInitialKey: string | null = null
+  /** 渲染态：表格单元格抑制自身标签（列头已承载标签与必填标记） */
+  private suppressCellLabels = false
 
   private engine: ReactionEngine | null = null
   private effects = new Map<string, ReactionEffects>()
   private nodeByKey = new Map<string, PlanNode>()
+  /** 异步选项：路径级请求序号（晚到响应丢弃） + 代次（卸载/重连后一律丢弃） */
+  private optionSeq = new Map<string, number>()
+  private optionGeneration = 0
+  /** 重建期间去重：同名 + 同路径 + 同依赖值的请求复用同一 Promise */
+  private optionPending = new Map<string, Promise<unknown[]>>()
   /** bind() 的清理函数是否已登记（重连再 bind 时不重复登记，避免 cleanupFns 无限增长） */
   private bindCleanupRegistered = false
   /** 数组元素 → 具体路径（根数组 `users`，嵌套 `users.0.matrix`） */
@@ -340,6 +385,11 @@ export class OASSchemaForm extends OASElement {
     form.addEventListener('oas-values-change', this.handleValuesEvent)
     form.addEventListener('oas-add', this.handleArrayMutationEvent)
     form.addEventListener('oas-remove', this.handleArrayMutationEvent)
+    form.addEventListener('oas-duplicate', this.handleArrayMutationEvent)
+    form.addEventListener('oas-move', this.handleArrayMutationEvent)
+    // 出向变换：提交 / 校验失败载荷就地改写（内层监听 → 先于宿主拿到事件）
+    form.addEventListener('oas-submit', this.handleOutboundEvent)
+    form.addEventListener('oas-validate-fail', this.handleOutboundEvent)
     if (this.bindCleanupRegistered) return
     this.bindCleanupRegistered = true
     this.onCleanup(() => {
@@ -347,11 +397,20 @@ export class OASSchemaForm extends OASElement {
       form.removeEventListener('oas-values-change', this.handleValuesEvent)
       form.removeEventListener('oas-add', this.handleArrayMutationEvent)
       form.removeEventListener('oas-remove', this.handleArrayMutationEvent)
+      form.removeEventListener('oas-duplicate', this.handleArrayMutationEvent)
+      form.removeEventListener('oas-move', this.handleArrayMutationEvent)
+      form.removeEventListener('oas-submit', this.handleOutboundEvent)
+      form.removeEventListener('oas-validate-fail', this.handleOutboundEvent)
+      this.optionGeneration += 1
     })
   }
 
-  private readonly handleValuesEvent = (event: Event): void => this.onValuesChange(event)
-  private readonly handleArrayMutationEvent = (): void => this.onArrayMutation()
+  private readonly handleValuesEvent = (event: Event): void => {
+    this.onValuesChange(event)
+    this.rewriteEventOutbound(event)
+  }
+  private readonly handleArrayMutationEvent = (event: Event): void => this.onArrayMutation(event)
+  private readonly handleOutboundEvent = (event: Event): void => this.rewriteEventOutbound(event)
 
   /** 断开重连：cleanup 已摘除监听 → 重绑（否则联动求值与数组增删刷新永久失效） */
   protected override onReconnect(): void {
@@ -378,9 +437,11 @@ export class OASSchemaForm extends OASElement {
     if (!compiled) return
     const key = this.structureKey()
     if (key !== this.renderedKey) {
+      // 受控 values 与结构变化同时到达：行数以宿主值为准（行数快照会让「初始 1 行 / 值 3 行」错配）
+      const valuesChanged = this.appliedValuesKey !== null && this.valuesKey() !== this.appliedValuesKey
       this.renderedKey = key
       this.appliedValuesKey = this.valuesKey()
-      this.rebuild()
+      this.rebuild({ restoreRows: !valuesChanged })
     } else {
       this.indexArrayNodes()
       this.syncArrayStates()
@@ -474,12 +535,19 @@ export class OASSchemaForm extends OASElement {
 
   // ---------- 渲染 ----------
 
-  /** 结构重建：快照当前值 → 重建 DOM → 回填值（结构变化时值不丢） */
-  private rebuild(): void {
+  /**
+   * 结构重建：快照当前值 → 重建 DOM → 回填值（结构变化时值不丢）。
+   *
+   * 行数快照（V2 批 1）：重建前从 DOM 现取各数组的行数，重建后按快照恢复（超出初始长度的行空值填充）。
+   * 「不建常驻 map」——断开保留的 DOM 就是快照来源，常驻态只会与 reset / 重连打架。
+   * `restoreRows: false` = 忽略快照（reset 行数回初始；受控 values 写入 / 初始值通道变化由 update 传入）。
+   */
+  private rebuild(options: { restoreRows?: boolean } = {}): void {
     const form = this.formEl
     const body = this.bodyEl
     const compiled = this.compiled
     if (!form || !body || !compiled) return
+    const rowCounts = options.restoreRows === false ? null : this.captureRowCounts()
     const snapshot = form.getValues()
     // 初始值通道是否变化决定「initial 胜还是快照胜」：只有宿主改写 initialValues 时才允许
     // 用初始值覆盖快照——schema/uiSchema 等其它结构变化触发的重建必须保留用户编辑。
@@ -491,6 +559,7 @@ export class OASSchemaForm extends OASElement {
     body.textContent = ''
     this.unmountedFields.clear()
     this.arrayErrorPaths.clear()
+    this.arrayPathOf = new WeakMap()
     if (compiled.error) {
       form.rules = {}
       this.syncEmptyState()
@@ -498,18 +567,33 @@ export class OASSchemaForm extends OASElement {
     }
     for (const node of compiled.plan) body.appendChild(this.renderNode(node))
     // 基线 = schema default ← 宿主通道（受控 values 优先，否则 initialValues）
-    const merged = mergeDeep(cloneJson(compiled.defaults) as Record<string, unknown>, this.baselineValues())
+    const merged = mergeDeep(
+      cloneJson(compiled.defaults) as Record<string, unknown>,
+      this.convertInbound(this.baselineValues()),
+    )
     form.initialValues = merged
-    // 行数由初始数组长度驱动（min 兜底；initialValues 有 1 行必须渲染 1 行）
-    this.syncArrayMin(merged)
+    // 行数：初始数组长度 ∪ 结构重建行数快照（initialChanged 时快照作废，交给初始值）
+    this.syncArrayRows(merged, initialChanged ? null : rowCounts)
     form.reapplyInitialValues()
     this.applySnapshotValues(snapshot, merged, controlled || initialChanged)
     this.appliedValues = controlled ? (cloneJson(this.values) as Record<string, unknown>) : null
-    this.pristineSnapshot = new Map(flattenValues(this.getValues()))
+    this.pristineSnapshot = new Map(flattenValues(this.kernelValues()))
     this.syncDirty()
     this.syncRules()
     this.evaluateEffects()
     this.syncArrayStates()
+    // 异步选项源：结构重建后统一加载（同一轮内重复请求按去重键合并）
+    this.loadAllOptionSources()
+  }
+
+  /** 结构重建行数快照：当前 DOM 各数组（具体路径）的行数 */
+  private captureRowCounts(): Map<string, number> {
+    const counts = new Map<string, number>()
+    this.indexArrayNodes()
+    for (const [element, path] of this.arrayNodes()) {
+      counts.set(path, element.querySelectorAll(':scope > [data-oas-form-list-item]').length)
+    }
+    return counts
   }
 
   private renderNode(node: PlanNode): HTMLElement {
@@ -522,13 +606,23 @@ export class OASSchemaForm extends OASElement {
   private renderField(node: FieldPlan): HTMLElement {
     const item = document.createElement('oas-form-item')
     item.setAttribute('data-schema-key', node.key)
-    item.setAttribute('label', node.label)
+    // 表格单元格：列头已承载标签与必填标记，单元格自身不重复渲染（含必填星号）
+    if (this.suppressCellLabels) {
+      item.setAttribute('data-schema-cell', '')
+    } else {
+      item.setAttribute('label', node.label)
+      if (node.staticRequired) item.setAttribute('required', '')
+    }
     if (node.help) item.setAttribute('help', node.help)
     if (node.span) item.setAttribute('span', String(node.span))
-    if (node.staticRequired) item.setAttribute('required', '')
     const widget = document.createElement(node.widget.tag)
     widget.setAttribute('data-schema-widget', node.name)
     widget.setAttribute('name', node.name)
+    // 异步选项空态由容器 `part="options-status"` 承接：组内默认空态文案在此抑制（避免双份提示；
+    // 组独立使用时无此标记，空态照常显示）
+    if (node.optionsSource && (node.widget.tag === 'oas-radio-group' || node.widget.tag === 'oas-checkbox-group')) {
+      widget.setAttribute('data-suppress-empty', '')
+    }
     for (const [key, value] of Object.entries(node.widget.props)) widget.setAttribute(key, value)
     item.appendChild(widget)
     return item
@@ -650,23 +744,41 @@ export class OASSchemaForm extends OASElement {
     title.hidden = node.label === ''
     container.appendChild(title)
 
-    const empty = document.createElement('div')
-    empty.className = 'array-empty'
-    empty.setAttribute('part', 'array-empty')
-    empty.textContent = this.t('schemaForm.emptyArray')
-    // 空态提示放在列表之前：列表的「添加一项」按钮在其下方，文案里的方向词才成立
-    container.appendChild(empty)
+    // 空态提示放在列表之前：列表的「添加一项」按钮在其下方，文案里的方向词才成立。
+    // 表格自带表体空态（role=row 占位），不再叠一层文案。
+    if (node.table !== true) {
+      const empty = document.createElement('div')
+      empty.className = 'array-empty'
+      empty.setAttribute('part', 'array-empty')
+      empty.textContent = this.t('schemaForm.emptyArray')
+      container.appendChild(empty)
+    }
 
-    const list = document.createElement('oas-form-list')
+    const list = document.createElement(node.table === true ? 'oas-array-table' : 'oas-form-list')
     list.setAttribute('part', 'list')
     list.setAttribute('data-schema-array-key', node.key)
     list.setAttribute('name', node.name)
-    // 增删按钮可访问名走 schemaForm.*（i18n），由 form-list 的可选属性承接
-    list.setAttribute('add-text', this.t('schemaForm.addItem'))
-    list.setAttribute('remove-text', this.t('schemaForm.removeItem'))
-    // 行模板：行内字段裸名（form-list 自动加前缀）；嵌套数组名带 {index}（外层替换）
+    // 增删按钮可访问名走 schemaForm.*（i18n），由容器的可选属性承接
+    list.setAttribute('add-text', this.t(node.table === true ? 'schemaForm.rowAdd' : 'schemaForm.addItem'))
+    list.setAttribute('remove-text', this.t(node.table === true ? 'schemaForm.rowRemove' : 'schemaForm.removeItem'))
+    // 行操作三钮（复制 / 上移 / 下移）：两种容器同一套语义
+    list.setAttribute('duplicate-text', this.t('schemaForm.rowDuplicate'))
+    list.setAttribute('move-up-text', this.t('schemaForm.rowUp'))
+    list.setAttribute('move-down-text', this.t('schemaForm.rowDown'))
+    if (node.table === true) {
+      list.setAttribute('label', node.label)
+      list.setAttribute('columns', JSON.stringify(node.columns ?? []))
+    }
+    // 行模板：行内字段裸名（form-list 自动加前缀）；嵌套数组名带 {index}（外层替换）。
+    // 表格单元格不渲染自己的标签（列头已承载），必填标记转到列头 `*`
     const template = document.createElement('template')
-    for (const child of node.children) template.content.appendChild(this.renderNode(child))
+    const previousSuppress = this.suppressCellLabels
+    this.suppressCellLabels = node.table === true
+    try {
+      for (const child of node.children) template.content.appendChild(this.renderNode(child))
+    } finally {
+      this.suppressCellLabels = previousSuppress
+    }
     list.appendChild(template)
     container.appendChild(list)
 
@@ -691,18 +803,271 @@ export class OASSchemaForm extends OASElement {
     }
   }
 
-  // ---------- 初始值 / 行数 ----------
+  // ---------- 内核原始值 / 值变换双钩子（V2 批 2）----------
 
-  /** 按初始值数组长度设置 form-list min（逐层；行数由数据驱动，0 行也有占位） */
-  private syncArrayMin(initial: Record<string, unknown>): void {
+  /** 内核原始值（字符串语义；值变换的出向改写不落在这里） */
+  private kernelValues(): Record<string, unknown> {
+    return this.formEl?.getValues() ?? {}
+  }
+
+  /** 编译产物里是否有该方向的钩子（无钩子时零开销短路） */
+  private hasHook(kind: 'convert' | 'transform'): boolean {
+    const plans = this.compiled?.transforms
+    if (!plans || plans.length === 0) return false
+    return plans.some((plan) => (kind === 'convert' ? plan.convert : plan.transform) !== undefined)
+  }
+
+  /** 具体路径命中的钩子（通配路径按 pathPatternMatches 匹配；后定义者覆盖先定义者） */
+  private hookFor(path: string, kind: 'convert' | 'transform'): ValueHook | null {
+    const plans = this.compiled?.transforms
+    if (!plans || plans.length === 0) return null
+    let name: string | undefined
+    for (const plan of plans) {
+      if (!pathPatternMatches(plan.path, path)) continue
+      const candidate = kind === 'convert' ? plan.convert : plan.transform
+      if (candidate !== undefined) name = candidate
+    }
+    if (name === undefined) return null
+    return kind === 'convert' ? getConverter(name) : getTransformer(name)
+  }
+
+  /** 钩子调用：空串 / 缺省不调用（防 `moneyToCents(undefined)` 之类得出 NaN）；抛错回落恒等 */
+  private runHook(hook: ValueHook, value: unknown, path: string, whole: Record<string, unknown>): unknown {
+    if (value === undefined || value === '') return value
+    try {
+      return hook(value, path, whole)
+    } catch (error) {
+      devWarn(`[oas-schema-form] 值变换钩子执行失败（${path}）：${String(error)}，已按恒等回落`)
+      return value
+    }
+  }
+
+  /**
+   * 按编译产物把钩子应用到整棵值树：**在字段路径处整值替换并停止下钻**（convert/transform 的
+   * 输出即该字段的组件值，继续下钻会把结果当容器再拆），其余节点递归。
+   */
+  private mapHookValues(
+    tree: Record<string, unknown>,
+    kind: 'convert' | 'transform',
+    whole: Record<string, unknown>,
+  ): Record<string, unknown> {
+    if (!this.hasHook(kind)) return tree
+    const walk = (value: unknown, path: string): unknown => {
+      if (path !== '') {
+        const hook = this.hookFor(path, kind)
+        if (hook) return this.runHook(hook, value, path, whole)
+      }
+      if (Array.isArray(value)) {
+        return value.map((item, index) => walk(item, `${path === '' ? '' : `${path}.`}${index}`))
+      }
+      if (isPlainObject(value)) {
+        const out: Record<string, unknown> = {}
+        for (const [key, child] of Object.entries(value)) {
+          if (key === '__proto__' || key === 'prototype' || key === 'constructor') continue
+          out[key] = walk(child, path === '' ? key : `${path}.${key}`)
+        }
+        return out
+      }
+      return value
+    }
+    const result = walk(tree, '')
+    return isPlainObject(result) ? result : tree
+  }
+
+  /** 入向：宿主值 → 组件值（initialValues 回填、受控 values、setValues） */
+  private convertInbound(values: Record<string, unknown>): Record<string, unknown> {
+    return this.mapHookValues(values, 'convert', values)
+  }
+
+  /** 出向：组件值 → 宿主值（事件载荷与公开 getValues） */
+  private transformOutbound(values: Record<string, unknown>): Record<string, unknown> {
+    return this.mapHookValues(values, 'transform', values)
+  }
+
+  /** 事件载荷就地改写（冒泡顺序先于宿主、target 不变、不停冒泡） */
+  private rewriteEventOutbound(event: Event): void {
+    if (!this.hasHook('transform')) return
+    const detail = (event as CustomEvent<Record<string, unknown>>).detail
+    if (!detail || typeof detail !== 'object') return
+    const raw = this.kernelValues()
+    if ('values' in detail) detail.values = this.transformOutbound(raw)
+    if (typeof detail.name === 'string' && 'value' in detail) {
+      const hook = this.hookFor(detail.name, 'transform')
+      if (hook) detail.value = this.runHook(hook, detail.value, detail.name, raw)
+    }
+  }
+
+  /** 单叶子入向换算（受控 diff 写用；通配路径命中） */
+  private convertLeaf(path: string, value: unknown, whole: Record<string, unknown>): unknown {
+    const hook = this.hookFor(path, 'convert')
+    return hook ? this.runHook(hook, value, path, whole) : value
+  }
+
+  // ---------- 异步选项源（V2 批 2 窄面）----------
+
+  /** 已渲染且声明了 `options.source` 的字段（[控件, 计划, 具体路径]） */
+  private *optionBindings(): Generator<[HTMLElement, FieldPlan, string]> {
+    if (!this.bodyEl) return
+    for (const element of this.bodyEl.querySelectorAll<HTMLElement>('[data-schema-key]')) {
+      const node = this.nodeByKey.get(element.getAttribute('data-schema-key') ?? '')
+      if (!node || node.kind !== 'field' || !node.optionsSource) continue
+      const widget = element.querySelector<HTMLElement>('[data-schema-widget]')
+      const name = widget?.getAttribute('name') ?? ''
+      if (!widget || name === '') continue
+      yield [widget, node, name]
+    }
+  }
+
+  /** 依赖值快照（去重键用） */
+  private depValuesKey(deps: string[]): string {
+    const values = this.projectedValues()
+    return JSON.stringify(
+      deps.map((dep) => {
+        const path = parseDslPath(dep)
+        return path === null ? undefined : readPath(values, path)
+      }),
+    )
+  }
+
+  /** 加载全部选项源（结构重建后调用；同一轮内的重复请求按去重键合并） */
+  private loadAllOptionSources(): void {
+    for (const [widget, node, path] of this.optionBindings()) void this.loadOptions(widget, node, path)
+  }
+
+  /**
+   * 依赖变化触发的重载（A 变 → 重载 B 的选项）。
+   *
+   * 批量通道（受控 `values` / `setValues`）：一次 diff 出多个变更路径，按**字段**触发一次——
+   * 同一字段的多个变更路径不能重复起请求（多行改动都命中 `users` 依赖时只重载一次）。
+   */
+  private reloadOptionDependents(changed: string | readonly string[]): void {
+    const changes = typeof changed === 'string' ? [changed] : changed
+    if (changes.length === 0) return
+    for (const [widget, node, path] of this.optionBindings()) {
+      const deps = node.optionsSource?.deps ?? []
+      if (!deps.some((dep) => changes.some((name) => pathDependencyMatches(dep, name)))) continue
+      void this.loadOptions(widget, node, path)
+    }
+  }
+
+  /**
+   * 加载单个字段的异步选项。
+   *
+   * 竞态口径（设计稿 v2）：**seq 序号守卫**（晚到响应丢弃）+ **重建期间去重**（同名/同路径/同依赖值
+   * 复用同一 Promise，避免结构重建抖出重复请求）+ **卸载后丢弃**（代次 + `isConnected`）。
+   * 失败态 = 控件下方状态块（错误文案 + 重试按钮，i18n）；空结果 = 空态文案。
+   */
+  private async loadOptions(widget: HTMLElement, node: FieldPlan, path: string, force = false): Promise<void> {
+    const source = node.optionsSource
+    if (!source) return
+    const seq = (this.optionSeq.get(path) ?? 0) + 1
+    this.optionSeq.set(path, seq)
+    const generation = this.optionGeneration
+    this.setOptionsLoading(widget, true)
+    const key = `${source.name}\u0000${path}\u0000${this.depValuesKey(source.deps)}`
+    let options: unknown[] = []
+    let failed = false
+    try {
+      const fn = getOptionSource(source.name)
+      if (!fn) throw new Error(`options.source "${source.name}" 未注册`)
+      let pending = force ? undefined : this.optionPending.get(key)
+      if (!pending) {
+        pending = Promise.resolve(fn(this.projectedValues(), path))
+        this.optionPending.set(key, pending)
+        const cleanup = (): void => {
+          this.optionPending.delete(key)
+        }
+        pending.then(cleanup, cleanup)
+      }
+      const loaded = await pending
+      options = Array.isArray(loaded) ? loaded : []
+    } catch (error) {
+      failed = true
+      devWarn(`[oas-schema-form] 选项源 "${source.name}" 加载失败（${path}）：${String(error)}`)
+    }
+    // 竞态守卫：代次变化（卸载/重连）、序号被后续请求顶替、控件已离场 → 丢弃本次结果
+    if (generation !== this.optionGeneration || this.optionSeq.get(path) !== seq || !widget.isConnected) return
+    this.setOptionsLoading(widget, false)
+    if (failed) {
+      this.renderOptionsStatus(widget, path, 'error')
+      return
+    }
+    widget.setAttribute('options', JSON.stringify(options))
+    this.renderOptionsStatus(widget, path, options.length === 0 ? 'empty' : null)
+  }
+
+  /** loading 态承载：select 沿用自身 loading（带 i18n 文案），单选/多选组新增 loading 布尔属性 */
+  private setOptionsLoading(widget: HTMLElement, loading: boolean): void {
+    const tag = widget.tagName.toLowerCase()
+    if (tag === 'oas-select') {
+      if (loading) {
+        widget.setAttribute('loading-text', this.t('schemaForm.optionsLoading'))
+        widget.setAttribute('loading', '')
+      } else {
+        widget.removeAttribute('loading')
+      }
+      return
+    }
+    if (tag === 'oas-radio-group' || tag === 'oas-checkbox-group') {
+      widget.toggleAttribute('loading', loading)
+    }
+  }
+
+  /** 选项状态块（失败 / 空态；加载中由控件自身 loading 承载）：挂在控件所在 form-item 内 */
+  private renderOptionsStatus(widget: HTMLElement, path: string, state: 'error' | 'empty' | null): void {
+    const item = widget.closest('oas-form-item')
+    if (!item) return
+    let box = item.querySelector<HTMLElement>(':scope > [part="options-status"]')
+    if (state === null) {
+      box?.remove()
+      return
+    }
+    if (!box) {
+      box = document.createElement('div')
+      box.className = 'options-status'
+      box.setAttribute('part', 'options-status')
+      item.appendChild(box)
+    }
+    box.textContent = ''
+    if (state === 'empty') {
+      box.setAttribute('role', 'status')
+      box.textContent = this.t('schemaForm.optionsEmpty')
+      return
+    }
+    box.setAttribute('role', 'alert')
+    const message = document.createElement('span')
+    message.className = 'options-status-message'
+    message.textContent = this.t('schemaForm.optionsFailed')
+    const hint = document.createElement('span')
+    hint.className = 'options-status-hint'
+    hint.textContent = this.t('schemaForm.optionsFailedHint')
+    const retry = document.createElement('button')
+    retry.type = 'button'
+    retry.className = 'options-retry'
+    retry.setAttribute('part', 'options-retry')
+    retry.textContent = this.t('schemaForm.optionsRetry')
+    retry.addEventListener('click', () => this.reloadOptions(path))
+    box.appendChild(message)
+    box.appendChild(hint)
+    box.appendChild(retry)
+  }
+
+  /**
+   * 按数组长度 + 结构重建行数快照设置 `rows`（逐层；嵌套数组随外层行展开）：
+   * 目标行数 = max(初始数组长度, 快照行数)。`min` 不再由本组件下发——删行下界归容器（默认 0），
+   * `minItems` 违规交给数组级校验报错，不再被「唯一行删不掉」锁住。
+   */
+  private syncArrayRows(initial: Record<string, unknown>, rowCounts: Map<string, number> | null): void {
     for (let pass = 0; pass < 4; pass++) {
       this.indexArrayNodes()
       let changed = false
       for (const [element, path] of this.arrayNodes()) {
+        if (!element.isConnected) continue
         const value = readPath(initial, parseDslPath(path) ?? [])
         const length = Array.isArray(value) ? value.length : 0
-        if (element.getAttribute('min') !== String(length)) {
-          element.setAttribute('min', String(length))
+        const target = Math.max(length, rowCounts?.get(path) ?? 0)
+        if (element.getAttribute('rows') !== String(target)) {
+          element.setAttribute('rows', String(target))
           changed = true
         }
       }
@@ -827,6 +1192,8 @@ export class OASSchemaForm extends OASElement {
     const nextAll = this.values
     const prevAll = this.appliedValues ?? {}
     const patch: Record<string, unknown> = {}
+    /** 本次 diff 出的变更路径（受控写不派发 values-change，异步选项依赖必须显式重载） */
+    const changedPaths: string[] = []
     let changed = false
     // 已渲染字段名：值树在**恰为该字段名**的节点上整值下发（不拍平成下标叶子）。
     // 标量数组字段（array of enum → oas-checkbox-group 单字段 `tags`）宿主写
@@ -838,18 +1205,21 @@ export class OASSchemaForm extends OASElement {
     for (const [path, value] of current) {
       const before = previous.get(path)
       if (before !== undefined && String(before) === String(value)) continue
-      setLeaf(patch, path.split('.'), value)
+      // 入向换算在「写入组件前」一步发生：宿主原始值 → 组件值
+      setLeaf(patch, path.split('.'), this.convertLeaf(path, value, nextAll))
+      changedPaths.push(path)
       changed = true
     }
     // 宿主删除键：清空对应字段（受控模式下「消失」等价于清空，而不是保留旧值）
     for (const path of previous.keys()) {
       if (current.has(path)) continue
       setLeaf(patch, path.split('.'), null)
+      changedPaths.push(path)
       changed = true
     }
     this.applyingHostValues = true
     try {
-      this.syncHostArrayMin(nextAll)
+      this.syncHostArrayRows(nextAll)
       if (changed) form.setValues(patch)
       this.appliedValues = cloneJson(nextAll) as Record<string, unknown>
     } finally {
@@ -860,21 +1230,35 @@ export class OASSchemaForm extends OASElement {
     this.syncArrayStates()
     this.evaluateEffects()
     this.syncDirty()
+    // 受控写是静默通道（不派发 values-change、onValuesChange 不进）：依赖本次变更路径的异步选项
+    // 必须在此显式重载，否则「宿主改 city → district 选项」只会在键入路径生效
+    this.reloadOptionDependents(changedPaths)
   }
 
-  /** 受控数组按长度补行（min 只增不减：行删除仍归 form-list 交互） */
-  private syncHostArrayMin(values: Record<string, unknown>): void {
-    this.indexArrayNodes()
-    for (const [element, path] of this.arrayNodes()) {
-      const value = readPath(values, parseDslPath(path) ?? [])
-      if (!Array.isArray(value)) continue
-      if (element.getAttribute('min') !== String(value.length)) element.setAttribute('min', String(value.length))
+  /** 受控数组按长度收敛行数（增补空行 / 删除多余行：宿主删行留空行的缺陷同批修） */
+  private syncHostArrayRows(values: Record<string, unknown>): void {
+    for (let pass = 0; pass < 4; pass++) {
+      this.indexArrayNodes()
+      let changed = false
+      for (const [element, path] of this.arrayNodes()) {
+        if (!element.isConnected) continue
+        const value = readPath(values, parseDslPath(path) ?? [])
+        if (!Array.isArray(value)) continue
+        const target = value.length
+        if (element.getAttribute('rows') !== String(target)) element.setAttribute('rows', String(target))
+        const before = element.querySelectorAll(':scope > [data-oas-form-list-item]').length
+        const sized = element as HTMLElement & { setRowCount?: (count: number) => void }
+        sized.setRowCount?.(target)
+        const after = element.querySelectorAll(':scope > [data-oas-form-list-item]').length
+        if (after !== before) changed = true
+      }
+      if (!changed) break
     }
   }
 
   /** 脏态：当前值扁平快照 vs 挂载基线（内核之外的一小块自持状态） */
   private syncDirty(): void {
-    const now = new Map(flattenValues(this.getValues()))
+    const now = new Map(flattenValues(this.kernelValues()))
     let dirty = now.size !== this.pristineSnapshot.size
     if (!dirty) {
       for (const [path, value] of now) {
@@ -925,6 +1309,8 @@ export class OASSchemaForm extends OASElement {
     if (this.applyingHostValues) return
     this.syncDirty()
     const next = engine.evaluateChanged(this.projectedValues(), name)
+    // 值依赖的异步选项：命中声明的 sourceDeps 才 reload（A 变 → 重载 B 的选项）
+    this.reloadOptionDependents(name)
     if (next === null) return
     this.effects = next
     const cleared = this.applyEffects()
@@ -961,13 +1347,43 @@ export class OASSchemaForm extends OASElement {
     }
   }
 
-  /** 数组增删：行号重绑 → 重索引/规则键重挂/清数组级错误 */
-  private onArrayMutation(): void {
+  /**
+   * 数组增删 / 复制 / 移动：行号重绑 → 重索引 / 规则键重挂 / 清错误 → 值同步。
+   *
+   * 错误清理扩到**该数组的字段级**：内核 errors 按旧 name 挂在元素上，重编号后错位
+   * （删掉第 1 行后，原 `users.1.nick` 的红字仍显示在新第 1 行上），必须随重编号一起清。
+   * 值同步：行操作会改值但不派发 `oas-values-change`（事件契约不变），脏态 / 联动 / 受控
+   * appliedValues 必须在此显式刷新，否则宿主下一次写同值会被当成「无变化」而静默丢弃。
+   */
+  private onArrayMutation(event: Event): void {
+    const list = event.target instanceof Element ? event.target : null
+    // 路径必须在重索引之前取：删行会让内层数组的具体路径整体前移
+    const mutatedPath = list ? this.arrayPathOf.get(list) : undefined
     this.indexArrayNodes()
     this.syncRules()
     this.clearArrayErrorVisuals()
+    if (list) this.clearArrayFieldErrors(list, mutatedPath)
     this.syncArrayStates()
     this.evaluateEffects()
+    this.syncDirty()
+    // 受控模式：行操作后把内核当前值当作新的写基线（宿主下次写树时只 diff 真实差异）
+    if (this.hasHostValues()) this.appliedValues = cloneJson(this.kernelValues()) as Record<string, unknown>
+  }
+
+  /** 清该数组的字段级错误视觉（注入项走内核，规则错误在下次校验时重算） */
+  private clearArrayFieldErrors(list: Element, path: string | undefined): void {
+    const form = this.formEl
+    if (form && path) {
+      const prefix = `${path}.`
+      const injected = Object.keys(form.getErrors()).filter((name) => name.startsWith(prefix))
+      if (injected.length > 0) form.clearErrors(injected)
+    }
+    for (const item of list.querySelectorAll<HTMLElement>('oas-form-item')) {
+      ;(item as HTMLElement & { setError?: (message: string | null) => void }).setError?.(null)
+    }
+    for (const widget of list.querySelectorAll<HTMLElement>('[aria-invalid="true"]')) {
+      widget.removeAttribute('aria-invalid')
+    }
   }
 
   /** 效果查找：effect 键（具体路径或通配模式）命中元素具体路径 */
@@ -1035,7 +1451,8 @@ export class OASSchemaForm extends OASElement {
     required: boolean,
   ): string | null {
     const widget = item.querySelector<HTMLElement>('[data-schema-widget]')
-    item.toggleAttribute('required', required)
+    // 表格单元格不渲染自身标签：必填标记由列头 `*` 承担（避免单元格里出现孤立星号）
+    item.toggleAttribute('required', required && !item.hasAttribute('data-schema-cell'))
     if (widget) {
       widget.toggleAttribute('disabled', disabled)
       if (required) widget.setAttribute('aria-required', 'true')
@@ -1269,9 +1686,21 @@ export class OASSchemaForm extends OASElement {
     return kernelOk && arrayOk
   }
 
-  /** 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串） */
+  /** 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）；出向变换在此应用 */
   getValues(): Record<string, unknown> {
-    return this.formEl?.getValues() ?? {}
+    return this.transformOutbound(this.kernelValues())
+  }
+
+  /**
+   * 手动重载异步选项（`options.source`）：省略 path = 全部重载。
+   * 与自动加载共用同一套竞态守卫（序号 / 去重 / 卸载丢弃）。
+   */
+  reloadOptions(path?: string): void {
+    for (const [widget, node, bound] of this.optionBindings()) {
+      if (path !== undefined && bound !== path) continue
+      // 手动刷新强制发起新请求（不复用进行中的同类请求）
+      void this.loadOptions(widget, node, bound, true)
+    }
   }
 
   /** 受控写通道：按路径写字段（走内核 `oas-form.setValues`；宿主写不派发事件、不重建 DOM） */
@@ -1280,11 +1709,13 @@ export class OASSchemaForm extends OASElement {
       devWarn('[oas-schema-form] setValues 需要普通对象，已忽略本次调用')
       return
     }
+    // 入向换算后写入组件（appliedValues 仍按宿主原值记基线，diff 口径不变）
+    const converted = this.convertInbound(patch)
     this.applyingHostValues = true
     try {
       this.indexArrayNodes()
-      this.syncHostArrayMin(patch)
-      this.formEl?.setValues(patch)
+      this.syncHostArrayRows(converted)
+      this.formEl?.setValues(converted)
       const merged = mergeDeep(
         cloneJson(this.appliedValues ?? {}) as Record<string, unknown>,
         cloneJson(patch) as Record<string, unknown>,
@@ -1298,6 +1729,8 @@ export class OASSchemaForm extends OASElement {
     this.syncArrayStates()
     this.evaluateEffects()
     this.syncDirty()
+    // 同受控通道：patch 键已知 → 逐路径重载依赖异步选项（不派发 values-change，无二次触发）
+    this.reloadOptionDependents(collectLeafPaths(patch))
   }
 
   /** 注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载 */
@@ -1310,11 +1743,11 @@ export class OASSchemaForm extends OASElement {
     this.formEl?.clearErrors(paths)
   }
 
-  /** 重置：回初始值、清错误、数组行数回初始长度（不派发事件） */
+  /** 重置：回初始值、清错误、数组行数回初始长度（不派发事件；行数快照在此 bypass） */
   reset(): void {
     if (!this.compiled) return
     this.clearArrayErrorVisuals()
-    this.rebuild()
+    this.rebuild({ restoreRows: false })
     this.formEl?.reset()
     this.syncDirty()
     this.evaluateEffects()
@@ -1425,6 +1858,30 @@ function flattenRawValues(
     if (key === '__proto__' || key === 'prototype' || key === 'constructor') continue
     out.push(...flattenRawValues(value, prefix === '' ? key : `${prefix}.${key}`, whole))
   }
+  return out
+}
+
+/**
+ * 嵌套值 → 变更参与判断的**点号路径**（含 `null` / `undefined` 叶子与空容器）：
+ * 受控写入拿它判断哪些字段路径需要重载依赖异步选项。与值 diff 用 `flattenRawValues` 不同——
+ * 那里缺省叶子会被视为「无值可写」，而这里 `null`（清空）同样是一次依赖变化。
+ */
+function collectLeafPaths(value: unknown, prefix = ''): string[] {
+  const out: string[] = []
+  if (value === null || value === undefined || typeof value !== 'object') {
+    if (prefix !== '') out.push(prefix)
+    return out
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0 && prefix !== '') return [prefix]
+    value.forEach((item, index) => out.push(...collectLeafPaths(item, `${prefix}.${index}`)))
+    return out
+  }
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    ([key]) => key !== '__proto__' && key !== 'prototype' && key !== 'constructor',
+  )
+  if (entries.length === 0 && prefix !== '') return [prefix]
+  for (const [key, child] of entries) out.push(...collectLeafPaths(child, prefix === '' ? key : `${prefix}.${key}`))
   return out
 }
 

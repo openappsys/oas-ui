@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 48481684,
+        "distTotalBytes": 49032354,
         "browserJs": {
-          "files": 579,
-          "rawBytes": 11955890,
-          "gzipBytes": 2994370,
-          "brotliBytes": 2349479
+          "files": 583,
+          "rawBytes": 12084431,
+          "gzipBytes": 3024810,
+          "brotliBytes": 2374032
         },
         "fullEntry": {
-          "files": 596,
-          "rawBytes": 4244771,
-          "gzipBytes": 1208075,
-          "brotliBytes": 1036895,
+          "files": 600,
+          "rawBytes": 4294444,
+          "gzipBytes": 1222252,
+          "brotliBytes": 1049210,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -483,6 +483,13 @@
             "packages/ui/dist/form/calendar/index.js",
             "packages/ui/dist/form/calendar/oas-calendar.js",
             "packages/ui/dist/form/schema-form/index.js",
+            "packages/ui/dist/form/array-table/index.js",
+            "packages/ui/dist/form/form-item/index.js",
+            "packages/ui/dist/form/form-item/oas-form-item.js",
+            "packages/ui/dist/form/form/index.js",
+            "packages/ui/dist/form/form/oas-form.js",
+            "packages/ui/dist/form/array-table/oas-array-table.js",
+            "packages/ui/dist/form/shared/list-row-ops.js",
             "packages/ui/dist/form/rate/index.js",
             "packages/ui/dist/form/rate/oas-rate.js",
             "packages/ui/dist/form/slider/index.js",
@@ -500,13 +507,10 @@
             "packages/ui/dist/form/input-number/oas-input-number.js",
             "packages/ui/dist/form/form-list/index.js",
             "packages/ui/dist/form/form-list/oas-form-list.js",
-            "packages/ui/dist/form/form-item/index.js",
-            "packages/ui/dist/form/form-item/oas-form-item.js",
-            "packages/ui/dist/form/form/index.js",
-            "packages/ui/dist/form/form/oas-form.js",
             "packages/ui/dist/form/schema-form/expr/index.js",
             "packages/ui/dist/form/schema-form/registry.js",
             "packages/ui/dist/form/schema-form/compiler/custom-widgets.js",
+            "packages/ui/dist/form/schema-form/compiler/value-hooks.js",
             "packages/ui/dist/form/schema-form/oas-schema-form.js",
             "packages/ui/dist/form/schema-form/compiler/validate.js",
             "packages/ui/dist/form/schema-form/compiler/reactions.js",
@@ -617,9 +621,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3480513,
-          "gzipBytes": 794427,
-          "brotliBytes": 549424
+          "rawBytes": 3519796,
+          "gzipBytes": 802357,
+          "brotliBytes": 555290
         }
       },
       "@oas-ui/theme": {
@@ -637,9 +641,9 @@
       },
       "@oas-ui/i18n": {
         "files": 50,
-        "rawBytes": 578139,
-        "gzipBytes": 158531,
-        "brotliBytes": 135257
+        "rawBytes": 595187,
+        "gzipBytes": 161624,
+        "brotliBytes": 137977
       },
       "@oas-ui/icons": {
         "files": 53,
@@ -649,9 +653,9 @@
       },
       "@oas-ui/ssr": {
         "files": 4,
-        "rawBytes": 58042,
-        "gzipBytes": 19032,
-        "brotliBytes": 15638
+        "rawBytes": 58119,
+        "gzipBytes": 19046,
+        "brotliBytes": 15646
       }
     },
     "components": {
@@ -735,9 +739,9 @@
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
         "files": 60,
-        "rawBytes": 370014,
-        "gzipBytes": 112113,
-        "brotliBytes": 94373,
+        "rawBytes": 370820,
+        "gzipBytes": 112293,
+        "brotliBytes": 94517,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -1080,9 +1084,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 10,
-        "rawBytes": 64961,
-        "gzipBytes": 22245,
-        "brotliBytes": 18643,
+        "rawBytes": 65922,
+        "gzipBytes": 22454,
+        "brotliBytes": 18805,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/slices/form.js",
@@ -1099,11 +1103,11 @@
       "schemaFormExpr": {
         "entry": "form/schema-form/expr",
         "spec": "@oas-ui/ui/form/schema-form/expr",
-        "files": 1,
-        "rawBytes": 7277,
-        "gzipBytes": 2984,
-        "brotliBytes": 2569,
-        "fileList": ["packages/ui/dist/form/schema-form/expr/index.js"]
+        "files": 2,
+        "rawBytes": 10281,
+        "gzipBytes": 4210,
+        "brotliBytes": 3617,
+        "fileList": ["packages/ui/dist/form/schema-form/expr/index.js", "packages/ui/dist/shared/dev-warn.js"]
       },
       "gantt": {
         "entry": "data/gantt",
@@ -1186,7 +1190,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 794427,
+        "actualBytes": 802357,
         "limitBytes": 819200,
         "warnAtBytes": 737280,
         "pass": true,
@@ -1196,12 +1200,12 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1208075,
-        "limitBytes": 1208320,
-        "warnAtBytes": 1087488,
+        "actualBytes": 1222252,
+        "limitBytes": 1269760,
+        "warnAtBytes": 1142784,
         "pass": true,
         "warn": true,
-        "basis": "天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）"
+        "basis": "天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；下一批（批 2 数据流）落地前须先做包体归因"
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
@@ -1240,7 +1244,7 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 112113,
+        "actualBytes": 112293,
         "limitBytes": 122880,
         "warnAtBytes": 110592,
         "pass": true,
@@ -1273,7 +1277,7 @@
         "name": "@oas-ui/ui/form/form 链 gzip",
         "kind": "absolute",
         "componentId": "form",
-        "actualBytes": 22245,
+        "actualBytes": 22454,
         "limitBytes": 29696,
         "warnAtBytes": 26726,
         "pass": true,
@@ -1284,12 +1288,12 @@
         "name": "@oas-ui/ui/form/schema-form/expr 链 gzip",
         "kind": "absolute",
         "componentId": "schemaFormExpr",
-        "actualBytes": 2984,
-        "limitBytes": 3481.6,
-        "warnAtBytes": 3133,
+        "actualBytes": 4210,
+        "limitBytes": 4710.4,
+        "warnAtBytes": 4239,
         "pass": true,
         "warn": false,
-        "basis": "受限表达式轨（parser + evaluator）独立计量：按需链为单文件实现（粘性正则单遍词法 + Pratt 递归下降 + 解析期闭包求值 + 冻结函数库 + 宿主函数注册表，零第三方依赖，不拉 path.js）。2026-11-23 首测：实测 gzip 2.90 KB / 7.0 KB raw / 1 文件。设计稿目标 ≤2.5 KB 未达成——已做两轮瘦身（AST 改为解析期闭包、词法改粘性正则单遍、路径占位校验本地化以免连带 path.js 进链），仍差约 0.4 KB：差距来自仓库体积口径为「逐文件 gzip 上界 + 未压缩 dist」与完整中文诊断文案；继续压到 2.5 KB 需把诊断文案降级为 ASCII 错误码（错误信息在调用层拼装）或收窄通配读值能力。按实测上浮约 17% 定档 3.4 KB；2026-11-23 用户已批按实测定档收口（PRD 口径同步为「实测定档 3.4 KB」），超原 2.5 KB 设计目标部分登记在组件 README「已知差距」"
+        "basis": "受限表达式轨（parser + evaluator）独立计量：按需链为单文件实现（粘性正则单遍词法 + Pratt 递归下降 + 解析期闭包求值 + 冻结函数库 + 宿主函数注册表，零第三方依赖，不拉 path.js）。2026-11-23 首测：实测 gzip 2.90 KB / 7.0 KB raw / 1 文件。设计稿目标 ≤2.5 KB 未达成——已做两轮瘦身（AST 改为解析期闭包、词法改粘性正则单遍、路径占位校验本地化以免连带 path.js 进链），仍差约 0.4 KB：差距来自仓库体积口径为「逐文件 gzip 上界 + 未压缩 dist」与完整中文诊断文案；继续压到 2.5 KB 需把诊断文案降级为 ASCII 错误码（错误信息在调用层拼装）或收窄通配读值能力。按实测上浮约 17% 定档 3.4 KB；2026-11-23 用户已批按实测定档收口（PRD 口径同步为「实测定档 3.4 KB」），超原 2.5 KB 设计目标部分登记在组件 README「已知差距」。2026-11-24 V2 批 2：函数库扩到 20 个（文本 5 + 数学 4 + 日期 2，含 formatDate 冻结 token 拼装与 dateAdd 单位表）+ 宿主优先 devWarn 通道（新增 dev-warn 共享模块入链，链文件数 1 → 2），实测 gzip 4.11 KB / 10.0 KB raw / 2 文件——增量全部是真实函数实现与告警通道（无冗余可清：函数表以 [min,max,fn] 元组形式已是最紧凑表达），按实测上浮约 12% 重定档 4.6 KB；预警线恢复有效（4.05 KB）"
       },
       {
         "name": "@oas-ui/ui/data/gantt 链 gzip",

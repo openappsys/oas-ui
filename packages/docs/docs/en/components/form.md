@@ -1,4 +1,4 @@
-﻿---
+---
 description: An enhanced native <form> supporting validation and submission of inner fields according to rules.
 ---
 
@@ -62,13 +62,13 @@ After submitting, `values` looks like `{"name":"Alex","profile":{"city":"Hangzho
 
 ### Dynamic field group form-list
 
-> `oas-form-list` maintains an add/remove group of field rows inside the form: put a `<template>` inside the component as the row template; cloned row fields get their `name` indexed automatically — either use the `{index}` placeholder in the template (`name="users.{index}.name"`), or set `name="users"` on the component and write bare names in the template (auto-prefixed to `users.N.field`). `min` / `max` constrain the row count (rows are padded up to `min`; lowering `min` never removes existing rows, and an invalid `max` is treated as unlimited), each row has a remove button, and after removal the remaining rows are renumbered with their filled values kept. Fields stay in the light DOM, so validation / submit / `oas-values-change` all follow the host form; the component dispatches `oas-add` / `oas-remove` (`detail: { index }`).
+> `oas-form-list` maintains an add/remove group of field rows inside the form: put a `<template>` inside the component as the row template; cloned row fields get their `name` indexed automatically — either use the `{index}` placeholder in the template (`name="users.{index}.name"`), or set `name="users"` on the component and write bare names in the template (auto-prefixed to `users.N.field`). Row count has two separate sources: `rows` only sets the **initial row count**, while `min` / `max` are the remove lower bound / add upper bound (when `rows` is absent, `min` doubles as the initial row count for backward compatibility; the remove bound defaults to 0, so `minItems` violations are reported by validation instead of locking the only row). Each row ends with an action area: duplicate / move up / move down / remove (`part` values `duplicate` / `move-up` / `move-down` / `remove`; accessible names come from i18n and can be overridden with `duplicate-text` / `move-up-text` / `move-down-text` / `remove-text`). Duplicate deep-copies the row value into the next row; move up / down **swap values** (DOM order stays). After an operation focus returns by row position and the action is announced via `aria-live`; after removal the remaining rows are renumbered with their filled values kept. Fields stay in the light DOM, so validation / submit / `oas-values-change` all follow the host form; the component dispatches `oas-add` / `oas-remove` (`detail: { index }`) and `oas-duplicate` / `oas-move` (`detail: { from, to }`).
 
 <DemoBlock title="Dynamic field group form-list">
   <oas-form id="form-list-demo" style="width: 420px">
     <oas-space direction="vertical" style="width: 100%">
       <oas-form-item label="Family members" help="Add a few rows; on submit they assemble into the values.members array">
-        <oas-form-list id="form-list-demo-list" name="members" min="1" max="4"></oas-form-list>
+        <oas-form-list id="form-list-demo-list" name="members" rows="1" max="4"></oas-form-list>
       </oas-form-item>
       <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
     </oas-space>
@@ -453,6 +453,12 @@ onMounted(() => {
   })
   formListForm?.addEventListener('oas-remove', (e) => {
     listOut.textContent = `oas-remove: removed row ${e.detail.index + 1} (remaining rows renumbered)`
+  })
+  formListForm?.addEventListener('oas-duplicate', (e) => {
+    listOut.textContent = `oas-duplicate: row ${e.detail.from + 1} copied to row ${e.detail.to + 1}`
+  })
+  formListForm?.addEventListener('oas-move', (e) => {
+    listOut.textContent = `oas-move: row ${e.detail.from + 1} moved to row ${e.detail.to + 1}`
   })
 
   // Native form integration: FormData read + reset

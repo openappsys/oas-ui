@@ -157,6 +157,16 @@ Defaults to `direction="vertical"` (stacked); `horizontal` lays items out in a r
 
 The `options` JSON attribute and declarative child elements form dual channels: when `options` is explicit, data-driven rendering wins (rendered internally; declarative children step aside). Fields: `label` / `value` / `disabled` / `description` / `checkAll`.
 
+## Loading State
+
+<DemoBlock title="Loading state (loading)">
+  <oas-checkbox-group loading options="[]">
+    <span slot="label">Notification channels (options loading)</span>
+  </oas-checkbox-group>
+</DemoBlock>
+
+`loading` marks options as being fetched asynchronously (`oas-schema-form` sets it automatically while an `options.source` request is in flight): a spinner plus the "Loading…" text appears in the options area, and `aria-busy` is mirrored onto the group container for screen readers. Write the loaded `options` and remove the attribute to return to normal.
+
 ## Count Limits
 
 <DemoBlock title="Count limits (max / min)">
@@ -352,6 +362,7 @@ Move focus with the Tab key: the middle item is skipped; clicking it with a mous
 | --- | --- | --- | --- |
 | `direction` | Layout direction: `vertical` (default) / `horizontal` (row layout with wrapping) | `string` | `vertical` |
 | `disabled` | Disable the whole group (cascades to items without overriding their own explicit disabled) | `boolean` | — |
+| `loading` | Loading state for async options: shows a spinner and text in the options area and syncs `aria-busy` on the group container; backward-compatible addition | `boolean` | — |
 | `max` | Selection cap: at the cap unchecked items gray out and block with oas-exceed-limit; checked items can still be unchecked | — | — |
 | `min` | Selection floor: at the floor checked items block unchecking; unchecked items are unaffected | — | — |
 | `options` | Data channel: JSON `[{ label, value, disabled?, description?, checkAll? }]`; when explicit, data-driven rendering wins over declarative children | `CheckboxOption[] \| string` | — |

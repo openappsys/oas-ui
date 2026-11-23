@@ -393,3 +393,74 @@ test('schema-form 题型控件：matrix / rank 经 uiSchema 渲染真实控件�
   const text = (await page.locator('#sf-question-types-output').textContent()) ?? ''
   expect(text, 'matrix 选中值应作为 JSON 串参与提交').toContain('good')
 })
+
+test('schema-form 行内编辑表格：行操作真实点击（复制 / 上移 / 删除）+ 可见反馈与 aria-live', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-table')
+
+  const table = page.locator('#sf-table oas-array-table')
+  const rows = page.locator('#sf-table [data-oas-form-list-item]')
+  await expect(rows).toHaveCount(2)
+  // 表格语义：role=table + 列头（昵称 / 年龄 / 角色 / 行操作）
+  await expect(table.locator('[role="table"]')).toBeVisible()
+  const headers = await table.locator('[role="columnheader"]').allTextContents()
+  expect(headers).toEqual(['昵称 *', '年龄', '角色', '行操作'])
+
+  // 复制第 1 行：行数 +1，值深拷贝，输出区给出 oas-duplicate 回显
+  await rows.nth(0).locator('[data-action="duplicate"]').click()
+  await expect(rows).toHaveCount(3)
+  await expect(page.locator('#sf-table-output')).toContainText('oas-duplicate')
+  const live = await table.locator('[part="live"]').textContent()
+  expect(live, '行操作需经 aria-live 播报').toContain('已复制第 2 行')
+
+  // 上移第 2 行：值交换后首行为原第 2 行
+  await rows.nth(1).locator('[data-action="move-up"]').click()
+  await expect(page.locator('#sf-table-output')).toContainText('oas-move')
+  const firstNick = await page
+    .locator('#sf-table [data-oas-form-list-item]')
+    .nth(0)
+    .locator('oas-input[name="users.0.nick"]')
+    .getAttribute('value')
+  expect(firstNick).toBe('张三')
+
+  // 删除第 1 行：行数 -1
+  await rows.nth(0).locator('[data-action="remove"]').click()
+  await expect(rows).toHaveCount(2)
+  await expect(page.locator('#sf-table-output')).toContainText('oas-remove')
+})
+
+test('schema-form 值变换：键入后 getValues 换回宿主语义（元）', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-transform')
+  // 组件内按「分」收集：初始 19.9 元 → 1990
+  await expect(page.locator('#sf-transform oas-input-number[name="price"]')).toHaveAttribute('value', '1990')
+  await page.locator('#sf-transform-values').click()
+  await expect(page.locator('#sf-transform-output')).toContainText('"price":"19.90"')
+})
+
+test('schema-form 异步选项：省份加载 → 城市按依赖加载 → 失败项重试可见反馈', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-options')
+
+  // 省份经 source 异步加载出选项
+  const province = page.locator('#sf-options oas-select[name="province"]')
+  await expect(province).not.toHaveAttribute('loading', '')
+  await province.locator('[part="trigger"]').click()
+  await expect(province.locator('[role="option"]').filter({ hasText: '浙江' })).toBeVisible()
+  await province.locator('[role="option"]').filter({ hasText: '浙江' }).click()
+
+  // 城市按 sourceDeps 重载出浙江下的城市
+  const city = page.locator('#sf-options oas-select[name="city"]')
+  await city.locator('[part="trigger"]').click()
+  await expect(city.locator('[role="option"]').filter({ hasText: '杭州' })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // 失败项：状态块 + 重试按钮（真实点击后成功）
+  const status = page.locator('#sf-options [part="options-status"]')
+  await expect(status).toContainText('选项加载失败')
+  await status.locator('[part="options-retry"]').click()
+  await expect(status).toHaveCount(0)
+  const plan = page.locator('#sf-options oas-select[name="plan"]')
+  await plan.locator('[part="trigger"]').click()
+  await expect(plan.locator('[role="option"]').filter({ hasText: '标准版' })).toBeVisible()
+})
