@@ -8,8 +8,8 @@
     "ratio": 286,
     "exempt": 692,
     "skipped": {
-      "local": 4018,
-      "ci": 4324
+      "local": 4032,
+      "ci": 4338
     }
   },
   "topPairs": [],
@@ -2430,8 +2430,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 8,
-        "ci": 8
+        "local": 15,
+        "ci": 15
       }
     },
     "schema-form.html::dark": {
@@ -2441,8 +2441,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 8,
-        "ci": 8
+        "local": 15,
+        "ci": 15
       }
     }
   }

@@ -111,7 +111,7 @@
 - `convert`（入向）：只在 `initialValues` 回填、受控 `values`、`setValues()` 三条写入通道上换算；
   键入交互 / 快照回填 / schema `default` 都不经过，空串不调用。
 - `transform`（出向）：`getValues()` 与 `oas-submit` / `oas-validate-fail` / `oas-values-change` 的载荷
-  就地改写；内部脏态 / 快照 / 受控写基线走内核原始值。
+  就地改写；内部脏态 / 快照 / 受控写基线走内核原始值。**空串 / 缺省同样不调用**（两钩子共用同一调用口径）。
 - 签名 `(value, fieldPath, wholeValues) => value`；仅叶子字段（容器上声明会告警忽略）；数组行用通配路径。
   抛错 / 未注册 → devWarn + 恒等回落。
 - 注册：`registerSchemaConverter` / `registerSchemaTransformer`。
@@ -125,7 +125,10 @@
 - loading：`oas-select` 沿用 `loading`（带 `loading-text`）；`oas-radio-group` / `oas-checkbox-group`
   新增 `loading` 布尔属性（选项区 spinner，向后兼容增量）。
 - 失败 / 空态：控件所在 form-item 内渲染 `part="options-status"`（错误文案 + `part="options-retry"` 重试按钮 /
-  空态文案）；`reloadOptions(path?)` 手动刷新（强制发起新请求，不复用进行中的请求）。
+  空态文案）；同一字段的组内默认空态文案让位给该状态块（单份提示），组独立使用时空态照常显示。
+  `reloadOptions(path?)` 手动刷新（强制发起新请求，不复用进行中的请求）。
+- 依赖重载：`onValuesChange`（键入路径）与受控 `values` / `setValues()` 两条**静默写**通道都按本次
+  变更路径重载命中 `sourceDeps` 的字段（批量路径按字段去重，一次写入只起一次请求）。
 - 默认映射落到纯文本输入时，声明 source 的字段自动改用 `oas-select`。
 - SSR 首帧无选项按空态渲染（无骨架），客户端挂载后异步补齐。
 

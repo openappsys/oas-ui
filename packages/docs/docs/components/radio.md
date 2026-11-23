@@ -192,6 +192,16 @@ description: "原生 <input type=\"radio\"> 增强，支持单选组键盘导航
 
 `options` JSON 属性与子元素声明式双通道并存：`options` 显式时数据驱动优先（渲染进组件内部，声明式子项让位）。字段：`label` / `value` / `disabled` / `description`。数据驱动的子项同样参与键盘导航。
 
+## 加载态
+
+<DemoBlock title="加载态（loading）">
+  <oas-radio-group loading options="[]">
+    <span slot="label">配送方式（选项加载中）</span>
+  </oas-radio-group>
+</DemoBlock>
+
+`loading` 表示选项正在异步加载（`oas-schema-form` 的 `options.source` 加载期间自动置位）：选项区显示 spinner + 「加载中…」文案，`aria-busy` 同步到组容器（读屏可感知）；加载完成写入 `options` 并移除该属性即回到常态。
+
 ## 卡片形态
 
 <DemoBlock title="卡片形态（variant=card）">

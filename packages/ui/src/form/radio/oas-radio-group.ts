@@ -189,6 +189,9 @@ export class OASRadioGroup extends OASFormElement {
   /**
    * loading / 空态承载（`loading` 布尔属性，向后兼容增量）：异步选项加载期间显示 spinner + 文案，
    * 组内无可选项时显示空态；`aria-busy` 同步到 fieldset，读屏可感知加载中。
+   *
+   * `data-suppress-empty`（容器内部标记，非公开 API）：外层表单容器已用 `part="options-status"`
+   * 给出空态提示时抑制组内同一文案，避免双份提示；组独立使用时无该标记，空态照常显示。
    */
   private syncLoading(): void {
     const loading = this.hasAttr('loading')
@@ -196,7 +199,7 @@ export class OASRadioGroup extends OASFormElement {
     fieldset?.toggleAttribute('aria-busy', loading)
     const status = this.shadow.querySelector<HTMLElement>('.status')
     if (!status) return
-    const empty = !loading && this.items.length === 0
+    const empty = !loading && !this.hasAttribute('data-suppress-empty') && this.items.length === 0
     status.hidden = !loading && !empty
     if (loading) {
       status.textContent = ''

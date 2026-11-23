@@ -318,6 +318,121 @@ describe('异步选项源（options.source / sourceDeps）', () => {
     expect(widget(el, 'district')!.getAttribute('options')).toContain('sh-区')
   })
 
+  it('受控 values 写入（静默通道）也触发 sourceDeps 重载', async () => {
+    const calls: Array<Record<string, unknown>> = []
+    cleanups.push(
+      registerSchemaOptionSource('districts', (values) => {
+        calls.push({ ...values })
+        return Promise.resolve([{ label: `${String(values.city)}-区`, value: 'x' }])
+      }),
+    )
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          city: { type: 'string', title: '城市', enum: ['hz', 'sh'] },
+          district: { type: 'string', title: '区县' },
+        },
+      },
+      {
+        uiSchema: { district: { options: { source: 'districts', sourceDeps: ['city'] } } },
+        values: { city: 'hz' },
+      },
+    )
+    await vi.waitFor(() => expect(calls.length).toBe(1))
+    calls.length = 0
+    el.values = { city: 'sh' }
+    await vi.waitFor(() => expect(calls.length).toBe(1))
+    expect(calls[0]!.city).toBe('sh')
+    expect(widget(el, 'district')!.getAttribute('options')).toContain('sh-区')
+  })
+
+  it('setValues 写入也触发 sourceDeps 重载', async () => {
+    const calls: Array<Record<string, unknown>> = []
+    cleanups.push(
+      registerSchemaOptionSource('districts', (values) => {
+        calls.push({ ...values })
+        return Promise.resolve([{ label: `${String(values.city)}-区`, value: 'x' }])
+      }),
+    )
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          city: { type: 'string', title: '城市', enum: ['hz', 'sh'] },
+          district: { type: 'string', title: '区县' },
+        },
+      },
+      {
+        uiSchema: { district: { options: { source: 'districts', sourceDeps: ['city'] } } },
+        initialValues: { city: 'hz' },
+      },
+    )
+    await vi.waitFor(() => expect(calls.length).toBe(1))
+    calls.length = 0
+    el.setValues({ city: 'sh' })
+    await vi.waitFor(() => expect(calls.length).toBe(1))
+    expect(widget(el, 'district')!.getAttribute('options')).toContain('sh-区')
+  })
+
+  it('重建期间去重：同源 / 同路径 / 同依赖值的在途请求只发起一次', async () => {
+    let resolve!: (value: unknown[]) => void
+    const spy = vi.fn(
+      () =>
+        new Promise<unknown[]>((r) => {
+          resolve = r
+        }),
+    )
+    cleanups.push(registerSchemaOptionSource('slow', spy))
+    const el = mount(selectSchema, { uiSchema: { city: { options: { source: 'slow' } } } })
+    expect(spy).toHaveBeenCalledTimes(1)
+    // 结构重建（新增字段）会让全部 source 重新加载：在途请求按键复用，不重复发起
+    el.schema = {
+      type: 'object',
+      properties: {
+        city: { type: 'string', title: '城市' },
+        district: { type: 'string', title: '区县' },
+        note: { type: 'string', title: '备注' },
+      },
+    }
+    expect(spy).toHaveBeenCalledTimes(1)
+    resolve([{ label: 'A', value: 'a' }])
+    await vi.waitFor(() => expect(widget(el, 'city')!.getAttribute('options')).toContain('"a"'))
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('source 未注册：失败态（错误文案 + 重试按钮），不抛异常', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount(selectSchema, { uiSchema: { city: { options: { source: 'not-registered' } } } })
+      await vi.waitFor(() =>
+        expect(el.shadowRoot!.querySelector('[part="options-status"]')?.getAttribute('role')).toBe('alert'),
+      )
+      expect(el.shadowRoot!.querySelector('[part="options-status"]')!.textContent).toContain('选项加载失败')
+      expect(el.shadowRoot!.querySelector('[part="options-retry"]')).not.toBeNull()
+      expect(widget(el, 'city')!.hasAttribute('loading')).toBe(false)
+      expect(warn.mock.calls.some((call) => String(call[0]).includes('not-registered'))).toBe(true)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('空态只显示一份：组内默认空态让位给容器 options-status', async () => {
+    cleanups.push(registerSchemaOptionSource('none', () => Promise.resolve([])))
+    const el = mount(
+      { type: 'object', properties: { level: { type: 'string', title: '等级' } } },
+      { uiSchema: { level: { widget: 'oas-radio-group', options: { source: 'none' } } } },
+    )
+    const level = widget(el, 'level')!
+    await vi.waitFor(() =>
+      expect(el.shadowRoot!.querySelector('[part="options-status"]')?.textContent).toBe('暂无可选项'),
+    )
+    // 组内 `.status` 不再重复「暂无数据」
+    const inner = level.shadowRoot!.querySelector<HTMLElement>('.status')!
+    expect(inner.hidden).toBe(true)
+    expect(inner.textContent).toBe('')
+  })
+
   it('失败态：错误文案 + 重试按钮（i18n），点击重试重新加载', async () => {
     let attempt = 0
     cleanups.push(

@@ -799,8 +799,9 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
   expect(mismatch, `新生成的基线 totals 与 pages 求和不一致：${mismatch.join('；')}`).toEqual([])
   // 生成会写的页数 = 各项计数非零的页（light/dark 各一条）。215 + image-picker 两条（隐藏 file input
   // 的 axe 无法评分节点）＝ 217；signature 的两条属手工登记、生成不覆盖，故已提交基线为 219；
-  // schema-form 的 light/dark 两条（字段树在 shadow 内、axe 无法评分节点 8 个/主题）同为手工实测登记，
-  // 已提交基线因此为 221（生成侧页数随之为 219）。
+  // schema-form 的 light/dark 两条（字段树在 shadow 内、axe 无法评分节点 15 个/主题——V2 批 1/2 新增
+  // 数组与数据流 demo 块后由 8 涨到 15，按 CONTRAST_BASELINE=update 实测值更新）同为手工实测登记，
+  // 已提交基线因此为 221。
   expect(Object.keys(pages).length).toBe(219)
 })
 

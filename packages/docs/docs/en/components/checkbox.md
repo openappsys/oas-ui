@@ -157,6 +157,16 @@ Defaults to `direction="vertical"` (stacked); `horizontal` lays items out in a r
 
 The `options` JSON attribute and declarative child elements form dual channels: when `options` is explicit, data-driven rendering wins (rendered internally; declarative children step aside). Fields: `label` / `value` / `disabled` / `description` / `checkAll`.
 
+## Loading State
+
+<DemoBlock title="Loading state (loading)">
+  <oas-checkbox-group loading options="[]">
+    <span slot="label">Notification channels (options loading)</span>
+  </oas-checkbox-group>
+</DemoBlock>
+
+`loading` marks options as being fetched asynchronously (`oas-schema-form` sets it automatically while an `options.source` request is in flight): a spinner plus the "Loading…" text appears in the options area, and `aria-busy` is mirrored onto the group container for screen readers. Write the loaded `options` and remove the attribute to return to normal.
+
 ## Count Limits
 
 <DemoBlock title="Count limits (max / min)">

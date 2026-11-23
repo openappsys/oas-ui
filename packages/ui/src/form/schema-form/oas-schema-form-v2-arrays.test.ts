@@ -92,6 +92,7 @@ describe('oas-schema-form array-table 渲染', () => {
     expect(headers).toEqual(['昵称 *', '年龄', '行操作'])
     const firstCell = rows(el)[0]!.querySelector('oas-form-item')!
     expect(firstCell.hasAttribute('label'), '表格单元格不再重复渲染自己的标签（列头已承载）').toBe(false)
+    expect(firstCell.hasAttribute('required'), '单元格不重复必填标记（列头已承载必填星号）').toBe(false)
     expect(container.shadowRoot!.querySelector<HTMLElement>('[role="columnheader"]')!.style.textAlign).toBe('right')
     // 单元格仍是 schema-form 渲染的 form-item（值收集/校验/联动零成本继承）
     expect(rows(el)).toHaveLength(2)

@@ -259,7 +259,6 @@ export class OASSchemaForm extends OASElement {
   private optionGeneration = 0
   /** 重建期间去重：同名 + 同路径 + 同依赖值的请求复用同一 Promise */
   private optionPending = new Map<string, Promise<unknown[]>>()
-  private optionErrors = new Set<string>()
   /** bind() 的清理函数是否已登记（重连再 bind 时不重复登记，避免 cleanupFns 无限增长） */
   private bindCleanupRegistered = false
   /** 数组元素 → 具体路径（根数组 `users`，嵌套 `users.0.matrix`） */
@@ -616,10 +615,14 @@ export class OASSchemaForm extends OASElement {
     }
     if (node.help) item.setAttribute('help', node.help)
     if (node.span) item.setAttribute('span', String(node.span))
-    if (node.staticRequired) item.setAttribute('required', '')
     const widget = document.createElement(node.widget.tag)
     widget.setAttribute('data-schema-widget', node.name)
     widget.setAttribute('name', node.name)
+    // 异步选项空态由容器 `part="options-status"` 承接：组内默认空态文案在此抑制（避免双份提示；
+    // 组独立使用时无此标记，空态照常显示）
+    if (node.optionsSource && (node.widget.tag === 'oas-radio-group' || node.widget.tag === 'oas-checkbox-group')) {
+      widget.setAttribute('data-suppress-empty', '')
+    }
     for (const [key, value] of Object.entries(node.widget.props)) widget.setAttribute(key, value)
     item.appendChild(widget)
     return item
@@ -931,11 +934,18 @@ export class OASSchemaForm extends OASElement {
     for (const [widget, node, path] of this.optionBindings()) void this.loadOptions(widget, node, path)
   }
 
-  /** 依赖变化触发的重载（A 变 → 重载 B 的选项） */
-  private reloadOptionDependents(changedName: string): void {
+  /**
+   * 依赖变化触发的重载（A 变 → 重载 B 的选项）。
+   *
+   * 批量通道（受控 `values` / `setValues`）：一次 diff 出多个变更路径，按**字段**触发一次——
+   * 同一字段的多个变更路径不能重复起请求（多行改动都命中 `users` 依赖时只重载一次）。
+   */
+  private reloadOptionDependents(changed: string | readonly string[]): void {
+    const changes = typeof changed === 'string' ? [changed] : changed
+    if (changes.length === 0) return
     for (const [widget, node, path] of this.optionBindings()) {
       const deps = node.optionsSource?.deps ?? []
-      if (!deps.some((dep) => pathDependencyMatches(dep, changedName))) continue
+      if (!deps.some((dep) => changes.some((name) => pathDependencyMatches(dep, name)))) continue
       void this.loadOptions(widget, node, path)
     }
   }
@@ -979,11 +989,9 @@ export class OASSchemaForm extends OASElement {
     if (generation !== this.optionGeneration || this.optionSeq.get(path) !== seq || !widget.isConnected) return
     this.setOptionsLoading(widget, false)
     if (failed) {
-      this.optionErrors.add(path)
       this.renderOptionsStatus(widget, path, 'error')
       return
     }
-    this.optionErrors.delete(path)
     widget.setAttribute('options', JSON.stringify(options))
     this.renderOptionsStatus(widget, path, options.length === 0 ? 'empty' : null)
   }
@@ -1184,6 +1192,8 @@ export class OASSchemaForm extends OASElement {
     const nextAll = this.values
     const prevAll = this.appliedValues ?? {}
     const patch: Record<string, unknown> = {}
+    /** 本次 diff 出的变更路径（受控写不派发 values-change，异步选项依赖必须显式重载） */
+    const changedPaths: string[] = []
     let changed = false
     // 已渲染字段名：值树在**恰为该字段名**的节点上整值下发（不拍平成下标叶子）。
     // 标量数组字段（array of enum → oas-checkbox-group 单字段 `tags`）宿主写
@@ -1197,12 +1207,14 @@ export class OASSchemaForm extends OASElement {
       if (before !== undefined && String(before) === String(value)) continue
       // 入向换算在「写入组件前」一步发生：宿主原始值 → 组件值
       setLeaf(patch, path.split('.'), this.convertLeaf(path, value, nextAll))
+      changedPaths.push(path)
       changed = true
     }
     // 宿主删除键：清空对应字段（受控模式下「消失」等价于清空，而不是保留旧值）
     for (const path of previous.keys()) {
       if (current.has(path)) continue
       setLeaf(patch, path.split('.'), null)
+      changedPaths.push(path)
       changed = true
     }
     this.applyingHostValues = true
@@ -1218,6 +1230,9 @@ export class OASSchemaForm extends OASElement {
     this.syncArrayStates()
     this.evaluateEffects()
     this.syncDirty()
+    // 受控写是静默通道（不派发 values-change、onValuesChange 不进）：依赖本次变更路径的异步选项
+    // 必须在此显式重载，否则「宿主改 city → district 选项」只会在键入路径生效
+    this.reloadOptionDependents(changedPaths)
   }
 
   /** 受控数组按长度收敛行数（增补空行 / 删除多余行：宿主删行留空行的缺陷同批修） */
@@ -1714,6 +1729,8 @@ export class OASSchemaForm extends OASElement {
     this.syncArrayStates()
     this.evaluateEffects()
     this.syncDirty()
+    // 同受控通道：patch 键已知 → 逐路径重载依赖异步选项（不派发 values-change，无二次触发）
+    this.reloadOptionDependents(collectLeafPaths(patch))
   }
 
   /** 注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载 */
@@ -1841,6 +1858,30 @@ function flattenRawValues(
     if (key === '__proto__' || key === 'prototype' || key === 'constructor') continue
     out.push(...flattenRawValues(value, prefix === '' ? key : `${prefix}.${key}`, whole))
   }
+  return out
+}
+
+/**
+ * 嵌套值 → 变更参与判断的**点号路径**（含 `null` / `undefined` 叶子与空容器）：
+ * 受控写入拿它判断哪些字段路径需要重载依赖异步选项。与值 diff 用 `flattenRawValues` 不同——
+ * 那里缺省叶子会被视为「无值可写」，而这里 `null`（清空）同样是一次依赖变化。
+ */
+function collectLeafPaths(value: unknown, prefix = ''): string[] {
+  const out: string[] = []
+  if (value === null || value === undefined || typeof value !== 'object') {
+    if (prefix !== '') out.push(prefix)
+    return out
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0 && prefix !== '') return [prefix]
+    value.forEach((item, index) => out.push(...collectLeafPaths(item, `${prefix}.${index}`)))
+    return out
+  }
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    ([key]) => key !== '__proto__' && key !== 'prototype' && key !== 'constructor',
+  )
+  if (entries.length === 0 && prefix !== '') return [prefix]
+  for (const [key, child] of entries) out.push(...collectLeafPaths(child, prefix === '' ? key : `${prefix}.${key}`))
   return out
 }
 
