@@ -86,6 +86,14 @@ describe('oas-schema-form 受控 values（V1b）', () => {
     expect(widgetOf(el, 'users.1.nick')!.getAttribute('value')).toBe('y')
   })
 
+  it('受控数组后续增长：宿主 values 变长 → 补行并写入新行值', () => {
+    const el = mount(schema, { values: { users: [{ nick: 'x' }] } })
+    el.values = { users: [{ nick: 'x' }, { nick: 'y' }] }
+    const list = el.shadowRoot!.querySelector<HTMLElement>('[data-schema-array-key="array:users"]')!
+    expect(list.querySelectorAll(':scope > [data-oas-form-list-item]')).toHaveLength(2)
+    expect(widgetOf(el, 'users.1.nick')!.getAttribute('value')).toBe('y')
+  })
+
   it('dirty：初始 false，用户编辑 true，reset 回基线后 false', () => {
     const el = mount(schema, { values: { name: 'A' } })
     expect(el.dirty).toBe(false)
