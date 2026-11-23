@@ -55,6 +55,10 @@
   类型保真输出（coerce / convertValue / transform）是 V2 能力。
 - 联动 `visible: false` = 卸载：非数组字段从 DOM 移除（值不提交）；**数组行内字段保留键位**
   （空串而非删键，保证行间键形状一致）。
+- **oas-matrix / oas-rank 未纳入 schema-form 已知控件表**：两组件已注册 form 值收集链
+  （FORM_CONTROLS），但 schema-form 的 uiSchema 配置通道未开（`columns` / `options` 不在
+  PROP_ALLOWLIST）——纳入只会静默渲染空态，待配置通道批次打通后再登记。当前在 schema-form 里
+  指定这两个 widget 会告警回落到默认输入件。
 
 ## 数据 schema 支持的 V1 关键字
 
