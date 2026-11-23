@@ -27,7 +27,9 @@ import { stableHash36 } from '../../shared/stable-id.js'
  * - `reset()`：回到初始位置并清除记忆
  *
  * 交互约定：整个宿主即拖拽面；提供 `handle` 插槽时只有手柄区起拖（其余区域照常交互）。
- * 指针位移 < 4px 视为点击，不阻止子元素的 click / 默认行为。
+ * 指针位移 < 4px 视为点击，不阻止子元素的 click / 默认行为；越过阈值的拖拽结束后，
+ * 紧随的那一次 click 被吞掉（松手恰好停在子按钮上不会误触），下一次正常点击不受影响。
+ * `pointercancel`（滚动 / 手势中断）只收尾拖拽，不写位置记忆、不起惯性。
  *
  * @summary 子元素自由拖拽浮块（边界钳制 / 惯性 / 位置记忆 / 键盘微调）
  */
@@ -37,6 +39,21 @@ export type DragAxis = 'both' | 'x' | 'y'
 export interface DragPosition {
   x: number
   y: number
+}
+
+/** 指针拖拽会话状态（null = 未拖拽） */
+interface PointerDragState {
+  pointerId: number
+  startX: number
+  startY: number
+  originX: number
+  originY: number
+  moved: boolean
+  lastX: number
+  lastY: number
+  lastT: number
+  velocityX: number
+  velocityY: number
 }
 
 type DragSource = 'pointer' | 'keyboard'
@@ -91,6 +108,10 @@ const STYLE = `
 }
 /* 惯性滑行期间禁用过渡，位移由 rAF 直接驱动 */
 :host([data-coasting]) {
+  transition: none;
+}
+/* 位置记忆恢复的首帧禁用过渡：避免「页面加载即从原点滑到记忆位置」的可见滑入 */
+:host([data-restoring]) {
   transition: none;
 }
 :host([data-reduced-motion]) {
@@ -154,21 +175,11 @@ export class OASDrag extends OASElement {
   private offsetX = 0
   private offsetY = 0
   /** 拖拽中的指针状态（null = 未拖拽） */
-  private drag: {
-    pointerId: number
-    startX: number
-    startY: number
-    originX: number
-    originY: number
-    moved: boolean
-    lastX: number
-    lastY: number
-    lastT: number
-    velocityX: number
-    velocityY: number
-  } | null = null
+  private drag: PointerDragState | null = null
   /** 惯性动画帧句柄（0 = 未运行） */
   private coastFrame = 0
+  /** 拖拽后抑制紧随 click 的守卫（null = 未挂） */
+  private clickGuard: ((event: Event) => void) | null = null
   /** 是否记忆位置已恢复（首帧只恢复一次） */
   private restored = false
   /** 是否处于「有手柄」形态（handle 插槽有内容） */
@@ -232,7 +243,7 @@ export class OASDrag extends OASElement {
     this.addEventListener('pointerdown', this.onPointerDown)
     this.addEventListener('pointermove', this.onPointerMove)
     this.addEventListener('pointerup', this.onPointerUp)
-    this.addEventListener('pointercancel', this.onPointerUp)
+    this.addEventListener('pointercancel', this.onPointerCancel)
     this.addEventListener('keydown', this.onKeyDown)
     this.handleSlot?.addEventListener('slotchange', this.onSlotChange)
     this.contentSlot?.addEventListener('slotchange', this.onSlotChange)
@@ -240,14 +251,16 @@ export class OASDrag extends OASElement {
       this.removeEventListener('pointerdown', this.onPointerDown)
       this.removeEventListener('pointermove', this.onPointerMove)
       this.removeEventListener('pointerup', this.onPointerUp)
-      this.removeEventListener('pointercancel', this.onPointerUp)
+      this.removeEventListener('pointercancel', this.onPointerCancel)
       this.removeEventListener('keydown', this.onKeyDown)
       this.handleSlot?.removeEventListener('slotchange', this.onSlotChange)
       this.contentSlot?.removeEventListener('slotchange', this.onSlotChange)
       this.stopCoast()
+      this.releaseClickGuard()
       this.releaseCapture()
       this.drag = null
       this.removeAttribute('data-dragging')
+      this.removeAttribute('data-restoring')
     })
   }
 
@@ -329,7 +342,7 @@ export class OASDrag extends OASElement {
     }
   }
 
-  private storageKey(): string {
+  private storageKeyOf(): string {
     return this.getAttr('storage-key', 'oas-drag') || 'oas-drag'
   }
 
@@ -337,7 +350,7 @@ export class OASDrag extends OASElement {
     const storage = this.storage()
     if (!storage) return
     try {
-      const raw = storage.getItem(this.storageKey())
+      const raw = storage.getItem(this.storageKeyOf())
       if (!raw) return
       const parsed = this.tryParse(raw) as { x?: unknown; y?: unknown } | null
       if (!parsed || typeof parsed !== 'object') return
@@ -346,16 +359,25 @@ export class OASDrag extends OASElement {
       const clamped = this.clampOffset(x, y)
       this.offsetX = clamped.x
       this.offsetY = clamped.y
+      this.holdRestoreFrame()
     } catch {
       /* 读到坏数据：忽略，保持初始位置 */
     }
+  }
+
+  /** 恢复位置的首帧禁用过渡（下一帧撤除）：避免挂载瞬间从原点可见滑到记忆位置 */
+  private holdRestoreFrame(): void {
+    this.toggleAttribute('data-restoring', true)
+    const release = (): void => this.removeAttribute('data-restoring')
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(release)
+    else setTimeout(release, 0)
   }
 
   private savePosition(): void {
     const storage = this.storage()
     if (!storage) return
     try {
-      storage.setItem(this.storageKey(), JSON.stringify({ x: this.offsetX, y: this.offsetY }))
+      storage.setItem(this.storageKeyOf(), JSON.stringify({ x: this.offsetX, y: this.offsetY }))
     } catch {
       /* 写入失败（配额 / 隐私模式）：忽略，不影响拖拽 */
     }
@@ -450,6 +472,7 @@ export class OASDrag extends OASElement {
     if (ev.button !== undefined && ev.button !== 0) return
     if (this.hasHandle && !this.isInHandle(ev.target)) return
     this.stopCoast()
+    this.releaseClickGuard()
     this.drag = {
       pointerId: ev.pointerId,
       startX: ev.clientX,
@@ -491,16 +514,61 @@ export class OASDrag extends OASElement {
   }
 
   private onPointerUp = (event: Event): void => {
-    const ev = event as PointerEvent
-    const drag = this.drag
-    if (!drag || ev.pointerId !== drag.pointerId) return
-    this.drag = null
-    this.releaseCapture(drag.pointerId)
-    if (!drag.moved) return
-    this.removeAttribute('data-dragging')
+    const drag = this.endPointerDrag(event)
+    if (!drag) return
     this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
     this.savePosition()
     this.startCoast(drag.velocityX, drag.velocityY)
+  }
+
+  /**
+   * 指针被浏览器接管（滚动 / 手势中断 / 触屏系统手势）：只收尾拖拽——不写位置记忆、不起惯性。
+   * 与 pointerup 分离，避免「取消也被当成一次正常松手」而落盘一个用户没打算要的位置。
+   */
+  private onPointerCancel = (event: Event): void => {
+    const drag = this.endPointerDrag(event)
+    if (!drag) return
+    this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
+  }
+
+  /** 收尾一次指针拖拽（up / cancel 共用）：释放捕获、撤拖拽标记，返回本次会话（未越过阈值返回 null） */
+  private endPointerDrag(event: Event): PointerDragState | null {
+    const ev = event as PointerEvent
+    const drag = this.drag
+    if (!drag || ev.pointerId !== drag.pointerId) return null
+    this.drag = null
+    this.releaseCapture(drag.pointerId)
+    if (!drag.moved) return null
+    this.removeAttribute('data-dragging')
+    // 拖拽结束的 click 不应落到子元素（松手恰好停在按钮上会误触）
+    this.armClickGuard()
+    return drag
+  }
+
+  /**
+   * 拖拽后抑制紧随的那一次 click：捕获阶段挂在宿主自身（先于任何子元素监听，含插槽内容），
+   * `once` + 下一任务自动撤销——真实浏览器里 click 在 pointerup 同一任务内派发，
+   * 因此不会吞掉之后用户的正常点击。宿主级而非 document 级：不产生全局监听。
+   */
+  private armClickGuard(): void {
+    this.releaseClickGuard()
+    const guard = (event: Event): void => {
+      event.stopPropagation()
+      event.preventDefault()
+      this.releaseClickGuard()
+    }
+    this.clickGuard = guard
+    this.addEventListener('click', guard, { capture: true, once: true })
+    setTimeout(() => {
+      if (this.clickGuard === guard) this.releaseClickGuard()
+    }, 0)
+  }
+
+  private releaseClickGuard(): void {
+    const guard = this.clickGuard
+    if (!guard) return
+    this.clickGuard = null
+    this.removeEventListener('click', guard, { capture: true })
   }
 
   private capturePointer(pointerId: number): void {
@@ -600,7 +668,7 @@ export class OASDrag extends OASElement {
     const storage = this.storage()
     if (storage) {
       try {
-        storage.removeItem(this.storageKey())
+        storage.removeItem(this.storageKeyOf())
       } catch {
         /* 忽略 */
       }

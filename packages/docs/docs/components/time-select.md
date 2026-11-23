@@ -1,5 +1,5 @@
 ---
-description: 配送时段选择：日期列（今日起 N 天）+ 时段网格，尽快送达 / 预约配送两模式，休息与满约两种不可选语义，JSON 数据属性与对象 property 双通道，日期与时段网格各自 roving tabindex 键盘导航。
+description: 配送时段选择：日期列（今日起 N 天）+ 时段网格，尽快送达 / 预约配送两模式，休息与满约两种不可选语义，JSON 数据属性与对象 property 双通道，模式组、日期与时段网格各自 roving tabindex 键盘导航。
 ---
 
 # TimeSelect 配送时段选择
@@ -31,7 +31,7 @@ description: 配送时段选择：日期列（今日起 N 天）+ 时段网格�
 
 ## 休息与满约
 
-两种不可选语义视觉可区分：**休息**（`disabled`）只置灰并标注「休息」；**满约**（`full`）额外加删除线并标注「已满约」。两者都带 `aria-disabled`，点击不改变值。
+两种不可选语义视觉可区分：**休息**（`disabled`）只置灰并标注「休息」；**满约**（`full`）额外加删除线并标注「已满约」。两者都是原生 `disabled` 按钮（同时带 `aria-disabled`），点击不改变值，且被键盘导航跳过。
 
 <DemoBlock title="休息 / 满约">
   <oas-time-select
@@ -58,8 +58,8 @@ description: 配送时段选择：日期列（今日起 N 天）+ 时段网格�
 
 ## 键盘与无障碍
 
-- 日期列是 `role="tablist"`（垂直）内的 `role="tab"`，时段网格是 `role="radiogroup"` 内的 `role="radio"`，选中态分别为 `aria-selected` / `aria-checked`
-- 两处各自 roving tabindex：同一时刻各只有一个 Tab 停靠点；方向键在可用项之间移动（跳过休息 / 满约 / 不可配送日），Home / End 到首末可用项，RTL 下左右方向镜像
+- 日期列是 `role="tablist"`（垂直）内的 `role="tab"`，时段网格与模式组是 `role="radiogroup"` 内的 `role="radio"`，选中态分别为 `aria-selected` / `aria-checked`
+- 三处各自 roving tabindex：同一时刻各只有一个 Tab 停靠点；模式组用左右方向键切换模式（Home / End 到首末模式），日期与时段的方向键在可用项之间移动（跳过休息 / 满约 / 不可配送日），Home / End 到首末可用项，RTL 下左右方向镜像
 - 日期文案走 `Intl.DateTimeFormat`（locale 感知），今天 / 明天用相对文案；网格的可访问名称 = 「配送时段 + 当前日期」
 
 ## 值契约

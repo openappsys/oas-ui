@@ -22,8 +22,9 @@ import { stableHash36 } from '../../shared/stable-id.js'
  * 事件（bubbles + composed）：
  * - `oas-change`：用户改变模式 / 日期 / 时段后派发，`detail: { value, mode, date, slot }`
  *
- * a11y：日期列 `role="tablist"`（垂直）+ `role="tab"`，时段网格 `role="radiogroup"` + `role="radio"`；
- * 两处各自 roving tabindex，方向键在可用项之间移动（跳过休息 / 满约），Home / End 到首末可用项；
+ * a11y：日期列 `role="tablist"`（垂直）+ `role="tab"`，时段网格 `role="radiogroup"` + `role="radio"`，
+ * 模式组同为 `role="radiogroup"` + `role="radio"`；
+ * 三处各自 roving tabindex，方向键在可用项之间移动（跳过休息 / 满约），Home / End 到首末可用项；
  * 选中态由 `aria-selected` / `aria-checked` 同步，绑定关系走 `aria-controls` / `aria-labelledby`。
  *
  * @summary 配送日期与时段选择（尽快送达 / 预约配送）
@@ -196,9 +197,10 @@ const STYLE = `
 .date[aria-disabled='true']:hover {
   border-color: transparent;
 }
+/* 次要文字落在 bg-hover 表面：用 secondary-strong 保证 4.5:1（secondary 在 #f4f4f5 上仅 4.39） */
 .date-relative {
   font-size: var(--oas-font-size-xs);
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-secondary-strong);
 }
 .date[aria-selected='true'] .date-relative {
   color: inherit;
@@ -283,7 +285,7 @@ const STYLE = `
   font-weight: 600;
 }
 .express-detail {
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-secondary-strong);
 }
 .empty {
   padding: var(--oas-space-3) 0;
@@ -430,6 +432,7 @@ export class OASTimeSelect extends OASElement {
     this.emptyEl = this.shadow.querySelector('.empty')
     // click / keydown 挂在 shadow 内部容器：原生按钮的激活事件跨界会重定向 target
     this.modesEl?.addEventListener('click', this.onModeClick)
+    this.modesEl?.addEventListener('keydown', this.onModeKeydown)
     this.datesEl?.addEventListener('click', this.onDateClick)
     this.datesEl?.addEventListener('keydown', this.onDateKeydown)
     this.slotsEl?.addEventListener('click', this.onSlotClick)
@@ -730,8 +733,11 @@ export class OASTimeSelect extends OASElement {
       button.dataset.index = String(i)
       if (slot.full) button.setAttribute('data-state', 'full')
       else if (slot.disabled) button.setAttribute('data-state', 'rest')
-      if (!this.isSelectableSlot(slot)) button.setAttribute('aria-disabled', 'true')
-      button.disabled = disabled
+      // 不可选时段走原生 disabled（与不可配送日期钮一致）：机读语义更硬，对比度门禁按原生禁用态豁免；
+      // aria-disabled 同时保留（读屏对 radio 的禁用播报）
+      const selectable = this.isSelectableSlot(slot)
+      button.disabled = disabled || !selectable
+      if (!selectable) button.setAttribute('aria-disabled', 'true')
       const label = document.createElement('span')
       label.className = 'slot-label'
       label.textContent = slot.label
@@ -830,14 +836,53 @@ export class OASTimeSelect extends OASElement {
     if (!(target instanceof Element)) return
     const button = target.closest<HTMLButtonElement>('.mode')
     if (!button || !this.modesEl!.contains(button)) return
+    this.selectMode(button.dataset.mode ?? '')
+  }
+
+  /**
+   * 模式组键盘导航（radiogroup + roving）：左右方向键切换模式并迁移焦点，Home / End 到首末模式。
+   * 只有 2 个模式时方向键恒切到另一个模式；RTL 下左右语义镜像（与日期列 / 时段网格一致）。
+   */
+  private onModeKeydown = (event: KeyboardEvent): void => {
+    const target = event.target
+    if (!(target instanceof Element)) return
+    const button = target.closest<HTMLButtonElement>('.mode')
+    if (!button || !this.modesEl!.contains(button)) return
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End']
+    if (!keys.includes(event.key)) return
+    event.preventDefault()
     if (this.injectDisabled()) return
-    const next = button.dataset.mode
-    if (next === undefined || !VALID_MODES.includes(next)) return
-    if (next === this.resolveMode()) return
+    const rtl = isRtl(this)
+    const forward = (event.key === 'ArrowRight' && !rtl) || (event.key === 'ArrowLeft' && rtl)
+    const current = VALID_MODES.indexOf(button.dataset.mode ?? '')
+    let next: string
+    if (event.key === 'Home') {
+      next = VALID_MODES[0]!
+    } else if (event.key === 'End') {
+      next = VALID_MODES[VALID_MODES.length - 1]!
+    } else {
+      const base = current < 0 ? 0 : current
+      next = VALID_MODES[(base + (forward ? 1 : -1) + VALID_MODES.length) % VALID_MODES.length]!
+    }
+    this.selectMode(next)
+    // 切换模式会按签名重建模式钮：焦点必须落到新节点上，否则键盘用户丢失位置
+    this.modeButton(next)?.focus()
+  }
+
+  /** 写回 mode 属性并派发 oas-change（点击与键盘共用）；未变化或非法时不动 */
+  private selectMode(next: string): boolean {
+    if (this.injectDisabled()) return false
+    if (!VALID_MODES.includes(next)) return false
+    if (next === this.resolveMode()) return false
     this.setAttribute('mode', next)
-    const mode = next
+    const mode = next as TimeSelectMode
     const value = { date: this.activeDate, slot: this.activeSlot }
     this.emit('change', { value, mode, date: this.activeDate, slot: this.activeSlot })
+    return true
+  }
+
+  private modeButton(mode: string): HTMLButtonElement | null {
+    return this.modesEl?.querySelector<HTMLButtonElement>(`.mode[data-mode="${mode}"]`) ?? null
   }
 
   private onDateClick = (event: Event): void => {

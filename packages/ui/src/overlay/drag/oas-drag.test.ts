@@ -355,4 +355,78 @@ describe('OAS drag 自由拖拽浮块', () => {
     expect(el.position).toEqual({ x: 0, y: 0 })
     expect(el.hasAttribute('data-dragging')).toBe(false)
   })
+
+  // 4px 阈值只管了「点击不吞」的反向：拖完松手落在子按钮上，浏览器仍会补发一次 click，
+  // 若不抑制就变成「拖一下顺手点了按钮」的误触（用户视角的真实缺陷）。
+  it('越过阈值后松手：紧随的 click 被吞掉，不误触子按钮', () => {
+    const el = mount({}, '<button class="call">联系</button>')
+    stubRect(el)
+    const button = el.querySelector('.call')!
+    let clicks = 0
+    button.addEventListener('click', () => clicks++)
+    drag(el, 100, 100, 160, 120)
+    // 真实浏览器在 pointerup 之后补发 click（同一任务内）
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
+    expect(clicks, '拖拽结束的点击不得落到子元素').toBe(0)
+  })
+
+  it('click 抑制只作用于紧随的一次：之后的正常点击照常到达子元素', () => {
+    const el = mount({}, '<button class="call">联系</button>')
+    stubRect(el)
+    const button = el.querySelector('.call')!
+    let clicks = 0
+    button.addEventListener('click', () => clicks++)
+    drag(el, 100, 100, 160, 120)
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
+    expect(clicks).toBe(1)
+  })
+
+  it('click 抑制在下一任务自动撤销（松手落在无子元素处时不吞掉之后的点击）', () => {
+    vi.useFakeTimers()
+    try {
+      const el = mount({}, '<button class="call">联系</button>')
+      stubRect(el)
+      const button = el.querySelector('.call')!
+      let clicks = 0
+      button.addEventListener('click', () => clicks++)
+      drag(el, 100, 100, 160, 120)
+      vi.advanceTimersByTime(0)
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
+      expect(clicks).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('pointercancel：收尾拖拽但不写位置记忆、不起惯性（与正常松手分离）', () => {
+    const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 1)
+    const el = mount({ remember: '', inertia: '', 'storage-key': 'cancelled' })
+    stubRect(el)
+    const ends: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-drag-end', (event) => ends.push((event as CustomEvent).detail))
+    el.dispatchEvent(pointer('pointerdown', 100, 100))
+    el.dispatchEvent(pointer('pointermove', 160, 100))
+    expect(el.hasAttribute('data-dragging')).toBe(true)
+    el.dispatchEvent(pointer('pointercancel', 160, 100))
+    expect(el.hasAttribute('data-dragging')).toBe(false)
+    expect(ends).toHaveLength(1)
+    expect(window.localStorage.getItem('cancelled'), '取消不落盘').toBeNull()
+    expect(rafSpy, '取消不起惯性').not.toHaveBeenCalled()
+  })
+
+  it('位置记忆恢复帧禁用过渡（data-restoring，下一帧撤除）', () => {
+    window.localStorage.setItem('restore-key', JSON.stringify({ x: 30, y: 20 }))
+    const frames: FrameRequestCallback[] = []
+    const rafSpy = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((cb: FrameRequestCallback) => frames.push(cb))
+    const el = mount({ remember: '', 'storage-key': 'restore-key' })
+    stubRect(el)
+    expect(el.position).toEqual({ x: 30, y: 20 })
+    expect(el.hasAttribute('data-restoring'), '恢复帧需要禁用过渡（否则可见滑入）').toBe(true)
+    frames.forEach((cb) => cb(0))
+    expect(el.hasAttribute('data-restoring')).toBe(false)
+    rafSpy.mockRestore()
+  })
 })

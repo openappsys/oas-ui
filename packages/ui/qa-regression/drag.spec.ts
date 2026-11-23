@@ -154,3 +154,74 @@ test('drag：键盘方向键微调可聚焦生效，Shift 加速 10px，announce
   expect(afterShift.live, 'announce 开启时应有位置播报').not.toBe('')
   expect(afterShift.feedback).toContain('键盘')
 })
+
+test('drag：越过阈值拖完后，紧随的 click 被吞掉（落在子按钮的情形），下一次照常到达', async ({ page }) => {
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-button')
+  // 说明：Chromium 在指针捕获后会把 click 派到最近公共祖先（oas-drag）而非子按钮；
+  // 其他引擎 / 捕获失败时 click 会落到子按钮上（历史误触来源）。这里在真实浏览器里
+  // 显式把 click 派到子按钮，验证「拖拽后那一次点击被拦下、下一次照常」的机制。
+  const result = await page.evaluate(() => {
+    const host = document.querySelector('#dg-button') as HTMLElement & { position: { x: number; y: number } }
+    const button = document.querySelector('#dg-button oas-button') as HTMLElement
+    const w = window as unknown as { __clicks: number }
+    w.__clicks = 0
+    button.addEventListener('click', () => {
+      w.__clicks += 1
+    })
+    const box = host.getBoundingClientRect()
+    const send = (type: string, x: number, y: number): void => {
+      host.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          pointerId: 21,
+          button: 0,
+          clientX: x,
+          clientY: y,
+        }),
+      )
+    }
+    // 同一任务内完成一次完整拖拽（引擎在 pointerup 之后补发 click）
+    send('pointerdown', box.left + 40, box.top + 20)
+    send('pointermove', box.left + 40 - 50, box.top + 20 - 30)
+    send('pointerup', box.left - 10, box.top - 10)
+    const movedX = host.position.x
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
+    const afterDrag = w.__clicks
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }))
+    return { movedX, afterDrag, afterAll: w.__clicks }
+  })
+  expect(result.movedX, '拖拽本身要生效').toBeLessThan(-20)
+  expect(result.afterDrag, '拖拽结束的 click 不得误触子按钮').toBe(0)
+  expect(result.afterAll, '之后的正常点击不得被吞掉').toBe(1)
+})
+
+test('drag：真实鼠标拖拽后的 click 抑制不泄漏到下一次真实点击', async ({ page }) => {
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-button')
+  await page.evaluate(() => {
+    const w = window as unknown as { __clicks: number }
+    w.__clicks = 0
+    document.querySelector('#dg-button oas-button')!.addEventListener('click', () => {
+      w.__clicks += 1
+    })
+  })
+  const box = await page.locator('#dg-button').boundingBox()
+  const startX = box!.x + box!.width / 2
+  const startY = box!.y + box!.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX - 30, startY - 20, { steps: 4 })
+  await page.mouse.move(startX - 50, startY - 30, { steps: 4 })
+  await page.mouse.up()
+  const movedX = await page.evaluate(
+    () => (document.querySelector('#dg-button') as HTMLElement & { position: { x: number } }).position.x,
+  )
+  expect(movedX, '真实拖拽要生效').toBeLessThan(-20)
+  // 真实拖拽后的下一次真实点击（不移动）必须照常到达子元素
+  await page.mouse.click(startX - 50, startY - 30)
+  const clicks = await page.evaluate(() => (window as unknown as { __clicks: number }).__clicks)
+  expect(clicks, '拖拽后的正常点击不得被吞掉').toBe(1)
+})

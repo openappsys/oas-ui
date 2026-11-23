@@ -59,9 +59,11 @@ test('time-select：休息与满约两种不可选态视觉可区分，且均不
   })
   expect(states.rest.state).toBe('rest')
   expect(states.rest.ariaDisabled).toBe('true')
+  expect(states.rest.disabled, '不可选时段走原生 disabled（a11y 门禁按原生禁用态豁免对比度）').toBe(true)
   expect(states.rest.text).toContain('休息')
   expect(states.full.state).toBe('full')
   expect(states.full.ariaDisabled).toBe('true')
+  expect(states.full.disabled).toBe(true)
   expect(states.full.text).toContain('已满约')
   expect(states.full.decoration, '满约需要删除线以区别于休息').toBe('line-through')
   expect(states.rest.decoration, '休息不加删除线（两种语义视觉可区分）').not.toBe('line-through')
@@ -89,4 +91,77 @@ test('time-select：键盘方向键在可用时段间移动并跳过不可选项
   expect(after.slot, '应跳过 disabled 的 b 与 full 的 c').toBe('d')
   expect(after.tabStops).toBe(1)
   expect(after.value).toBe('d')
+})
+
+test('time-select：模式组方向键可切换模式并迁移焦点（另一模式纯键盘可达）', async ({ page }) => {
+  await page.goto('/components/time-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-express')
+  await page.evaluate(() => {
+    const root = (document.querySelector('#ts-express') as HTMLElement).shadowRoot!
+    root.querySelector<HTMLElement>('.mode')!.focus()
+  })
+  await page.keyboard.press('ArrowRight')
+  const after = await page.evaluate(() => {
+    const host = document.querySelector('#ts-express') as HTMLElement
+    const root = host.shadowRoot!
+    const active = root.activeElement as HTMLButtonElement | null
+    return {
+      mode: host.getAttribute('mode'),
+      focused: active?.dataset.mode,
+      checked: root.querySelector<HTMLButtonElement>('.mode[aria-checked="true"]')?.dataset.mode,
+      feedback: document.querySelector('#ts-express-out')!.textContent ?? '',
+    }
+  })
+  expect(after.mode, '方向键切到预约配送').toBe('schedule')
+  expect(after.focused, '焦点必须跟到新模式钮（否则键盘丢失位置）').toBe('schedule')
+  expect(after.checked).toBe('schedule')
+  expect(after.feedback).toContain('oas-change')
+})
+
+test('time-select：次要文字（相对日 / 尽快送达详情）在浅色下满足 4.5:1', async ({ page }) => {
+  await page.goto('/components/time-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-express')
+  const ratios = await page.evaluate(() => {
+    // 计算色可能是 rgb()/rgba() 或 color(srgb …)（color-mix 的 computed 形态），两种都要按 0-255 归一到同一量纲
+    const toRgb = (value: string): number[] => {
+      const nums = (value.match(/-?[\d.]+/g) ?? []).map(Number)
+      const scale = value.startsWith('color(') ? 255 : 1
+      return nums.slice(0, 3).map((n) => n * scale)
+    }
+    const luminance = (rgb: number[]): number => {
+      const [r, g, b] = rgb.map((v) => {
+        const s = (v ?? 0) / 255
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+      }) as [number, number, number]
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    const ratio = (fg: number[], bg: number[]): number => {
+      const [hi, lo] = [luminance(fg), luminance(bg)].sort((a, b) => b - a) as [number, number]
+      return (hi + 0.05) / (lo + 0.05)
+    }
+    // 有效背景：最近的非透明背景色（shadow 内逐级上溯，越过根即为默认白）
+    const effectiveBg = (start: Element): number[] => {
+      let node: Element | null = start
+      while (node) {
+        const bg = getComputedStyle(node).backgroundColor
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return toRgb(bg)
+        node = node.parentElement
+      }
+      return [255, 255, 255]
+    }
+    const read = (el: Element | null): number | null =>
+      el ? ratio(toRgb(getComputedStyle(el).color), effectiveBg(el)) : null
+    const expressRoot = (document.querySelector('#ts-express') as HTMLElement).shadowRoot!
+    const valueRoot = (document.querySelector('#ts-value') as HTMLElement).shadowRoot!
+    // 取「未选中日期」的相对文案：选中日的相对文案走 selected 反色（不是次要文字配色）
+    const relative = [...valueRoot.querySelectorAll('.date')].find(
+      (date) => date.getAttribute('aria-selected') !== 'true',
+    )
+    return {
+      express: read(expressRoot.querySelector('.express-detail')),
+      relative: read(relative?.querySelector('.date-relative') ?? null),
+    }
+  })
+  expect(ratios.express, '尽快送达详情（次要文字落在 bg-hover 表面）需达 AA').toBeGreaterThanOrEqual(4.5)
+  expect(ratios.relative, '「明天」相对文案需达 AA').toBeGreaterThanOrEqual(4.5)
 })

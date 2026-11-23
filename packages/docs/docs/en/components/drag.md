@@ -80,6 +80,7 @@ With a `handle` slot only the handle starts a drag; the rest of the block keeps 
 - In whole-host mode the host is the focus stop (`tabindex="0"`, accessible name from i18n `drag.label`, hint wired through `aria-describedby`); arrow keys nudge 1px, Shift+arrow 10px, constrained by `axis` and the boundary
 - With `announce` on, position changes are announced through `aria-live="polite"`; `disabled` turns dragging off and removes the focus stop
 - Pointer moves under 4px are treated as clicks (no pointer capture, no default prevention), so buttons and inputs inside the content keep working
+- When a drag passes the threshold, the `click` the browser fires afterwards is swallowed (releasing over a child button does not trigger it); the next normal click works as usual. `pointercancel` (scroll / gesture takeover) only ends the drag — no position is saved and no inertia starts
 - In handle mode only the handle starts a drag; inputs inside the content keep their own arrow-key semantics
 
 <script setup>

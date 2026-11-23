@@ -1,5 +1,5 @@
 ---
-description: Delivery time selection — a date column (N days starting today) plus a time-slot grid, "as soon as possible" / "schedule delivery" modes, distinct unavailable states for closed and fully booked slots, JSON attributes and object properties as two channels, Roving tabindex keyboard navigation for both the date list and the slot grid.
+description: Delivery time selection — a date column (N days starting today) plus a time-slot grid, "as soon as possible" / "schedule delivery" modes, distinct unavailable states for closed and fully booked slots, JSON attributes and object properties as two channels, Roving tabindex keyboard navigation for the mode group, date list and slot grid.
 ---
 
 # TimeSelect Delivery time selection
@@ -31,7 +31,7 @@ In express mode the component picks the first available slot, so the host can re
 
 ## Closed and fully booked
 
-The two unavailable meanings are visually distinct: **closed** (`disabled`) is dimmed and labelled "Closed"; **fully booked** (`full`) also gets a strikethrough label and a "Fully booked" badge. Both carry `aria-disabled` and clicking them does not change the value.
+The two unavailable meanings are visually distinct: **closed** (`disabled`) is dimmed and labelled "Closed"; **fully booked** (`full`) also gets a strikethrough label and a "Fully booked" badge. Both are native `disabled` buttons (also carrying `aria-disabled`), clicking them does not change the value, and keyboard navigation skips them.
 
 <DemoBlock title="Closed / fully booked">
   <oas-time-select
@@ -58,8 +58,8 @@ The two unavailable meanings are visually distinct: **closed** (`disabled`) is d
 
 ## Keyboard and accessibility
 
-- The date column is a `role="tablist"` (vertical) of `role="tab"` buttons; the slot grid is a `role="radiogroup"` of `role="radio"` buttons. Selection state is exposed through `aria-selected` / `aria-checked`.
-- Both regions use roving tabindex: exactly one Tab stop each. Arrow keys move between available items (skipping closed, fully booked and unavailable dates), Home / End jump to the first / last available item, and left / right directions mirror under RTL.
+- The date column is a `role="tablist"` (vertical) of `role="tab"` buttons; the slot grid and the mode group are `role="radiogroup"` of `role="radio"` buttons. Selection state is exposed through `aria-selected` / `aria-checked`.
+- All three regions use roving tabindex: exactly one Tab stop each. The mode group switches modes with left / right arrows (Home / End jump to the first / last mode); arrow keys move between available items (skipping closed, fully booked and unavailable dates), Home / End jump to the first / last available item, and left / right directions mirror under RTL.
 - Date labels are formatted with `Intl.DateTimeFormat` (locale aware), with relative labels for today / tomorrow; the grid's accessible name combines the group title with the active date.
 
 ## Value contract

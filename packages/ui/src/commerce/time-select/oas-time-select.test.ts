@@ -62,6 +62,16 @@ describe('OAS time-select 配送时段选择', () => {
     expect(dates(el)).toHaveLength(3)
   })
 
+  it('days 上界：超过 14 视为非法，回落 3（不按 14 钳制）', () => {
+    const el = mount({ 'start-date': START, slots: BASE_SLOTS, days: '30' })
+    expect(el.days, '超出合法范围按非法值处理').toBe(3)
+    expect(dates(el)).toHaveLength(3)
+    el.setAttribute('days', '14')
+    expect(dates(el)).toHaveLength(14)
+    el.setAttribute('days', '15')
+    expect(dates(el)).toHaveLength(3)
+  })
+
   it('日期键从 start-date 起逐日递增，今天 / 明天有相对文案', () => {
     const today = new Date()
     const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
@@ -93,8 +103,10 @@ describe('OAS time-select 配送时段选择', () => {
     })
     const [rest, full, open] = slots(el)
     expect(rest!.getAttribute('data-state')).toBe('rest')
+    expect(rest!.disabled, '不可选时段走原生 disabled').toBe(true)
     expect(rest!.textContent).toContain('休息')
     expect(full!.getAttribute('data-state')).toBe('full')
+    expect(full!.disabled).toBe(true)
     expect(full!.textContent).toContain('已满约')
     expect(full!.querySelector('.slot-label')!.textContent).toBe('11:00–13:00')
     expect(open!.hasAttribute('data-state')).toBe(false)
@@ -224,6 +236,39 @@ describe('OAS time-select 配送时段选择', () => {
     expect(el.getAttribute('mode')).toBe('express')
     expect(el.value).toEqual({ date: START, slot: 'm' })
     expect(el.shadowRoot!.querySelector<HTMLElement>('.picker')!.hidden).toBe(true)
+  })
+
+  // 修复批 I1：radiogroup + roving 却无 keydown 时，Tab 只能到选中模式，另一模式纯键盘不可达。
+  it('模式组键盘：方向键切换模式并迁移焦点，Home / End 到首末模式', () => {
+    const el = mount({ 'start-date': START, slots: BASE_SLOTS })
+    const detail: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-change', (event) => detail.push((event as CustomEvent).detail))
+    modeButtons(el)[0]!.focus()
+    modeButtons(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.getAttribute('mode')).toBe('schedule')
+    expect(detail).toHaveLength(1)
+    expect((el.shadowRoot!.activeElement as HTMLButtonElement).dataset.mode, '焦点必须跟到新节点').toBe('schedule')
+    el.shadowRoot!.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    expect(el.getAttribute('mode')).toBe('express')
+    expect((el.shadowRoot!.activeElement as HTMLButtonElement).dataset.mode).toBe('express')
+    el.shadowRoot!.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    expect(el.getAttribute('mode')).toBe('schedule')
+  })
+
+  it('模式组键盘 RTL：ArrowLeft 是前进方向（镜像 LTR 的 ArrowRight）', () => {
+    const wrap = document.createElement('div')
+    wrap.setAttribute('dir', 'rtl')
+    document.body.appendChild(wrap)
+    const el = new OASTimeSelect()
+    el.setAttribute('start-date', START)
+    el.setAttribute('slots', BASE_SLOTS)
+    wrap.appendChild(el)
+    modeButtons(el)[0]!.focus()
+    modeButtons(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(el.getAttribute('mode')).toBe('schedule')
+    expect((el.shadowRoot!.activeElement as HTMLButtonElement).dataset.mode).toBe('schedule')
+    el.shadowRoot!.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(el.getAttribute('mode')).toBe('express')
   })
 
   it('尽快送达忽略宿主写入的 value：恒取首个可用时段', () => {

@@ -132,6 +132,11 @@ const EXEMPT_EVENTS = new Set([
   'oas-rows-error', // table：server 行模型失败反馈需宿主 reportRowsError 通知（通用探针不可达；qa-regression/table-server.spec.ts 已固化失败链路）
   'oas-range-request', // gantt/resource：宿主托管时间范围时滚到轴端才触发（通用探针不可达；qa-regression/gantt.spec.ts 与 resource.spec.ts 已固化真实链路）
   'oas-item-click', // barrage：弹幕项随时间漂移，通用探针（click 首元素）命中窗口不稳定——qa-regression/barrage.spec.ts 先暂停再点项固化真实点击链路。同名事件另见 index-bar / statusbar，二者在 COMPONENT_STEPS 中有显式点击步骤（豁免不影响其覆盖）
+  // drag：三个事件都要「指针按下 → 越过 4px 阈值 → 移动 → 松手」的真实拖拽序列，
+  // 通用探针（点击/悬停/滚轮）不可达；qa-regression/drag.spec.ts 已固化真实拖拽链路与阈值内点击语义
+  'oas-drag-start',
+  'oas-drag',
+  'oas-drag-end',
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求
@@ -153,6 +158,12 @@ const EXEMPT_ATTRS: Record<string, string[]> = {
   list: ['windowed', 'total', 'window-start'],
   // kanban：预估步长为数值调优通道（默认 68 已覆盖常规场景），静态 demo 不单独演示
   kanban: ['card-estimate'],
+  // drag：aria-label 缺省走 i18n drag.label（demo 无需覆写，机制由单测与 qa-regression/drag.spec 覆盖可访问名）；
+  // keyboard 缺省开启，demo 只演示开启路径（关闭路径由单测 keyboard="false" 固化）
+  drag: ['aria-label', 'keyboard'],
+  // time-select：start-date 是宿主指定发货日 / 测试固定时点的通道，静态 demo 写死日期会让「今天 / 明天」相对文案失真；
+  // 机制由单测（start-date 解析与非法回落）与 qa-regression/time-select.spec 覆盖
+  'time-select': ['start-date'],
 }
 
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）
@@ -201,6 +212,9 @@ const INTERACTIONS: Array<[string, string]> = [
   ['oas-command input', 'fill:x'],
   // resource：泳道任务条真点 → oas-task-click（Playwright CSS 穿透 open shadow DOM 命中 .bar）
   ['oas-resource .row.lane .bar', 'click'],
+  // time-select：模式钮真点 → oas-change（Playwright CSS 穿透 open shadow DOM 命中 [part="mode"]；
+  // 每页取前 2 个匹配 = 首个实例的两个模式钮，点「预约配送」即派发）
+  ['oas-time-select [part="mode"]', 'click'],
 ]
 
 // ===== 组件级探针步骤（key = manifest 组件名）=====
