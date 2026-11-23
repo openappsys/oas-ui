@@ -90,10 +90,14 @@ function primaryType(schema: JsonSchema): string | null {
   return null
 }
 
-/** 空值判据（原始值层面）：`''` / undefined / null / 空数组 */
+/** 空值判据（原始值层面）：`''` / undefined / null / 空数组 / 空容器 JSON（`[]` / `{}`） */
 export function isEmptyValue(value: unknown): boolean {
   if (value === undefined || value === null) return true
-  if (typeof value === 'string') return value.trim() === '' || value === '[]'
+  if (typeof value === 'string') {
+    const text = value.trim()
+    // `'{}'`：matrix 等复合控件清空后的值形态（读值层已归一，schema 直接吃原始值时同判据）
+    return text === '' || text === '[]' || text === '{}'
+  }
   if (Array.isArray(value)) return value.length === 0
   return false
 }

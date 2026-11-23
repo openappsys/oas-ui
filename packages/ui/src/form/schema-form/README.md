@@ -249,3 +249,9 @@ duck-typed 契约（`getValues()` / `validate()` + 派发 `oas-values-change`）
   dist」口径；进一步压缩需把诊断降级为 ASCII 错误码（在调用层拼装）或收窄通配读值，等定夺。
 - **未实现（显式）**：array-table 行内编辑表格、对象数组复制/排序、`convertValue` / `transform`
   值变换、远程数据源注解、表达式函数库扩充（V2）。
+
+## 定版前评审记档（不修项）
+
+- **C 域评审 minor 2 / 3 / 5 / 6 本批不修**：定版前修复批只消化必修项（子路径入口漏注册 / 联动清值
+  二次传播 / 快照回填走 writer 通道），四项 minor 按用户决策留档待后续批次处理（编号沿用全域 review
+  报告，其余 minor 已在本批顺手修掉：`collectDefaults` 保留键过滤、快照回填选择器转义）。

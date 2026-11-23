@@ -113,6 +113,9 @@ function arrayRulesOf(schema: JsonSchema, required: boolean): ArrayRules {
   return rules
 }
 
+/** 保留键段：原型污染面（JSON.parse 的 `__proto__` 是自有键，直接赋值会改写原型） */
+const RESERVED_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
+
 /** schema `default` 汇总为嵌套初始值（宿主 initialValues 优先，见组件） */
 function collectDefaults(schema: unknown): unknown {
   if (!isPlainObject(schema)) return undefined
@@ -123,6 +126,8 @@ function collectDefaults(schema: unknown): unknown {
     const out: Record<string, unknown> = {}
     let has = false
     for (const [key, child] of Object.entries(s.properties)) {
+      // 保留键段整段跳过：`out['__proto__'] = ...` 会改写结果对象原型（宿主 schema 来自 JSON）
+      if (RESERVED_KEYS.has(key)) continue
       const value = collectDefaults(child)
       if (value !== undefined) {
         out[key] = value

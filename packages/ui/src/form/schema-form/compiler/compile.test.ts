@@ -166,6 +166,17 @@ describe('编译层：渲染计划（字段 / 分组 / 数组 / 标签页）', (
     expect(result.defaults).toEqual({ name: '张三', profile: { city: 'bj' } })
   })
 
+  it('默认值汇总过滤保留键段（__proto__ / prototype / constructor 不进 defaults，不改原型）', () => {
+    // 宿主 schema 经 JSON.parse 传入时 `__proto__` 是自有键：直接 out[key] 赋值会改写结果对象原型
+    const raw = JSON.parse(
+      '{"type":"object","properties":{"__proto__":{"type":"string","default":"x"},"prototype":{"type":"string","default":"y"},"constructor":{"type":"string","default":"z"},"ok":{"type":"string","default":"1"}}}',
+    ) as Parameters<typeof compileSchema>[0]
+    const result = compileSchema(raw)
+    expect(result.defaults).toEqual({ ok: '1' })
+    expect(Object.getPrototypeOf(result.defaults)).toBe(Object.prototype)
+    expect(({} as Record<string, unknown>).x).toBeUndefined()
+  })
+
   it('uiSchema 路径不存在 / 未知键告警（防拼写错误静默失效）', () => {
     const result = compileSchema(schema, {
       nam: { widget: 'oas-textarea' },

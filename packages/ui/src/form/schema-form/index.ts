@@ -17,6 +17,10 @@ import '../textarea/index.js'
 import '../slider/index.js'
 import '../rate/index.js'
 import '../pin-input/index.js'
+// 题型控件（matrix / rank）：KNOWN_WIDGETS 已登记，widget 解析可命中——但元素注册必须在入口
+// 一并引入，否则只引本子路径的宿主拿到的是「未升级标签」，控件静默不渲染（值也收集不到）
+import '../matrix/index.js'
+import '../rank/index.js'
 import { OASSchemaForm } from './oas-schema-form.js'
 
 if (!customElements.get('oas-schema-form')) {

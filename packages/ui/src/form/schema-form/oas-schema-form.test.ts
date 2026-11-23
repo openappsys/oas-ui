@@ -717,3 +717,187 @@ describe('oas-schema-form 组合面（错误注入 / 事件 / 生命周期 / que
     expect(formItems(el)).toHaveLength(2)
   })
 })
+
+describe('oas-schema-form 子路径入口注册面', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('只引本子路径时题型控件元素已注册并升级（matrix / rank 不缺 import）', () => {
+    expect(typeof customElements.get('oas-matrix')).toBe('function')
+    expect(typeof customElements.get('oas-rank')).toBe('function')
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          grid: { type: 'object', title: '矩阵' },
+          order: { type: 'string', title: '排序' },
+        },
+      },
+      {
+        uiSchema: {
+          grid: {
+            widget: 'oas-matrix',
+            options: {
+              rows: [{ key: 'speed', label: '响应速度' }],
+              columns: [{ key: 'good', label: '好' }],
+            },
+          },
+          order: { widget: 'oas-rank', options: { options: [{ key: 'a', label: '苹果' }] } },
+        },
+      },
+    )
+    const grid = widgetOf(el, 'grid')!
+    const order = widgetOf(el, 'order')!
+    expect(grid.tagName.toLowerCase()).toBe('oas-matrix')
+    expect(order.tagName.toLowerCase()).toBe('oas-rank')
+    // 未注册时自定义元素不升级（shadowRoot 为 null）——静默空渲染；按真实渲染产物断言
+    expect(grid.shadowRoot!.querySelectorAll('[part="cell"]')).toHaveLength(1)
+    expect(order.shadowRoot!.querySelectorAll('button.option')).toHaveLength(1)
+    expect(el.getValues()).toMatchObject({ grid: '', order: '' })
+  })
+})
+
+describe('oas-schema-form 清值二次传播（隐藏字段的下游反应）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('A 隐藏 B，C 依赖 B 的值：B 被清值后 C 的效果同步更新', () => {
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          country: { type: 'string', title: '国家', enum: ['CN', 'US'] },
+          province: { type: 'string', title: '省份' },
+          city: { type: 'string', title: '城市' },
+        },
+      },
+      {
+        initialValues: { country: 'CN', province: 'CA' },
+        uiSchema: {
+          country: {
+            reactions: [{ whenSchema: { schema: { const: 'US' } }, target: 'province', fulfill: { visible: false } }],
+          },
+          province: {
+            // 表达式轨：空值不短路（whenSchema 对空值一律放行，观察不到清值效果）
+            reactions: [{ when: '{province} == "CA"', target: 'city', fulfill: { required: true } }],
+          },
+        },
+      },
+    )
+    // 初始：province 有值 CA → city 必填
+    const city = widgetOf(el, 'city')!
+    expect(city.getAttribute('aria-required')).toBe('true')
+    expect(city.closest('oas-form-item')!.hasAttribute('required')).toBe(true)
+
+    // A 改成 US → province 隐藏并清值 → city 的必填必须跟着撤销（旧实现停在旧效果）
+    const country = widgetOf(el, 'country')!
+    country.setAttribute('value', 'US')
+    country.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: 'US' } }))
+    expect(widgetOf(el, 'province')).toBeNull()
+    expect(el.getValues()).toMatchObject({ country: 'US', city: '' })
+    expect(widgetOf(el, 'city')!.getAttribute('aria-required')).toBeNull()
+    expect(widgetOf(el, 'city')!.closest('oas-form-item')!.hasAttribute('required')).toBe(false)
+  })
+
+  it('数组行内字段被隐藏清值：依赖该行的下游反应重算', () => {
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          users: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                vip: { type: 'boolean', title: 'VIP' },
+                nick: { type: 'string', title: '昵称' },
+                note: { type: 'string', title: '备注' },
+              },
+            },
+          },
+        },
+      },
+      {
+        initialValues: { users: [{ vip: false, nick: 'a' }] },
+        uiSchema: {
+          'users[].vip': {
+            reactions: [{ when: '$self == true', target: 'users[].nick', fulfill: { visible: false } }],
+          },
+          'users[].nick': {
+            // 行内字段被隐藏后清值（空串）→ 条件失效 → note 的必填必须撤销
+            reactions: [{ when: '$self == "a"', target: 'users[].note', fulfill: { required: true } }],
+          },
+        },
+      },
+    )
+    // 初始：nick = 'a' → note 必填
+    expect((widgetOf(el, 'users.0.nick')!.closest('oas-form-item') as HTMLElement).hidden).toBe(false)
+    expect(widgetOf(el, 'users.0.note')!.getAttribute('aria-required')).toBe('true')
+    const vip = widgetOf(el, 'users.0.vip')!
+    vip.toggleAttribute('checked', true)
+    vip.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: 'true' } }))
+    // 行内隐藏保留键位，值为空串；下游 note 的必填跟着撤销
+    expect((widgetOf(el, 'users.0.nick')!.closest('oas-form-item') as HTMLElement).hidden).toBe(true)
+    expect(el.getValues()).toMatchObject({ users: [{ vip: 'true', nick: '', note: '' }] })
+    expect(widgetOf(el, 'users.0.note')!.getAttribute('aria-required')).toBeNull()
+  })
+})
+
+describe('oas-schema-form 快照回填走内核 writer 通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('自定义 writer（model-value 通道）：结构重建后用户编辑保留', async () => {
+    const { registerSchemaWidget } = await import('./registry.js')
+    const unregister = registerSchemaWidget('probe-widget', 'oas-probe-widget', {
+      reader: (el) => el.getAttribute('model-value') ?? '',
+      writer: (el, value) => el.setAttribute('model-value', value),
+    })
+    try {
+      const schema = {
+        type: 'object',
+        properties: {
+          probe: { type: 'string', title: '探针' },
+          other: { type: 'string', title: '其它' },
+        },
+      }
+      const el = mount(schema, {
+        uiSchema: { probe: { widget: 'probe-widget' } },
+        initialValues: { probe: 'init' },
+      })
+      const widget = widgetOf(el, 'probe') as HTMLElement & { setAttribute(name: string, value: string): void }
+      expect(widget.getAttribute('model-value')).toBe('init')
+      // 用户编辑走自定义通道（writer 只认 model-value）
+      widget.setAttribute('model-value', 'edited')
+      widget.dispatchEvent(
+        new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: 'edited' } }),
+      )
+      expect(el.getValues()).toMatchObject({ probe: 'edited' })
+      // 改 schema 无关字段触发结构重建：快照必须经 writer 回填（旧实现 setAttribute('value') 被组件忽略）
+      el.schema = {
+        type: 'object',
+        properties: {
+          probe: { type: 'string', title: '探针' },
+          other: { type: 'string', title: '其它' },
+          extra: { type: 'string', title: '额外' },
+        },
+      }
+      expect(widgetOf(el, 'probe')!.getAttribute('model-value')).toBe('edited')
+      expect(el.getValues()).toMatchObject({ probe: 'edited' })
+    } finally {
+      unregister()
+    }
+  })
+})
