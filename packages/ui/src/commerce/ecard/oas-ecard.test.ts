@@ -166,4 +166,19 @@ describe('OASECard', () => {
     expect(fields).toContain('amount')
     expect(q<HTMLElement>(el, '.custom-group .error').textContent).toBe('请输入 10–1000 之间的整数面额')
   })
+
+  it('readonly semantics: amount input stays focusable/copyable (native readOnly, not disabled), other controls locked', () => {
+    const el = mount({ cards: CARDS, readonly: '', 'selected-id': 'custom' })
+    const amount = q<HTMLInputElement>(el, '.amount-input')
+    expect(amount.disabled).toBe(false)
+    expect(amount.readOnly).toBe(true)
+    expect(q<HTMLInputElement>(el, '[part="agreement-input"]').disabled).toBe(true)
+    expect(q<HTMLButtonElement>(el, '.confirm').disabled).toBe(true)
+    // 移除 readonly 恢复可编辑
+    el.removeAttribute('readonly')
+    expect(amount.readOnly).toBe(false)
+    // disabled 仍真正禁用输入框
+    el.setAttribute('disabled', '')
+    expect(amount.disabled).toBe(true)
+  })
 })

@@ -478,7 +478,7 @@ export class OASECard extends OASElement {
     }
     if (this.customRow) this.customRow.hidden = !custom
     if (this.amountInput) {
-      this.amountInput.disabled = this.locked()
+      this.applyAmountInputState()
       const amount = this.getAttr('amount', '')
       if (amount !== this.appliedAmount) {
         this.appliedAmount = amount
@@ -597,6 +597,16 @@ export class OASECard extends OASElement {
     }
     if (this.agreementInput) this.agreementInput.disabled = locked
     if (this.confirmBtn) this.confirmBtn.disabled = locked
-    if (this.amountInput) this.amountInput.disabled = locked || !this.isCustom()
+    this.applyAmountInputState()
+  }
+
+  /** 面额输入框状态：readonly 语义对齐 address/invoice——文本框可聚焦复制（原生 readOnly 非 disabled），
+   *  禁用态 / 非自定义卡时才真正 disabled */
+  private applyAmountInputState(): void {
+    if (!this.amountInput) return
+    const disabled = this.hasAttr('disabled') || this.injectDisabled()
+    const readonly = this.hasAttr('readonly')
+    this.amountInput.disabled = disabled || (!this.isCustom() && !readonly)
+    this.amountInput.readOnly = readonly
   }
 }

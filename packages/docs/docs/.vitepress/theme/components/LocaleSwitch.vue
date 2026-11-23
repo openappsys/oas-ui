@@ -52,7 +52,7 @@ function onSelect(toEn: boolean): void {
       :lang="opt.langAttr"
       rel="alternate"
       :title="opt.label"
-      :aria-label="opt.label"
+      :aria-label="`${opt.short} ${opt.label}`"
       :aria-current="opt.active ? 'page' : undefined"
       @click="onSelect(opt.langAttr === 'en')"
       >{{ opt.short }}</a

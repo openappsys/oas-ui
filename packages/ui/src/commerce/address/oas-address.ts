@@ -28,7 +28,7 @@ export type AddressMode = 'edit' | 'list' | 'contact'
 const VALID_MODES: readonly string[] = ['edit', 'list', 'contact']
 /**
  * 常规电话格式门（移动端场景不锁国家码）：`+` 仅可在首位，允许数字 / 空格 / 连字符，
- * 总长 6–20；数字位数另由 isValidPhone 要求 ≥6（纯符号串如 `------` 不得通过）。
+ * 总字符长 6–21（`+` 占 1 位时上限 21）；数字位数另由 isValidPhone 要求 ≥6（纯符号串如 `------` 不得通过）。
  */
 const PHONE_RE = /^\+?[0-9][0-9\s-]{5,19}$/
 const PHONE_MIN_DIGITS = 6
