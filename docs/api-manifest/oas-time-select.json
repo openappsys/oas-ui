@@ -1,0 +1,66 @@
+{
+  "className": "OASTimeSelect",
+  "sourceFile": "packages/ui/src/commerce/time-select/oas-time-select.ts",
+  "attrs": [
+    {
+      "name": "days",
+      "observed": true
+    },
+    {
+      "name": "start-date",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "slots",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "slots-override",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "express",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "days",
+      "type": "number | string",
+      "api": true
+    },
+    {
+      "name": "value",
+      "type": "TimeSelectValue | string",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value, mode, date: this.activeDate, slot: this.activeSlot }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

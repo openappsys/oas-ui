@@ -731,4 +731,15 @@ export const zhCN = {
   'rank.remove': '取消选择 {label}',
   'rank.moveUp': '上移 {label}',
   'rank.moveDown': '下移 {label}',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': '配送方式',
+  'timeSelect.dates': '配送日期',
+  'timeSelect.slots': '配送时段',
+  'timeSelect.express': '尽快送达',
+  'timeSelect.schedule': '预约配送',
+  'timeSelect.full': '已满约',
+  'timeSelect.rest': '休息',
+  'timeSelect.empty': '暂无可选时段',
+  'timeSelect.today': '今天',
+  'timeSelect.tomorrow': '明天',
 } as const

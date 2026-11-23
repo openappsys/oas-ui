@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 241,
+    "components": 242,
     "whitelist": 176,
-    "noSsr": 65
+    "noSsr": 66
   },
   "components": [
     {
@@ -4044,6 +4044,23 @@
       "reason": "pending",
       "parent": null,
       "note": "SSR 白名单化未立项（commerce 族新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-time-select",
+      "family": "commerce",
+      "dir": "commerce/time-select",
+      "className": "OASTimeSelect",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（电商可捞件批新组件，先登记 pending）",
       "entry": null,
       "hasTemplate": true,
       "hasHydrate": false,

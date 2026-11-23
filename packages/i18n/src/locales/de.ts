@@ -726,4 +726,15 @@ export const de: LocaleMessages = {
   'rank.remove': '{label} aus der Rangfolge entfernen',
   'rank.moveUp': '{label} nach oben verschieben',
   'rank.moveDown': '{label} nach unten verschieben',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'Lieferart',
+  'timeSelect.dates': 'Lieferdatum',
+  'timeSelect.slots': 'Lieferzeitfenster',
+  'timeSelect.express': 'So schnell wie möglich',
+  'timeSelect.schedule': 'Lieferung planen',
+  'timeSelect.full': 'Ausgebucht',
+  'timeSelect.rest': 'Ruhetag',
+  'timeSelect.empty': 'Keine Zeitfenster verfügbar',
+  'timeSelect.today': 'Heute',
+  'timeSelect.tomorrow': 'Morgen',
 }

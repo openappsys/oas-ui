@@ -1,10 +1,10 @@
 ---
-description: OAS-UI 提供 174 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+description: OAS-UI 提供 175 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 ---
 
 # 组件总览
 
-OAS-UI 提供 174 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 175 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -197,6 +197,7 @@ OAS-UI 提供 174 个框架无关的 Web Components 组件，按用途划分为 
 - [Price 价格](/components/price) —— 价格格式化：币种 / 千分位 / 划线价 / 区间价 + 涨跌趋势箭头。
 - [SKU 商品规格](/components/sku) —— 规格组与 SKU 组合匹配、缺货置灰、可选路径提示与数量步进。
 - [SubmitBar 结算栏](/components/submit-bar) —— 底部结算栏：扩展区 + 合计金额 + 主按钮（加载 / 禁用 / 危险态）。
+- [TimeSelect 配送时段](/components/time-select) —— 配送时段选择：日期列（今日起 N 天）+ 时段网格，尽快送达 / 预约配送两模式，休息与满约两种不可选语义，日期与时段网格各自 roving tabindex 键盘导航。
 
 ## 会话组件
 

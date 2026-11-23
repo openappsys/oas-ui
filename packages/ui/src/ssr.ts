@@ -256,6 +256,7 @@ export { OASAddress } from './commerce/address/oas-address.js'
 export { OASInvoice } from './commerce/invoice/oas-invoice.js'
 export { OASECard } from './commerce/ecard/oas-ecard.js'
 export { OASCategory } from './commerce/category/oas-category.js'
+export { OASTimeSelect } from './commerce/time-select/oas-time-select.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'

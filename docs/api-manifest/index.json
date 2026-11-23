@@ -237,6 +237,7 @@
   "oas-invoice",
   "oas-ecard",
   "oas-category",
+  "oas-time-select",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

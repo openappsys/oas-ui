@@ -4,6 +4,10 @@
 
 ### 新增
 
+**电商可捞件：oas-time-select（commerce 族）**
+
+- **oas-time-select（配送时段选择）**：日期列（今日起 `days` 天，缺省 3）+ 时段网格（`slots` 通用时段，`slots-override` 按日期覆盖），「尽快送达（`mode="express"`，自动取首个可用时段）/ 预约配送（`mode="schedule"`）」两模式；不可选时段区分**休息**（`disabled`，置灰 + 「休息」标注）与**满约**（`full`，置灰 + 删除线 + 「已满约」标注），均带 `aria-disabled` 且点击不改值；值契约 `{ date, slot }` 的 property + attribute JSON 双通道，用户切换模式 / 日期 / 时段派发 `oas-change`；a11y：日期列 `role="tablist"` + `role="tab"`、时段网格 `role="radiogroup"` + `role="radio"`，两处各自 roving tabindex，方向键只在可用项之间移动（跳过休息 / 满约 / 不可配送日），Home / End 到首末可用项，RTL 镜像，网格可访问名称 = 分组标题 + 当前日期；日期文案 `Intl.DateTimeFormat` 感知 locale，今天 / 明天用相对文案；空时段集合渲染空态占位；i18n `timeSelect.*`（16 语言）+ 单测 19 + qa-regression e2e（真实点击选中态 / 休息满约视觉区分 / 键盘跳过不可选项）+ zh/en 文档与 demo。
+
 **问卷填写端（form 族，2 件）**
 
 - **oas-matrix（矩阵题）**：行 = 子问题、列 = 选项的矩阵选择——`rows` / `columns` 数据契约（JSON 属性 + 对象 property 双通道，字符串项按 `key=label` 收敛）；`mode="radio" | "checkbox"` 行内单选 / 多选，值契约 `{ rowKey: colKey }` / `{ rowKey: [colKey] }` 交互即回写属性；`required` + `required-scope="row" | "table"` 两档必答（行级每行必选 / 全表至少一行），`validate()` 未通过派发 `oas-invalid` 并显示可视错误，补满自动消失；行 / 列级与组级 `disabled`、组级 `readonly`（保留外观与已选，不响应交互）；a11y——每行 `fieldset` + `legend` 承载行标题，列头可见、输入以 `aria-labelledby` 关联行头 + 列头，radio 行 roving tabindex、方向键行内移动并选中（RTL 镜像）、Home/End 首末列，必答提示与错误经 `aria-describedby` 关联；空 rows / columns 显示占位。i18n `matrix.*` ×16；单测 21 + qa-regression e2e（真实点选 / 键盘 / 校验可见反馈）+ zh/en 文档 + API 表。

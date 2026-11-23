@@ -121,6 +121,7 @@ export const NOT_SSR: readonly NotSsrEntry[] = [
   { tag: 'oas-invoice', reason: 'pending', note: 'SSR 白名单化未立项（commerce 族新组件，先登记 pending）' },
   { tag: 'oas-ecard', reason: 'pending', note: 'SSR 白名单化未立项（commerce 族新组件，先登记 pending）' },
   { tag: 'oas-category', reason: 'pending', note: 'SSR 白名单化未立项（commerce 族新组件，先登记 pending）' },
+  { tag: 'oas-time-select', reason: 'pending', note: 'SSR 白名单化未立项（电商可捞件批新组件，先登记 pending）' },
   { tag: 'oas-number-keyboard', reason: 'pending', note: 'SSR 白名单化未立项（未发布批新组件，先登记 pending）' },
   { tag: 'oas-code-button', reason: 'pending', note: 'SSR 白名单化未立项（未发布批新组件，先登记 pending）' },
   { tag: 'oas-image-picker', reason: 'client-only', note: 'File / objectURL 选图仅客户端可用' },

@@ -726,4 +726,15 @@ export const ja: LocaleMessages = {
   'rank.remove': '{label} の選択を解除',
   'rank.moveUp': '{label} を上へ移動',
   'rank.moveDown': '{label} を下へ移動',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': '配送方法',
+  'timeSelect.dates': '配送日',
+  'timeSelect.slots': '配送時間帯',
+  'timeSelect.express': '最短でお届け',
+  'timeSelect.schedule': '日時を指定',
+  'timeSelect.full': '予約済み',
+  'timeSelect.rest': '定休',
+  'timeSelect.empty': '選択できる時間帯がありません',
+  'timeSelect.today': '今日',
+  'timeSelect.tomorrow': '明日',
 }

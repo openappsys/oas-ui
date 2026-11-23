@@ -634,4 +634,15 @@ export const th: LocaleMessages = {
   'rank.remove': 'ยกเลิกเลือก {label}',
   'rank.moveUp': 'เลื่อน {label} ขึ้น',
   'rank.moveDown': 'เลื่อน {label} ลง',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'วิธีจัดส่ง',
+  'timeSelect.dates': 'วันที่จัดส่ง',
+  'timeSelect.slots': 'ช่วงเวลาจัดส่ง',
+  'timeSelect.express': 'เร็วที่สุดเท่าที่ทำได้',
+  'timeSelect.schedule': 'จัดส่งตามนัด',
+  'timeSelect.full': 'เต็มแล้ว',
+  'timeSelect.rest': 'หยุด',
+  'timeSelect.empty': 'ไม่มีช่วงเวลาว่าง',
+  'timeSelect.today': 'วันนี้',
+  'timeSelect.tomorrow': 'พรุ่งนี้',
 }

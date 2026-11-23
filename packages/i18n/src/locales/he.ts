@@ -729,4 +729,15 @@ export const he: LocaleMessages = {
   'rank.remove': 'הסרת {label} מהדירוג',
   'rank.moveUp': 'העברת {label} למעלה',
   'rank.moveDown': 'העברת {label} למטה',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'אופן משלוח',
+  'timeSelect.dates': 'תאריך משלוח',
+  'timeSelect.slots': 'חלון משלוח',
+  'timeSelect.express': 'בהקדם האפשרי',
+  'timeSelect.schedule': 'משלוח מתוזמן',
+  'timeSelect.full': 'תפוס',
+  'timeSelect.rest': 'סגור',
+  'timeSelect.empty': 'אין חלונות פנויים',
+  'timeSelect.today': 'היום',
+  'timeSelect.tomorrow': 'מחר',
 }

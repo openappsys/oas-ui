@@ -726,4 +726,15 @@ export const ptBR: LocaleMessages = {
   'rank.remove': 'Remover {label} da ordenação',
   'rank.moveUp': 'Mover {label} para cima',
   'rank.moveDown': 'Mover {label} para baixo',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'Forma de entrega',
+  'timeSelect.dates': 'Data de entrega',
+  'timeSelect.slots': 'Faixa de entrega',
+  'timeSelect.express': 'O mais rápido possível',
+  'timeSelect.schedule': 'Entrega agendada',
+  'timeSelect.full': 'Esgotado',
+  'timeSelect.rest': 'Fechado',
+  'timeSelect.empty': 'Nenhum horário disponível',
+  'timeSelect.today': 'Hoje',
+  'timeSelect.tomorrow': 'Amanhã',
 }

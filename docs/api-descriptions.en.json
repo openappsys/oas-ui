@@ -5921,5 +5921,23 @@
     "cssVars": {
       "--oas-rank-badge-size": "Rank badge diameter (default `--oas-control-height-sm`)"
     }
+  },
+  "oas-time-select": {
+    "attrs": {
+      "days": "Number of days in the date column (N days from today; default 3, valid range 1–14; invalid values fall back and warn once)",
+      "start-date": "First date as `YYYY-MM-DD` (defaults to today; lets hosts pin the dispatch day and tests pin a clock)",
+      "slots": "Shared slot JSON array `[{ key, label, disabled?, full? }]`; string items collapse to `key=label`",
+      "slots-override": "Per-date slot overrides as a JSON object `{ \"YYYY-MM-DD\": [...] }`; a matched date uses the override, and an empty array marks that date undeliverable",
+      "mode": "Delivery mode: `express` as soon as possible (default, auto-picks the first available slot) / `schedule`; invalid values fall back to `express` with a warning",
+      "value": "Value JSON object `{ date, slot }` where `date` is `YYYY-MM-DD` and `slot` is the slot key",
+      "disabled": "Disables the whole control: mode buttons, dates and slots"
+    },
+    "props": {
+      "days": "Number of days in the date column: get+set dual channel; assignment applies immediately without emitting events",
+      "value": "Current value: get+set dual channel (object or JSON string); assignment applies immediately without emitting events"
+    },
+    "events": {
+      "oas-change": "Dispatched when the user switches mode, date or slot, with `detail: { value, mode, date, slot }`"
+    }
   }
 }

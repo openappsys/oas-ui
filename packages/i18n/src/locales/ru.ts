@@ -727,4 +727,15 @@ export const ru: LocaleMessages = {
   'rank.remove': 'Убрать {label} из сортировки',
   'rank.moveUp': 'Переместить {label} выше',
   'rank.moveDown': 'Переместить {label} ниже',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'Способ доставки',
+  'timeSelect.dates': 'Дата доставки',
+  'timeSelect.slots': 'Интервал доставки',
+  'timeSelect.express': 'Как можно скорее',
+  'timeSelect.schedule': 'Доставка по расписанию',
+  'timeSelect.full': 'Мест нет',
+  'timeSelect.rest': 'Выходной',
+  'timeSelect.empty': 'Нет доступных интервалов',
+  'timeSelect.today': 'Сегодня',
+  'timeSelect.tomorrow': 'Завтра',
 }

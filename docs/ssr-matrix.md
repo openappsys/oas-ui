@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：241
+- 组件：242
 - SSR 白名单：176
-- 有意不 SSR：65
+- 有意不 SSR：66
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -246,6 +246,7 @@
 | `oas-invoice` | commerce | `commerce/invoice` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-ecard` | commerce | `commerce/ecard` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-category` | commerce | `commerce/category` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-time-select` | commerce | `commerce/time-select` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-config-provider` | framework | `framework/config-provider` | ✅ 白名单 | — | — | `@oas-ui/ui/framework/config-provider` | ✅ | ✅ | — | ✅ | ✅/✅ |
 | `oas-app` | framework | `framework/app` | ✅ 白名单 | — | — | `@oas-ui/ui/framework/app` | ✅ | ✅ | — | ✅ | ✅/✅ |
 | `oas-theme-editor` | framework | `framework/theme-editor` | ⛔ 不 SSR | dev-tool | — | — | — | — | ✅ | — | ✅/✅ |

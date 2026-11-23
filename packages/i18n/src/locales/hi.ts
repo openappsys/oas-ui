@@ -729,4 +729,15 @@ export const hi: LocaleMessages = {
   'rank.remove': '{label} को क्रम से हटाएँ',
   'rank.moveUp': '{label} को ऊपर ले जाएँ',
   'rank.moveDown': '{label} को नीचे ले जाएँ',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'डिलीवरी विधि',
+  'timeSelect.dates': 'डिलीवरी तिथि',
+  'timeSelect.slots': 'डिलीवरी समय',
+  'timeSelect.express': 'जल्द से जल्द',
+  'timeSelect.schedule': 'निर्धारित डिलीवरी',
+  'timeSelect.full': 'पूर्ण बुक',
+  'timeSelect.rest': 'बंद',
+  'timeSelect.empty': 'कोई समय उपलब्ध नहीं',
+  'timeSelect.today': 'आज',
+  'timeSelect.tomorrow': 'कल',
 }

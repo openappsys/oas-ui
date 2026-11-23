@@ -221,6 +221,7 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Price 价格', link: '/components/price' },
       { text: 'SKU 商品规格', link: '/components/sku' },
       { text: 'SubmitBar 结算栏', link: '/components/submit-bar' },
+      { text: 'TimeSelect 配送时段', link: '/components/time-select' },
     ],
   },
   {

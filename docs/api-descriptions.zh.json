@@ -5665,5 +5665,23 @@
     "cssVars": {
       "--oas-rank-badge-size": "名次徽标直径（默认 `--oas-control-height-sm`）"
     }
+  },
+  "oas-time-select": {
+    "attrs": {
+      "days": "日期列天数：今日起 N 天（缺省 3，合法范围 1–14；非法值回落默认并告警一次）",
+      "start-date": "起始日期 `YYYY-MM-DD`（缺省今天；供宿主指定发货日与固定时点）",
+      "slots": "通用时段 JSON 数组 `[{ key, label, disabled?, full? }]`；字符串项按 `key=label` 收敛",
+      "slots-override": "按日期覆盖的时段 JSON 对象 `{ \"YYYY-MM-DD\": [...] }`；命中的日期以覆盖值为准，空数组表示该日不可配送",
+      "mode": "配送模式：`express` 尽快送达（缺省，自动取首个可用时段）/ `schedule` 预约配送；非法值回落 `express` 并告警",
+      "value": "值 JSON 对象 `{ date, slot }`：`date` 为 `YYYY-MM-DD`，`slot` 为时段 key",
+      "disabled": "整体禁用：模式钮、日期与时段都不可操作"
+    },
+    "props": {
+      "days": "日期列天数：get+set 双通道；赋值即生效，不派发事件",
+      "value": "当前值：get+set 双通道（对象或 JSON 字符串）；赋值即生效，不派发事件"
+    },
+    "events": {
+      "oas-change": "用户切换模式 / 日期 / 时段后派发，`detail: { value, mode, date, slot }`"
+    }
   }
 }

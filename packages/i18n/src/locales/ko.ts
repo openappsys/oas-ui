@@ -726,4 +726,15 @@ export const ko: LocaleMessages = {
   'rank.remove': '{label} 선택 해제',
   'rank.moveUp': '{label} 위로 이동',
   'rank.moveDown': '{label} 아래로 이동',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': '배송 방식',
+  'timeSelect.dates': '배송 날짜',
+  'timeSelect.slots': '배송 시간대',
+  'timeSelect.express': '최대한 빨리',
+  'timeSelect.schedule': '예약 배송',
+  'timeSelect.full': '예약 마감',
+  'timeSelect.rest': '휴무',
+  'timeSelect.empty': '선택 가능한 시간대가 없습니다',
+  'timeSelect.today': '오늘',
+  'timeSelect.tomorrow': '내일',
 }

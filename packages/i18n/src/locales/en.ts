@@ -654,4 +654,15 @@ export const en: LocaleMessages = {
   'rank.remove': 'Remove {label} from the ranking',
   'rank.moveUp': 'Move {label} up',
   'rank.moveDown': 'Move {label} down',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'Delivery method',
+  'timeSelect.dates': 'Delivery date',
+  'timeSelect.slots': 'Delivery time slot',
+  'timeSelect.express': 'As soon as possible',
+  'timeSelect.schedule': 'Schedule delivery',
+  'timeSelect.full': 'Fully booked',
+  'timeSelect.rest': 'Closed',
+  'timeSelect.empty': 'No time slots available',
+  'timeSelect.today': 'Today',
+  'timeSelect.tomorrow': 'Tomorrow',
 }

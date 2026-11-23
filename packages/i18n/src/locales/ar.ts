@@ -726,4 +726,15 @@ export const ar: LocaleMessages = {
   'rank.remove': 'إزالة {label} من الترتيب',
   'rank.moveUp': 'نقل {label} لأعلى',
   'rank.moveDown': 'نقل {label} لأسفل',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'طريقة التوصيل',
+  'timeSelect.dates': 'تاريخ التوصيل',
+  'timeSelect.slots': 'فترة التوصيل',
+  'timeSelect.express': 'في أقرب وقت',
+  'timeSelect.schedule': 'توصيل مجدول',
+  'timeSelect.full': 'مكتمل الحجز',
+  'timeSelect.rest': 'مغلق',
+  'timeSelect.empty': 'لا توجد فترات متاحة',
+  'timeSelect.today': 'اليوم',
+  'timeSelect.tomorrow': 'غدًا',
 }

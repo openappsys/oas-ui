@@ -730,4 +730,15 @@ export const fa: LocaleMessages = {
   'rank.remove': 'حذف {label} از مرتب‌سازی',
   'rank.moveUp': 'جابه‌جایی {label} به بالا',
   'rank.moveDown': 'جابه‌جایی {label} به پایین',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'روش تحویل',
+  'timeSelect.dates': 'تاریخ تحویل',
+  'timeSelect.slots': 'بازه تحویل',
+  'timeSelect.express': 'در اسرع وقت',
+  'timeSelect.schedule': 'تحویل زمان‌بندی‌شده',
+  'timeSelect.full': 'تکمیل ظرفیت',
+  'timeSelect.rest': 'تعطیل',
+  'timeSelect.empty': 'بازه‌ای موجود نیست',
+  'timeSelect.today': 'امروز',
+  'timeSelect.tomorrow': 'فردا',
 }

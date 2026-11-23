@@ -731,4 +731,15 @@ export const zhHant: LocaleMessages = {
   'rank.remove': '取消選擇 {label}',
   'rank.moveUp': '上移 {label}',
   'rank.moveDown': '下移 {label}',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': '配送方式',
+  'timeSelect.dates': '配送日期',
+  'timeSelect.slots': '配送時段',
+  'timeSelect.express': '儘快送達',
+  'timeSelect.schedule': '預約配送',
+  'timeSelect.full': '已滿約',
+  'timeSelect.rest': '休息',
+  'timeSelect.empty': '暫無可選時段',
+  'timeSelect.today': '今天',
+  'timeSelect.tomorrow': '明天',
 }

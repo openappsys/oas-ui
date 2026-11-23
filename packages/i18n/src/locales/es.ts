@@ -726,4 +726,15 @@ export const es: LocaleMessages = {
   'rank.remove': 'Quitar {label} de la ordenación',
   'rank.moveUp': 'Subir {label}',
   'rank.moveDown': 'Bajar {label}',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'Forma de entrega',
+  'timeSelect.dates': 'Fecha de entrega',
+  'timeSelect.slots': 'Franja de entrega',
+  'timeSelect.express': 'Lo antes posible',
+  'timeSelect.schedule': 'Entrega programada',
+  'timeSelect.full': 'Completo',
+  'timeSelect.rest': 'Cerrado',
+  'timeSelect.empty': 'No hay franjas disponibles',
+  'timeSelect.today': 'Hoy',
+  'timeSelect.tomorrow': 'Mañana',
 }

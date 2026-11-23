@@ -730,4 +730,15 @@ export const uk: LocaleMessages = {
   'rank.remove': 'Вилучити {label} з упорядкування',
   'rank.moveUp': 'Перемістити {label} вище',
   'rank.moveDown': 'Перемістити {label} нижче',
+  // time-select（配送时段）
+  'timeSelect.modeLabel': 'Спосіб доставки',
+  'timeSelect.dates': 'Дата доставки',
+  'timeSelect.slots': 'Інтервал доставки',
+  'timeSelect.express': 'Якнайшвидше',
+  'timeSelect.schedule': 'Доставка за розкладом',
+  'timeSelect.full': 'Зайнято',
+  'timeSelect.rest': 'Вихідний',
+  'timeSelect.empty': 'Немає доступних інтервалів',
+  'timeSelect.today': 'Сьогодні',
+  'timeSelect.tomorrow': 'Завтра',
 }
