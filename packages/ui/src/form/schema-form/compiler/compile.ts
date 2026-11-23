@@ -18,7 +18,7 @@ import type {
 } from './types.js'
 import { resolveSchemaRefs } from './refs.js'
 import { canonicalDslPath, parseDslPath, WILDCARD } from './path.js'
-import { isObjectArray, resolveWidget, schemaType } from './widgets.js'
+import { isObjectArray, resolveWidget, resolveWidgetOverride, schemaType } from './widgets.js'
 import { FORMATS } from './validate.js'
 import { compileReactions, type UiReactionSource } from './reactions.js'
 
@@ -273,11 +273,14 @@ function buildChild(
     ctx.warnings.push(`uiSchema.widget "array-table" 为 V2 能力（行内编辑表格），本版未实现，按默认映射渲染（${path}）`)
   }
   const type = effectiveType(schema)
+  // uiSchema.widget 覆盖优先于容器判定：object / 对象数组被 widget 接管时按单控件渲染
+  //（matrix 的值是对象，没有这条通道就只会渲染成分组容器、控件永远不出现）
+  const overridden = resolveWidgetOverride(ui?.widget) !== null
 
-  if (type === 'object') {
+  if (type === 'object' && !overridden) {
     return [buildObject(schema, ctx, name, path, key, ui, required, inArrayRow)]
   }
-  if (type === 'array' && isObjectArray(schema)) {
+  if (type === 'array' && isObjectArray(schema) && !overridden) {
     return [buildArray(schema, ctx, name, path, key, ui, required)]
   }
   const field = buildField(schema, ctx, name, path, key, ui, required, inArrayRow)

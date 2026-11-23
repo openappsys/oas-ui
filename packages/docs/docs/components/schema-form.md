@@ -166,6 +166,18 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
   <span id="sf-widget-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## 题型控件（matrix / rank）经 uiSchema 配置
+
+题型控件已进内置控件表：`widget: 'oas-matrix'` / `'oas-rank'` 直接指定，数据经 `options` 通道透传——
+`rows`（数组 → JSON）给矩阵子问题、`columns`（仅 matrix / 自定义 widget 接受）给矩阵列、
+`options` 数组给排序题可排序项。值仍按 form 内核字符串语义收集（JSON 串）。
+
+<DemoBlock title="matrix / rank 纯 JSON 驱动">
+  <oas-schema-form id="sf-question-types" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-button id="sf-question-types-submit" type="primary" style="margin-top: 8px">提交</oas-button>
+  <span id="sf-question-types-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## 与 Questionnaire 组合
 
 本组件实现 duck-typed 契约（`getValues()` / `validate()` + 派发 `oas-values-change`），可直接作为
@@ -579,6 +591,52 @@ onMounted(() => {
       report('删除 tags 键 → 数组值字段整清空')
     })
     document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty 检查'))
+  })
+
+  // ---- 题型控件（matrix / rank）：数据经 uiSchema.options 透传 ----
+  onUpgraded(document.getElementById('sf-question-types'), () => {
+    const types = document.getElementById('sf-question-types')
+    types.schema = {
+      type: 'object',
+      properties: {
+        review: { type: 'object', title: '服务评价（矩阵题）' },
+        priority: { type: 'array', title: '处理优先级（排序题）', items: { type: 'string' } },
+      },
+    }
+    types.uiSchema = {
+      review: {
+        widget: 'oas-matrix',
+        options: {
+          rows: [
+            { key: 'speed', label: '响应速度' },
+            { key: 'quality', label: '内容质量' },
+          ],
+          columns: [
+            { key: 'bad', label: '差' },
+            { key: 'ok', label: '一般' },
+            { key: 'good', label: '好' },
+          ],
+        },
+      },
+      priority: {
+        widget: 'oas-rank',
+        options: {
+          options: [
+            { key: 'urgent', label: '紧急' },
+            { key: 'normal', label: '普通' },
+            { key: 'low', label: '可延后' },
+          ],
+        },
+      },
+    }
+    const typesOut = document.getElementById('sf-question-types-output')
+    types.addEventListener('oas-values-change', (e) => {
+      typesOut.textContent = `当前值：${JSON.stringify(e.detail.values)}`
+    })
+    types.addEventListener('oas-submit', (e) => {
+      typesOut.textContent = `oas-submit：${JSON.stringify(e.detail.values)}`
+    })
+    document.getElementById('sf-question-types-submit')?.addEventListener('click', () => types.submit())
   })
 
   // ---- 自定义 widget ----

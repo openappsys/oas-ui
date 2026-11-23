@@ -12,6 +12,10 @@
 
 - **oas-drag（自由拖拽浮块）**：把默认插槽内容包成可拖拽浮块——指针统一拖拽（鼠标 / 触屏 / 笔，`setPointerCapture`，位移 < 4px 视为点击、不吞子元素交互），`boundary` 边界钳制（缺省 `viewport` 或 CSS 选择器，未命中告警一次并回落视口），`axis="both|x|y"` 方向轴，`inertia` 松手滑行衰减（`prefers-reduced-motion: reduce` 下瞬停），`remember` + `storage-key` 位置记忆（`localStorage` 不可用 / 配额满时静默降级），`disabled` 关闭拖拽；`handle` 插槽提供时只有手柄区起拖（其余区域保持原交互，宿主不再抢 Tab 停靠点），整宿主形态下宿主本身是焦点停靠点（`tabindex="0"` + 方向键 1px / Shift+方向键 10px），`announce` 开启时位置经 `aria-live="polite"` 播报；值面 = `position` property（get+set，赋值钳制生效不派发事件）+ `reset()` 归位清记忆；事件 `oas-drag-start` / `oas-drag` / `oas-drag-end`（`detail: { x, y, source }`）；i18n `drag.*`（16 语言）+ 单测 20 + qa-regression e2e（真实鼠标拖拽 / 4px 点击阈值 / 手柄互斥 / 键盘微调与播报）+ zh/en 文档与 demo
 
+**schema-form 配置通道（尾巴② + 尾巴①测试）**
+
+- **oas-schema-form 题型控件通道打通**：`PROP_ALLOWLIST` 扩 `columns`（仅 `oas-matrix` 与已注册自定义 widget 接受，其余控件告警忽略）与 `options` 数据语义（数组 → JSON 透传给 rank 可排序项 / 自定义 widget；非数组按原语义跳过不告警）；`rows` 修正为双语义——数组按 JSON 透传（matrix 子问题），标量保持 textarea 行数语义（不再混用同一分支）；`oas-matrix` / `oas-rank` 回纳 `KNOWN_WIDGETS`（指定时不再告警回落），README 从「已知差距」移入能力清单；zh/en 文档新增「matrix / rank 纯 JSON 驱动」demo；单测新增数据通道 / 语义分流 / 非数组跳过三组断言。另补**尾巴①**：嵌套数组内 array-of-enum（`users.0.tags`）受控整写显式单测（换值整串写回、删除键清空、`setValues` 按路径整写、非受控初始值），防止受控值退化为下标路径而静默丢失。
+
 **问卷填写端（form 族，2 件）**
 
 - **oas-matrix（矩阵题）**：行 = 子问题、列 = 选项的矩阵选择——`rows` / `columns` 数据契约（JSON 属性 + 对象 property 双通道，字符串项按 `key=label` 收敛）；`mode="radio" | "checkbox"` 行内单选 / 多选，值契约 `{ rowKey: colKey }` / `{ rowKey: [colKey] }` 交互即回写属性；`required` + `required-scope="row" | "table"` 两档必答（行级每行必选 / 全表至少一行），`validate()` 未通过派发 `oas-invalid` 并显示可视错误，补满自动消失；行 / 列级与组级 `disabled`、组级 `readonly`（保留外观与已选，不响应交互）；a11y——每行 `fieldset` + `legend` 承载行标题，列头可见、输入以 `aria-labelledby` 关联行头 + 列头，radio 行 roving tabindex、方向键行内移动并选中（RTL 镜像）、Home/End 首末列，必答提示与错误经 `aria-describedby` 关联；空 rows / columns 显示占位。i18n `matrix.*` ×16；单测 21 + qa-regression e2e（真实点选 / 键盘 / 校验可见反馈）+ zh/en 文档 + API 表。

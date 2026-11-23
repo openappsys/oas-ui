@@ -24,9 +24,9 @@ export const KNOWN_WIDGETS = new Set([
   'oas-slider',
   'oas-rate',
   'oas-pin-input',
-  // oas-matrix / oas-rank 未纳入：form 值收集链已注册（FORM_CONTROLS），但 schema-form 的
-  // uiSchema 配置通道未开（columns/options 不在 PROP_ALLOWLIST）——纳入只会静默渲染空态，
-  // 待配置通道批次打通后再登记（见 schema-form README「已知差距」）。
+  // 数据驱动的题型控件：`rows` / `columns` / `options` 经 uiSchema 数据通道透传为 JSON attribute
+  'oas-matrix',
+  'oas-rank',
 ])
 
 /** 透传给控件的展示态属性白名单（避免把任意键写进 DOM） */
@@ -36,6 +36,7 @@ const PROP_ALLOWLIST = new Set([
   'readonly',
   'clearable',
   'rows',
+  'columns',
   'step',
   'min',
   'max',
@@ -52,16 +53,46 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function toStringProps(options: unknown, warnings: string[], path: string): Record<string, string> {
+/**
+ * uiSchema.options → 控件 attribute。
+ *
+ * 同一键在不同控件上语义不同，按值形态而非控件名区分（避免「键名撞车」导致的静默错误）：
+ * - `rows`：数组 → JSON（matrix 子问题）；标量 → 原字符串（textarea 行数，既有语义）
+ * - `columns`：数组或字符串 → 透传（matrix 列）；仅在目标控件为 matrix / 自定义 widget 时接受
+ * - `options`：数组 → JSON（rank 可排序项、自定义 widget 数据）；非数组按原语义跳过（不告警）
+ */
+function toStringProps(
+  options: unknown,
+  warnings: string[],
+  path: string,
+  requestedWidget: string,
+): Record<string, string> {
   const props: Record<string, string> = {}
   if (!isPlainObject(options)) return props
+  const acceptsColumns = requestedWidget === 'oas-matrix' || getCustomWidget(requestedWidget) !== null
   for (const [key, value] of Object.entries(options)) {
-    if (key === 'options' || key === 'className' || key === 'style') continue
+    if (key === 'className' || key === 'style') continue
+    if (key === 'options') {
+      if (Array.isArray(value)) props.options = JSON.stringify(value)
+      continue
+    }
     if (!PROP_ALLOWLIST.has(key)) {
       warnings.push(`uiSchema.options 未知键 "${key}" 已忽略（${path || '(root)'}）`)
       continue
     }
     if (value === undefined || value === null) continue
+    if (key === 'rows' && Array.isArray(value)) {
+      props.rows = JSON.stringify(value)
+      continue
+    }
+    if (key === 'columns') {
+      if (!acceptsColumns) {
+        warnings.push(`uiSchema.options.columns 仅适用于 oas-matrix 或自定义 widget，已忽略（${path || '(root)'}）`)
+        continue
+      }
+      props.columns = Array.isArray(value) ? JSON.stringify(value) : String(value)
+      continue
+    }
     props[key] = typeof value === 'string' ? value : String(value)
   }
   return props
@@ -99,6 +130,18 @@ export function isObjectArray(schema: JsonSchema): boolean {
 }
 
 /**
+ * `uiSchema.widget` 是否指向可用控件：返回内置控件名或已注册自定义控件的 tag；否则 null。
+ *
+ * `array-table` 不算覆盖（V2 能力，走默认映射）；计划层用它判断「object 字段是否被
+ * widget 覆盖成单控件」——matrix 的值是对象，没有这条通道就只能退化成分组容器。
+ */
+export function resolveWidgetOverride(widget: unknown): string | null {
+  if (typeof widget !== 'string' || widget === '' || widget === 'array-table') return null
+  if (KNOWN_WIDGETS.has(widget)) return widget
+  return getCustomWidget(widget)?.tag ?? null
+}
+
+/**
  * 解析字段控件：返回 widget 规格（tag + 透传属性）；`object` / 对象数组返回 null（由计划层建容器）。
  */
 export function resolveWidget(
@@ -108,22 +151,23 @@ export function resolveWidget(
   warnings: string[],
 ): WidgetSpec | null {
   const type = schemaType(schema)
-  const props = toStringProps(ui.options, warnings, path)
-
   const custom = ui.widget
-  if (typeof custom === 'string' && custom !== '') {
-    if (custom === 'array-table') {
+  const requestedWidget = typeof custom === 'string' && custom !== '' ? custom : ''
+  const props = toStringProps(ui.options, warnings, path, requestedWidget)
+
+  if (requestedWidget !== '') {
+    if (requestedWidget === 'array-table') {
       warnings.push(
         `uiSchema.widget "array-table" 为 V2 能力（行内编辑表格），本版未实现，按默认映射渲染（${path || '(root)'}）`,
       )
-    } else if (!KNOWN_WIDGETS.has(custom)) {
-      const registered = getCustomWidget(custom)
+    } else if (!KNOWN_WIDGETS.has(requestedWidget)) {
+      const registered = getCustomWidget(requestedWidget)
       if (registered) return { tag: registered.tag, props }
       warnings.push(
-        `uiSchema.widget "${custom}" 不在内置控件表内，也未通过 registerSchemaWidget 注册，回落到默认映射（${path || '(root)'}）`,
+        `uiSchema.widget "${requestedWidget}" 不在内置控件表内，也未通过 registerSchemaWidget 注册，回落到默认映射（${path || '(root)'}）`,
       )
     } else {
-      return { tag: custom, props }
+      return { tag: requestedWidget, props }
     }
   }
 

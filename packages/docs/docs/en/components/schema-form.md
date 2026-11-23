@@ -182,6 +182,19 @@ kernel's only value-collection extension point), so `reader` / `writer` must fol
   <span id="sf-widget-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## Question widgets (matrix / rank) via uiSchema
+
+Question widgets are part of the built-in widget table: set `widget: 'oas-matrix'` or `'oas-rank'` and inject
+their data through the `options` channel — `rows` (array → JSON) for matrix sub-questions, `columns` (accepted
+only by matrix and custom widgets) for matrix columns, and an `options` array for the rank items. Values are
+still collected with the form core's string contract (JSON strings).
+
+<DemoBlock title="matrix / rank driven by plain JSON">
+  <oas-schema-form id="sf-question-types" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-button id="sf-question-types-submit" type="primary" style="margin-top: 8px">Submit</oas-button>
+  <span id="sf-question-types-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## Composing with Questionnaire
 
 The component implements the duck-typed contract (`getValues()` / `validate()` and emits
@@ -586,6 +599,52 @@ onMounted(() => {
       report('Removed tags key → array-valued field cleared')
     })
     document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty check'))
+  })
+
+  // ---- question widgets (matrix / rank): data travels through uiSchema.options ----
+  onUpgraded(document.getElementById('sf-question-types'), () => {
+    const types = document.getElementById('sf-question-types')
+    types.schema = {
+      type: 'object',
+      properties: {
+        review: { type: 'object', title: 'Service review (matrix)' },
+        priority: { type: 'array', title: 'Priority (ranking)', items: { type: 'string' } },
+      },
+    }
+    types.uiSchema = {
+      review: {
+        widget: 'oas-matrix',
+        options: {
+          rows: [
+            { key: 'speed', label: 'Response speed' },
+            { key: 'quality', label: 'Content quality' },
+          ],
+          columns: [
+            { key: 'bad', label: 'Poor' },
+            { key: 'ok', label: 'Fair' },
+            { key: 'good', label: 'Good' },
+          ],
+        },
+      },
+      priority: {
+        widget: 'oas-rank',
+        options: {
+          options: [
+            { key: 'urgent', label: 'Urgent' },
+            { key: 'normal', label: 'Normal' },
+            { key: 'low', label: 'Can wait' },
+          ],
+        },
+      },
+    }
+    const typesOut = document.getElementById('sf-question-types-output')
+    types.addEventListener('oas-values-change', (e) => {
+      typesOut.textContent = `Current values: ${JSON.stringify(e.detail.values)}`
+    })
+    types.addEventListener('oas-submit', (e) => {
+      typesOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+    })
+    document.getElementById('sf-question-types-submit')?.addEventListener('click', () => types.submit())
   })
 
   // ---- custom widget ----

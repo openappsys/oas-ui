@@ -56,10 +56,10 @@
   类型保真输出（coerce / convertValue / transform）是 V2 能力。
 - 联动 `visible: false` = 卸载：非数组字段从 DOM 移除（值不提交）；**数组行内字段保留键位**
   （空串而非删键，保证行间键形状一致）。
-- **oas-matrix / oas-rank 未纳入 schema-form 已知控件表**：两组件已注册 form 值收集链
-  （FORM_CONTROLS），但 schema-form 的 uiSchema 配置通道未开（`columns` / `options` 不在
-  PROP_ALLOWLIST）——纳入只会静默渲染空态，待配置通道批次打通后再登记。当前在 schema-form 里
-  指定这两个 widget 会告警回落到默认输入件。
+- **题型控件（oas-matrix / oas-rank）已纳入内置控件表**：两组件走 form 值收集链（FORM_CONTROLS），
+  uiSchema 的数据通道已开——`options.rows`（数组 → JSON）给 matrix 子问题、`options.columns`
+  （数组或 JSON 串，仅 matrix / 自定义 widget 接受）给矩阵列、`options.options`（数组 → JSON）给
+  rank 可排序项；其余 `rows` 标量仍按 textarea 行数语义透传。
 
 ## 数据 schema 支持的 V1 关键字
 
@@ -72,8 +72,9 @@
 
 - `widget`：覆盖默认映射（仅内置控件表内合法，未知 → devWarn 回落默认）。
 - `layout`：`span`（1-24，`layout=grid` 时生效）/ `type: 'group' | 'tabs'` + `tabs: [{ key, title, fields }]`。
-- `options`：`placeholder` / `disabled` / `readonly` / `clearable` / `rows` / `step` / `min` / `max` /
+- `options`：`placeholder` / `disabled` / `readonly` / `clearable` / `rows` / `columns` / `step` / `min` / `max` /
   `precision` / `format` / `size` / `maxlength` / `direction` / `searchable` / `multiple`（其余键 devWarn 忽略）。
+  数据通道：`rows` / `columns` / `options` 传数组时按 JSON 透传（matrix / rank 题型数据，详见「值契约」）。
 - `reactions`：联动注解（见下）。
 - `keepValueOnHidden`：`visible:false` 时保留值（默认卸载清值）。
 - 编译期校验 uiSchema 每个路径必须存在于数据 schema（数组用 `users[].name` 通配）；错字 devWarn。

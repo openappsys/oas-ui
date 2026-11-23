@@ -53,11 +53,56 @@ describe('默认 widget 映射表（V1 冻结）', () => {
     expect(warnings.join()).toContain('不在内置控件表内')
   })
 
-  it('matrix / rank 未纳入已知控件表：指定时告警回落（配置通道未开，见 README 已知差距）', () => {
+  it('matrix / rank 纳入已知控件表：数据通道（rows / columns / options 数组）透传为 JSON attribute', () => {
     const warnings: string[] = []
-    expect(resolve({ type: 'string' }, { widget: 'oas-matrix' }, warnings)?.tag).toBe('oas-input')
-    expect(resolve({ type: 'string' }, { widget: 'oas-rank' }, warnings)?.tag).toBe('oas-input')
-    expect(warnings).toHaveLength(2)
+    const matrix = resolve(
+      { type: 'string' },
+      {
+        widget: 'oas-matrix',
+        options: {
+          rows: [{ key: 'speed', label: '响应速度' }],
+          columns: [{ key: 'good', label: '好' }],
+          disabled: true,
+        },
+      },
+      warnings,
+    )
+    expect(matrix?.tag).toBe('oas-matrix')
+    expect(JSON.parse(matrix!.props.rows!)).toEqual([{ key: 'speed', label: '响应速度' }])
+    expect(JSON.parse(matrix!.props.columns!)).toEqual([{ key: 'good', label: '好' }])
+    expect(matrix!.props.disabled).toBe('true')
+
+    const rank = resolve(
+      { type: 'string' },
+      { widget: 'oas-rank', options: { options: [{ key: 'a', label: 'A' }] } },
+      warnings,
+    )
+    expect(rank?.tag).toBe('oas-rank')
+    expect(JSON.parse(rank!.props.options!)).toEqual([{ key: 'a', label: 'A' }])
+    expect(warnings).toEqual([])
+  })
+
+  it('rows 保留 textarea 行数语义；columns 只对 matrix / 自定义 widget 生效', () => {
+    const textarea = resolve({ type: 'string' }, { widget: 'oas-textarea', options: { rows: 6 } })
+    expect(textarea?.props.rows).toBe('6')
+    expect(resolve({ type: 'string' }, { widget: 'oas-textarea', options: { rows: [{ key: 'x' }] } })?.props.rows).toBe(
+      '[{"key":"x"}]',
+    )
+
+    const warnings: string[] = []
+    const input = resolve({ type: 'string' }, { options: { columns: [{ key: 'a' }] } }, warnings)
+    expect(input?.tag).toBe('oas-input')
+    expect(input?.props.columns).toBeUndefined()
+    expect(warnings.join()).toContain('columns 仅适用于 oas-matrix')
+  })
+
+  it('options 数据通道：数组透传 JSON，非数组按原语义跳过（不写 attribute、不告警）', () => {
+    const warnings: string[] = []
+    const widget = resolve({ type: 'string' }, { options: { options: [{ key: 'a' }] } }, warnings)
+    expect(JSON.parse(widget!.props.options!)).toEqual([{ key: 'a' }])
+    const skipped = resolve({ type: 'string' }, { options: { options: { key: 'a' } } }, warnings)
+    expect(skipped!.props.options).toBeUndefined()
+    expect(warnings).toEqual([])
   })
 
   it('未知 format 告警并按普通文本渲染', () => {

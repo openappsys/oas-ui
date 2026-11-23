@@ -88,6 +88,43 @@ describe('编译层：渲染计划（字段 / 分组 / 数组 / 标签页）', (
     expect((matrix.children[0] as FieldPlan).inArrayRow).toBe(true)
   })
 
+  it('uiSchema.widget 覆盖容器判定：object 字段交给 matrix 渲染为单控件（不再是分组）', () => {
+    const result = compileSchema(
+      {
+        type: 'object',
+        properties: {
+          review: { type: 'object', title: '服务评价' },
+          priority: { type: 'array', items: { type: 'string' }, title: '优先级' },
+        },
+      },
+      {
+        review: {
+          widget: 'oas-matrix',
+          options: {
+            rows: [{ key: 'speed', label: '响应速度' }],
+            columns: [{ key: 'good', label: '好' }],
+          },
+        },
+        priority: {
+          widget: 'oas-rank',
+          options: { options: [{ key: 'a', label: 'A' }] },
+        },
+      },
+    )
+    const byKey = new Map(result.plan.map((node) => [node.key, node]))
+    const review = byKey.get('field:review') as FieldPlan
+    expect(review.kind).toBe('field')
+    expect(review.widget.tag).toBe('oas-matrix')
+    expect(JSON.parse(review.widget.props.rows!)).toEqual([{ key: 'speed', label: '响应速度' }])
+    expect(JSON.parse(review.widget.props.columns!)).toEqual([{ key: 'good', label: '好' }])
+    expect(byKey.get('group:review'), 'object 字段不得再渲染成分组容器').toBeUndefined()
+
+    const priority = byKey.get('field:priority') as FieldPlan
+    expect(priority.widget.tag).toBe('oas-rank')
+    expect(JSON.parse(priority.widget.props.options!)).toEqual([{ key: 'a', label: 'A' }])
+    expect(result.warnings.join()).not.toContain('不在内置控件表内')
+  })
+
   it('layout.type=tabs 产出标签页容器（未列出字段并入首标签并告警）', () => {
     const result = compileSchema(
       {

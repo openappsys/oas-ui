@@ -361,3 +361,35 @@ test('schema-form RTL：标签页顺序镜像 + 联动复显字段继承逻辑�
     document.documentElement.dir = 'ltr'
   })
 })
+
+test('schema-form 题型控件：matrix / rank 经 uiSchema 渲染真实控件（非空态）并可收集值', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-question-types')
+
+  // 控件必须真实渲染：matrix 有行与列，rank 有可选项（配置通道未开时会退化成空态或默认输入件）
+  const rendered = await page.evaluate(() => {
+    const host = document.querySelector('#sf-question-types')!
+    const root = host.shadowRoot!
+    const matrix = root.querySelector<HTMLElement>('[name="review"]')!
+    const rank = root.querySelector<HTMLElement>('[name="priority"]')!
+    return {
+      matrixTag: matrix.tagName.toLowerCase(),
+      matrixRows: matrix.shadowRoot!.querySelectorAll('fieldset.row').length,
+      matrixColumns: matrix.shadowRoot!.querySelectorAll('.head-cell').length,
+      rankTag: rank.tagName.toLowerCase(),
+      rankOptions: rank.shadowRoot!.querySelectorAll('[part="option"]').length,
+    }
+  })
+  expect(rendered.matrixTag).toBe('oas-matrix')
+  expect(rendered.matrixRows, 'matrix 应渲染 2 行子问题').toBe(2)
+  expect(rendered.matrixColumns, 'matrix 应渲染 3 列选项').toBe(3)
+  expect(rendered.rankTag).toBe('oas-rank')
+  expect(rendered.rankOptions, 'rank 应渲染 3 个可排序项').toBeGreaterThanOrEqual(3)
+
+  // 真实点选 matrix 单元格后提交：值以 JSON 串进入 detail.values
+  await page.locator('#sf-question-types oas-matrix[name="review"] input[value="good"]').first().click({ force: true })
+  await page.locator('#sf-question-types-submit').click()
+  await expect(page.locator('#sf-question-types-output')).toContainText('oas-submit')
+  const text = (await page.locator('#sf-question-types-output').textContent()) ?? ''
+  expect(text, 'matrix 选中值应作为 JSON 串参与提交').toContain('good')
+})

@@ -46,6 +46,24 @@ const enumArraySchema = {
   },
 }
 
+/** 嵌套数组内的 array-of-enum（`users.0.tags`）：受控整写的路径归属回归用 */
+const nestedEnumArraySchema = {
+  type: 'object',
+  properties: {
+    users: {
+      type: 'array',
+      title: '成员',
+      items: {
+        type: 'object',
+        properties: {
+          nick: { type: 'string', title: '昵称' },
+          tags: { type: 'array', title: '标签', items: { enum: ['a', 'b', 'c'] } },
+        },
+      },
+    },
+  },
+}
+
 describe('oas-schema-form 受控 values（V1b）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -148,6 +166,34 @@ describe('oas-schema-form 受控 values（V1b）', () => {
     const el = mount(enumArraySchema, { values: {} })
     el.setValues({ tags: ['a', 'c'] })
     expect(widgetOf(el, 'tags')!.getAttribute('value')).toBe('["a","c"]')
+  })
+
+  // 尾巴①（V1b R2 Minor n1）：嵌套数组内的 array-of-enum 受控整写——路径形如 `users.0.tags`，
+  // 不能按 `tags.<index>` 拆开写（否则每次写都退化成下标路径，组件受控值被静默丢弃）
+  it('嵌套数组内的 array-of-enum 受控整写：users.0.tags 换值写回整串', () => {
+    const el = mount(nestedEnumArraySchema, { values: { users: [{ nick: 'x', tags: ['a'] }] } })
+    const tags = widgetOf(el, 'users.0.tags')!
+    expect(tags.tagName.toLowerCase()).toBe('oas-checkbox-group')
+    expect(tags.getAttribute('value')).toBe('["a"]')
+
+    el.values = { users: [{ nick: 'x', tags: ['b', 'c'] }] }
+    const updated = widgetOf(el, 'users.0.tags')!
+    expect(updated.getAttribute('value'), '受控换值必须整串写回，不得拆成 tags.0').toBe('["b","c"]')
+    expect(widgetOf(el, 'users.0.tags.0'), '不得出现按下标拆分的假字段').toBeNull()
+  })
+
+  it('嵌套数组内的 array-of-enum：受控删除键 → 清空；setValues 按路径整写', () => {
+    const el = mount(nestedEnumArraySchema, { values: { users: [{ nick: 'x', tags: ['a', 'b'] }] } })
+    el.values = { users: [{ nick: 'x' }] }
+    expect(widgetOf(el, 'users.0.tags')!.getAttribute('value')).toBe('')
+
+    el.setValues({ users: [{ nick: 'x', tags: ['c'] }] })
+    expect(widgetOf(el, 'users.0.tags')!.getAttribute('value')).toBe('["c"]')
+  })
+
+  it('嵌套数组内的 array-of-enum：非受控初始值同样按整串写入', () => {
+    const el = mount(nestedEnumArraySchema, { initialValues: { users: [{ nick: 'y', tags: ['b'] }] } })
+    expect(widgetOf(el, 'users.0.tags')!.getAttribute('value')).toBe('["b"]')
   })
 })
 
