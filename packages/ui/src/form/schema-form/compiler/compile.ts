@@ -24,6 +24,12 @@ import { compileReactions, type UiReactionSource } from './reactions.js'
 
 const UI_KEYS = new Set(['widget', 'layout', 'options', 'reactions', 'keepValueOnHidden'])
 
+/** V2 明确不做：值变换双钩子 / 远程数据源（uiSchema 注解面） */
+const V2_UI_KEYS = new Set(['convertValue', 'transform', 'dataSource'])
+
+/** V2 明确不做：值变换 / 远程数据源（数据 schema 面，未知关键字默认放行——这几个要显式告知） */
+const V2_SCHEMA_KEYS = ['convertValue', 'transform', 'dataSource'] as const
+
 export interface CompileOptions {
   /** devWarn 出口（编译告警：未知 widget / uiSchema 路径不存在 / reactions 词表越界等） */
   onWarn?: (message: string) => void
@@ -249,8 +255,22 @@ function buildChild(
   const ui = uiAt(ctx, path)
   if (ui) {
     for (const unknownKey of Object.keys(ui)) {
-      if (!UI_KEYS.has(unknownKey)) ctx.warnings.push(`uiSchema 节点含未知键 "${unknownKey}"（${path}）`)
+      if (V2_UI_KEYS.has(unknownKey)) {
+        // V2 明确不做：值变换双钩子 / 远程数据源——命中即告知，不静默失效
+        ctx.warnings.push(`uiSchema."${unknownKey}" 为 V2 能力（值变换 / 远程数据源），本版未实现（${path}）`)
+      } else if (!UI_KEYS.has(unknownKey)) {
+        ctx.warnings.push(`uiSchema 节点含未知键 "${unknownKey}"（${path}）`)
+      }
     }
+  }
+  for (const v2Key of V2_SCHEMA_KEYS) {
+    if (schema[v2Key] !== undefined) {
+      ctx.warnings.push(`schema.${v2Key} 为 V2 能力（值变换 / 远程数据源），本版未实现（${path}）`)
+    }
+  }
+  // 行内编辑表格作用于对象数组：数组节点不走 resolveWidget，这里是它的告警落点
+  if (ui?.widget === 'array-table') {
+    ctx.warnings.push(`uiSchema.widget "array-table" 为 V2 能力（行内编辑表格），本版未实现，按默认映射渲染（${path}）`)
   }
   const type = effectiveType(schema)
 

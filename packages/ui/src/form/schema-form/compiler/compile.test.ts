@@ -171,4 +171,25 @@ describe('编译层：渲染计划（字段 / 分组 / 数组 / 标签页）', (
     )
     expect(result2.plan[0]!.keepValueOnHidden).toBe(true)
   })
+
+  it('V2 能力命中即告警（array-table / 值变换钩子 / 远程数据源），不静默', () => {
+    const result = compileSchema(
+      {
+        type: 'object',
+        properties: {
+          rows: { type: 'array', items: { type: 'object', properties: { a: { type: 'string' } } } },
+          money: { type: 'string', transform: 'upper' },
+        },
+      },
+      {
+        rows: { widget: 'array-table' },
+        money: { convertValue: 'cents', dataSource: '/api/money' },
+      },
+    )
+    const text = result.warnings.join('\n')
+    expect(text).toContain('array-table')
+    expect(text).toContain('convertValue')
+    expect(text).toContain('dataSource')
+    expect(text).toContain('V2 能力')
+  })
 })

@@ -109,7 +109,11 @@ export function resolveWidget(
 
   const custom = ui.widget
   if (typeof custom === 'string' && custom !== '') {
-    if (!KNOWN_WIDGETS.has(custom)) {
+    if (custom === 'array-table') {
+      warnings.push(
+        `uiSchema.widget "array-table" 为 V2 能力（行内编辑表格），本版未实现，按默认映射渲染（${path || '(root)'}）`,
+      )
+    } else if (!KNOWN_WIDGETS.has(custom)) {
       const registered = getCustomWidget(custom)
       if (registered) return { tag: registered.tag, props }
       warnings.push(
