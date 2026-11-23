@@ -740,4 +740,8 @@ export const he: LocaleMessages = {
   'timeSelect.empty': 'אין חלונות פנויים',
   'timeSelect.today': 'היום',
   'timeSelect.tomorrow': 'מחר',
+  // drag（可拖动浮块）
+  'drag.label': 'שכבה הניתנת לגרירה',
+  'drag.hint': 'מקשי החצים מזיזים את המיקום, Shift מזרז את התנועה',
+  'drag.position': 'מיקום {x}, {y}',
 }

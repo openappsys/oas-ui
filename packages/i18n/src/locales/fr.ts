@@ -737,4 +737,8 @@ export const fr: LocaleMessages = {
   'timeSelect.empty': 'Aucun créneau disponible',
   'timeSelect.today': "Aujourd'hui",
   'timeSelect.tomorrow': 'Demain',
+  // drag（可拖动浮块）
+  'drag.label': 'Superposition déplaçable',
+  'drag.hint': 'Les flèches déplacent la position, Shift accélère le déplacement',
+  'drag.position': 'Position {x}, {y}',
 }

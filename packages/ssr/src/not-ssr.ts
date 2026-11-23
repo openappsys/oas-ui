@@ -130,6 +130,11 @@ export const NOT_SSR: readonly NotSsrEntry[] = [
   { tag: 'oas-rank', reason: 'pending', note: 'SSR 白名单化未立项（问卷填写端缺口批新组件，先登记 pending）' },
   { tag: 'oas-share-sheet', reason: 'client-only', note: '受控浮层与焦点管理依赖客户端交互' },
   { tag: 'oas-curtain', reason: 'client-only', note: '首次弹出判定依赖 localStorage' },
+  {
+    tag: 'oas-drag',
+    reason: 'client-only',
+    note: '拖拽依赖指针事件与元素几何测量；位置记忆依赖 localStorage',
+  },
   { tag: 'oas-offline', reason: 'client-only', note: '依赖 navigator.onLine 与 online/offline 事件' },
   { tag: 'oas-page-loading', reason: 'pending', note: 'SSR 白名单化未立项（移动端与工具组件批先登记 pending）' },
   { tag: 'oas-rolling-text', reason: 'pending', note: 'SSR 白名单化未立项（移动端与工具组件批先登记 pending）' },

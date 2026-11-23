@@ -737,4 +737,8 @@ export const ko: LocaleMessages = {
   'timeSelect.empty': '선택 가능한 시간대가 없습니다',
   'timeSelect.today': '오늘',
   'timeSelect.tomorrow': '내일',
+  // drag（可拖动浮块）
+  'drag.label': '드래그 가능한 오버레이',
+  'drag.hint': '방향키로 위치를 미세 조정하고 Shift로 빠르게 이동',
+  'drag.position': '위치 {x}, {y}',
 }

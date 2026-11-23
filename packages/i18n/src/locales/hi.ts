@@ -740,4 +740,8 @@ export const hi: LocaleMessages = {
   'timeSelect.empty': 'कोई समय उपलब्ध नहीं',
   'timeSelect.today': 'आज',
   'timeSelect.tomorrow': 'कल',
+  // drag（可拖动浮块）
+  'drag.label': 'खींचने योग्य ओवरले',
+  'drag.hint': 'तीर कुंजियाँ स्थिति सँभालती हैं, Shift दबाकर तेज़ चलें',
+  'drag.position': 'स्थिति {x}, {y}',
 }

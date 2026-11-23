@@ -742,4 +742,8 @@ export const zhHant: LocaleMessages = {
   'timeSelect.empty': '暫無可選時段',
   'timeSelect.today': '今天',
   'timeSelect.tomorrow': '明天',
+  // drag（可拖动浮块）
+  'drag.label': '可拖動浮塊',
+  'drag.hint': '方向鍵微調位置，按住 Shift 加速',
+  'drag.position': '位置 {x}, {y}',
 }

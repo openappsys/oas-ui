@@ -737,4 +737,8 @@ export const de: LocaleMessages = {
   'timeSelect.empty': 'Keine Zeitfenster verfügbar',
   'timeSelect.today': 'Heute',
   'timeSelect.tomorrow': 'Morgen',
+  // drag（可拖动浮块）
+  'drag.label': 'Verschiebbares Overlay',
+  'drag.hint': 'Pfeiltasten verschieben die Position, mit Shift schneller',
+  'drag.position': 'Position {x}, {y}',
 }

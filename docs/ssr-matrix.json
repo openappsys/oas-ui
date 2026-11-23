@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 242,
+    "components": 243,
     "whitelist": 176,
-    "noSsr": 66
+    "noSsr": 67
   },
   "components": [
     {
@@ -2123,6 +2123,23 @@
       "reason": "client-only",
       "parent": null,
       "note": "首次弹出判定依赖 localStorage",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-drag",
+      "family": "overlay",
+      "dir": "overlay/drag",
+      "className": "OASDrag",
+      "ssr": "no-ssr",
+      "reason": "client-only",
+      "parent": null,
+      "note": "拖拽依赖指针事件与元素几何测量；位置记忆依赖 localStorage",
       "entry": null,
       "hasTemplate": true,
       "hasHydrate": false,

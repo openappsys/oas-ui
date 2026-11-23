@@ -741,4 +741,8 @@ export const fa: LocaleMessages = {
   'timeSelect.empty': 'بازه‌ای موجود نیست',
   'timeSelect.today': 'امروز',
   'timeSelect.tomorrow': 'فردا',
+  // drag（可拖动浮块）
+  'drag.label': 'لایه قابل کشیدن',
+  'drag.hint': 'کلیدهای جهت موقعیت را جابه‌جا می‌کنند، Shift سرعت را بیشتر می‌کند',
+  'drag.position': 'موقعیت {x}, {y}',
 }

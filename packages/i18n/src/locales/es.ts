@@ -737,4 +737,8 @@ export const es: LocaleMessages = {
   'timeSelect.empty': 'No hay franjas disponibles',
   'timeSelect.today': 'Hoy',
   'timeSelect.tomorrow': 'Mañana',
+  // drag（可拖动浮块）
+  'drag.label': 'Superposición arrastrable',
+  'drag.hint': 'Las flechas ajustan la posición, mantén Shift para ir más rápido',
+  'drag.position': 'Posición {x}, {y}',
 }

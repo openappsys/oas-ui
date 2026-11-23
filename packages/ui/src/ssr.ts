@@ -137,6 +137,7 @@ export { OASPageLoading } from './feedback/page-loading/oas-page-loading.js'
 // ---------- overlay ----------
 export { OASShareSheet } from './overlay/share-sheet/oas-share-sheet.js'
 export { OASCurtain } from './overlay/curtain/oas-curtain.js'
+export { OASDrag } from './overlay/drag/oas-drag.js'
 
 // ---------- navigation ----------
 export { OASMenu } from './navigation/menu/oas-menu.js'

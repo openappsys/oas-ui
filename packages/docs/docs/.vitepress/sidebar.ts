@@ -101,6 +101,7 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'BottomSheet 底部抽屉', link: '/components/bottom-sheet' },
       { text: 'Confirm 确认框', link: '/components/confirm' },
       { text: 'Curtain 幕帘', link: '/components/curtain' },
+      { text: 'Drag 自由拖拽', link: '/components/drag' },
       { text: 'Drawer 抽屉', link: '/components/drawer' },
       { text: 'Empty 空状态', link: '/components/empty' },
       { text: 'HoverCard 悬停卡片', link: '/components/hover-card' },

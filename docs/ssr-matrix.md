@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：242
+- 组件：243
 - SSR 白名单：176
-- 有意不 SSR：66
+- 有意不 SSR：67
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -133,6 +133,7 @@
 | `oas-page-loading` | feedback | `feedback/page-loading` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-share-sheet` | overlay | `overlay/share-sheet` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-curtain` | overlay | `overlay/curtain` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-drag` | overlay | `overlay/drag` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-menu` | navigation | `navigation/menu` | ✅ 白名单 | — | — | `@oas-ui/ui/navigation/menu` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-menu-item` | navigation | `navigation/menu` | ⛔ 不 SSR | subcomponent | oas-menu | — | — | — | — | — | —/— |
 | `oas-menu-group` | navigation | `navigation/menu` | ⛔ 不 SSR | subcomponent | oas-menu | — | — | — | — | — | —/— |

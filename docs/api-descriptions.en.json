@@ -5939,5 +5939,33 @@
     "events": {
       "oas-change": "Dispatched when the user switches mode, date or slot, with `detail: { value, mode, date, slot }`"
     }
+  },
+  "oas-drag": {
+    "attrs": {
+      "boundary": "Drag boundary: `viewport` (default) or a CSS selector whose element rect is the boundary (a miss warns once and falls back to the viewport)",
+      "axis": "Drag axis: `both` (default) / `x` horizontal only / `y` vertical only; invalid values fall back to `both` with a warning",
+      "inertia": "Decaying glide after release; instant stop under `prefers-reduced-motion: reduce`",
+      "remember": "Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota)",
+      "storage-key": "Storage key for position memory (default `oas-drag`)",
+      "keyboard": "Keyboard nudging: on by default (`tabindex=\"0\"`, 1px with arrow keys, 10px with Shift); write `false` to disable",
+      "announce": "Announce position changes through `aria-live=\"polite\"` (off by default)",
+      "disabled": "Turn dragging off: pointer and keyboard are ignored and the focus stop is removed",
+      "aria-label": "Accessible name (defaults to the i18n drag.label)"
+    },
+    "props": {
+      "position": "Current offset `{ x, y }` relative to the initial layout position: get+set channel; assignment is clamped immediately and emits no events"
+    },
+    "methods": {
+      "reset": "Return to the initial position (offset zero) and clear the stored position"
+    },
+    "events": {
+      "oas-drag-start": "Dispatched once when a pointer drag passes the 4px threshold and captures the pointer, `detail: { x, y, source }`",
+      "oas-drag": "Dispatched on every position change (pointer drag / keyboard nudge / inertia), `detail: { x, y, source }`",
+      "oas-drag-end": "Dispatched when a pointer drag ends (including the inertia tail), `detail: { x, y, source }`"
+    },
+    "slots": {
+      "": "Default slot: the wrapped floating content (also the drag surface when the whole host drags)",
+      "handle": "Drag handle: once it has content, only the handle starts a drag"
+    }
   }
 }

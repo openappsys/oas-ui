@@ -1,0 +1,156 @@
+---
+description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针统一拖拽（4px 阈值内视为点击），边界钳制（视口或选择器），方向轴限制、可选惯性与位置记忆，键盘方向键微调与 aria-live 位置播报。
+---
+
+# Drag 自由拖拽浮块
+
+把任意子元素包成可拖拽的浮块：指针拖拽（鼠标 / 触屏 / 笔统一）、边界钳制、可选惯性与位置记忆；键盘方向键微调。典型场景是悬浮客服钮、悬浮工具块。
+
+## 基础用法（悬浮客服钮）
+
+默认整个宿主就是拖拽面，`boundary` 指定可拖动范围（这里用演示区容器，实际页面可用 `viewport`）。位移 4px 以内视为点击，按钮照常响应。
+
+<DemoBlock title="boundary=&quot;#dg-stage&quot;">
+  <div
+    id="dg-stage"
+    style="position: relative; height: 240px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover)"
+  >
+    <oas-drag
+      id="dg-button"
+      boundary="#dg-stage"
+      remember
+      storage-key="oas-drag-demo-button"
+      style="position: absolute; inset-block-end: 16px; inset-inline-end: 16px"
+    >
+      <oas-button type="primary">在线客服</oas-button>
+    </oas-drag>
+  </div>
+  <span id="dg-button-out" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">拖动客服钮试试（也可以 Tab 聚焦后用方向键微调）</span>
+</DemoBlock>
+
+## 手柄形态（工具块）
+
+提供 `handle` 插槽时只有手柄区能起拖，其余区域保持原有交互；手柄内容自带焦点，宿主不再抢占 Tab 停靠点。
+
+<DemoBlock title="handle 插槽">
+  <div
+    id="dg-stage-handle"
+    style="position: relative; height: 220px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"
+  >
+    <oas-drag
+      id="dg-panel"
+      boundary="#dg-stage-handle"
+      axis="both"
+      style="position: absolute; inset-block-start: 12px; inset-inline-start: 12px"
+    >
+      <div slot="handle" style="cursor: grab; padding: var(--oas-space-2); background: var(--oas-color-bg-hover); border-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md)">⠿ 拖动</div>
+      <div style="padding: var(--oas-space-3); background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
+        <strong>快捷工具</strong>
+        <p style="margin: var(--oas-space-1) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">只有左侧手柄区能拖，面板内容照常点击。</p>
+      </div>
+    </oas-drag>
+  </div>
+</DemoBlock>
+
+## 方向轴、惯性与位置播报
+
+`axis="x"` 限制为横向拖拽；`inertia` 松手滑行（`prefers-reduced-motion: reduce` 下瞬停）；`announce` 让位置变化经 `aria-live` 播报。
+
+<DemoBlock title="axis=&quot;x&quot; + inertia + announce">
+  <div
+    id="dg-stage-axis"
+    style="position: relative; height: 120px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); overflow: hidden"
+  >
+    <oas-drag
+      id="dg-chip"
+      boundary="#dg-stage-axis"
+      axis="x"
+      inertia
+      announce
+      style="position: absolute; inset-block-start: 36px; inset-inline-start: 12px"
+    >
+      <span style="display: inline-block; padding: var(--oas-space-2) var(--oas-space-4); background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); border-radius: 999px">横向拖动</span>
+    </oas-drag>
+  </div>
+  <span id="dg-chip-out" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 无障碍与交互约定
+
+- 整宿主拖拽形态下宿主是焦点停靠点（`tabindex="0"`，可访问名 i18n `drag.label`，操作提示经 `aria-describedby` 关联）；方向键微调 1px，Shift+方向键 10px，受 `axis` 与边界约束
+- `announce` 开启时位置变化经 `aria-live="polite"` 播报；`disabled` 关闭拖拽并移除焦点停靠点
+- 指针位移 4px 以内视为点击（不捕获指针、不阻止默认行为），因此子元素内的按钮、输入框照常工作
+- 手柄形态下只有手柄区起拖；子元素内的输入框保留自己的方向键语义
+
+<script setup>
+import { onMounted } from 'vue'
+import { onUpgraded } from '../.vitepress/theme/when-defined'
+
+onMounted(() => {
+  const text = (id, value) => {
+    const el = document.getElementById(id)
+    if (el) el.textContent = value
+  }
+  const report = (id, label) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    onUpgraded(el, () => {
+      text(`${id}-out`, `${label}：x ${el.position.x}, y ${el.position.y}`)
+      el.addEventListener('oas-drag-end', (event) => {
+        text(`${id}-out`, `${label}结束：x ${event.detail.x}, y ${event.detail.y}（${event.detail.source}）`)
+      })
+      el.addEventListener('oas-drag', (event) => {
+        if (event.detail.source !== 'keyboard') return
+        text(`${id}-out`, `${label}：x ${event.detail.x}, y ${event.detail.y}（键盘）`)
+      })
+    })
+  }
+  report('dg-button', '客服钮位置')
+  report('dg-chip', '横向拖动位置')
+})
+</script>
+
+## API
+
+### oas-drag
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `announce` | 位置变化经 `aria-live="polite"` 播报（缺省关闭） | `boolean` | — |
+| `aria-label` | 可访问名称（缺省 i18n drag.label） | `string` | — |
+| `axis` | 拖拽方向轴：`both`（缺省）/ `x` 仅横向 / `y` 仅纵向；非法值回落 `both` 并告警 | `string` | `both` |
+| `boundary` | 拖拽边界：`viewport`（缺省，视口）或 CSS 选择器（该元素的矩形；未命中告警一次并回落视口） | `string` | `viewport` |
+| `disabled` | 关闭拖拽：指针与键盘都不生效，并移除焦点停靠点 | `boolean` | — |
+| `inertia` | 松手后惯性滑行（速度衰减至停止）；`prefers-reduced-motion: reduce` 下瞬停 | `boolean` | — |
+| `keyboard` | 键盘微调：缺省开启（`tabindex="0"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭 | `string` | — |
+| `remember` | 把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级 | `boolean` | — |
+| `storage-key` | 位置记忆的存储键（缺省 `oas-drag`） | `string` | `oas-drag` |
+
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `position` | 当前位移 `{ x, y }`（相对初始布局位置）：get+set 双通道；赋值立即钳制生效，不派发事件 | `DragPosition \| string` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `reset` | `reset(): void` | 回到初始位置（位移归零）并清除位置记忆 |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-drag` | 位置变化（指针拖拽 / 键盘微调 / 惯性滑行）时派发，`detail: { x, y, source }` |
+| `oas-drag-end` | 指针拖拽结束（含惯性滑行收尾）时派发，`detail: { x, y, source }` |
+| `oas-drag-start` | 指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }` |
+
+#### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 默认插槽：被包装的浮块内容（整宿主可拖时的拖拽面） |
+| `handle` | 拖拽手柄区：提供内容后只有手柄区能起拖 |

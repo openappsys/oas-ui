@@ -11,6 +11,7 @@ import '../framework/app/index.js'
 import '../framework/theme-editor/index.js'
 import '../overlay/share-sheet/index.js'
 import '../overlay/curtain/index.js'
+import '../overlay/drag/index.js'
 
 // 唯一透传的 registry API（与全量入口一致）：OASUI.setLocale 切语言；其余 registry API 不进导出面
 export { setLocale } from '@oas-ui/i18n/registry'

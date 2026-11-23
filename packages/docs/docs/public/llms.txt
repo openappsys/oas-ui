@@ -112,6 +112,7 @@
 - [BottomSheet 底部抽屉](https://oas-ui.dev/components/bottom-sheet): 移动端底部抽屉承载件：底部升起面板 + 拖拽把手 + 遮罩，下滑把手/点遮罩/Esc 三种关闭手势，safe-area 刘海屏手势区与焦点陷阱内置；passive 被动透传模式可作浮层组件 PC 形态的结构占位。
 - [Confirm 确认框](https://oas-ui.dev/components/confirm): 命令式确认对话框，基于 Promise，底层复用 oas-modal。
 - [Curtain 幕帘](https://oas-ui.dev/components/curtain): 进入页面后一次性展示的全屏浮层：首次进入自动弹出，用户关闭后写入本地记忆，之后不再打扰。
+- [Drag 自由拖拽浮块](https://oas-ui.dev/components/drag): 把任意子元素包成可拖拽的浮块：指针拖拽（鼠标 / 触屏 / 笔统一）、边界钳制、可选惯性与位置记忆；键盘方向键微调。
 - [Drawer 抽屉](https://oas-ui.dev/components/drawer): 从屏幕边缘滑出的浮层面板，常用于筛选条件、详情信息、表单编辑等场景。
 - [Empty 空状态](https://oas-ui.dev/components/empty): 空数据时的占位展示，支持标题、富内容描述、图标型媒体、两套内置插画、尺寸档位、横向布局与容器变体。
 - [HoverCard 悬停卡片](https://oas-ui.dev/components/hover-card): hover / 聚焦触发，浮层可悬停不闪关的富内容预览卡片。

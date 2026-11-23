@@ -15,4 +15,7 @@ export const overlayMessages: Partial<LocaleMessages> = {
   'shareSheet.empty': '暂无可分享渠道',
   'curtain.close': '关闭',
   'curtain.label': '提示',
+  'drag.label': '可拖动浮块',
+  'drag.hint': '方向键微调位置，按住 Shift 加速',
+  'drag.position': '位置 {x}, {y}',
 }

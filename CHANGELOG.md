@@ -8,6 +8,10 @@
 
 - **oas-time-select（配送时段选择）**：日期列（今日起 `days` 天，缺省 3）+ 时段网格（`slots` 通用时段，`slots-override` 按日期覆盖），「尽快送达（`mode="express"`，自动取首个可用时段）/ 预约配送（`mode="schedule"`）」两模式；不可选时段区分**休息**（`disabled`，置灰 + 「休息」标注）与**满约**（`full`，置灰 + 删除线 + 「已满约」标注），均带 `aria-disabled` 且点击不改值；值契约 `{ date, slot }` 的 property + attribute JSON 双通道，用户切换模式 / 日期 / 时段派发 `oas-change`；a11y：日期列 `role="tablist"` + `role="tab"`、时段网格 `role="radiogroup"` + `role="radio"`，两处各自 roving tabindex，方向键只在可用项之间移动（跳过休息 / 满约 / 不可配送日），Home / End 到首末可用项，RTL 镜像，网格可访问名称 = 分组标题 + 当前日期；日期文案 `Intl.DateTimeFormat` 感知 locale，今天 / 明天用相对文案；空时段集合渲染空态占位；i18n `timeSelect.*`（16 语言）+ 单测 19 + qa-regression e2e（真实点击选中态 / 休息满约视觉区分 / 键盘跳过不可选项）+ zh/en 文档与 demo。
 
+**电商可捞件：oas-drag（overlay 族）**
+
+- **oas-drag（自由拖拽浮块）**：把默认插槽内容包成可拖拽浮块——指针统一拖拽（鼠标 / 触屏 / 笔，`setPointerCapture`，位移 < 4px 视为点击、不吞子元素交互），`boundary` 边界钳制（缺省 `viewport` 或 CSS 选择器，未命中告警一次并回落视口），`axis="both|x|y"` 方向轴，`inertia` 松手滑行衰减（`prefers-reduced-motion: reduce` 下瞬停），`remember` + `storage-key` 位置记忆（`localStorage` 不可用 / 配额满时静默降级），`disabled` 关闭拖拽；`handle` 插槽提供时只有手柄区起拖（其余区域保持原交互，宿主不再抢 Tab 停靠点），整宿主形态下宿主本身是焦点停靠点（`tabindex="0"` + 方向键 1px / Shift+方向键 10px），`announce` 开启时位置经 `aria-live="polite"` 播报；值面 = `position` property（get+set，赋值钳制生效不派发事件）+ `reset()` 归位清记忆；事件 `oas-drag-start` / `oas-drag` / `oas-drag-end`（`detail: { x, y, source }`）；i18n `drag.*`（16 语言）+ 单测 20 + qa-regression e2e（真实鼠标拖拽 / 4px 点击阈值 / 手柄互斥 / 键盘微调与播报）+ zh/en 文档与 demo
+
 **问卷填写端（form 族，2 件）**
 
 - **oas-matrix（矩阵题）**：行 = 子问题、列 = 选项的矩阵选择——`rows` / `columns` 数据契约（JSON 属性 + 对象 property 双通道，字符串项按 `key=label` 收敛）；`mode="radio" | "checkbox"` 行内单选 / 多选，值契约 `{ rowKey: colKey }` / `{ rowKey: [colKey] }` 交互即回写属性；`required` + `required-scope="row" | "table"` 两档必答（行级每行必选 / 全表至少一行），`validate()` 未通过派发 `oas-invalid` 并显示可视错误，补满自动消失；行 / 列级与组级 `disabled`、组级 `readonly`（保留外观与已选，不响应交互）；a11y——每行 `fieldset` + `legend` 承载行标题，列头可见、输入以 `aria-labelledby` 关联行头 + 列头，radio 行 roving tabindex、方向键行内移动并选中（RTL 镜像）、Home/End 首末列，必答提示与错误经 `aria-describedby` 关联；空 rows / columns 显示占位。i18n `matrix.*` ×16；单测 21 + qa-regression e2e（真实点选 / 键盘 / 校验可见反馈）+ zh/en 文档 + API 表。

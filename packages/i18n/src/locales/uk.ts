@@ -741,4 +741,8 @@ export const uk: LocaleMessages = {
   'timeSelect.empty': 'Немає доступних інтервалів',
   'timeSelect.today': 'Сьогодні',
   'timeSelect.tomorrow': 'Завтра',
+  // drag（可拖动浮块）
+  'drag.label': 'Перетягуваний шар',
+  'drag.hint': 'Стрілки зсувають положення, Shift прискорює переміщення',
+  'drag.position': 'Положення {x}, {y}',
 }

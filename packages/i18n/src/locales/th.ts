@@ -645,4 +645,8 @@ export const th: LocaleMessages = {
   'timeSelect.empty': 'ไม่มีช่วงเวลาว่าง',
   'timeSelect.today': 'วันนี้',
   'timeSelect.tomorrow': 'พรุ่งนี้',
+  // drag（可拖动浮块）
+  'drag.label': 'เลเยอร์ที่ลากได้',
+  'drag.hint': 'ใช้ปุ่มลูกศรปรับตำแหน่ง กด Shift เพื่อเลื่อนเร็วขึ้น',
+  'drag.position': 'ตำแหน่ง {x}, {y}',
 }

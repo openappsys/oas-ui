@@ -1,0 +1,94 @@
+{
+  "className": "OASDrag",
+  "sourceFile": "packages/ui/src/overlay/drag/oas-drag.ts",
+  "attrs": [
+    {
+      "name": "boundary",
+      "type": "string",
+      "default": "viewport",
+      "observed": true
+    },
+    {
+      "name": "axis",
+      "type": "string",
+      "default": "both",
+      "observed": true
+    },
+    {
+      "name": "inertia",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "remember",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "storage-key",
+      "type": "string",
+      "default": "oas-drag",
+      "observed": true
+    },
+    {
+      "name": "keyboard",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "announce",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "type": "string",
+      "default": "",
+      "observed": false
+    }
+  ],
+  "props": [
+    {
+      "name": "position",
+      "type": "DragPosition | string",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "回到初始位置（位移归零）并清除位置记忆"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-drag",
+      "detail": "{ x: this.offsetX, y: this.offsetY, source } | { x: this.offsetX, y: this.offsetY, source: 'pointer' }"
+    },
+    {
+      "name": "oas-drag-start",
+      "detail": "{ x: this.offsetX, y: this.offsetY, source: 'pointer' }"
+    },
+    {
+      "name": "oas-drag-end",
+      "detail": "{ x: this.offsetX, y: this.offsetY, source: 'pointer' } | { x: 0, y: 0, source: 'keyboard' }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "handle"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

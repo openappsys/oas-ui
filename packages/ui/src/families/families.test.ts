@@ -48,8 +48,8 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
     //       address / invoice / ecard / category）+ form 族四件（number-keyboard / code-button /
     //       image-picker / image-cropper）+ 移动端与工具组件批 8 件（layout 2 / feedback 2 / data 2 / overlay 2）
     //       + schema-form（form 族）+ 问卷填写端两件（matrix / rank，form 族）
-    // 188 = 187 + time-select（commerce 族，电商可捞件批）
-    expect(all.length, '全量注册表组件数').toBe(188)
+    // 189 = 187 + time-select（commerce 族）+ drag（overlay 族），电商可捞件批
+    expect(all.length, '全量注册表组件数').toBe(189)
     const tops = new Set(all.map((p) => p.split('/')[0]))
     expect(tops).toEqual(new Set(Object.values(FAMILY_DIR)))
     // 每个顶层目录的全部组件都在 index.ts 全量清单里
@@ -67,7 +67,7 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
         conversation: 8,
         commerce: 10,
         framework: 3,
-        overlay: 2,
+        overlay: 3,
       }
       expect(dirComps.length, `${dir} 族注册组件数`).toBe(EXPECTED_PER_DIR[dir])
       // 无空目录；framework 目录即基座三件，其余目录不含基座

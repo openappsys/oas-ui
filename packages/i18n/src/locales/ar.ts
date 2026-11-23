@@ -737,4 +737,8 @@ export const ar: LocaleMessages = {
   'timeSelect.empty': 'لا توجد فترات متاحة',
   'timeSelect.today': 'اليوم',
   'timeSelect.tomorrow': 'غدًا',
+  // drag（可拖动浮块）
+  'drag.label': 'طبقة قابلة للسحب',
+  'drag.hint': 'تعدّل الأسهم الموضع، واضغط Shift للتحرك أسرع',
+  'drag.position': 'الموضع {x}, {y}',
 }

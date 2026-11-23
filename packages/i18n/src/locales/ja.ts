@@ -737,4 +737,8 @@ export const ja: LocaleMessages = {
   'timeSelect.empty': '選択できる時間帯がありません',
   'timeSelect.today': '今日',
   'timeSelect.tomorrow': '明日',
+  // drag（可拖动浮块）
+  'drag.label': 'ドラッグ可能なオーバーレイ',
+  'drag.hint': '方向キーで位置を微調整、Shift で加速',
+  'drag.position': '位置 {x}, {y}',
 }

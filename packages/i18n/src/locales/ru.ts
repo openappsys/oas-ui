@@ -738,4 +738,8 @@ export const ru: LocaleMessages = {
   'timeSelect.empty': 'Нет доступных интервалов',
   'timeSelect.today': 'Сегодня',
   'timeSelect.tomorrow': 'Завтра',
+  // drag（可拖动浮块）
+  'drag.label': 'Перетаскиваемый слой',
+  'drag.hint': 'Стрелки сдвигают положение, Shift ускоряет перемещение',
+  'drag.position': 'Положение {x}, {y}',
 }

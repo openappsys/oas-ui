@@ -737,4 +737,8 @@ export const ptBR: LocaleMessages = {
   'timeSelect.empty': 'Nenhum horário disponível',
   'timeSelect.today': 'Hoje',
   'timeSelect.tomorrow': 'Amanhã',
+  // drag（可拖动浮块）
+  'drag.label': 'Sobreposição arrastável',
+  'drag.hint': 'As setas ajustam a posição, segure Shift para mover mais rápido',
+  'drag.position': 'Posição {x}, {y}',
 }

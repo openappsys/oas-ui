@@ -1,10 +1,10 @@
 ---
-description: OAS-UI 提供 175 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+description: OAS-UI 提供 176 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 ---
 
 # 组件总览
 
-OAS-UI 提供 175 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 176 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -88,6 +88,7 @@ OAS-UI 提供 175 个框架无关的 Web Components 组件，按用途划分为 
 - [BottomSheet 底部抽屉](/components/bottom-sheet) —— feedback 移动端底部抽屉承载件：下滑把手/点遮罩/Esc 关闭、safe-area 与焦点陷阱内置，`passive` 模式作浮层 PC 形态结构占位。
 - [Confirm 确认框](/components/confirm) —— 命令式确认对话框，基于 Promise，底层复用 `oas-modal`。
 - [Curtain 幕帘](/components/curtain) —— 一次性全屏浮层，首次进入自动弹出、关闭后本地记忆不再打扰，支持 `reset()` 清除记忆。
+- [Drag 自由拖拽](/components/drag) —— 任意子元素包装成可拖拽浮块：指针统一拖拽（4px 阈值内视为点击）、边界钳制（视口或选择器）、方向轴限制、可选惯性与位置记忆、键盘方向键微调与 aria-live 位置播报。
 - [Drawer 抽屉](/components/drawer) —— 从侧边滑出的面板，常用于筛选条件、详情信息等场景。
 - [Empty 空状态](/components/empty) —— 空数据时的占位展示，支持自定义描述、自定义插画与尺寸、隐藏插画与操作区。
 - [HoverCard 悬停卡片](/components/hover-card) —— hover / 聚焦触发，可配置延迟的预览卡片。

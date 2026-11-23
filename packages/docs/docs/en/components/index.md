@@ -1,10 +1,10 @@
 ---
-description: OAS-UI provides 175 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
+description: OAS-UI provides 176 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 ---
 
 # Component Overview
 
-OAS-UI provides 175 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 176 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -88,6 +88,7 @@ OAS-UI provides 175 framework-agnostic Web Components, organized into 10 groups 
 - [BottomSheet](/en/components/bottom-sheet) —— feedback Mobile bottom sheet container: close via drag handle / backdrop click / Esc, with safe-area and focus trap built in; `passive` mode serves as a structural placeholder for overlay PC forms.
 - [Confirm](/en/components/confirm) —— Imperative confirmation dialog based on Promises, reusing `oas-modal` under the hood.
 - [Curtain](/en/components/curtain) — a one-time full-screen overlay that opens on first visit and remembers dismissal; `reset()` clears the memory.
+- [Drag](/en/components/drag) — Wrap any children into a draggable block: unified pointer dragging (moves under 4px stay clicks), boundary clamping (viewport or selector), axis restriction, optional inertia and position memory, arrow-key nudging and aria-live position announcements.
 - [Drawer](/en/components/drawer) —— A panel that slides in from the side, often used for filters, details, and similar scenarios.
 - [Empty](/en/components/empty) —— A placeholder for empty data, supporting custom descriptions, custom illustrations with sizing, and hiding the illustration or action area.
 - [HoverCard](/en/components/hover-card) —— A preview card triggered on hover/focus with configurable delay.

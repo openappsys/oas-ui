@@ -665,4 +665,8 @@ export const en: LocaleMessages = {
   'timeSelect.empty': 'No time slots available',
   'timeSelect.today': 'Today',
   'timeSelect.tomorrow': 'Tomorrow',
+  // drag（可拖动浮块）
+  'drag.label': 'Draggable overlay',
+  'drag.hint': 'Arrow keys nudge the position, hold Shift to move faster',
+  'drag.position': 'Position {x}, {y}',
 }

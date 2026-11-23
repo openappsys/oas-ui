@@ -5683,5 +5683,33 @@
     "events": {
       "oas-change": "用户切换模式 / 日期 / 时段后派发，`detail: { value, mode, date, slot }`"
     }
+  },
+  "oas-drag": {
+    "attrs": {
+      "boundary": "拖拽边界：`viewport`（缺省，视口）或 CSS 选择器（该元素的矩形；未命中告警一次并回落视口）",
+      "axis": "拖拽方向轴：`both`（缺省）/ `x` 仅横向 / `y` 仅纵向；非法值回落 `both` 并告警",
+      "inertia": "松手后惯性滑行（速度衰减至停止）；`prefers-reduced-motion: reduce` 下瞬停",
+      "remember": "把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级",
+      "storage-key": "位置记忆的存储键（缺省 `oas-drag`）",
+      "keyboard": "键盘微调：缺省开启（`tabindex=\"0\"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭",
+      "announce": "位置变化经 `aria-live=\"polite\"` 播报（缺省关闭）",
+      "disabled": "关闭拖拽：指针与键盘都不生效，并移除焦点停靠点",
+      "aria-label": "可访问名称（缺省 i18n drag.label）"
+    },
+    "props": {
+      "position": "当前位移 `{ x, y }`（相对初始布局位置）：get+set 双通道；赋值立即钳制生效，不派发事件"
+    },
+    "methods": {
+      "reset": "回到初始位置（位移归零）并清除位置记忆"
+    },
+    "events": {
+      "oas-drag-start": "指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }`",
+      "oas-drag": "位置变化（指针拖拽 / 键盘微调 / 惯性滑行）时派发，`detail: { x, y, source }`",
+      "oas-drag-end": "指针拖拽结束（含惯性滑行收尾）时派发，`detail: { x, y, source }`"
+    },
+    "slots": {
+      "": "默认插槽：被包装的浮块内容（整宿主可拖时的拖拽面）",
+      "handle": "拖拽手柄区：提供内容后只有手柄区能起拖"
+    }
   }
 }
