@@ -343,10 +343,10 @@ const CONTRACT: ContractEntry[] = [
   {
     page: 'schema-form',
     tag: 'oas-schema-form',
-    // schema / uiSchema / initialValues 是 get+set 双通道（对象 property + JSON attribute）：
+    // schema / uiSchema / initialValues / values 是 get+set 双通道（对象 property + JSON attribute）：
     // demo 在 Vue 里以 property 赋值供数，attribute 缺失属设计内行为，按 property 通道逐实例断言。
     propContract: {
-      attrs: ['schema', 'uiSchema', 'initialValues'],
+      attrs: ['schema', 'uiSchema', 'initialValues', 'values'],
       // 渲染证据按「结构种类」取：普通对象字段 → oas-form-item；对象数组（0 行也渲染）→ [part="array"]。
       // 骨架只有 oas-form/.body/[part=empty]，不含这两者，故仍是真实渲染证据。
       renderedSel: 'oas-form-item, [part="array"]',
