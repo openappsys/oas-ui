@@ -2,44 +2,44 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
-## 未发布（文档站 SEO：语言机制去跳转化）
+## v2.6.9（文档站 SEO：语言机制去跳转化）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **语言机制去跳转化** | 移除浏览器语言自动跳转（URL 即真源）；显式偏好深链跳转保留；语言提示条 + 导航分段切换器（中/EN）承接引导 | 🚧 已完成，未发布 |
-| **SEO 产物** | sitemap 每 URL 注入 git `<lastmod>`（浅克隆宁缺勿假）+ 补齐 x-default；340 页 frontmatter `description` 全量 | 🚧 已完成，未发布 |
+| **语言机制去跳转化** | 移除浏览器语言自动跳转（URL 即真源）；显式偏好深链跳转保留；语言提示条 + 导航分段切换器（中/EN）承接引导 | ✅ 已完成（v2.6.9） |
+| **SEO 产物** | sitemap 每 URL 注入 git `<lastmod>`（浅克隆宁缺勿假）+ 补齐 x-default；340 页 frontmatter `description` 全量 | ✅ 已完成（v2.6.9） |
 
-## 未发布（电商组件族 commerce）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **commerce 新族 9 件** | oas-sku / oas-coupon / oas-submit-bar / oas-goods-action / oas-address（含 contact 模式）/ oas-invoice / oas-ecard / oas-category / oas-price，覆盖交易链路业务件 | 🚧 已完成，未发布 |
-
-## 未发布（移动端与工具组件批）
+## v2.6.9（电商组件族 commerce）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **form 族增补 4 件** | oas-number-keyboard（含车牌键盘变体）/ oas-code-button / oas-image-picker / oas-image-cropper | 🚧 已完成，未发布 |
-| **overlay / data / layout / feedback 增补 8 件** | oas-share-sheet / oas-curtain；oas-rolling-text / oas-barrage；oas-safe-area / oas-status-bar；oas-offline / oas-page-loading | 🚧 已完成，未发布 |
+| **commerce 新族 10 件** | oas-sku / oas-coupon / oas-submit-bar / oas-goods-action / oas-address（含 contact 模式）/ oas-invoice / oas-ecard / oas-category / oas-price / oas-time-select，覆盖交易链路业务件 | ✅ 已完成（v2.6.9） |
 
-## 未发布（schema-form）
-
-| 范围 | 内容 | 状态 |
-| --- | --- | --- |
-| **schema-form** | JSON 声明式表单渲染层（DSL 全景调研 → 两轮设计评审 → 实现）；与 questionnaire 分工 = 字段渲染 vs 流程编排 | 🚧 V1a 已完成，未发布（V1b 表达式轨/受控/自定义 widget 待排；V2 array-table） |
-
-## 未发布（问卷填写端缺口）
+## v2.6.9（移动端与工具组件批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **矩阵题 / 排序题** | oas-matrix（行×列矩阵选择，radio/checkbox 双模式）/ oas-rank（名次排序选择）——问卷填写端标配题型，通用表单件 | 📋 待开发（PRD 见「未发布：问卷填写端缺口」） |
+| **form 族增补 4 件** | oas-number-keyboard（含车牌键盘变体）/ oas-code-button / oas-image-picker / oas-image-cropper | ✅ 已完成（v2.6.9） |
+| **overlay / data / layout / feedback 增补 8 件** | oas-share-sheet / oas-curtain；oas-rolling-text / oas-barrage；oas-safe-area / oas-status-bar；oas-offline / oas-page-loading | ✅ 已完成（v2.6.9） |
 
-## 未发布（可捞件与 schema-form 尾巴批）
+## v2.6.9（schema-form）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **oas-time-select / oas-drag** | 配送时段选择（commerce 族）/ 自由拖拽浮块（overlay 族） | 📋 待开发 |
-| **schema-form 配置通道 + 补测** | matrix/rank 经 uiSchema 数据配置（回纳已知控件表）+ 嵌套数组受控整写补测试 | 📋 待开发 |
+| **schema-form** | JSON 声明式表单渲染层（DSL 全景调研 → 两轮设计评审 → V1a/V1b 实现两轮评审收口）；与 questionnaire 分工 = 字段渲染 vs 流程编排 | ✅ 已完成（v2.6.9，V1a+V1b 全量；V2 array-table/值变换待后续） |
+
+## v2.6.9（问卷填写端缺口）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **矩阵题 / 排序题** | oas-matrix（行×列矩阵选择，radio/checkbox 双模式）/ oas-rank（名次排序选择）——问卷填写端标配题型，通用表单件 | ✅ 已完成（v2.6.9） |
+
+## v2.6.9（可捞件与 schema-form 尾巴批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **oas-time-select / oas-drag** | 配送时段选择（commerce 族）/ 自由拖拽浮块（overlay 族） | ✅ 已完成（v2.6.9） |
+| **schema-form 配置通道 + 补测** | matrix/rank 经 uiSchema 数据配置（回纳已知控件表）+ 嵌套数组受控整写补测试 | ✅ 已完成（v2.6.9） |
 
 ## v2.6.8（table 公共能力补齐批）
 
