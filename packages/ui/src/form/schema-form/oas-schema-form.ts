@@ -161,6 +161,7 @@ export class OASSchemaForm extends OASElement {
       'schema',
       'ui-schema',
       'initial-values',
+      'values',
       'layout',
       'label-align',
       'label-width',
@@ -185,6 +186,17 @@ export class OASSchemaForm extends OASElement {
   private _schemaVersion = 0
   private _uiVersion = 0
   private _initialVersion = 0
+  /** 受控值（property 优先；attribute 为 JSON 字符串） */
+  private _valuesProp: Record<string, unknown> | null = null
+  private _valuesPropAttr: string | null = null
+  private _valuesVersion = 0
+  /** 已应用的受控值（diff 写基线）与来源标记（宿主写期间不回派事件、不叠联动） */
+  private appliedValues: Record<string, unknown> | null = null
+  private appliedValuesKey: string | null = null
+  private applyingHostValues = false
+  /** 脏态基线：挂载基线的扁平字符串快照（内核之外的明确一小块） */
+  private pristineSnapshot = new Map<string, string>()
+  private _dirty = false
 
   /** 编译缓存（schema/uiSchema 身份变化才重编译） */
   private compiled: CompileResult | null = null
@@ -255,6 +267,28 @@ export class OASSchemaForm extends OASElement {
     this._initialProp = value
     this._initialPropAttr = this.getAttribute('initial-values')
     this._initialVersion += 1
+    if (this.hasRendered) this.update()
+  }
+
+  /**
+   * 受控值（V1b）：property（对象）+ attribute（JSON 字符串）双通道。
+   *
+   * 受控模式下本属性是字段值来源：挂载时作为基线，之后每次变化按**叶子路径 diff 写**
+   * （只写变化路径，不重建 DOM、不打断焦点）；宿主写不派发 `oas-values-change`（防回环）。
+   * 与 `initialValues` 同时提供时 `values` 优先（受控覆盖非受控基线）。
+   */
+  get values(): Record<string, unknown> {
+    if (this._valuesProp !== null && this.getAttribute('values') === this._valuesPropAttr) return this._valuesProp
+    return this.parseObjectAttr(this.getAttribute('values'))
+  }
+  set values(value: Record<string, unknown> | string) {
+    if (typeof value === 'string') {
+      this.setAttribute('values', value)
+      return
+    }
+    this._valuesProp = value
+    this._valuesPropAttr = this.getAttribute('values')
+    this._valuesVersion += 1
     if (this.hasRendered) this.update()
   }
 
@@ -338,10 +372,16 @@ export class OASSchemaForm extends OASElement {
     const key = this.structureKey()
     if (key !== this.renderedKey) {
       this.renderedKey = key
+      this.appliedValuesKey = this.valuesKey()
       this.rebuild()
     } else {
       this.indexArrayNodes()
       this.syncArrayStates()
+      // 受控 values 变化：按叶子 diff 写（不重建 DOM、不打断焦点）
+      if (this.valuesKey() !== this.appliedValuesKey) {
+        this.appliedValuesKey = this.valuesKey()
+        this.applyHostValues()
+      }
     }
     this.syncEmptyState()
   }
@@ -360,6 +400,21 @@ export class OASSchemaForm extends OASElement {
   /** 初始值通道身份（attribute 原文 + property 写入次数） */
   private initialKey(): string {
     return `${this.getAttribute('initial-values') ?? ''}\u0000${this._initialVersion}`
+  }
+
+  /** 受控值通道身份（attribute 原文 + property 写入次数） */
+  private valuesKey(): string {
+    return `${this.getAttribute('values') ?? ''}\u0000${this._valuesVersion}`
+  }
+
+  /** 宿主是否提供受控值（property 或 attribute 任一在场；空对象也算受控） */
+  private hasHostValues(): boolean {
+    return this._valuesProp !== null || this.getAttribute('values') !== null
+  }
+
+  /** 当前通道基线：受控 values 优先，否则 initialValues */
+  private baselineValues(): Record<string, unknown> {
+    return this.hasHostValues() ? this.values : this.initialValues
   }
 
   /** 布局/尺寸等表级属性透传给内层 oas-form（grid span / label-align / 禁用链路复用内核） */
@@ -421,6 +476,8 @@ export class OASSchemaForm extends OASElement {
     const snapshot = form.getValues()
     // 初始值通道是否变化决定「initial 胜还是快照胜」：只有宿主改写 initialValues 时才允许
     // 用初始值覆盖快照——schema/uiSchema 等其它结构变化触发的重建必须保留用户编辑。
+    // 受控 values 模式下宿主值恒为来源（每次重建都以它为准）。
+    const controlled = this.hasHostValues()
     const initialKey = this.initialKey()
     const initialChanged = this.renderedInitialKey !== null && this.renderedInitialKey !== initialKey
     this.renderedInitialKey = initialKey
@@ -433,13 +490,16 @@ export class OASSchemaForm extends OASElement {
       return
     }
     for (const node of compiled.plan) body.appendChild(this.renderNode(node))
-    // 初始值 = schema default ← 宿主 initialValues（宿主优先）
-    const merged = mergeDeep(cloneJson(compiled.defaults) as Record<string, unknown>, this.initialValues)
+    // 基线 = schema default ← 宿主通道（受控 values 优先，否则 initialValues）
+    const merged = mergeDeep(cloneJson(compiled.defaults) as Record<string, unknown>, this.baselineValues())
     form.initialValues = merged
     // 行数由初始数组长度驱动（min 兜底；initialValues 有 1 行必须渲染 1 行）
     this.syncArrayMin(merged)
     form.reapplyInitialValues()
-    this.applySnapshotValues(snapshot, merged, initialChanged)
+    this.applySnapshotValues(snapshot, merged, controlled || initialChanged)
+    this.appliedValues = controlled ? (cloneJson(this.values) as Record<string, unknown>) : null
+    this.pristineSnapshot = new Map(flattenValues(this.getValues()))
+    this.syncDirty()
     this.syncRules()
     this.evaluateEffects()
     this.syncArrayStates()
@@ -739,6 +799,79 @@ export class OASSchemaForm extends OASElement {
     element.setAttribute('value', value)
   }
 
+  // ---------- 受控值（V1b）----------
+
+  /**
+   * 宿主 values 变化：只写**变化叶子**（diff 写），数组先按长度补行再写。
+   * 写入期间置来源标记：程序化写不产生字段编辑事件，若未来控件补发事件也不会被当成用户编辑。
+   */
+  private applyHostValues(): void {
+    const form = this.formEl
+    const compiled = this.compiled
+    if (!form || !compiled || compiled.error) return
+    const nextAll = this.values
+    const prevAll = this.appliedValues ?? {}
+    const patch: Record<string, unknown> = {}
+    let changed = false
+    const current = new Map(flattenRawValues(nextAll))
+    const previous = new Map(flattenRawValues(prevAll))
+    for (const [path, value] of current) {
+      const before = previous.get(path)
+      if (before !== undefined && String(before) === String(value)) continue
+      setLeaf(patch, path.split('.'), value)
+      changed = true
+    }
+    // 宿主删除键：清空对应字段（受控模式下「消失」等价于清空，而不是保留旧值）
+    for (const path of previous.keys()) {
+      if (current.has(path)) continue
+      setLeaf(patch, path.split('.'), null)
+      changed = true
+    }
+    this.applyingHostValues = true
+    try {
+      this.syncHostArrayMin(nextAll)
+      if (changed) form.setValues(patch)
+      this.appliedValues = cloneJson(nextAll) as Record<string, unknown>
+    } finally {
+      this.applyingHostValues = false
+    }
+    this.indexArrayNodes()
+    this.syncRules()
+    this.syncArrayStates()
+    this.evaluateEffects()
+    this.syncDirty()
+  }
+
+  /** 受控数组按长度补行（min 只增不减：行删除仍归 form-list 交互） */
+  private syncHostArrayMin(values: Record<string, unknown>): void {
+    this.indexArrayNodes()
+    for (const [element, path] of this.arrayNodes()) {
+      const value = readPath(values, parseDslPath(path) ?? [])
+      if (!Array.isArray(value)) continue
+      if (element.getAttribute('min') !== String(value.length)) element.setAttribute('min', String(value.length))
+    }
+  }
+
+  /** 脏态：当前值扁平快照 vs 挂载基线（内核之外的一小块自持状态） */
+  private syncDirty(): void {
+    const now = new Map(flattenValues(this.getValues()))
+    let dirty = now.size !== this.pristineSnapshot.size
+    if (!dirty) {
+      for (const [path, value] of now) {
+        if (this.pristineSnapshot.get(path) !== value) {
+          dirty = true
+          break
+        }
+      }
+    }
+    this._dirty = dirty
+  }
+
+  /** 是否与挂载基线不同（受控模式下基线 = 宿主 values） */
+  get dirty(): boolean {
+    return this._dirty
+  }
+
   // ---------- 联动求值与效果应用 ----------
 
   private rootSchemaValue(): unknown {
@@ -768,6 +901,9 @@ export class OASSchemaForm extends OASElement {
     const name = detail?.name
     const engine = this.engine
     if (!engine || typeof name !== 'string') return
+    // 宿主写入期间的合成事件按来源标记跳过（宿主写不回派事件防回环）
+    if (this.applyingHostValues) return
+    this.syncDirty()
     const next = engine.evaluateChanged(this.projectedValues(), name)
     if (next === null) return
     this.effects = next
@@ -1075,10 +1211,30 @@ export class OASSchemaForm extends OASElement {
     return this.formEl?.getValues() ?? {}
   }
 
-  /** 受控写通道：V1b 能力。V1a 显式未实现 → devWarn，禁止静默失效 */
+  /** 受控写通道：按路径写字段（走内核 `oas-form.setValues`；宿主写不派发事件、不重建 DOM） */
   setValues(patch: Record<string, unknown>): void {
-    void patch
-    devWarn('[oas-schema-form] setValues 为 V1b 能力（受控写通道），V1a 未实现——请使用 initialValues 一次性基线')
+    if (!isPlainObject(patch)) {
+      devWarn('[oas-schema-form] setValues 需要普通对象，已忽略本次调用')
+      return
+    }
+    this.applyingHostValues = true
+    try {
+      this.indexArrayNodes()
+      this.syncHostArrayMin(patch)
+      this.formEl?.setValues(patch)
+      const merged = mergeDeep(
+        cloneJson(this.appliedValues ?? {}) as Record<string, unknown>,
+        cloneJson(patch) as Record<string, unknown>,
+      )
+      this.appliedValues = merged
+    } finally {
+      this.applyingHostValues = false
+    }
+    this.indexArrayNodes()
+    this.syncRules()
+    this.syncArrayStates()
+    this.evaluateEffects()
+    this.syncDirty()
   }
 
   /** 注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载 */
@@ -1097,6 +1253,7 @@ export class OASSchemaForm extends OASElement {
     this.clearArrayErrorVisuals()
     this.rebuild()
     this.formEl?.reset()
+    this.syncDirty()
     this.evaluateEffects()
   }
 
@@ -1107,6 +1264,10 @@ export class OASSchemaForm extends OASElement {
     this.engine = null
     this.nodeByKey.clear()
     this.effects.clear()
+    this.appliedValues = null
+    this.appliedValuesKey = null
+    this.pristineSnapshot.clear()
+    this._dirty = false
     super.disconnectedCallback()
   }
 }
@@ -1169,6 +1330,40 @@ function flattenValues(values: unknown, prefix = ''): Array<[string, string]> {
     out.push(...flattenValues(value, prefix === '' ? key : `${prefix}.${key}`))
   }
   return out
+}
+
+/** 嵌套值 → [点号路径, 原始叶子值]（受控 diff 用：保留数字/布尔原值以便按类型写入） */
+function flattenRawValues(values: unknown, prefix = ''): Array<[string, unknown]> {
+  const out: Array<[string, unknown]> = []
+  if (values === null || values === undefined) return out
+  if (typeof values !== 'object') {
+    if (prefix !== '') out.push([prefix, values])
+    return out
+  }
+  if (Array.isArray(values)) {
+    values.forEach((item, index) => {
+      out.push(...flattenRawValues(item, prefix === '' ? String(index) : `${prefix}.${index}`))
+    })
+    return out
+  }
+  for (const [key, value] of Object.entries(values as Record<string, unknown>)) {
+    if (key === '__proto__' || key === 'prototype' || key === 'constructor') continue
+    out.push(...flattenRawValues(value, prefix === '' ? key : `${prefix}.${key}`))
+  }
+  return out
+}
+
+/** 按路径段写嵌套 patch（中间层缺失自动建对象；保留键段跳过） */
+function setLeaf(target: Record<string, unknown>, segments: string[], value: unknown): void {
+  if (segments.length === 0 || segments.some((segment) => !segment)) return
+  let cursor: Record<string, unknown> = target
+  for (let i = 0; i < segments.length - 1; i++) {
+    const segment = segments[i]!
+    const next = cursor[segment]
+    if (!isPlainObject(next)) cursor[segment] = {}
+    cursor = cursor[segment] as Record<string, unknown>
+  }
+  cursor[segments[segments.length - 1]!] = value
 }
 
 /** 路径工具再导出（与编译层同一实现，供宿主/测试复用） */

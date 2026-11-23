@@ -8,6 +8,7 @@
  */
 import type { JsonSchema, WidgetSpec } from './types.js'
 import { FORMATS } from './validate.js'
+import { getCustomWidget } from './custom-widgets.js'
 
 /** 允许经 uiSchema `widget` 指定的控件（内部必须走 FORM_CONTROLS 才能被值收集） */
 export const KNOWN_WIDGETS = new Set([
@@ -109,7 +110,11 @@ export function resolveWidget(
   const custom = ui.widget
   if (typeof custom === 'string' && custom !== '') {
     if (!KNOWN_WIDGETS.has(custom)) {
-      warnings.push(`uiSchema.widget "${custom}" 不在内置控件表内，回落到默认映射（${path || '(root)'}）`)
+      const registered = getCustomWidget(custom)
+      if (registered) return { tag: registered.tag, props }
+      warnings.push(
+        `uiSchema.widget "${custom}" 不在内置控件表内，也未通过 registerSchemaWidget 注册，回落到默认映射（${path || '(root)'}）`,
+      )
     } else {
       return { tag: custom, props }
     }

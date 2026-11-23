@@ -604,12 +604,13 @@ describe('oas-schema-form 组合面（错误注入 / 事件 / 生命周期 / que
     await expect(el.validate()).resolves.toBe(true)
   })
 
-  it('setValues 为 V1b 能力：显式 devWarn 不静默', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  it('setValues 受控写通道生效（V1b）：按路径写字段且不重建 DOM', () => {
     const el = mount(basicSchema)
+    const item = formItems(el)[0]!
     el.setValues({ name: 'x' })
-    expect(warn.mock.calls.some((call) => String(call[0]).includes('V1b'))).toBe(true)
-    warn.mockRestore()
+    expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('x')
+    expect(formItems(el)[0], '结构未重建（节点引用不变，不打断焦点）').toBe(item)
+    expect(el.getValues()).toMatchObject({ name: 'x' })
   })
 
   it('断开重连（onCleanup 清理）后仍可交互', () => {

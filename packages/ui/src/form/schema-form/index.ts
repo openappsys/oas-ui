@@ -24,4 +24,9 @@ if (!customElements.get('oas-schema-form')) {
 }
 
 export { OASSchemaForm }
+export { registerSchemaWidget } from './registry.js'
+export type { SchemaWidgetIO } from './registry.js'
+// 表达式轨公开 API：宿主函数注册 + 编译器类型（子路径入口 `@oas-ui/ui/form/schema-form/expr` 同源）
+export { registerExprFunction } from './expr/index.js'
+export type { ExprCompileResult, ExprFunction, ExprProgram } from './expr/index.js'
 export type { JsonSchema, PlanNode } from './compiler/index.js'
