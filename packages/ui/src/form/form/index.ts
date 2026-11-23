@@ -8,4 +8,4 @@ if (!customElements.get('oas-form')) {
 }
 
 export { OASForm, registerFormControl, parseNamePath }
-export type { Rule, Rules, ValidateTrigger } from './oas-form.js'
+export type { Rule, Rules, ValidateTrigger, FormError, ErrorSeverity } from './oas-form.js'

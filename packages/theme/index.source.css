@@ -253,6 +253,8 @@ html.dark {
   --oas-color-primary-text: #002766;
   --oas-color-success: #006d1b;
   --oas-color-warning: #8c4a00;
+  /* warning 文字安全档：白底/白 elevated 底对比 6.8:1，与 base 同值即达标（高对比档不掺色） */
+  --oas-color-warning-text: #8c4a00;
   --oas-color-danger: #a8071a;
   /* 语义色 -soft：与 light/dark 同比例（12%），基色随本档深 danger 联动 */
   --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);

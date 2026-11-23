@@ -795,7 +795,27 @@ export class OASQuestionnaire extends OASElement {
 
   // ---------- 内层 oas-form 发现与值跟踪 ----------
 
-  /** 每步一个 oas-form（宿主面板内）：按 slot 关联发现；每步取第一个 */
+  /**
+   * 步骤内容发现面（duck-typed 契约）：`oas-form`，或任意**实现同契约接口**的元素——
+   * 提供 `getValues()` / `validate()` 且派发 `oas-values-change`（composed 冒泡）。
+   * schema-form 等声明式表单因此可直接作为步骤内容，问卷无需认识具体组件。
+   */
+  private isFormLike(element: Element): boolean {
+    if (element.tagName.toLowerCase() === 'oas-form') return true
+    const candidate = element as { getValues?: unknown; validate?: unknown }
+    return typeof candidate.getValues === 'function' && typeof candidate.validate === 'function'
+  }
+
+  /** 在节点自身与子树里找第一个契约元素（自身优先，深度优先文档序） */
+  private findFormLike(node: Element): Element | null {
+    if (this.isFormLike(node)) return node
+    for (const descendant of node.querySelectorAll('*')) {
+      if (this.isFormLike(descendant)) return descendant
+    }
+    return null
+  }
+
+  /** 每步一个表单契约元素（宿主面板内）：按 slot 关联发现；每步取第一个 */
   private stepForms(): Array<{ idx: number; form: Element }> {
     const out: Array<{ idx: number; form: Element }> = []
     if (!this.bodyEl) return out
@@ -806,9 +826,9 @@ export class OASQuestionnaire extends OASElement {
       const slot = slots.find((s) => s.getAttribute('name') === name)
       if (!slot) continue
       for (const node of slot.assignedElements()) {
-        const forms = node.tagName === 'OAS-FORM' ? [node] : Array.from(node.querySelectorAll('oas-form'))
-        if (forms.length > 0) {
-          out.push({ idx, form: forms[0]! })
+        const form = this.findFormLike(node)
+        if (form) {
+          out.push({ idx, form })
           break
         }
       }

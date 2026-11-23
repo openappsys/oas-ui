@@ -75,6 +75,13 @@ const STYLE = `
 .status-icon[hidden] {
   display: none;
 }
+/* 警告提示（warning severity）：与错误同位置、同字号，颜色走 warning 文字安全档；
+   role="status"（polite）弱播报一档，不置 aria-invalid、不阻断校验/提交 */
+.warning-text {
+  color: var(--oas-color-warning-text, var(--oas-color-warning));
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.4;
+}
 /* 静态帮助文案（help 属性）：常驻控件下方、与校验错误独立并存 */
 .help-text {
   color: var(--oas-color-text-secondary);
@@ -120,10 +127,14 @@ export class OASFormItem extends OASElement {
   private requiredEl: HTMLElement | null = null
   private errorEl: HTMLElement | null = null
   private errorMsgEl: HTMLElement | null = null
+  private warningEl: HTMLElement | null = null
+  private warningMsgEl: HTMLElement | null = null
   private statusIconEl: HTMLElement | null = null
   private helpEl: HTMLElement | null = null
   /** 当前错误消息（status-icon 显隐的状态源；null = 无错误） */
   private lastError: string | null = null
+  /** 当前警告消息（warning severity；error 在场时让位——error 独占显示） */
+  private lastWarning: string | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -138,6 +149,7 @@ export class OASFormItem extends OASElement {
           <slot></slot>
           <div part="help" class="help-text" hidden></div>
           <div part="error" class="error-text" role="alert" hidden><span part="status-icon" class="status-icon" aria-hidden="true" hidden></span><span class="error-msg"></span></div>
+          <div part="warning" class="warning-text" role="status" hidden><span class="warning-msg"></span></div>
         </div>
       </div>
     `
@@ -150,6 +162,8 @@ export class OASFormItem extends OASElement {
     this.requiredEl = this.shadow.querySelector<HTMLElement>('[part="required"]')
     this.errorEl = this.shadow.querySelector<HTMLElement>('[part="error"]')
     this.errorMsgEl = this.shadow.querySelector<HTMLElement>('.error-msg')
+    this.warningEl = this.shadow.querySelector<HTMLElement>('[part="warning"]')
+    this.warningMsgEl = this.shadow.querySelector<HTMLElement>('.warning-msg')
     this.statusIconEl = this.shadow.querySelector<HTMLElement>('[part="status-icon"]')
     this.helpEl = this.shadow.querySelector<HTMLElement>('[part="help"]')
 
@@ -237,14 +251,43 @@ export class OASFormItem extends OASElement {
     focusable?.focus()
   }
 
-  /** 校验错误文本收编（由 oas-form 调用）。message 为空时移除错误态。 */
-  setError(message: string | null): void {
+  /**
+   * 校验错误/警告文本收编（由 oas-form 调用）。message 为空时移除对应状态。
+   *
+   * severity='error'（默认）：role=alert 强播报 + danger 色；同时清掉警告位（error 独占显示，
+   * 不叠两条避免高度抖动）。severity='warning'：role=status（polite）弱播报一档 + warning 色，
+   * 不置 aria-invalid、不阻断 validate/submit（判定在 oas-form 侧，本组件只负责视觉与播报）。
+   */
+  setError(message: string | null, severity: 'error' | 'warning' = 'error'): void {
+    if (severity === 'warning') {
+      this.setWarning(message)
+      return
+    }
     this.lastError = message != null && message !== '' ? message : null
-    if (!this.errorEl) return
+    // 错误位清空 = 该字段本轮无错误：一并清掉警告（避免残留旧警告）；有错误时警告让位（error 独占显示）
+    if (this.lastError === null) this.lastWarning = null
+    if (!this.errorEl) {
+      this.syncWarningVisibility()
+      return
+    }
     if (this.errorMsgEl) this.errorMsgEl.textContent = message ?? ''
     this.errorEl.hidden = this.lastError === null
+    this.syncWarningVisibility()
     this.syncStatusIcon()
     this.syncErrorA11y()
+  }
+
+  /** 警告位写入：error 在场时让位（保留内容但隐藏，error 清空后恢复可见） */
+  private setWarning(message: string | null): void {
+    this.lastWarning = message != null && message !== '' ? message : null
+    if (this.warningMsgEl) this.warningMsgEl.textContent = message ?? ''
+    this.syncWarningVisibility()
+  }
+
+  /** 警告位显隐：无警告或 error 在场时隐藏（error 独占显示，不叠两条） */
+  private syncWarningVisibility(): void {
+    if (!this.warningEl) return
+    this.warningEl.hidden = this.lastWarning === null || this.lastError !== null
   }
 
   /**

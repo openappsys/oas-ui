@@ -191,6 +191,7 @@ html.dark {
   --oas-color-primary-text: #002766;
   --oas-color-success: #006d1b;
   --oas-color-warning: #8c4a00;
+  --oas-color-warning-text: #8c4a00;
   --oas-color-danger: #a8071a;
   --oas-color-danger-soft: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
   --oas-color-text-on-primary: #ffffff;

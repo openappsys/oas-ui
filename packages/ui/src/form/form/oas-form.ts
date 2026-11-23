@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { devWarn } from '../../shared/dev-warn.js'
 
 /** 表单控件读取器：返回该控件的表单值（字符串形态；复杂控件返回 JSON 字符串） */
 type FormControlReader = (el: Element) => string
@@ -89,6 +90,16 @@ export function parseNamePath(name: string): string[] | null {
   return result
 }
 
+/**
+ * 路径规范键：`parseNamePath` 的段数组按点号拼回（`users[0].name` / `users.0.name` 同为
+ * `users.0.name`）。保留键段返回 null（与 parseNamePath 同判据）。
+ * setErrors / clearErrors / 注入错误与字段匹配统一走该键。
+ */
+export function canonicalNamePath(name: string): string | null {
+  const segments = parseNamePath(name)
+  return segments === null ? null : segments.join('.')
+}
+
 /** 按路径段读取嵌套值（中途缺失返回 undefined） */
 function readPath(source: Record<string, unknown> | undefined, segments: string[]): unknown {
   let current: unknown = source
@@ -143,7 +154,9 @@ register([
   'oas-input-number',
   'oas-radio',
   'oas-radio-group',
+  'oas-checkbox-group',
   'oas-date-picker',
+  'oas-time-picker',
   'oas-slider',
   'oas-rate',
   'oas-pin-input',
@@ -284,6 +297,16 @@ export interface Rule {
 
 export type Rules = Record<string, Rule[]>
 
+/** 错误严重档：error 阻断提交（role=alert），warning 仅提示（role=status，不置 aria-invalid、不阻断） */
+export type ErrorSeverity = 'error' | 'warning'
+
+/** 注入错误条目：path 为书写面路径（`users[0].name` / `users.0.name` 均可，内部归一为点号规范键） */
+export interface FormError {
+  path: string
+  message: string
+  severity?: ErrorSeverity
+}
+
 /**
  * 校验文案模板（validate-messages）：按规则类型覆盖 locale 默认文案。
  * 模板支持 `${min}` / `${max}` / `${value}` 占位插值；`default` 作为未命中具体 key 时的兜底。
@@ -353,6 +376,12 @@ export class OASForm extends OASElement {
   /** reset 基线：挂载时各字段初始值（initial-values 优先，否则取字段当前值） */
   private _initialSnapshot: Record<string, string> = {}
   private errors: Record<string, string> = Object.create(null)
+  /**
+   * 注入错误（宿主/上游容器经 setErrors 写入，如服务端校验返回、schema-form 数组级校验）。
+   * 语义：**优先于规则错误直到该字段值再次变化**——值变即清该字段注入项，回落到规则错误。
+   * 键为点号规范键（canonicalNamePath），同一键只保留最后一次注入。
+   */
+  private injectedErrors = new Map<string, { message: string; severity: ErrorSeverity }>()
   /** 当前生效的校验文案模板（attribute 解析或 property 通道，property 优先） */
   private _validateMessages: ValidateMessages = {}
   private _validateMessagesProp: ValidateMessages | null = null
@@ -865,10 +894,10 @@ export class OASForm extends OASElement {
     fields: Array<{ name: string; element: Element }>,
     values: Record<string, string>,
   ): {
-    invalid: Array<{ name: string; element: Element; message: string }>
+    invalid: Array<{ name: string; element: Element | null; message: string }>
     asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }>
   } {
-    const invalid: Array<{ name: string; element: Element; message: string }> = []
+    const invalid: Array<{ name: string; element: Element | null; message: string }> = []
     const asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }> = []
     for (const { name, element } of fields) {
       if (this.isFieldDisabled(element)) continue
@@ -883,9 +912,9 @@ export class OASForm extends OASElement {
   /** 聚合异步校验结果并入 invalid 并按字段 DOM 序重排，validateAndSubmit 与 validate 共用 */
   private async mergeAsyncErrors(
     fields: Array<{ name: string; element: Element }>,
-    invalid: Array<{ name: string; element: Element; message: string }>,
+    invalid: Array<{ name: string; element: Element | null; message: string }>,
     asyncJobs: Array<{ name: string; element: Element; promise: Promise<string | null> }>,
-  ): Promise<Array<{ name: string; element: Element; message: string }>> {
+  ): Promise<Array<{ name: string; element: Element | null; message: string }>> {
     const resolved = await Promise.all(asyncJobs.map((job) => job.promise.then((message) => ({ job, message }))))
     for (const { job, message } of resolved) {
       if (message !== null) invalid.push({ name: job.name, element: job.element, message })
@@ -906,6 +935,7 @@ export class OASForm extends OASElement {
     // 用 clear() 而非按 name 逐个 bump：可一并覆盖「在途期间被移除/改名、collectFields 收不到」的字段
     this.fieldValidateSeq.clear()
     const { invalid, asyncJobs } = this.collectInvalid(fields, values)
+    this.mergeInjectedErrors(invalid, fields)
 
     if (asyncJobs.length === 0) {
       this.finalizeValidation(values, fields, invalid)
@@ -920,7 +950,7 @@ export class OASForm extends OASElement {
   private finalizeValidation(
     values: Record<string, string>,
     fields: Array<{ name: string; element: Element }>,
-    invalid: Array<{ name: string; element: Element; message: string }>,
+    invalid: Array<{ name: string; element: Element | null; message: string }>,
   ): void {
     this.errors = Object.create(null)
     for (const { name, message } of invalid) this.errors[name] = message
@@ -930,12 +960,14 @@ export class OASForm extends OASElement {
       else element.removeAttribute('aria-invalid')
       this.syncErrorText(element, bad ? this.errors[name]! : null)
     }
+    this.syncInjectedWarnings(fields)
     if (invalid.length === 0) {
       this.emit('submit', { values: this.nestValues(values) })
     } else {
       // 载荷出包转普通原型（宿主对 detail.errors 调 hasOwnProperty/toString 不应炸——与 el.rules getter 同判据）
       this.emit('validate-fail', { errors: { ...this.errors }, values: this.nestValues(values) })
-      if (this.hasAttr('scroll-to-first-error')) this.revealField(invalid[0]!.element)
+      const first = invalid[0]!.element
+      if (this.hasAttr('scroll-to-first-error') && first) this.revealField(first)
     }
   }
 
@@ -949,40 +981,191 @@ export class OASForm extends OASElement {
   /** 值变化统一出口：派发 oas-values-change（values 为全表当前值快照，嵌套结构） */
   private emitValuesChange(name: string | null, value: string): void {
     if (!name) return
+    // 服务端错误优先期到此结束：该字段值已变，注入项清除并回落规则错误（PRD 契约）
+    this.clearInjectedForField(name)
     const flat = this.snapshotValues()
     this.emit('values-change', { name, value, values: this.nestValues(flat) })
   }
 
   /**
-   * 同步错误提示。字段被 oas-form-item 包裹时写入 form-item 的错误位（shadow 内更新）；
+   * 同步错误/警告提示。字段被 oas-form-item 包裹时写入 form-item 的错误位（shadow 内更新）；
    * 裸字段保持既有行为——在字段 host 后插入内联 token 样式 div（自动跟随暗色/高对比主题）。
+   * warning 走 warning 文字安全档 token + role=status 语义（form-item 内），不置 aria-invalid。
    * 校验失败时插入/更新，通过时移除。
    */
-  private syncErrorText(element: Element, message: string | null): void {
-    const item = element.closest('oas-form-item') as (Element & { setError?: (m: string | null) => void }) | null
+  private syncErrorText(element: Element, message: string | null, severity: ErrorSeverity = 'error'): void {
+    const item = element.closest('oas-form-item') as
+      | (Element & { setError?: (m: string | null, s?: ErrorSeverity) => void })
+      | null
     if (item?.setError) {
-      item.setError(message)
+      item.setError(message, severity)
       return
     }
     const next = element.nextElementSibling
-    const existing = next && next.classList.contains('error-text') ? (next as HTMLElement) : null
+    const existing =
+      next && (next.classList.contains('error-text') || next.classList.contains('warning-text'))
+        ? (next as HTMLElement)
+        : null
     if (message === null) {
       existing?.remove()
       return
     }
     const el = existing ?? document.createElement('div')
     if (!existing) {
-      el.className = 'error-text'
-      el.style.color = 'var(--oas-color-danger)'
       el.style.fontSize = 'var(--oas-font-size-sm)'
       el.style.marginTop = 'var(--oas-space-1)'
       element.insertAdjacentElement('afterend', el)
     }
+    el.className = severity === 'warning' ? 'warning-text' : 'error-text'
+    el.style.color = severity === 'warning' ? 'var(--oas-color-warning-text)' : 'var(--oas-color-danger)'
     el.textContent = message
   }
 
   getErrors(): Record<string, string> {
     return { ...this.errors }
+  }
+
+  /**
+   * 注入错误（公开 API，向后兼容新增）：服务端校验结果 / 上游容器的数组级校验错误统一走本通道。
+   *
+   * - 路径经 `parseNamePath` 归一为点号规范键（`users[0].name` 与 `users.0.name` 命中同一字段），
+   *   与 form-list 产出的 name 一致；保留键段（`__proto__` 等）整条拒绝。
+   * - **服务端错误优先于规则错误，直到该字段值再次变化**：值变即清该字段注入项并回落规则错误。
+   * - `severity: 'warning'` 只提示不阻断（不置 aria-invalid、不进 errors 载荷、不使 validate 失败）；
+   *   同路径 error 在场时 warning 让位（error 独占显示）。
+   * - 数组路径（如 `users`）没有字段元素时照样进 errors 载荷（validate/validate-fail 可见），
+   *   视觉落点由上层容器自行渲染。
+   */
+  setErrors(list: FormError[]): void {
+    if (!Array.isArray(list)) {
+      devWarn('[oas-form] setErrors 需要数组，已忽略本次调用')
+      return
+    }
+    const fields = this.fieldsByCanonical()
+    for (const entry of list) {
+      if (!entry || typeof entry.path !== 'string' || typeof entry.message !== 'string' || entry.message === '') {
+        continue
+      }
+      const key = canonicalNamePath(entry.path)
+      if (key === null) {
+        devWarn(`[oas-form] setErrors 拒绝非法路径 "${entry.path}"（含保留键段或非路径语法）`)
+        continue
+      }
+      const severity: ErrorSeverity = entry.severity === 'warning' ? 'warning' : 'error'
+      this.injectedErrors.set(key, { message: entry.message, severity })
+      const field = fields.get(key)
+      if (severity === 'error') {
+        this.errors[field?.name ?? key] = entry.message
+        if (field) {
+          field.element.setAttribute('aria-invalid', 'true')
+          this.syncErrorText(field.element, entry.message)
+        }
+      } else if (field && !Object.hasOwn(this.errors, field.name)) {
+        this.syncErrorText(field.element, entry.message, 'warning')
+      }
+    }
+  }
+
+  /**
+   * 清除注入错误（paths 省略 = 清全部）：清后该字段立即回落规则错误（有规则则重算，无则清空）。
+   * 只影响注入通道，不触碰规则错误本身。
+   */
+  clearErrors(paths?: string[]): void {
+    const fields = this.fieldsByCanonical()
+    let keys: string[]
+    if (paths == null) {
+      keys = [...this.injectedErrors.keys()]
+    } else if (!Array.isArray(paths)) {
+      devWarn('[oas-form] clearErrors 需要路径数组或省略，已忽略本次调用')
+      return
+    } else {
+      keys = []
+      for (const path of paths) {
+        if (typeof path !== 'string') continue
+        const key = canonicalNamePath(path)
+        if (key === null) {
+          devWarn(`[oas-form] clearErrors 拒绝非法路径 "${path}"`)
+          continue
+        }
+        keys.push(key)
+      }
+    }
+    for (const key of keys) {
+      if (!this.injectedErrors.delete(key)) continue
+      const field = fields.get(key)
+      const raw = field?.name ?? key
+      delete this.errors[raw]
+      if (!field) continue
+      if (this.isFieldDisabled(field.element)) {
+        field.element.removeAttribute('aria-invalid')
+        this.syncErrorText(field.element, null)
+        continue
+      }
+      // 回落规则错误：复用单字段校验链路（含异步 validator 竞态令牌）
+      this.validateFieldByTrigger(field.name, field.element)
+    }
+  }
+
+  /** 字段规范键 → 字段（同键多元素取文档序第一个，与 collectFields 一致） */
+  private fieldsByCanonical(): Map<string, { name: string; element: Element }> {
+    const map = new Map<string, { name: string; element: Element }>()
+    for (const field of this.collectFields()) {
+      const key = canonicalNamePath(field.name)
+      if (key !== null && !map.has(key)) map.set(key, field)
+    }
+    return map
+  }
+
+  /** 值变即清该字段的注入错误（服务端错误优先期的终点），并回落规则错误 */
+  private clearInjectedForField(rawName: string | null): void {
+    if (!rawName) return
+    const key = canonicalNamePath(rawName)
+    if (key === null || !this.injectedErrors.delete(key)) return
+    const field = this.fieldsByCanonical().get(key)
+    if (!field) return
+    delete this.errors[field.name]
+    if (this.isFieldDisabled(field.element)) {
+      field.element.removeAttribute('aria-invalid')
+      this.syncErrorText(field.element, null)
+      return
+    }
+    this.validateFieldByTrigger(field.name, field.element)
+  }
+
+  /**
+   * 注入错误并入本次校验结果：同路径注入 error 覆盖规则文案（注入优先）；无对应字段的路径
+   * 按规范键进入载荷（数组级错误），element 为 null。
+   */
+  private mergeInjectedErrors(
+    invalid: Array<{ name: string; element: Element | null; message: string }>,
+    fields: Array<{ name: string; element: Element }>,
+  ): void {
+    if (this.injectedErrors.size === 0) return
+    const byKey = new Map<string, { name: string; element: Element }>()
+    for (const field of fields) {
+      const key = canonicalNamePath(field.name)
+      if (key !== null && !byKey.has(key)) byKey.set(key, field)
+    }
+    for (const [key, entry] of this.injectedErrors) {
+      if (entry.severity !== 'error') continue
+      const field = byKey.get(key)
+      const name = field?.name ?? key
+      const existing = invalid.find((item) => item.name === name)
+      if (existing) existing.message = entry.message
+      else invalid.push({ name, element: field?.element ?? null, message: entry.message })
+    }
+  }
+
+  /** 注入 warning 展示（error 在场时让位）：校验收尾后补齐，不进 errors 载荷、不影响通过判定 */
+  private syncInjectedWarnings(fields: Array<{ name: string; element: Element }>): void {
+    if (this.injectedErrors.size === 0) return
+    for (const field of fields) {
+      const key = canonicalNamePath(field.name)
+      const entry = key === null ? undefined : this.injectedErrors.get(key)
+      if (entry?.severity === 'warning' && !Object.hasOwn(this.errors, field.name)) {
+        this.syncErrorText(field.element, entry.message, 'warning')
+      }
+    }
   }
 
   /**
@@ -1011,6 +1194,7 @@ export class OASForm extends OASElement {
     this.fieldValidateSeq.clear()
     const { invalid, asyncJobs } = this.collectInvalid(fields, values)
     if (asyncJobs.length > 0) await this.mergeAsyncErrors(fields, invalid, asyncJobs)
+    this.mergeInjectedErrors(invalid, fields)
     this.errors = Object.create(null)
     for (const { name, message } of invalid) this.errors[name] = message
     for (const { name, element } of fields) {
@@ -1019,6 +1203,7 @@ export class OASForm extends OASElement {
       else element.removeAttribute('aria-invalid')
       this.syncErrorText(element, bad ? this.errors[name]! : null)
     }
+    this.syncInjectedWarnings(fields)
     return invalid.length === 0
   }
 
@@ -1042,6 +1227,8 @@ export class OASForm extends OASElement {
     for (const { name, element } of fields) {
       this.resetField(name, element)
     }
+    // 重置 = 一次完整回基线：注入错误（服务端/上游）一并清空，不跨重置残留
+    this.injectedErrors.clear()
     this.errors = Object.create(null)
     for (const { element } of fields) {
       element.removeAttribute('aria-invalid')
