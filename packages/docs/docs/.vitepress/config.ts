@@ -463,6 +463,9 @@ gtag('config', 'G-RXS142HBXF');`,
   vite: {
     plugins: [stripPreflightHostReset()],
     server: {
+      // 监听 0.0.0.0 全部网卡（局域网可访问，如 http://192.168.x.x:5175）；
+      // 默认只绑 localhost，手机/其他设备调试时放开
+      host: '0.0.0.0',
       port: 5175,
       strictPort: true, // 固定 5175，端口被占时直接报错而不是自增到 5176/5177
     },
