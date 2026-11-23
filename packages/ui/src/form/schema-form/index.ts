@@ -21,6 +21,8 @@ import '../pin-input/index.js'
 // 一并引入，否则只引本子路径的宿主拿到的是「未升级标签」，控件静默不渲染（值也收集不到）
 import '../matrix/index.js'
 import '../rank/index.js'
+// 行内编辑表格（`uiSchema.widget: 'array-table'`）：容器元素注册必须在入口（否则未升级标签静默不渲染）
+import '../array-table/index.js'
 import { OASSchemaForm } from './oas-schema-form.js'
 
 if (!customElements.get('oas-schema-form')) {

@@ -1,0 +1,115 @@
+{
+  "className": "OASArrayTable",
+  "sourceFile": "packages/ui/src/form/array-table/oas-array-table.ts",
+  "attrs": [
+    {
+      "name": "name",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "rows",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "columns",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "add-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "remove-text",
+      "observed": true
+    },
+    {
+      "name": "duplicate-text",
+      "observed": true
+    },
+    {
+      "name": "move-up-text",
+      "observed": true
+    },
+    {
+      "name": "move-down-text",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "columns",
+      "type": "ArrayTableColumn[] | string"
+    },
+    {
+      "name": "rowCount",
+      "type": "number"
+    }
+  ],
+  "methods": [
+    {
+      "name": "setRowCount",
+      "signature": "setRowCount(count: number): void",
+      "description": "行数收敛（受控数组缩容 / 行值内层数组对齐用）：增补空行、缩减从末尾删行，不派发事件"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-add",
+      "detail": "{ index }"
+    },
+    {
+      "name": "oas-remove",
+      "detail": "{ index }"
+    },
+    {
+      "name": "oas-duplicate",
+      "detail": "{ from: index, to: target }"
+    },
+    {
+      "name": "oas-move",
+      "detail": "{ from, to }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-array-table-actions-width",
+      "default": "148px"
+    }
+  ],
+  "unresolved": []
+}

@@ -104,6 +104,36 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
   </oas-space>
 </DemoBlock>
 
+## 行内编辑表格（array-table）
+
+对象数组还可以用 `uiSchema.widget: 'array-table'` 渲染成行内编辑表格：**行内容仍由本组件渲染**
+（每个单元格是一个 `form-item`，值收集 / 校验 / 联动 / 错误注入全部照常），表格只多做二维布局、表头
+与行操作列——所以它与 `oas-form-list` 是同一套值语义的两种排版。
+
+- 列定义来自 `items.properties` 的声明顺序；列级注解写在 `users[].字段` 上：`width`（数字按 px，
+  字符串按 grid 轨道原样，如 `'2fr'`）、`align`（`left` / `center` / `right`）、`hidden`（隐藏视觉但
+  **保留单元格与值**）；`widget` 覆盖同样作用于列内的单元格。
+- 行操作列（表格尾列）：删除 / 复制 / 上移 / 下移；末尾追加行走表格下方的按钮。语义与 `oas-form-list`
+  行尾操作完全一致（值深拷贝 / 值交换、焦点按行位回归、`aria-live` 播报）。
+- 事件：`oas-add` / `oas-remove`（`detail: { index }`）、`oas-duplicate` / `oas-move`（`detail: { from, to }`）。
+- 行操作会改值但**不派发 `oas-values-change`**（事件契约不变）；组件在同一轮里刷新 `dirty`、联动效果与
+  受控写基线，宿主只需在自己的 `values` 里跟进（受控模式下组件也不会把行操作结果冲掉）。
+- 结构重建（`schema` / `uiSchema` 变化）按**行数快照**恢复行数；`initialValues` 改写与 `reset()`
+  则回到初始行数。两个 widget 互相切换不丢数据。
+- 表格语义用 ARIA（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 承载几何，不使用原生
+  `<table>`（slot 产不出 `td`，行内容必须留在 light DOM 才能被主表收集）。
+- 与全功能 `oas-table` 的分工：本 widget 面向轻量表单场景，不做列宽拖拽 / 列排序 / 分页 / 虚拟滚动 /
+  跨行粘贴 / 批量操作 / 单元格合并。
+
+<DemoBlock title="行内编辑表格：列级注解 + 行操作（复制 / 上移 / 下移 / 删除）">
+  <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-table-values">getValues()</oas-button>
+    <oas-button id="sf-table-submit" type="primary">submit()</oas-button>
+  </oas-space>
+  <span id="sf-table-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## 布局：栅格 / 分组 / 标签页
 
 `layout.span`（1-24）在 `layout="grid"` 下占列；`layout.type="group"` 把对象节点渲染为分组容器；
@@ -375,6 +405,56 @@ onMounted(() => {
       out.textContent = `oas-submit：${JSON.stringify(e.detail.values)}`
     })
     document.getElementById('sf-array-required-submit')?.addEventListener('click', () => arrayRequired.submit())
+  })
+
+  // ---- 行内编辑表格（array-table）----
+  onUpgraded(document.getElementById('sf-table'), () => {
+    const table = document.getElementById('sf-table')
+    table.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: '成员（行内编辑表格）',
+          items: {
+            type: 'object',
+            required: ['nick'],
+            properties: {
+              nick: { type: 'string', title: '昵称' },
+              age: { type: 'integer', title: '年龄' },
+              role: { type: 'string', title: '角色', enum: ['dev', 'ops', 'pm'] },
+            },
+          },
+        },
+      },
+    }
+    table.uiSchema = {
+      users: { widget: 'array-table' },
+      'users[].nick': { width: 160, align: 'left' },
+      'users[].age': { width: 96, align: 'right' },
+    }
+    table.initialValues = {
+      users: [
+        { nick: '张三', age: 28, role: 'dev' },
+        { nick: '李四', age: 32, role: 'ops' },
+      ],
+    }
+    const tableOut = document.getElementById('sf-table-output')
+    const reportTable = (label) => {
+      tableOut.textContent = `${label}：${JSON.stringify(table.getValues())}（dirty=${table.dirty}）`
+    }
+    table.addEventListener('oas-duplicate', (e) => reportTable(`oas-duplicate 第 ${e.detail.from + 1} → ${e.detail.to + 1} 行`))
+    table.addEventListener('oas-move', (e) => reportTable(`oas-move 第 ${e.detail.from + 1} → ${e.detail.to + 1} 行`))
+    table.addEventListener('oas-remove', (e) => reportTable(`oas-remove 第 ${e.detail.index + 1} 行`))
+    table.addEventListener('oas-add', () => reportTable('oas-add 末尾追加'))
+    document.getElementById('sf-table-values')?.addEventListener('click', () => reportTable('getValues()'))
+    document.getElementById('sf-table-submit')?.addEventListener('click', () => table.submit())
+    table.addEventListener('oas-submit', (e) => {
+      tableOut.textContent = `oas-submit：${JSON.stringify(e.detail.values)}`
+    })
+    table.addEventListener('oas-validate-fail', (e) => {
+      tableOut.textContent = `oas-validate-fail：${Object.entries(e.detail.errors).map(([k, v]) => `${k}=${v}`).join('；')}`
+    })
   })
 
   // ---- 布局 ----

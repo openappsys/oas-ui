@@ -1,5 +1,21 @@
 # Changelog
 
+## [未发布]
+
+### 新增
+
+**schema-form V2 批 1：数组体系**
+
+- **oas-array-table（form 族，行内编辑表格容器）**：对象数组用 `uiSchema.widget: 'array-table'` 渲染成行内编辑表格——**行模板仍由 schema-form 渲染**（每个单元格是一个 `form-item`，`data-schema-key` / 行内字段名 / 行容器 `[data-oas-form-list-item]` 契约齐全），表格只多做 ARIA 表格语义（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 二维布局 + 表头 + 行操作列（增 / 删 / 复制 / 上移 / 下移，可访问名走 i18n 且可用 `*-text` 覆盖）。列定义来自 `items.properties` 声明顺序 + 列级注解 `width`（数字 px / 字符串轨道）/ `align` / `hidden`（隐藏视觉但保留单元格与值）；`hidden` 列同列头一起不占轨道；零行时隐藏表头显示表体空态。行 wrapper 与单元格在 light DOM（主表只收集 light DOM），几何以行内样式承载（shadow 样式够不到 light DOM，表头与行用同一份轨道串保证对齐）；不使用原生 `<table>`（slot 产不出 `td`）。name 重编号与 form-list 共用同一实现（`form/shared/list-row-ops`）。
+- **行操作契约（两种容器同源）**：复制 = 内核 `getValues()` 行子树深拷贝插到下一行（`upload` 跳过——文件体不可序列化）；上移 / 下移 = 相邻行值交换（DOM 顺序不动）；值读写走内核通道 `readFormControlValue` / `writeFormControlValue`（未注册 writer 的 tag 回落 `value` 属性，否则写入静默丢失）；操作后按行位置重聚焦（边界处该按钮已禁用则退到反向按钮，焦点不丢）+ `aria-live="polite"` 播报；`oas-form-list` 行尾补 复制 / 上移 / 下移 三钮（`part="duplicate" / "move-up" / "move-down"`），数组行操作不再只有删除。事件保留 `oas-add` / `oas-remove`（`{ index }`），新增 `oas-duplicate` / `oas-move`（`{ from, to }`）——**不引入 `oas-change` 的 `op` 字段**（已发布契约不变）。
+- **行操作值同步与错误清理**：行操作改值但不派发 `oas-values-change`；schema-form 在 `oas-add/remove/duplicate/move` 里重索引 / 重挂规则 / 清「数组级 + 该数组字段级」错误视觉（重编号后旧 name 的红字不再错位）/ 刷新脏态与联动效果，受控模式下并把内核当前值当作新的 `appliedValues` 基线（宿主随后写同值不会把行操作结果冲掉）。
+- **`min` 一物二用拆分（缺陷修复）**：`oas-form-list` 新增 `rows`（初始渲染行数），`min` / `max` 恢复为删行下界 / 增行上界（未提供 `rows` 时 `min` 兼作初始行数，既有用法不变）；schema-form 改为按数组长度下发 `rows`，不再下发 `min`——「初始 1 行的唯一行删不掉」消失，`minItems` 违规由数组级校验报错。`rows` 缺省为 0 行（独立使用时行为不变）。
+- **结构重建行数快照**：`schema` / `uiSchema` 变化触发的重建，按重建前 DOM 行数恢复（超出初始长度的行空值填充，快照在 rebuild 内局部捕获，不建常驻 map）；`initialValues` 改写与受控 `values` 写入触发的重建忽略快照，`reset()` 走 bypass（行数回初始长度）。
+- **受控缩容同批修**：受控 `values` 变短时按值长度收敛行数（旧行为只增不减，宿主删行会留空行）；容器新增 `setRowCount(count)` / `insertRowAt(index)` / 只读 `rowCount`。
+- **断开重连缺陷修复（oas-form-list / oas-array-table）**：重连不再清空行记录（行 wrapper 留在 light DOM），否则会按初始行数再建一遍导致行数翻倍；重连补挂模板观察器，交互与「晚注入模板」恢复。
+- **内核增量（向后兼容）**：`oas-form` 导出 `readFormControlValue(element)`——与 `collectFields` 同一条读值通道（复合控件的值不在 `value` 属性上），供行容器做值搬运。
+- i18n `schemaForm.*` 新增 11 键（16 语言 × 全量）；单测新增 40（array-table 16 / form-list 7 / schema-form 数组体系 14 / 编译层 3）；zh/en 文档新增「行内编辑表格」段与 demo，form 页 form-list 说明同步行数拆分与行操作。
+
 ## [2.6.9] - 2026-11-23
 
 ### 新增

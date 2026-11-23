@@ -114,6 +114,40 @@ are injected into the array path and rendered below the list as `part="array-err
   </oas-space>
 </DemoBlock>
 
+## Inline-edit table (`array-table`)
+
+Object arrays can also render as an inline-edit table with `uiSchema.widget: 'array-table'`. Row content is
+still rendered by this component (each cell is a `form-item`, so value collection / validation / reactions /
+error injection all work unchanged); the table only adds the two-dimensional layout, the header row and the
+row-action column — it is the same value semantics as `oas-form-list` in a different presentation.
+
+- Columns come from the declaration order of `items.properties`. Column-level annotations live on
+  `users[].field`: `width` (numbers are px, strings are used as grid tracks such as `'2fr'`), `align`
+  (`left` / `center` / `right`), `hidden` (visually hidden but the cell and its value are kept); a `widget`
+  override also applies to cells.
+- The action column holds remove / duplicate / move-up / move-down; the add button appends below the table.
+  Semantics match `oas-form-list` row operations (deep copy / value swap, focus returns by row position,
+  `aria-live` announcements).
+- Events: `oas-add` / `oas-remove` (`detail: { index }`), `oas-duplicate` / `oas-move` (`detail: { from, to }`).
+- Row operations change values but do **not** emit `oas-values-change` (contract preserved); the component
+  refreshes `dirty`, reactions and the controlled write baseline in the same turn, so the host only needs to
+  follow along in its own `values` (a controlled host write will not roll the operation back).
+- Structure changes (`schema` / `uiSchema`) restore the current row counts; rewriting `initialValues` and
+  `reset()` go back to the initial row count. Switching between the two widgets keeps the data.
+- Table semantics use ARIA (`role="table"` / `columnheader` / `row` / `cell`) plus CSS grid for geometry; no
+  native `<table>` (slots cannot produce `td`, and row content must stay in light DOM for the form kernel).
+- Division of labour with the full-featured `oas-table`: this widget targets lightweight forms and does not do
+  column resizing / reordering / paging / virtual scrolling / cross-row paste / bulk operations / cell merging.
+
+<DemoBlock title="Inline-edit table: column annotations + row actions (duplicate / move / remove)">
+  <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-table-values">getValues()</oas-button>
+    <oas-button id="sf-table-submit" type="primary">submit()</oas-button>
+  </oas-space>
+  <span id="sf-table-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## Layout: grid / group / tabs
 
 `layout.span` (1–24) occupies grid columns when the form uses `layout="grid"`. `layout.type="group"`
@@ -387,6 +421,56 @@ onMounted(() => {
       out.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
     })
     document.getElementById('sf-array-required-submit')?.addEventListener('click', () => arrayRequired.submit())
+  })
+
+  // ---- inline-edit table (array-table) ----
+  onUpgraded(document.getElementById('sf-table'), () => {
+    const table = document.getElementById('sf-table')
+    table.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: 'Members (inline-edit table)',
+          items: {
+            type: 'object',
+            required: ['nick'],
+            properties: {
+              nick: { type: 'string', title: 'Nickname' },
+              age: { type: 'integer', title: 'Age' },
+              role: { type: 'string', title: 'Role', enum: ['dev', 'ops', 'pm'] },
+            },
+          },
+        },
+      },
+    }
+    table.uiSchema = {
+      users: { widget: 'array-table' },
+      'users[].nick': { width: 160, align: 'left' },
+      'users[].age': { width: 96, align: 'right' },
+    }
+    table.initialValues = {
+      users: [
+        { nick: 'Alice', age: 28, role: 'dev' },
+        { nick: 'Bob', age: 32, role: 'ops' },
+      ],
+    }
+    const tableOut = document.getElementById('sf-table-output')
+    const reportTable = (label) => {
+      tableOut.textContent = `${label}: ${JSON.stringify(table.getValues())} (dirty=${table.dirty})`
+    }
+    table.addEventListener('oas-duplicate', (e) => reportTable(`oas-duplicate row ${e.detail.from + 1} → ${e.detail.to + 1}`))
+    table.addEventListener('oas-move', (e) => reportTable(`oas-move row ${e.detail.from + 1} → ${e.detail.to + 1}`))
+    table.addEventListener('oas-remove', (e) => reportTable(`oas-remove row ${e.detail.index + 1}`))
+    table.addEventListener('oas-add', () => reportTable('oas-add appended'))
+    document.getElementById('sf-table-values')?.addEventListener('click', () => reportTable('getValues()'))
+    document.getElementById('sf-table-submit')?.addEventListener('click', () => table.submit())
+    table.addEventListener('oas-submit', (e) => {
+      tableOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+    })
+    table.addEventListener('oas-validate-fail', (e) => {
+      tableOut.textContent = `oas-validate-fail: ${Object.entries(e.detail.errors).map(([k, v]) => `${k}=${v}`).join('; ')}`
+    })
   })
 
   onUpgraded(document.getElementById('sf-layout'), () => {

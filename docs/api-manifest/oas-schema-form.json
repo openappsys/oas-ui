@@ -100,7 +100,7 @@
     {
       "name": "reset",
       "signature": "reset(): void",
-      "description": "重置：回初始值、清错误、数组行数回初始长度（不派发事件）"
+      "description": "重置：回初始值、清错误、数组行数回初始长度（不派发事件；行数快照在此 bypass）"
     }
   ],
   "events": [],

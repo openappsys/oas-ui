@@ -79,6 +79,30 @@
 - `keepValueOnHidden`：`visible:false` 时保留值（默认卸载清值）。
 - 编译期校验 uiSchema 每个路径必须存在于数据 schema（数组用 `users[].name` 通配）；错字 devWarn。
 
+## 数组：两种容器与行操作（V2 批 1）
+
+对象数组默认走 `oas-form-list`；`uiSchema.widget: 'array-table'` 换成 `oas-array-table`（行内编辑表格）。
+两种容器的**行模板都由本组件渲染**（`form-item` + `data-schema-key` + 行内字段名 + 行容器
+`[data-oas-form-list-item]`），所以数组的 12 处 DOM 契约（路径索引 / 规则键重挂 / 联动具体路径 /
+数组错误条 / 空态）零成本共用。
+
+- **列定义（array-table）**：`items.properties` 声明顺序 + 列级注解 `width`（数字 px / 字符串轨道）/
+  `align` / `hidden`；`hidden` 列保留单元格与值，只隐藏视觉。`width` / `align` / `hidden` 用在非表格节点
+  上会 devWarn 忽略。
+- **行操作**：容器内建 复制 / 上移 / 下移 / 删除（`array-table` 另有表下列头内的追加按钮）。契约与
+  容器同源（`form/shared/list-row-ops`）：值读写走内核通道（`oas-upload` 跳过）、操作后焦点按行位回归、
+  `aria-live` 播报；事件 `oas-add` / `oas-remove` `{ index }` + `oas-duplicate` / `oas-move` `{ from, to }`。
+  **不引入 `oas-change` 的 `op` 字段**（已发布契约）。
+- **值同步**：行操作不派发 `oas-values-change`；本组件在 `oas-add/remove/duplicate/move` 监听里刷新
+  索引 / 规则 / 错误视觉 / 脏态 / 联动效果，受控模式下并把内核当前值当作新的 `appliedValues` 基线。
+- **错误清理**：重编号后旧 name 的错误会错位，因此行变更时清「数组级 + 该数组字段级」错误视觉
+  （注入错误走内核 `clearErrors`，规则错误在下次校验重算）。
+- **`min` 一物二用拆分**：容器 `rows` = 初始行数（本组件按数组长度下发），`min` = 删行下界（本组件
+  不再下发，默认 0）。`minItems` 违规由数组级校验报错，不再锁住唯一行。
+- **结构重建行数快照**：`schema` / `uiSchema` 变化触发的重建按重建前 DOM 行数恢复（超出初始长度的
+  行空值填充）；`initialValues` 改写与 `reset()` 忽略快照（行数回宿主初始值 / 初始长度）。
+- **受控缩容**：受控 `values` 变短时按值长度收敛行数（旧行为只增不减、宿主删行会留空行）。
+
 ## 联动注解（双轨：`whenSchema` / `when`）
 
 ```json

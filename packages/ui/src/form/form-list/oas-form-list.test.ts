@@ -347,3 +347,95 @@ describe('OASFormList template 后注入与水合', () => {
     expect(rows(el).length).toBe(1)
   })
 })
+
+describe('OASFormList rows / min 拆分与行操作（V2 批 1）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function actionBtn(el: OASFormList, idx: number, action: string): HTMLButtonElement {
+    return frames(el)[idx]!.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)!
+  }
+
+  function liveText(el: OASFormList): string {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="live"]')!.textContent ?? ''
+  }
+
+  it('rows 决定初始行数、min 只作删行下界：初始 1 行可删空（minItems 归校验层）', () => {
+    const el = makeList({ name: 'users', rows: '1' }, '<oas-input name="nick"></oas-input>')
+    expect(rows(el).length).toBe(1)
+    expect(actionBtn(el, 0, 'remove').disabled).toBe(false)
+    actionBtn(el, 0, 'remove').click()
+    expect(rows(el).length).toBe(0)
+  })
+
+  it('rows 缺省时 min 仍兼作初始行数（既有用法向后兼容）', () => {
+    const el = makeList({ min: '3' }, '<oas-input name="name"></oas-input>')
+    expect(rows(el).length).toBe(3)
+  })
+
+  it('复制行：插入下一行、值 JSON 深拷贝、oas-duplicate {from,to} + 播报', () => {
+    const el = makeList({ name: 'users', rows: '2' }, '<oas-input name="nick"></oas-input>')
+    rowFields(el, 0)[0]!.setAttribute('value', 'A')
+    rowFields(el, 1)[0]!.setAttribute('value', 'B')
+    const events: unknown[] = []
+    el.addEventListener('oas-duplicate', (e) => events.push((e as CustomEvent).detail))
+    actionBtn(el, 0, 'duplicate').click()
+    expect(events).toEqual([{ from: 0, to: 1 }])
+    expect(rows(el).length).toBe(3)
+    expect(rowFields(el, 1)[0]!.getAttribute('name')).toBe('users.1.nick')
+    expect(rowFields(el, 1)[0]!.getAttribute('value')).toBe('A')
+    expect(rowFields(el, 2)[0]!.getAttribute('value')).toBe('B')
+    expect(liveText(el)).toContain('已复制第 2 行')
+  })
+
+  it('上移 / 下移：值交换（DOM 顺序不动）+ oas-move {from,to} + 焦点跟随', () => {
+    const el = makeList({ name: 'users', rows: '2' }, '<oas-input name="nick"></oas-input>')
+    rowFields(el, 0)[0]!.setAttribute('value', 'A')
+    rowFields(el, 1)[0]!.setAttribute('value', 'B')
+    const events: unknown[] = []
+    el.addEventListener('oas-move', (e) => events.push((e as CustomEvent).detail))
+    actionBtn(el, 1, 'move-up').click()
+    expect(events).toEqual([{ from: 1, to: 0 }])
+    expect(rowFields(el, 0)[0]!.getAttribute('value')).toBe('B')
+    expect(rowFields(el, 1)[0]!.getAttribute('value')).toBe('A')
+    // 首行的上移已禁用 → 焦点退到该行「下移」（可撤销刚做的移动）
+    expect(el.shadowRoot!.activeElement).toBe(actionBtn(el, 0, 'move-down'))
+    expect(liveText(el)).toContain('第 2 行已移动到第 1 行')
+  })
+
+  it('setRowCount 收敛行数（增补 / 缩减，不派发事件，重编号即时）', () => {
+    const el = makeList({ name: 'users', rows: '1' }, '<oas-input name="nick"></oas-input>')
+    const events: unknown[] = []
+    el.addEventListener('oas-add', (e) => events.push(e))
+    el.addEventListener('oas-remove', (e) => events.push(e))
+    el.setRowCount(3)
+    expect(rows(el).length).toBe(3)
+    el.setRowCount(1)
+    expect(rows(el).length).toBe(1)
+    expect(rowFields(el, 0)[0]!.getAttribute('name')).toBe('users.0.nick')
+    expect(events).toHaveLength(0)
+  })
+
+  it('insertRowAt 在指定位置插行并重编号（后续行值随行保留）', () => {
+    const el = makeList({ name: 'users', rows: '2' }, '<oas-input name="nick"></oas-input>')
+    rowFields(el, 0)[0]!.setAttribute('value', 'A')
+    rowFields(el, 1)[0]!.setAttribute('value', 'B')
+    expect(el.insertRowAt(1)).toBe(true)
+    expect(rows(el).length).toBe(3)
+    expect(rowFields(el, 2)[0]!.getAttribute('name')).toBe('users.2.nick')
+    expect(rowFields(el, 2)[0]!.getAttribute('value')).toBe('B')
+  })
+
+  it('断开重连：观察器重挂、行不重复创建（行数不翻倍）、行操作可用', () => {
+    const el = makeList({ name: 'users', rows: '1' }, '<oas-input name="nick"></oas-input>')
+    el.remove()
+    document.body.appendChild(el)
+    expect(rows(el).length).toBe(1)
+    actionBtn(el, 0, 'duplicate').click()
+    expect(rows(el).length).toBe(2)
+  })
+})

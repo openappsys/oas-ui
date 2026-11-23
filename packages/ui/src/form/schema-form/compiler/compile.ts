@@ -14,7 +14,9 @@ import type {
   GroupPlan,
   JsonSchema,
   PlanNode,
+  TableColumn,
   UiNode,
+  ValueTransformPlan,
 } from './types.js'
 import { resolveSchemaRefs } from './refs.js'
 import { canonicalDslPath, parseDslPath, WILDCARD } from './path.js'
@@ -22,12 +24,22 @@ import { isObjectArray, resolveWidget, resolveWidgetOverride, schemaType } from 
 import { FORMATS } from './validate.js'
 import { compileReactions, type UiReactionSource } from './reactions.js'
 
-const UI_KEYS = new Set(['widget', 'layout', 'options', 'reactions', 'keepValueOnHidden'])
+const UI_KEYS = new Set([
+  'widget',
+  'layout',
+  'options',
+  'reactions',
+  'keepValueOnHidden',
+  // 值变换双钩子（V2 批 2）：裸键，注册名由 registerSchemaConverter / registerSchemaTransformer 解析
+  'convert',
+  'transform',
+  // array-table 列级注解（仅表格数组的直接列消费；其它节点出现即告警忽略）
+  'width',
+  'align',
+  'hidden',
+])
 
-/** V2 明确不做：值变换双钩子 / 远程数据源（uiSchema 注解面） */
-const V2_UI_KEYS = new Set(['convertValue', 'transform', 'dataSource'])
-
-/** V2 明确不做：值变换 / 远程数据源（数据 schema 面，未知关键字默认放行——这几个要显式告知） */
+/** V2 未承接的数据 schema 关键字：显式告知（其余未知关键字按 JSON Schema 放行） */
 const V2_SCHEMA_KEYS = ['convertValue', 'transform', 'dataSource'] as const
 
 export interface CompileOptions {
@@ -145,6 +157,7 @@ interface BuildContext {
   uiUsed: Set<string>
   warnings: string[]
   reactions: UiReactionSource[]
+  transforms: ValueTransformPlan[]
 }
 
 /** uiSchema 路径查找（规范化键；不存在返回 null） */
@@ -163,6 +176,24 @@ function collectReactions(ctx: BuildContext, path: string, ui: UiNode | null): v
   ctx.reactions.push({ path, reactions: ui.reactions })
 }
 
+/**
+ * 采集值变换钩子（`convert` / `transform` 注册名）：只对**叶子字段**有效——
+ * convert 的输出是组件值字符串，作用于容器（对象/数组）没有语义落点，命中即告警忽略。
+ */
+function collectValueHooks(ctx: BuildContext, path: string, ui: UiNode | null): void {
+  if (!ui) return
+  const entry: ValueTransformPlan = { path }
+  if (ui.convert !== undefined) {
+    if (typeof ui.convert === 'string' && ui.convert !== '') entry.convert = ui.convert
+    else ctx.warnings.push(`uiSchema.convert 必须是注册名（非空字符串），已忽略（${path}）`)
+  }
+  if (ui.transform !== undefined) {
+    if (typeof ui.transform === 'string' && ui.transform !== '') entry.transform = ui.transform
+    else ctx.warnings.push(`uiSchema.transform 必须是注册名（非空字符串），已忽略（${path}）`)
+  }
+  if (entry.convert !== undefined || entry.transform !== undefined) ctx.transforms.push(entry)
+}
+
 /** 构建字段节点 */
 function buildField(
   schema: JsonSchema,
@@ -177,6 +208,7 @@ function buildField(
   const widget = resolveWidget(schema, { widget: ui?.widget, options: ui?.options }, path, ctx.warnings)
   if (!widget) return null
   collectReactions(ctx, path, ui)
+  collectValueHooks(ctx, path, ui)
   return {
     kind: 'field',
     key: `field:${path}`,
@@ -205,20 +237,45 @@ function buildArray(
   key: string,
   ui: UiNode | null,
   required: boolean,
+  table = false,
 ): ArrayPlan {
   const items = (isPlainObject(schema.items) ? schema.items : {}) as JsonSchema
   const itemNamePrefix = ''
   const itemPathPrefix = `${path}.[]`
   const children: PlanNode[] = []
+  const columns: TableColumn[] = []
   if (isObjectArray(schema)) {
     const requiredKeys = new Set(
       Array.isArray(items.required) ? items.required.filter((k): k is string => typeof k === 'string') : [],
     )
     const props = isPlainObject(items.properties) ? (items.properties as Record<string, JsonSchema>) : {}
     for (const [childKey, childSchema] of Object.entries(props)) {
-      children.push(
-        ...buildChild(childSchema, ctx, itemNamePrefix, itemPathPrefix, childKey, requiredKeys.has(childKey), true),
+      const childNodes = buildChild(
+        childSchema,
+        ctx,
+        itemNamePrefix,
+        itemPathPrefix,
+        childKey,
+        requiredKeys.has(childKey),
+        true,
+        table,
       )
+      children.push(...childNodes)
+      if (table) {
+        const columnUi = uiAt(ctx, joinPath(itemPathPrefix, childKey))
+        columns.push({
+          key: childKey,
+          label: labelOf(childSchema, childKey, columnUi),
+          width: columnUi?.width,
+          align:
+            columnUi?.align === 'center' || columnUi?.align === 'right'
+              ? columnUi.align
+              : columnUi?.align === 'left'
+                ? 'left'
+                : undefined,
+          hidden: columnUi?.hidden === true,
+        })
+      }
     }
   }
   collectReactions(ctx, path, ui)
@@ -236,6 +293,8 @@ function buildArray(
     items,
     children,
     arrayRules: arrayRulesOf(schema, required),
+    table: table || undefined,
+    columns: table ? columns : undefined,
     staticVisible: true,
     staticDisabled: staticDisabled(ui),
     staticRequired: required,
@@ -254,30 +313,38 @@ function buildChild(
   key: string,
   required: boolean,
   inArrayRow: boolean,
+  inTableColumn = false,
 ): PlanNode[] {
   const name = joinName(namePrefix, key)
   const path = joinPath(pathPrefix, key)
   const ui = uiAt(ctx, path)
   if (ui) {
     for (const unknownKey of Object.keys(ui)) {
-      if (V2_UI_KEYS.has(unknownKey)) {
-        // V2 明确不做：值变换双钩子 / 远程数据源——命中即告知，不静默失效
-        ctx.warnings.push(`uiSchema."${unknownKey}" 为 V2 能力（值变换 / 远程数据源），本版未实现（${path}）`)
-      } else if (!UI_KEYS.has(unknownKey)) {
+      if (!UI_KEYS.has(unknownKey)) {
         ctx.warnings.push(`uiSchema 节点含未知键 "${unknownKey}"（${path}）`)
       }
+    }
+    if (!inTableColumn && (ui.width !== undefined || ui.align !== undefined || ui.hidden !== undefined)) {
+      ctx.warnings.push(`uiSchema 列级注解（width / align / hidden）仅对 array-table 的直接列生效，已忽略（${path}）`)
     }
   }
   for (const v2Key of V2_SCHEMA_KEYS) {
     if (schema[v2Key] !== undefined) {
-      ctx.warnings.push(`schema.${v2Key} 为 V2 能力（值变换 / 远程数据源），本版未实现（${path}）`)
+      ctx.warnings.push(`schema.${v2Key} 不属于 V1/V2 冻结关键字，已忽略（${path}）`)
     }
   }
-  // 行内编辑表格作用于对象数组：数组节点不走 resolveWidget，这里是它的告警落点
-  if (ui?.widget === 'array-table') {
-    ctx.warnings.push(`uiSchema.widget "array-table" 为 V2 能力（行内编辑表格），本版未实现，按默认映射渲染（${path}）`)
-  }
   const type = effectiveType(schema)
+  if (
+    (ui?.convert !== undefined || ui?.transform !== undefined) &&
+    (type === 'object' || type === 'array') &&
+    resolveWidgetOverride(ui?.widget) === null
+  ) {
+    ctx.warnings.push(`uiSchema.convert / transform 仅对叶子字段生效，容器节点已忽略（${path}）`)
+  }
+  // 行内编辑表格：对象数组 + `widget: 'array-table'` 走表格容器（其余形态在 resolveWidget 里告警回落）
+  if (ui?.widget === 'array-table' && type === 'array' && isObjectArray(schema)) {
+    return [buildArray(schema, ctx, name, path, key, ui, required, true)]
+  }
   // uiSchema.widget 覆盖优先于容器判定：object / 对象数组被 widget 接管时按单控件渲染
   //（matrix 的值是对象，没有这条通道就只会渲染成分组容器、控件永远不出现）
   const overridden = resolveWidgetOverride(ui?.widget) !== null
@@ -440,14 +507,21 @@ export function compileSchema(rawSchema: unknown, rawUiSchema?: unknown, options
   if (expanded.schema === null) {
     const error = expanded.errors.join('；') || 'schema 非法'
     warn(`schema 编译失败：${error}`)
-    return finish({ plan: [], defaults: {}, reactions: [], warnings, error })
+    return finish({ plan: [], defaults: {}, reactions: [], transforms: [], warnings, error })
   }
   const schema = expanded.schema
 
   const rootType = effectiveType(schema)
   if (rootType !== 'object') {
     warn('schema 根节点必须是 object（V1 表单根是字段集合）')
-    return finish({ plan: [], defaults: {}, reactions: [], warnings, error: 'schema 根节点必须是 object' })
+    return finish({
+      plan: [],
+      defaults: {},
+      reactions: [],
+      transforms: [],
+      warnings,
+      error: 'schema 根节点必须是 object',
+    })
   }
 
   const ctx: BuildContext = {
@@ -455,6 +529,7 @@ export function compileSchema(rawSchema: unknown, rawUiSchema?: unknown, options
     uiUsed: new Set(),
     warnings,
     reactions: [],
+    transforms: [],
   }
 
   const rootPath = ''
@@ -483,7 +558,7 @@ export function compileSchema(rawSchema: unknown, rawUiSchema?: unknown, options
   const defaultsRaw = collectDefaults(schema)
   const defaults = isPlainObject(defaultsRaw) ? defaultsRaw : {}
 
-  return finish({ plan, defaults, reactions, warnings })
+  return finish({ plan, defaults, reactions, transforms: ctx.transforms, warnings })
 }
 
 /** 路径工具再导出（组件/测试共用同一实现，避免口径漂移） */

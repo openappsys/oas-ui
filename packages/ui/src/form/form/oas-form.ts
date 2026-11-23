@@ -363,6 +363,18 @@ export function writeFormControlValue(element: Element, value: string): boolean 
   return true
 }
 
+/**
+ * 按控件的**已注册 reader** 读值（与 `collectFields` 同一条读值通道）。
+ *
+ * 供行容器做「行复制 / 行交换」等不经过用户交互的值搬运：复合控件的值不在 `value` 属性上
+ * （switch 是 checked 态、动态条目是 `model-value` 通道、自定义 widget 有自己 reader），
+ * 直接读属性会静默错值。未注册 reader 的 tag 回落默认读值（`value` 属性）。
+ */
+export function readFormControlValue(element: Element): string {
+  const reader = FORM_CONTROLS.get(element.tagName.toLowerCase()) ?? defaultReader
+  return reader(element) ?? ''
+}
+
 /** 校验触发时机 */
 export type ValidateTrigger = 'change' | 'blur' | 'input'
 const TRIGGERS: ValidateTrigger[] = ['change', 'blur', 'input']

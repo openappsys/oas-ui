@@ -49,7 +49,8 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
     //       image-picker / image-cropper）+ 移动端与工具组件批 8 件（layout 2 / feedback 2 / data 2 / overlay 2）
     //       + schema-form（form 族）+ 问卷填写端两件（matrix / rank，form 族）
     // 189 = 187 + time-select（commerce 族）+ drag（overlay 族），电商可捞件批
-    expect(all.length, '全量注册表组件数').toBe(189)
+    // 190 = 189 + array-table（form 族，schema-form V2 批 1 行内编辑表格容器）
+    expect(all.length, '全量注册表组件数').toBe(190)
     const tops = new Set(all.map((p) => p.split('/')[0]))
     expect(tops).toEqual(new Set(Object.values(FAMILY_DIR)))
     // 每个顶层目录的全部组件都在 index.ts 全量清单里
@@ -59,7 +60,8 @@ describe('CDN 按需打包：全族注册文件覆盖全量注册表', () => {
         basic: 12,
         layout: 11,
         workbench: 5,
-        form: 44,
+        // form 45 = 44 + array-table（schema-form V2 批 1）
+        form: 45,
         feedback: 26,
         navigation: 23,
         // data 44 = 42 + rolling-text / barrage（移动端与工具组件批）

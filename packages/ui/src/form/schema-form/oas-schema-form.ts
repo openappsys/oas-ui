@@ -340,6 +340,8 @@ export class OASSchemaForm extends OASElement {
     form.addEventListener('oas-values-change', this.handleValuesEvent)
     form.addEventListener('oas-add', this.handleArrayMutationEvent)
     form.addEventListener('oas-remove', this.handleArrayMutationEvent)
+    form.addEventListener('oas-duplicate', this.handleArrayMutationEvent)
+    form.addEventListener('oas-move', this.handleArrayMutationEvent)
     if (this.bindCleanupRegistered) return
     this.bindCleanupRegistered = true
     this.onCleanup(() => {
@@ -347,11 +349,13 @@ export class OASSchemaForm extends OASElement {
       form.removeEventListener('oas-values-change', this.handleValuesEvent)
       form.removeEventListener('oas-add', this.handleArrayMutationEvent)
       form.removeEventListener('oas-remove', this.handleArrayMutationEvent)
+      form.removeEventListener('oas-duplicate', this.handleArrayMutationEvent)
+      form.removeEventListener('oas-move', this.handleArrayMutationEvent)
     })
   }
 
   private readonly handleValuesEvent = (event: Event): void => this.onValuesChange(event)
-  private readonly handleArrayMutationEvent = (): void => this.onArrayMutation()
+  private readonly handleArrayMutationEvent = (event: Event): void => this.onArrayMutation(event)
 
   /** 断开重连：cleanup 已摘除监听 → 重绑（否则联动求值与数组增删刷新永久失效） */
   protected override onReconnect(): void {
@@ -378,9 +382,11 @@ export class OASSchemaForm extends OASElement {
     if (!compiled) return
     const key = this.structureKey()
     if (key !== this.renderedKey) {
+      // 受控 values 与结构变化同时到达：行数以宿主值为准（行数快照会让「初始 1 行 / 值 3 行」错配）
+      const valuesChanged = this.appliedValuesKey !== null && this.valuesKey() !== this.appliedValuesKey
       this.renderedKey = key
       this.appliedValuesKey = this.valuesKey()
-      this.rebuild()
+      this.rebuild({ restoreRows: !valuesChanged })
     } else {
       this.indexArrayNodes()
       this.syncArrayStates()
@@ -474,12 +480,19 @@ export class OASSchemaForm extends OASElement {
 
   // ---------- 渲染 ----------
 
-  /** 结构重建：快照当前值 → 重建 DOM → 回填值（结构变化时值不丢） */
-  private rebuild(): void {
+  /**
+   * 结构重建：快照当前值 → 重建 DOM → 回填值（结构变化时值不丢）。
+   *
+   * 行数快照（V2 批 1）：重建前从 DOM 现取各数组的行数，重建后按快照恢复（超出初始长度的行空值填充）。
+   * 「不建常驻 map」——断开保留的 DOM 就是快照来源，常驻态只会与 reset / 重连打架。
+   * `restoreRows: false` = 忽略快照（reset 行数回初始；受控 values 写入 / 初始值通道变化由 update 传入）。
+   */
+  private rebuild(options: { restoreRows?: boolean } = {}): void {
     const form = this.formEl
     const body = this.bodyEl
     const compiled = this.compiled
     if (!form || !body || !compiled) return
+    const rowCounts = options.restoreRows === false ? null : this.captureRowCounts()
     const snapshot = form.getValues()
     // 初始值通道是否变化决定「initial 胜还是快照胜」：只有宿主改写 initialValues 时才允许
     // 用初始值覆盖快照——schema/uiSchema 等其它结构变化触发的重建必须保留用户编辑。
@@ -491,6 +504,7 @@ export class OASSchemaForm extends OASElement {
     body.textContent = ''
     this.unmountedFields.clear()
     this.arrayErrorPaths.clear()
+    this.arrayPathOf = new WeakMap()
     if (compiled.error) {
       form.rules = {}
       this.syncEmptyState()
@@ -500,16 +514,26 @@ export class OASSchemaForm extends OASElement {
     // 基线 = schema default ← 宿主通道（受控 values 优先，否则 initialValues）
     const merged = mergeDeep(cloneJson(compiled.defaults) as Record<string, unknown>, this.baselineValues())
     form.initialValues = merged
-    // 行数由初始数组长度驱动（min 兜底；initialValues 有 1 行必须渲染 1 行）
-    this.syncArrayMin(merged)
+    // 行数：初始数组长度 ∪ 结构重建行数快照（initialChanged 时快照作废，交给初始值）
+    this.syncArrayRows(merged, initialChanged ? null : rowCounts)
     form.reapplyInitialValues()
     this.applySnapshotValues(snapshot, merged, controlled || initialChanged)
     this.appliedValues = controlled ? (cloneJson(this.values) as Record<string, unknown>) : null
-    this.pristineSnapshot = new Map(flattenValues(this.getValues()))
+    this.pristineSnapshot = new Map(flattenValues(this.kernelValues()))
     this.syncDirty()
     this.syncRules()
     this.evaluateEffects()
     this.syncArrayStates()
+  }
+
+  /** 结构重建行数快照：当前 DOM 各数组（具体路径）的行数 */
+  private captureRowCounts(): Map<string, number> {
+    const counts = new Map<string, number>()
+    this.indexArrayNodes()
+    for (const [element, path] of this.arrayNodes()) {
+      counts.set(path, element.querySelectorAll(':scope > [data-oas-form-list-item]').length)
+    }
+    return counts
   }
 
   private renderNode(node: PlanNode): HTMLElement {
@@ -650,20 +674,31 @@ export class OASSchemaForm extends OASElement {
     title.hidden = node.label === ''
     container.appendChild(title)
 
-    const empty = document.createElement('div')
-    empty.className = 'array-empty'
-    empty.setAttribute('part', 'array-empty')
-    empty.textContent = this.t('schemaForm.emptyArray')
-    // 空态提示放在列表之前：列表的「添加一项」按钮在其下方，文案里的方向词才成立
-    container.appendChild(empty)
+    // 空态提示放在列表之前：列表的「添加一项」按钮在其下方，文案里的方向词才成立。
+    // 表格自带表体空态（role=row 占位），不再叠一层文案。
+    if (node.table !== true) {
+      const empty = document.createElement('div')
+      empty.className = 'array-empty'
+      empty.setAttribute('part', 'array-empty')
+      empty.textContent = this.t('schemaForm.emptyArray')
+      container.appendChild(empty)
+    }
 
-    const list = document.createElement('oas-form-list')
+    const list = document.createElement(node.table === true ? 'oas-array-table' : 'oas-form-list')
     list.setAttribute('part', 'list')
     list.setAttribute('data-schema-array-key', node.key)
     list.setAttribute('name', node.name)
-    // 增删按钮可访问名走 schemaForm.*（i18n），由 form-list 的可选属性承接
-    list.setAttribute('add-text', this.t('schemaForm.addItem'))
-    list.setAttribute('remove-text', this.t('schemaForm.removeItem'))
+    // 增删按钮可访问名走 schemaForm.*（i18n），由容器的可选属性承接
+    list.setAttribute('add-text', this.t(node.table === true ? 'schemaForm.rowAdd' : 'schemaForm.addItem'))
+    list.setAttribute('remove-text', this.t(node.table === true ? 'schemaForm.rowRemove' : 'schemaForm.removeItem'))
+    // 行操作三钮（复制 / 上移 / 下移）：两种容器同一套语义
+    list.setAttribute('duplicate-text', this.t('schemaForm.rowDuplicate'))
+    list.setAttribute('move-up-text', this.t('schemaForm.rowUp'))
+    list.setAttribute('move-down-text', this.t('schemaForm.rowDown'))
+    if (node.table === true) {
+      list.setAttribute('label', node.label)
+      list.setAttribute('columns', JSON.stringify(node.columns ?? []))
+    }
     // 行模板：行内字段裸名（form-list 自动加前缀）；嵌套数组名带 {index}（外层替换）
     const template = document.createElement('template')
     for (const child of node.children) template.content.appendChild(this.renderNode(child))
@@ -693,16 +728,27 @@ export class OASSchemaForm extends OASElement {
 
   // ---------- 初始值 / 行数 ----------
 
-  /** 按初始值数组长度设置 form-list min（逐层；行数由数据驱动，0 行也有占位） */
-  private syncArrayMin(initial: Record<string, unknown>): void {
+  /** 内核原始值（字符串语义；值变换的出向改写不落在这里） */
+  private kernelValues(): Record<string, unknown> {
+    return this.formEl?.getValues() ?? {}
+  }
+
+  /**
+   * 按数组长度 + 结构重建行数快照设置 `rows`（逐层；嵌套数组随外层行展开）：
+   * 目标行数 = max(初始数组长度, 快照行数)。`min` 不再由本组件下发——删行下界归容器（默认 0），
+   * `minItems` 违规交给数组级校验报错，不再被「唯一行删不掉」锁住。
+   */
+  private syncArrayRows(initial: Record<string, unknown>, rowCounts: Map<string, number> | null): void {
     for (let pass = 0; pass < 4; pass++) {
       this.indexArrayNodes()
       let changed = false
       for (const [element, path] of this.arrayNodes()) {
+        if (!element.isConnected) continue
         const value = readPath(initial, parseDslPath(path) ?? [])
         const length = Array.isArray(value) ? value.length : 0
-        if (element.getAttribute('min') !== String(length)) {
-          element.setAttribute('min', String(length))
+        const target = Math.max(length, rowCounts?.get(path) ?? 0)
+        if (element.getAttribute('rows') !== String(target)) {
+          element.setAttribute('rows', String(target))
           changed = true
         }
       }
@@ -849,7 +895,7 @@ export class OASSchemaForm extends OASElement {
     }
     this.applyingHostValues = true
     try {
-      this.syncHostArrayMin(nextAll)
+      this.syncHostArrayRows(nextAll)
       if (changed) form.setValues(patch)
       this.appliedValues = cloneJson(nextAll) as Record<string, unknown>
     } finally {
@@ -862,19 +908,30 @@ export class OASSchemaForm extends OASElement {
     this.syncDirty()
   }
 
-  /** 受控数组按长度补行（min 只增不减：行删除仍归 form-list 交互） */
-  private syncHostArrayMin(values: Record<string, unknown>): void {
-    this.indexArrayNodes()
-    for (const [element, path] of this.arrayNodes()) {
-      const value = readPath(values, parseDslPath(path) ?? [])
-      if (!Array.isArray(value)) continue
-      if (element.getAttribute('min') !== String(value.length)) element.setAttribute('min', String(value.length))
+  /** 受控数组按长度收敛行数（增补空行 / 删除多余行：宿主删行留空行的缺陷同批修） */
+  private syncHostArrayRows(values: Record<string, unknown>): void {
+    for (let pass = 0; pass < 4; pass++) {
+      this.indexArrayNodes()
+      let changed = false
+      for (const [element, path] of this.arrayNodes()) {
+        if (!element.isConnected) continue
+        const value = readPath(values, parseDslPath(path) ?? [])
+        if (!Array.isArray(value)) continue
+        const target = value.length
+        if (element.getAttribute('rows') !== String(target)) element.setAttribute('rows', String(target))
+        const before = element.querySelectorAll(':scope > [data-oas-form-list-item]').length
+        const sized = element as HTMLElement & { setRowCount?: (count: number) => void }
+        sized.setRowCount?.(target)
+        const after = element.querySelectorAll(':scope > [data-oas-form-list-item]').length
+        if (after !== before) changed = true
+      }
+      if (!changed) break
     }
   }
 
   /** 脏态：当前值扁平快照 vs 挂载基线（内核之外的一小块自持状态） */
   private syncDirty(): void {
-    const now = new Map(flattenValues(this.getValues()))
+    const now = new Map(flattenValues(this.kernelValues()))
     let dirty = now.size !== this.pristineSnapshot.size
     if (!dirty) {
       for (const [path, value] of now) {
@@ -961,13 +1018,43 @@ export class OASSchemaForm extends OASElement {
     }
   }
 
-  /** 数组增删：行号重绑 → 重索引/规则键重挂/清数组级错误 */
-  private onArrayMutation(): void {
+  /**
+   * 数组增删 / 复制 / 移动：行号重绑 → 重索引 / 规则键重挂 / 清错误 → 值同步。
+   *
+   * 错误清理扩到**该数组的字段级**：内核 errors 按旧 name 挂在元素上，重编号后错位
+   * （删掉第 1 行后，原 `users.1.nick` 的红字仍显示在新第 1 行上），必须随重编号一起清。
+   * 值同步：行操作会改值但不派发 `oas-values-change`（事件契约不变），脏态 / 联动 / 受控
+   * appliedValues 必须在此显式刷新，否则宿主下一次写同值会被当成「无变化」而静默丢弃。
+   */
+  private onArrayMutation(event: Event): void {
+    const list = event.target instanceof Element ? event.target : null
+    // 路径必须在重索引之前取：删行会让内层数组的具体路径整体前移
+    const mutatedPath = list ? this.arrayPathOf.get(list) : undefined
     this.indexArrayNodes()
     this.syncRules()
     this.clearArrayErrorVisuals()
+    if (list) this.clearArrayFieldErrors(list, mutatedPath)
     this.syncArrayStates()
     this.evaluateEffects()
+    this.syncDirty()
+    // 受控模式：行操作后把内核当前值当作新的写基线（宿主下次写树时只 diff 真实差异）
+    if (this.hasHostValues()) this.appliedValues = cloneJson(this.kernelValues()) as Record<string, unknown>
+  }
+
+  /** 清该数组的字段级错误视觉（注入项走内核，规则错误在下次校验时重算） */
+  private clearArrayFieldErrors(list: Element, path: string | undefined): void {
+    const form = this.formEl
+    if (form && path) {
+      const prefix = `${path}.`
+      const injected = Object.keys(form.getErrors()).filter((name) => name.startsWith(prefix))
+      if (injected.length > 0) form.clearErrors(injected)
+    }
+    for (const item of list.querySelectorAll<HTMLElement>('oas-form-item')) {
+      ;(item as HTMLElement & { setError?: (message: string | null) => void }).setError?.(null)
+    }
+    for (const widget of list.querySelectorAll<HTMLElement>('[aria-invalid="true"]')) {
+      widget.removeAttribute('aria-invalid')
+    }
   }
 
   /** 效果查找：effect 键（具体路径或通配模式）命中元素具体路径 */
@@ -1283,7 +1370,7 @@ export class OASSchemaForm extends OASElement {
     this.applyingHostValues = true
     try {
       this.indexArrayNodes()
-      this.syncHostArrayMin(patch)
+      this.syncHostArrayRows(patch)
       this.formEl?.setValues(patch)
       const merged = mergeDeep(
         cloneJson(this.appliedValues ?? {}) as Record<string, unknown>,
@@ -1310,11 +1397,11 @@ export class OASSchemaForm extends OASElement {
     this.formEl?.clearErrors(paths)
   }
 
-  /** 重置：回初始值、清错误、数组行数回初始长度（不派发事件） */
+  /** 重置：回初始值、清错误、数组行数回初始长度（不派发事件；行数快照在此 bypass） */
   reset(): void {
     if (!this.compiled) return
     this.clearArrayErrorVisuals()
-    this.rebuild()
+    this.rebuild({ restoreRows: false })
     this.formEl?.reset()
     this.syncDirty()
     this.evaluateEffects()

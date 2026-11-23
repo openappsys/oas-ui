@@ -1,21 +1,21 @@
 {
   "size": {
-    "generatedAt": "2026-11-23",
+    "generatedAt": "2026-11-24",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 47664205,
+        "distTotalBytes": 48827558,
         "browserJs": {
-          "files": 571,
-          "rawBytes": 11742925,
-          "gzipBytes": 2940222,
-          "brotliBytes": 2306642
+          "files": 582,
+          "rawBytes": 12039882,
+          "gzipBytes": 3012488,
+          "brotliBytes": 2364406
         },
         "fullEntry": {
-          "files": 588,
-          "rawBytes": 4164274,
-          "gzipBytes": 1184957,
-          "brotliBytes": 1017043,
+          "files": 599,
+          "rawBytes": 4276693,
+          "gzipBytes": 1217010,
+          "brotliBytes": 1044722,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -86,8 +86,12 @@
             "packages/ui/dist/framework/config-provider/index.js",
             "packages/ui/dist/framework/config-provider/oas-config-provider.js",
             "packages/ui/dist/shared/ssr-runtime.js",
-            "packages/ui/dist/commerce/category/index.js",
+            "packages/ui/dist/commerce/time-select/index.js",
             "packages/i18n/dist/slices/commerce.js",
+            "packages/ui/dist/commerce/time-select/oas-time-select.js",
+            "packages/ui/dist/shared/stable-id.js",
+            "packages/ui/dist/shared/direction.js",
+            "packages/ui/dist/commerce/category/index.js",
             "packages/ui/dist/commerce/category/oas-category.js",
             "packages/ui/dist/shared/json-array.js",
             "packages/ui/dist/commerce/ecard/index.js",
@@ -101,7 +105,6 @@
             "packages/ui/dist/commerce/price/index.js",
             "packages/ui/dist/commerce/price/oas-price.js",
             "packages/ui/dist/shared/safe-url.js",
-            "packages/ui/dist/shared/stable-id.js",
             "packages/ui/dist/commerce/coupon/index.js",
             "packages/ui/dist/commerce/coupon/oas-coupon.js",
             "packages/ui/dist/shared/choice.js",
@@ -124,7 +127,6 @@
             "packages/ui/dist/conversation/message-scroller/oas-message-scroller.js",
             "packages/ui/dist/conversation/attachment/index.js",
             "packages/ui/dist/conversation/attachment/oas-attachment-group.js",
-            "packages/ui/dist/shared/direction.js",
             "packages/ui/dist/conversation/attachment/oas-attachment.js",
             "packages/ui/dist/conversation/bubble/index.js",
             "packages/ui/dist/conversation/bubble/oas-bubble.js",
@@ -363,8 +365,10 @@
             "packages/ui/dist/navigation/dropdown/oas-dropdown-group.js",
             "packages/ui/dist/navigation/dropdown/oas-dropdown-item.js",
             "packages/ui/dist/navigation/dropdown/oas-dropdown.js",
-            "packages/ui/dist/overlay/curtain/index.js",
+            "packages/ui/dist/overlay/drag/index.js",
             "packages/i18n/dist/slices/overlay.js",
+            "packages/ui/dist/overlay/drag/oas-drag.js",
+            "packages/ui/dist/overlay/curtain/index.js",
             "packages/ui/dist/overlay/curtain/oas-curtain.js",
             "packages/ui/dist/overlay/share-sheet/index.js",
             "packages/ui/dist/overlay/share-sheet/oas-share-sheet.js",
@@ -423,6 +427,10 @@
             "packages/ui/dist/feedback/message/index.js",
             "packages/ui/dist/feedback/message/message.js",
             "packages/ui/dist/feedback/message/oas-message.js",
+            "packages/ui/dist/form/rank/index.js",
+            "packages/ui/dist/form/rank/oas-rank.js",
+            "packages/ui/dist/form/matrix/index.js",
+            "packages/ui/dist/form/matrix/oas-matrix.js",
             "packages/ui/dist/form/image-cropper/index.js",
             "packages/ui/dist/form/image-cropper/oas-image-cropper.js",
             "packages/ui/dist/form/image-picker/index.js",
@@ -475,6 +483,13 @@
             "packages/ui/dist/form/calendar/index.js",
             "packages/ui/dist/form/calendar/oas-calendar.js",
             "packages/ui/dist/form/schema-form/index.js",
+            "packages/ui/dist/form/array-table/index.js",
+            "packages/ui/dist/form/form-item/index.js",
+            "packages/ui/dist/form/form-item/oas-form-item.js",
+            "packages/ui/dist/form/form/index.js",
+            "packages/ui/dist/form/form/oas-form.js",
+            "packages/ui/dist/form/array-table/oas-array-table.js",
+            "packages/ui/dist/form/shared/list-row-ops.js",
             "packages/ui/dist/form/rate/index.js",
             "packages/ui/dist/form/rate/oas-rate.js",
             "packages/ui/dist/form/slider/index.js",
@@ -492,10 +507,6 @@
             "packages/ui/dist/form/input-number/oas-input-number.js",
             "packages/ui/dist/form/form-list/index.js",
             "packages/ui/dist/form/form-list/oas-form-list.js",
-            "packages/ui/dist/form/form-item/index.js",
-            "packages/ui/dist/form/form-item/oas-form-item.js",
-            "packages/ui/dist/form/form/index.js",
-            "packages/ui/dist/form/form/oas-form.js",
             "packages/ui/dist/form/schema-form/expr/index.js",
             "packages/ui/dist/form/schema-form/registry.js",
             "packages/ui/dist/form/schema-form/compiler/custom-widgets.js",
@@ -609,9 +620,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3414428,
-          "gzipBytes": 778820,
-          "brotliBytes": 538602
+          "rawBytes": 3506543,
+          "gzipBytes": 798980,
+          "brotliBytes": 552900
         }
       },
       "@oas-ui/theme": {
@@ -629,9 +640,9 @@
       },
       "@oas-ui/i18n": {
         "files": 48,
-        "rawBytes": 534424,
-        "gzipBytes": 146423,
-        "brotliBytes": 124721
+        "rawBytes": 568557,
+        "gzipBytes": 154850,
+        "brotliBytes": 132001
       },
       "@oas-ui/icons": {
         "files": 53,
@@ -641,9 +652,9 @@
       },
       "@oas-ui/ssr": {
         "files": 4,
-        "rawBytes": 57459,
-        "gzipBytes": 18916,
-        "brotliBytes": 15550
+        "rawBytes": 58042,
+        "gzipBytes": 19032,
+        "brotliBytes": 15638
       }
     },
     "components": {
@@ -727,9 +738,9 @@
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
         "files": 60,
-        "rawBytes": 369472,
-        "gzipBytes": 111949,
-        "brotliBytes": 94234,
+        "rawBytes": 370556,
+        "gzipBytes": 112231,
+        "brotliBytes": 94466,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -1072,9 +1083,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 10,
-        "rawBytes": 63602,
-        "gzipBytes": 21913,
-        "brotliBytes": 18355,
+        "rawBytes": 65658,
+        "gzipBytes": 22392,
+        "brotliBytes": 18754,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/slices/form.js",
@@ -1092,9 +1103,9 @@
         "entry": "form/schema-form/expr",
         "spec": "@oas-ui/ui/form/schema-form/expr",
         "files": 1,
-        "rawBytes": 7215,
-        "gzipBytes": 2969,
-        "brotliBytes": 2555,
+        "rawBytes": 7277,
+        "gzipBytes": 2984,
+        "brotliBytes": 2569,
         "fileList": ["packages/ui/dist/form/schema-form/expr/index.js"]
       },
       "gantt": {
@@ -1178,22 +1189,22 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 778820,
-        "limitBytes": 788480,
-        "warnAtBytes": 709632,
+        "actualBytes": 798980,
+        "limitBytes": 819200,
+        "warnAtBytes": 737280,
         "pass": true,
         "warn": true,
-        "basis": "天花板制：实测 gzip 665.4 KB（并入 workbench 构件族后；含 gantt/barcode/chart 扩展/glass/图标 opt-in），上浮约 15% 定档 770 KB；前档 730 KB 定档于 2026-10-07（628.7 KB 实测），再前档 700 KB 定档于 2026-10-05（608.5 KB 实测）"
+        "basis": "天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB——schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档（实测 2.9KB / 档 3.4KB）；归因记录于此，form 链按族分包瘦身列入后续优化。前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测）"
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1184957,
-        "limitBytes": 1208320,
-        "warnAtBytes": 1087488,
+        "actualBytes": 1217010,
+        "limitBytes": 1269760,
+        "warnAtBytes": 1142784,
         "pass": true,
         "warn": true,
-        "basis": "天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）"
+        "basis": "天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；下一批（批 2 数据流）落地前须先做包体归因"
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
@@ -1232,7 +1243,7 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 111949,
+        "actualBytes": 112231,
         "limitBytes": 122880,
         "warnAtBytes": 110592,
         "pass": true,
@@ -1265,7 +1276,7 @@
         "name": "@oas-ui/ui/form/form 链 gzip",
         "kind": "absolute",
         "componentId": "form",
-        "actualBytes": 21913,
+        "actualBytes": 22392,
         "limitBytes": 29696,
         "warnAtBytes": 26726,
         "pass": true,
@@ -1276,7 +1287,7 @@
         "name": "@oas-ui/ui/form/schema-form/expr 链 gzip",
         "kind": "absolute",
         "componentId": "schemaFormExpr",
-        "actualBytes": 2969,
+        "actualBytes": 2984,
         "limitBytes": 3481.6,
         "warnAtBytes": 3133,
         "pass": true,

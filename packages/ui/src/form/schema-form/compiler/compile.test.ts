@@ -220,24 +220,67 @@ describe('编译层：渲染计划（字段 / 分组 / 数组 / 标签页）', (
     expect(result2.plan[0]!.keepValueOnHidden).toBe(true)
   })
 
-  it('V2 能力命中即告警（array-table / 值变换钩子 / 远程数据源），不静默', () => {
+  it('array-table：对象数组生成表格数组节点（table 标记 + 列定义），不再告警', () => {
     const result = compileSchema(
       {
         type: 'object',
         properties: {
-          rows: { type: 'array', items: { type: 'object', properties: { a: { type: 'string' } } } },
-          money: { type: 'string', transform: 'upper' },
+          rows: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: { a: { type: 'string', title: '甲' }, b: { type: 'number', title: '乙' } },
+            },
+          },
         },
       },
       {
         rows: { widget: 'array-table' },
-        money: { convertValue: 'cents', dataSource: '/api/money' },
+        'rows[].a': { width: 120, align: 'right' },
+        'rows[].b': { hidden: true },
       },
+    )
+    const node = result.plan[0]!
+    expect(node.kind).toBe('array')
+    expect(node.kind === 'array' && node.table).toBe(true)
+    expect(node.kind === 'array' && node.columns).toEqual([
+      { key: 'a', label: '甲', width: 120, align: 'right', hidden: false },
+      { key: 'b', label: '乙', width: undefined, align: undefined, hidden: true },
+    ])
+    expect(result.warnings.join('\n')).not.toContain('array-table')
+  })
+
+  it('array-table 用在非对象数组上：告警并回落默认映射（不静默）', () => {
+    const result = compileSchema(
+      {
+        type: 'object',
+        properties: { note: { type: 'string' }, rows: { type: 'array', items: { type: 'string' } } },
+      },
+      { note: { widget: 'array-table' }, rows: { widget: 'array-table' } },
     )
     const text = result.warnings.join('\n')
     expect(text).toContain('array-table')
+    expect(text).toContain('仅适用于对象数组')
+  })
+
+  it('列级注解用在非表格节点：告警忽略（不静默失效）', () => {
+    const result = compileSchema({ type: 'object', properties: { note: { type: 'string' } } }, { note: { width: 120 } })
+    expect(result.warnings.join('\n')).toContain('列级注解')
+  })
+
+  it('未承接的关键字命中即告警（convertValue / dataSource），不静默', () => {
+    const result = compileSchema(
+      {
+        type: 'object',
+        properties: {
+          money: { type: 'string', transform: 'upper' },
+        },
+      },
+      { money: { convertValue: 'cents', dataSource: '/api/money' } },
+    )
+    const text = result.warnings.join('\n')
     expect(text).toContain('convertValue')
     expect(text).toContain('dataSource')
-    expect(text).toContain('V2 能力')
+    expect(text).toContain('money')
   })
 })
