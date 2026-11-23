@@ -13,7 +13,7 @@ description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针�
 <DemoBlock title="boundary=&quot;#dg-stage&quot;">
   <div
     id="dg-stage"
-    style="position: relative; height: 240px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover)"
+    style="position: relative; width: 100%; height: 240px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover)"
   >
     <oas-drag
       id="dg-button"
@@ -35,13 +35,13 @@ description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针�
 <DemoBlock title="handle 插槽">
   <div
     id="dg-stage-handle"
-    style="position: relative; height: 220px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"
+    style="position: relative; width: 100%; height: 220px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"
   >
     <oas-drag
       id="dg-panel"
       boundary="#dg-stage-handle"
       axis="both"
-      style="position: absolute; inset-block-start: 12px; inset-inline-start: 12px"
+      style="position: absolute; inset-block-start: 12px; inset-inline-start: 12px; max-inline-size: 260px"
     >
       <div slot="handle" style="cursor: grab; padding: var(--oas-space-2); background: var(--oas-color-bg-hover); border-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md)">⠿ 拖动</div>
       <div style="padding: var(--oas-space-3); background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
@@ -59,7 +59,7 @@ description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针�
 <DemoBlock title="axis=&quot;x&quot; + inertia + announce">
   <div
     id="dg-stage-axis"
-    style="position: relative; height: 120px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); overflow: hidden"
+    style="position: relative; width: 100%; height: 120px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); overflow: hidden"
   >
     <oas-drag
       id="dg-chip"

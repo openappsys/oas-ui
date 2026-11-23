@@ -198,6 +198,7 @@ OAS-UI provides 176 framework-agnostic Web Components, organized into 10 groups 
 - [Price](/en/components/price) —— Price formatting: currency, thousands separators, original price, ranges and trend arrows.
 - [SKU](/en/components/sku) —— Spec groups and SKU matching with sold-out options, path hints and a quantity stepper.
 - [SubmitBar](/en/components/submit-bar) —— Bottom submit bar with an extra area, formatted total and a primary button covering loading, disabled and danger states.
+- [TimeSelect](/en/components/time-select) — Delivery time selection: a date column (N days from today) plus a slot grid, express and scheduled modes, distinct closed / fully booked states, and roving-tabindex keyboard navigation in both regions.
 
 ## Conversation
 

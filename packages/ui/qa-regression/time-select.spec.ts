@@ -41,12 +41,12 @@ test('time-select：休息与满约两种不可选态视觉可区分，且均不
     const root = host.shadowRoot!
     const read = (selector: string) => {
       const button = root.querySelector<HTMLButtonElement>(selector)!
-      const style = getComputedStyle(button)
+      const label = button.querySelector<HTMLElement>('.slot-label')!
       return {
         disabled: button.disabled,
         ariaDisabled: button.getAttribute('aria-disabled'),
         state: button.getAttribute('data-state'),
-        decoration: style.textDecorationLine,
+        decoration: getComputedStyle(label).textDecorationLine,
         text: button.textContent ?? '',
       }
     }

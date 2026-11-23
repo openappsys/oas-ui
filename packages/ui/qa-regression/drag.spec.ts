@@ -24,7 +24,8 @@ test('drag：真实鼠标拖动客服钮，位移生效、位置记忆落盘、d
     const el = document.querySelector('#dg-button') as HTMLElement & { position: { x: number; y: number } }
     return { ...el.position, transform: el.style.transform }
   })
-  await dragBy(page, '#dg-button', 60, -40)
+  // 客服钮初始贴在演示区右下角：向右已贴边（会被钳制），向左上拖才能自由移动
+  await dragBy(page, '#dg-button', -60, -40)
   const after = await page.evaluate(() => {
     const el = document.querySelector('#dg-button') as HTMLElement & { position: { x: number; y: number } }
     return {
@@ -34,7 +35,7 @@ test('drag：真实鼠标拖动客服钮，位移生效、位置记忆落盘、d
       feedback: document.querySelector('#dg-button-out')!.textContent ?? '',
     }
   })
-  expect(after.position.x, '横向位移应跟手').toBeGreaterThan(before.x + 30)
+  expect(after.position.x, '横向位移应跟手').toBeLessThan(before.x - 30)
   expect(after.position.y, '纵向位移应跟手').toBeLessThan(before.y - 15)
   expect(after.transform, '位移必须体现在 transform 上（用户可见）').toContain('translate3d')
   expect(JSON.parse(after.stored ?? '{}'), 'remember 开启时应写入 localStorage').toMatchObject({
