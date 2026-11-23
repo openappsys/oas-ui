@@ -105,7 +105,7 @@ describe('oas-schema-form 渲染（schema → 控件树）', () => {
     })
     const group = el.shadowRoot!.querySelector<HTMLElement>('[part="group"]')!
     expect(group.querySelector('.group-title')!.textContent).toBe('地址')
-    expect(group.querySelector<HTMLElement>('[name="address.street"]')).toBeTruthy()
+    expect(group.querySelector<HTMLElement>('[name="address.street"]')?.tagName).toMatch(/^OAS-/)
   })
 
   it('空 schema / 零字段有占位（非空白渲染）', () => {
@@ -137,7 +137,7 @@ describe('oas-schema-form 渲染（schema → 控件树）', () => {
       type: 'object',
       properties: { ...basicSchema.properties, extra: { type: 'string', title: '备注' } },
     }
-    expect(widgetOf(el, 'extra')).toBeTruthy()
+    expect(widgetOf(el, 'extra')?.tagName).toMatch(/^OAS-/)
     expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('编辑后的值')
   })
 
@@ -190,7 +190,7 @@ describe('oas-schema-form 校验（迷你校验器 + 数组级）', () => {
     // 提交路径派发 validate-fail
     el.submit()
     await Promise.resolve()
-    expect(detail!.errors).toBeTruthy()
+    expect((detail as { errors?: Record<string, string> } | null)?.errors).toBeTypeOf('object')
   })
 
   it('填对后通过（minLength 满足）并派发 oas-submit', async () => {
@@ -408,7 +408,7 @@ describe('oas-schema-form 联动（whenSchema 单轨）', () => {
     const country = el.shadowRoot!.querySelector<HTMLElement>('[name="country"]')!
     country.setAttribute('value', 'CN')
     country.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: 'CN' } }))
-    expect(widgetOf(el, 'province')).toBeTruthy()
+    expect(widgetOf(el, 'province')?.tagName).toMatch(/^OAS-/)
   })
 
   it('required / disabled 随条件同步（含 aria-required）', () => {
@@ -477,7 +477,7 @@ describe('oas-schema-form 联动（whenSchema 单轨）', () => {
       },
     )
     // 行内字段隐藏（保留键位）：键仍在，值为空串
-    expect(widgetOf(el, 'users.0.nick')).toBeTruthy()
+    expect(widgetOf(el, 'users.0.nick')?.tagName).toMatch(/^OAS-/)
     expect((widgetOf(el, 'users.0.nick')!.closest('oas-form-item') as HTMLElement).hidden).toBe(true)
     expect(el.getValues()).toMatchObject({ users: [{ vip: 'true', nick: '' }] })
   })
@@ -517,7 +517,7 @@ describe('oas-schema-form 数组（初始行 / 增删 / 嵌套）', () => {
     const el = mount(schema, { initialValues: { users: [{ nick: 'a' }, { nick: 'b' }] } })
     const list = arrayList(el)
     expect(list.querySelectorAll(':scope > [data-oas-form-list-item]')).toHaveLength(2)
-    expect(widgetOf(el, 'users.0.nick')).toBeTruthy()
+    expect(widgetOf(el, 'users.0.nick')?.tagName).toMatch(/^OAS-/)
     expect(widgetOf(el, 'users.1.nick')!.getAttribute('value')).toBe('b')
   })
 
@@ -525,7 +525,7 @@ describe('oas-schema-form 数组（初始行 / 增删 / 嵌套）', () => {
     const el = mount(schema, {
       initialValues: { users: [{ nick: 'a', matrix: [{ label: 'x' }, { label: 'y' }] }] },
     })
-    expect(widgetOf(el, 'users.0.matrix.0.label')).toBeTruthy()
+    expect(widgetOf(el, 'users.0.matrix.0.label')?.tagName).toMatch(/^OAS-/)
     expect(widgetOf(el, 'users.0.matrix.1.label')!.getAttribute('value')).toBe('y')
   })
 
@@ -533,7 +533,7 @@ describe('oas-schema-form 数组（初始行 / 增删 / 嵌套）', () => {
     const el = mount(schema, { initialValues: { users: [{ nick: 'a' }] } })
     clickArrayAdd(el)
     expect(arrayList(el).querySelectorAll(':scope > [data-oas-form-list-item]')).toHaveLength(2)
-    expect(widgetOf(el, 'users.1.nick')).toBeTruthy()
+    expect(widgetOf(el, 'users.1.nick')?.tagName).toMatch(/^OAS-/)
     clickArrayRemove(el, 0)
     expect(el.getValues()).toMatchObject({ users: [{ nick: '' }] })
   })
@@ -647,7 +647,7 @@ describe('oas-schema-form 组合面（错误注入 / 事件 / 生命周期 / que
         },
       },
     )
-    expect(widgetOf(el, 'province')).toBeTruthy()
+    expect(widgetOf(el, 'province')?.tagName).toMatch(/^OAS-/)
 
     const parent = el.parentElement!
     el.remove()
@@ -664,7 +664,7 @@ describe('oas-schema-form 组合面（错误注入 / 事件 / 生命周期 / que
     // ② 数组增删监听已重绑：加一行后规则按新行号重挂（空行必填被拦）
     clickArrayAdd(el, 'array:users')
     expect(arrayList(el, 'array:users').querySelectorAll(':scope > [data-oas-form-list-item]')).toHaveLength(1)
-    expect(widgetOf(el, 'users.0.nick')).toBeTruthy()
+    expect(widgetOf(el, 'users.0.nick')?.tagName).toMatch(/^OAS-/)
     await expect(el.validate()).resolves.toBe(false)
     expect(widgetOf(el, 'users.0.nick')!.getAttribute('aria-invalid'), '重连后 oas-add 必须重挂新行规则').toBe('true')
   })

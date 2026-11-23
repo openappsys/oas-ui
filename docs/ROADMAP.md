@@ -26,7 +26,13 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **schema-form** | JSON 声明式表单渲染层（DSL 并集调研 → 设计稿评审 → 实现）；与 questionnaire 分工 = 字段渲染 vs 流程编排 | 🚧 V1a 已完成，未发布（V1b 表达式轨/受控 + V2 array-table 待后续） |
+| **schema-form** | JSON 声明式表单渲染层（DSL 全景调研 → 两轮设计评审 → 实现）；与 questionnaire 分工 = 字段渲染 vs 流程编排 | 🚧 V1a 已完成，未发布（V1b 表达式轨/受控/自定义 widget 待排；V2 array-table） |
+
+## 未发布（问卷填写端缺口）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **矩阵题 / 排序题** | oas-matrix（行×列矩阵选择，radio/checkbox 双模式）/ oas-rank（名次排序选择）——问卷填写端标配题型，通用表单件 | 📋 待开发（PRD 见「未发布：问卷填写端缺口」） |
 
 ## v2.6.8（table 公共能力补齐批）
 

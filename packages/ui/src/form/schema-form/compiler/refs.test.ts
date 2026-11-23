@@ -71,7 +71,7 @@ describe('$ref 编译期急切展开', () => {
     for (let i = 0; i < 100; i++) deep = { type: 'object', properties: { [`l${i}`]: deep } }
     const nested = resolveSchemaRefs({ type: 'object', properties: { root: deep } })
     expect(nested.errors, '普通嵌套不得报 $ref 层级/循环错误').toEqual([])
-    expect(nested.schema).not.toBeNull()
+    expect(nested.schema).toBeTypeOf('object')
 
     // $ref 链本身仍然受深度约束：链式引用 65 层（无环）必须报层级超限
     const defs: Record<string, unknown> = {}

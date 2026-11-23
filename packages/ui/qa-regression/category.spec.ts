@@ -94,13 +94,15 @@ test('category RTL：折叠箭头镜像（LTR 指右 / RTL 指左）', async ({ 
     const el = document.querySelector('oas-category#category-demo')!
     el.shadowRoot!.querySelector<HTMLElement>('.node[aria-expanded="true"]')!.click()
   })
-  await page.waitForTimeout(400)
+  // 等过渡落定（确定性轮询替代固定 sleep）：折叠后 LTR chevron 回到单位变换
+  await expect.poll(readTransform, { timeout: 3000 }).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/)
   const ltr = await readTransform()
   await page.evaluate(() => {
     const el = document.querySelector('oas-category#category-demo')!
     el.setAttribute('dir', 'rtl')
   })
-  await page.waitForTimeout(400)
+  // dir=rtl 后等镜像 rotate(180deg) 过渡落定
+  await expect.poll(readTransform, { timeout: 3000 }).toContain('matrix(-1')
   const rtl = await readTransform()
   expect(ltr, 'LTR 折叠箭头应无旋转（指向右侧）').toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/)
   expect(rtl, 'RTL 折叠箭头应旋转 180°（指向左侧）').toContain('matrix(-1')

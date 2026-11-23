@@ -234,7 +234,15 @@ test('schema-form RTL：标签页顺序镜像 + 联动复显字段继承逻辑�
     document.documentElement.dir = 'rtl'
   })
   // RTL：flex 行随方向镜像——文档序首个 tab 落到最右（容器未被物理 left/right 锁死）
-  await expect.poll(async () => (await tabLefts())[0]! - (await tabLefts())[1]!, { timeout: 5000 }).toBeGreaterThan(0)
+  await expect
+    .poll(
+      async () => {
+        const [first, second] = await tabLefts()
+        return first! > second!
+      },
+      { timeout: 5000 },
+    )
+    .toBe(true)
 
   // 联动卸载区（#sf-react）：切到 US 复显的 state 字段继承 RTL 方向，且保持文档序在 country 之后
   await pickOption(page, '#sf-react oas-select[name="country"]', 'US')

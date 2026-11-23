@@ -582,23 +582,23 @@ test.describe('文档站 SEO 产物', () => {
     }
     type Bc = { itemListElement: { position: number; name: string; item?: string }[] }
     const sw = ld.find((d) => d['@type'] === 'SoftwareApplication') as unknown as SwApp | undefined
-    expect(sw, '组件页应有 SoftwareApplication').toBeTruthy()
-    expect(sw!.name.toLowerCase()).toContain('button')
-    expect(sw!.applicationCategory).toBe('DeveloperApplication')
-    expect(sw!.offers.price).toBe('0')
-    expect(sw!.softwareVersion).toMatch(/^\d+\.\d+\.\d+$/)
+    expect(sw?.name.toLowerCase(), '组件页应有 SoftwareApplication').toContain('button')
+    expect(sw?.applicationCategory).toBe('DeveloperApplication')
+    expect(sw?.offers.price).toBe('0')
+    expect(sw?.softwareVersion).toMatch(/^\d+\.\d+\.\d+$/)
     const bc0 = ld.find((d) => d['@type'] === 'BreadcrumbList') as unknown as Bc | undefined
-    expect(bc0, '组件页应有面包屑').toBeTruthy()
-    expect(bc0!.itemListElement.map((i) => i.position)).toEqual([1, 2, 3])
-    expect(bc0!.itemListElement[0]!.name).toBe('首页')
-    expect(bc0!.itemListElement[2]!.item).toBe('https://oas-ui.dev/components/button')
+    expect(
+      bc0?.itemListElement.map((i) => i.position),
+      '组件页应有面包屑',
+    ).toEqual([1, 2, 3])
+    expect(bc0?.itemListElement[0]?.name).toBe('首页')
+    expect(bc0?.itemListElement[2]?.item).toBe('https://oas-ui.dev/components/button')
     // guide 页面包屑：分组为「指南」；无 SoftwareApplication
     await page.goto('/guide/getting-started', { waitUntil: 'domcontentloaded' })
     ld = await jsonLd()
     const bc1 = ld.find((d) => d['@type'] === 'BreadcrumbList') as unknown as Bc | undefined
-    expect(bc1, 'guide 页应有面包屑').toBeTruthy()
-    expect(bc1!.itemListElement[1]!.name).toBe('指南')
-    expect(bc1!.itemListElement[2]!.name).toContain('快速开始')
+    expect(bc1?.itemListElement[1]?.name, 'guide 页应有面包屑').toBe('指南')
+    expect(bc1?.itemListElement[2]?.name).toContain('快速开始')
     expect(ld.some((d) => d['@type'] === 'SoftwareApplication')).toBe(false)
   })
 })

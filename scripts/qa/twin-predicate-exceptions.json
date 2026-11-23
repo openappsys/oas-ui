@@ -1,4 +1,17 @@
 {
-  "$comment": "孪生协议判定守卫（scripts/qa/hygiene-guards.mjs）的精确例外。每条精确到 file + predicate（归一化后的复合判定原文）+ count（该文件当前出现次数）+ reason；一条例外只消费一条命中。当前无例外：既有候选已按组件抽具名 helper 消除。新增命中应优先重构为具名 helper（内部用单原子 if/return 分支）；确属合理保留时才登记，并写清为什么不能合并。",
-  "exceptions": []
+  "$comment": "复合协议判定重复的登记例外（scripts/qa/hygiene-guards.mjs 的精确匹配）。每个条目写 file + predicate（一行内的完整判定原文）+ count（在文件内出现次数）+ reason。一般倾向抽具名 helper，只有下列情况才登记：① helper 合并后内部仍要按原因 if/return 分支、合并反而更绕；② 不同组件各自必须保留的同型判定（跨组件复制，无公共基类可归）；③ 判定依赖组件私有状态无法外提。登记时写清为什么现在不能合并。",
+  "exceptions": [
+    {
+      "file": "packages/ui/src/commerce/address/oas-address.ts",
+      "predicate": "this.hasAttr('readonly') && !this.hasAttr('disabled') && !this.injectDisabled()",
+      "count": 1,
+      "reason": "address 与 invoice 两个独立组件的同型「纯只读（非禁用注入）」判定；二者无公共基类（均直接继承 OASElement + form-associated mixin），判定依赖组件私有上下文。commerce 族内新建共享模块会引入目录注册面风险（族按目录清点）。语义为协议级同型，各自保留更易读；若后续 commerce 出现第三个使用者，再抽公共 helper 并移出本例外。"
+    },
+    {
+      "file": "packages/ui/src/commerce/invoice/oas-invoice.ts",
+      "predicate": "this.hasAttr('readonly') && !this.hasAttr('disabled') && !this.injectDisabled()",
+      "count": 1,
+      "reason": "同 address 条目：invoice 与 address 的同型「纯只读」判定，跨组件各自保留（无公共基类可归）；address 条目已述同一理由，两处一起核销。"
+    }
+  ]
 }

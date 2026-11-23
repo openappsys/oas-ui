@@ -148,7 +148,7 @@ describe('编译层：渲染计划（字段 / 分组 / 数组 / 标签页）', (
 
   it('根节点非 object / 空 schema：返回可展示错误而非静默空白', () => {
     expect(compileSchema({ type: 'string' }).error).toContain('根节点必须是 object')
-    expect(compileSchema(null).error).toBeTruthy()
+    expect(compileSchema(null).error).toBeDefined()
     expect(compileSchema({ type: 'object', properties: {} }).plan).toEqual([])
   })
 

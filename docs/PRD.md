@@ -62,7 +62,7 @@
 
 **四层架构（编译一次，运行定向刷新）**：
 
-```
+```text
 schema + uiSchema
    │  ① 编译层（纯函数，一次编译：$ref 展开 / 路径归一 / 规则编译 / uiSchema 对齐校验）
    ▼
@@ -126,6 +126,16 @@ Shadow DOM 渲染（复用全部现有组件与 token；定向刷新 keyed 复�
 **评审焦点结论记录（R1 四问）**：Q1 uiSchema 独立层维持，补编译期路径对齐校验；Q2 表达式语法按上述冻结清单；Q3 warning 复用 form-item 错误位结构（error 独占、warning role=status 弱一档、不阻断）；Q4 `whenSchema` 为一等轨（V1a 即可交付），表达式轨 V1b 补位，两轨表达力不同不宣传等价。
 
 ---
+
+## 未发布：问卷填写端缺口（矩阵题 / 排序题）
+
+调研结论（2026-11-22）：questionnaire × schema-form 组合已可支撑问卷「填写端」主体，但调研产品的两个标配题型组件缺位。两组件归 `form` 族（问卷是表单的特化场景，题型控件同时服务通用表单）。通用验收同新组件纪律（TDD / 暗色 / RTL / a11y / zh/en / qa-regression / perf 预算）。
+
+- **oas-matrix 矩阵题** 📋：行 = 子问题、列 = 选项的矩阵选择——`mode="radio" | "checkbox"`（行内单选 / 行内多选）；数据契约 = `rows`（子问题数组）+ `columns`（选项数组），值契约 = 每行选中列 key 的对象（radio：`{rowKey: colKey}`）或数组（checkbox：`{rowKey: [colKey]}`）；行全不选/部分选的校验语义（`required` 行级与全表级两档）；a11y：每行一个 radiogroup/checkbox-group 语义（fieldset + legend 承载行标题），方向键行内切换；批量禁用 / 只读态。
+- **oas-rank 排序题** 📋：选项按名次选择——点击 / 键盘将选项加入排名序列（已选置灰或标记名次徽标），已选项可上移 / 下移调整或再点取消；数据契约 = `options`（可排序项数组）；值契约 = 按名次排序的 key 数组（部分排名 = 已选子集有序数组，`min-ranks` 下限校验）；a11y：选项按钮 + 名次播报（aria-live），调整操作为可见按钮（非仅拖拽）。
+
+---
+
 ## v2.6.8：table 缺口补齐续批（批 G/H/I）
 
 ### 功能定义
