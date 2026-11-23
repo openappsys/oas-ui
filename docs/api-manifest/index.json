@@ -73,6 +73,7 @@
   "oas-form-item",
   "oas-form-list",
   "oas-questionnaire",
+  "oas-schema-form",
   "oas-calendar",
   "oas-date-picker",
   "oas-time-picker",

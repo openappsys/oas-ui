@@ -65,6 +65,7 @@ OAS-UI 提供 172 个框架无关的 Web Components 组件，按用途划分为 
 - [Questionnaire 多步问卷](/components/questionnaire) —— 步骤驱动的表单流程编排器：步骤头 + 进度（第 n / m 步）+ 每步独立面板 + 逐步校验门控；每个步骤内嵌一个 `<oas-form>`，复用 `oas-form` 内核。
 - [Radio 单选框](/components/radio) —— 原生 `<input type="radio">` 增强，支持单选组与受控 value。
 - [Rate 评分](/components/rate) —— 星级评分，支持键盘方向键调节，默认点击已选中的同一颗星可清空。
+- [SchemaForm 声明式表单](/components/schema-form) —— 一份 JSON schema + uiSchema 声明式描述表单：编译为渲染计划挂载 form 族控件树，值管理与字段校验走 form 内核，错误注入、数组级校验、联动求值由组件承载。
 - [Segmented 分段器](/components/segmented) —— 单选的线性分段选择器，用于轻度筛选 / 切换视图，`role="radiogroup"`，可禁用单项。
 - [Select 选择器](/components/select) —— 下拉选择器，支持单选、多选、分组、可清空、远程搜索与自定义创建，键盘可操作。
 - [Slider 滑块](/components/slider) —— 原生 `<input type="range">` 增强的滑动条。

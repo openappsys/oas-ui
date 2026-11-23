@@ -4,6 +4,12 @@
 
 ### 新增
 
+**schema-form（form 族，JSON 声明式表单 V1a）**
+
+- **oas-schema-form**：一份 `schema`（JSON Schema 子集：`type/format/enum/const/default/required/min-max-length/pattern/items/properties/if-then-else` + 本地 `$ref` 急切展开、循环报错）+ `uiSchema`（`widget/layout/options/reactions/keepValueOnHidden`，裸键）编译为渲染计划并挂载 form 族控件树——值管理与字段校验走 `oas-form` 内核（字段即内核 light DOM 子节点），错误注入 / 数组级校验 / 联动求值 / 编译由组件承载。默认 widget 映射（`string→input`、format→`input(type)/date-picker/time-picker`、`number/integer→input-number`、`boolean→switch`、`enum→select`、`array of enum→checkbox-group`、`object→分组`、`array of object→form-list`）+ `layout.span` 栅格 / `group` 分组 / `tabs` 标签页（`role=tablist` + 方向键 / Home / End）；`whenSchema` 单轨联动（`target` 多目标、`otherwise` 回静态值、依赖图定向刷新、8 轮定点守卫、`visible:false` 卸载且数组行内保键位、disabled 级联、required 同步 `aria-required`）；对象数组初始长度驱动建行、增删走 form-list 既有交互、嵌套数组逐层命名（`users.N.matrix.M.label`）、数组级校验注入数组路径并渲染 `part="array-error"`；自研迷你校验器（标准关键字 + format 清单 + i18n 文案）+ **只读类型投影归一**（`"42"` → 42 参与校验，提交值仍为字符串契约）；非受控 `initialValues` 与 schema `default` 兜底；空 schema / 非法 schema / 零字段 / 空数组均有占位；`onCleanup` 全清、断开重连无损；SSR 白名单登记（快照确定性与真水合）。与 `oas-questionnaire` 的 duck-typed 组合契约同步落地（步骤内容可内嵌 schema-form，纯 JSON 驱动整份问卷）。i18n `schemaForm.*` ×16；单测 92（编译层纯函数 63 + 组件 29）+ qa-regression e2e + zh/en 文档 + API 表。
+- **oas-form / oas-form-item 内核增量（向后兼容）**：`oas-form.setErrors(list)` / `clearErrors(paths?)`——路径经 `parseNamePath` 归一为点号规范键，注入错误优先于规则错误直到字段值再次变化，数组路径错误同通道注入并进入 `oas-validate-fail` 载荷；`oas-form-item.setError(message, severity?)` 双态——error 走 `role=alert` 且独占显示，warning 走 `role=status`（polite）+ `--oas-color-warning-text`、不置 `aria-invalid`、不阻断校验/提交。内核 `FORM_CONTROLS` 补 `oas-checkbox-group` / `oas-time-picker`（值收集补漏）；主题 high-contrast 档补 `--oas-color-warning-text`；`oas-form-list` 新增可选 `add-text` / `remove-text`（增删钮可访问名，缺省行为不变）。
+- **oas-questionnaire**：步骤内容发现面从「仅 light DOM 的 `oas-form`」扩为 duck-typed 契约（`oas-form` 或实现 `getValues()` / `validate()` 且派发 `oas-values-change` 的元素），与 schema-form 组合时无需问卷认识具体组件。
+
 **电商组件族（commerce，新场景族，9 件）**
 
 - **oas-sku（commerce 族，商品规格选择）**：`specs`（规格组 + 选项）/ `skus`（选项组合 → 价格 / 库存 / 图片）数据契约；内置组合匹配算法——精确匹配定位 SKU、逐项「可选路径」判定（选中项按「该组合有货」过滤可选项）、缺货组合置灰；数量步进按库存钳制；aria-live 价格播报；原生 radio fieldset 键盘可达；桌面内嵌面板形态（底部弹层形态后续补）。TDD（RED→GREEN）：单测覆盖匹配矩阵 / 置灰语义 / 库存钳制 / 注入安全（规格值含引号与 CSS 元字符二次 update 不崩——宿主数据不拼选择器）/ property 双通道（specs / skus / value / quantity get+set 反射 attribute，消属性撞方法）；zh/en 文档 + API 表 + qa-regression e2e（真实点选 / 缺货置灰 / 键盘）。

@@ -75,6 +75,7 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Questionnaire 多步问答', link: '/components/questionnaire' },
       { text: 'Radio 单选框', link: '/components/radio' },
       { text: 'Rate 评分', link: '/components/rate' },
+      { text: 'SchemaForm 声明式表单', link: '/components/schema-form' },
       { text: 'Segmented 分段器', link: '/components/segmented' },
       { text: 'Select 选择器', link: '/components/select' },
         { text: 'Slider 滑块', link: '/components/slider' },

@@ -681,6 +681,21 @@ test.beforeAll(async () => {
   // task-progress-well）全部独立 fixture，避免 light DOM 子组件布局耦合
   // （嵌套组合 DSD 由嵌套序列化专项用例覆盖）；数据/文案全部固定、无 new Date()。
   const wbSnaps = await Promise.all([
+    renderToString(
+      'oas-schema-form',
+      {
+        schema: JSON.stringify({
+          type: 'object',
+          required: ['name'],
+          properties: {
+            name: { type: 'string', title: '姓名' },
+            age: { type: 'integer', title: '年龄' },
+          },
+        }),
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
     renderToString('oas-knob', { value: '60', min: '0', max: '100', 'show-value': '', unit: '%' }, '', {
       locale: 'zh-CN',
     }),

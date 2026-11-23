@@ -87,6 +87,16 @@
       "description": "为「初始值基线建立后才出现的字段」补写 initial-values（oas-form-list 等动态字段容器"
     },
     {
+      "name": "setErrors",
+      "signature": "setErrors(list: FormError[]): void",
+      "description": "注入错误（公开 API，向后兼容新增）：服务端校验结果 / 上游容器的数组级校验错误统一走本通道。"
+    },
+    {
+      "name": "clearErrors",
+      "signature": "clearErrors(paths?: string[]): void",
+      "description": "清除注入错误（paths 省略 = 清全部）：清后该字段立即回落规则错误（有规则则重算，无则清空）。"
+    },
+    {
       "name": "getValues",
       "signature": "getValues(): Record<string, unknown>",
       "description": "公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径"

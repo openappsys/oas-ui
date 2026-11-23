@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "totals": {
-    "components": 238,
-    "whitelist": 175,
+    "components": 239,
+    "whitelist": 176,
     "noSsr": 63
   },
   "components": [
@@ -1257,6 +1257,23 @@
       "parent": null,
       "note": null,
       "entry": "@oas-ui/ui/form/questionnaire",
+      "hasTemplate": true,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": true,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-schema-form",
+      "family": "form",
+      "dir": "form/schema-form",
+      "className": "OASSchemaForm",
+      "ssr": "whitelist",
+      "reason": null,
+      "parent": null,
+      "note": null,
+      "entry": "@oas-ui/ui/form/schema-form",
       "hasTemplate": true,
       "hasHydrate": true,
       "unitTest": true,

@@ -39,8 +39,8 @@
   "methods": [
     {
       "name": "setError",
-      "signature": "setError(message: string | null): void",
-      "description": "校验错误文本收编（由 oas-form 调用）。message 为空时移除错误态。"
+      "signature": "setError(message: string | null, severity: 'error' | 'warning'): void",
+      "description": "校验错误/警告文本收编（由 oas-form 调用）。message 为空时移除对应状态。"
     },
     {
       "name": "refreshLayout",

@@ -334,6 +334,26 @@ const CONTRACT: ContractEntry[] = [
       ],
     },
   },
+  {
+    page: 'schema-form',
+    tag: 'oas-schema-form',
+    // schema / uiSchema / initialValues 是 get+set 双通道（对象 property + JSON attribute）：
+    // demo 在 Vue 里以 property 赋值供数，attribute 缺失属设计内行为，按 property 通道逐实例断言。
+    propContract: {
+      attrs: ['schema', 'uiSchema', 'initialValues'],
+      renderedSel: 'oas-form-item',
+      mode: 'when-data',
+      probe: 'schema',
+      stringProbe: [
+        {
+          prop: 'schema',
+          raw: '{"type":"object","properties":{"probe":{"type":"string","title":"Probe Field"}}}',
+          identity: true,
+          text: 'Probe Field',
+        },
+      ],
+    },
+  },
 ]
 
 test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖 __vnode）', async ({ page }) => {

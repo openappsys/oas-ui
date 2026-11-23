@@ -2,8 +2,8 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：238
-- SSR 白名单：175
+- 组件：239
+- SSR 白名单：176
 - 有意不 SSR：63
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
@@ -82,6 +82,7 @@
 | `oas-form-item` | form | `form/form-item` | ✅ 白名单 | — | — | `@oas-ui/ui/form/form-item` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-form-list` | form | `form/form-list` | ✅ 白名单 | — | — | `@oas-ui/ui/form/form-list` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-questionnaire` | form | `form/questionnaire` | ✅ 白名单 | — | — | `@oas-ui/ui/form/questionnaire` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
+| `oas-schema-form` | form | `form/schema-form` | ✅ 白名单 | — | — | `@oas-ui/ui/form/schema-form` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-calendar` | form | `form/calendar` | ✅ 白名单 | — | — | `@oas-ui/ui/form/calendar` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-date-picker` | form | `form/date-picker` | ✅ 白名单 | — | — | `@oas-ui/ui/form/date-picker` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-time-picker` | form | `form/time-picker` | ✅ 白名单 | — | — | `@oas-ui/ui/form/time-picker` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |

@@ -24,6 +24,18 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "add-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "remove-text",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],

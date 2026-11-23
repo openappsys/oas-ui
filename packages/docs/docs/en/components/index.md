@@ -65,6 +65,7 @@ OAS-UI provides 172 framework-agnostic Web Components, organized into 10 groups 
 - [Questionnaire](/en/components/questionnaire) —— A step-driven form flow orchestrator: step header + progress (Step n / m) + one panel per step + per-step validation gating; each step embeds one `<oas-form>`, reusing the `oas-form` kernel.
 - [Radio](/en/components/radio) —— An enhanced native `<input type="radio">` supporting radio groups and controlled values.
 - [Rate](/en/components/rate) —— A star rating supporting keyboard arrow-key adjustment; clicking the currently selected star clears the value by default.
+- [SchemaForm](/en/components/schema-form) —— A declarative form described by one JSON schema plus uiSchema: compiled into a render plan mounted on the form family, with values and field validation handled by the form kernel while error injection, array-level checks and reactions live in the component.
 - [Segmented](/en/components/segmented) —— A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling.
 - [Select](/en/components/select) —— A dropdown selector supporting single/multiple selection, groups, clearable, remote search, and custom creation, with full keyboard operation.
 - [Slider](/en/components/slider) —— A slider built on an enhanced native `<input type="range">`.

@@ -5844,5 +5844,27 @@
     "slots": {
       "": "Content covered by the watermark"
     }
+  },
+  "oas-schema-form": {
+    "attrs": {
+      "schema": "Data schema (a JSON Schema subset). Dual channel: property (object, preferred) and attribute (JSON string); an attribute changed after the property invalidates the property (drift guard).",
+      "ui-schema": "UI annotation layer (bare keys: `widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`). Dual channel; every path is verified against the data schema at compile time.",
+      "initial-values": "Uncontrolled one-time baseline (nested object). Deep-merged over schema `default` with host values winning; the initial array length drives row creation.",
+      "layout": "Forwarded to the inner oas-form layout (with `grid`, fields occupy columns by `layout.span`).",
+      "label-align": "Forwarded to the inner oas-form label alignment (top / left / right).",
+      "label-width": "Forwarded to the inner oas-form label width.",
+      "size": "Forwarded to the inner oas-form size.",
+      "disabled": "Disables the whole form through the kernel form chain (fields and array add/remove buttons).",
+      "validate-trigger": "Forwarded to the inner oas-form field validation trigger (input / change / blur)."
+    },
+    "methods": {
+      "submit": "Submit: evaluates reactions, runs array-level validation and injects its errors, then delegates to the kernel (oas-submit / oas-validate-fail are dispatched by the kernel and bubble out).",
+      "validate": "Validate: reactions → array-level validation → kernel field validation; returns whether everything passes.",
+      "getValues": "Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings).",
+      "setValues": "Controlled write channel is a V1b capability; V1a raises a dev warning instead of failing silently.",
+      "setErrors": "Inject errors (for server validation). Path normalization and precedence are handled by the form kernel.",
+      "clearErrors": "Clear injected errors (omit paths to clear all); affected fields fall back to rule errors.",
+      "reset": "Reset: back to initial values, clear errors, array rows back to their initial length (no events)."
+    }
   }
 }

@@ -978,18 +978,18 @@ export class OASSchemaForm extends OASElement {
 
   // ---------- 公开方法 ----------
 
-  /** 提交：先跑数组级校验并注入，再委托内核提交（oas-submit / oas-validate-fail 由内核派发并穿出） */
+  /** 提交：先值归一/联动求值，再数组级校验并注入，最后委托内核提交（事件由内核派发并穿出） */
   submit(): void {
+    this.evaluateEffects()
     this.syncArrayErrors()
     this.formEl?.submit()
   }
 
-  /** 校验：数组级校验 + 内核字段校验（错误并集），返回是否全部通过 */
+  /** 校验：联动求值 → 数组级校验 → 内核字段校验（错误并集），返回是否全部通过 */
   async validate(): Promise<boolean> {
-    this.syncArrayErrors()
-    const ok = this.formEl ? await this.formEl.validate() : true
     this.evaluateEffects()
-    return ok
+    this.syncArrayErrors()
+    return this.formEl ? this.formEl.validate() : true
   }
 
   /** 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串） */
@@ -1008,6 +1008,7 @@ export class OASSchemaForm extends OASElement {
     this.formEl?.setErrors(list)
   }
 
+  /** 清除注入错误（paths 省略 = 清全部）：清后该字段回落规则错误 */
   clearErrors(paths?: string[]): void {
     this.formEl?.clearErrors(paths)
   }

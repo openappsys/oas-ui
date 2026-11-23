@@ -268,6 +268,7 @@ export const WHITELIST = [
   //    （titlebar/statusbar/inspector/action-bar 全部 tag；浮层与输入交互默认关闭/空态直出骨架） ——
   'oas-knob',
   'oas-questionnaire',
+  'oas-schema-form',
   'oas-bubble',
   'oas-attachment',
   'oas-attachment-group',
@@ -549,6 +550,7 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   // —— SSR 白名单补位批次 2：form 收尾 + conversation 五件 + workbench 构件族 ——
   'oas-knob': '@oas-ui/ui/form/knob',
   'oas-questionnaire': '@oas-ui/ui/form/questionnaire',
+  'oas-schema-form': '@oas-ui/ui/form/schema-form',
   'oas-bubble': '@oas-ui/ui/conversation/bubble',
   'oas-attachment': '@oas-ui/ui/conversation/attachment',
   'oas-attachment-group': '@oas-ui/ui/conversation/attachment',

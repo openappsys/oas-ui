@@ -616,6 +616,8 @@ onMounted(() => {
 | `validate` | `validate(): Promise<boolean>` | Public validation entry: validates all fields and syncs error state (aria-invalid + error message), returning whether everything passed |
 | `submit` | `submit(): void` | Public submit entry: delegates to requestSubmit() on the internal form |
 | `reset` | `reset(): void` | Reset to the initial values (matching form-associated reset baseline semantics: restores initial values, clears validation errors, dispatches no events) |
+| `setErrors` | `setErrors(list: { path: string; message: string; severity?: 'error' \| 'warning' }[]): void` | Inject errors (server validation / upstream containers): paths are normalized by `parseNamePath`; injected errors take precedence over rule errors until the field value changes again; array-path errors use the same channel and appear in the `oas-validate-fail` payload |
+| `clearErrors` | `clearErrors(paths?: string[]): void` | Clear injected errors (omit paths to clear all); affected fields fall back to rule errors |
 
 #### Events
 
@@ -648,7 +650,7 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `setError` | `setError(message: string \| null): void` | Validation error text sink (called by oas-form). An empty message removes the error state |
+| `setError` | `setError(message: string \| null, severity?: 'error' \| 'warning'): void` | Validation error/warning sink (called by oas-form): error uses role=alert and takes exclusive precedence; warning uses role=status (no aria-invalid, non-blocking) |
 | `refreshLayout` | `refreshLayout(): void` | Called by the parent oas-form when layout attributes change, to immediately refresh grid/label layout awareness |
 
 #### Slots

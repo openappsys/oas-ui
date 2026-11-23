@@ -89,6 +89,7 @@
 - [Questionnaire 多步问答](https://oas-ui.dev/components/questionnaire): 步骤驱动的表单流程编排组件：步骤头 + 进度（「第 n / m 步」）+ 每步内容面板 + 单步校验门控。
 - [Radio 单选框](https://oas-ui.dev/components/radio): 原生 <input type="radio"> 增强，支持单选组键盘导航（radiogroup 模式）、数据驱动与卡片形态。
 - [Rate 评分](https://oas-ui.dev/components/rate): 星级评分，支持键盘方向键调节、半星交互、悬停预览、只读展示与触屏拖拽，默认点击已选中的同一颗星可清空。
+- [SchemaForm 声明式表单](https://oas-ui.dev/components/schema-form): 一份 schema（JSON Schema 子集）+ 可选 uiSchema（UI 注解层）声明式描述表单：运行时编译为渲染计划，
 - [Segmented 分段器](https://oas-ui.dev/components/segmented): 单选的线性分段选择器，用于轻度筛选 / 切换视图，role="radiogroup"，可禁用单项。
 - [Select 选择器](https://oas-ui.dev/components/select): 下拉选择器，支持单选、多选、分组、可清空、远程搜索与自定义创建，尺寸/校验态/受控展开/多选上限齐备，键盘可操作。
 - [Slider 滑块](https://oas-ui.dev/components/slider): 原生 <input type="range"> 增强的滑动条。

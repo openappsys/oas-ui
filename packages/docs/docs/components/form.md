@@ -612,6 +612,8 @@ onMounted(() => {
 | `validate` | `validate(): Promise<boolean>` | 公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。 |
 | `submit` | `submit(): void` | 公开提交入口：委托内部 form 的 requestSubmit()。 |
 | `reset` | `reset(): void` | 重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件） |
+| `setErrors` | `setErrors(list: { path: string; message: string; severity?: 'error' \| 'warning' }[]): void` | 注入错误（服务端校验 / 上游容器）：路径经 `parseNamePath` 归一为点号规范键，注入错误优先于规则错误直到该字段值再次变化；数组路径错误同通道注入并进入 `oas-validate-fail` 载荷 |
+| `clearErrors` | `clearErrors(paths?: string[]): void` | 清除注入错误（省略 paths = 清全部）；清除后受影响字段回落规则错误 |
 
 #### 事件
 
@@ -644,7 +646,7 @@ onMounted(() => {
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `setError` | `setError(message: string \| null): void` | 校验错误文本收编（由 oas-form 调用）。message 为空时移除错误态。 |
+| `setError` | `setError(message: string \| null, severity?: 'error' \| 'warning'): void` | 校验错误/警告文本收编（由 oas-form 调用）：error 走 role=alert 且独占显示，warning 走 role=status（不置 aria-invalid、不阻断校验） |
 | `refreshLayout` | `refreshLayout(): void` | 供父 oas-form 在布局属性变化时调用，即时重刷 grid/标签布局感知 |
 
 #### 插槽

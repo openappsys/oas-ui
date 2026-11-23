@@ -82,6 +82,8 @@ const HELPER_NO_REGISTER: readonly string[] = [
   'data/table/detail',
   'layout/scroll-area/infinite',
   'framework/config-provider',
+  // schema-form 编译器：纯函数模块（无 i18n 注册职责，schemaForm.* 由组件入口 index.ts 注册）
+  'form/schema-form/compiler',
 ]
 
 /** 唯一注册豁免：闭包只命中 table.rangeSelection / table.fillHandle（translateText 运行时通道），设计明确本批不处理 */
