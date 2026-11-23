@@ -718,4 +718,17 @@ export const zhHant: LocaleMessages = {
   'schemaForm.format.date': '日期格式不正確',
   'schemaForm.format.dateTime': '日期時間格式不正確',
   'schemaForm.format.time': '時間格式不正確',
+  // matrix / rank
+  'matrix.group': '矩陣題',
+  'matrix.requiredAll': '請為每一列選擇一項',
+  'matrix.requiredAny': '請至少選擇一列',
+  'rank.group': '排序題',
+  'rank.minRanks': '請至少排序 {min} 項',
+  'rank.count': '已排序 {count} 項，至少 {min} 項',
+  'rank.selected': '{label} 已排第 {rank} 名',
+  'rank.removed': '{label} 已移出排名',
+  'rank.cleared': '已清空排名',
+  'rank.remove': '取消選擇 {label}',
+  'rank.moveUp': '上移 {label}',
+  'rank.moveDown': '下移 {label}',
 }

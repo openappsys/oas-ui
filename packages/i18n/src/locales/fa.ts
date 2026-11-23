@@ -717,4 +717,17 @@ export const fa: LocaleMessages = {
   'schemaForm.format.date': 'تاریخ نامعتبر است',
   'schemaForm.format.dateTime': 'تاریخ و زمان نامعتبر است',
   'schemaForm.format.time': 'زمان نامعتبر است',
+  // matrix / rank
+  'matrix.group': 'پرسش ماتریسی',
+  'matrix.requiredAll': 'لطفاً به هر سطر پاسخ دهید',
+  'matrix.requiredAny': 'لطفاً حداقل به یک سطر پاسخ دهید',
+  'rank.group': 'پرسش مرتب‌سازی',
+  'rank.minRanks': 'حداقل {min} مورد را مرتب کنید',
+  'rank.count': '{count} مورد مرتب‌شده، حداقل {min}',
+  'rank.selected': '{label} در رتبه {rank} است',
+  'rank.removed': '{label} از مرتب‌سازی حذف شد',
+  'rank.cleared': 'مرتب‌سازی پاک شد',
+  'rank.remove': 'حذف {label} از مرتب‌سازی',
+  'rank.moveUp': 'جابه‌جایی {label} به بالا',
+  'rank.moveDown': 'جابه‌جایی {label} به پایین',
 }

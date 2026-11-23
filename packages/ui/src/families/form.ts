@@ -52,6 +52,8 @@ import '../form/number-keyboard/index.js'
 import '../form/code-button/index.js'
 import '../form/image-picker/index.js'
 import '../form/image-cropper/index.js'
+import '../form/matrix/index.js'
+import '../form/rank/index.js'
 
 // 唯一透传的 registry API（与全量入口一致）：OASUI.setLocale 切语言；其余 registry API 不进导出面
 export { setLocale } from '@oas-ui/i18n/registry'

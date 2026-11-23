@@ -713,4 +713,17 @@ export const ja: LocaleMessages = {
   'schemaForm.format.date': '日付の形式が正しくありません',
   'schemaForm.format.dateTime': '日時の形式が正しくありません',
   'schemaForm.format.time': '時刻の形式が正しくありません',
+  // matrix / rank
+  'matrix.group': 'マトリックス質問',
+  'matrix.requiredAll': '各行に1つ選択してください',
+  'matrix.requiredAny': '少なくとも1行選択してください',
+  'rank.group': '並べ替え質問',
+  'rank.minRanks': '少なくとも{min}項目を並べてください',
+  'rank.count': '{count}項目を選択済み（最低{min}項目）',
+  'rank.selected': '{label} は {rank} 位です',
+  'rank.removed': '{label} をランキングから外しました',
+  'rank.cleared': 'ランキングをクリアしました',
+  'rank.remove': '{label} の選択を解除',
+  'rank.moveUp': '{label} を上へ移動',
+  'rank.moveDown': '{label} を下へ移動',
 }

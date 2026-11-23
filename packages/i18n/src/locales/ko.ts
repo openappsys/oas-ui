@@ -713,4 +713,17 @@ export const ko: LocaleMessages = {
   'schemaForm.format.date': '날짜 형식이 올바르지 않습니다',
   'schemaForm.format.dateTime': '날짜 및 시간 형식이 올바르지 않습니다',
   'schemaForm.format.time': '시간 형식이 올바르지 않습니다',
+  // matrix / rank
+  'matrix.group': '매트릭스 질문',
+  'matrix.requiredAll': '각 행에서 하나씩 선택하세요',
+  'matrix.requiredAny': '최소 한 행을 선택하세요',
+  'rank.group': '순위 질문',
+  'rank.minRanks': '최소 {min}개 항목을 정렬하세요',
+  'rank.count': '{count}개 정렬됨, 최소 {min}개',
+  'rank.selected': '{label}의 순위는 {rank}위입니다',
+  'rank.removed': '{label}이(가) 순위에서 제외되었습니다',
+  'rank.cleared': '순위를 비웠습니다',
+  'rank.remove': '{label} 선택 해제',
+  'rank.moveUp': '{label} 위로 이동',
+  'rank.moveDown': '{label} 아래로 이동',
 }

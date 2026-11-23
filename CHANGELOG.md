@@ -4,6 +4,12 @@
 
 ### 新增
 
+**问卷填写端（form 族，2 件）**
+
+- **oas-matrix（矩阵题）**：行 = 子问题、列 = 选项的矩阵选择——`rows` / `columns` 数据契约（JSON 属性 + 对象 property 双通道，字符串项按 `key=label` 收敛）；`mode="radio" | "checkbox"` 行内单选 / 多选，值契约 `{ rowKey: colKey }` / `{ rowKey: [colKey] }` 交互即回写属性；`required` + `required-scope="row" | "table"` 两档必答（行级每行必选 / 全表至少一行），`validate()` 未通过派发 `oas-invalid` 并显示可视错误，补满自动消失；行 / 列级与组级 `disabled`、组级 `readonly`（保留外观与已选，不响应交互）；a11y——每行 `fieldset` + `legend` 承载行标题，列头可见、输入以 `aria-labelledby` 关联行头 + 列头，radio 行 roving tabindex、方向键行内移动并选中（RTL 镜像）、Home/End 首末列，必答提示与错误经 `aria-describedby` 关联；空 rows / columns 显示占位。i18n `matrix.*` ×16；单测 21 + qa-regression e2e（真实点选 / 键盘 / 校验可见反馈）+ zh/en 文档 + API 表。
+- **oas-rank（排序题）**：选项按名次选择——点击 / 键盘把选项加入排名序列（已选项显示名次徽标），已选项可上移 / 下移 / 取消（再点或移除按钮），操作全部是可见按钮、不依赖拖拽；值契约 = 按名次排序的 key 数组（部分排名即已选子集有序），`min-ranks` 下限校验（`validate()` 未达时派发 `oas-invalid` 并显示错误，补足自动消失）；`options` / `value` JSON 属性 + property 双通道；选项级 / 组级 `disabled` 与组级 `readonly`；a11y——原生 `button`、调整按钮可访问名带选项名、名次变化 `aria-live` 播报、徽标与间距全逻辑属性（RTL 自动镜像）、重建后焦点归还语义等价按钮；空 options 显示占位。i18n `rank.*` ×16；单测 18 + qa-regression e2e（真实点选 / 键盘 / 名次调整 / 下限校验）+ zh/en 文档 + API 表。
+- 两组件均登记 `not-ssr` pending（README 论证），属性双通道进 `vue-prop-hijack` 契约表，`form` 族 CDN bundle / 全量入口 / api-manifest / llms / stats / SSR 矩阵同步。
+
 **schema-form（form 族，JSON 声明式表单 V1a）**
 
 - **oas-schema-form**：一份 `schema`（JSON Schema 子集：`type/format/enum/const/default/required/min-max-length/pattern/items/properties/if-then-else` + 本地 `$ref` 急切展开、循环报错）+ `uiSchema`（`widget/layout/options/reactions/keepValueOnHidden`，裸键）编译为渲染计划并挂载 form 族控件树——值管理与字段校验走 `oas-form` 内核（字段即内核 light DOM 子节点），错误注入 / 数组级校验 / 联动求值 / 编译由组件承载。默认 widget 映射（`string→input`、format→`input(type)/date-picker/time-picker`、`number/integer→input-number`、`boolean→switch`、`enum→select`、`array of enum→checkbox-group`、`object→分组`、`array of object→form-list`）+ `layout.span` 栅格 / `group` 分组 / `tabs` 标签页（`role=tablist` + 方向键 / Home / End）；`whenSchema` 单轨联动（`target` 多目标、`otherwise` 回静态值、依赖图定向刷新、8 轮定点守卫、`visible:false` 卸载且数组行内保键位、disabled 级联、required 同步 `aria-required`）；对象数组初始长度驱动建行、增删走 form-list 既有交互、嵌套数组逐层命名（`users.N.matrix.M.label`）、数组级校验注入数组路径并渲染 `part="array-error"`；自研迷你校验器（标准关键字 + format 清单 + i18n 文案）+ **只读类型投影归一**（`"42"` → 42 参与校验，提交值仍为字符串契约）；非受控 `initialValues` 与 schema `default` 兜底；空 schema / 非法 schema / 零字段 / 空数组均有占位；`onCleanup` 全清、断开重连无损；SSR 白名单登记（快照确定性与真水合）。与 `oas-questionnaire` 的 duck-typed 组合契约同步落地（步骤内容可内嵌 schema-form，纯 JSON 驱动整份问卷）。i18n `schemaForm.*` ×16；单测 92（编译层纯函数 63 + 组件 29）+ qa-regression e2e + zh/en 文档 + API 表。

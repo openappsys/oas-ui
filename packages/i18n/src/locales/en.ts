@@ -641,4 +641,17 @@ export const en: LocaleMessages = {
   'schemaForm.format.date': 'Invalid date',
   'schemaForm.format.dateTime': 'Invalid date and time',
   'schemaForm.format.time': 'Invalid time',
+  // matrix / rank
+  'matrix.group': 'Matrix question',
+  'matrix.requiredAll': 'Please answer every row',
+  'matrix.requiredAny': 'Please answer at least one row',
+  'rank.group': 'Ranking question',
+  'rank.minRanks': 'Rank at least {min} items',
+  'rank.count': '{count} ranked, at least {min}',
+  'rank.selected': '{label} is ranked #{rank}',
+  'rank.removed': '{label} removed from the ranking',
+  'rank.cleared': 'Ranking cleared',
+  'rank.remove': 'Remove {label} from the ranking',
+  'rank.moveUp': 'Move {label} up',
+  'rank.moveDown': 'Move {label} down',
 }

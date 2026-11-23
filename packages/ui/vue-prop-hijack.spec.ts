@@ -341,6 +341,45 @@ const CONTRACT: ContractEntry[] = [
     },
   },
   {
+    page: 'matrix',
+    tag: 'oas-matrix',
+    attrContract: { rows: 'array', columns: 'array', value: 'object' },
+    propContract: {
+      attrs: ['rows', 'columns', 'value'],
+      renderedSel: '[part="cell"]',
+      mode: 'when-data',
+      probe: 'rows',
+      stringProbe: [
+        {
+          prop: 'rows',
+          raw: '[{"key":"probe-row","label":"Probe Row"}]',
+          text: 'Probe Row',
+        },
+        { prop: 'columns', raw: '[{"key":"probe-col","label":"Probe Column"}]', text: 'Probe Column' },
+        { prop: 'value', raw: '{"probe-row":"probe-col"}', kind: 'object' },
+      ],
+    },
+  },
+  {
+    page: 'rank',
+    tag: 'oas-rank',
+    attrContract: { options: 'array', value: 'array' },
+    propContract: {
+      attrs: ['options', 'value'],
+      renderedSel: 'button.option',
+      mode: 'when-data',
+      probe: 'options',
+      stringProbe: [
+        {
+          prop: 'options',
+          raw: '[{"key":"probe-a","label":"Probe A"},{"key":"probe-b","label":"Probe B"}]',
+          text: 'Probe A',
+        },
+        { prop: 'value', raw: '["probe-a"]' },
+      ],
+    },
+  },
+  {
     page: 'schema-form',
     tag: 'oas-schema-form',
     // schema / uiSchema / initialValues 是 get+set 双通道（对象 property + JSON attribute）：

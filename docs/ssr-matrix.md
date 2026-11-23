@@ -2,9 +2,9 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：239
+- 组件：241
 - SSR 白名单：176
-- 有意不 SSR：63
+- 有意不 SSR：65
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -105,6 +105,8 @@
 | `oas-code-button` | form | `form/code-button` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-image-picker` | form | `form/image-picker` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-image-cropper` | form | `form/image-cropper` | ⛔ 不 SSR | client-only | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-matrix` | form | `form/matrix` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
+| `oas-rank` | form | `form/rank` | ⛔ 不 SSR | pending | — | — | ✅ | — | ✅ | — | ✅/✅ |
 | `oas-message` | feedback | `feedback/message` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |
 | `oas-notification` | feedback | `feedback/notification` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |
 | `oas-toast` | feedback | `feedback/toast` | ⛔ 不 SSR | imperative | — | — | — | — | — | — | ✅/✅ |

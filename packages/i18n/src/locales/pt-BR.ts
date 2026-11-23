@@ -713,4 +713,17 @@ export const ptBR: LocaleMessages = {
   'schemaForm.format.date': 'Data inválida',
   'schemaForm.format.dateTime': 'Data e hora inválidas',
   'schemaForm.format.time': 'Hora inválida',
+  // matrix / rank
+  'matrix.group': 'Pergunta matricial',
+  'matrix.requiredAll': 'Responda todas as linhas',
+  'matrix.requiredAny': 'Responda pelo menos uma linha',
+  'rank.group': 'Pergunta de ordenação',
+  'rank.minRanks': 'Ordene pelo menos {min} itens',
+  'rank.count': '{count} ordenados, pelo menos {min}',
+  'rank.selected': '{label} está em {rank}º lugar',
+  'rank.removed': '{label} removido da ordenação',
+  'rank.cleared': 'Ordenação limpa',
+  'rank.remove': 'Remover {label} da ordenação',
+  'rank.moveUp': 'Mover {label} para cima',
+  'rank.moveDown': 'Mover {label} para baixo',
 }

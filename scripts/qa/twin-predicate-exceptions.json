@@ -12,6 +12,18 @@
       "predicate": "this.hasAttr('readonly') && !this.hasAttr('disabled') && !this.injectDisabled()",
       "count": 1,
       "reason": "同 address 条目：invoice 与 address 的同型「纯只读」判定，跨组件各自保留（无公共基类可归）；address 条目已述同一理由，两处一起核销。"
+    },
+    {
+      "file": "packages/ui/src/form/image-picker/oas-image-picker.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "image-picker 与 rank 两个独立 form 组件的同型「禁用或只读」交互闸门；二者无公共基类（均直接继承 OASElement），闸门各自在点击入口短路。抽公共 helper 会引入跨目录共享模块，收益仅一行判定；语义为协议级同型，各自保留更易读，出现第三个使用者时再抽。"
+    },
+    {
+      "file": "packages/ui/src/form/rank/oas-rank.ts",
+      "predicate": "this.injectDisabled() || this.hasAttr('readonly')",
+      "count": 1,
+      "reason": "同 image-picker 条目：rank 与 image-picker 的同型「禁用或只读」交互闸门，跨组件各自保留（无公共基类可归）；两处一起核销。"
     }
   ]
 }

@@ -1,0 +1,98 @@
+{
+  "className": "OASMatrix",
+  "sourceFile": "packages/ui/src/form/matrix/oas-matrix.ts",
+  "attrs": [
+    {
+      "name": "rows",
+      "observed": true
+    },
+    {
+      "name": "columns",
+      "observed": true
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "radio",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "required-scope",
+      "type": "string",
+      "default": "row",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "rows",
+      "type": "MatrixRow[] | string",
+      "api": true
+    },
+    {
+      "name": "columns",
+      "type": "MatrixColumn[] | string",
+      "api": true
+    },
+    {
+      "name": "value",
+      "type": "MatrixValue | string",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "validate",
+      "signature": "validate(): boolean",
+      "description": "校验必答语义并同步可视错误。"
+    },
+    {
+      "name": "clear",
+      "signature": "clear(): void",
+      "description": "清空全部选择（派发 `oas-change`）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: next, rowKey: row.key, columnKey: column.key, checked } | { value: {}, rowKey: '', columnKey: '', checked: false }"
+    },
+    {
+      "name": "oas-invalid",
+      "detail": "{ reason: 'required', scope: info.scope, missingRows: [...info.missingRows], value: this.value, }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-matrix-label-width",
+      "default": "34%"
+    }
+  ],
+  "unresolved": []
+}

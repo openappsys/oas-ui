@@ -713,4 +713,17 @@ export const ar: LocaleMessages = {
   'schemaForm.format.date': 'التاريخ غير صالح',
   'schemaForm.format.dateTime': 'التاريخ والوقت غير صالحين',
   'schemaForm.format.time': 'الوقت غير صالح',
+  // matrix / rank
+  'matrix.group': 'سؤال مصفوفة',
+  'matrix.requiredAll': 'يرجى الإجابة عن كل صف',
+  'matrix.requiredAny': 'يرجى الإجابة عن صف واحد على الأقل',
+  'rank.group': 'سؤال ترتيب',
+  'rank.minRanks': 'رتب {min} عناصر على الأقل',
+  'rank.count': 'تم ترتيب {count}، بحد أدنى {min}',
+  'rank.selected': '{label} في المرتبة {rank}',
+  'rank.removed': 'تمت إزالة {label} من الترتيب',
+  'rank.cleared': 'تم مسح الترتيب',
+  'rank.remove': 'إزالة {label} من الترتيب',
+  'rank.moveUp': 'نقل {label} لأعلى',
+  'rank.moveDown': 'نقل {label} لأسفل',
 }

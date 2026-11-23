@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 239,
+    "components": 241,
     "whitelist": 176,
-    "noSsr": 63
+    "noSsr": 65
   },
   "components": [
     {
@@ -1647,6 +1647,40 @@
       "reason": "client-only",
       "parent": null,
       "note": "canvas 裁剪与舞台测量仅客户端可用",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-matrix",
+      "family": "form",
+      "dir": "form/matrix",
+      "className": "OASMatrix",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（问卷填写端缺口批新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-rank",
+      "family": "form",
+      "dir": "form/rank",
+      "className": "OASRank",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（问卷填写端缺口批新组件，先登记 pending）",
       "entry": null,
       "hasTemplate": true,
       "hasHydrate": false,

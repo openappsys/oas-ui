@@ -1,10 +1,10 @@
 ---
-description: OAS-UI 提供 172 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+description: OAS-UI 提供 174 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 ---
 
 # 组件总览
 
-OAS-UI 提供 172 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 174 个框架无关的 Web Components 组件，按用途划分为 10 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -57,6 +57,7 @@ OAS-UI 提供 172 个框架无关的 Web Components 组件，按用途划分为 
 - [Input 输入框](/components/input) —— 原生 `<input>` 增强的基础输入组件。
 - [InputNumber 数字输入](/components/input-number) —— 原生 `<input type="number">` 增强，带步进按钮并支持范围约束。
 - [Knob 旋钮](/components/knob) —— 把连续/离散值映射为圆周角度的旋钮控件，为参数密集面板（音频/工业/3D）设计；支持圆周 + 直线拖拽两种交互与双击复位。
+- [Matrix 矩阵题](/components/matrix) —— 行（子问题）× 列（选项）的矩阵选择：行内单选 / 多选、行级或全表级必答校验、fieldset + legend 行标题与方向键行内导航。
 - [Mentions 提及](/components/mentions) —— 输入 `@` 触发建议浮层的提及输入组件，适合 @成员 / @任务 等场景。
 - [NumberKeyboard 数字键盘](/components/number-keyboard) —— 数字键盘：随机乱序、完成/删除键、车牌号布局（省份简称 + 字母 + 数字），组件内支持物理键盘输入。
 - [PasswordStrength 密码强度](/components/password-strength) —— 密码强度独立指示条：`for` 关联或 slot 自动发现密码输入，内置 0–4 五档评分与弱口令惩罚，受控/自定义评分双模式。
@@ -64,6 +65,7 @@ OAS-UI 提供 172 个框架无关的 Web Components 组件，按用途划分为 
 - [PinInput 验证码](/components/pin-input) —— 分格验证码输入，支持键盘方向键移动、Backspace 回退、粘贴自动分发。
 - [Questionnaire 多步问卷](/components/questionnaire) —— 步骤驱动的表单流程编排器：步骤头 + 进度（第 n / m 步）+ 每步独立面板 + 逐步校验门控；每个步骤内嵌一个 `<oas-form>`，复用 `oas-form` 内核。
 - [Radio 单选框](/components/radio) —— 原生 `<input type="radio">` 增强，支持单选组与受控 value。
+- [Rank 排序题](/components/rank) —— 点击 / 键盘把选项加入排名序列（名次徽标），已选项可上移 / 下移 / 取消；支持部分排名与 `min-ranks` 下限校验，名次变化经 aria-live 播报。
 - [Rate 评分](/components/rate) —— 星级评分，支持键盘方向键调节，默认点击已选中的同一颗星可清空。
 - [SchemaForm 声明式表单](/components/schema-form) —— 一份 JSON schema + uiSchema 声明式描述表单：编译为渲染计划挂载 form 族控件树，值管理与字段校验走 form 内核，错误注入、数组级校验、联动求值由组件承载。
 - [Segmented 分段器](/components/segmented) —— 单选的线性分段选择器，用于轻度筛选 / 切换视图，`role="radiogroup"`，可禁用单项。
