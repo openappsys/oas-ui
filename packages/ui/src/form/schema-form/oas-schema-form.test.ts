@@ -117,6 +117,13 @@ describe('oas-schema-form 渲染（schema → 控件树）', () => {
     expect(broken.shadowRoot!.querySelector<HTMLElement>('[part="empty"]')!.hidden).toBe(false)
   })
 
+  it('先挂 schema 再写 initialValues：初始值落盘（结构重建快照不得回压初始值）', () => {
+    const el = mount(basicSchema)
+    el.initialValues = { name: '后来写入', vip: true, plan: 'sh' }
+    expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('后来写入')
+    expect(widgetOf(el, 'vip')!.hasAttribute('checked')).toBe(true)
+  })
+
   it('schema 变更重建并保留已填值（快照回填）', () => {
     const el = mount(basicSchema, { initialValues: { name: '原名' } })
     expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('原名')

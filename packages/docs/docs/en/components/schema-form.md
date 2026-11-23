@@ -368,6 +368,7 @@ onMounted(() => {
       out.textContent = 'Two server errors injected (they fall back to rule errors after edits)'
     })
     document.getElementById('sf-errors-warning')?.addEventListener('click', () => {
+      errors.clearErrors()
       errors.setErrors([{ path: 'mail', message: 'Consider a corporate email', severity: 'warning' }])
       out.textContent = 'Warning injected: informational, validate() still passes'
     })

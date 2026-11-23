@@ -366,6 +366,7 @@ onMounted(() => {
       out.textContent = '已注入 2 条服务端错误（改值后自动回落到规则错误）'
     })
     document.getElementById('sf-errors-warning')?.addEventListener('click', () => {
+      errors.clearErrors()
       errors.setErrors([{ path: 'mail', message: '建议使用企业邮箱', severity: 'warning' }])
       out.textContent = '已注入 warning：仅提示、不阻断 validate()'
     })

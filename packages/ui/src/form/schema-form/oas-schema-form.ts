@@ -410,7 +410,7 @@ export class OASSchemaForm extends OASElement {
     // 行数由初始数组长度驱动（min 兜底；initialValues 有 1 行必须渲染 1 行）
     this.syncArrayMin(merged)
     form.reapplyInitialValues()
-    this.applySnapshotValues(snapshot)
+    this.applySnapshotValues(snapshot, merged)
     this.syncRules()
     this.evaluateEffects()
     this.syncArrayStates()
@@ -673,11 +673,16 @@ export class OASSchemaForm extends OASElement {
     return relative === '' ? rowPath : `${rowPath}.${relative}`
   }
 
-  /** 回填快照值（结构重建后已填值不丢） */
-  private applySnapshotValues(snapshot: Record<string, unknown>): void {
+  /** 回填快照值（结构重建后已填值不丢）：空值与新增 initialValues 覆盖的路径不再回填 */
+  private applySnapshotValues(snapshot: Record<string, unknown>, initial: Record<string, unknown>): void {
     const form = this.formEl
     if (!form) return
     for (const [name, raw] of flattenValues(snapshot)) {
+      // 空串 = 字段未编辑（fresh 状态），不回填（否则会把新写入的初始值覆盖成空）
+      if (raw === '') continue
+      // 新 initialValues 显式覆盖的路径以初始值为准（初始值变化触发重建时快照不能回压）
+      const path = parseDslPath(name)
+      if (path !== null && readPath(initial, path) !== undefined) continue
       const element = form.querySelector<HTMLElement>(`[name="${name.replace(/"/g, '\\"')}"]`)
       if (!element) continue
       this.writeWidgetValue(element, raw)

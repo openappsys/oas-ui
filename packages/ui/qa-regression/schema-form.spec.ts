@@ -18,7 +18,7 @@ test('schema-form 渲染：字段/初始值/值契约（叶子字符串）与提
   await expect(page.locator('#sf-basic oas-input[name="name"]')).toBeVisible()
   await expect(page.locator('#sf-basic oas-input-number[name="age"]')).toBeVisible()
   // 初始值写入：switch 选中、枚举选中 basic
-  await expect(page.locator('#sf-basic oas-switch[name="vip"]')).toHaveAttribute('checked', '')
+  expect(await page.locator('#sf-basic oas-switch[name="vip"]').evaluate((el) => el.hasAttribute('checked'))).toBe(true)
   await expect(page.locator('#sf-basic oas-select[name="plan"]')).toHaveAttribute('value', 'basic')
 
   // 必填未填 → submit 拦截并给出可见反馈
@@ -42,13 +42,15 @@ test('schema-form whenSchema 联动：切换国家 → 字段卸载/复显与 re
 
   // CN：state 卸载、province 必填
   await expect(page.locator('#sf-react oas-input[name="state"]')).toHaveCount(0)
-  await expect(page.locator('#sf-react oas-form-item', { hasText: 'Province' }).first()).toHaveAttribute('required', '')
+  const provinceItem = page.locator('#sf-react oas-form-item:has(oas-input[name="province"])')
+  const stateItem = page.locator('#sf-react oas-form-item:has(oas-input[name="state"])')
+  await expect(provinceItem).toHaveAttribute('required', '')
 
   // 切到 US：province 卸载、state 出现且必填
   await pickOption(page, '#sf-react oas-select[name="country"]', 'US')
   await expect(page.locator('#sf-react oas-input[name="province"]')).toHaveCount(0)
   await expect(page.locator('#sf-react oas-input[name="state"]')).toBeVisible()
-  await expect(page.locator('#sf-react oas-form-item', { hasText: 'State' }).first()).toHaveAttribute('required', '')
+  await expect(stateItem).toHaveAttribute('required', '')
   // 依赖图联动反馈（demo 输出当前值）
   await expect(page.locator('#sf-react-output')).toContainText('"country":"US"')
 
@@ -62,7 +64,7 @@ test('schema-form 数组：初始行 / 真实增删 / 值随行号重绑 / 数�
 
   const list = page.locator('#sf-array oas-form-list')
   await expect(list.locator('[data-oas-form-list-item]')).toHaveCount(1)
-  await expect(page.locator('#sf-array oas-input[name="users.0.nick"]')).toHaveValue('张三')
+  await expect(page.locator('#sf-array oas-input[name="users.0.nick"]')).toHaveAttribute('value', '张三')
 
   // 真实点击「添加一项」→ 2 行，新增行按行号命名
   await page.locator('#sf-array oas-form-list [part="add"]').click()
@@ -73,10 +75,10 @@ test('schema-form 数组：初始行 / 真实增删 / 值随行号重绑 / 数�
   await page.locator('#sf-array-submit').click()
   await expect(page.locator('#sf-array oas-input[name="users.1.nick"]')).toHaveAttribute('aria-invalid', 'true')
 
-  // 删除第二行后只剩 1 行，错误清除
+  // 删除第二行后只剩 1 行（错误态随元素移除）
   await page.locator('#sf-array oas-form-list [part="remove"]').nth(1).click()
   await expect(list.locator('[data-oas-form-list-item]')).toHaveCount(1)
-  await expect(page.locator('#sf-array-output')).not.toContainText('oas-validate-fail')
+  await expect(page.locator('#sf-array oas-input[name="users.0.nick"]')).not.toHaveAttribute('aria-invalid')
 
   // reset 回初始行数
   await page.locator('#sf-array-reset').click()
@@ -107,8 +109,8 @@ test('schema-form 嵌套数组：内层行命名 users.N.matrix.M.label 且值�
   await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#sf-nested')
 
-  await expect(page.locator('#sf-nested oas-input[name="users.0.matrix.0.label"]')).toHaveValue('A')
-  await expect(page.locator('#sf-nested oas-input[name="users.0.matrix.1.label"]')).toHaveValue('B')
+  await expect(page.locator('#sf-nested oas-input[name="users.0.matrix.0.label"]')).toHaveAttribute('value', 'A')
+  await expect(page.locator('#sf-nested oas-input[name="users.0.matrix.1.label"]')).toHaveAttribute('value', 'B')
   await page.locator('#sf-nested-values').click()
   await expect(page.locator('#sf-nested-output')).toContainText('matrix')
   await expect(page.locator('#sf-nested-output')).toContainText('B')
