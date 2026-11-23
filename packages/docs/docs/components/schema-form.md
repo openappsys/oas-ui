@@ -117,6 +117,8 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
 - 列定义来自 `items.properties` 的声明顺序；列级注解写在 `users[].字段` 上：`width`（数字按 px，
   字符串按 grid 轨道原样，如 `'2fr'`）、`align`（`left` / `center` / `right`）、`hidden`（隐藏视觉但
   **保留单元格与值**）；`widget` 覆盖同样作用于列内的单元格。
+- **单元格不渲染自己的标签**（列头已承载标签），必填字段的 `*` 上移到列头；控件宽度被 `max-width: 100%`
+  约束在单元格内（固定像素宽度的控件不会溢出到行操作列）。
 - 行操作列（表格尾列）：删除 / 复制 / 上移 / 下移；末尾追加行走表格下方的按钮。语义与 `oas-form-list`
   行尾操作完全一致（值深拷贝 / 值交换、焦点按行位回归、`aria-live` 播报）。
 - 事件：`oas-add` / `oas-remove`（`detail: { index }`）、`oas-duplicate` / `oas-move`（`detail: { from, to }`）。

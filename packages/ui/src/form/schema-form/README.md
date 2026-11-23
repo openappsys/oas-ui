@@ -88,7 +88,8 @@
 
 - **列定义（array-table）**：`items.properties` 声明顺序 + 列级注解 `width`（数字 px / 字符串轨道）/
   `align` / `hidden`；`hidden` 列保留单元格与值，只隐藏视觉。`width` / `align` / `hidden` 用在非表格节点
-  上会 devWarn 忽略。
+  上会 devWarn 忽略。**单元格不渲染自身标签**（列头承载；必填 `*` 上移列头），控件宽 `max-width: 100%`
+  约束在单元格内。
 - **行操作**：容器内建 复制 / 上移 / 下移 / 删除（`array-table` 另有表下列头内的追加按钮）。契约与
   容器同源（`form/shared/list-row-ops`）：值读写走内核通道（`oas-upload` 跳过）、操作后焦点按行位回归、
   `aria-live` 播报；事件 `oas-add` / `oas-remove` `{ index }` + `oas-duplicate` / `oas-move` `{ from, to }`。

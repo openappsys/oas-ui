@@ -88,7 +88,10 @@ describe('oas-schema-form array-table 渲染', () => {
     expect(container.tagName.toLowerCase()).toBe('oas-array-table')
     expect(container.shadowRoot!.querySelector('[role="table"]')!.getAttribute('role')).toBe('table')
     const headers = [...container.shadowRoot!.querySelectorAll('[role="columnheader"]')].map((cell) => cell.textContent)
-    expect(headers).toEqual(['昵称', '年龄', '行操作'])
+    // 列头承载标签与必填标记（单元格自身不渲染标签，必填星号上移到列头）
+    expect(headers).toEqual(['昵称 *', '年龄', '行操作'])
+    const firstCell = rows(el)[0]!.querySelector('oas-form-item')!
+    expect(firstCell.hasAttribute('label'), '表格单元格不再重复渲染自己的标签（列头已承载）').toBe(false)
     expect(container.shadowRoot!.querySelector<HTMLElement>('[role="columnheader"]')!.style.textAlign).toBe('right')
     // 单元格仍是 schema-form 渲染的 form-item（值收集/校验/联动零成本继承）
     expect(rows(el)).toHaveLength(2)

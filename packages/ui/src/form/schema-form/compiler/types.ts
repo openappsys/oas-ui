@@ -180,6 +180,8 @@ export interface TableColumn {
   width?: number | string
   align?: 'left' | 'center' | 'right'
   hidden?: boolean
+  /** 必填（items.required 命中）：单元格自身不渲染标签，必填标记由列头 `*` 承担 */
+  required?: boolean
 }
 
 export type PlanNode = FieldPlan | GroupPlan | TabsPlan | ArrayPlan

@@ -329,6 +329,7 @@ function buildArray(
                 ? 'left'
                 : undefined,
           hidden: columnUi?.hidden === true,
+          required: requiredKeys.has(childKey) || undefined,
         })
       }
     }

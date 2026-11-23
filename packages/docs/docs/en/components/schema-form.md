@@ -131,6 +131,9 @@ row-action column — it is the same value semantics as `oas-form-list` in a dif
   `users[].field`: `width` (numbers are px, strings are used as grid tracks such as `'2fr'`), `align`
   (`left` / `center` / `right`), `hidden` (visually hidden but the cell and its value are kept); a `widget`
   override also applies to cells.
+- **Cells do not render their own label** (the header carries it) and the `*` of required fields moves to the
+  header; widget widths are constrained to the cell with `max-width: 100%` (fixed-width controls never spill
+  into the action column).
 - The action column holds remove / duplicate / move-up / move-down; the add button appends below the table.
   Semantics match `oas-form-list` row operations (deep copy / value swap, focus returns by row position,
   `aria-live` announcements).

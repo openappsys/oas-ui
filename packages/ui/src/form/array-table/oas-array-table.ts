@@ -68,6 +68,10 @@ const STYLE = `
 .head-actions {
   text-align: end;
 }
+/* 必填星号（列头承担；单元格自身不渲染标签） */
+.required-mark {
+  color: var(--oas-color-danger);
+}
 .rows {
   display: block;
 }
@@ -144,6 +148,8 @@ export interface ArrayTableColumn {
   width?: number | string
   align?: 'left' | 'center' | 'right'
   hidden?: boolean
+  /** 必填列：列头追加 `*`（单元格自身不渲染标签） */
+  required?: boolean
 }
 
 /** 行操作列固定宽度（表头与每行同值，保证末列对齐） */
@@ -289,6 +295,7 @@ export class OASArrayTable extends OASElement {
           align:
             col.align === 'center' || col.align === 'right' ? col.align : col.align === 'left' ? 'left' : undefined,
           hidden: col.hidden === true,
+          required: col.required === true,
         }))
     } catch {
       return []
@@ -401,9 +408,15 @@ export class OASArrayTable extends OASElement {
       })
       btn.addEventListener('focus', () => {
         btn.style.boxShadow = 'var(--oas-focus-ring)'
+        // 强制色模式下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7）
+        if (globalThis.matchMedia?.('(forced-colors: active)').matches) {
+          btn.style.outline = '1px solid CanvasText'
+          btn.style.outlineOffset = '1px'
+        }
       })
       btn.addEventListener('blur', () => {
         btn.style.boxShadow = 'none'
+        btn.style.outline = 'none'
       })
       actions.appendChild(btn)
     }
@@ -460,6 +473,11 @@ export class OASArrayTable extends OASElement {
         if (column?.hidden === true) style.push('display:none')
         if (column?.align) style.push(`text-align:${column.align}`)
         cell.style.cssText = style.join(';')
+        // 控件宽度不得越出单元格：固定像素宽度的控件（如 select 默认 220px）会被 max-width 收窄，
+        // 否则会溢出到行操作列、抢占点击
+        for (const widget of cell.querySelectorAll<HTMLElement>('[data-schema-widget]')) {
+          widget.style.maxWidth = '100%'
+        }
       })
     }
   }
@@ -483,7 +501,17 @@ export class OASArrayTable extends OASElement {
       cell.className = 'head-cell'
       cell.setAttribute('part', 'columnheader')
       cell.setAttribute('role', 'columnheader')
-      cell.textContent = column.label !== '' ? column.label : column.key
+      const title = document.createElement('span')
+      title.textContent = column.label !== '' ? column.label : column.key
+      cell.appendChild(title)
+      // 必填标记：单元格不渲染标签，星号由列头承担（星号 aria-hidden，必填语义由单元格控件的 aria-required 承担）
+      if (column.required === true) {
+        const mark = document.createElement('span')
+        mark.className = 'required-mark'
+        mark.setAttribute('aria-hidden', 'true')
+        mark.textContent = ' *'
+        cell.appendChild(mark)
+      }
       if (column.hidden === true) cell.style.display = 'none'
       if (column.align) cell.style.textAlign = column.align
       head.appendChild(cell)

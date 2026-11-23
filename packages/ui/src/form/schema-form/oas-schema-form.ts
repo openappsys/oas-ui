@@ -248,6 +248,8 @@ export class OASSchemaForm extends OASElement {
   private renderedKey: string | null = null
   /** 上次重建时的初始值通道身份（仅当它变化时，初始值才允许覆盖快照里的用户编辑） */
   private renderedInitialKey: string | null = null
+  /** 渲染态：表格单元格抑制自身标签（列头已承载标签与必填标记） */
+  private suppressCellLabels = false
 
   private engine: ReactionEngine | null = null
   private effects = new Map<string, ReactionEffects>()
@@ -605,7 +607,13 @@ export class OASSchemaForm extends OASElement {
   private renderField(node: FieldPlan): HTMLElement {
     const item = document.createElement('oas-form-item')
     item.setAttribute('data-schema-key', node.key)
-    item.setAttribute('label', node.label)
+    // 表格单元格：列头已承载标签与必填标记，单元格自身不重复渲染（含必填星号）
+    if (this.suppressCellLabels) {
+      item.setAttribute('data-schema-cell', '')
+    } else {
+      item.setAttribute('label', node.label)
+      if (node.staticRequired) item.setAttribute('required', '')
+    }
     if (node.help) item.setAttribute('help', node.help)
     if (node.span) item.setAttribute('span', String(node.span))
     if (node.staticRequired) item.setAttribute('required', '')
@@ -758,9 +766,16 @@ export class OASSchemaForm extends OASElement {
       list.setAttribute('label', node.label)
       list.setAttribute('columns', JSON.stringify(node.columns ?? []))
     }
-    // 行模板：行内字段裸名（form-list 自动加前缀）；嵌套数组名带 {index}（外层替换）
+    // 行模板：行内字段裸名（form-list 自动加前缀）；嵌套数组名带 {index}（外层替换）。
+    // 表格单元格不渲染自己的标签（列头已承载），必填标记转到列头 `*`
     const template = document.createElement('template')
-    for (const child of node.children) template.content.appendChild(this.renderNode(child))
+    const previousSuppress = this.suppressCellLabels
+    this.suppressCellLabels = node.table === true
+    try {
+      for (const child of node.children) template.content.appendChild(this.renderNode(child))
+    } finally {
+      this.suppressCellLabels = previousSuppress
+    }
     list.appendChild(template)
     container.appendChild(list)
 
@@ -1421,7 +1436,8 @@ export class OASSchemaForm extends OASElement {
     required: boolean,
   ): string | null {
     const widget = item.querySelector<HTMLElement>('[data-schema-widget]')
-    item.toggleAttribute('required', required)
+    // 表格单元格不渲染自身标签：必填标记由列头 `*` 承担（避免单元格里出现孤立星号）
+    item.toggleAttribute('required', required && !item.hasAttribute('data-schema-cell'))
     if (widget) {
       widget.toggleAttribute('disabled', disabled)
       if (required) widget.setAttribute('aria-required', 'true')

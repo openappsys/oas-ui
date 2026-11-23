@@ -404,7 +404,7 @@ test('schema-form 行内编辑表格：行操作真实点击（复制 / 上移 /
   // 表格语义：role=table + 列头（昵称 / 年龄 / 角色 / 行操作）
   await expect(table.locator('[role="table"]')).toBeVisible()
   const headers = await table.locator('[role="columnheader"]').allTextContents()
-  expect(headers).toEqual(['昵称', '年龄', '角色', '行操作'])
+  expect(headers).toEqual(['昵称 *', '年龄', '角色', '行操作'])
 
   // 复制第 1 行：行数 +1，值深拷贝，输出区给出 oas-duplicate 回显
   await rows.nth(0).locator('[data-action="duplicate"]').click()
