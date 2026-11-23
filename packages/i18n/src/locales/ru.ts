@@ -714,4 +714,17 @@ export const ru: LocaleMessages = {
   'schemaForm.format.date': 'Неверная дата',
   'schemaForm.format.dateTime': 'Неверные дата и время',
   'schemaForm.format.time': 'Неверное время',
+  // matrix / rank
+  'matrix.group': 'Матричный вопрос',
+  'matrix.requiredAll': 'Ответьте на каждую строку',
+  'matrix.requiredAny': 'Ответьте хотя бы на одну строку',
+  'rank.group': 'Вопрос сортировки',
+  'rank.minRanks': 'Упорядочьте не менее {min} элементов',
+  'rank.count': 'Упорядочено {count}, минимум {min}',
+  'rank.selected': '{label} на {rank}-м месте',
+  'rank.removed': '{label} убран из сортировки',
+  'rank.cleared': 'Сортировка очищена',
+  'rank.remove': 'Убрать {label} из сортировки',
+  'rank.moveUp': 'Переместить {label} выше',
+  'rank.moveDown': 'Переместить {label} ниже',
 }

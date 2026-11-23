@@ -96,6 +96,8 @@
   "oas-code-button",
   "oas-image-picker",
   "oas-image-cropper",
+  "oas-matrix",
+  "oas-rank",
   "oas-message",
   "oas-notification",
   "oas-toast",

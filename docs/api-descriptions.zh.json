@@ -5611,5 +5611,59 @@
       "clearErrors": "清除注入错误（省略 paths = 清全部）；受影响字段回落规则错误。",
       "reset": "重置：回初始值、清错误、数组行数回初始长度（不派发事件）。"
     }
+  },
+  "oas-matrix": {
+    "attrs": {
+      "rows": "子问题（行）JSON 数组 `[{ key, label?, disabled? }]`；字符串项按 `key=label` 收敛",
+      "columns": "选项（列）JSON 数组，形态同 `rows`",
+      "mode": "行内选择模式：`radio` 单选（默认）/ `checkbox` 多选；非法值回落 `radio` 并告警",
+      "value": "值 JSON 对象：radio `{ rowKey: columnKey }` / checkbox `{ rowKey: [columnKey] }`（用户交互时回写）",
+      "required": "必答：配合 `required-scope` 表达行级或全表级语义",
+      "required-scope": "必答范围：`row` 每行必选（默认）/ `table` 全表至少一行作答",
+      "disabled": "禁用全部行与列（行 / 列级 `disabled` 仍可单独设置）",
+      "readonly": "只读：保留外观与已选展示，不响应交互",
+      "label": "题面文本（渲染为标题，并作为分组可访问名称）"
+    },
+    "props": {
+      "rows": "行（子问题）列表：get+set 双通道（数组或 JSON 字符串）；赋值即生效，不派发事件",
+      "columns": "选项（列）列表：get+set 双通道（数组或 JSON 字符串）；赋值即生效，不派发事件",
+      "value": "当前值：get+set 双通道（对象或 JSON 字符串）；赋值即生效，不派发事件"
+    },
+    "methods": {
+      "validate": "校验必答语义并同步可视错误，返回是否通过（未通过时派发 `oas-invalid`）",
+      "clear": "清空全部选择（派发 `oas-change`）"
+    },
+    "events": {
+      "oas-change": "用户改变选择时派发，`detail: { value, rowKey, columnKey, checked }`",
+      "oas-invalid": "`validate()` 未通过时派发，`detail: { reason, scope, missingRows, value }`"
+    },
+    "cssVars": {
+      "--oas-matrix-label-width": "行标题列宽（默认 `34%`）"
+    }
+  },
+  "oas-rank": {
+    "attrs": {
+      "options": "可排序项 JSON 数组 `[{ key, label?, disabled?, description? }]`；字符串项按 `key=label` 收敛",
+      "value": "按名次排序的 key 数组（JSON）；部分排名即已选子集有序",
+      "min-ranks": "最少入选名次数（正整数）；未达下限时 `validate()` 不通过",
+      "disabled": "禁用全部交互",
+      "readonly": "只读：保留外观与排名展示，不响应交互",
+      "label": "题面文本（渲染为标题，并作为分组可访问名称）"
+    },
+    "props": {
+      "options": "可排序项列表：get+set 双通道（数组或 JSON 字符串）；赋值即生效，不派发事件",
+      "value": "当前值（有序 key 数组）：get+set 双通道（数组或 JSON 字符串）；赋值即生效，不派发事件"
+    },
+    "methods": {
+      "validate": "校验名次下限并同步可视错误，返回是否通过（未通过时派发 `oas-invalid`）",
+      "clear": "清空排名（派发 `oas-change`）"
+    },
+    "events": {
+      "oas-change": "用户加入 / 移除 / 上移 / 下移 / 清空时派发，`detail: { value, key, rank, action }`",
+      "oas-invalid": "`validate()` 未达 `min-ranks` 时派发，`detail: { reason, min, count, value }`"
+    },
+    "cssVars": {
+      "--oas-rank-badge-size": "名次徽标直径（默认 `--oas-control-height-sm`）"
+    }
   }
 }

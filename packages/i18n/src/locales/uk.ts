@@ -717,4 +717,17 @@ export const uk: LocaleMessages = {
   'schemaForm.format.date': 'Неправильна дата',
   'schemaForm.format.dateTime': 'Неправильні дата й час',
   'schemaForm.format.time': 'Неправильний час',
+  // matrix / rank
+  'matrix.group': 'Матричне питання',
+  'matrix.requiredAll': 'Дайте відповідь на кожен рядок',
+  'matrix.requiredAny': 'Дайте відповідь хоча б на один рядок',
+  'rank.group': 'Питання впорядкування',
+  'rank.minRanks': 'Упорядкуйте щонайменше {min} елементів',
+  'rank.count': 'Упорядковано {count}, щонайменше {min}',
+  'rank.selected': '{label} на {rank}-му місці',
+  'rank.removed': '{label} вилучено з упорядкування',
+  'rank.cleared': 'Упорядкування очищено',
+  'rank.remove': 'Вилучити {label} з упорядкування',
+  'rank.moveUp': 'Перемістити {label} вище',
+  'rank.moveDown': 'Перемістити {label} нижче',
 }

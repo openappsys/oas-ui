@@ -1,10 +1,10 @@
 ---
-description: OAS-UI provides 172 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
+description: OAS-UI provides 174 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 ---
 
 # Component Overview
 
-OAS-UI provides 172 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 174 framework-agnostic Web Components, organized into 10 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -57,6 +57,7 @@ OAS-UI provides 172 framework-agnostic Web Components, organized into 10 groups 
 - [Input](/en/components/input) —— An enhanced base input built on the native `<input>` element.
 - [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
 - [Knob](/en/components/knob) —— A rotary control that maps continuous/discrete values to a circular angle, designed for parameter-dense panels (audio/industrial/3D); supports circular + linear drag interactions and double-click reset.
+- [Matrix](/en/components/matrix) —— A matrix question with rows (sub-questions) and columns (options): in-row radio or checkbox, row-level or table-level required validation, fieldset + legend row headers and in-row arrow-key navigation.
 - [Mentions](/en/components/mentions) —— A mention input component that pops a suggestion overlay when typing `@`, suited for @member / @task scenarios.
 - [NumberKeyboard](/en/components/number-keyboard) —— Numeric keyboard: randomized key order, delete/done keys, license-plate layout (province abbreviation + letters + digits), with physical-keyboard input inside the component.
 - [PasswordStrength](/en/components/password-strength) —— A standalone password-strength meter: `for` association or slot auto-discovery, built-in 0–4 scoring with weak-password penalties, controlled and custom-scorer modes.
@@ -64,6 +65,7 @@ OAS-UI provides 172 framework-agnostic Web Components, organized into 10 groups 
 - [PinInput](/en/components/pin-input) —— A segmented code input supporting keyboard arrow navigation, Backspace fallback, and paste auto-distribution.
 - [Questionnaire](/en/components/questionnaire) —— A step-driven form flow orchestrator: step header + progress (Step n / m) + one panel per step + per-step validation gating; each step embeds one `<oas-form>`, reusing the `oas-form` kernel.
 - [Radio](/en/components/radio) —— An enhanced native `<input type="radio">` supporting radio groups and controlled values.
+- [Rank](/en/components/rank) —— Add options to a ranked sequence by click / keyboard (rank badges); ranked items can move up / down or be removed, with partial ranking, `min-ranks` validation and aria-live rank announcements.
 - [Rate](/en/components/rate) —— A star rating supporting keyboard arrow-key adjustment; clicking the currently selected star clears the value by default.
 - [SchemaForm](/en/components/schema-form) —— A declarative form described by one JSON schema plus uiSchema: compiled into a render plan mounted on the form family, with values and field validation handled by the form kernel while error injection, array-level checks and reactions live in the component.
 - [Segmented](/en/components/segmented) —— A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling.

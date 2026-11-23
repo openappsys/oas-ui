@@ -24,6 +24,9 @@ export const KNOWN_WIDGETS = new Set([
   'oas-slider',
   'oas-rate',
   'oas-pin-input',
+  // oas-matrix / oas-rank 未纳入：form 值收集链已注册（FORM_CONTROLS），但 schema-form 的
+  // uiSchema 配置通道未开（columns/options 不在 PROP_ALLOWLIST）——纳入只会静默渲染空态，
+  // 待配置通道批次打通后再登记（见 schema-form README「已知差距」）。
 ])
 
 /** 透传给控件的展示态属性白名单（避免把任意键写进 DOM） */

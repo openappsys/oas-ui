@@ -621,4 +621,17 @@ export const th: LocaleMessages = {
   'schemaForm.format.date': 'วันที่ไม่ถูกต้อง',
   'schemaForm.format.dateTime': 'วันที่และเวลาไม่ถูกต้อง',
   'schemaForm.format.time': 'เวลาไม่ถูกต้อง',
+  // matrix / rank
+  'matrix.group': 'คำถามแบบเมทริกซ์',
+  'matrix.requiredAll': 'โปรดตอบทุกแถว',
+  'matrix.requiredAny': 'โปรดตอบอย่างน้อยหนึ่งแถว',
+  'rank.group': 'คำถามจัดอันดับ',
+  'rank.minRanks': 'จัดอันดับอย่างน้อย {min} รายการ',
+  'rank.count': 'จัดอันดับแล้ว {count} รายการ อย่างน้อย {min}',
+  'rank.selected': '{label} อยู่อันดับ {rank}',
+  'rank.removed': 'นำ {label} ออกจากอันดับแล้ว',
+  'rank.cleared': 'ล้างอันดับแล้ว',
+  'rank.remove': 'ยกเลิกเลือก {label}',
+  'rank.moveUp': 'เลื่อน {label} ขึ้น',
+  'rank.moveDown': 'เลื่อน {label} ลง',
 }

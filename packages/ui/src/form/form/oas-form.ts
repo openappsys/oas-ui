@@ -199,6 +199,10 @@ register([
   'oas-pin-input',
   'oas-picker',
   'oas-transfer',
+  // 矩阵题 / 排序题：受控通道即 `value` 属性（JSON 串），默认读写器口径直接适用
+  // （读：JSON 串归一；写：setAttribute——initial-values / reset 基线与组件自身受控通道同源）
+  'oas-matrix',
+  'oas-rank',
 ])
 // combobox：读 value property（无已选值时草稿文本即表单值，datalist 语义）；写仍走 value 属性通道。
 // 未升级元素（真实 CDN 文档序升级：oas-form 先于子级 combobox 升级，模板 e2e 实抓）没有

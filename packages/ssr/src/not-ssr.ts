@@ -125,6 +125,8 @@ export const NOT_SSR: readonly NotSsrEntry[] = [
   { tag: 'oas-code-button', reason: 'pending', note: 'SSR 白名单化未立项（未发布批新组件，先登记 pending）' },
   { tag: 'oas-image-picker', reason: 'client-only', note: 'File / objectURL 选图仅客户端可用' },
   { tag: 'oas-image-cropper', reason: 'client-only', note: 'canvas 裁剪与舞台测量仅客户端可用' },
+  { tag: 'oas-matrix', reason: 'pending', note: 'SSR 白名单化未立项（问卷填写端缺口批新组件，先登记 pending）' },
+  { tag: 'oas-rank', reason: 'pending', note: 'SSR 白名单化未立项（问卷填写端缺口批新组件，先登记 pending）' },
   { tag: 'oas-share-sheet', reason: 'client-only', note: '受控浮层与焦点管理依赖客户端交互' },
   { tag: 'oas-curtain', reason: 'client-only', note: '首次弹出判定依赖 localStorage' },
   { tag: 'oas-offline', reason: 'client-only', note: '依赖 navigator.onLine 与 online/offline 事件' },

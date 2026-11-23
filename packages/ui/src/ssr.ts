@@ -105,6 +105,8 @@ export { OASNumberKeyboard } from './form/number-keyboard/oas-number-keyboard.js
 export { OASCodeButton } from './form/code-button/oas-code-button.js'
 export { OASImagePicker } from './form/image-picker/oas-image-picker.js'
 export { OASImageCropper } from './form/image-cropper/oas-image-cropper.js'
+export { OASMatrix } from './form/matrix/oas-matrix.js'
+export { OASRank } from './form/rank/oas-rank.js'
 
 // ---------- feedback ----------
 export { OASMessage } from './feedback/message/oas-message.js'

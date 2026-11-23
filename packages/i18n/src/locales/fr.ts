@@ -713,4 +713,17 @@ export const fr: LocaleMessages = {
   'schemaForm.format.date': 'Date invalide',
   'schemaForm.format.dateTime': 'Date et heure invalides',
   'schemaForm.format.time': 'Heure invalide',
+  // matrix / rank
+  'matrix.group': 'Question matricielle',
+  'matrix.requiredAll': 'Veuillez répondre à chaque ligne',
+  'matrix.requiredAny': 'Veuillez répondre à au moins une ligne',
+  'rank.group': 'Question de classement',
+  'rank.minRanks': 'Classez au moins {min} éléments',
+  'rank.count': '{count} classés, au moins {min}',
+  'rank.selected': '{label} est classé n° {rank}',
+  'rank.removed': '{label} retiré du classement',
+  'rank.cleared': 'Classement effacé',
+  'rank.remove': 'Retirer {label} du classement',
+  'rank.moveUp': 'Déplacer {label} vers le haut',
+  'rank.moveDown': 'Déplacer {label} vers le bas',
 }

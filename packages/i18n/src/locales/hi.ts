@@ -716,4 +716,17 @@ export const hi: LocaleMessages = {
   'schemaForm.format.date': 'तिथि अमान्य है',
   'schemaForm.format.dateTime': 'दिनांक और समय अमान्य है',
   'schemaForm.format.time': 'समय अमान्य है',
+  // matrix / rank
+  'matrix.group': 'मैट्रिक्स प्रश्न',
+  'matrix.requiredAll': 'कृपया प्रत्येक पंक्ति का उत्तर दें',
+  'matrix.requiredAny': 'कृपया कम से कम एक पंक्ति का उत्तर दें',
+  'rank.group': 'क्रम प्रश्न',
+  'rank.minRanks': 'कम से कम {min} आइटम क्रमबद्ध करें',
+  'rank.count': '{count} क्रमबद्ध, कम से कम {min}',
+  'rank.selected': '{label} {rank} स्थान पर है',
+  'rank.removed': '{label} को क्रम से हटाया गया',
+  'rank.cleared': 'क्रम साफ़ किया गया',
+  'rank.remove': '{label} को क्रम से हटाएँ',
+  'rank.moveUp': '{label} को ऊपर ले जाएँ',
+  'rank.moveDown': '{label} को नीचे ले जाएँ',
 }

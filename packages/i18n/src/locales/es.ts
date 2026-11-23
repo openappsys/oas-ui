@@ -713,4 +713,17 @@ export const es: LocaleMessages = {
   'schemaForm.format.date': 'Fecha no válida',
   'schemaForm.format.dateTime': 'Fecha y hora no válidas',
   'schemaForm.format.time': 'Hora no válida',
+  // matrix / rank
+  'matrix.group': 'Pregunta matricial',
+  'matrix.requiredAll': 'Responda todas las filas',
+  'matrix.requiredAny': 'Responda al menos una fila',
+  'rank.group': 'Pregunta de ordenación',
+  'rank.minRanks': 'Ordene al menos {min} elementos',
+  'rank.count': '{count} ordenados, al menos {min}',
+  'rank.selected': '{label} está en el puesto {rank}',
+  'rank.removed': '{label} se quitó de la ordenación',
+  'rank.cleared': 'Ordenación borrada',
+  'rank.remove': 'Quitar {label} de la ordenación',
+  'rank.moveUp': 'Subir {label}',
+  'rank.moveDown': 'Bajar {label}',
 }

@@ -716,4 +716,17 @@ export const he: LocaleMessages = {
   'schemaForm.format.date': 'תאריך לא תקין',
   'schemaForm.format.dateTime': 'תאריך ושעה לא תקינים',
   'schemaForm.format.time': 'שעה לא תקינה',
+  // matrix / rank
+  'matrix.group': 'שאלת מטריצה',
+  'matrix.requiredAll': 'נא לענות על כל שורה',
+  'matrix.requiredAny': 'נא לענות על שורה אחת לפחות',
+  'rank.group': 'שאלת דירוג',
+  'rank.minRanks': 'דרגו לפחות {min} פריטים',
+  'rank.count': '{count} דורגו, לפחות {min}',
+  'rank.selected': '{label} במקום {rank}',
+  'rank.removed': '{label} הוסר מהדירוג',
+  'rank.cleared': 'הדירוג נוקה',
+  'rank.remove': 'הסרת {label} מהדירוג',
+  'rank.moveUp': 'העברת {label} למעלה',
+  'rank.moveDown': 'העברת {label} למטה',
 }

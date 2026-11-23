@@ -5867,5 +5867,59 @@
       "clearErrors": "Clear injected errors (omit paths to clear all); affected fields fall back to rule errors.",
       "reset": "Reset: back to initial values, clear errors, array rows back to their initial length (no events)."
     }
+  },
+  "oas-matrix": {
+    "attrs": {
+      "rows": "Sub-questions (rows) as a JSON array `[{ key, label?, disabled? }]`; string items collapse to `key=label`",
+      "columns": "Options (columns) as a JSON array, same shape as `rows`",
+      "mode": "In-row selection mode: `radio` (default) or `checkbox`; invalid values fall back to `radio` with a warning",
+      "value": "Value JSON object: radio `{ rowKey: columnKey }` / checkbox `{ rowKey: [columnKey] }` (written back on user interaction)",
+      "required": "Required: combined with `required-scope` for row-level or table-level semantics",
+      "required-scope": "Required scope: `row` every row (default) / `table` at least one answered row",
+      "disabled": "Disable every row and column (per-row / per-column `disabled` still applies)",
+      "readonly": "Readonly: keeps the appearance and selections but ignores interaction",
+      "label": "Question text (rendered as a caption and used as the group accessible name)"
+    },
+    "props": {
+      "rows": "Row (sub-question) list: get+set channel (array or JSON string); assignment applies immediately without events",
+      "columns": "Option (column) list: get+set channel (array or JSON string); assignment applies immediately without events",
+      "value": "Current value: get+set channel (object or JSON string); assignment applies immediately without events"
+    },
+    "methods": {
+      "validate": "Validate the required semantics and sync the visible error; returns whether it passed (dispatches `oas-invalid` on failure)",
+      "clear": "Clear all selections (dispatches `oas-change`)"
+    },
+    "events": {
+      "oas-change": "Dispatched when the user changes a selection, `detail: { value, rowKey, columnKey, checked }`",
+      "oas-invalid": "Dispatched when `validate()` fails, `detail: { reason, scope, missingRows, value }`"
+    },
+    "cssVars": {
+      "--oas-matrix-label-width": "Row label column width (default `34%`)"
+    }
+  },
+  "oas-rank": {
+    "attrs": {
+      "options": "Sortable options as a JSON array `[{ key, label?, disabled?, description? }]`; string items collapse to `key=label`",
+      "value": "Rank-ordered key array (JSON); a partial ranking is simply an ordered subset",
+      "min-ranks": "Minimum number of ranked items (positive integer); `validate()` fails below it",
+      "disabled": "Disable all interaction",
+      "readonly": "Readonly: keeps the appearance and ranking but ignores interaction",
+      "label": "Question text (rendered as a caption and used as the group accessible name)"
+    },
+    "props": {
+      "options": "Sortable option list: get+set channel (array or JSON string); assignment applies immediately without events",
+      "value": "Current value (ordered key array): get+set channel (array or JSON string); assignment applies immediately without events"
+    },
+    "methods": {
+      "validate": "Validate the minimum rank count and sync the visible error; returns whether it passed (dispatches `oas-invalid` on failure)",
+      "clear": "Clear the ranking (dispatches `oas-change`)"
+    },
+    "events": {
+      "oas-change": "Dispatched on add / remove / move up / move down / clear, `detail: { value, key, rank, action }`",
+      "oas-invalid": "Dispatched when `validate()` is below `min-ranks`, `detail: { reason, min, count, value }`"
+    },
+    "cssVars": {
+      "--oas-rank-badge-size": "Rank badge diameter (default `--oas-control-height-sm`)"
+    }
   }
 }

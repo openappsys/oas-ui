@@ -1,0 +1,78 @@
+{
+  "className": "OASRank",
+  "sourceFile": "packages/ui/src/form/rank/oas-rank.ts",
+  "attrs": [
+    {
+      "name": "options",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "min-ranks",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "options",
+      "type": "RankOption[] | string",
+      "api": true
+    },
+    {
+      "name": "value",
+      "type": "string[] | string",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "validate",
+      "signature": "validate(): boolean",
+      "description": "校验名次下限并同步可视错误。"
+    },
+    {
+      "name": "clear",
+      "signature": "clear(): void",
+      "description": "清空排名（派发 `oas-change`）"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: next, key, rank, action } | { value: [], key: '', rank: 0, action: 'clear' }"
+    },
+    {
+      "name": "oas-invalid",
+      "detail": "{ reason: 'min-ranks', min: info.min, count: info.count, value: this.value }"
+    }
+  ],
+  "slots": [],
+  "cssVars": [
+    {
+      "name": "--oas-rank-badge-size",
+      "default": "var(--oas-control-height-sm)"
+    }
+  ],
+  "unresolved": []
+}
