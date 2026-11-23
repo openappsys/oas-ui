@@ -130,6 +130,30 @@ function writePath(target: Record<string, unknown>, segments: string[], value: s
   ;(cursor as Record<string, unknown>)[last] = value
 }
 
+/** 普通对象判定（setValues patch 遍历用） */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * 把嵌套 patch 展开为 [路径段, 叶子值] 并逐个回调：数组按下标展开，对象按键递归；
+ * 保留键段跳过（与 parseNamePath 同判据，防原型污染）；空对象/空数组不产生叶子。
+ */
+function walkPatch(value: unknown, segments: string[], apply: (segments: string[], value: unknown) => void): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => walkPatch(item, [...segments, String(index)], apply))
+    return
+  }
+  if (isPlainObject(value)) {
+    for (const key of Object.keys(value)) {
+      if (FORBIDDEN_SEGMENT.has(key)) continue
+      walkPatch(value[key], [...segments, key], apply)
+    }
+    return
+  }
+  if (segments.length > 0) apply(segments, value)
+}
+
 function register(
   tags: string[],
   reader?: FormControlReader,
@@ -1176,6 +1200,35 @@ export class OASForm extends OASElement {
    */
   getValues(): Record<string, unknown> {
     return this.nestValues(this.snapshotValues())
+  }
+
+  /**
+   * 受控写通道（公开 API，向后兼容新增）：按嵌套路径写字段值，走控件 writer 注册表。
+   *
+   * - `patch` 可嵌套（对象 / 数组）；叶子按点号路径逐字段写入，`users[0].name` 与
+   *   `users.0.name` 命中同一字段（经 `parseNamePath` 归一）；
+   * - 只写**已渲染**的字段；未渲染路径（隐藏字段 / 数组新增行尚未建立）静默跳过——
+   *   行数仍由容器（form-list）维护，不在此通道创建 DOM；
+   * - 程序化写不派发 `oas-values-change`（与 initial-values 同口径：只有用户交互才派发），
+   *   宿主据此做受控 diff 写不会形成回环；
+   * - 不改变 reset 基线（reset 仍回 initial-values / 字段初始态）；
+   * - 保留键段（`__proto__` 等）整块跳过（原型污染防护）。
+   */
+  setValues(patch: Record<string, unknown>): void {
+    if (!isPlainObject(patch)) {
+      devWarn('[oas-form] setValues 需要对象，已忽略本次调用')
+      return
+    }
+    const fields = new Map<string, Element>()
+    for (const { name, element } of this.collectFields()) {
+      const key = canonicalNamePath(name)
+      if (key !== null && !fields.has(key)) fields.set(key, element)
+    }
+    walkPatch(patch, [], (segments, value) => {
+      const element = fields.get(segments.join('.'))
+      if (!element) return
+      this.writeValue(element, this.stringifyInitial(value))
+    })
   }
 
   /**
