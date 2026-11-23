@@ -63,6 +63,11 @@ description: 排序题：点击或键盘把选项加入排名序列，已选项�
       value='["b","a"]'
       readonly
     ></oas-rank>
+    <oas-rank
+      options='[{"key":"a","label":"苹果"},{"key":"b","label":"香蕉"}]'
+      value='["a"]'
+      disabled
+    ></oas-rank>
   </oas-space>
 </DemoBlock>
 

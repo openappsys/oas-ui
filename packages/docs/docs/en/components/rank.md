@@ -63,6 +63,11 @@ Option-level `disabled` cannot be added; group-level `disabled` blocks everythin
       value='["b","a"]'
       readonly
     ></oas-rank>
+    <oas-rank
+      options='[{"key":"a","label":"Apple"},{"key":"b","label":"Banana"}]'
+      value='["a"]'
+      disabled
+    ></oas-rank>
   </oas-space>
 </DemoBlock>
 
