@@ -37,3 +37,7 @@
 - 类型切换的方向键按 `direction` 取符号（`segmentedStep`）：RTL 下 `←` 是下一项。
 - readonly 走原生 `readOnly`（可聚焦复制），只有 `disabled` 才是禁用。
 
+## 定版前评审记档（不修项）
+
+- **浮层受控面与 `oas-coupon` 的差异**：「选择已保存抬头」弹层是纯内部 UI 状态（由触发按钮 / Esc / 外点控制），没有受控属性或命令式开关；`oas-coupon` 的券列表弹层则有 `open` 受控属性 + `openOverlay()` / `closeOverlay()`。定位不同（辅助选择器 vs 宿主可编排的主要交互面），本批不统一，留待与 ui-spec §2.5 一并评审。
+

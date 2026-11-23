@@ -22,11 +22,11 @@ description: "Full bundle (simplest, registers all components): cdn.js is a pre-
 | `cdn/layout.js` | Layout: layout, sidebar, container, grid, flex, splitter, scroll-area, masonry, aspect-ratio, safe-area, status-bar |
 | `cdn/form.js` | Form: input, textarea, checkbox, radio, switch, segmented, slider, input-number, rate, select, auto-complete, combobox, cascader, tree-select, mentions, date-picker, time-picker, calendar, upload, transfer, color-picker, toggle-button, toggle-group, pin-input, dynamic-input, dynamic-tags, editable, form, etc. |
 | `cdn/feedback.js` | Feedback & Overlays: tooltip, popover, hover-card, message, notification, toast, snackbar, backdrop, modal, confirm, drawer, popconfirm, alert, progress, loading-bar, spin, skeleton, empty, result, bottom-sheet, notice-bar, pull-refresh, offline, page-loading |
-| `cdn/overlay.js` | Overlays: share-sheet, curtain |
+| `cdn/overlay.js` | Overlays: share-sheet, curtain, drag |
 | `cdn/navigation.js` | Navigation: menu, dropdown, contextmenu, command, menubar, navigation-menu, toolbar, breadcrumb, anchor, back-top, tour, tabs, bottom-navigation, pagination, steps, stepper, affix, page-header, float-button, speed-dial, app-bar, index-bar |
 | `cdn/data.js` | Data display: table, tree, virtual-list, card, avatar, avatar-group, image, qrcode, watermark, collapse, descriptions, timeline, list, carousel, statistic, countdown, ellipsis, chart, code, equation, log, marquee, number-animation, gradient-text, comment, rolling-text, barrage, etc. |
 | `cdn/conversation.js` | Conversation: bubble, attachment, message-scroller, marker, message-row |
-| `cdn/commerce.js` | Commerce: price, submit-bar, goods-action, coupon, sku, address, invoice, ecard, category |
+| `cdn/commerce.js` | Commerce: price, submit-bar, goods-action, coupon, sku, time-select, address, invoice, ecard, category |
 | `cdn/workbench.js` | Workbench: titlebar, statusbar, inspector, action-bar |
 | `cdn/framework.js` | Framework containers: config-provider, app, theme-editor |
 

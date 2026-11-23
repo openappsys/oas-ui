@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { checkFormat, projectValue, projectValues, validateValue } from './validate.js'
+import { checkFormat, isEmptyValue, projectValue, projectValues, validateValue } from './validate.js'
 import type { JsonSchema } from './types.js'
 
 describe('只读类型投影（值契约：提交值不变，求值/校验前归一）', () => {
@@ -35,6 +35,27 @@ describe('只读类型投影（值契约：提交值不变，求值/校验前归
       properties: { age: { type: 'number' }, flag: { type: 'boolean' } },
     }
     expect(projectValues(schema, { age: '30', flag: 'true', extra: 'x' })).toEqual({ age: 30, flag: true, extra: 'x' })
+  })
+})
+
+describe('空值判据（isEmptyValue）', () => {
+  it('认空容器 JSON：[] / {} 与空串同判空（复合控件清空后的值形态）', () => {
+    expect(isEmptyValue('')).toBe(true)
+    expect(isEmptyValue('[]')).toBe(true)
+    expect(isEmptyValue('{}')).toBe(true)
+    expect(isEmptyValue('  ')).toBe(true)
+    expect(isEmptyValue([])).toBe(true)
+    expect(isEmptyValue(null)).toBe(true)
+    expect(isEmptyValue(undefined)).toBe(true)
+  })
+
+  it('有内容的容器与标量不算空（false / 0 是合法值）', () => {
+    expect(isEmptyValue('{"a":"b"}')).toBe(false)
+    expect(isEmptyValue('["a"]')).toBe(false)
+    expect(isEmptyValue([1])).toBe(false)
+    expect(isEmptyValue('0')).toBe(false)
+    expect(isEmptyValue(false)).toBe(false)
+    expect(isEmptyValue({ a: 1 })).toBe(false)
   })
 })
 

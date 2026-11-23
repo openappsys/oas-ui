@@ -65,11 +65,18 @@ interface ContractEntry {
   /** attribute 通道契约：attr → JSON.parse 后的期望类型（逐实例：SSR 基线携带则 SPA 后必须仍携带） */
   attrContract?: Record<string, ExpectType>
   /**
-   * 需要与 SSR 基线「比例等价」的数值数组属性（CSV / JSON 两种写法归一后逐项比较）。
+   * 需要在与 SSR 基线「比例等价」的数值数组属性（CSV / JSON 两种写法归一后逐项比较）。
    * 用于 splitter.sizes 这类文档写 CSV、组件写回 JSON 的双格式通道——只看格式合法会被
    * 「属性还在但值被覆盖成均分」蒙混过关。
    */
   attrRatio?: string[]
+  /**
+   * 运行时注入型 attribute 契约（demo 在脚本里写入、SSR 基线天然没有载体，如 time-select 的
+   * `slots-override`——日期键无法静态书写）。断言「页面上至少一个实例经运行时写入后面带该
+   * attribute、类型合法、无同名 own property 遮蔽」，不因基线缺载体误报；demo 改道 property
+   * 或被 Vue 劫持成一串字符串时照样报错。
+   */
+  runtimeAttrs?: Record<string, ExpectType>
   /**
    * property 通道契约：attrs = 设计内 setter 属性名；renderedSel = shadow 内数据已渲染的选择器锚点。
    * - mode='all'（默认）：每个实例都必须渲染出 renderedSel
@@ -379,10 +386,31 @@ const CONTRACT: ContractEntry[] = [
       ],
     },
   },
+  // commerce 族：time-select —— `slots` 是静态 JSON 数组属性（SSR 基线有载体，按 attribute 通道逐实例核）；
+  // `slots-override` 的日期键无法在 md 里静态书写（demo 脚本按「明天」算出后写入），SSR 基线天然
+  // 没有载体 → 走 runtimeAttrs 口径：运行时写入后 attribute 仍在且 JSON 形态合法，不改道 property。
+  {
+    page: 'time-select',
+    tag: 'oas-time-select',
+    attrContract: { slots: 'array' },
+    runtimeAttrs: { 'slots-override': 'object' },
+  },
+  // overlay 族：drag —— `position` 是设计内 get+set 双通道（demo 读 position.x/y 上报，宿主也可赋值）。
+  // 字符串注入只取 x（y=0）：axis="x" 的实例会忽略纵向分量，带 y 值会误报。
+  {
+    page: 'drag',
+    tag: 'oas-drag',
+    propContract: {
+      attrs: ['position'],
+      renderedSel: '[part="surface"]',
+      mode: 'when-data',
+      probe: 'position',
+      stringProbe: [{ prop: 'position', raw: '{"x":12,"y":0}', kind: 'object', identity: true }],
+    },
+  },
   {
     page: 'schema-form',
-    tag: 'oas-schema-form',
-    // schema / uiSchema / initialValues / values 是 get+set 双通道（对象 property + JSON attribute）：
+    tag: 'oas-schema-form', // schema / uiSchema / initialValues / values 是 get+set 双通道（对象 property + JSON attribute）：
     // demo 在 Vue 里以 property 赋值供数，attribute 缺失属设计内行为，按 property 通道逐实例断言。
     propContract: {
       attrs: ['schema', 'uiSchema', 'initialValues', 'values'],
@@ -412,7 +440,7 @@ test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖
   await page.waitForSelector('oas-button', { timeout: 10000 })
 
   const problems: string[] = []
-  for (const { page: name, tag, attrContract, attrRatio, propContract } of CONTRACT) {
+  for (const { page: name, tag, attrContract, attrRatio, runtimeAttrs, propContract } of CONTRACT) {
     // SPA 导航（客户端渲染，patchProp 全量生效）；总览页在侧栏归一化为 /components/（末尾斜杠）
     const href = `/components/${name}`
     await page.evaluate((h) => {
@@ -430,7 +458,7 @@ test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖
     await page.waitForTimeout(250)
 
     const issues = await page.evaluate(
-      async ({ href: pageHref, tag, attrContract, attrRatio, propContract }) => {
+      async ({ href: pageHref, tag, attrContract, attrRatio, runtimeAttrs, propContract }) => {
         const typeName = (v: unknown): string => (Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v)
         const hasSetter = (el: Element, key: string): boolean => {
           // 从原型链开始：实例 own property 遮蔽单独报错，避免与「无 setter」重复归因
@@ -618,6 +646,28 @@ test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖
           }
         }
 
+        // ①b 运行时注入型 attribute（SSR 基线无载体是设计内行为）：断言运行时写入后 attribute 存活 + 类型合法
+        if (runtimeAttrs) {
+          for (const [attr, want] of Object.entries(runtimeAttrs)) {
+            let liveCarriers = 0
+            els.forEach((el, i) => {
+              const label = `${tag} ${where(el, i)} [${attr}]`
+              if (!el.hasAttribute(attr)) return
+              liveCarriers++
+              if (Object.prototype.hasOwnProperty.call(el, attr)) {
+                out.push(`${label}: 实例存在同名 own property（class 字段遮蔽，Vue 'in' 判定会走 property 赋值）`)
+              }
+              const err = validate(el.getAttribute(attr) ?? '', want)
+              if (err) out.push(`${label}: ${err}`)
+            })
+            if (liveCarriers === 0) {
+              out.push(
+                `${tag}[${attr}]: 页面上没有任何实例带该 attribute（demo 脚本未写入 / 改道 property 通道）——运行时注入型契约失效`,
+              )
+            }
+          }
+        }
+
         // ② property 通道：逐实例 setter 在场 + 无 own property 遮蔽 + 数据真实渲染
         if (propContract) {
           const { attrs, renderedSel, mode = 'all', probe, stringProbe, renderExemptIds } = propContract
@@ -714,7 +764,7 @@ test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖
         }
         return out
       },
-      { href, tag, attrContract, attrRatio, propContract },
+      { href, tag, attrContract, attrRatio, runtimeAttrs, propContract },
     )
     problems.push(...issues.map((m) => `[${name}] ${m}`))
   }

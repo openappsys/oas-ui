@@ -34,6 +34,8 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
 
 下一步前对当前步 `oas-form` 校验（委托其 `validate()`），未过不放行并派发 `oas-step-validate`（`detail: { index, key?, valid, errors }`）；回退不校验（不会被错误困在当前步）。`validation="false"` 关闭门控（纯导航）。
 
+> 步骤内容只要求「实现 `getValues()` / `validate()` 契约」的元素（duck-typed），不限定为 `oas-form`——也可以用 `oas-schema-form` 等自带同一契约的复合表单，整份问卷纯 JSON 驱动。组合写法见 [SchemaForm · 与 Questionnaire 组合](./schema-form.md#与-questionnaire-组合)。
+
 <DemoBlock title="未填不放行">
   <oas-questionnaire id="q-gate" style="width: 100%; max-width: 480px" steps='[{"title":"联系方式"},{"title":"完成"}]'>
     <oas-form slot="step-0" rules='{"phone":[{"required":true,"message":"请输入手机号"},{"pattern":"^1\\d{10}$","message":"手机号格式不正确"}]}'>

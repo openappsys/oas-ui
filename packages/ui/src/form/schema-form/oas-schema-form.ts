@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core/oas-element'
 import { devWarn } from '../../shared/dev-warn.js'
 import { stableHash36 } from '../../shared/stable-id.js'
 import { OASForm } from '../form/index.js'
+import { writeFormControlValue } from '../form/index.js'
 import type { FormError } from '../form/index.js'
 import {
   canonicalDslPath,
@@ -22,6 +23,7 @@ import {
   type JsonSchema,
   type PlanNode,
   type ReactionEffects,
+  type ReactionEffectsMap,
   type ReactionEngine,
   type TabsPlan,
 } from './compiler/index.js'
@@ -154,6 +156,9 @@ const STYLE = `
   }
 }
 `
+
+/** 清值二次传播的轮次上限（与全量求值的定点迭代同量级，防病态联动死循环） */
+const CLEAR_PROPAGATION_ROUNDS = 8
 
 export class OASSchemaForm extends OASElement {
   static override get observedAttributes(): string[] {
@@ -787,17 +792,25 @@ export class OASSchemaForm extends OASElement {
         const path = parseDslPath(name)
         if (path !== null && readPath(initial, path) !== undefined) continue
       }
-      const element = form.querySelector<HTMLElement>(`[name="${name.replace(/"/g, '\\"')}"]`)
+      // 属性选择器转义：路径里的 `\` 与 `"` 都可能出现（自定义 widget 的 name），
+      // 只转义引号会让反斜杠逃出字符串边界、选择器解析失败或误匹配（先转义反斜杠）
+      const escaped = name.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+      const element = form.querySelector<HTMLElement>(`[name="${escaped}"]`)
       if (!element) continue
+      // upload 的读值是「派生只读汇总」（仅 File 元数据，文件体不可序列化）：回填无法还原文件，
+      // 只会把 initial-values 刚恢复的回显记录清空——与内核 NO_WRITEBACK_CONTROLS 同判据，跳过
+      if (element.tagName.toLowerCase() === 'oas-upload') continue
       this.writeWidgetValue(element, raw)
     }
   }
 
+  /**
+   * 控件写值：优先走 form 内核 writer 注册表（`model-value` 通道 / checked 态 / property setter /
+   * 宿主自定义 writer 都只有这条通道能落值），取不到 writer 才回落 `setAttribute('value')`。
+   * 直接 setAttribute 会让自定义 writer 件在结构重建时静默回退初始值。
+   */
   private writeWidgetValue(element: HTMLElement, value: string): void {
-    if (element.tagName.toLowerCase() === 'oas-switch') {
-      element.toggleAttribute('checked', value === 'true')
-      return
-    }
+    if (writeFormControlValue(element, value)) return
     element.setAttribute('value', value)
   }
 
@@ -914,7 +927,38 @@ export class OASSchemaForm extends OASElement {
     const next = engine.evaluateChanged(this.projectedValues(), name)
     if (next === null) return
     this.effects = next
-    this.applyEffects()
+    const cleared = this.applyEffects()
+    if (cleared.length > 0) this.propagateClearedEffects(cleared)
+  }
+
+  /**
+   * 清值二次传播：联动把字段值清空（隐藏字段 → 空串）后，依赖该字段的下游 reaction 必须重算。
+   *
+   * 定向刷新只重算「依赖本次变更路径」的 reactions；被清值的字段是**下游**（如 A 隐藏 B，
+   * C 的条件读 B），它的值变化没有对应的 values-change 事件，若不补一轮求值，C 会停在
+   * 「B 还有值」时算出的旧效果（星号/禁用残留）。按轮次推进并限制往返次数，
+   * 与全量求值的定点迭代同口径（8 轮上限）。
+   */
+  private propagateClearedEffects(names: string[]): void {
+    const engine = this.engine
+    if (!engine) return
+    const pending = [...names]
+    const visited = new Set(names)
+    for (let round = 0; round < CLEAR_PROPAGATION_ROUNDS && pending.length > 0; round++) {
+      const batch = pending.splice(0, pending.length)
+      let next: ReactionEffectsMap | null = null
+      for (const path of batch) {
+        const result = engine.evaluateChanged(this.projectedValues(), path)
+        if (result !== null) next = result
+      }
+      if (next === null) continue
+      this.effects = next
+      for (const cleared of this.applyEffects()) {
+        if (visited.has(cleared)) continue
+        visited.add(cleared)
+        pending.push(cleared)
+      }
+    }
   }
 
   /** 数组增删：行号重绑 → 重索引/规则键重挂/清数组级错误 */
@@ -935,25 +979,29 @@ export class OASSchemaForm extends OASElement {
     return merged
   }
 
-  /** 应用可见/禁用/必填效果（文档序遍历，容器效果通过祖先标记向下传导） */
-  private applyEffects(): void {
+  /** 应用可见/禁用/必填效果（文档序遍历，容器效果通过祖先标记向下传导）；返回本轮被清值的字段名 */
+  private applyEffects(): string[] {
     const body = this.bodyEl
-    if (!body) return
+    if (!body) return []
+    const cleared: string[] = []
     for (const element of body.querySelectorAll<HTMLElement>('[data-schema-key]')) {
-      this.applyNodeEffect(element)
+      const name = this.applyNodeEffect(element)
+      if (name !== null) cleared.push(name)
     }
     // 被卸载（不在文档里）的字段仍需按效果复显：非行内字段卸载后由占位注释保留位置
     for (const element of this.unmountedFields) {
       if (element.isConnected) continue
-      this.applyNodeEffect(element)
+      const name = this.applyNodeEffect(element)
+      if (name !== null) cleared.push(name)
     }
+    return cleared
   }
 
-  /** 单节点效果应用（字段态 / 容器态） */
-  private applyNodeEffect(element: HTMLElement): void {
+  /** 单节点效果应用（字段态 / 容器态）；返回被清值的字段名（无清值返回 null） */
+  private applyNodeEffect(element: HTMLElement): string | null {
     const key = element.getAttribute('data-schema-key') ?? ''
     const node = this.nodeByKey.get(key)
-    if (!node) return
+    if (!node) return null
     const isField = element.tagName.toLowerCase() === 'oas-form-item'
     const path = this.concretePathOf(element, node)
     const own = this.effectFor(path) ?? {}
@@ -968,24 +1016,24 @@ export class OASSchemaForm extends OASElement {
     element.toggleAttribute('data-schema-disabled', disabled)
 
     if (isField) {
-      this.applyFieldState(element, node as FieldPlan, visible, disabled, required)
-      return
+      return this.applyFieldState(element, node as FieldPlan, visible, disabled, required)
     }
     element.hidden = !visible
     if (node.kind === 'array') {
       const list = element.querySelector<HTMLElement>('[data-schema-array-key]')
       if (list) list.toggleAttribute('disabled', disabled)
     }
+    return null
   }
 
-  /** 字段态：可见（卸载/清值/保键位）、禁用、必填 + aria-required 同步 */
+  /** 字段态：可见（卸载/清值/保键位）、禁用、必填 + aria-required 同步；返回被清值的字段名 */
   private applyFieldState(
     item: HTMLElement,
     node: FieldPlan,
     visible: boolean,
     disabled: boolean,
     required: boolean,
-  ): void {
+  ): string | null {
     const widget = item.querySelector<HTMLElement>('[data-schema-widget]')
     item.toggleAttribute('required', required)
     if (widget) {
@@ -996,15 +1044,23 @@ export class OASSchemaForm extends OASElement {
     if (visible) {
       this.remount(item)
       item.hidden = false
-      return
+      return null
     }
+    // 生效字段名按控件上的 name 属性取（数组行由 form-list 重绑为具体路径，node.name 是模板名）
+    const fieldName = widget?.getAttribute('name') ?? node.name
     if (node.inArrayRow || node.keepValueOnHidden) {
       // 数组行内字段卸载保留键位（空串而非删键，行间键形状一致）；keepValueOnHidden 保留值只隐藏
-      if (!node.keepValueOnHidden && widget) this.writeWidgetValue(widget, '')
+      if (!node.keepValueOnHidden && widget) {
+        this.writeWidgetValue(widget, '')
+        item.hidden = true
+        return fieldName
+      }
       item.hidden = true
-      return
+      return null
     }
+    // 非行内字段直接卸载：值随之从快照消失（对下游 reaction 等价于清值）
     this.unmount(item)
+    return fieldName
   }
 
   private unmount(item: HTMLElement): void {

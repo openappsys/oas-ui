@@ -107,7 +107,8 @@ const STYLE = `
 }
 .soldout {
   font-size: var(--oas-font-size-sm);
-  color: var(--oas-color-danger);
+  /* 小字文字色走文字安全档 token（实色 danger 在小字浅底不达 4.5:1；族内 ecard / invoice 同口径） */
+  color: var(--oas-color-danger-text);
 }
 .soldout[hidden] {
   display: none;

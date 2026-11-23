@@ -308,13 +308,18 @@ export class OASFormList extends OASElement {
     }
     const frozen = this.hasAttr('disabled')
     const atMin = this.items.length <= this.minValue()
+    // 删除按钮的可访问名随 remove-text 同步刷新（既有行不重连也跟随；add 按钮文案走同款每次刷新）
+    const removeText = this.resolveRemoveText()
     this.items.forEach((item, i) => {
       const frame = frames[i]!
       const slot = frame.querySelector('slot')
       const slotName = `oas-form-list-item-${item.uid}`
       if (slot?.getAttribute('name') !== slotName) slot?.setAttribute('name', slotName)
       const btn = frame.querySelector('button')
-      if (btn) btn.disabled = frozen || atMin
+      if (btn) {
+        btn.disabled = frozen || atMin
+        if (btn.getAttribute('aria-label') !== removeText) btn.setAttribute('aria-label', removeText)
+      }
     })
     const addBtn = this.addBtn
     if (addBtn) {
