@@ -19,6 +19,11 @@
       "observed": true
     },
     {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "direction",
       "type": "string",
       "default": "vertical",

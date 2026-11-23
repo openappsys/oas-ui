@@ -351,6 +351,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `direction` | 布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行） | `string` | `vertical` |
 | `disabled` | 禁用整组（下发子项，不覆盖子项自身显式 disabled） | `boolean` | — |
+| `loading` | 加载态（异步选项加载中）：选项区显示 spinner + 文案，`aria-busy` 同步到组容器；向后兼容增量 | `boolean` | — |
 | `max` | 选中数量上限：达上限后未选项置灰拦截并派发 oas-exceed-limit，已选项仍可取消 | — | — |
 | `min` | 选中数量下限：达下限后已选项拦截取消，未选项不受影响 | — | — |
 | `options` | 数据通道：JSON `[{ label, value, disabled?, description?, checkAll? }]`，显式设置时数据驱动优先于子元素声明式 | `CheckboxOption[] \| string` | — |

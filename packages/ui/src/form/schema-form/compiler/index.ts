@@ -29,6 +29,16 @@ export { compileReactions, createReactionEngine, projectForCondition } from './r
 export type { ReactionCompileOptions, ReactionEngine, ReactionEffectsMap, UiReactionSource } from './reactions.js'
 export { compileExpression, evaluateCondition, evaluateExpression, registerExprFunction } from './expr.js'
 export type { ExprCompileOptions, ExprCompileResult, ExprEvalContext, ExprFunction, ExprProgram } from './expr.js'
+export {
+  getConverter,
+  getOptionSource,
+  getTransformer,
+  registeredHookNames,
+  setConverter,
+  setOptionSource,
+  setTransformer,
+} from './value-hooks.js'
+export type { OptionSource, SchemaOption, ValueHook } from './value-hooks.js'
 export type {
   ArrayPlan,
   ArrayRules,
@@ -40,7 +50,9 @@ export type {
   JsonSchema,
   PlanNode,
   ReactionEffects,
+  TableColumn,
   TabsPlan,
   UiNode,
+  ValueTransformPlan,
   WidgetSpec,
 } from './types.js'

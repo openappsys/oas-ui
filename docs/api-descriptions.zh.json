@@ -832,7 +832,8 @@
       "min": "选中数量下限：达下限后已选项拦截取消，未选项不受影响",
       "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
       "status": "校验态（下发子项）：`error` / `warning` / `success`",
-      "readonly": "只读（下发子项）：可聚焦不切换"
+      "readonly": "只读（下发子项）：可聚焦不切换",
+      "loading": "加载态（异步选项加载中）：选项区显示 spinner + 文案，`aria-busy` 同步到组容器；向后兼容增量"
     },
     "events": {
       "oas-change": "组值变化，`detail: { value: string[] }`（含全选联动与数量限制内的变化）",
@@ -1849,16 +1850,29 @@
   "oas-form-list": {
     "attrs": {
       "name": "字段组根路径（裸字段名自动前缀为 `name.N.字段名`）",
-      "min": "最少行数（自动补足）",
-      "max": "最多行数（到顶禁用添加）",
-      "disabled": "冻结增删"
+      "min": "删行下界（缺省 0：`minItems` 违规交给校验层，不锁住唯一行）",
+      "max": "增行上界（到顶禁用添加与复制）",
+      "disabled": "冻结增删与行操作",
+      "rows": "初始渲染行数（只决定初始行数；未提供时 `min` 兼作初始行数）",
+      "duplicate-text": "复制按钮可访问名（缺省走 i18n `schemaForm.rowDuplicate`）",
+      "move-up-text": "上移按钮可访问名（缺省走 i18n `schemaForm.rowUp`）",
+      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）"
     },
     "events": {
       "oas-add": "添加行时派发，`detail: { index }`",
-      "oas-remove": "删除行时派发，`detail: { index }`（剩余行重编号，值随行保留）"
+      "oas-remove": "删除行时派发，`detail: { index }`（剩余行重编号，值随行保留）",
+      "oas-duplicate": "复制行时派发，`detail: { from, to }`（值深拷贝插入下一行）",
+      "oas-move": "上移 / 下移行时派发，`detail: { from, to }`（相邻行值交换，DOM 顺序不变）"
     },
     "slots": {
       "": "行模板（首个无 slot 属性的 template 元素；字段 name 用 `{index}` 占位或自动索引化）"
+    },
+    "methods": {
+      "setRowCount": "行数收敛到指定值（增补空行 / 从末尾删行），不派发 `oas-add` / `oas-remove`；受控数组缩容与行值内层数组对齐用。",
+      "insertRowAt": "在第 `index` 位插入一行（复制行用），返回是否插入；新行按模板克隆、字段名重编号，值由调用方写入。"
+    },
+    "props": {
+      "rowCount": "当前渲染行数（只读）"
     }
   },
   "oas-gantt": {
@@ -3659,7 +3673,8 @@
       "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
       "status": "校验态（下发子项）：`error` / `warning` / `success`；单项显式 status 优先",
       "readonly": "只读（下发子项）：可聚焦、方向键不切换",
-      "required": "组级必选校验（form-associated valueMissing，reset 恢复基线）"
+      "required": "组级必选校验（form-associated valueMissing，reset 恢复基线）",
+      "loading": "加载态（异步选项加载中）：选项区显示 spinner + 文案，`aria-busy` 同步到组容器；向后兼容增量"
     },
     "events": {
       "oas-change": "组值变化，`detail: { value }`（点击与方向键选中都触发）",
@@ -5592,7 +5607,7 @@
   "oas-schema-form": {
     "attrs": {
       "schema": "数据 schema（JSON Schema 子集）。property（对象，推荐）与 attribute（JSON 字符串）双通道；attribute 在 property 之后变化即失效（防 attr/prop 漂移）。",
-      "ui-schema": "UI 注解层（裸键：`widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`）。属性双通道；编译期校验每个路径必须存在于数据 schema。",
+      "ui-schema": "UI 注解层（裸键：`widget` / `layout` / `options` / `reactions` / `keepValueOnHidden` / `convert` / `transform` / 列级 `width` / `align` / `hidden`）。属性双通道；编译期校验每个路径必须存在于数据 schema。",
       "initial-values": "非受控一次性基线（嵌套对象）。与 schema `default` 深合并，宿主值优先；初始数组长度驱动建行。",
       "layout": "透传给内层 oas-form 的布局（`grid` 时字段按 `layout.span` 占列）。",
       "label-align": "透传给内层 oas-form 的标签对齐（top / left / right）。",
@@ -5605,11 +5620,12 @@
     "methods": {
       "submit": "提交：联动求值 → 内核字段校验 → 数组级校验并注入错误 → 委托内核提交（时序对齐设计稿：先内核、后数组级；oas-submit / oas-validate-fail 由内核派发并穿出，失败载荷含字段错误 ∪ 数组级错误）。",
       "validate": "校验：联动求值 → 内核字段校验 → 数组级校验（错误并集），返回是否全部通过。",
-      "getValues": "全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）。",
+      "getValues": "全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）；配置了 `transform` 的字段按出向变换换回宿主语义。",
       "setValues": "受控写通道（V1b）：按嵌套路径写字段值（走内核 `oas-form.setValues` 与控件 writer 注册表）；路径恰为已渲染字段名时整值写入（数组值字段不按下标拆路径），容器键照常下钻；只写已渲染字段、不派发事件、不重建 DOM；未渲染路径跳过（数组行数由 form-list 维护）。",
       "setErrors": "注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载。",
       "clearErrors": "清除注入错误（省略 paths = 清全部）；受影响字段回落规则错误。",
-      "reset": "重置：回初始值、清错误、数组行数回初始长度（不派发事件）。"
+      "reset": "重置：回初始值、清错误、数组行数回初始长度（不派发事件）。",
+      "reloadOptions": "手动重载异步选项（`options.source`）：省略 path = 全部重载；与自动加载共用竞态守卫（seq / 去重 / 卸载丢弃），手动调用强制发起新请求。"
     }
   },
   "oas-matrix": {
@@ -5710,6 +5726,39 @@
     "slots": {
       "": "默认插槽：被包装的浮块内容（整宿主可拖时的拖拽面）",
       "handle": "拖拽手柄区：提供内容后只有手柄区能起拖"
+    }
+  },
+  "oas-array-table": {
+    "attrs": {
+      "name": "数组根路径（裸字段名自动前缀为 `name.N.字段名`）",
+      "rows": "初始渲染行数",
+      "min": "删行下界（缺省 0）",
+      "max": "增行上界（到顶禁用新增与复制）",
+      "disabled": "冻结新增与行操作",
+      "columns": "列定义 JSON：`[{ key, label, width?, align?, hidden? }]`（顺序 = 单元格顺序；`width` 数字按 px、字符串按 grid 轨道；`hidden` 隐藏视觉但保留单元格与值）",
+      "label": "表格可访问名（缺省走 i18n `schemaForm.tableLabel`）",
+      "add-text": "新增行按钮文案（缺省走 i18n `schemaForm.rowAdd`）",
+      "remove-text": "删除按钮可访问名（缺省走 i18n `schemaForm.rowRemove`）",
+      "duplicate-text": "复制按钮可访问名（缺省走 i18n `schemaForm.rowDuplicate`）",
+      "move-up-text": "上移按钮可访问名（缺省走 i18n `schemaForm.rowUp`）",
+      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）"
+    },
+    "events": {
+      "oas-add": "末尾追加行时派发，`detail: { index }`",
+      "oas-remove": "删除行时派发，`detail: { index }`（剩余行重编号，值随行保留）",
+      "oas-duplicate": "复制行时派发，`detail: { from, to }`（值深拷贝插入下一行）",
+      "oas-move": "上移 / 下移行时派发，`detail: { from, to }`（相邻行值交换，DOM 顺序不变）"
+    },
+    "methods": {
+      "setRowCount": "行数收敛到指定值（增补空行 / 从末尾删行），不派发事件。",
+      "insertRowAt": "在第 `index` 位插入一行，返回是否插入。"
+    },
+    "props": {
+      "columns": "列定义数组（property 通道，等价 `columns` 属性的 JSON 形态）",
+      "rowCount": "当前渲染行数（只读）"
+    },
+    "slots": {
+      "": "行模板（首个无 slot 属性的 template 元素；单元格即模板直接子元素）"
     }
   }
 }

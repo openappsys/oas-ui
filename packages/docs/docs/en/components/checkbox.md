@@ -352,6 +352,7 @@ Move focus with the Tab key: the middle item is skipped; clicking it with a mous
 | --- | --- | --- | --- |
 | `direction` | Layout direction: `vertical` (default) / `horizontal` (row layout with wrapping) | `string` | `vertical` |
 | `disabled` | Disable the whole group (cascades to items without overriding their own explicit disabled) | `boolean` | — |
+| `loading` | Loading state for async options: shows a spinner and text in the options area and syncs `aria-busy` on the group container; backward-compatible addition | `boolean` | — |
 | `max` | Selection cap: at the cap unchecked items gray out and block with oas-exceed-limit; checked items can still be unchecked | — | — |
 | `min` | Selection floor: at the floor checked items block unchecking; unchecked items are unaffected | — | — |
 | `options` | Data channel: JSON `[{ label, value, disabled?, description?, checkAll? }]`; when explicit, data-driven rendering wins over declarative children | `CheckboxOption[] \| string` | — |

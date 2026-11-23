@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "totals": {
-    "components": 243,
-    "whitelist": 176,
+    "components": 244,
+    "whitelist": 177,
     "noSsr": 67
   },
   "components": [
@@ -1240,6 +1240,23 @@
       "parent": null,
       "note": null,
       "entry": "@oas-ui/ui/form/form-list",
+      "hasTemplate": true,
+      "hasHydrate": true,
+      "unitTest": true,
+      "dsdFixture": true,
+      "docsZh": false,
+      "docsEn": false
+    },
+    {
+      "tag": "oas-array-table",
+      "family": "form",
+      "dir": "form/array-table",
+      "className": "OASArrayTable",
+      "ssr": "whitelist",
+      "reason": null,
+      "parent": null,
+      "note": null,
+      "entry": "@oas-ui/ui/form/array-table",
       "hasTemplate": true,
       "hasHydrate": true,
       "unitTest": true,

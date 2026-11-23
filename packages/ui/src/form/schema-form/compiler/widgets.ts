@@ -75,6 +75,8 @@ function toStringProps(
   const acceptsColumns = requestedWidget === 'oas-matrix' || getCustomWidget(requestedWidget) !== null
   for (const [key, value] of Object.entries(options)) {
     if (key === 'className' || key === 'style') continue
+    // 异步选项通道（`source` / `sourceDeps`）由计划层消费，不下发为控件属性
+    if (key === 'source' || key === 'sourceDeps') continue
     if (key === 'options') {
       if (Array.isArray(value)) props.options = JSON.stringify(value)
       continue

@@ -853,7 +853,8 @@
       "min": "Selection floor: at the floor checked items block unchecking; unchecked items are unaffected",
       "size": "Size (cascades to items): `small` / `medium` (default) / `large`",
       "status": "Validation status (cascades to items): `error` / `warning` / `success`",
-      "readonly": "Readonly (cascades to items): focusable, no toggling"
+      "readonly": "Readonly (cascades to items): focusable, no toggling",
+      "loading": "Loading state for async options: shows a spinner and text in the options area and syncs `aria-busy` on the group container; backward-compatible addition"
     },
     "events": {
       "oas-change": "Group value change, `detail: { value: string[] }` (includes select-all linkage and in-limit changes)",
@@ -1908,16 +1909,29 @@
   "oas-form-list": {
     "attrs": {
       "name": "List root path (bare field names are auto-prefixed as `name.N.field`)",
-      "min": "Minimum rows (auto-padded)",
-      "max": "Row cap (adding is disabled at the cap)",
-      "disabled": "Freezes add/remove"
+      "min": "Remove lower bound (default 0: `minItems` violations are reported by validation instead of locking the only row)",
+      "max": "Add upper bound (adding and duplicating are disabled at the cap)",
+      "disabled": "Freezes add/remove and row actions",
+      "rows": "Initial row count (only the initial count; when omitted, `min` doubles as the initial row count)",
+      "duplicate-text": "Accessible name of the duplicate button (defaults to i18n `schemaForm.rowDuplicate`)",
+      "move-up-text": "Accessible name of the move-up button (defaults to i18n `schemaForm.rowUp`)",
+      "move-down-text": "Accessible name of the move-down button (defaults to i18n `schemaForm.rowDown`)"
     },
     "events": {
       "oas-add": "Dispatched when a row is added, `detail: { index }`",
-      "oas-remove": "Dispatched when a row is removed, `detail: { index }` (remaining rows renumber, values stay with their rows)"
+      "oas-remove": "Dispatched when a row is removed, `detail: { index }` (remaining rows renumber, values stay with their rows)",
+      "oas-duplicate": "Dispatched when a row is duplicated, `detail: { from, to }` (value deep-copied into the next row)",
+      "oas-move": "Dispatched when a row is moved up/down, `detail: { from, to }` (adjacent row values swapped, DOM order unchanged)"
     },
     "slots": {
       "": "Row template (the first template element without a slot attribute; field names use `{index}` or are auto-indexed)"
+    },
+    "methods": {
+      "setRowCount": "Converge the row count to the given value (pad empty rows / remove from the end) without dispatching `oas-add` / `oas-remove`; used for controlled shrink and for aligning nested arrays inside row values.",
+      "insertRowAt": "Insert a row at `index` (used by duplicate); returns whether it was inserted. The new row clones the template with renumbered field names, the caller writes its values."
+    },
+    "props": {
+      "rowCount": "Current rendered row count (read-only)"
     }
   },
   "oas-gantt": {
@@ -3833,7 +3847,8 @@
       "size": "Size (cascades to items): `small` / `medium` (default) / `large`",
       "status": "Validation status (cascades to items): `error` / `warning` / `success`; an explicit item status wins",
       "readonly": "Readonly (cascades to items): focusable, arrow keys do not switch",
-      "required": "Group-level required validation via the form-associated chain (valueMissing); reset restores the baseline"
+      "required": "Group-level required validation via the form-associated chain (valueMissing); reset restores the baseline",
+      "loading": "Loading state for async options: shows a spinner and text in the options area and syncs `aria-busy` on the group container; backward-compatible addition"
     },
     "events": {
       "oas-change": "Group value change, `detail: { value }` (fired by both clicks and arrow-key selection)",
@@ -5848,7 +5863,7 @@
   "oas-schema-form": {
     "attrs": {
       "schema": "Data schema (a JSON Schema subset). Dual channel: property (object, preferred) and attribute (JSON string); an attribute changed after the property invalidates the property (drift guard).",
-      "ui-schema": "UI annotation layer (bare keys: `widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`). Dual channel; every path is verified against the data schema at compile time.",
+      "ui-schema": "UI annotation layer (bare keys: `widget` / `layout` / `options` / `reactions` / `keepValueOnHidden` / `convert` / `transform` / column-level `width` / `align` / `hidden`). Dual channel; every path is verified against the data schema at compile time.",
       "initial-values": "Uncontrolled one-time baseline (nested object). Deep-merged over schema `default` with host values winning; the initial array length drives row creation.",
       "layout": "Forwarded to the inner oas-form layout (with `grid`, fields occupy columns by `layout.span`).",
       "label-align": "Forwarded to the inner oas-form label alignment (top / left / right).",
@@ -5861,11 +5876,12 @@
     "methods": {
       "submit": "Submit: evaluates reactions, runs kernel field validation, then array-level validation and injects its errors, and finally delegates to the kernel (design order: kernel first, array-level second; oas-submit / oas-validate-fail are dispatched by the kernel and bubble out, failure payload = field errors ∪ array-level errors).",
       "validate": "Validate: reactions → kernel field validation → array-level validation (union of errors); returns whether everything passes.",
-      "getValues": "Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings).",
+      "getValues": "Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings); fields configured with `transform` are mapped back to host semantics.",
       "setValues": "Controlled write channel (V1b): writes field values by nested path through the kernel `oas-form.setValues` and the control writer registry; a path that exactly matches a rendered field name is written as a whole value (array-valued fields are not split into index paths), container keys still descend; only rendered fields are written, no events are emitted and no DOM is rebuilt; unrendered paths are skipped (row count stays with form-list).",
       "setErrors": "Inject errors (for server validation). Path normalization and precedence are handled by the form kernel.",
       "clearErrors": "Clear injected errors (omit paths to clear all); affected fields fall back to rule errors.",
-      "reset": "Reset: back to initial values, clear errors, array rows back to their initial length (no events)."
+      "reset": "Reset: back to initial values, clear errors, array rows back to their initial length (no events).",
+      "reloadOptions": "Manually reload async options (`options.source`): omit the path to reload everything. Shares the race guards with automatic loading (sequence / de-duplication / drop after unmount); a manual call always starts a fresh request."
     }
   },
   "oas-matrix": {
@@ -5966,6 +5982,39 @@
     "slots": {
       "": "Default slot: the wrapped floating content (also the drag surface when the whole host drags)",
       "handle": "Drag handle: once it has content, only the handle starts a drag"
+    }
+  },
+  "oas-array-table": {
+    "attrs": {
+      "name": "Array root path (bare field names are auto-prefixed as `name.N.field`)",
+      "rows": "Initial row count",
+      "min": "Remove lower bound (default 0)",
+      "max": "Add upper bound (adding and duplicating are disabled at the cap)",
+      "disabled": "Freezes adding and row actions",
+      "columns": "Column definitions JSON: `[{ key, label, width?, align?, hidden? }]` (order = cell order; numeric `width` is px, a string is used as a grid track; `hidden` hides the cell visually but keeps it and its value)",
+      "label": "Table accessible name (defaults to i18n `schemaForm.tableLabel`)",
+      "add-text": "Add-row button label (defaults to i18n `schemaForm.rowAdd`)",
+      "remove-text": "Accessible name of the remove button (defaults to i18n `schemaForm.rowRemove`)",
+      "duplicate-text": "Accessible name of the duplicate button (defaults to i18n `schemaForm.rowDuplicate`)",
+      "move-up-text": "Accessible name of the move-up button (defaults to i18n `schemaForm.rowUp`)",
+      "move-down-text": "Accessible name of the move-down button (defaults to i18n `schemaForm.rowDown`)"
+    },
+    "events": {
+      "oas-add": "Dispatched when a row is appended, `detail: { index }`",
+      "oas-remove": "Dispatched when a row is removed, `detail: { index }` (remaining rows renumber, values stay with their rows)",
+      "oas-duplicate": "Dispatched when a row is duplicated, `detail: { from, to }` (value deep-copied into the next row)",
+      "oas-move": "Dispatched when a row is moved up/down, `detail: { from, to }` (adjacent row values swapped, DOM order unchanged)"
+    },
+    "methods": {
+      "setRowCount": "Converge the row count to the given value (pad empty rows / remove from the end) without dispatching events.",
+      "insertRowAt": "Insert a row at `index`; returns whether it was inserted."
+    },
+    "props": {
+      "columns": "Column definition array (property channel, the JSON form of the `columns` attribute)",
+      "rowCount": "Current rendered row count (read-only)"
+    },
+    "slots": {
+      "": "Row template (the first template element without a slot attribute; its direct children are the cells)"
     }
   }
 }

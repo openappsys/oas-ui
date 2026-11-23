@@ -12,6 +12,13 @@
  */
 import { devWarn } from '../../shared/dev-warn.js'
 import { registerFormControl } from '../form/index.js'
+import {
+  setConverter,
+  setOptionSource,
+  setTransformer,
+  type OptionSource,
+  type ValueHook,
+} from './compiler/value-hooks.js'
 import { deleteCustomWidget, setCustomWidget, type SchemaWidgetIO } from './compiler/custom-widgets.js'
 
 export type { SchemaWidgetIO } from './compiler/custom-widgets.js'
@@ -41,4 +48,27 @@ export function registerSchemaWidget(name: string, tag: string, options: SchemaW
     unregisterControl()
     deleteCustomWidget(name)
   }
+}
+
+/**
+ * 注册入向值变换（`uiSchema.convert: '<name>'`）。返回注销函数。
+ *
+ * 签名 `(value, fieldPath, wholeValues) => value`；仅作用于 `initialValues` 回填与受控
+ * `values` / `setValues()` 写入（键入交互、快照回填、schema `default` 都不经过），空串不调用。
+ */
+export function registerSchemaConverter(name: string, fn: ValueHook): () => void {
+  return setConverter(name, fn)
+}
+
+/** 注册出向值变换（`uiSchema.transform: '<name>'`）：作用于 kernel 事件载荷与公开 `getValues()` */
+export function registerSchemaTransformer(name: string, fn: ValueHook): () => void {
+  return setTransformer(name, fn)
+}
+
+/**
+ * 注册异步选项源（`uiSchema.options.source: '<name>'`）：`(values, path) => Promise<Option[]>`。
+ * 与 convert/transform 同表纪律——独立注册表，不进表达式函数库。
+ */
+export function registerSchemaOptionSource(name: string, fn: OptionSource): () => void {
+  return setOptionSource(name, fn)
 }

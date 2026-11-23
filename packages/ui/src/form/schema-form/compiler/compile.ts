@@ -17,6 +17,7 @@ import type {
   TableColumn,
   UiNode,
   ValueTransformPlan,
+  WidgetSpec,
 } from './types.js'
 import { resolveSchemaRefs } from './refs.js'
 import { canonicalDslPath, parseDslPath, WILDCARD } from './path.js'
@@ -194,6 +195,55 @@ function collectValueHooks(ctx: BuildContext, path: string, ui: UiNode | null): 
   if (entry.convert !== undefined || entry.transform !== undefined) ctx.transforms.push(entry)
 }
 
+/**
+ * 解析异步选项源（`uiSchema.options.source` + `sourceDeps`），并按三通道优先级判定。
+ *
+ * 优先级：`enum` / `const`（数据 schema）> `options.options`（静态列表）> `options.source`。
+ * 多通道并存时高优先级胜出并 devWarn 一次（不静默丢弃另一通道）。
+ */
+function resolveOptionsSource(
+  schema: JsonSchema,
+  ui: UiNode | null,
+  path: string,
+  ctx: BuildContext,
+): { name: string; deps: string[] } | undefined {
+  const options = ui?.options
+  if (!isPlainObject(options)) return undefined
+  const raw = options.source
+  if (raw === undefined) return undefined
+  if (typeof raw !== 'string' || raw === '') {
+    ctx.warnings.push(`uiSchema.options.source 必须是注册名（非空字符串），已忽略（${path}）`)
+    return undefined
+  }
+  const enumChannel = Array.isArray(schema.enum) || schema.const !== undefined
+  const staticChannel = Array.isArray(options.options)
+  if (enumChannel || staticChannel) {
+    ctx.warnings.push(
+      `uiSchema.options.source 与${enumChannel ? ' schema enum/const' : ' options.options'} 并存，按优先级取前者，` +
+        `source 通道已忽略（${path}）`,
+    )
+    return undefined
+  }
+  const depsRaw = options.sourceDeps
+  const deps: string[] = []
+  if (depsRaw !== undefined) {
+    if (!Array.isArray(depsRaw)) {
+      ctx.warnings.push(`uiSchema.options.sourceDeps 必须是路径数组，已忽略（${path}）`)
+    } else {
+      for (const dep of depsRaw) {
+        if (typeof dep !== 'string' || dep === '') continue
+        const canonical = canonicalDslPath(dep)
+        if (canonical === null) {
+          ctx.warnings.push(`uiSchema.options.sourceDeps 路径非法："${dep}"（${path}）`)
+          continue
+        }
+        deps.push(canonical)
+      }
+    }
+  }
+  return { name: raw, deps }
+}
+
 /** 构建字段节点 */
 function buildField(
   schema: JsonSchema,
@@ -205,10 +255,14 @@ function buildField(
   required: boolean,
   inArrayRow: boolean,
 ): FieldPlan | null {
-  const widget = resolveWidget(schema, { widget: ui?.widget, options: ui?.options }, path, ctx.warnings)
-  if (!widget) return null
+  const resolved = resolveWidget(schema, { widget: ui?.widget, options: ui?.options }, path, ctx.warnings)
+  if (!resolved) return null
   collectReactions(ctx, path, ui)
   collectValueHooks(ctx, path, ui)
+  const optionsSource = resolveOptionsSource(schema, ui, path, ctx)
+  // 异步选项是「选项通道」：默认映射落到纯文本输入时改用 select（否则 options 无处承载）
+  const widget: WidgetSpec =
+    optionsSource && resolved.tag === 'oas-input' ? { tag: 'oas-select', props: resolved.props } : resolved
   return {
     kind: 'field',
     key: `field:${path}`,
@@ -225,6 +279,7 @@ function buildField(
     keepValueOnHidden: ui?.keepValueOnHidden === true,
     span: spanOf(ui),
     inArrayRow,
+    optionsSource,
   }
 }
 

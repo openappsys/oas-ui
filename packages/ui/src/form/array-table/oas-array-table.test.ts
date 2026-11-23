@@ -72,7 +72,6 @@ describe('oas-array-table 结构与布局', () => {
   it('ARIA 表格语义：role=table / columnheader / row / cell', () => {
     const { table } = makeTable()
     const wrapper = table.shadowRoot!.querySelector<HTMLElement>('[role="table"]')!
-    expect(wrapper).not.toBeNull()
     expect(wrapper.getAttribute('aria-label')).toBe('数据表格')
     // 列头 = 3 列 + 行操作列
     expect(headCells(table)).toHaveLength(4)

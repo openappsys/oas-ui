@@ -334,6 +334,7 @@ The current value is available through the public `value` property for read/writ
 | --- | --- | --- | --- |
 | `direction` | Layout direction: `vertical` (default) / `horizontal` (row layout with wrapping) | `string` | `vertical` |
 | `disabled` | Disable the whole group (cascades to items without overriding their own explicit disabled) | `boolean` | — |
+| `loading` | Loading state for async options: shows a spinner and text in the options area and syncs `aria-busy` on the group container; backward-compatible addition | `boolean` | — |
 | `options` | Data channel: JSON `[{ label, value, disabled?, description? }]`; when explicit, data-driven rendering wins over declarative children | `RadioOption[] \| string` | — |
 | `readonly` | Readonly (cascades to items): focusable, arrow keys do not switch | `boolean` | — |
 | `required` | Group-level required validation via the form-associated chain (valueMissing); reset restores the baseline | `boolean` | — |

@@ -2,8 +2,8 @@
 
 > 生成物：`pnpm ssr:matrix`。禁止手改；改数据源后重新生成。
 
-- 组件：243
-- SSR 白名单：176
+- 组件：244
+- SSR 白名单：177
 - 有意不 SSR：67
 
 | tag | 族 | 源目录 | SSR | 原因 | 父件 | entry | template | hydrate | 单测 | DSD e2e | 文档 zh/en |
@@ -81,6 +81,7 @@
 | `oas-form` | form | `form/form` | ✅ 白名单 | — | — | `@oas-ui/ui/form/form` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-form-item` | form | `form/form-item` | ✅ 白名单 | — | — | `@oas-ui/ui/form/form-item` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-form-list` | form | `form/form-list` | ✅ 白名单 | — | — | `@oas-ui/ui/form/form-list` | ✅ | ✅ | ✅ | ✅ | —/— |
+| `oas-array-table` | form | `form/array-table` | ✅ 白名单 | — | — | `@oas-ui/ui/form/array-table` | ✅ | ✅ | ✅ | ✅ | —/— |
 | `oas-questionnaire` | form | `form/questionnaire` | ✅ 白名单 | — | — | `@oas-ui/ui/form/questionnaire` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-schema-form` | form | `form/schema-form` | ✅ 白名单 | — | — | `@oas-ui/ui/form/schema-form` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |
 | `oas-calendar` | form | `form/calendar` | ✅ 白名单 | — | — | `@oas-ui/ui/form/calendar` | ✅ | ✅ | ✅ | ✅ | ✅/✅ |

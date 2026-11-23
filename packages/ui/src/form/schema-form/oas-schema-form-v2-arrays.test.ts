@@ -86,7 +86,7 @@ describe('oas-schema-form array-table 渲染', () => {
     })
     const container = list(el)
     expect(container.tagName.toLowerCase()).toBe('oas-array-table')
-    expect(container.shadowRoot!.querySelector('[role="table"]')).not.toBeNull()
+    expect(container.shadowRoot!.querySelector('[role="table"]')!.getAttribute('role')).toBe('table')
     const headers = [...container.shadowRoot!.querySelectorAll('[role="columnheader"]')].map((cell) => cell.textContent)
     expect(headers).toEqual(['昵称', '年龄', '行操作'])
     expect(container.shadowRoot!.querySelector<HTMLElement>('[role="columnheader"]')!.style.textAlign).toBe('right')
@@ -227,7 +227,7 @@ describe('oas-schema-form 结构重建行数快照与 min 拆分', () => {
     el.schema = { ...tableSchema, properties: { ...tableSchema.properties, note: { type: 'string', title: '备注' } } }
     expect(rows(el)).toHaveLength(3)
     expect(widget(el, 'users.0.nick')!.getAttribute('value')).toBe('A')
-    expect(widget(el, 'note')).not.toBeNull()
+    expect(widget(el, 'note')!.tagName.toLowerCase()).toBe('oas-input')
   })
 
   it('initialValues 改写（initialChanged）忽略行数快照：行数跟宿主初始值走', () => {

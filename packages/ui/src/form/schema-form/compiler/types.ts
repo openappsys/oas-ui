@@ -138,6 +138,8 @@ export interface FieldPlan extends NodeBase {
   rules: FieldRules
   /** 数组内字段：隐藏时保留键位（空串）而非删键 */
   inArrayRow: boolean
+  /** 异步选项源（`options.source` + `options.sourceDeps`；三通道优先级判定后仅保留可行通道） */
+  optionsSource?: { name: string; deps: string[] }
 }
 
 export interface GroupPlan extends NodeBase {

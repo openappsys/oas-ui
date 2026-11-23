@@ -332,6 +332,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `direction` | 布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行） | `string` | `vertical` |
 | `disabled` | 禁用整组（下发子项，不覆盖子项自身显式 disabled） | `boolean` | — |
+| `loading` | 加载态（异步选项加载中）：选项区显示 spinner + 文案，`aria-busy` 同步到组容器；向后兼容增量 | `boolean` | — |
 | `options` | 数据通道：JSON `[{ label, value, disabled?, description? }]`，显式设置时数据驱动优先于子元素声明式 | `RadioOption[] \| string` | — |
 | `readonly` | 只读（下发子项）：可聚焦、方向键不切换 | `boolean` | — |
 | `required` | 组级必选校验（form-associated valueMissing，reset 恢复基线） | `boolean` | — |
