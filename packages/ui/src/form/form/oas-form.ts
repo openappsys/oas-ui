@@ -60,6 +60,33 @@ const defaultReader: FormControlReader = (el) => normalizeValue(el.getAttribute(
 
 const defaultWriter: FormControlWriter = (el, value) => el.setAttribute('value', value)
 
+/**
+ * 复合控件空值归一：把「空容器 JSON」读作 `''`。
+ *
+ * 复合控件的清空/受控写入写出的是空容器而不是空串——`oas-matrix` 清空写 `{}`，
+ * `oas-rank` / `oas-checkbox-group` 写 `[]`，`oas-time-picker` 范围模式受控写入空数组时
+ * 得到 `[]` / `["",""]`。不归一则 `rules.required` 永远放行（`'{}' !== ''`），
+ * 与 chips-input / upload 读取器的空值口径不一致。
+ * 判据：空数组、全空串数组、无自有键的对象 = 空值；非法 JSON 原样返回（由 normalizeValue 兜底）。
+ */
+function normalizeEmptyContainer(raw: string): string {
+  const normalized = normalizeValue(raw)
+  if (normalized === '') return ''
+  const head = normalized[0]
+  if (head !== '[' && head !== '{') return normalized
+  try {
+    const parsed: unknown = JSON.parse(normalized)
+    if (Array.isArray(parsed)) {
+      const empty = parsed.every((item) => item === '' || item === null)
+      return empty ? '' : normalized
+    }
+    if (parsed !== null && typeof parsed === 'object' && Object.keys(parsed).length === 0) return ''
+  } catch {
+    /* 非法 JSON：保持原串（与既有读值口径一致） */
+  }
+  return normalized
+}
+
 /** 数字路径段（数组下标） */
 const INDEX_SEGMENT = /^\d+$/
 
@@ -191,19 +218,19 @@ register([
   'oas-input-number',
   'oas-radio',
   'oas-radio-group',
-  'oas-checkbox-group',
   'oas-date-picker',
-  'oas-time-picker',
   'oas-slider',
   'oas-rate',
   'oas-pin-input',
   'oas-picker',
   'oas-transfer',
-  // 矩阵题 / 排序题：受控通道即 `value` 属性（JSON 串），默认读写器口径直接适用
-  // （读：JSON 串归一；写：setAttribute——initial-values / reset 基线与组件自身受控通道同源）
-  'oas-matrix',
-  'oas-rank',
 ])
+// 复合题型控件：受控通道即 `value` 属性（JSON 串），读值需把空容器归一为空串
+//（matrix 清空写 `{}`、rank / checkbox-group 写 `[]`——否则 required 对「零作答」永远放行）。
+// 写通道仍走默认 setAttribute('value')：initial-values / reset 基线与组件自身受控通道同源。
+register(['oas-checkbox-group', 'oas-time-picker', 'oas-matrix', 'oas-rank'], (el) =>
+  normalizeEmptyContainer(el.getAttribute('value') ?? ''),
+)
 // combobox：读 value property（无已选值时草稿文本即表单值，datalist 语义）；写仍走 value 属性通道。
 // 未升级元素（真实 CDN 文档序升级：oas-form 先于子级 combobox 升级，模板 e2e 实抓）没有
 // value property——undefined 不得进 normalizeValue（JSON.stringify(undefined) 得 undefined
@@ -319,9 +346,25 @@ export function registerFormControl(
   }
 }
 
+/**
+ * 按控件的**已注册 writer** 写值（容器快照回填等外部写通道用）。
+ *
+ * 与表单自身的 initial-values / reset 回写走同一张 writer 注册表：复合控件（switch 的
+ * checked 态、checkbox 的 property setter、`model-value` 通道的动态条目控件、宿主自定义
+ * widget）只有经自己的 writer 才能落值，直接 `setAttribute('value')` 会被组件忽略——
+ * 结构重建后用户编辑静默回退初始值。
+ *
+ * @returns true = 命中注册 writer 且已写入；false = 该 tag 未注册 writer（调用方自行回落 setAttribute）
+ */
+export function writeFormControlValue(element: Element, value: string): boolean {
+  const writer = FORM_CONTROL_WRITERS.get(element.tagName.toLowerCase())
+  if (!writer) return false
+  writer(element, value)
+  return true
+}
+
 /** 校验触发时机 */
 export type ValidateTrigger = 'change' | 'blur' | 'input'
-
 const TRIGGERS: ValidateTrigger[] = ['change', 'blur', 'input']
 
 export interface Rule {
@@ -958,11 +1001,23 @@ export class OASForm extends OASElement {
   ): Promise<Array<{ name: string; element: Element | null; message: string }>> {
     const resolved = await Promise.all(asyncJobs.map((job) => job.promise.then((message) => ({ job, message }))))
     for (const { job, message } of resolved) {
-      if (message !== null) invalid.push({ name: job.name, element: job.element, message })
+      if (message === null) continue
+      // 同名去重替换：同步错误/注入错误先入队时按名字改写，不追加第二条
+      //（追加会让 errors 载荷里后者覆盖前者，两条同名字段的排序也无从确定）
+      const existing = invalid.find((item) => item.name === job.name)
+      if (existing) {
+        existing.message = message
+        existing.element ??= job.element
+        continue
+      }
+      invalid.push({ name: job.name, element: job.element, message })
     }
-    // 混合同步/异步 validator 时按字段 DOM 序重排——首错必须是文档序第一个错误字段（同步项先入队、异步 append 在后会错位）
+    // 混合同步/异步 validator 时按字段 DOM 序重排——首错必须是文档序第一个错误字段（同步项先入队、异步 append 在后会错位）。
+    // 无对应字段的注入错误（数组级路径）排在所有字段之后：它没有可聚焦落点，不得抢占 scroll-to-first
     const order = new Map(fields.map((f, i) => [f.name, i]))
-    invalid.sort((a, b) => (order.get(a.name) ?? 0) - (order.get(b.name) ?? 0))
+    invalid.sort(
+      (a, b) => (order.get(a.name) ?? Number.POSITIVE_INFINITY) - (order.get(b.name) ?? Number.POSITIVE_INFINITY),
+    )
     return invalid
   }
 
@@ -976,13 +1031,16 @@ export class OASForm extends OASElement {
     // 用 clear() 而非按 name 逐个 bump：可一并覆盖「在途期间被移除/改名、collectFields 收不到」的字段
     this.fieldValidateSeq.clear()
     const { invalid, asyncJobs } = this.collectInvalid(fields, values)
-    this.mergeInjectedErrors(invalid, fields)
 
     if (asyncJobs.length === 0) {
+      this.mergeInjectedErrors(invalid, fields)
       this.finalizeValidation(values, fields, invalid)
       return
     }
+    // 与 validate() 同序：**先聚合异步结果、再并入注入错误**。反过来（先并入注入、后 append 异步）
+    // 会让异步文案覆盖注入文案，违反「服务端错误优先」契约——两条路径必须同序。
     void this.mergeAsyncErrors(fields, invalid, asyncJobs).then((iv) => {
+      this.mergeInjectedErrors(iv, fields)
       this.finalizeValidation(values, fields, iv)
     })
   }

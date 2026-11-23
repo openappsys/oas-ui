@@ -183,6 +183,108 @@ describe('OASForm.setErrors / clearErrors（错误注入通道）', () => {
     expect(({} as Record<string, unknown>).x).toBeUndefined()
     expect(form.getErrors()).toEqual({})
   })
+
+  it('提交路径：异步 validator 失败 + 同名字段注入错误 → 载荷取注入消息（注入优先，与 validate() 同口径）', async () => {
+    const form = new OASForm()
+    form.appendChild(fieldItem('邮箱', 'email', 'x'))
+    document.body.appendChild(form)
+    form.rules = { email: [{ validator: () => Promise.resolve('异步规则失败') }] }
+    form.setErrors([{ path: 'email', message: '服务端：邮箱被占用' }])
+    const failed = new Promise<Record<string, string>>((resolve) => {
+      form.addEventListener('oas-validate-fail', (e) => {
+        resolve((e as CustomEvent<{ errors: Record<string, string> }>).detail.errors)
+      })
+    })
+    form.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    // 异步规则文案不得覆盖注入文案（旧实现先并入注入再 append 异步 → 后者覆盖后者）
+    expect(await failed).toEqual({ email: '服务端：邮箱被占用' })
+    expect(itemError(findItem(form, 'email')).textContent).toContain('服务端：邮箱被占用')
+    // validate() 路径同口径（注入优先）
+    await expect(form.validate()).resolves.toBe(false)
+    expect(form.getErrors().email).toBe('服务端：邮箱被占用')
+  })
+
+  it('数组级注入错误（无字段元素）不抢占 scroll-to-first-error 定位', async () => {
+    const form = new OASForm()
+    form.setAttribute('scroll-to-first-error', '')
+    form.appendChild(fieldItem('姓名', 'users[0].name'))
+    document.body.appendChild(form)
+    form.rules = { 'users[0].name': [{ validator: () => Promise.resolve('异步错') }] }
+    form.setErrors([{ path: 'users', message: '至少添加一位成员' }])
+    const scrollCalls: Element[] = []
+    const orig = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrollCalls.push(this)
+    }
+    try {
+      form.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+      await new Promise((r) => setTimeout(r, 20))
+    } finally {
+      Element.prototype.scrollIntoView = orig
+    }
+    const input = findInput(form, 'users[0].name')
+    expect(form.getErrors().users).toBe('至少添加一位成员')
+    // 首个滚动定位必须是带字段元素的错误（数组级注入错误没有可聚焦落点，不得吞掉定位）
+    expect(scrollCalls).toEqual([input])
+  })
+})
+
+describe('空容器归一：required 不放过「零作答」', () => {
+  const ROWS = JSON.stringify([{ key: 'speed', label: '响应速度' }])
+  const COLUMNS = JSON.stringify([{ key: 'good', label: '好' }])
+  const OPTIONS = JSON.stringify([{ key: 'a', label: '苹果' }])
+  const GROUP_OPTIONS = JSON.stringify([{ label: 'A', value: 'a' }])
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('matrix value="{}" / rank、checkbox-group "[]" / 范围 time-picker 读取为空串', () => {
+    const form = new OASForm()
+    form.innerHTML = `
+      <oas-matrix name="grid" rows='${ROWS}' columns='${COLUMNS}' value='{}'></oas-matrix>
+      <oas-rank name="order" options='${OPTIONS}' value='[]'></oas-rank>
+      <oas-checkbox-group name="tags" options='${GROUP_OPTIONS}' value='[]'></oas-checkbox-group>
+      <oas-time-picker name="at" is-range value='["",""]'></oas-time-picker>
+    `
+    document.body.appendChild(form)
+    expect(form.getValues()).toEqual({ grid: '', order: '', tags: '', at: '' })
+  })
+
+  it('required 规则对四类空容器判失败（有值时照常通过）', async () => {
+    const form = new OASForm()
+    form.setAttribute(
+      'rules',
+      JSON.stringify({
+        grid: [{ required: true, message: '请作答矩阵' }],
+        order: [{ required: true, message: '请排序' }],
+        tags: [{ required: true, message: '请选择' }],
+        at: [{ required: true, message: '请选时间' }],
+      }),
+    )
+    form.innerHTML = `
+      <oas-matrix name="grid" rows='${ROWS}' columns='${COLUMNS}' value='{}'></oas-matrix>
+      <oas-rank name="order" options='${OPTIONS}' value='[]'></oas-rank>
+      <oas-checkbox-group name="tags" options='${GROUP_OPTIONS}' value='[]'></oas-checkbox-group>
+      <oas-time-picker name="at" is-range value='["",""]'></oas-time-picker>
+    `
+    document.body.appendChild(form)
+    await expect(form.validate()).resolves.toBe(false)
+    expect(Object.keys(form.getErrors()).sort()).toEqual(['at', 'grid', 'order', 'tags'])
+
+    // 有作答即通过（归一不吞真实值）
+    form.innerHTML = `
+      <oas-matrix name="grid" rows='${ROWS}' columns='${COLUMNS}' value='{"speed":"good"}'></oas-matrix>
+      <oas-rank name="order" options='${OPTIONS}' value='["a"]'></oas-rank>
+      <oas-checkbox-group name="tags" options='${GROUP_OPTIONS}' value='["a"]'></oas-checkbox-group>
+      <oas-time-picker name="at" is-range value='["09:00","11:00"]'></oas-time-picker>
+    `
+    await expect(form.validate()).resolves.toBe(true)
+    expect(form.getErrors()).toEqual({})
+  })
 })
 
 describe('FORM_CONTROLS 注册补漏（checkbox-group / time-picker）', () => {
