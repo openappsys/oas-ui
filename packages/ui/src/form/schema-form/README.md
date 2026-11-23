@@ -4,10 +4,11 @@
 挂载到 form 族控件树。值管理 / 字段校验状态走 `oas-form` 内核；错误注入 / 数组级校验 / 联动求值 /
 编译由本组件承载。
 
-> V1a 范围（可独立交付）：编译层 + 渲染层 + 内核接线 + 迷你校验器 + `whenSchema` 单轨联动 +
-> 对象/数组渲染与增删 + 数组级校验 + 非受控 + SSR 登记。
-> **V1b / V2 显式不做**（命中即 devWarn / 文档标注，不静默）：`when` 表达式轨、受控 `values` +
-> `setValues`、`registerSchemaWidget` 自定义组件、array-table、值变换钩子。
+> V1b 范围（本批）：受限表达式轨 `when`（parser + evaluator + 8 函数 + `registerExprFunction`）、
+> `registerSchemaWidget` 自定义 widget、受控 `values` + `setValues` + `dirty`。V1a 已有：编译层 +
+> 渲染层 + 内核接线 + 迷你校验器 + `whenSchema` 轨 + 对象/数组渲染与增删 + 数组级校验 + 非受控 + SSR 登记。
+> **V2 显式不做**（命中即 devWarn / 文档标注，不静默）：array-table 行内编辑表格、对象数组复制/排序、
+> `convertValue` / `transform` 值变换钩子、远程数据源注解、表达式函数库扩充。
 
 ## 用法
 
@@ -73,7 +74,7 @@
 - `keepValueOnHidden`：`visible:false` 时保留值（默认卸载清值）。
 - 编译期校验 uiSchema 每个路径必须存在于数据 schema（数组用 `users[].name` 通配）；错字 devWarn。
 
-## 联动注解（V1a 单轨）
+## 联动注解（双轨：`whenSchema` / `when`）
 
 ```json
 {
@@ -98,10 +99,71 @@
 - 数组通配：`users[].name`（依赖图按通配重绑，行重编号后仍命中）。
 - 循环依赖守卫：定点迭代 ≤ 8 轮，不收敛 devWarn 保留最后一轮。
 
+### `when` 受限表达式轨（V1b）
+
+同一 `reactions` 条目可用 `when: string` 代替 `whenSchema`（二选一，同时提供即 devWarn 并忽略）：
+
+```json
+{
+  "plan": {
+    "reactions": [
+      {
+        "when": "$self != 'free' && {seats} >= 5",
+        "target": "invoice",
+        "fulfill": { "visible": true },
+        "otherwise": { "visible": false }
+      }
+    ]
+  }
+}
+```
+
+- 值：`{path}` 占位（点号 + `[i]`，通配 `[]`）/ 字符串 / 数字 / `true/false/null` / `$self`。
+  通配路径在表达式里读成匹配值数组（`sum({items[].price})`、`len({users[].name})`）。
+- 比较 `== != > >= < <=`：两侧同为数字按数值，其余按字符串（写死，避开 `"9" > "100"`）。
+- 逻辑 `&& || !` + 括号；算术 `+ - * / %` 仅数值（字符串不隐式转数）；成员 `in` / `contains(c, x)`。
+- 函数库 8 个：`iif(c, a, b)` / `empty(x)` / `len(x)` / `sum(arr)` / `min(...nums)` / `max(...nums)` /
+  `lower(s)` / `upper(s)`。
+- 排除项一律**编译期报错**：赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则字面量 / 属性访问链。
+  语法错 / 未知字段 / 未知函数只让**该条** reaction 降级（devWarn），其余联动照常。
+- 宿主函数：`registerExprFunction(name, fn)`（注册需在设置 schema 之前）。用到宿主函数的 reaction
+  依赖面不可静态提取 → **全量重算**；其余表达式仍走依赖图定向刷新。
+- 两轨表达力不同，**不宣传等价**：需要 JSON Schema 语义（enum/format/if-then-else）用 `whenSchema`。
+- 体积：parser + evaluator 单文件按需链，实测 gzip 2.90 KB（独立预算档 3.4 KB；设计稿 2.5 KB 目标
+  未达，见下「已知差距」）。
+
+## 受控 `values` / `setValues` / `dirty`
+
+- 非受控 = `initialValues` 一次性基线（schema `default` 兜底，宿主值优先）。
+- 受控 = property `values`（对象 / attribute JSON 双通道）：挂载时作为基线，之后**按叶子路径 diff 写**
+  （不重建 DOM、不打断焦点）；宿主删除的键 → 对应字段清空；数组按长度补行（`min` 只增，删行仍走
+  form-list 交互）。
+- 宿主写**不派发** `oas-values-change`（程序化写与 initial-values 同口径，防回环）；用户交互照常派发。
+- `setValues(patch)` 是同一写通道的方法形态（走内核 `oas-form.setValues` → 控件 writer 注册表）。
+- `dirty` = 当前扁平值与挂载基线比较（组件自持 `pristineSnapshot`，内核之外明确的一小块）。
+- `values` 与 `initialValues` 同时提供时 `values` 优先。
+
+## 自定义 widget（`registerSchemaWidget`）
+
+```js
+import { registerSchemaWidget } from '@oas-ui/ui/form/schema-form'
+registerSchemaWidget('score', 'x-score-input', {
+  reader: (el) => el.getAttribute('value') ?? '',
+  writer: (el, value) => el.setAttribute('value', value),
+})
+```
+
+- schema 里只写**注册名**（`uiSchema.widget: 'score'`）；注册需在设置 schema 之前。
+- 内部无条件调 `registerFormControl`（form 内核值收集的唯一扩展口）——不调用则值永远收集不到，因此本
+  实现不留给调用方自行注册。
+- **硬约束：非自定义元素 widget（Vue / React 组件、原生标签）无法参与值收集**。tag 不含连字符时注册即
+  devWarn 并拒绝（内核按元素 tag 匹配读值通道）。
+- 注销函数会同时撤销内核登记，恢复该 tag 未注册状态。
+
 ## 方法 / 事件
 
-方法：`submit()` / `validate()` / `getValues()` / `reset()` / `setErrors(list)` / `clearErrors(paths?)`
-（`setValues` 为 V1b，V1a 调即 devWarn）。事件由内层 `oas-form` 派发并 composed 冒泡穿出：
+方法：`submit()` / `validate()` / `getValues()` / `setValues(patch)` / `setErrors(list)` /
+`clearErrors(paths?)` / `reset()`；只读 `dirty`。事件由内层 `oas-form` 派发并 composed 冒泡穿出：
 `oas-submit` / `oas-validate-fail` / `oas-values-change`。与 `oas-questionnaire` 组合：本组件实现
 duck-typed 契约（`getValues()` / `validate()` + 派发 `oas-values-change`），可直接作为步骤内容。
 
@@ -127,10 +189,11 @@ duck-typed 契约（`getValues()` / `validate()` + 派发 `oas-values-change`）
    分组容器为语义化 div；字段标签来自 `title`（form-item label）、说明来自 `description`（help）；
    联动 `required` 同步到 form-item 与控件 `aria-required`；warning 走 form-item `role=status`。
 6. **受控 / 非受控 + 宿主框架桥接**
-   非受控 = `initialValues` 一次性基线（schema `default` 兜底合并，宿主优先）。受控 `values` /
-   `setValues` 为 V1b（显式 devWarn）。三属性均为 property + JSON attribute 双通道：attribute 在
-   property 之后变化即失效（防 attr/prop 漂移，同 form 内核口径），对象直接赋值不写 attribute（防止
-   Vue 下把对象序列化进 DOM）。
+   非受控 = `initialValues` 一次性基线（schema `default` 兜底合并，宿主优先）。受控 `values` 按叶子
+   diff 写、宿主写不派发事件（防回环）、`dirty` 自持 pristine 快照（不宣称全走内核）。四属性（schema /
+   uiSchema / initialValues / values）均为 property + JSON attribute 双通道：attribute 在 property
+   之后变化即失效（防 attr/prop 漂移，同 form 内核口径），对象直接赋值不写 attribute（防止 Vue 下把
+   对象序列化进 DOM）。
 
 ## 决策记录（设计稿未覆盖 / 与实现冲突处）
 
@@ -160,5 +223,19 @@ duck-typed 契约（`getValues()` / `validate()` + 派发 `oas-values-change`）
 - **`$ref` 深度上限只计引用链**：`MAX_DEPTH` 只累加 `$ref` 展开层数，普通 `properties` / `items`
   嵌套不计数（旧实现每次递归 +1，深层普通嵌套会被误判成「疑似循环引用」）。
 - **`keepValueOnHidden`** 支持（注解键）：保留值仅隐藏，适合需要回显的历史数据。
-- **未实现（显式）**：`when` 表达式轨、`setValues`、`registerSchemaWidget`、array-table、远程 `$ref`、
-  值变换钩子、`visible` 的「卸载期间保留键」以外的可配置策略（当前只有 keepValueOnHidden）。
+- **编译告警统一出口**：`compileSchema` 内的告警先入数组、返回前一次性投递 `onWarn`（去重保序）。
+  此前部分告警（未知 widget / options 未知键等）只入数组不投递，devWarn 看不到——V1b 自定义 widget
+  与表达式轨的诊断依赖该出口，顺手修正。
+- **表达式模块单文件入口**：实现与公开子路径入口同文件（`expr/index.ts`），组件经
+  `compiler/expr.ts` 转发。这样 L3 独立预算链只有一个文件（不因 re-export 折叠丢链），也让
+  宿主按需 import 拿到与组件完全相同的实现。
+- **表达式路径校验本地化**：为守住体积预算，`expr` 不引 `path.js`，本地实现与 `parseDslPath`
+  同判据的占位校验（含 `{index}`/`[]` 归一与保留键段拒绝）。**`expr.test.ts` 用 15 条语料对照
+  `parseDslPath` 守住口径**，防两处分叉。
+- **受控 `values` 的数组边界**：只按长度补行（`min` 增量），不删行；宿主缩短数组时多余行的值保留到
+  form-list 交互删除为止（文档明示，不静默）。
+- **已知差距（显式）**：表达式 parser + evaluator 实测 gzip 2.90 KB，未达设计稿 2.5 KB 目标
+  （按实测上浮定档 3.4 KB）。剩余差距主要来自完整中文诊断文案与仓库「逐文件 gzip 上界 + 未压缩
+  dist」口径；进一步压缩需把诊断降级为 ASCII 错误码（在调用层拼装）或收窄通配读值，等定夺。
+- **未实现（显式）**：array-table 行内编辑表格、对象数组复制/排序、`convertValue` / `transform`
+  值变换、远程数据源注解、表达式函数库扩充（V2）。

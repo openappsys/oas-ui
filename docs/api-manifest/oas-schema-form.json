@@ -15,6 +15,10 @@
       "observed": true
     },
     {
+      "name": "values",
+      "observed": true
+    },
+    {
       "name": "layout",
       "observed": true
     },
@@ -51,6 +55,15 @@
     {
       "name": "initialValues",
       "type": "Record<string, unknown> | string"
+    },
+    {
+      "name": "values",
+      "type": "Record<string, unknown> | string"
+    },
+    {
+      "name": "dirty",
+      "type": "boolean",
+      "default": "false"
     }
   ],
   "methods": [
@@ -72,7 +85,7 @@
     {
       "name": "setValues",
       "signature": "setValues(patch: Record<string, unknown>): void",
-      "description": "受控写通道：V1b 能力。V1a 显式未实现 → devWarn，禁止静默失效"
+      "description": "受控写通道：按路径写字段（走内核 `oas-form.setValues`；宿主写不派发事件、不重建 DOM）"
     },
     {
       "name": "setErrors",

@@ -102,6 +102,11 @@
       "description": "公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径"
     },
     {
+      "name": "setValues",
+      "signature": "setValues(patch: Record<string, unknown>): void",
+      "description": "受控写通道（公开 API，向后兼容新增）：按嵌套路径写字段值，走控件 writer 注册表。"
+    },
+    {
       "name": "validate",
       "signature": "validate(): Promise<boolean>",
       "description": "公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。"

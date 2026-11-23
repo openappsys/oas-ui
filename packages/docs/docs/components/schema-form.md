@@ -45,6 +45,24 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
   <span id="sf-react-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## 联动（when 表达式）
+
+`when` 是受限表达式轨（V1b）：条件写成字符串，路径用 `{path}` 占位（点号 + `[i]`，数组通配 `[]`），
+本字段用 `$self`。语法冻结：值（字符串 / 数字 / `true/false/null`）、比较 `== != > >= < <=`
+（两侧同为数字按数值、其余按字符串）、逻辑 `&& || !` + 括号、算术 `+ - * / %`（仅数值）、
+成员 `in` / `contains()`、函数库 `iif / empty / len / sum / min / max / lower / upper`。
+**赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则 / 属性访问链一律编译期报错**；语法错 / 未知字段 /
+未知函数只影响该条 reaction（开发期告警并降级），其余联动照常生效。表达式轨与 `whenSchema` 表达力不同，
+不宣称等价——需要复用 JSON Schema 语义时用 `whenSchema`。
+
+宿主函数：`registerExprFunction(name, fn)` 注册后可在表达式里按函数名调用；因依赖不可静态提取，
+用到宿主函数的 reaction 按**全量重算**（其余表达式仍走依赖图定向刷新）。注册需发生在设置 schema 之前。
+
+<DemoBlock title="when 表达式：套餐 + 人数决定发票字段可见与备注必填">
+  <oas-schema-form id="sf-expr" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-expr-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## 数组与嵌套
 
 对象数组走 `oas-form-list`：初始数组长度驱动建行（`initialValues.users` 有 1 行就渲染 1 行）、
@@ -76,6 +94,14 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
   </oas-space>
 </DemoBlock>
 
+<DemoBlock title="嵌套数组的数组级校验：内层标签组 minItems 错误落在该行自己的错误条">
+  <oas-schema-form id="sf-array-nested-error" style="width: 100%; max-width: 680px"></oas-schema-form>
+  <span id="sf-array-nested-error-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  <oas-space style="margin-top: 12px; display: flex">
+    <oas-button id="sf-array-nested-error-submit" type="primary">submit()</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## 布局：栅格 / 分组 / 标签页
 
 `layout.span`（1-24）在 `layout="grid"` 下占列；`layout.type="group"` 把对象节点渲染为分组容器；
@@ -101,6 +127,38 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
     <oas-button id="sf-errors-validate">validate()</oas-button>
   </oas-space>
   <span id="sf-errors-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 受控 values 与脏态
+
+受控模式用 property `values`（对象）作为字段值来源：挂载时作为基线，之后每次变化按**叶子路径 diff 写**
+（只写变化路径，不重建 DOM、不打断焦点）；宿主删除的键会清空对应字段。宿主写不派发 `oas-values-change`
+（防回环），只有用户交互才派发。数组按长度补行（`min` 只增不减，删行仍走 form-list 交互）。
+`setValues(patch)` 是同一写通道的方法形态；`dirty` 读的是组件自持的 pristine 快照（内核之外的一小块）。
+`values` 与 `initialValues` 同时提供时 `values` 优先。
+
+<DemoBlock title="受控 values：宿主改值 → diff 写入；setValues() 与 dirty">
+  <oas-schema-form id="sf-controlled" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-controlled-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-controlled-next" type="primary">宿主换一批值</oas-button>
+    <oas-button id="sf-controlled-clear">清空邮箱</oas-button>
+    <oas-button id="sf-controlled-dirty">dirty?</oas-button>
+  </oas-space>
+</DemoBlock>
+
+## 自定义 widget
+
+`registerSchemaWidget(name, tag, { reader, writer })` 把**注册名**映射到自定义元素：schema 里只写注册名
+（`uiSchema.widget: 'score'`）。内部自动调 `registerFormControl`（form 内核值收集的唯一扩展口），
+所以 `reader` / `writer` 必须按内核契约实现（读字符串、写受控值）。
+
+> **硬约束**：非自定义元素 widget（Vue / React 组件或原生标签）无法参与值收集——内核按元素 tag 匹配读值通道。
+> `tag` 不含连字符时注册即开发期告警并拒绝。注册需发生在设置 schema 之前。
+
+<DemoBlock title="自定义 widget：五档评分控件（自定义元素 + reader/writer）">
+  <oas-schema-form id="sf-widget" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-widget-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 与 Questionnaire 组合
@@ -409,6 +467,177 @@ onMounted(() => {
     const emptyFields = document.getElementById('sf-empty-fields')
     emptyFields.schema = { type: 'object', properties: {} }
   })
+
+  // ---- when 表达式轨 ----
+  onUpgraded(document.getElementById('sf-expr'), () => {
+    const expr = document.getElementById('sf-expr')
+    expr.schema = {
+      type: 'object',
+      properties: {
+        plan: { type: 'string', title: '套餐', enum: ['free', 'pro', 'team'] },
+        seats: { type: 'integer', title: '人数' },
+        invoice: { type: 'string', title: '发票抬头' },
+        note: { type: 'string', title: '备注（非 free 必填）' },
+      },
+    }
+    expr.initialValues = { plan: 'free', seats: 3 }
+    expr.uiSchema = {
+      plan: {
+        reactions: [
+          {
+            when: "$self != 'free' && {seats} >= 5",
+            target: 'invoice',
+            fulfill: { visible: true },
+            otherwise: { visible: false },
+          },
+          { when: "$self != 'free'", target: 'note', fulfill: { required: true } },
+        ],
+      },
+    }
+    const out = document.getElementById('sf-expr-output')
+    expr.addEventListener('oas-values-change', (e) => {
+      out.textContent = `当前值：${JSON.stringify(e.detail.values)}（表达式轨按依赖图定向刷新）`
+    })
+  })
+
+  // ---- 嵌套数组的数组级校验 ----
+  onUpgraded(document.getElementById('sf-array-nested-error'), () => {
+    const nestedError = document.getElementById('sf-array-nested-error')
+    nestedError.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: '成员',
+          items: {
+            type: 'object',
+            properties: {
+              nick: { type: 'string', title: '昵称' },
+              tags: {
+                type: 'array',
+                title: '标签（至少 1 个）',
+                minItems: 1,
+                items: { type: 'object', properties: { label: { type: 'string', title: '标签' } } },
+              },
+            },
+          },
+        },
+      },
+    }
+    nestedError.initialValues = { users: [{ nick: '张三', tags: [] }] }
+    const out = document.getElementById('sf-array-nested-error-output')
+    nestedError.addEventListener('oas-validate-fail', (e) => {
+      out.textContent = `oas-validate-fail：${Object.entries(e.detail.errors)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('；')}`
+    })
+    nestedError.addEventListener('oas-submit', (e) => {
+      out.textContent = `oas-submit：${JSON.stringify(e.detail.values)}`
+    })
+    document.getElementById('sf-array-nested-error-submit')?.addEventListener('click', () => nestedError.submit())
+  })
+
+  // ---- 受控 values ----
+  onUpgraded(document.getElementById('sf-controlled'), () => {
+    const controlled = document.getElementById('sf-controlled')
+    controlled.values = { name: '张三', mail: 'zhang@example.com', level: 'basic' }
+    controlled.schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string', title: '姓名' },
+        mail: { type: 'string', title: '邮箱', format: 'email' },
+        level: { type: 'string', title: '等级', enum: ['basic', 'pro'] },
+      },
+    }
+    const out = document.getElementById('sf-controlled-output')
+    const report = (label) => {
+      out.textContent = `${label}：values=${JSON.stringify(controlled.values)}；dirty=${controlled.dirty}`
+    }
+    report('挂载（宿主 values 为基线）')
+    controlled.addEventListener('oas-values-change', () => report('用户编辑后（事件照常派发）'))
+    document.getElementById('sf-controlled-next')?.addEventListener('click', () => {
+      controlled.values = { name: '李四', mail: 'li@example.com', level: 'pro' }
+      report('宿主换一批值 → diff 写入')
+    })
+    document.getElementById('sf-controlled-clear')?.addEventListener('click', () => {
+      const next = { ...controlled.values }
+      delete next.mail
+      controlled.values = next
+      report('删除 mail 键 → 字段清空')
+    })
+    document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty 检查'))
+  })
+
+  // ---- 自定义 widget ----
+  onUpgraded(document.getElementById('sf-widget'), () => {
+    // 组件入口含 HTMLElement 依赖（SSG 阶段没有该全局）→ 页内按需动态 import
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaWidget }) => {
+    if (!customElements.get('x-score-input')) {
+      customElements.define(
+        'x-score-input',
+        class extends HTMLElement {
+          static get observedAttributes() {
+            return ['value']
+          }
+          connectedCallback() {
+            this.render()
+          }
+          attributeChangedCallback() {
+            this.render()
+          }
+          render() {
+            if (!this.shadowRoot) this.attachShadow({ mode: 'open' })
+            const current = this.getAttribute('value') ?? ''
+            const root = this.shadowRoot
+            root.textContent = ''
+            for (let score = 1; score <= 5; score++) {
+              const button = document.createElement('button')
+              const active = current === String(score)
+              button.type = 'button'
+              button.textContent = String(score)
+              button.setAttribute('aria-pressed', String(active))
+              button.style.cssText = [
+                'margin-inline-end: 4px',
+                'padding: 2px 8px',
+                'border-radius: var(--oas-radius-sm)',
+                'border: 1px solid ' + (active ? 'var(--oas-color-primary)' : 'var(--oas-color-border)'),
+                'background: ' + (active ? 'var(--oas-color-bg-hover)' : 'transparent'),
+                'color: var(--oas-color-text-primary)',
+                'font-weight: ' + (active ? '600' : '400'),
+                'cursor: pointer',
+              ].join(';')
+              button.addEventListener('click', () => {
+                this.setAttribute('value', String(score))
+                this.dispatchEvent(
+                  new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: String(score) } }),
+                )
+              })
+              root.appendChild(button)
+            }
+          }
+        },
+      )
+    }
+    registerSchemaWidget('score', 'x-score-input', {
+      reader: (element) => element.getAttribute('value') ?? '',
+      writer: (element, value) => element.setAttribute('value', value),
+    })
+    const widget = document.getElementById('sf-widget')
+    widget.schema = {
+      type: 'object',
+      properties: {
+        score: { type: 'integer', title: '满意度（1-5）' },
+        comment: { type: 'string', title: '补充说明' },
+      },
+    }
+    widget.uiSchema = { score: { widget: 'score' } }
+    widget.values = { score: 4 }
+    const out = document.getElementById('sf-widget-output')
+    widget.addEventListener('oas-values-change', (e) => {
+      out.textContent = `当前值：${JSON.stringify(e.detail.values)}（自定义 widget 经 reader 进值收集）`
+    })
+    })
+  })
 })
 </script>
 
@@ -429,6 +658,7 @@ onMounted(() => {
 | `size` | 透传给内层 oas-form 的尺寸档位。 | — | — |
 | `ui-schema` | UI 注解层（裸键：`widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`）。属性双通道；编译期校验每个路径必须存在于数据 schema。 | `unknown` | — |
 | `validate-trigger` | 透传给内层 oas-form 的字段校验触发时机（input / change / blur）。 | — | — |
+| `values` | 受控值（V1b）：property（对象）与 attribute（JSON 字符串）双通道。挂载时作为基线，之后按叶子路径 diff 写（不重建 DOM、不打断焦点）；宿主写不派发 `oas-values-change`（防回环）；与 `initialValues` 同时提供时本属性优先。 | `Record<string, unknown> \| string` | — |
 
 #### 方法
 
@@ -437,7 +667,7 @@ onMounted(() => {
 | `submit` | `submit(): void` | 提交：联动求值 → 内核字段校验 → 数组级校验并注入错误 → 委托内核提交（时序对齐设计稿：先内核、后数组级；oas-submit / oas-validate-fail 由内核派发并穿出，失败载荷含字段错误 ∪ 数组级错误）。 |
 | `validate` | `validate(): Promise<boolean>` | 校验：联动求值 → 内核字段校验 → 数组级校验（错误并集），返回是否全部通过。 |
 | `getValues` | `getValues(): Record<string, unknown>` | 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）。 |
-| `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道为 V1b 能力；V1a 调即 devWarn，不静默失效。 |
+| `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道（V1b）：按嵌套路径写字段值（走内核 `oas-form.setValues` 与控件 writer 注册表）；只写已渲染字段、不派发事件、不重建 DOM；未渲染路径跳过（数组行数由 form-list 维护）。 |
 | `setErrors` | `setErrors(list: FormError[]): void` | 注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载。 |
 | `clearErrors` | `clearErrors(paths?: string[]): void` | 清除注入错误（省略 paths = 清全部）；受影响字段回落规则错误。 |
 | `reset` | `reset(): void` | 重置：回初始值、清错误、数组行数回初始长度（不派发事件）。 |

@@ -659,6 +659,8 @@ const COMPONENT_ENTRIES = [
   { id: 'resourceLoad', entry: 'data/resource/load', spec: '@oas-ui/ui/data/resource/load' },
   { id: 'resourceLevel', entry: 'data/resource/level', spec: '@oas-ui/ui/data/resource/level' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
+  // schema-form 受限表达式轨（parser + evaluator 独立预算档，L3 登记表驱动）
+  { id: 'schemaFormExpr', entry: 'form/schema-form/expr', spec: '@oas-ui/ui/form/schema-form/expr' },
   { id: 'gantt', entry: 'data/gantt', spec: '@oas-ui/ui/data/gantt' },
   { id: 'jsonViewer', entry: 'data/json-viewer', spec: '@oas-ui/ui/data/json-viewer' },
   { id: 'diffViewer', entry: 'data/diff-viewer', spec: '@oas-ui/ui/data/diff-viewer' },
@@ -776,6 +778,17 @@ const BUDGETS = [
     limit: 29 * 1024, // 29 KB（2026-10-07 重定档；2026-10-29 动态 label observer 后实测 29692 B / 上限 29696 B，余量 4 B——全库最危险预算）
     basis:
       '实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量；2026-11-03 core 子路径导入批后实测 16.8 KB（绕开 barrel，余量恢复充裕，但预算上限仍按上述纪律不自行抬高）',
+  },
+  {
+    // schema-form 受限表达式轨（parser + evaluator）：L3 登记表（lib/l3-registry.mjs）要求
+    // measured 条目必须有独立计量与独立预算档。
+    name: '@oas-ui/ui/form/schema-form/expr 链 gzip',
+    kind: 'absolute',
+    componentId: 'schemaFormExpr',
+    get: () => componentMeasures.schemaFormExpr.gzipBytes,
+    limit: 3.4 * 1024, // 3.4 KB（2026-11-23 首档：实测 2.90 KB；设计稿目标 2.5 KB 未达，见 basis）
+    basis:
+      '受限表达式轨（parser + evaluator）独立计量：按需链为单文件实现（粘性正则单遍词法 + Pratt 递归下降 + 解析期闭包求值 + 冻结函数库 + 宿主函数注册表，零第三方依赖，不拉 path.js）。2026-11-23 首测：实测 gzip 2.90 KB / 7.0 KB raw / 1 文件。设计稿目标 ≤2.5 KB 未达成——已做两轮瘦身（AST 改为解析期闭包、词法改粘性正则单遍、路径占位校验本地化以免连带 path.js 进链），仍差约 0.4 KB：差距来自仓库体积口径为「逐文件 gzip 上界 + 未压缩 dist」与完整中文诊断文案；继续压到 2.5 KB 需把诊断文案降级为 ASCII 错误码（错误信息在调用层拼装）或收窄通配读值能力。按实测上浮约 17% 定档 3.4 KB，超目标部分已登记在组件 README「已知差距」，待定夺接受或排后续瘦身',
   },
   {
     name: '@oas-ui/ui/data/gantt 链 gzip',

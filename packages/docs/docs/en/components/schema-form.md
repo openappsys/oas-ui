@@ -51,6 +51,27 @@ are re-evaluated.
   <span id="sf-react-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## Reactions (`when` expressions)
+
+`when` is the restricted expression track (V1b): the condition is a string, paths use `{path}` placeholders
+(dot notation plus `[i]`, array wildcard `[]`) and the source field is `$self`. Frozen syntax: values
+(string / number / `true/false/null`), comparisons `== != > >= < <=` (numeric when both sides are numbers,
+otherwise string comparison), logic `&& || !` with parentheses, arithmetic `+ - * / %` (numbers only),
+membership `in` / `contains()`, and the function library `iif / empty / len / sum / min / max / lower / upper`.
+**Assignments / statements / loops / arrow functions / template strings / regex literals / property access
+chains are compile-time errors**; syntax errors, unknown fields and unknown functions only disable that single
+reaction (dev warning) while the rest keep working. The two tracks differ in expressiveness — they are not
+advertised as equivalent; prefer `whenSchema` when you want JSON Schema semantics.
+
+Host functions: after `registerExprFunction(name, fn)` you can call the function by name. Their dependencies
+cannot be extracted statically, so reactions using host functions **recompute on every value change**
+(everything else still uses the directed dependency graph). Register before setting the schema.
+
+<DemoBlock title="when expression: plan + seats drive invoice visibility and note requirement">
+  <oas-schema-form id="sf-expr" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-expr-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## Arrays and nesting
 
 Object arrays render through `oas-form-list`: the initial array length drives row creation (one initial
@@ -83,6 +104,14 @@ are injected into the array path and rendered below the list as `part="array-err
   </oas-space>
 </DemoBlock>
 
+<DemoBlock title="Nested array-level validation: inner minItems lands on that row's own error slot">
+  <oas-schema-form id="sf-array-nested-error" style="width: 100%; max-width: 680px"></oas-schema-form>
+  <span id="sf-array-nested-error-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  <oas-space style="margin-top: 12px; display: flex">
+    <oas-button id="sf-array-nested-error-submit" type="primary">submit()</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## Layout: grid / group / tabs
 
 `layout.span` (1–24) occupies grid columns when the form uses `layout="grid"`. `layout.type="group"`
@@ -110,6 +139,42 @@ no `aria-invalid`); an error on the same path takes exclusive precedence.
     <oas-button id="sf-errors-validate">validate()</oas-button>
   </oas-space>
   <span id="sf-errors-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## Controlled `values` and dirty state
+
+In controlled mode the `values` property is the source of truth: it acts as the baseline on mount, and each
+later change is written as a **leaf-level diff** (only changed paths, no DOM rebuild, no focus loss). Keys
+removed by the host clear the corresponding field. Host writes never emit `oas-values-change` (no echo loop);
+only user interaction does. Arrays grow via `min` (rows are never removed by this channel — row removal stays
+with form-list). `setValues(patch)` is the method form of the same channel; `dirty` compares against the
+component-held pristine snapshot (a small explicit piece outside the kernel). When both `values` and
+`initialValues` are provided, `values` wins.
+
+<DemoBlock title="Controlled values: host change → diff write; setValues() and dirty">
+  <oas-schema-form id="sf-controlled" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-controlled-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-controlled-next" type="primary">Host writes new values</oas-button>
+    <oas-button id="sf-controlled-clear">Clear email</oas-button>
+    <oas-button id="sf-controlled-dirty">dirty?</oas-button>
+  </oas-space>
+</DemoBlock>
+
+## Custom widgets
+
+`registerSchemaWidget(name, tag, { reader, writer })` maps a **registration name** to a custom element; the
+schema only references the name (`uiSchema.widget: 'score'`). It calls `registerFormControl` internally (the
+kernel's only value-collection extension point), so `reader` / `writer` must follow the kernel contract
+(read a string, write the controlled value).
+
+> **Hard constraint**: non-custom-element widgets (Vue / React components or native tags) cannot take part in
+> value collection — the kernel matches value channels by element tag. A tag without a hyphen is rejected with
+> a dev warning. Register before setting the schema.
+
+<DemoBlock title="Custom widget: five-level score control (custom element + reader/writer)">
+  <oas-schema-form id="sf-widget" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-widget-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Composing with Questionnaire
@@ -409,6 +474,177 @@ onMounted(() => {
     const emptyFields = document.getElementById('sf-empty-fields')
     emptyFields.schema = { type: 'object', properties: {} }
   })
+
+  // ---- when expression track ----
+  onUpgraded(document.getElementById('sf-expr'), () => {
+    const expr = document.getElementById('sf-expr')
+    expr.schema = {
+      type: 'object',
+      properties: {
+        plan: { type: 'string', title: 'Plan', enum: ['free', 'pro', 'team'] },
+        seats: { type: 'integer', title: 'Seats' },
+        invoice: { type: 'string', title: 'Invoice title' },
+        note: { type: 'string', title: 'Note (required unless free)' },
+      },
+    }
+    expr.initialValues = { plan: 'free', seats: 3 }
+    expr.uiSchema = {
+      plan: {
+        reactions: [
+          {
+            when: "$self != 'free' && {seats} >= 5",
+            target: 'invoice',
+            fulfill: { visible: true },
+            otherwise: { visible: false },
+          },
+          { when: "$self != 'free'", target: 'note', fulfill: { required: true } },
+        ],
+      },
+    }
+    const out = document.getElementById('sf-expr-output')
+    expr.addEventListener('oas-values-change', (e) => {
+      out.textContent = `values: ${JSON.stringify(e.detail.values)} (expression track refreshes via the dependency graph)`
+    })
+  })
+
+  // ---- nested array-level validation ----
+  onUpgraded(document.getElementById('sf-array-nested-error'), () => {
+    const nestedError = document.getElementById('sf-array-nested-error')
+    nestedError.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: 'Members',
+          items: {
+            type: 'object',
+            properties: {
+              nick: { type: 'string', title: 'Nickname' },
+              tags: {
+                type: 'array',
+                title: 'Tags (at least 1)',
+                minItems: 1,
+                items: { type: 'object', properties: { label: { type: 'string', title: 'Tag' } } },
+              },
+            },
+          },
+        },
+      },
+    }
+    nestedError.initialValues = { users: [{ nick: 'Alice', tags: [] }] }
+    const out = document.getElementById('sf-array-nested-error-output')
+    nestedError.addEventListener('oas-validate-fail', (e) => {
+      out.textContent = `oas-validate-fail: ${Object.entries(e.detail.errors)
+        .map(([key, value]) => `${key}=${value}`)
+        .join('; ')}`
+    })
+    nestedError.addEventListener('oas-submit', (e) => {
+      out.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+    })
+    document.getElementById('sf-array-nested-error-submit')?.addEventListener('click', () => nestedError.submit())
+  })
+
+  // ---- controlled values ----
+  onUpgraded(document.getElementById('sf-controlled'), () => {
+    const controlled = document.getElementById('sf-controlled')
+    controlled.values = { name: 'Alice', mail: 'alice@example.com', level: 'basic' }
+    controlled.schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string', title: 'Name' },
+        mail: { type: 'string', title: 'Email', format: 'email' },
+        level: { type: 'string', title: 'Level', enum: ['basic', 'pro'] },
+      },
+    }
+    const out = document.getElementById('sf-controlled-output')
+    const report = (label) => {
+      out.textContent = `${label}: values=${JSON.stringify(controlled.values)}; dirty=${controlled.dirty}`
+    }
+    report('Mounted (host values are the baseline)')
+    controlled.addEventListener('oas-values-change', () => report('After user edit (event still fires)'))
+    document.getElementById('sf-controlled-next')?.addEventListener('click', () => {
+      controlled.values = { name: 'Bob', mail: 'bob@example.com', level: 'pro' }
+      report('Host writes new values → diff write')
+    })
+    document.getElementById('sf-controlled-clear')?.addEventListener('click', () => {
+      const next = { ...controlled.values }
+      delete next.mail
+      controlled.values = next
+      report('Removed mail key → field cleared')
+    })
+    document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty check'))
+  })
+
+  // ---- custom widget ----
+  onUpgraded(document.getElementById('sf-widget'), () => {
+    // 组件入口含 HTMLElement 依赖（SSG 阶段没有该全局）→ 页内按需动态 import
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaWidget }) => {
+    if (!customElements.get('x-score-input')) {
+      customElements.define(
+        'x-score-input',
+        class extends HTMLElement {
+          static get observedAttributes() {
+            return ['value']
+          }
+          connectedCallback() {
+            this.render()
+          }
+          attributeChangedCallback() {
+            this.render()
+          }
+          render() {
+            if (!this.shadowRoot) this.attachShadow({ mode: 'open' })
+            const current = this.getAttribute('value') ?? ''
+            const root = this.shadowRoot
+            root.textContent = ''
+            for (let score = 1; score <= 5; score++) {
+              const button = document.createElement('button')
+              const active = current === String(score)
+              button.type = 'button'
+              button.textContent = String(score)
+              button.setAttribute('aria-pressed', String(active))
+              button.style.cssText = [
+                'margin-inline-end: 4px',
+                'padding: 2px 8px',
+                'border-radius: var(--oas-radius-sm)',
+                'border: 1px solid ' + (active ? 'var(--oas-color-primary)' : 'var(--oas-color-border)'),
+                'background: ' + (active ? 'var(--oas-color-bg-hover)' : 'transparent'),
+                'color: var(--oas-color-text-primary)',
+                'font-weight: ' + (active ? '600' : '400'),
+                'cursor: pointer',
+              ].join(';')
+              button.addEventListener('click', () => {
+                this.setAttribute('value', String(score))
+                this.dispatchEvent(
+                  new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: String(score) } }),
+                )
+              })
+              root.appendChild(button)
+            }
+          }
+        },
+      )
+    }
+    registerSchemaWidget('score', 'x-score-input', {
+      reader: (element) => element.getAttribute('value') ?? '',
+      writer: (element, value) => element.setAttribute('value', value),
+    })
+    const widget = document.getElementById('sf-widget')
+    widget.schema = {
+      type: 'object',
+      properties: {
+        score: { type: 'integer', title: 'Satisfaction (1-5)' },
+        comment: { type: 'string', title: 'Comment' },
+      },
+    }
+    widget.uiSchema = { score: { widget: 'score' } }
+    widget.values = { score: 4 }
+    const out = document.getElementById('sf-widget-output')
+    widget.addEventListener('oas-values-change', (e) => {
+      out.textContent = `values: ${JSON.stringify(e.detail.values)} (custom widget reads through its reader)`
+    })
+    })
+  })
 })
 </script>
 
@@ -429,6 +665,7 @@ onMounted(() => {
 | `size` | Forwarded to the inner oas-form size. | — | — |
 | `ui-schema` | UI annotation layer (bare keys: `widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`). Dual channel; every path is verified against the data schema at compile time. | `unknown` | — |
 | `validate-trigger` | Forwarded to the inner oas-form field validation trigger (input / change / blur). | — | — |
+| `values` | Controlled values (V1b): dual channel — property (object) and attribute (JSON string). Applied as the baseline on mount; later changes are written as a leaf-level diff (no DOM rebuild, no focus loss). Host writes never emit `oas-values-change` (no echo loop). Takes precedence over `initialValues` when both are provided. | `Record<string, unknown> \| string` | — |
 
 #### Methods
 
@@ -437,7 +674,7 @@ onMounted(() => {
 | `submit` | `submit(): void` | Submit: evaluates reactions, runs kernel field validation, then array-level validation and injects its errors, and finally delegates to the kernel (design order: kernel first, array-level second; oas-submit / oas-validate-fail are dispatched by the kernel and bubble out, failure payload = field errors ∪ array-level errors). |
 | `validate` | `validate(): Promise<boolean>` | Validate: reactions → kernel field validation → array-level validation (union of errors); returns whether everything passes. |
 | `getValues` | `getValues(): Record<string, unknown>` | Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings). |
-| `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel is a V1b capability; V1a raises a dev warning instead of failing silently. |
+| `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel (V1b): writes field values by nested path through the kernel `oas-form.setValues` and the control writer registry. Only rendered fields are written, no events are emitted and no DOM is rebuilt; unrendered paths are skipped (array row counts stay with form-list). |
 | `setErrors` | `setErrors(list: FormError[]): void` | Inject errors (for server validation). Path normalization and precedence are handled by the form kernel. |
 | `clearErrors` | `clearErrors(paths?: string[]): void` | Clear injected errors (omit paths to clear all); affected fields fall back to rule errors. |
 | `reset` | `reset(): void` | Reset: back to initial values, clear errors, array rows back to their initial length (no events). |

@@ -1,4 +1,5 @@
-// 复核回归：schema-form——渲染 / whenSchema 联动 / 错误注入 / 数组增删 / 嵌套数组 / 空态 / 宿主桥接。
+// 复核回归：schema-form——渲染 / whenSchema 与 when 表达式联动 / 错误注入 / 受控 values / 自定义 widget /
+// 数组增删 / 嵌套数组（含内层数组级错误条）/ 空态 / 宿主桥接。
 // 全部走真实指针点击（helpers.realClick）+ 用户可见反馈断言（demo 输出区），不只看 console。
 
 import { test, expect } from '@playwright/test'
@@ -211,6 +212,89 @@ test('schema-form 联动 required 参与校验：province 未填时 validate() �
     return host.validate!()
   })
   expect(okAfter, '填上必填项后校验通过').toBe(true)
+})
+
+test('schema-form when 表达式轨：$self + 比较 + 函数驱动发票可见与备注必填', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-expr')
+
+  const invoice = page.locator('#sf-expr oas-input[name="invoice"]')
+  const noteItem = page.locator('#sf-expr oas-form-item:has(oas-input[name="note"])')
+  // 初始 free / 3 人：invoice 卸载、note 非必填
+  await expect(invoice).toHaveCount(0)
+  await expect(noteItem).not.toHaveAttribute('required', '')
+
+  // 切到 pro：note 必填（表达式 $self != 'free'），invoice 仍隐藏（seats < 5）
+  await pickOption(page, '#sf-expr oas-select[name="plan"]', 'pro')
+  await expect(noteItem).toHaveAttribute('required', '')
+  await expect(invoice).toHaveCount(0)
+
+  // 人数改到 5：invoice 出现（表达式 && 比较）
+  await page.fill('#sf-expr oas-input-number[name="seats"] input', '5')
+  await page.locator('#sf-expr oas-input-number[name="seats"] input').blur()
+  await expect(page.locator('#sf-expr oas-input[name="invoice"]')).toBeVisible()
+  await expect(page.locator('#sf-expr-output')).toContainText('"plan":"pro"')
+})
+
+test('schema-form 受控 values：宿主换值 diff 写入 / 删键清空 / dirty 可见', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-controlled')
+
+  const name = page.locator('#sf-controlled oas-input[name="name"]')
+  await expect(name).toHaveAttribute('value', '张三')
+  await expect(page.locator('#sf-controlled-output')).toContainText('dirty=false')
+
+  // 宿主导入一批新值：diff 写入，输出可见
+  await page.locator('#sf-controlled-next').click()
+  await expect(name).toHaveAttribute('value', '李四')
+  await expect(page.locator('#sf-controlled oas-input[name="mail"]')).toHaveAttribute('value', 'li@example.com')
+  await expect(page.locator('#sf-controlled-output')).toContainText('dirty=true')
+
+  // 宿主删除 mail 键 → 字段清空
+  await page.locator('#sf-controlled-clear').click()
+  await expect(page.locator('#sf-controlled oas-input[name="mail"]')).toHaveAttribute('value', '')
+  await expect(page.locator('#sf-controlled-output')).toContainText('mail')
+
+  // 宿主写不产生回环事件：输出仍是脚本主动写的文案（不是 values-change 文案）
+  await expect(page.locator('#sf-controlled-output')).not.toContainText('用户编辑后')
+})
+
+test('schema-form 自定义 widget：注册名渲染为自定义元素，点击后值进收集', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-widget')
+
+  const widget = page.locator('#sf-widget x-score-input')
+  await expect(widget).toHaveCount(1)
+  await expect(widget).toHaveAttribute('value', '4')
+  // 真实点击五档评分（shadow 内按钮）
+  await widget.locator('button').nth(1).click()
+  await expect(widget).toHaveAttribute('value', '2')
+  await expect(page.locator('#sf-widget-output')).toContainText('"score":"2"')
+})
+
+test('schema-form 嵌套数组数组级错误条：内层 minItems 落在该行自己的 part=array-error', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-array-nested-error')
+
+  const innerList = page.locator('#sf-array-nested-error [data-oas-form-list-item] oas-form-list')
+  await expect(innerList).toHaveCount(1)
+  // 内层 0 行 → 提交触发内层数组级错误（errors 载荷路径 users.0.tags）
+  await page.locator('#sf-array-nested-error-submit').click()
+  await expect(page.locator('#sf-array-nested-error-output')).toContainText('users.0.tags=')
+  const innerError = page
+    .locator('#sf-array-nested-error [data-oas-form-list-item]')
+    .first()
+    .locator('[part="array-error"]')
+    .last()
+  await expect(innerError).toBeVisible()
+  await expect(innerError).toContainText('至少需要 1 项')
+
+  // 内层添加一行并填写 → 提交通过、错误条隐藏
+  await innerList.locator('[part="add"]').click()
+  await page.fill('#sf-array-nested-error oas-input[name="users.0.tags.0.label"] input', 'A')
+  await page.locator('#sf-array-nested-error-submit').click()
+  await expect(page.locator('#sf-array-nested-error-output')).toContainText('oas-submit')
+  await expect(innerError).toBeHidden()
 })
 
 test('schema-form RTL：标签页顺序镜像 + 联动复显字段继承逻辑方向', async ({ page }) => {

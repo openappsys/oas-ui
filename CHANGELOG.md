@@ -10,6 +10,16 @@
 - **oas-form / oas-form-item 内核增量（向后兼容）**：`oas-form.setErrors(list)` / `clearErrors(paths?)`——路径经 `parseNamePath` 归一为点号规范键，注入错误优先于规则错误直到字段值再次变化，数组路径错误同通道注入并进入 `oas-validate-fail` 载荷；`oas-form-item.setError(message, severity?)` 双态——error 走 `role=alert` 且独占显示，warning 走 `role=status`（polite）+ `--oas-color-warning-text`、不置 `aria-invalid`、不阻断校验/提交。内核 `FORM_CONTROLS` 补 `oas-checkbox-group` / `oas-time-picker`（值收集补漏）；主题 high-contrast 档补 `--oas-color-warning-text`；`oas-form-list` 新增可选 `add-text` / `remove-text`（增删钮可访问名，缺省行为不变）。
 - **oas-questionnaire**：步骤内容发现面从「仅 light DOM 的 `oas-form`」扩为 duck-typed 契约（`oas-form` 或实现 `getValues()` / `validate()` 且派发 `oas-values-change` 的元素），与 schema-form 组合时无需问卷认识具体组件。
 
+**schema-form V1b（表达式轨 / 受控 / 自定义 widget）**
+
+- **oas-schema-form 受限表达式轨**：`reactions[].when` 字符串条件（手写词法 + 递归下降 + Pratt，零第三方依赖）——`{path}` 占位（点号 + `[i]`，通配 `[]` 读成匹配值数组）/ 字符串 / 数字 / `true/false/null` / `$self`；比较 `== != > >= < <=`（两侧同为数字按数值、其余按字符串）、逻辑 `&& || !` + 括号、算术 `+ - * / %`（仅数值）、成员 `in` / `contains()`、函数库 8 个（`iif/empty/len/sum/min/max/lower/upper`）；赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则 / 属性访问链一律编译期报错，语法错 / 未知字段 / 未知函数只降级该条 reaction 并 devWarn；依赖静态提取（含 `users[].name` 通配）接入同一依赖图，`$self` 支持数组行通配；`registerExprFunction(name, fn)` 宿主函数注册表（用到宿主函数的 reaction 按全量重算）。公开子路径 `@oas-ui/ui/form/schema-form/expr`，独立预算档（实测 gzip 2.90 KB / 定档 3.4 KB；设计稿 2.5 KB 目标未达，已在组件 README 登记）。
+- **oas-form 受控写通道（向后兼容新增）**：`setValues(patch)`——按嵌套路径写字段值（经控件 writer 注册表），只写已渲染字段、程序化写不派发 `oas-values-change`、不改变 reset 基线、保留键段跳过（原型污染防护）。
+- **oas-schema-form 受控 `values` + 脏态**：property / attribute 双通道，挂载时作为基线、之后按叶子路径 diff 写（不重建 DOM、不打断焦点）、宿主删键即清字段、数组按长度补行；宿主写不回派事件（防回环）；自持 pristine 快照提供只读 `dirty`；`setValues(patch)` 同名方法转发内核通道。
+- **registerSchemaWidget(name, tag, { reader, writer })**：注册名 → 自定义元素，内部无条件调 `registerFormControl`（内核值收集唯一扩展口）；非自定义元素 tag（无连字符）devWarn 并拒绝，文档明示「Vue/React 组件与原生标签无法参与值收集」硬约束。
+- **固化回归**：重连两次防监听/刷新叠加、`submit()` 载荷 = 字段错误 ∪ 数组级错误、嵌套数组内层数组级错误条 e2e。
+- **诊断补漏**：`compileSchema` 告警统一在返回前投递 `onWarn`（此前未知 widget / options 未知键等只入数组不投递，devWarn 看不到）。
+- **文档**：zh/en 补表达式轨 / 受控 values / 自定义 widget / 嵌套数组错误条 demo 与说明；API 表随 `values` / `setValues` 同步。
+
 **电商组件族（commerce，新场景族，9 件）**
 
 - **oas-sku（commerce 族，商品规格选择）**：`specs`（规格组 + 选项）/ `skus`（选项组合 → 价格 / 库存 / 图片）数据契约；内置组合匹配算法——精确匹配定位 SKU、逐项「可选路径」判定（选中项按「该组合有货」过滤可选项）、缺货组合置灰；数量步进按库存钳制；aria-live 价格播报；原生 radio fieldset 键盘可达；桌面内嵌面板形态（底部弹层形态后续补）。TDD（RED→GREEN）：单测覆盖匹配矩阵 / 置灰语义 / 库存钳制 / 注入安全（规格值含引号与 CSS 元字符二次 update 不崩——宿主数据不拼选择器）/ property 双通道（specs / skus / value / quantity get+set 反射 attribute，消属性撞方法）；zh/en 文档 + API 表 + qa-regression e2e（真实点选 / 缺货置灰 / 键盘）。

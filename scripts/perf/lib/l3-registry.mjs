@@ -110,6 +110,16 @@ export const L3_REGISTRY = [
     kind: 'capability',
     measured: false,
   },
+  // schema-form 受限表达式轨（V1b）：`oas-schema-form` 的 `when` 条件在运行时静态依赖同一份
+  // 实现（编译 + 求值），入口路径自身无属性触发面，但属组件运行时依赖——按 capability 口径
+  // 要求含于 L1/form 族包（同 data/resource/pool 先例）。独立计量档见 size.mjs 预算。
+  {
+    id: 'schemaFormExpr',
+    entry: 'form/schema-form/expr',
+    family: 'form',
+    kind: 'capability',
+    measured: true,
+  },
   // —— layout 家族 helper 型 L3（独立计量 + 独立预算档） ——
   // 无限滚动 headless 控制器：激活唯一入口是 createInfiniteScroll/InfiniteScrollController 导出函数，
   // 无 HTML/属性触发面；进 L1/layout 族包即死重，必须显式 import。
