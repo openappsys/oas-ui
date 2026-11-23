@@ -50,6 +50,11 @@
       "type": "number",
       "default": "0",
       "api": true
+    },
+    {
+      "name": "offset",
+      "type": "CropOffset",
+      "api": true
     }
   ],
   "methods": [
@@ -66,7 +71,7 @@
     {
       "name": "reset",
       "signature": "reset(): void",
-      "description": "恢复初始态（缩放 1 / 不旋转 / 裁剪框重置 / 图片居中；派发 oas-change）"
+      "description": "恢复初始态（缩放 1 / 不旋转 / 位移归零 / 裁剪框重置；派发 oas-change）"
     },
     {
       "name": "toBlob",
@@ -90,11 +95,11 @@
     },
     {
       "name": "oas-change",
-      "detail": "{ zoom: this.zoomValue, rotation: this.rotationValue, frame: { ...this.frameRect }, }"
+      "detail": "{ zoom: this.zoomValue, rotation: this.rotationValue, frame: { ...this.frameRect }, offset: { ...this.offsetValue }, }"
     },
     {
       "name": "oas-crop",
-      "detail": "{ blob, zoom: this.zoomValue, rotation: this.rotationValue, frame: { ...this.frameRect }, }"
+      "detail": "{ blob, zoom: this.zoomValue, rotation: this.rotationValue, frame: { ...this.frameRect }, offset: { ...this.offsetValue }, }"
     }
   ],
   "slots": [],

@@ -2215,20 +2215,21 @@
       "disabled": "Disables all interaction (toolbar disabled, crop frame not focusable)"
     },
     "events": {
-      "oas-change": "After zoom / rotate / crop-frame adjustment, `detail: { zoom, rotation, frame }`",
-      "oas-crop": "Crop confirmed, `detail: { blob, zoom, rotation, frame }`; `blob` is null when canvas is unavailable",
+      "oas-change": "After zoom / rotate / crop-frame adjustment / image pan, `detail: { zoom, rotation, frame, offset }`",
+      "oas-crop": "Crop confirmed, `detail: { blob, zoom, rotation, frame, offset }`; `blob` is null when canvas is unavailable",
       "oas-load": "Image loaded, `detail: { width, height }`",
       "oas-error": "Image failed to load, `detail: { src }`"
     },
     "slots": {},
     "props": {
       "zoom": "Current zoom (starts at 1). Writes apply immediately but dispatch **no event** — `oas-change` only reports user interaction, so echoing `el.zoom` back from the handler cannot recurse",
-      "rotation": "Current rotation in degrees (0 / 90 / 180 / 270, read-only)"
+      "rotation": "Current rotation in degrees (0 / 90 / 180 / 270, read-only)",
+      "offset": "Current image offset `{ x, y }` (pixels from the stage centre, read-only; already clamped by the “image covers the crop frame” constraint)"
     },
     "methods": {
       "setZoom": "Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change` only when the value actually changes)",
       "rotate": "Rotate by a delta (default +90°, dispatches `oas-change`)",
-      "reset": "Restore initial zoom / rotation / crop frame (dispatches `oas-change`)",
+      "reset": "Restore initial zoom / rotation / image offset / crop frame (dispatches `oas-change`)",
       "toBlob": "Export the crop as a Blob (null when canvas is unavailable)",
       "toDataURL": "Export the crop as a dataURL (empty string when canvas is unavailable)"
     }
