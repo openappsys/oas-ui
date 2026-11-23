@@ -43,6 +43,12 @@
 - 族注册与构建：commerce 新族 + overlay 公开族——CDN 11 族 bundle（`dist/cdn/overlay.js` 等）、families / index / ssr 导出 / not-ssr 台账 / 侧栏 / 总览 / llms / stats / api-manifest 全量登记；i18n 新增 commerce / overlay 切片（11 族 588 键 ×16 语言，completeness 双层守卫）。
 - 属性通道治理：21 件复杂数据属性全部落实「property 优先 + setter 反射 attribute」双通道约定；`vue-prop-hijack.spec.ts` 契约表扩至 14 条新组件（attrContract + propContract + stringProbe 含含引号值注入）；collision-guard 撞名守卫全绿（sku / coupon / category / ecard / image-cropper / barrage / curtain / share-sheet 等撞名点全部消歧）。
 
+### 修复
+
+- **oas-schema-form（发布前修复批）**：断开重连后联动求值与数组增删监听失效（覆写 `onReconnect()` 调幂等 `bind()`，处理器改为稳定引用免叠双份）；联动 `required` 不参与校验（字段规则与数组级必填判据合并联动效果——`fulfill:{required:true}` 会真拦截提交，README 数组示例从「只加星号」变为生效）；结构重建回压用户编辑（仅当 `initialValues` 通道本次变化时初始值才覆盖快照，加无关字段不再把已编辑字段重置）；校验时序对齐设计稿（先内核字段校验、后数组级校验，事件载荷仍为错误并集）；`uniqueItems` 改深比较（键序不同不再漏判重复）；`$ref` 深度上限只计引用链（深层普通嵌套不再误判循环）；uiSchema 根路径死代码删除（明确不支持根级注解，README 记录决策）。
+- **oas-form-list**：`add-text` / `remove-text` 的 camelCase 撞私有解析方法（框架 property 写入会遮蔽方法致 TypeError）——方法改名 `resolveAddText` / `resolveRemoveText`，公开属性名不变；补属性覆盖与撞名守卫单测。
+- **e2e 门禁口径**：`vue-prop-hijack` 的 schema-form 契约改按结构选择器判定渲染（`oas-form-item` ∪ `[part="array"]`，零字段空态实例单独豁免）；`a11y` 登记 schema-form light/dark 无法评分节点基线（8/主题）；DSD 快照验收撤下 oas-schema-form（字段树在客户端渲染进自身 shadow，DSD 只覆盖宿主一层 → 快照零高度且水合后布局漂移；SSR 白名单登记保留，待 light DOM 渲染改造后再纳入）。
+
 ### 文档站（SEO 与语言机制）
 
 - **移除浏览器语言自动跳转**：不再按 `navigator.language` 把访客从首页改写到 `/en/`——URL 即真源，爬虫/用户/外链看到一致内容（原 v2.6.7「Landing 语言适配」自动跳转行为下线；显式保存的语言偏好深链跳转保留，爬虫无 localStorage 不受影响）。语言引导改由 hreflang + 新增的语言提示条与导航栏分段切换器（中 / EN）承接。

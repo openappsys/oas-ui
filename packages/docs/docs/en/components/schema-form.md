@@ -434,8 +434,8 @@ onMounted(() => {
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `submit` | `submit(): void` | Submit: evaluates reactions, runs array-level validation and injects its errors, then delegates to the kernel (oas-submit / oas-validate-fail are dispatched by the kernel and bubble out). |
-| `validate` | `validate(): Promise<boolean>` | Validate: reactions → array-level validation → kernel field validation; returns whether everything passes. |
+| `submit` | `submit(): void` | Submit: evaluates reactions, runs kernel field validation, then array-level validation and injects its errors, and finally delegates to the kernel (design order: kernel first, array-level second; oas-submit / oas-validate-fail are dispatched by the kernel and bubble out, failure payload = field errors ∪ array-level errors). |
+| `validate` | `validate(): Promise<boolean>` | Validate: reactions → kernel field validation → array-level validation (union of errors); returns whether everything passes. |
 | `getValues` | `getValues(): Record<string, unknown>` | Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings). |
 | `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel is a V1b capability; V1a raises a dev warning instead of failing silently. |
 | `setErrors` | `setErrors(list: FormError[]): void` | Inject errors (for server validation). Path normalization and precedence are handled by the form kernel. |

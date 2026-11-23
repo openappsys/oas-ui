@@ -42,22 +42,23 @@ function resolvePointer(root: unknown, pointer: string): unknown {
   return cursor
 }
 
-/** 递归展开：`stack` 为当前展开链上的引用指针（循环检测） */
+/** 递归展开：`stack` 为当前展开链上的引用指针（循环检测）；`refDepth` 只计 `$ref` 层级（普通嵌套不计） */
 function expandNode(
   node: unknown,
   root: JsonSchema,
   stack: string[],
-  depth: number,
+  refDepth: number,
   errors: string[],
   warnings: string[],
   warnOnce: Set<string>,
 ): unknown {
-  if (depth > MAX_DEPTH) {
+  if (refDepth > MAX_DEPTH) {
     errors.push(`$ref 展开层级超过 ${MAX_DEPTH} 层，疑似循环引用`)
     return {}
   }
   if (Array.isArray(node)) {
-    return node.map((item) => expandNode(item, root, stack, depth + 1, errors, warnings, warnOnce))
+    // 普通嵌套（properties / items / $defs 等）不消耗引用深度：深度上限只用于拦 $ref 环
+    return node.map((item) => expandNode(item, root, stack, refDepth, errors, warnings, warnOnce))
   }
   if (!isPlainObject(node)) return node
 
@@ -82,7 +83,7 @@ function expandNode(
         warnings.push(`$ref 兄弟键 "${key}" 被忽略（仅允许 title / description / default 并存）：${ref}`)
       }
     }
-    const expanded = expandNode(target, root, [...stack, ref], depth + 1, errors, warnings, warnOnce)
+    const expanded = expandNode(target, root, [...stack, ref], refDepth + 1, errors, warnings, warnOnce)
     if (!isPlainObject(expanded)) return expanded
     // 兄弟键覆盖：title / description / default 显式给出时优先
     const merged: Record<string, unknown> = { ...expanded }
@@ -99,7 +100,7 @@ function expandNode(
       out[key] = value
       continue
     }
-    out[key] = expandNode(value, root, stack, depth + 1, errors, warnings, warnOnce)
+    out[key] = expandNode(value, root, stack, refDepth, errors, warnings, warnOnce)
   }
   return out
 }

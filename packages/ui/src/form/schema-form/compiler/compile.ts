@@ -412,8 +412,8 @@ export function compileSchema(rawSchema: unknown, rawUiSchema?: unknown, options
     Array.isArray(schema.required) ? schema.required.filter((k): k is string => typeof k === 'string') : [],
   )
   const plan: PlanNode[] = []
-  const rootUi = uiAt(ctx, '')
-  collectReactions(ctx, '', rootUi)
+  // 根路径（''）没有合法书写面（parseDslPath 把空路径判为非法），故不支持根级 uiSchema 注解；
+  // 用户写 `''` 会在 parseUiSchema 处得到「路径非法」告警——reactions 必须挂在具名字段上。
   for (const [key, childSchema] of Object.entries(props)) {
     plan.push(...buildChild(childSchema, ctx, '', rootPath, key, requiredKeys.has(key), false))
   }

@@ -57,12 +57,12 @@
     {
       "name": "submit",
       "signature": "submit(): void",
-      "description": "提交：先值归一/联动求值，再数组级校验并注入，最后委托内核提交（事件由内核派发并穿出）"
+      "description": "提交：联动求值 → **内核字段校验** → 数组级校验并注入 → 委托内核提交。"
     },
     {
       "name": "validate",
       "signature": "validate(): Promise<boolean>",
-      "description": "校验：联动求值 → 数组级校验 → 内核字段校验（错误并集），返回是否全部通过"
+      "description": "校验：联动求值 → **内核字段校验** → 数组级校验（错误并集），返回是否全部通过。"
     },
     {
       "name": "getValues",

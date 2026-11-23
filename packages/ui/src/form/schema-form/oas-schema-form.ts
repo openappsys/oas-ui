@@ -7,6 +7,7 @@ import {
   canonicalDslPath,
   compileSchema,
   createReactionEngine,
+  deepEqual,
   isEmptyValue,
   joinDslPath,
   parseDslPath,
@@ -190,10 +191,14 @@ export class OASSchemaForm extends OASElement {
   private compiledKey: string | null = null
   /** 上次渲染所用的结构键（决定是否需要重建 DOM，避免属性微调抖掉焦点） */
   private renderedKey: string | null = null
+  /** 上次重建时的初始值通道身份（仅当它变化时，初始值才允许覆盖快照里的用户编辑） */
+  private renderedInitialKey: string | null = null
 
   private engine: ReactionEngine | null = null
   private effects = new Map<string, ReactionEffects>()
   private nodeByKey = new Map<string, PlanNode>()
+  /** bind() 的清理函数是否已登记（重连再 bind 时不重复登记，避免 cleanupFns 无限增长） */
+  private bindCleanupRegistered = false
   /** 数组元素 → 具体路径（根数组 `users`，嵌套 `users.0.matrix`） */
   private arrayPathOf = new WeakMap<Element, string>()
   private arrayErrorPaths = new Set<string>()
@@ -282,23 +287,34 @@ export class OASSchemaForm extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定值变化/数组增删（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定值变化/数组增删（render / 水合 / 重连路径共用，幂等） */
   private bind(): void {
     this.formEl = this.shadow.querySelector('oas-form')
     this.bodyEl = this.shadow.querySelector('.body')
     this.emptyEl = this.shadow.querySelector('.empty')
     const form = this.formEl
     if (!form) return
-    const onValues = (e: Event): void => this.onValuesChange(e)
-    const onArrayMutation = (): void => this.onArrayMutation()
-    form.addEventListener('oas-values-change', onValues)
-    form.addEventListener('oas-add', onArrayMutation)
-    form.addEventListener('oas-remove', onArrayMutation)
+    // 处理器用实例字段（稳定引用）：重连再次 bind 时 addEventListener 按「同 target 同 handler」去重，
+    // 不会叠出双份联动/数组增删刷新
+    form.addEventListener('oas-values-change', this.handleValuesEvent)
+    form.addEventListener('oas-add', this.handleArrayMutationEvent)
+    form.addEventListener('oas-remove', this.handleArrayMutationEvent)
+    if (this.bindCleanupRegistered) return
+    this.bindCleanupRegistered = true
     this.onCleanup(() => {
-      form.removeEventListener('oas-values-change', onValues)
-      form.removeEventListener('oas-add', onArrayMutation)
-      form.removeEventListener('oas-remove', onArrayMutation)
+      this.bindCleanupRegistered = false
+      form.removeEventListener('oas-values-change', this.handleValuesEvent)
+      form.removeEventListener('oas-add', this.handleArrayMutationEvent)
+      form.removeEventListener('oas-remove', this.handleArrayMutationEvent)
     })
+  }
+
+  private readonly handleValuesEvent = (event: Event): void => this.onValuesChange(event)
+  private readonly handleArrayMutationEvent = (): void => this.onArrayMutation()
+
+  /** 断开重连：cleanup 已摘除监听 → 重绑（否则联动求值与数组增删刷新永久失效） */
+  protected override onReconnect(): void {
+    this.bind()
   }
 
   protected override render(): void {
@@ -335,11 +351,15 @@ export class OASSchemaForm extends OASElement {
     return [
       this.getAttribute('schema') ?? '',
       this.getAttribute('ui-schema') ?? '',
-      this.getAttribute('initial-values') ?? '',
+      this.initialKey(),
       this._schemaVersion,
       this._uiVersion,
-      this._initialVersion,
     ].join('\u0000')
+  }
+
+  /** 初始值通道身份（attribute 原文 + property 写入次数） */
+  private initialKey(): string {
+    return `${this.getAttribute('initial-values') ?? ''}\u0000${this._initialVersion}`
   }
 
   /** 布局/尺寸等表级属性透传给内层 oas-form（grid span / label-align / 禁用链路复用内核） */
@@ -399,6 +419,11 @@ export class OASSchemaForm extends OASElement {
     const compiled = this.compiled
     if (!form || !body || !compiled) return
     const snapshot = form.getValues()
+    // 初始值通道是否变化决定「initial 胜还是快照胜」：只有宿主改写 initialValues 时才允许
+    // 用初始值覆盖快照——schema/uiSchema 等其它结构变化触发的重建必须保留用户编辑。
+    const initialKey = this.initialKey()
+    const initialChanged = this.renderedInitialKey !== null && this.renderedInitialKey !== initialKey
+    this.renderedInitialKey = initialKey
     body.textContent = ''
     this.unmountedFields.clear()
     this.arrayErrorPaths.clear()
@@ -414,7 +439,7 @@ export class OASSchemaForm extends OASElement {
     // 行数由初始数组长度驱动（min 兜底；initialValues 有 1 行必须渲染 1 行）
     this.syncArrayMin(merged)
     form.reapplyInitialValues()
-    this.applySnapshotValues(snapshot, merged)
+    this.applySnapshotValues(snapshot, merged, initialChanged)
     this.syncRules()
     this.evaluateEffects()
     this.syncArrayStates()
@@ -678,16 +703,28 @@ export class OASSchemaForm extends OASElement {
     return relative === '' ? rowPath : `${rowPath}.${relative}`
   }
 
-  /** 回填快照值（结构重建后已填值不丢）：空值与新增 initialValues 覆盖的路径不再回填 */
-  private applySnapshotValues(snapshot: Record<string, unknown>, initial: Record<string, unknown>): void {
+  /**
+   * 回填快照值（结构重建后已填值不丢）：空值与「本次由 initialValues 变化覆盖的路径」不再回填。
+   *
+   * `initialWins` 仅在初始值通道本次发生变化时为 true——结构键的其它部分（schema / uiSchema）
+   * 变化触发的重建必须让快照（用户编辑）胜过 initialValues，否则加一个无关字段就会把用户
+   * 已改的字段回压成初始值。
+   */
+  private applySnapshotValues(
+    snapshot: Record<string, unknown>,
+    initial: Record<string, unknown>,
+    initialWins: boolean,
+  ): void {
     const form = this.formEl
     if (!form) return
     for (const [name, raw] of flattenValues(snapshot)) {
       // 空串 = 字段未编辑（fresh 状态），不回填（否则会把新写入的初始值覆盖成空）
       if (raw === '') continue
-      // 新 initialValues 显式覆盖的路径以初始值为准（初始值变化触发重建时快照不能回压）
-      const path = parseDslPath(name)
-      if (path !== null && readPath(initial, path) !== undefined) continue
+      // 初始值通道本次变化：显式覆盖的路径以初始值为准（初始值变化触发重建时快照不能回压）
+      if (initialWins) {
+        const path = parseDslPath(name)
+        if (path !== null && readPath(initial, path) !== undefined) continue
+      }
       const element = form.querySelector<HTMLElement>(`[name="${name.replace(/"/g, '\\"')}"]`)
       if (!element) continue
       this.writeWidgetValue(element, raw)
@@ -887,21 +924,26 @@ export class OASSchemaForm extends OASElement {
     form.rules = rules
   }
 
-  /** 单字段校验：只读投影 → required → 关键字校验 → i18n 文案 */
+  /** 单字段校验：只读投影 → required（静态 ∪ 联动效果）→ 关键字校验 → i18n 文案 */
   private validateFieldValue(node: FieldPlan, raw: string, concreteName: string): string | null {
     const effect = this.effectFor(concreteName)
     if (effect?.visible === false) return null
     const projected = projectValue(node.schema, raw)
-    if (node.rules.required && isEmptyValue(projected)) return this.t('schemaForm.required')
+    // 必填判据合并联动效果：fulfill required:true 必须真拦截（只落属性/aria 不参与校验 = 假必填）
+    const required = typeof effect?.required === 'boolean' ? effect.required : node.rules.required
+    if (required && isEmptyValue(projected)) return this.t('schemaForm.required')
     const issue = validateValue(node.schema, projected)
     if (!issue) return null
     return this.t(issue.messageKey, issue.params)
   }
 
-  /** 数组级校验（required / minItems / maxItems / uniqueItems）→ 注入数组路径 + 渲染错误条 */
-  private syncArrayErrors(): void {
+  /**
+   * 数组级校验（required / minItems / maxItems / uniqueItems）→ 注入数组路径 + 渲染错误条。
+   * 返回 false 表示存在数组级问题（供 validate 汇总；错误注入仍走内核通道）。
+   */
+  private syncArrayErrors(): boolean {
     const form = this.formEl
-    if (!form || !this.compiled || this.compiled.error) return
+    if (!form || !this.compiled || this.compiled.error) return true
     const projected = this.projectedValues()
     const issues: FormError[] = []
     const visuals: Array<{ path: string; message: string }> = []
@@ -910,7 +952,7 @@ export class OASSchemaForm extends OASElement {
       const node = this.nodeByKey.get(key)
       if (!node || node.kind !== 'array') continue
       const value = readPath(projected, parseDslPath(path) ?? [])
-      const message = this.validateArray(node, value)
+      const message = this.validateArray(node, value, path)
       if (message === null) continue
       issues.push({ path, message })
       visuals.push({ path, message })
@@ -924,13 +966,18 @@ export class OASSchemaForm extends OASElement {
     }
     for (const issue of issues) this.arrayErrorPaths.add(issue.path)
     if (issues.length > 0) form.setErrors(issues)
+    return issues.length === 0
   }
 
-  /** 单个数组规则求值（返回首个错误文案） */
-  private validateArray(node: ArrayPlan, value: unknown): string | null {
+  /** 单个数组规则求值（返回首个错误文案）；`path` 用于取联动效果（required 可被 reactions 改写） */
+  private validateArray(node: ArrayPlan, value: unknown, path: string): string | null {
     const items = Array.isArray(value) ? value : []
     const rules = node.arrayRules
-    if (rules.required && items.length === 0) return this.t('schemaForm.required')
+    const effect = this.effectFor(path)
+    // 与字段同判据：联动卸载（visible:false）的数组不参与校验
+    if (effect?.visible === false) return null
+    const required = typeof effect?.required === 'boolean' ? effect.required : rules.required
+    if (required && items.length === 0) return this.t('schemaForm.required')
     if (typeof rules.minItems === 'number' && items.length < rules.minItems) {
       return this.t('schemaForm.minItems', { min: rules.minItems })
     }
@@ -940,7 +987,8 @@ export class OASSchemaForm extends OASElement {
     if (rules.uniqueItems) {
       for (let i = 0; i < items.length; i++) {
         for (let j = i + 1; j < items.length; j++) {
-          if (JSON.stringify(items[i]) === JSON.stringify(items[j])) return this.t('schemaForm.uniqueItems')
+          // 深比较而非 JSON.stringify：键序不同（{a,b} vs {b,a}）应判为重复，字符串化会漏
+          if (deepEqual(items[i], items[j])) return this.t('schemaForm.uniqueItems')
         }
       }
     }
@@ -988,18 +1036,38 @@ export class OASSchemaForm extends OASElement {
 
   // ---------- 公开方法 ----------
 
-  /** 提交：先值归一/联动求值，再数组级校验并注入，最后委托内核提交（事件由内核派发并穿出） */
+  /**
+   * 提交：联动求值 → **内核字段校验** → 数组级校验并注入 → 委托内核提交。
+   *
+   * 时序对齐 PRD（先内核 validate、后数组级）：数组级错误在最终 submit 之前注入，内核对
+   * 字段错误与注入项做并集判定——两者任一失败都只派发 `oas-validate-fail`（载荷含并集）。
+   * `form.validate()` 只做校验不派发事件，因此提交事件契约不变（内核 requestSubmit 派发）。
+   */
   submit(): void {
     this.evaluateEffects()
-    this.syncArrayErrors()
-    this.formEl?.submit()
+    const form = this.formEl
+    if (!form) return
+    void form.validate().then(() => {
+      // 等待期间结构重建/断开：旧的 form 引用已失效，放弃本次提交
+      if (this.formEl !== form) return
+      this.syncArrayErrors()
+      form.submit()
+    })
   }
 
-  /** 校验：联动求值 → 数组级校验 → 内核字段校验（错误并集），返回是否全部通过 */
+  /**
+   * 校验：联动求值 → **内核字段校验** → 数组级校验（错误并集），返回是否全部通过。
+   *
+   * 先清上一轮数组级注入：内核 validate 会把注入项并入本次结论（陈旧数组错误不得冒充字段校验结果）。
+   */
   async validate(): Promise<boolean> {
     this.evaluateEffects()
-    this.syncArrayErrors()
-    return this.formEl ? this.formEl.validate() : true
+    const form = this.formEl
+    if (!form) return true
+    this.clearArrayErrorVisuals()
+    const kernelOk = await form.validate()
+    const arrayOk = this.syncArrayErrors()
+    return kernelOk && arrayOk
   }
 
   /** 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串） */

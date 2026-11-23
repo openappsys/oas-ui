@@ -434,8 +434,8 @@ onMounted(() => {
 
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
-| `submit` | `submit(): void` | 提交：先联动求值、再数组级校验并注入错误，最后委托内核提交（oas-submit / oas-validate-fail 由内核派发并穿出）。 |
-| `validate` | `validate(): Promise<boolean>` | 校验：联动求值 → 数组级校验 → 内核字段校验（错误并集），返回是否全部通过。 |
+| `submit` | `submit(): void` | 提交：联动求值 → 内核字段校验 → 数组级校验并注入错误 → 委托内核提交（时序对齐设计稿：先内核、后数组级；oas-submit / oas-validate-fail 由内核派发并穿出，失败载荷含字段错误 ∪ 数组级错误）。 |
+| `validate` | `validate(): Promise<boolean>` | 校验：联动求值 → 内核字段校验 → 数组级校验（错误并集），返回是否全部通过。 |
 | `getValues` | `getValues(): Record<string, unknown>` | 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）。 |
 | `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道为 V1b 能力；V1a 调即 devWarn，不静默失效。 |
 | `setErrors` | `setErrors(list: FormError[]): void` | 注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载。 |

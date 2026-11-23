@@ -190,3 +190,73 @@ test('schema-form 宿主桥接：Vue 下 schema/uiSchema 走 property 通道（�
   expect(bridge.schemaAttr, '对象未被 Vue 序列化进 attribute').toBeNull()
   expect(bridge.formItemCount).toBe(5)
 })
+
+test('schema-form 联动 required 参与校验：province 未填时 validate() 返回 false 且 aria-invalid 上屏', async ({
+  page,
+}) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-react')
+  // demo 默认 CN：reaction fulfill required:true → province 必填
+  await expect(page.locator('#sf-react oas-input[name="province"]')).toHaveAttribute('aria-required', 'true')
+  const ok = await page.evaluate(async () => {
+    const host = document.getElementById('sf-react') as HTMLElement & { validate?: () => Promise<boolean> }
+    return host.validate!()
+  })
+  expect(ok, '联动必填必须真拦截（不只加星号）').toBe(false)
+  await expect(page.locator('#sf-react oas-input[name="province"]')).toHaveAttribute('aria-invalid', 'true')
+  // 填上后通过（plan=free 时 note 仅禁用，不参与校验）
+  await page.fill('#sf-react oas-input[name="province"] input', 'CA')
+  const okAfter = await page.evaluate(async () => {
+    const host = document.getElementById('sf-react') as HTMLElement & { validate?: () => Promise<boolean> }
+    return host.validate!()
+  })
+  expect(okAfter, '填上必填项后校验通过').toBe(true)
+})
+
+test('schema-form RTL：标签页顺序镜像 + 联动复显字段继承逻辑方向', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-layout')
+  await up(page, '#sf-react')
+
+  const tabLefts = (): Promise<number[]> =>
+    page.evaluate(() =>
+      [...document.getElementById('sf-layout')!.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"]')].map((tab) =>
+        Math.round(tab.getBoundingClientRect().left),
+      ),
+    )
+
+  // LTR 基线：文档序第一个 tab 在左
+  const ltr = await tabLefts()
+  expect(ltr, 'LTR 下应渲染 2 个标签页按钮').toHaveLength(2)
+  expect(ltr[0]!, 'LTR 下首个标签页在左').toBeLessThan(ltr[1]!)
+
+  await page.evaluate(() => {
+    document.documentElement.dir = 'rtl'
+  })
+  // RTL：flex 行随方向镜像——文档序首个 tab 落到最右（容器未被物理 left/right 锁死）
+  await expect.poll(async () => (await tabLefts())[0]! - (await tabLefts())[1]!, { timeout: 5000 }).toBeGreaterThan(0)
+
+  // 联动卸载区（#sf-react）：切到 US 复显的 state 字段继承 RTL 方向，且保持文档序在 country 之后
+  await pickOption(page, '#sf-react oas-select[name="country"]', 'US')
+  await expect(page.locator('#sf-react oas-input[name="state"]')).toBeVisible()
+  const remounted = await page.evaluate(() => {
+    const host = document.getElementById('sf-react')!
+    const root = host.shadowRoot!
+    const stateWidget = root.querySelector<HTMLElement>('[name="state"]')!
+    const stateItem = stateWidget.closest('oas-form-item') as HTMLElement
+    const countryItem = root.querySelector<HTMLElement>('[name="country"]')!.closest('oas-form-item') as HTMLElement
+    return {
+      direction: getComputedStyle(stateItem).direction,
+      widgetDirection: getComputedStyle(stateWidget).direction,
+      stateTop: Math.round(stateItem.getBoundingClientRect().top),
+      countryTop: Math.round(countryItem.getBoundingClientRect().top),
+    }
+  })
+  expect(remounted.direction, '复显字段容器必须继承 RTL 方向（逻辑属性，无物理锁死）').toBe('rtl')
+  expect(remounted.widgetDirection, '复显字段控件同样继承 RTL').toBe('rtl')
+  expect(remounted.stateTop, 'RTL 下纵向流不变：state 仍在 country 之后').toBeGreaterThan(remounted.countryTop)
+
+  await page.evaluate(() => {
+    document.documentElement.dir = 'ltr'
+  })
+})

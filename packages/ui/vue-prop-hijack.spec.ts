@@ -82,6 +82,12 @@ interface ContractEntry {
     probe?: string
     /** 逐实例写入合法 JSON 字符串，断言内部数据已解析且该实例 shadow 渲染非空（防字符串容忍退化） */
     stringProbe?: StringProbe[]
+    /**
+     * mode='when-data' 的显式豁免（按实例 id）：用于「合法持有数据但按设计不渲染 renderedSel」
+     * 的空态实例（如零字段表单只渲染 `[part="empty"]` 占位，骨架自带不能当渲染证据）。
+     * 只在 when-data 判定里跳过**该实例**，其余实例与字符串注入路径照常断言。
+     */
+    renderExemptIds?: string[]
   }
 }
 
@@ -341,9 +347,14 @@ const CONTRACT: ContractEntry[] = [
     // demo 在 Vue 里以 property 赋值供数，attribute 缺失属设计内行为，按 property 通道逐实例断言。
     propContract: {
       attrs: ['schema', 'uiSchema', 'initialValues'],
-      renderedSel: 'oas-form-item',
+      // 渲染证据按「结构种类」取：普通对象字段 → oas-form-item；对象数组（0 行也渲染）→ [part="array"]。
+      // 骨架只有 oas-form/.body/[part=empty]，不含这两者，故仍是真实渲染证据。
+      renderedSel: 'oas-form-item, [part="array"]',
       mode: 'when-data',
       probe: 'schema',
+      // 零字段空态（#sf-empty-fields）按设计只渲染 [part="empty"] 占位文案（骨架自带，不能当渲染证据），
+      // 该实例豁免 when-data 的渲染断言；属性通道 setter/own-property 断言仍逐实例执行。
+      renderExemptIds: ['sf-empty-fields'],
       stringProbe: [
         {
           prop: 'schema',
@@ -570,7 +581,8 @@ test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖
 
         // ② property 通道：逐实例 setter 在场 + 无 own property 遮蔽 + 数据真实渲染
         if (propContract) {
-          const { attrs, renderedSel, mode = 'all', probe, stringProbe } = propContract
+          const { attrs, renderedSel, mode = 'all', probe, stringProbe, renderExemptIds } = propContract
+          const exempt = new Set(renderExemptIds ?? [])
           els.forEach((el, i) => {
             const label = `${tag} ${where(el, i)}`
             for (const attr of attrs) {
@@ -592,7 +604,7 @@ test('Vue property 劫持门禁：SPA 导航 + 静态 JSON 契约表（不依赖
               const probeKey = probe ?? attrs[0]!
               const value = (el as unknown as Record<string, unknown>)[probeKey]
               const hasData = Array.isArray(value) ? value.length > 0 : value != null && value !== ''
-              if (hasData && rendered === 0) {
+              if (hasData && rendered === 0 && !(el.id && exempt.has(el.id))) {
                 out.push(
                   `${label}: 实例自身 ${probeKey} 有数据，但 shadow 内未渲染出任何 "${renderedSel}"（property 通道数据未落地）`,
                 )

@@ -63,4 +63,23 @@ describe('$ref 编译期急切展开', () => {
     const missing = resolveSchemaRefs({ type: 'object', properties: { a: { $ref: '#/$defs/none' } } })
     expect(missing.errors.join()).toContain('$ref 目标不存在')
   })
+
+  it('深度上限只计 $ref 链：普通深层嵌套不误判为循环引用', () => {
+    // 100 层普通嵌套（properties 链）：旧实现按「每次递归 +1」计数，会被误判成 $ref 循环
+    type Node = { type: string; title?: string; properties?: Record<string, Node> }
+    let deep: Node = { type: 'string', title: '叶子' }
+    for (let i = 0; i < 100; i++) deep = { type: 'object', properties: { [`l${i}`]: deep } }
+    const nested = resolveSchemaRefs({ type: 'object', properties: { root: deep } })
+    expect(nested.errors, '普通嵌套不得报 $ref 层级/循环错误').toEqual([])
+    expect(nested.schema).not.toBeNull()
+
+    // $ref 链本身仍然受深度约束：链式引用 65 层（无环）必须报层级超限
+    const defs: Record<string, unknown> = {}
+    for (let i = 0; i < 70; i++) {
+      defs[`r${i}`] = i === 69 ? { type: 'string' } : { $ref: `#/$defs/r${i + 1}` }
+    }
+    const chained = resolveSchemaRefs({ $defs: defs, type: 'object', properties: { a: { $ref: '#/$defs/r0' } } })
+    expect(chained.schema).toBeNull()
+    expect(chained.errors.join()).toContain('$ref 展开层级超过')
+  })
 })

@@ -8,8 +8,8 @@
     "ratio": 286,
     "exempt": 692,
     "skipped": {
-      "local": 4002,
-      "ci": 4308
+      "local": 4018,
+      "ci": 4324
     }
   },
   "topPairs": [],
@@ -2413,6 +2413,28 @@
       }
     },
     "signature.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
+    },
+    "schema-form.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
+    },
+    "schema-form.html::dark": {
       "below30": 0,
       "below45": 0,
       "below60": 0,

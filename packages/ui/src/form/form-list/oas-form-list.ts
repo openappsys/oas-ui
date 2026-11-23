@@ -300,7 +300,7 @@ export class OASFormList extends OASElement {
       btn.type = 'button'
       btn.className = 'remove'
       btn.setAttribute('part', 'remove')
-      btn.setAttribute('aria-label', this.removeText())
+      btn.setAttribute('aria-label', this.resolveRemoveText())
       btn.innerHTML = REMOVE_ICON
       frame.appendChild(btn)
       itemsEl.appendChild(frame)
@@ -338,19 +338,23 @@ export class OASFormList extends OASElement {
       icon.style.verticalAlign = '-2px'
       addBtn.appendChild(icon)
       const span = document.createElement('span')
-      span.textContent = this.addText()
+      span.textContent = this.resolveAddText()
       addBtn.appendChild(span)
     }
   }
 
-  /** 删除按钮可访问名：remove-text 覆盖（缺省走既有 i18n），供声明式表单注入自己的文案 */
-  private removeText(): string {
+  /**
+   * 删除按钮可访问名：remove-text 覆盖（缺省走既有 i18n），供声明式表单注入自己的文案。
+   * 命名避开 attribute camelCase（`remove-text` → `removeText`）：同名私有方法会被框架的
+   * property 写入以 own property 遮蔽，内部 `this.xxx()` 直接 TypeError（撞名守卫红线）。
+   */
+  private resolveRemoveText(): string {
     const raw = this.getAttr('remove-text', '')
     return raw !== '' ? raw : this.t('dynamicInput.remove')
   }
 
-  /** 添加按钮文案：add-text 覆盖（缺省走既有 i18n） */
-  private addText(): string {
+  /** 添加按钮文案：add-text 覆盖（缺省走既有 i18n）；命名同 resolveRemoveText 的撞名规避 */
+  private resolveAddText(): string {
     const raw = this.getAttr('add-text', '')
     return raw !== '' ? raw : this.t('dynamicInput.add')
   }

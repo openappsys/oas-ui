@@ -161,6 +161,26 @@ describe('OASFormList 增删行', () => {
     el.setAttribute('name', 'b')
     expect(rowFields(el, 0)[0]!.getAttribute('name')).toBe('b.0.name')
   })
+
+  it('add-text / remove-text 覆盖按钮文案与可访问名（schema-form 注入 i18n 文案用）', () => {
+    const el = makeList(
+      { min: '1', 'add-text': '添加成员', 'remove-text': '删除成员' },
+      '<oas-input name="users.{index}.name"></oas-input>',
+    )
+    expect(addBtn(el).textContent).toContain('添加成员')
+    expect(removeBtn(el, 0).getAttribute('aria-label')).toBe('删除成员')
+  })
+
+  it('collision-guard：私有解析方法不与 attribute camelCase 撞名（addText / removeText）', () => {
+    // 框架按「key in el」走 property 写入时，同名实例方法会被 own property 遮蔽 → this.addText() TypeError
+    const proto = OASFormList.prototype as unknown as Record<string, unknown>
+    for (const name of ['addText', 'removeText']) {
+      expect(
+        proto[name],
+        `${name} 不得作为实例成员存在（撞 add-text / remove-text 的 camelCase，改名 resolveAddText / resolveRemoveText）`,
+      ).toBeUndefined()
+    }
+  })
 })
 
 describe('OASFormList 与主表联动', () => {

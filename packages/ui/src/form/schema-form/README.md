@@ -92,6 +92,8 @@
 
 - `reactions` 挂在**源字段**的 uiSchema 节点；条件路径恒为根路径，本字段用 `$self`（`scope` 缺省 = `$self`）。
 - `fulfill` 词表 V1 = `visible` / `disabled` / `required`；`value` 保留键（V1 未实现，编译期 devWarn）。
+  **`required` 同时参与校验**（字段规则与数组级 `required` 判据都合并联动效果）：`fulfill: { required: true }`
+  会真拦截提交，不只是加星号/`aria-required`。
 - `otherwise` 缺省 = 回到静态注解值；跨 reactions 写同一目标同一属性后者胜 + devWarn。
 - 数组通配：`users[].name`（依赖图按通配重绑，行重编号后仍命中）。
 - 循环依赖守卫：定点迭代 ≤ 8 轮，不收敛 devWarn 保留最后一轮。
@@ -107,15 +109,17 @@ duck-typed 契约（`getValues()` / `validate()` + 派发 `oas-values-change`）
 
 1. **每个操作的取消路径 / 孤儿产物**
    结构重建先快照值再回填；数组行增删由 form-list 自身处理；卸载字段用注释占位保留文档序，
-   复显时插回原位。所有监听（值变化 / 数组增删）经 `onCleanup` 摘除；`disconnectedCallback`
+   复显时插回原位。所有监听（值变化 / 数组增删）经 `onCleanup` 摘除，断开重连由基类
+   `onReconnect()` 钩子调幂等 `bind()` 重挂（处理器是稳定引用，不叠双份）；`disconnectedCallback`
    清空编译缓存、效果表与节点索引；重连由基类 `update()` 重建。
 2. **每个属性的默认值 / 空态**
    `schema` / `uiSchema` / `initialValues` 三通道默认空；空 schema、根非 object、零字段均渲染
    占位文案（非空白），编译错误额外把原因写入 `title`；空数组有「暂无条目」占位。
 3. **多步交互的失败点 / 加载禁用态**
-   提交 = 数组级校验注入 → 内核校验 → 内核派发事件；任一步失败走 `oas-validate-fail`（含数组路径
-   错误）；数组级错误渲染在 form-list 下方 `part="array-error"`（role=alert）；
-   `disabled` 级联：容器 → 子树控件 + form-list 增删按钮。
+   提交 = 内核字段校验 → 数组级校验并注入 → 内核提交派发事件（PRD 冻结时序：先内核、后数组级；
+   数组级错误在最终提交前注入，事件载荷仍是「字段错误 ∪ 数组级错误」）；任一步失败走
+   `oas-validate-fail`（含数组路径错误）；数组级错误渲染在 form-list 下方 `part="array-error"`
+   （role=alert）；`disabled` 级联：容器 → 子树控件 + form-list 增删按钮。
 4. **破坏性选项默认非破坏**
    `visible:false` 默认清值（PRD 写死），数组行内保留键位；`uniqueItems` 等只校验不改值。
 5. **键盘可达 / ARIA**
@@ -142,10 +146,19 @@ duck-typed 契约（`getValues()` / `validate()` + 派发 `oas-values-change`）
   错误条（非全局单条）。
 - **schema `default` 作为 initialValues 兜底**：宿主值优先；未声明的数组不出默认值（行数仍由宿主
   initialValues 驱动）。
-- **`uniqueItems` 比较**用投影值的 JSON 串（对象按键序稳定）；`maxItems` 等只校验不阻断行添加
+- **`uniqueItems` 比较**走深比较（投影值递归比，键序无关）；`maxItems` 等只校验不阻断行添加
   （form-list 的 `max` 仅在 schema `maxItems` 存在时同步？V1a 未同步，添加后再报错，避免吞掉用户操作）。
+- **不支持根级 uiSchema 注解**（决策）：uiSchema 的书写面是「点号 + 方括号」路径，根路径 `''` 经
+  `parseDslPath` 判为非法（保留键段/空路径一律拒绝），没有合法写法可以命中根节点；因此编译层不读
+  根注解（原 `uiAt(ctx, '')` 收集是死代码，已删除）。用户写 `''` 会在 uiSchema 编译告警里得到
+  「路径非法」，reactions 必须挂在具名字段上——避免造第二套根路径语法（与 PRD「唯一用户可见语法」冲突）。
 - **tabs 的未列出字段**并入首个标签页 + devWarn（不静默丢字段）；`tabs` 为空则退化为分组容器。
 - **根节点必须是 object**（表单根即字段集合），否则编译错误空态。
+- **结构重建的「初始值 vs 快照」优先级**：仅当 `initialValues` 通道本次发生变化（attribute 原文或
+  property 写入次数变了）时，初始值才覆盖快照里的用户编辑；schema / uiSchema 变化触发的重建一律
+  「快照胜过初始值」——否则加一个无关字段就把用户已改的带初值字段回压成初始值（回归实测）。
+- **`$ref` 深度上限只计引用链**：`MAX_DEPTH` 只累加 `$ref` 展开层数，普通 `properties` / `items`
+  嵌套不计数（旧实现每次递归 +1，深层普通嵌套会被误判成「疑似循环引用」）。
 - **`keepValueOnHidden`** 支持（注解键）：保留值仅隐藏，适合需要回显的历史数据。
 - **未实现（显式）**：`when` 表达式轨、`setValues`、`registerSchemaWidget`、array-table、远程 `$ref`、
   值变换钩子、`visible` 的「卸载期间保留键」以外的可配置策略（当前只有 keepValueOnHidden）。

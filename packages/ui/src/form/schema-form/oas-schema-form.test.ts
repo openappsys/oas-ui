@@ -124,15 +124,37 @@ describe('oas-schema-form 渲染（schema → 控件树）', () => {
     expect(widgetOf(el, 'vip')!.hasAttribute('checked')).toBe(true)
   })
 
-  it('schema 变更重建并保留已填值（快照回填）', () => {
+  it('schema 变更重建并保留已填值（快照回填，initialValues 不回压用户编辑）', () => {
     const el = mount(basicSchema, { initialValues: { name: '原名' } })
     expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('原名')
+    // 用户改写（与初始值不同）：重建必须保住编辑值，而不是重放 initialValues
+    const input = widgetOf(el, 'name')!
+    input.setAttribute('value', '编辑后的值')
+    input.dispatchEvent(
+      new CustomEvent('oas-input', { bubbles: true, composed: true, detail: { value: '编辑后的值' } }),
+    )
     el.schema = {
       type: 'object',
       properties: { ...basicSchema.properties, extra: { type: 'string', title: '备注' } },
     }
     expect(widgetOf(el, 'extra')).toBeTruthy()
-    expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('原名')
+    expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('编辑后的值')
+  })
+
+  it('加无关字段（结构重建）不回压用户编辑；改写 initialValues 时初始值才胜过快照', () => {
+    const el = mount(basicSchema, { initialValues: { name: '原名', age: 30 } })
+    const name = widgetOf(el, 'name')!
+    name.setAttribute('value', '用户编辑')
+    name.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, composed: true, detail: { value: '用户编辑' } }))
+    // ① schema 加字段 → 快照（用户编辑）胜过 initial
+    el.schema = {
+      type: 'object',
+      properties: { ...basicSchema.properties, extra: { type: 'string', title: '备注' } },
+    }
+    expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('用户编辑')
+    // ② 宿主改写 initialValues → 初始值通道变化，允许覆盖快照
+    el.initialValues = { name: '新初始值', age: 30 }
+    expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('新初始值')
   })
 
   it('表格/尺寸等表级属性透传给内层 oas-form', () => {
@@ -225,6 +247,131 @@ describe('oas-schema-form 校验（迷你校验器 + 数组级）', () => {
     el.initialValues = { users: [{ nick: 'a' }, { nick: 'a' }] }
     await expect(el.validate()).resolves.toBe(false)
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="array-error"]')!.textContent).toContain('重复')
+  })
+
+  it('uniqueItems 深比较：键序不同的相同项判为重复（JSON.stringify 会漏）', async () => {
+    const el = mount({
+      type: 'object',
+      properties: {
+        rows: {
+          type: 'array',
+          uniqueItems: true,
+          items: { type: 'object', properties: { a: { type: 'string' }, b: { type: 'string' } } },
+        },
+      },
+    })
+    el.initialValues = {
+      rows: [
+        { a: '1', b: '2' },
+        { b: '2', a: '1' },
+      ],
+    }
+    await expect(el.validate()).resolves.toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="array-error"]')!.textContent).toContain('重复')
+  })
+
+  it('校验时序：先内核字段校验、后数组级校验（PRD 冻结时序）', async () => {
+    const el = mount({
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: { type: 'string', title: '姓名' },
+        users: {
+          type: 'array',
+          title: '成员',
+          minItems: 1,
+          items: { type: 'object', properties: { nick: { type: 'string' } } },
+        },
+      },
+    })
+    const order: string[] = []
+    const record = (records: MutationRecord[]): void => {
+      for (const record of records) {
+        if (record.type !== 'attributes') continue
+        const target = record.target as HTMLElement
+        // 只认「内核字段校验落态（aria-invalid）」与「数组错误条上屏（hidden 被移除）」两个信号：
+        // 联动求值先写的 aria-required / 清上一轮错误条的 hidden=true 不参与排序
+        if (target.getAttribute('data-schema-widget') === 'name' && record.attributeName === 'aria-invalid') {
+          order.push('field')
+        } else if (target.getAttribute('part') === 'array-error' && record.attributeName === 'hidden') {
+          if (!target.hasAttribute('hidden')) order.push('array')
+        }
+      }
+    }
+    const observer = new MutationObserver((records) => record(records))
+    observer.observe(el.shadowRoot!, { attributes: true, subtree: true })
+    await expect(el.validate()).resolves.toBe(false)
+    record(observer.takeRecords())
+    observer.disconnect()
+    expect(order, '内核字段校验（aria-invalid）必须先于数组级错误条上屏').toContain('field')
+    expect(order).toContain('array')
+    expect(order.indexOf('field')).toBeLessThan(order.indexOf('array'))
+  })
+
+  it('联动 required 参与字段校验：fulfill required:true 真拦截（不只有星号）', async () => {
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          country: { type: 'string', title: '国家', enum: ['CN', 'US'] },
+          province: { type: 'string', title: '省份' },
+        },
+      },
+      {
+        initialValues: { country: 'CN' },
+        uiSchema: {
+          country: {
+            reactions: [{ whenSchema: { schema: { const: 'CN' } }, target: 'province', fulfill: { required: true } }],
+          },
+        },
+      },
+    )
+    expect(widgetOf(el, 'province')!.getAttribute('aria-required')).toBe('true')
+    await expect(el.validate()).resolves.toBe(false)
+    expect(widgetOf(el, 'province')!.getAttribute('aria-invalid')).toBe('true')
+    const item = widgetOf(el, 'province')!.closest('oas-form-item')!
+    expect(item.shadowRoot!.querySelector<HTMLElement>('[part="error"]')!.textContent).toContain('必填')
+
+    // 条件不再成立（改 country=US）→ required 撤销，校验通过
+    const country = widgetOf(el, 'country')!
+    country.setAttribute('value', 'US')
+    country.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: 'US' } }))
+    await expect(el.validate()).resolves.toBe(true)
+  })
+
+  it('联动 required 参与数组级校验：空数组被 reactions 的 required:true 拦截', async () => {
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          plan: { type: 'string', title: '套餐', enum: ['basic', 'pro'] },
+          users: {
+            type: 'array',
+            title: '成员',
+            items: { type: 'object', properties: { nick: { type: 'string', title: '昵称' } } },
+          },
+        },
+      },
+      {
+        initialValues: { plan: 'pro' },
+        uiSchema: {
+          plan: {
+            reactions: [{ whenSchema: { schema: { const: 'pro' } }, target: 'users', fulfill: { required: true } }],
+          },
+        },
+      },
+    )
+    await expect(el.validate()).resolves.toBe(false)
+    const error = el.shadowRoot!.querySelector<HTMLElement>('[part="array-error"]')!
+    expect(error.hidden).toBe(false)
+    expect(error.textContent).toContain('必填')
+
+    // 切回 basic：required 撤销，空数组通过
+    const plan = widgetOf(el, 'plan')!
+    plan.setAttribute('value', 'basic')
+    plan.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: 'basic' } }))
+    await expect(el.validate()).resolves.toBe(true)
+    expect(error.hidden).toBe(true)
   })
 })
 
@@ -475,6 +622,51 @@ describe('oas-schema-form 组合面（错误注入 / 事件 / 生命周期 / que
     name.setAttribute('value', 'lisi')
     name.dispatchEvent(new CustomEvent('oas-input', { bubbles: true, composed: true, detail: { value: 'lisi' } }))
     expect(el.getValues()).toMatchObject({ name: 'lisi' })
+  })
+
+  it('断开重连后绑定恢复：联动复算 + 数组增删重索引（onReconnect → bind）', async () => {
+    const el = mount(
+      {
+        type: 'object',
+        properties: {
+          country: { type: 'string', title: '国家', enum: ['CN', 'US'] },
+          province: { type: 'string', title: '省份' },
+          users: {
+            type: 'array',
+            title: '成员',
+            items: { type: 'object', required: ['nick'], properties: { nick: { type: 'string', title: '昵称' } } },
+          },
+        },
+      },
+      {
+        initialValues: { country: 'CN' },
+        uiSchema: {
+          country: {
+            reactions: [{ whenSchema: { schema: { const: 'US' } }, target: 'province', fulfill: { visible: false } }],
+          },
+        },
+      },
+    )
+    expect(widgetOf(el, 'province')).toBeTruthy()
+
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+    // 重连后值不丢
+    expect(el.getValues()).toMatchObject({ country: 'CN' })
+
+    // ① 联动监听已重绑：改 source 字段 → 依赖命中 → province 卸载
+    const country = widgetOf(el, 'country')!
+    country.setAttribute('value', 'US')
+    country.dispatchEvent(new CustomEvent('oas-change', { bubbles: true, composed: true, detail: { value: 'US' } }))
+    expect(widgetOf(el, 'province')).toBeNull()
+
+    // ② 数组增删监听已重绑：加一行后规则按新行号重挂（空行必填被拦）
+    clickArrayAdd(el, 'array:users')
+    expect(arrayList(el, 'array:users').querySelectorAll(':scope > [data-oas-form-list-item]')).toHaveLength(1)
+    expect(widgetOf(el, 'users.0.nick')).toBeTruthy()
+    await expect(el.validate()).resolves.toBe(false)
+    expect(widgetOf(el, 'users.0.nick')!.getAttribute('aria-invalid'), '重连后 oas-add 必须重挂新行规则').toBe('true')
   })
 
   it('标签页容器：role/tab 语义 + 方向键切页', () => {
