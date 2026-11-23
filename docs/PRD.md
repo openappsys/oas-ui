@@ -78,7 +78,7 @@ Shadow DOM 渲染（复用全部现有组件与 token；定向刷新 keyed 复�
 **form 内核最小增量（本批新增，接口签名冻结，向后兼容）**：
 
 - `oas-form.setErrors(list: { path: string; message: string; severity?: 'error' | 'warning' }[])` / `clearErrors(paths?: string[])`：路径经 `parseNamePath` 归一为点号规范键（`users[0].name` → `users.0.name`，与 form-list 产出的 name 一致）；**服务端错误优先于规则错误，直到该字段值再次变化**（值变即清该字段服务端错误）；数组级校验错误同通道注入（挂在数组路径）。
-- `oas-form-item.setError(message, severity?: 'error' | 'warning')`：warning 走 `--oas-color-warning` token（三档齐全）+ `role="status"`（polite）+ 不设 `aria-invalid` + **不阻断** validate/submit；同字段 error 与 warning 并存时 **error 独占显示**（不叠两条，避免高度抖动）。
+- `oas-form-item.setError(message, severity?: 'error' | 'warning')`：**V1a 落地完整双态**——warning 走 `--oas-color-warning` token + `role="status"`（polite）+ 不设 `aria-invalid` + **不阻断** validate/submit；同字段 error 与 warning 并存时 **error 独占显示**（不叠两条，避免高度抖动）。前置：主题 high-contrast 档补 `--oas-color-warning-text` 定义（实测该档缺失，随本批补）。
 - 错误合并顺序：字段级规则错误与数组级校验错误天然按路径分离；同一路径规则错误与注入错误并存时显示注入错误（值变后回落规则错误）。
 
 **DSL 三层契约**：
@@ -89,23 +89,23 @@ Shadow DOM 渲染（复用全部现有组件与 token；定向刷新 keyed 复�
    - `reactions` 挂在**源字段的 uiSchema 节点**；条件里的路径恒为**表单数据根路径**，本字段用保留 token `$self`。
    - `target: string | string[]`；`fulfill` 键封闭词表 V1 = `visible / disabled / required`（`value` 键保留但 V1 编译期 devWarn 未实现——禁止静默失效）；未知键编译期 devWarn。
    - `otherwise` 缺省语义 = **回到静态注解值**（幂等、与求值顺序无关）；禁止跨 reactions 写同一目标同一属性（后者胜 + devWarn 一次）。
-   - 条件双轨（表达力不同，不宣传等价）：**`whenSchema`（一等轨，V1a）**——`{ scope, schema }`，条件即 JSON Schema 校验（复用自研校验器，边际成本≈0，与校验同一套语义词）；**`when`（受限表达式轨，V1b）**——语法冻结：值 = `{path}` 占位（点号 + `[i]`，经 parseNamePath 校验）/ 字符串 / 数字 / `true/false/null` / `$self`；比较 `== != > >= < <=`（数字同型按数值比、其余按字符串比——写死）；逻辑 `&& || !` + 括号；算术 `+ - * / %` 仅数值（字符串拼接走 `concat()` 函数，避免 `+` 二义）；成员 `in` / `contains()`；函数库冻结 8 个：`iif / empty / len / sum / min / max / lower / upper`；排除赋值/语句/循环/箭头函数/模板串/正则字面量/属性访问链/日期函数；手写递归下降 + Pratt（不引 peggy，保持零运行时依赖）；语法错/未知字段/未知函数 = 编译期收集 devWarn、该条 reaction 降级不生效；parser + evaluator 预算 ≤2.5 KB gzip 独立计量档。
+   - 条件双轨（表达力不同，不宣传等价）：**`whenSchema`（一等轨，V1a）**——`{ scope, schema }`，条件即 JSON Schema 校验（复用自研校验器，边际成本≈0，与校验同一套语义词）；**`scope` 缺省 = `$self`（本字段）**，嵌套字段可写绝对路径；**`when`（受限表达式轨，V1b）**——语法冻结：值 = `{path}` 占位（点号 + `[i]`，经 parseNamePath 校验）/ 字符串 / 数字 / `true/false/null` / `$self`；比较 `== != > >= < <=`（数字同型按数值比、其余按字符串比——写死）；逻辑 `&& || !` + 括号；算术 `+ - * / %` 仅数值（字符串拼接走 `concat()` 函数，避免 `+` 二义）；成员 `in` / `contains()`；函数库冻结 8 个（签名随实现冻结）：`iif(cond, a, b)`、`empty(x)`、`len(x)`、`sum(arr)`、`min(...nums)`、`max(...nums)`、`lower(s)`、`upper(s)`；排除赋值/语句/循环/箭头函数/模板串/正则字面量/属性访问链/日期函数；手写递归下降 + Pratt（不引 peggy，保持零运行时依赖）；语法错/未知字段/未知函数 = 编译期收集 devWarn、该条 reaction 降级不生效；parser + evaluator 预算 ≤2.5 KB gzip 独立计量档。
    - **循环依赖守卫**：依赖图定点迭代 + 最大 8 轮，不收敛 devWarn 并保留最后一轮；V1 无值联动故无值环。
-   - `visible: false` 语义 = **卸载**（值置 undefined、不参与校验、不提交），默认即 `clearValueOnHidden`，可配置保留。
+   - `visible: false` 语义 = **卸载**（值置 undefined、不参与校验、不提交），默认即 `clearValueOnHidden`，可配置保留；**数组行内字段卸载保留键位**（空串而非删键）——保证行间键形状一致、逐行校验结果可比。
 
 **路径统一（唯一用户可见语法）**：点号 + 方括号下标——`type`、`users[0].name`、数组内通配 `users[].name`（数组重编号时依赖图按通配重绑）；所有书写面（setErrors / when / target / scope）经编译层 `parseNamePath` 归一为点号规范键；`#/` JSON Pointer 仅存在于数据 schema 内部（$ref / $defs），不作条件注解书写面。
 
-**默认 widget 映射表（V1 冻结）**：`string`→oas-input；`string`+format→oas-input(type) / oas-date-picker / oas-time-picker；`number/integer`→oas-input-number；`boolean`→oas-switch；`enum`→oas-select；`array of enum`→oas-checkbox-group；`object`→分组容器（layout group）；`array of object`→oas-form-list；`string`+format=date-time→oas-date-picker（含时间）。
+**默认 widget 映射表（V1 冻结）**：`string`→oas-input；`string`+format→oas-input(type) / oas-date-picker / oas-time-picker；`number/integer`→oas-input-number；`boolean`→oas-switch；`enum`→oas-select；`array of enum`→oas-checkbox-group；`object`→分组容器（layout group）；`array of object`→oas-form-list；`string`+format=date-time→oas-date-picker（含时间）。**前置：内核 FORM_CONTROLS 注册表补 `oas-checkbox-group` 与 `oas-time-picker` 两行注册**（实测缺失，缺则映射字段收集不到值）。
 
 **数组与嵌套（归属与契约写死）**：
 
 - 对象嵌套按 properties 递归渲染；嵌套数组约定：**外层模板写 `name="matrix.{index}"`（内层 form-list 自带前缀），内层字段裸名**——禁止内层模板字段写 `{index}`（外层 split/join 全量替换会双写）；嵌套 `<template>` 不被外层 name 扫描（DOM 规范），首条 RED 测试固化嵌套数组用例。
 - **行创建**：初始数据数组长度驱动建行（`min = 初始长度` 或行 API 兜底——`initialValues: {users: [{...}]}` 必须渲染 1 行，禁止 0 行）；增删走 form-list 既有交互。
-- **数组级校验**（`required / minItems / maxItems / uniqueItems`）由 schema-form 自跑（内核 rule 是字段级、无处挂），错误经 `setErrors` 注入数组路径；与内核字段校验时序：提交时先内核 validate、后数组级校验，错误并集。
+- **数组级校验**（`required / minItems / maxItems / uniqueItems`）由 schema-form 自跑（内核 rule 是字段级、无处挂），错误经 `setErrors` 注入数组路径，**渲染落点 = form-list 容器下方的数组级错误条（`part="array-error"`，role=alert）**；与内核字段校验时序：提交时先内核 validate、后数组级校验，错误并集。
 
-**值契约（V1 明确声明）**：提交值遵循 form 内核字符串语义——叶子恒为字符串（`number` 出 `"42"`、`boolean` 出 `"true"`、数组出 JSON 串）；类型保真（coerce / convertValue / transform）为 V2 能力，文档首页写明此契约，禁止 demo 出现「声明 type 与值类型不符」的误导。
+**值契约（V1 明确声明）**：提交值遵循 form 内核字符串语义——叶子恒为字符串（`number` 出 `"42"`、`boolean` 出 `"true"`、数组出 JSON 串）；**求值与校验前按数据 schema `type` 做只读投影归一**（`"42"` → 42 参与比较/校验），提交值契约不变——禁止 `"9" > "100"` 字符串比较陷阱；类型保真输出（coerce / convertValue / transform）为 V2 能力，文档首页写明此契约。
 
-**受控 / 非受控（契约写死）**：非受控 = `initialValues` 一次性基线（复用内核 initial-values 通道）；受控 = property `values`，**diff 写字段**（只写变化路径 + 来源标记，宿主写不回派事件防回环——对齐 ui-spec 受控口径）；脏态由 schema-form 自持 pristineSnapshot 比较（明确在内核之外的一小块，不宣称「全走内核」）。
+**受控 / 非受控（契约写死）**：非受控 = `initialValues` 一次性基线（复用内核 initial-values 通道）；受控 = property `values`，**diff 写字段**（只写变化路径 + 来源标记，宿主写不回派事件防回环——对齐 ui-spec 受控口径）——写通道 = 新增 `oas-form.setValues(patch)`（按路径写，走内核 writer 注册表，V1b 落地）；脏态由 schema-form 自持 pristineSnapshot 比较（明确在内核之外的一小块，不宣称「全走内核」）。
 
 **注册表**：`registerSchemaWidget(name, tag, { reader, writer })`——内部**必须**调 `registerFormControl`（内核值收集的唯一扩展口），否则渲染前 devWarn；**硬约束：非自定义元素 widget（Vue/React 组件）无法参与值收集**（文档明示）。
 
@@ -115,13 +115,13 @@ Shadow DOM 渲染（复用全部现有组件与 token；定向刷新 keyed 复�
 
 **V1a / V1b / V2 边界（已批三刀切分）**：
 
-- **V1a（可独立交付验收）**：编译层（$ref 展开 / 路径归一 / uiSchema 对齐校验）+ 渲染层 + 内核接线（含本批 form/form-item 增量 API）+ 自研迷你校验器（标准关键字 + format 清单 + 本地化文案）+ `whenSchema` 单轨联动 + 对象 / 数组渲染与增删 + 数组级校验 + 非受控 + SSR 白名单登记。
+- **V1a（可独立交付验收）**：编译层（$ref 展开 / 路径归一 / uiSchema 对齐校验）+ 渲染层 + 内核接线（含本批 form/form-item 增量 API、checkbox-group / time-picker 注册、high-contrast warning-text token）+ 自研迷你校验器（标准关键字 + format 清单 + 本地化文案）+ `whenSchema` 单轨联动 + 对象 / 数组渲染与增删 + 数组级校验 + 非受控 + **SSR 登记白名单**（快照确定性 + hydrate 真水合 + ssr:check / docs 计数同步，口径定为登记）。
 - **V1b**：受限表达式轨（parser + evaluator + 8 函数 + 函数注册表 `registerExprFunction`）+ `registerSchemaWidget` 自定义组件 + 受控 `values` + warning severity 软错误视觉。
 - **V2**：array-table 行内编辑表格件、对象数组复制 / 排序（需 form-list 扩展，届时另行报批）、convertValue / transform 值变换双钩子、远程数据源注解、表达式函数库扩充。
 - **V1 已知差距（显式声明，非静默）**：array-table 与研究必做清单的差距延至 V2（三家实证刚需，V1 用 form-list 承接）；对象数组暂只有增删。
 - **不做**：分步 / 问卷编排（归 questionnaire）；纯 JS 表达式求值；远程 $ref；拖拽设计器（另立项目评估）。
 
-**验收（逐项可验）**：TDD（编译器纯函数单测 + 组件单测 + 嵌套数组 RED 首测）；a11y——label 来源（`title`→label、`description`→help）、联动驱动 `aria-required` 同步、错误关联走 form-item 既有 ariaDescribedByElements、warning 走 role=status；dark——warning/error 两色对比度实测 + 截图；RTL——schema-form 自带容器（分组 / 数组增删钮）全逻辑属性；SSR——登记白名单（快照确定性 + hydrate 真水合 + ssr:check/docs 计数同步）或明确排除并写理由（二选一，实现前定）；i18n——新增 `schemaForm.*` key 清单随实现登记（locale completeness 双层守卫同步，「不新增 key」口径作废）；zh/en 文档 + 可交互 demo（基础表单 / 联动 / 数组 / questionnaire 组合）；qa-regression 按「渲染 / whenSchema 联动 / 错误注入 / 数组增删 / 嵌套数组 / 受控回环」逐条真实浏览器断言；perf——组件进 L1/CDN union（form 族），V1b 表达式求值器立独立预算档（≤2.5 KB gzip 先定档后实测）。
+**验收（逐项可验）**：TDD（编译器纯函数单测 + 组件单测 + 嵌套数组 RED 首测）；a11y——label 来源（`title`→label、`description`→help）、联动驱动 `aria-required` 同步、错误关联走 form-item 既有 ariaDescribedByElements、warning 走 role=status；dark——warning/error 两色对比度实测 + 截图；RTL——schema-form 自带容器（分组 / 数组增删钮）全逻辑属性，**增删钮有可访问名（i18n `schemaForm.addItem/removeItem`）、tabs/group 容器键盘可达**；SSR——**登记白名单**（已定，见 V1a）；i18n——新增 `schemaForm.*` key 清单随实现登记（locale completeness 双层守卫同步，「不新增 key」口径作废）；**生命周期**——编译缓存 / 事件监听 / MutationObserver 全部走 onCleanup，断连重连无损；**空态**——空 schema / 零字段 / 空数组有占位（非空白渲染）；**宿主桥接**——`schema / uiSchema / values` 对象 property + attribute JSON 反射双通道，Vue 属性名冲突核对进 vue-prop-hijack 契约表；**生成物门禁**——api:scan/gen、llms:gen、stats:gen、CHANGELOG [未发布] 条目随批同步；**异步时序**——宿主异步 validator 与 whenSchema 求值顺序固化（先值归一 → 求值 → 校验）；zh/en 文档 + 可交互 demo（基础表单 / 联动 / 数组 / questionnaire 组合）；qa-regression 按「渲染 / whenSchema 联动 / 错误注入 / 数组增删 / 嵌套数组 / 受控回环」逐条真实浏览器断言；perf——组件进 L1/CDN union（form 族），V1b 表达式求值器立独立预算档（≤2.5 KB gzip 先定档后实测）。
 
 **评审焦点结论记录（R1 四问）**：Q1 uiSchema 独立层维持，补编译期路径对齐校验；Q2 表达式语法按上述冻结清单；Q3 warning 复用 form-item 错误位结构（error 独占、warning role=status 弱一档、不阻断）；Q4 `whenSchema` 为一等轨（V1a 即可交付），表达式轨 V1b 补位，两轨表达力不同不宣传等价。
 
