@@ -376,12 +376,35 @@ function parseUiSchema(raw: unknown, warnings: string[]): Map<string, UiNode> {
   return map
 }
 
+/** 表达式轨的字段存在性判定（数据 schema 面；数组下标与通配均落到 items） */
+function pathExistsInSchema(root: JsonSchema, path: string): boolean {
+  const segments = parseDslPath(path)
+  if (segments === null) return false
+  let node: JsonSchema = root
+  for (const segment of segments) {
+    if (segment === WILDCARD || /^\d+$/.test(segment)) {
+      if (!isPlainObject(node.items)) return false
+      node = node.items as JsonSchema
+      continue
+    }
+    const props = node.properties
+    if (!isPlainObject(props) || !Object.hasOwn(props, segment)) return false
+    node = props[segment] as JsonSchema
+  }
+  return true
+}
+
 /** 编译入口 */
 export function compileSchema(rawSchema: unknown, rawUiSchema?: unknown, options: CompileOptions = {}): CompileResult {
   const warnings: string[] = []
   const warn = (message: string): void => {
     warnings.push(message)
-    options.onWarn?.(message)
+  }
+  // 告警统一在返回前一次性投递（去重保序）：既有实现里大量告警经 ctx.warnings 直接入数组，
+  // 逐点回调会漏投——统一出口保证「编译告警 = devWarn」口径一致（V1b 表达式/自定义 widget 依赖它）。
+  const finish = (result: CompileResult): CompileResult => {
+    for (const message of new Set(warnings)) options.onWarn?.(message)
+    return result
   }
 
   const expanded = resolveSchemaRefs(rawSchema)
@@ -389,14 +412,14 @@ export function compileSchema(rawSchema: unknown, rawUiSchema?: unknown, options
   if (expanded.schema === null) {
     const error = expanded.errors.join('；') || 'schema 非法'
     warn(`schema 编译失败：${error}`)
-    return { plan: [], defaults: {}, reactions: [], warnings, error }
+    return finish({ plan: [], defaults: {}, reactions: [], warnings, error })
   }
   const schema = expanded.schema
 
   const rootType = effectiveType(schema)
   if (rootType !== 'object') {
     warn('schema 根节点必须是 object（V1 表单根是字段集合）')
-    return { plan: [], defaults: {}, reactions: [], warnings, error: 'schema 根节点必须是 object' }
+    return finish({ plan: [], defaults: {}, reactions: [], warnings, error: 'schema 根节点必须是 object' })
   }
 
   const ctx: BuildContext = {
@@ -424,13 +447,15 @@ export function compileSchema(rawSchema: unknown, rawUiSchema?: unknown, options
   }
 
   const reactionWarnings: string[] = []
-  const reactions = compileReactions(ctx.reactions, reactionWarnings)
+  const reactions = compileReactions(ctx.reactions, reactionWarnings, {
+    pathExists: (path) => pathExistsInSchema(schema, path),
+  })
   for (const warning of reactionWarnings) warn(warning)
 
   const defaultsRaw = collectDefaults(schema)
   const defaults = isPlainObject(defaultsRaw) ? defaultsRaw : {}
 
-  return { plan, defaults, reactions, warnings }
+  return finish({ plan, defaults, reactions, warnings })
 }
 
 /** 路径工具再导出（组件/测试共用同一实现，避免口径漂移） */

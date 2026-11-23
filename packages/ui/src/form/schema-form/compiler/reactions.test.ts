@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { compileSchema } from './compile.js'
 import { compileReactions, createReactionEngine } from './reactions.js'
+import { registerExprFunction } from './expr.js'
 import type { CompiledReaction } from './types.js'
 
 const BASE_SCHEMA = {
@@ -12,6 +13,8 @@ const BASE_SCHEMA = {
     province: { type: 'string' },
     city: { type: 'string' },
     note: { type: 'string' },
+    plan: { type: 'string' },
+    team: { type: 'string' },
     users: {
       type: 'array',
       items: {
@@ -61,18 +64,60 @@ describe('reactions 编译（封闭词表 / otherwise / 冲突）', () => {
     expect(result.reactions[0]!.fulfill).toEqual({ visible: true })
   })
 
-  it('缺少 whenSchema 或 when 表达式轨：告警且不生效', () => {
+  it('缺少条件（when / whenSchema 都没有）：告警且不生效', () => {
+    const result = compile({
+      country: {
+        reactions: [{ target: 'province', fulfill: { visible: false } }],
+      },
+    })
+    expect(result.warnings.join('\n')).toContain('缺少 whenSchema.schema')
+    expect(result.reactions).toHaveLength(0)
+  })
+
+  it('when 表达式轨：编译成功并带静态依赖（V1b）', () => {
+    const result = compile({
+      country: {
+        reactions: [{ when: "{country} == 'US' && len({city}) > 0", target: 'city', fulfill: { visible: false } }],
+      },
+    })
+    expect(result.warnings).toEqual([])
+    expect(result.reactions).toHaveLength(1)
+    const reaction = result.reactions[0]!
+    expect(reaction.conditionKind).toBe('expr')
+    expect(reaction.deps.sort()).toEqual(['city', 'country'])
+    expect(reaction.scope).toBe('country')
+  })
+
+  it('when 语法错误 / 未知字段：编译告警且该条降级（不静默生效）', () => {
     const result = compile({
       country: {
         reactions: [
-          { target: 'province', fulfill: { visible: false } },
+          { when: '{country} ==', target: 'city', fulfill: { visible: false } },
+          { when: "{nope} == 'x'", target: 'province', fulfill: { visible: false } },
           { when: "{country} == 'US'", target: 'city', fulfill: { visible: false } },
         ],
       },
     })
     const text = result.warnings.join('\n')
-    expect(text).toContain('缺少 whenSchema.schema')
-    expect(text).toContain('表达式轨为 V1b 能力')
+    expect(text).toContain('表达式编译失败')
+    expect(text).toContain('未知字段')
+    expect(result.reactions).toHaveLength(1)
+  })
+
+  it('when 与 whenSchema 同时提供：二选一告警并忽略', () => {
+    const result = compile({
+      country: {
+        reactions: [
+          {
+            when: "{country} == 'US'",
+            whenSchema: { schema: { const: 'US' } },
+            target: 'city',
+            fulfill: { visible: false },
+          },
+        ],
+      },
+    })
+    expect(result.warnings.join()).toContain('二选一')
     expect(result.reactions).toHaveLength(0)
   })
 
@@ -195,5 +240,93 @@ describe('reactions 求值（whenSchema 单轨 + 多 target + otherwise 回静�
     const effects = engine.evaluate({ country: 'US' })
     expect(warnings.join()).toContain('未收敛')
     expect(effects.get('province')).toEqual({ visible: false, required: false })
+  })
+})
+
+describe('reactions 表达式轨（when）：求值 / 依赖图 / 宿主函数', () => {
+  it('表达式条件驱动 fulfill，与 whenSchema 同一效果出口', () => {
+    const { engine } = engineOf({
+      plan: {
+        reactions: [
+          {
+            when: "{plan} == 'pro' && len({team}) >= 2",
+            target: ['note', 'city'],
+            fulfill: { disabled: true },
+            otherwise: { disabled: false },
+          },
+        ],
+      },
+    })
+    const pro = engine.evaluate({ plan: 'pro', team: 'ab' })
+    expect(pro.get('note')).toEqual({ disabled: true })
+    expect(pro.get('city')).toEqual({ disabled: true })
+    const free = engine.evaluate({ plan: 'free', team: 'ab' })
+    expect(free.get('note')).toEqual({ disabled: false })
+  })
+
+  it('$self 解析为源字段当前值（含数组行通配）', () => {
+    const { engine } = engineOf({
+      'users[].country': {
+        reactions: [{ when: "$self == 'US'", target: 'users[].state', fulfill: { visible: false } }],
+      },
+    })
+    const effects = engine.evaluate({
+      users: [
+        { country: 'US', state: 'CA' },
+        { country: 'CN', state: 'ZJ' },
+      ],
+    })
+    expect(effects.get('users.0.state')).toEqual({ visible: false })
+    expect(effects.get('users.1.state')).toEqual({ visible: true })
+  })
+
+  it('依赖图：表达式静态依赖命中才重算；宿主函数轨道任何变更都重算', () => {
+    const { engine, result } = engineOf({
+      plan: {
+        reactions: [{ when: "{plan} == 'pro'", target: 'note', fulfill: { disabled: true } }],
+      },
+      country: {
+        reactions: [{ when: "{province} == 'X'", target: 'city', fulfill: { visible: false } }],
+      },
+    })
+    const planIndex = result.reactions.findIndex((reaction) => reaction.sourcePath === 'plan')
+    const countryIndex = result.reactions.findIndex((reaction) => reaction.sourcePath === 'country')
+    expect(planIndex).toBeGreaterThanOrEqual(0)
+    expect(countryIndex).toBeGreaterThanOrEqual(0)
+    expect(engine.impacted('plan')).toEqual([planIndex])
+    expect(engine.impacted('province')).toEqual([countryIndex])
+    expect(engine.impacted('city')).toEqual([])
+
+    const unregister = registerExprFunction('endsWithX', (value) => String(value ?? '').endsWith('x'))
+    try {
+      const { engine: dynamicEngine, result: dynamicResult } = engineOf({
+        plan: {
+          reactions: [{ when: 'endsWithX({plan})', target: 'note', fulfill: { disabled: true } }],
+        },
+      })
+      const index = dynamicResult.reactions.findIndex((reaction) => reaction.sourcePath === 'plan')
+      expect(dynamicEngine.impacted('anything')).toEqual([index])
+      expect(dynamicEngine.evaluate({ plan: 'prox' }).get('note')).toEqual({ disabled: true })
+    } finally {
+      unregister()
+    }
+  })
+
+  it('表达式求值异常（宿主函数抛错）：按条件不成立处理 + 提示一次', () => {
+    const unregister = registerExprFunction('boom', () => {
+      throw new Error('boom')
+    })
+    try {
+      const { engine, warnings } = engineOf({
+        plan: {
+          reactions: [{ when: 'boom({plan})', target: 'note', fulfill: { disabled: true } }],
+        },
+      })
+      const effects = engine.evaluate({ plan: 'x' })
+      expect(effects.get('note')).toEqual({ disabled: false })
+      expect(warnings.filter((line) => line.includes('表达式求值失败'))).toHaveLength(1)
+    } finally {
+      unregister()
+    }
   })
 })

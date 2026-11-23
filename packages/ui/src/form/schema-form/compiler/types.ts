@@ -6,6 +6,8 @@
  * 运行期只做定向刷新。
  */
 
+import type { ExprProgram } from './expr.js'
+
 /** V1 冻结关键字子集（新增关键字先改设计稿） */
 export interface JsonSchema {
   $ref?: string
@@ -63,12 +65,18 @@ export interface CompiledReaction {
   key: string
   /** 源字段路径（reactions 挂在源字段的 uiSchema 节点上），`[]` 为数组通配 */
   sourcePath: string
-  /** 条件作用域：`$self` 已在编译期解析为 sourcePath */
+  /** 条件作用域：`$self` 已在编译期解析为 sourcePath（表达式轨同样取源字段路径） */
   scope: string
-  /** 条件 schema（已展开 $ref） */
+  /** 条件 schema（已展开 $ref）——`conditionKind: 'expr'` 时为空对象占位 */
   condition: JsonSchema
-  /** 依赖的字段路径（含通配），驱动依赖图定向刷新 */
+  /** 条件轨：`'schema'` = whenSchema（缺省）；`'expr'` = when 受限表达式 */
+  conditionKind?: 'schema' | 'expr'
+  /** 表达式 AST（`conditionKind === 'expr'`）；求值器按源字段值解析 `$self` */
+  expr?: ExprProgram
+  /** 依赖的字段路径（含通配），驱动依赖图定向刷新；宿主函数轨道为空 + `dynamic` */
   deps: string[]
+  /** 依赖面不可静态提取（用到宿主注册函数）：任何值变化都重算该条 reaction */
+  dynamic?: boolean
   /** 作用目标（含通配），多 target 展开 */
   targets: string[]
   fulfill: ReactionEffects

@@ -26,7 +26,9 @@ export {
 export type { SchemaIssue } from './validate.js'
 export { resolveWidget, KNOWN_WIDGETS, isObjectArray, schemaType } from './widgets.js'
 export { compileReactions, createReactionEngine, projectForCondition } from './reactions.js'
-export type { ReactionEngine, ReactionEffectsMap, UiReactionSource } from './reactions.js'
+export type { ReactionCompileOptions, ReactionEngine, ReactionEffectsMap, UiReactionSource } from './reactions.js'
+export { compileExpression, evaluateCondition, evaluateExpression, registerExprFunction } from './expr.js'
+export type { ExprCompileOptions, ExprCompileResult, ExprEvalContext, ExprFunction, ExprProgram } from './expr.js'
 export type {
   ArrayPlan,
   ArrayRules,

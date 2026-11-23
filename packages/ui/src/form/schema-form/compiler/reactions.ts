@@ -13,6 +13,7 @@
 import type { CompiledReaction, JsonSchema, PlanNode, ReactionEffects } from './types.js'
 import { canonicalDslPath, parseDslPath, pathDependencyMatches, pathPatternMatches, WILDCARD } from './path.js'
 import { projectValues, validateValue } from './validate.js'
+import { compileExpression, evaluateCondition, type ExprProgram } from './expr.js'
 
 const ALLOWED_FULFILL = new Set(['visible', 'disabled', 'required'])
 /** `value` 键保留但 V1 未实现（V1 无值联动，避免半吊子语义） */
@@ -65,10 +66,19 @@ export interface UiReactionSource {
   reactions: unknown[]
 }
 
+export interface ReactionCompileOptions {
+  /** 表达式轨的字段存在性校验（数据 schema 面）；未知字段 → 编译告警并降级该条 reaction */
+  pathExists?: (path: string) => boolean
+}
+
 /**
  * 编译 reactions 列表。`warnings` 收集 devWarn 文案（去重由调用方保证）。
  */
-export function compileReactions(sources: UiReactionSource[], warnings: string[]): CompiledReaction[] {
+export function compileReactions(
+  sources: UiReactionSource[],
+  warnings: string[],
+  options: ReactionCompileOptions = {},
+): CompiledReaction[] {
   const out: CompiledReaction[] = []
   const claimed = new Set<string>()
   for (const source of sources) {
@@ -83,20 +93,47 @@ export function compileReactions(sources: UiReactionSource[], warnings: string[]
         warnings.push(`reaction 必须是对象（${key}）`)
         return
       }
+      if (raw.when !== undefined && raw.whenSchema !== undefined) {
+        warnings.push(`reaction 同时提供 when 与 whenSchema（二选一），已忽略（${key}）`)
+        return
+      }
+      // 条件双轨（表达力不同，不宣传等价）：whenSchema 为一等轨；when 为受限表达式轨
+      let scope: string
+      let condition: JsonSchema = {}
+      let conditionKind: 'schema' | 'expr' = 'schema'
+      let expr: ExprProgram | undefined
+      let dynamic = false
+      const deps = new Set<string>()
       if (raw.when !== undefined) {
-        warnings.push(`reaction 的 when 表达式轨为 V1b 能力，V1a 不生效（${key}）`)
-        return
-      }
-      const when = raw.whenSchema
-      if (!isPlainObject(when) || !isPlainObject(when.schema)) {
-        warnings.push(`reaction 缺少 whenSchema.schema 或形态非法（${key}）——V1a 只支持 whenSchema 轨`)
-        return
-      }
-      const scopeRaw = typeof when.scope === 'string' && when.scope !== '' ? when.scope : '$self'
-      const scope = scopeRaw === '$self' ? sourcePath : canonicalDslPath(scopeRaw)
-      if (scope === null) {
-        warnings.push(`reaction 的 scope 路径非法："${scopeRaw}"（${key}）`)
-        return
+        if (typeof raw.when !== 'string' || raw.when.trim() === '') {
+          warnings.push(`reaction.when 必须是非空字符串（${key}）`)
+          return
+        }
+        const compiled = compileExpression(raw.when, { self: sourcePath, exists: options.pathExists })
+        if (!compiled.program) {
+          warnings.push(`reaction.when 表达式编译失败（${key}）：${compiled.error}`)
+          return
+        }
+        scope = sourcePath
+        conditionKind = 'expr'
+        expr = compiled.program
+        dynamic = compiled.dynamic
+        for (const dep of compiled.deps) deps.add(dep)
+      } else {
+        const when = raw.whenSchema
+        if (!isPlainObject(when) || !isPlainObject(when.schema)) {
+          warnings.push(`reaction 缺少 whenSchema.schema 或形态非法（${key}）——支持 whenSchema 或 when 两条轨`)
+          return
+        }
+        const scopeRaw = typeof when.scope === 'string' && when.scope !== '' ? when.scope : '$self'
+        const resolvedScope = scopeRaw === '$self' ? sourcePath : canonicalDslPath(scopeRaw)
+        if (resolvedScope === null) {
+          warnings.push(`reaction 的 scope 路径非法："${scopeRaw}"（${key}）`)
+          return
+        }
+        scope = resolvedScope
+        condition = when.schema as JsonSchema
+        collectDependencyPaths(when.schema, scope, deps)
       }
       const targetsRaw = raw.target
       const targetsList = Array.isArray(targetsRaw) ? targetsRaw : [targetsRaw]
@@ -135,14 +172,15 @@ export function compileReactions(sources: UiReactionSource[], warnings: string[]
           claimed.add(claim)
         }
       }
-      const deps = new Set<string>()
-      collectDependencyPaths(when.schema, scope, deps)
       out.push({
         key,
         sourcePath,
         scope,
-        condition: when.schema as JsonSchema,
+        condition,
+        conditionKind,
+        expr,
         deps: [...deps],
+        dynamic,
         targets,
         fulfill,
         otherwise,
@@ -261,7 +299,21 @@ function evaluateReaction(
     : [{ path: scopeSegments, binding: [] as string[] }]
   for (const scope of scopes) {
     const value = readPath(values, scope.path)
-    const failed = validateValue(reaction.condition, value) !== null
+    let failed: boolean
+    if (reaction.conditionKind === 'expr' && reaction.expr) {
+      // 表达式轨：异常（宿主函数抛错）按条件不成立处理并提示一次，避免整棵求值链中断
+      try {
+        failed = !evaluateCondition(reaction.expr, { values, self: value })
+      } catch (error) {
+        if (!warnedScopes.has(reaction.key)) {
+          warnedScopes.add(reaction.key)
+          warnings(`reaction ${reaction.key} 的表达式求值失败（${String(error)}），按条件不成立处理`)
+        }
+        failed = true
+      }
+    } else {
+      failed = validateValue(reaction.condition, value) !== null
+    }
     for (const targetPattern of reaction.targets) {
       const targetSegments = parseDslPath(targetPattern)
       if (targetSegments === null) continue
@@ -379,6 +431,11 @@ export function createReactionEngine(
       if (normalized === null) return []
       const out: number[] = []
       reactions.forEach((reaction, index) => {
+        // 宿主函数轨道无静态依赖面：任何值变化都重算
+        if (reaction.dynamic) {
+          out.push(index)
+          return
+        }
         if (reaction.deps.some((dep) => pathDependencyMatches(dep, normalized))) out.push(index)
       })
       return out
