@@ -136,6 +136,14 @@ Shadow DOM 渲染（复用全部现有组件与 token；定向刷新 keyed 复�
 
 ---
 
+## 未发布：电商可捞件与 schema-form 尾巴批
+
+- **oas-time-select（commerce 族，配送时段选择）** 📋：下单链路的时间选择——日期列（今日起 N 天）+ 时段网格（如 14:00–16:00，跨天可配 `slots` 数据），支持「尽快送达 / 预约配送」两模式；不可选时段置灰（满约/休息）；值契约 = 选中的日期 + 时段 key；delivery 语境通用件。
+- **oas-drag（overlay 族，自由拖拽）** 📋：任意子元素的自由拖拽浮块——pointer 拖拽移动（触屏/鼠标/笔统一），边界钳制（视口或指定容器），惯性可选；记忆位置可选（localStorage）；a11y：键盘方向键微调 + 可关闭拖拽（`disabled`）；典型场景 = 悬浮客服钮、悬浮工具块。
+- **schema-form 配置通道打通（尾巴②）** 📋：PROP_ALLOWLIST 扩 `columns`（matrix）与 `options` 数据语义（rank），打通后 matrix/rank 回纳 KNOWN_WIDGETS，问卷题型纯 JSON 驱动闭环；捎带尾巴①（嵌套数组 array-of-enum 受控整写补显式测试）。
+
+---
+
 ## v2.6.8：table 缺口补齐续批（批 G/H/I）
 
 ### 功能定义
