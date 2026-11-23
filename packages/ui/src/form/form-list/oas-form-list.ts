@@ -131,7 +131,7 @@ const INDEX_PLACEHOLDER = '{index}'
 
 export class OASFormList extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['name', 'min', 'max', 'disabled']
+    return ['name', 'min', 'max', 'disabled', 'add-text', 'remove-text']
   }
 
   private itemsEl: HTMLElement | null = null
@@ -300,7 +300,7 @@ export class OASFormList extends OASElement {
       btn.type = 'button'
       btn.className = 'remove'
       btn.setAttribute('part', 'remove')
-      btn.setAttribute('aria-label', this.t('dynamicInput.remove'))
+      btn.setAttribute('aria-label', this.removeText())
       btn.innerHTML = REMOVE_ICON
       frame.appendChild(btn)
       itemsEl.appendChild(frame)
@@ -338,9 +338,21 @@ export class OASFormList extends OASElement {
       icon.style.verticalAlign = '-2px'
       addBtn.appendChild(icon)
       const span = document.createElement('span')
-      span.textContent = this.t('dynamicInput.add')
+      span.textContent = this.addText()
       addBtn.appendChild(span)
     }
+  }
+
+  /** 删除按钮可访问名：remove-text 覆盖（缺省走既有 i18n），供声明式表单注入自己的文案 */
+  private removeText(): string {
+    const raw = this.getAttr('remove-text', '')
+    return raw !== '' ? raw : this.t('dynamicInput.remove')
+  }
+
+  /** 添加按钮文案：add-text 覆盖（缺省走既有 i18n） */
+  private addText(): string {
+    const raw = this.getAttr('add-text', '')
+    return raw !== '' ? raw : this.t('dynamicInput.add')
   }
 
   /** 新建行后通知最近 oas-form 补放 initial-values（只为新字段；无主表/无新行时跳过） */

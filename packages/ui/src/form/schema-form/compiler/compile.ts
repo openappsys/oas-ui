@@ -23,7 +23,6 @@ import { FORMATS } from './validate.js'
 import { compileReactions, type UiReactionSource } from './reactions.js'
 
 const UI_KEYS = new Set(['widget', 'layout', 'options', 'reactions', 'keepValueOnHidden'])
-const INDEX_PLACEHOLDER = '{index}'
 
 export interface CompileOptions {
   /** devWarn 出口（编译告警：未知 widget / uiSchema 路径不存在 / reactions 词表越界等） */
@@ -195,7 +194,6 @@ function buildArray(
   key: string,
   ui: UiNode | null,
   required: boolean,
-  nested: boolean,
 ): ArrayPlan {
   const items = (isPlainObject(schema.items) ? schema.items : {}) as JsonSchema
   const itemNamePrefix = ''
@@ -217,8 +215,11 @@ function buildArray(
     kind: 'array',
     key: `array:${path}`,
     path,
-    // 嵌套数组（行内）：模板名带 {index}，外层 form-list 替换为行号；根数组用裸名（form-list 自带前缀）
-    name: nested ? `${name}.${INDEX_PLACEHOLDER}` : name,
+    // 数组 list 一律用**裸相对名**：外层 form-list 会按「自己的完整名 + 行号」加前缀，
+    // 嵌套 list 运行时名因此已是完整路径（`users.0.matrix`），逐层成立。
+    // 注：设计稿示例的 `matrix.{index}` 会让外层替换成 `matrix.0`、丢掉父级前缀，
+    // 实测会产生 `matrix.0.0.label`（缺少 users.0），故按「内层 list 自带前缀」的语义取裸名。
+    name,
     label: labelOf(schema, key, ui),
     help: helpOf(schema),
     items,
@@ -257,7 +258,7 @@ function buildChild(
     return [buildObject(schema, ctx, name, path, key, ui, required, inArrayRow)]
   }
   if (type === 'array' && isObjectArray(schema)) {
-    return [buildArray(schema, ctx, name, path, key, ui, required, inArrayRow)]
+    return [buildArray(schema, ctx, name, path, key, ui, required)]
   }
   const field = buildField(schema, ctx, name, path, key, ui, required, inArrayRow)
   return field ? [field] : []
@@ -314,7 +315,7 @@ function buildObject(
     if (tabs.length > 0) {
       const rest = Object.keys(props).filter((childKey) => !used.has(childKey))
       if (rest.length > 0) {
-        ctx.warnings.push(`layout.tabs 未覆盖字段 [${rest.join(', ')}]（${path}），已并入首个标签页`)
+        ctx.warnings.push(`标签页布局（layout.tabs）未覆盖字段 [${rest.join(', ')}]（${path}），已并入首个标签页`)
         for (const childKey of rest) tabs[0]!.children.push(...buildOne(childKey))
       }
       return {
@@ -331,7 +332,7 @@ function buildObject(
         span: spanOf(ui),
       }
     }
-    ctx.warnings.push(`layout.type='tabs' 未提供有效 tabs（${path}），已按分组容器渲染`)
+    ctx.warnings.push(`标签页布局（layout.type='tabs'）未提供有效 tabs（${path}），已按分组容器渲染`)
   }
 
   const children: PlanNode[] = []

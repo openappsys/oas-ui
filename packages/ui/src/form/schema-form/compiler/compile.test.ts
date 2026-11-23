@@ -78,12 +78,12 @@ describe('编译层：渲染计划（字段 / 分组 / 数组 / 标签页）', (
     const users = result.plan.find((node) => node.key === 'array:users') as ArrayPlan
     expect(users.kind).toBe('array')
     expect(users.name).toBe('users')
-    expect(users.children.map((child) => (child as FieldPlan).name)).toEqual(['nick', 'matrix.{index}'])
+    expect(users.children.map((child) => (child as FieldPlan).name)).toEqual(['nick', 'matrix'])
     expect((users.children[0] as FieldPlan).rules.required).toBe(true)
     // 嵌套数组：模板名带 {index}（外层 form-list 替换为行号）
     const matrix = users.children[1] as ArrayPlan
     expect(matrix.kind).toBe('array')
-    expect(matrix.name).toBe('matrix.{index}')
+    expect(matrix.name).toBe('matrix')
     expect((matrix.children[0] as FieldPlan).name).toBe('label')
     expect((matrix.children[0] as FieldPlan).inArrayRow).toBe(true)
   })
