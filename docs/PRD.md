@@ -9,39 +9,54 @@
 
 ### 批 1：schema-form V2 · 数组体系（设计稿先行 + 评审后实现）
 
-- **array-table 行内编辑表格件** 📋：Formily ArrayTable 派——单元格常驻编辑器（form-item 渲染既有 form 控件，零 table 全家桶依赖），行操作列 = 增/删/复制/上移/下移；`ui:widget: 'array-table'` 承接对象数组；与 oas-table 全功能表明确不混用（轻量表单场景）。
+- **array-table 行内编辑表格件** 📋：单元格常驻编辑器派——行内容由 schema-form 渲染（form-item 走内核收集，零 table 全家桶依赖），array-table 只做二维布局 + 行操作列（增/删/复制/上移/下移）；`ui:widget: 'array-table'` 承接对象数组；与 oas-table 全功能表明确不混用（轻量表单场景）。
 - **对象数组复制/排序** 📋：form-list 行操作补 复制（深拷贝行值插入）/ 上移 / 下移，与 array-table 行操作列同语义同事件。
 - **结构重建行数快照** 📋：schema/uiSchema 变化触发重建时，快照各数组当前行数、重建后按快照恢复（超出初始长度的行空值填充）——「行数快照 > 初始长度」优先级进契约。
 
-#### 批 1 设计稿（评审稿 v1，2026-11-24）
+#### 批 1 设计稿（评审稿 v2，2026-11-24，按 R1 评审修订）
 
-**array-table 架构选择（核心决策）**：不做独立表格状态机——每单元格 = 该字段的 `oas-form-item` + 编辑器，`name = <arrayPath>.<index>.<field>` 走内核收集。收益：校验 / 受控 / 快照回填 / 错误注入 / SSR 白名单**零新增通道**，全部继承内核（与 V1「薄渲染层」纪律一致）；渲染层只做「行 × 列的二维布局 + 行操作」。
+**array-table 架构（核心决策，评审修正后）**：**行内容由 schema-form 渲染、array-table 只做「二维布局 + 行操作」**——行模板（含 form-item 单元格、`data-schema-key`、`data-schema-array-key`、行容器 `[data-oas-form-list-item]`）完全复用既有数组渲染机制（与 form-list 同构），array-table 接管：列头行 + 行 × 列的 CSS grid 布局 + 行操作列。理由：schema-form 对数组容器有 12 处 DOM 契约依赖（syncRules/indexArrayNodes/concretePathOf/reactions/数组错误条/空态），自建行容器会全失效；schema-form 出模板后这些能力零成本继承。
 
-- **列定义**：来自 `items.properties`（数据 schema 权威）+ uiSchema 列级注解（`width` / `align` / `widget` 覆盖 / 列隐藏）；表头文案 = 字段 `title` → key。
-- **行操作列**（表格尾列，内建）：增（末尾插行，新行字段填 schema `default` 或空）/ 删（立即删，`oas-change` 上报）/ 复制（深拷贝当前行值插入下一行）/ 上移 / 下移；按钮可访问名走 i18n `schemaForm.rowAdd/rowRemove/rowDuplicate/rowUp/rowDown`；`minItems` 下限禁用删、`maxItems` 上限禁用增（既有数组级校验承接超限报错）。
-- **校验呈现**：单元格级错误在单元格下方（form-item error 位，继承）；数组级错误在表格下方（既有 `part="array-error"` 通道）。
-- **键盘 / a11y**：原生 `table` 语义（th/td + 列头 scope）；行内 Tab 自然序；行操作钮在单元格 Tab 序末尾；不实现表格内方向键漫游（Tab 足够，对齐 Formily 默认）。
-- **与 form-list 关系**：同一对象数组的两种 `ui:widget`，值契约 / 校验 / 事件完全同构，宿主可切换不丢数据。
-- **V2 明确不做**：列宽拖拽、列排序、分页、虚拟滚动（大数组用 form-list）、单元格合并——这些是 oas-table 的场景，array-table 只服务表单内编辑。
+- **布局语义（评审修正）**：**不用原生 table 元素**（slot 产不出 td 且行内容须留 light DOM）——ARIA `role="table"`（列头 `role="columnheader"`、行 `role="row"`、单元格 `role="cell"`）+ CSS grid 承载几何。
+- **列定义**：来自 `items.properties` + uiSchema 列级注解（`width` / `align` / `widget` 覆盖 / 列隐藏）；表头 = `title` → key；name 派生 = `<arrayPath>.<index>.<field>`，**行增删/移动时须实现与 form-list `applyNaming` 同款的 name 重编号**。
+- **行操作列**（表格尾列）：增（末尾插行，新行填 schema `default` 或空）/ 删 / 复制 / 上移 / 下移；按钮可访问名 i18n（`schemaForm.rowAdd/rowRemove/rowDuplicate/rowUp/rowDown`）。
+- **行操作契约（评审修正，三处硬约定）**：① 值读写一律走内核 writer 通道（`writeFormControlValue`，upload 等派生只读控件复用既有 skip 判据——复制的「深拷贝」= JSON 串解析再序列化，非引用语义）；② 操作后显式补一次值同步（不派发 values-change 会致 dirty/联动/受控 appliedValues 陈旧）；③ **清该数组的字段级错误视觉**（内核 errors 按旧 name 挂在元素上，重编号后错位——onArrayMutation 从「只清数组级」扩展到「数组级 + 该数组字段级」）。
+- **事件（评审修正，破坏性防线）**：保留既有 `oas-add` / `oas-remove`（detail `{index}`），新增 **`oas-duplicate` / `oas-move`**（detail `{from, to}`）——**不引入 `oas-change` 的 `op` 字段**（已发布契约，且 oas-form 无条件消费冒泡 oas-change）。
+- **键盘 / a11y**：行内 Tab 自然序；行操作钮在单元格 Tab 序末尾；焦点语义写死——操作后焦点留在被点按钮的**位置**（行重排后按钮重建，按索引重新 focus）；行操作用 aria-live 播报（i18n）。
+- **校验呈现**：单元格级错误在单元格下方（继承 form-item）；数组级错误在表格下方（既有 `part="array-error"`）。
+- **`min` 一物二用拆分（评审新发现，本批修）**：form-list 现用 `min` 同时当「初始行数」与「删行下界」（初始 1 行时唯一行删不掉，与 minItems 语义冲突）——拆 `rows`（初始渲染行数，syncArrayMin 用）/ `min`（纯删行下界）；既有 `min` 属性语义迁移：`min` 继续兼作下界，初始行数缺省改看 `rows ?? min ?? 初始数组长度 ?? 1`。
+- **与 form-list 关系**：同对象数组两种 widget，值/校验/事件同构；「切换 widget 不丢数据」= 整树重建走行数快照 + 值快照（见下），补切换测试。
+- **V2 不做**：列宽拖拽、列排序、分页、虚拟滚动、**跨行粘贴 / 批量操作**、单元格合并。
 
-**form-list 行操作**：行尾操作区（内建三钮 + part 暴露）——复制 = 取 `getValues()` 行子树深拷贝插入下一行（后续行走既有 index 重编号）；上移/下移 = 相邻行值交换（不重排 DOM，焦点跟随行身份不丢）。事件统一 `oas-change`，detail 增 `op: 'duplicate' | 'move'`（`from/to`），与 add/remove 同通道。
+**form-list 行操作**：行尾操作区内建复制/上移/下移三钮（part 暴露可定制）——复制 = 取内核 `getValues()` 行子树 JSON 串解析→序列化插入下一行（upload 行内字段 skip）；上移/下移 = 相邻行**值交换**（不走 DOM 交换，焦点语义同上）；事件/值同步/错误清理与 array-table 行操作列同契约（一套语义两处承载）。
 
-**结构重建行数快照**：rebuild 前记录每个数组容器的当前行数（内存态，不序列化）；重建后建行数 = 快照行数（快照缺席回落既有「初始数组长度」逻辑）；行值回填仍走 initialValues 逐字段——快照只管「行数」这个事实，不管值。断连重连同口径（onReconnect 不丢快照）。与 C-3 已修的「快照回填走 writer」正交：一个管行数，一个管值。
+**结构重建行数快照（评审修正）**：
+- **rebuild 内局部捕获**（不建常驻 map——断开保留 DOM，重建开头从 DOM 现取行数即可；常驻态只会与 reset/重连打架）。
+- **优先级（评审修正）**：`initialChanged || 受控 values 写入` 触发的重建**忽略行数快照**（否则宿主 initialValues 1→3 行时出行数 1/值 3 行的混合态）；其余重建按快照行数恢复（> 初始长度空值填充）。
+- **reset() 走 bypass**：reset → rebuild 行数回初始（既有测试断言此行为，保持不变）。
+- **受控 shrink 缺陷同修（评审新发现）**：`syncHostArrayMin` 只增不减——宿主删行留空行；本批修为按受控值长度收敛（补删行回归）。
 
 ### 批 2：schema-form V2 · 数据流（设计稿先行 + 评审后实现）
 
-#### 批 2 设计稿（评审稿 v1，2026-11-24）
+#### 批 2 设计稿（评审稿 v2，2026-11-24，按 R1 评审修订）
 
-**convertValue / transform 双钩子**（对齐 Pro Components 入向/出向语义）：
-- `convert`（入向）：外部值 → 组件值——应用于 `initialValues` 回填与受控 `values` 写入之后、写组件之前（每字段一次，投影归一之前还是之后？——**之后**：convert 拿到的是 schema 类型语义值（数字/布尔已投影），输出仍须符合 schema type，写入前再字符串化）。
-- `transform`（出向）：提交值 → 外部值——应用于 `getValues()` / `oas-submit.detail.values` / `oas-values-change.detail` 出口（投影归一之后的值 → 宿主期望形态）。
-- 可序列化纪律：schema/uiSchema 写**函数名**（`"ui:convert": "moneyToCents"`），宿主经 `registerSchemaConverter(name, fn)` / `registerSchemaTransformer(name, fn)` 注册（与 registerExprFunction 同轨注册表）；未注册函数名 = 编译期 devWarn + 该字段钩子不生效（不静默）。
-- 钩子签名：`(value, fieldPath, wholeValues) => value`；抛错按「钩子不存在」同口径（devWarn + 回落恒等）。
-- V2 边界：不做异步钩子（远程换算归宿主函数内自己起异步再 setValues）。
+**convert / transform 值变换双钩子（评审修正后）**：
+- **裸键无前缀**（对齐 V1 冻结契约）：`convert` / `transform`，补进 uiSchema 已知键表（`ui:` 前缀违反 V1「独立层裸键」约定）。
+- **入向（convert）应用面（评审修正，四入口收敛为二）**：仅 `initialValues` 回填与受控 `values` / `setValues()` 写入两条入向通道应用 convert；**键入交互不经过**（widget 值已是组件语义）；**快照回填不经过**（否则二次换算）；**schema `default` 不经过**；空串/缺省不调用 convert（防 `moneyToCents(undefined)`→NaN）。投影归一发生在校验读侧——convert 定义在「写入组件前」一步：输入 = 宿主给的原始值（字符串或对象），输出 = 组件值字符串（number/boolean/array/object 按 schema type 序列化口径，与 value 契约一致）。
+- **出向（transform）机制（评审修正）**：schema-form 在内核 form 上监听 `oas-submit` / `oas-validate-fail` / `oas-values-change`（**就地改写 detail.values / detail.value**，冒泡顺序先于宿主、target 不变、不停冒泡）；公开 `getValues()` 出口应用 transform；**内部 dirty / 快照 / appliedValues 走内核原始值**（syncDirty 现用公开 getValues，须改接原始通道，防往返出错）。
+- **注册表（评审修正）**：convert/transform 用**独立注册表**（`registerSchemaConverter` / `registerSchemaTransformer`，不与表达式函数同表——防表达式调用值变换并撞名）；宿主函数与内置同名 = **宿主优先 + devWarn**（修正表达式解析器现「内置优先静默遮蔽」策略，函数库扩充同批生效）。
+- 签名 `(value, fieldPath, wholeValues) => value`；抛错按「钩子失效」口径（devWarn + 回落恒等）。V2 不做异步钩子。
 
-**异步选项加载（内建窄面）**：`ui:options.source = "<函数名>"`——宿主 `registerExprFunction` 同轨注册 `() => Promise<Option[]>`；组件内建：挂载/reload 时调用一次、loading 态（选项区 spinner）、失败态（可重试按钮 + 错误文案 i18n）、去抖（同一字段并发取最新）、值不在新选项集时告警保留。仅 select / radio / checkbox（含组）承接；不做通用 fetch/url 配置（网络层不进库，通用场景走自定义 widget）。`reloadOptions(path)` 方法供宿主手动刷新。
+**异步选项加载（内建窄面，评审修正）**：
+- `options.source = "<函数名>"`，宿主注册签名为 **`(values, path) => Promise<Option[]>`**——补 `options.sourceDeps = ["<路径>"]` 声明值依赖：依赖变化自动 reload（评审确认的真实缺口「A 变重载 B 选项」的正式入口）。
+- **竞态口径（评审修正）**：seq 序号守卫（晚到响应丢弃）+ 重建期间去重 + 卸载后丢弃——一次性调用无去抖意义，不做去抖。
+- **三通道优先级**：`enum/const`（数据 schema）> `options.options` > `options.source`，多通道并存 devWarn 一次。
+- **loading 态承载（评审修正）**：oas-select 有 `loading`（向后兼容沿用）；**radio-group / checkbox-group 本批新增 `loading` 布尔属性**（选项区 spinner 占位，向后兼容增量）；失败态 = 错误文案 + 重试按钮（i18n）；SSR 首帧无选项 = 空态渲染（无骨架，写入文档）。
+- `reloadOptions(path)` 方法供宿主手动刷新；**不做**请求取消/进度/缓存（通用网络层不进库）。
 
-**表达式函数库扩充（→ 20）**：新增 11 个——文本 `join(arr, sep)` / `split(s, sep)` / `substring(s, start, end?)` / `replace(s, from, to)` / `trim(s)`；数学 `round(n, digits?)` / `abs(n)` / `floor(n)` / `ceil(n)`；日期 `formatDate(ts, fmt?)`（yyyy-MM-dd HH:mm 冻结子集）/ `dateAdd(ts, n, unit)`（day/hour/minute 冻结三单位）/ `now()`。参数与边界口径各补单测；文档函数表全量列 signatures。
+**表达式函数库扩充（评审修正，目标 20 → 实定 20）**：现库 10 个（9 + contains）。新增 **10 个**（评审指出原列 12 个计数有误，砍 2）：文本 `join(arr, sep)` / `split(s, sep)` / `substring(s, start, end?)` / `replace(s, from, to)` / `trim(s)`；数学 `round(n, digits?)` / `abs(n)` / `floor(n)` / `ceil(n)`；日期 `formatDate(ts, fmt?)` / `dateAdd(ts, n, unit)`——**砍 `now()`**（非确定性与 reaction 静态重算模型冲突，宿主需要当前时间应走受控值）。合计 20 整。
+- **日期口径（评审修正）**：V1 排除项「日期函数」收窄为「**除 formatDate/dateAdd 外的日期函数**」；`formatDate` 冻结 token 表 = `yyyy MM dd HH mm ss`（未知 token 原样输出 + devWarn 一次）、本地时区（不做 UTC/时区参数——不做清单写明）；`dateAdd` 单位冻结 `day/hour/minute`。
+- 表达式预算档按新函数表**重实测重定档**（3.4KB 档可能上浮，实测定档）。
 
 ### 批 3：新组件完善批（PRD 条目即实现依据）
 
@@ -3882,7 +3897,7 @@ OASElement 的 render 生命周期只首连一次（`rendered` 门闩），组�
 
 ## v2.5.9 移动原生形态批
 
-> 立项背景：组件并集矩阵偏桌面（24 源中移动源仅 Ant Design Mobile / Ionic / Quasar），移动端虽有响应式 + coarse pointer 触屏降级 + bottom-sheet / bottom-navigation，但移动原生交互形态存在 5 项真缺口（2026-10-04 立项评估）。
+> 立项背景：组件能力矩阵偏桌面（既有调研源中移动端覆盖薄），移动端虽有响应式 + coarse pointer 触屏降级 + bottom-sheet / bottom-navigation，但移动原生交互形态存在 5 项真缺口（2026-10-04 立项评估）。
 
 ### 特性
 
