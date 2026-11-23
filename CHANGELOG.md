@@ -68,8 +68,8 @@
 
 **基础设施（随本批同步）**
 
-- 族注册与构建：commerce 新族 + overlay 公开族——CDN 11 族 bundle（`dist/cdn/overlay.js` 等）、families / index / ssr 导出 / not-ssr 台账 / 侧栏 / 总览 / llms / stats / api-manifest 全量登记；i18n 新增 commerce / overlay 切片（11 族 588 键 ×16 语言，completeness 双层守卫）。
-- 属性通道治理：21 件复杂数据属性全部落实「property 优先 + setter 反射 attribute」双通道约定；`vue-prop-hijack.spec.ts` 契约表扩至 14 条新组件（attrContract + propContract + stringProbe 含含引号值注入）；collision-guard 撞名守卫全绿（sku / coupon / category / ecard / image-cropper / barrage / curtain / share-sheet 等撞名点全部消歧）。
+- 族注册与构建：commerce 新族 + overlay 公开族——CDN 11 族 bundle（`dist/cdn/overlay.js` 等）、families / index / ssr 导出 / not-ssr 台账 / 侧栏 / 总览 / llms / stats / api-manifest 全量登记；i18n 新增 commerce / overlay 切片（11 族 634 键 ×16 语言，completeness 双层守卫）。
+- 属性通道治理：26 件复杂数据属性全部落实「property 优先 + setter 反射 attribute」双通道约定；`vue-prop-hijack.spec.ts` 契约表扩至 13 条新组件（attrContract + propContract + stringProbe 含含引号值注入）；collision-guard 撞名守卫全绿（sku / coupon / category / ecard / image-cropper / barrage / curtain / share-sheet 等撞名点全部消歧）。
 
 ### 修复
 

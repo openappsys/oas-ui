@@ -22,11 +22,11 @@ description: 整包（最简单，注册全部组件）：cdn.js 是打包好的
 | `cdn/layout.js` | 布局：layout、sidebar、container、grid、flex、splitter、scroll-area、masonry、aspect-ratio、safe-area、status-bar |
 | `cdn/form.js` | 表单：input、textarea、checkbox、radio、switch、segmented、slider、input-number、rate、select、auto-complete、combobox、cascader、tree-select、mentions、date-picker、time-picker、calendar、upload、transfer、color-picker、toggle-button、toggle-group、pin-input、dynamic-input、dynamic-tags、editable、form 等 |
 | `cdn/feedback.js` | 反馈与浮层：tooltip、popover、hover-card、message、notification、toast、snackbar、backdrop、modal、confirm、drawer、popconfirm、alert、progress、loading-bar、spin、skeleton、empty、result、bottom-sheet、notice-bar、pull-refresh、offline、page-loading |
-| `cdn/overlay.js` | 浮层：share-sheet、curtain |
+| `cdn/overlay.js` | 浮层：share-sheet、curtain、drag |
 | `cdn/navigation.js` | 导航：menu、dropdown、contextmenu、command、menubar、navigation-menu、toolbar、breadcrumb、anchor、back-top、tour、tabs、bottom-navigation、pagination、steps、stepper、affix、page-header、float-button、speed-dial、app-bar、index-bar |
 | `cdn/data.js` | 数据展示：table、tree、virtual-list、card、avatar、avatar-group、image、qrcode、watermark、collapse、descriptions、timeline、list、carousel、statistic、countdown、ellipsis、chart、code、equation、log、marquee、number-animation、gradient-text、comment、rolling-text、barrage 等 |
 | `cdn/conversation.js` | 会话：bubble、attachment、message-scroller、marker、message-row |
-| `cdn/commerce.js` | 电商：price、submit-bar、goods-action、coupon、sku、address、invoice、ecard、category |
+| `cdn/commerce.js` | 电商：price、submit-bar、goods-action、coupon、sku、time-select、address、invoice、ecard、category |
 | `cdn/workbench.js` | 工作台构件：titlebar、statusbar、inspector、action-bar |
 | `cdn/framework.js` | 框架级：config-provider、app、theme-editor |
 

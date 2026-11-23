@@ -34,6 +34,8 @@ Pass a `steps` array (`{ key?, title, description?, optional?, hidden? }`) and a
 
 Before advancing, the current step's `oas-form` is validated (via its `validate()`); failure blocks navigation and emits `oas-step-validate` (`detail: { index, key?, valid, errors }`). Going back never validates. Set `validation="false"` for pure navigation.
 
+> Step content only needs an element that implements the `getValues()` / `validate()` contract (duck-typed) — not necessarily `oas-form`. Any compound form exposing the same contract works, such as `oas-schema-form`, so the whole questionnaire can be JSON-driven. See [SchemaForm · Composing with Questionnaire](./schema-form.md#composing-with-questionnaire).
+
 <DemoBlock title="Blocked until valid">
   <oas-questionnaire id="q-gate" style="width: 100%; max-width: 480px" steps='[{"title":"Contact"},{"title":"Done"}]'>
     <oas-form slot="step-0" rules='{"phone":[{"required":true,"message":"Phone is required"},{"pattern":"^1\\d{10}$","message":"Invalid phone number"}]}'>
