@@ -49,8 +49,10 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
 
 `when` 是受限表达式轨（V1b）：条件写成字符串，路径用 `{path}` 占位（点号 + `[i]`，数组通配 `[]`），
 本字段用 `$self`。语法冻结：值（字符串 / 数字 / `true/false/null`）、比较 `== != > >= < <=`
-（两侧同为数字按数值、其余按字符串）、逻辑 `&& || !` + 括号、算术 `+ - * / %`（仅数值）、
-成员 `in` / `contains()`、函数库 `iif / empty / len / sum / min / max / lower / upper`。
+（两侧同为数字按数值、其余按字符串）、逻辑 `&& || !` + 括号、算术 `+ - * / %`（仅数值，非数值操作数
+得 `NaN`（运行时），`NaN` 参与比较恒为假）、成员 `in` / `contains()`、函数库
+`iif / empty / len / sum / min / max / lower / upper / concat`（`iif` 惰性求值；字符串拼接用
+`concat(...strings)`，`+` 只做数值加法）。
 **赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则 / 属性访问链一律编译期报错**；语法错 / 未知字段 /
 未知函数只影响该条 reaction（开发期告警并降级），其余联动照常生效。表达式轨与 `whenSchema` 表达力不同，
 不宣称等价——需要复用 JSON Schema 语义时用 `whenSchema`。
@@ -132,7 +134,9 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
 ## 受控 values 与脏态
 
 受控模式用 property `values`（对象）作为字段值来源：挂载时作为基线，之后每次变化按**叶子路径 diff 写**
-（只写变化路径，不重建 DOM、不打断焦点）；宿主删除的键会清空对应字段。宿主写不派发 `oas-values-change`
+（只写变化路径，不重建 DOM、不打断焦点）；值树在**恰为已渲染字段名**的节点整值下发——数组值字段
+（`array of enum` → 单控件 `oas-checkbox-group`）宿主写 `{ tags: ['a', 'b'] }` 即整写，对象数组容器键
+照常下钻到行字段；宿主删除的键会清空对应字段。宿主写不派发 `oas-values-change`
 （防回环），只有用户交互才派发。数组按长度补行（`min` 只增不减，删行仍走 form-list 交互）。
 `setValues(patch)` 是同一写通道的方法形态；`dirty` 读的是组件自持的 pristine 快照（内核之外的一小块）。
 `values` 与 `initialValues` 同时提供时 `values` 优先。
@@ -143,6 +147,7 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
   <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
     <oas-button id="sf-controlled-next" type="primary">宿主换一批值</oas-button>
     <oas-button id="sf-controlled-clear">清空邮箱</oas-button>
+    <oas-button id="sf-controlled-clear-tags">清空标签</oas-button>
     <oas-button id="sf-controlled-dirty">dirty?</oas-button>
   </oas-space>
 </DemoBlock>
@@ -540,13 +545,15 @@ onMounted(() => {
   // ---- 受控 values ----
   onUpgraded(document.getElementById('sf-controlled'), () => {
     const controlled = document.getElementById('sf-controlled')
-    controlled.values = { name: '张三', mail: 'zhang@example.com', level: 'basic' }
+    controlled.values = { name: '张三', mail: 'zhang@example.com', level: 'basic', tags: ['a', 'b'] }
     controlled.schema = {
       type: 'object',
       properties: {
         name: { type: 'string', title: '姓名' },
         mail: { type: 'string', title: '邮箱', format: 'email' },
         level: { type: 'string', title: '等级', enum: ['basic', 'pro'] },
+        // array of enum → 单控件 oas-checkbox-group：数组值字段整写（不按下标拆路径）
+        tags: { type: 'array', title: '标签', items: { enum: ['a', 'b', 'c'] } },
       },
     }
     const out = document.getElementById('sf-controlled-output')
@@ -556,7 +563,7 @@ onMounted(() => {
     report('挂载（宿主 values 为基线）')
     controlled.addEventListener('oas-values-change', () => report('用户编辑后（事件照常派发）'))
     document.getElementById('sf-controlled-next')?.addEventListener('click', () => {
-      controlled.values = { name: '李四', mail: 'li@example.com', level: 'pro' }
+      controlled.values = { name: '李四', mail: 'li@example.com', level: 'pro', tags: ['c'] }
       report('宿主换一批值 → diff 写入')
     })
     document.getElementById('sf-controlled-clear')?.addEventListener('click', () => {
@@ -564,6 +571,12 @@ onMounted(() => {
       delete next.mail
       controlled.values = next
       report('删除 mail 键 → 字段清空')
+    })
+    document.getElementById('sf-controlled-clear-tags')?.addEventListener('click', () => {
+      const next = { ...controlled.values }
+      delete next.tags
+      controlled.values = next
+      report('删除 tags 键 → 数组值字段整清空')
     })
     document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty 检查'))
   })
@@ -658,7 +671,7 @@ onMounted(() => {
 | `size` | 透传给内层 oas-form 的尺寸档位。 | — | — |
 | `ui-schema` | UI 注解层（裸键：`widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`）。属性双通道；编译期校验每个路径必须存在于数据 schema。 | `unknown` | — |
 | `validate-trigger` | 透传给内层 oas-form 的字段校验触发时机（input / change / blur）。 | — | — |
-| `values` | 受控值（V1b）：property（对象）与 attribute（JSON 字符串）双通道。挂载时作为基线，之后按叶子路径 diff 写（不重建 DOM、不打断焦点）；宿主写不派发 `oas-values-change`（防回环）；与 `initialValues` 同时提供时本属性优先。 | `Record<string, unknown> \| string` | — |
+| `values` | 受控值（V1b）：property（对象）与 attribute（JSON 字符串）双通道。挂载时作为基线，之后按叶子路径 diff 写（不重建 DOM、不打断焦点）；值树在恰为已渲染字段名的节点整值下发（数组值字段如 `array of enum` → `oas-checkbox-group` 直接写 `["a","b"]`，对象数组容器键照常下钻到行字段）；宿主写不派发 `oas-values-change`（防回环）；与 `initialValues` 同时提供时本属性优先。 | `Record<string, unknown> \| string` | — |
 
 #### 方法
 
@@ -667,7 +680,7 @@ onMounted(() => {
 | `submit` | `submit(): void` | 提交：联动求值 → 内核字段校验 → 数组级校验并注入错误 → 委托内核提交（时序对齐设计稿：先内核、后数组级；oas-submit / oas-validate-fail 由内核派发并穿出，失败载荷含字段错误 ∪ 数组级错误）。 |
 | `validate` | `validate(): Promise<boolean>` | 校验：联动求值 → 内核字段校验 → 数组级校验（错误并集），返回是否全部通过。 |
 | `getValues` | `getValues(): Record<string, unknown>` | 全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）。 |
-| `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道（V1b）：按嵌套路径写字段值（走内核 `oas-form.setValues` 与控件 writer 注册表）；只写已渲染字段、不派发事件、不重建 DOM；未渲染路径跳过（数组行数由 form-list 维护）。 |
+| `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道（V1b）：按嵌套路径写字段值（走内核 `oas-form.setValues` 与控件 writer 注册表）；路径恰为已渲染字段名时整值写入（数组值字段不按下标拆路径），容器键照常下钻；只写已渲染字段、不派发事件、不重建 DOM；未渲染路径跳过（数组行数由 form-list 维护）。 |
 | `setErrors` | `setErrors(list: FormError[]): void` | 注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载。 |
 | `clearErrors` | `clearErrors(paths?: string[]): void` | 清除注入错误（省略 paths = 清全部）；受影响字段回落规则错误。 |
 | `reset` | `reset(): void` | 重置：回初始值、清错误、数组行数回初始长度（不派发事件）。 |

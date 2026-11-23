@@ -3,6 +3,7 @@ import { OASForm } from './index.js'
 import { OASFormItem } from '../form-item/index.js'
 import { OASInput } from '../input/index.js'
 import { OASSwitch } from '../switch/index.js'
+import { OASCheckboxGroup } from '../checkbox/index.js'
 
 /** 显式构造元素（happy-dom 下解析式创建的自定义元素升级时机不稳定） */
 function fieldItem(label: string, name: string, value = ''): OASFormItem {
@@ -83,6 +84,37 @@ describe('OASForm.setValues（受控写通道）', () => {
     expect(({} as Record<string, unknown>).hacked).toBeUndefined()
     const values = form.getValues() as { users: Array<Record<string, string>> }
     expect(values.users[0]).toEqual({ nick: 'D' })
+  })
+
+  it('已渲染字段本身就是数组值容器时整值写入（不按下标拆成假路径）', () => {
+    const form = mountForm()
+    const item = new OASFormItem()
+    item.setAttribute('label', '标签')
+    const group = new OASCheckboxGroup()
+    group.setAttribute('name', 'tags')
+    group.setAttribute(
+      'options',
+      JSON.stringify([
+        { label: 'A', value: 'a' },
+        { label: 'B', value: 'b' },
+      ]),
+    )
+    item.appendChild(group)
+    form.appendChild(item)
+
+    form.setValues({ tags: ['a', 'b'] })
+    expect(group.getAttribute('value')).toBe('["a","b"]')
+    form.setValues({ tags: ['b'] })
+    expect(group.getAttribute('value')).toBe('["b"]')
+    form.setValues({ tags: null })
+    expect(group.getAttribute('value')).toBe('')
+  })
+
+  it('非字段容器（如 form-list 行键）仍按下标下钻写行字段', () => {
+    const form = mountForm()
+    form.setValues({ users: [{ nick: 'Z' }, { mail: 'z@example.com' }] })
+    expect(widget(form, 'users.0.nick').getAttribute('value')).toBe('Z')
+    expect(widget(form, 'users.1.mail').getAttribute('value')).toBe('z@example.com')
   })
 
   it('不改变 reset 基线：reset 仍回 initialValues', () => {

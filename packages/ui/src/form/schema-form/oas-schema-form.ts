@@ -274,7 +274,9 @@ export class OASSchemaForm extends OASElement {
    * 受控值（V1b）：property（对象）+ attribute（JSON 字符串）双通道。
    *
    * 受控模式下本属性是字段值来源：挂载时作为基线，之后每次变化按**叶子路径 diff 写**
-   * （只写变化路径，不重建 DOM、不打断焦点）；宿主写不派发 `oas-values-change`（防回环）。
+   * （只写变化路径，不重建 DOM、不打断焦点）；值树在**恰为已渲染字段名**的节点整值下发
+   * （数组值字段如 `array of enum` → `oas-checkbox-group` 宿主写 `['a','b']` 即整写；
+   * 对象数组容器键照常下钻到行字段）；宿主写不派发 `oas-values-change`（防回环）。
    * 与 `initialValues` 同时提供时 `values` 优先（受控覆盖非受控基线）。
    */
   get values(): Record<string, unknown> {
@@ -813,8 +815,13 @@ export class OASSchemaForm extends OASElement {
     const prevAll = this.appliedValues ?? {}
     const patch: Record<string, unknown> = {}
     let changed = false
-    const current = new Map(flattenRawValues(nextAll))
-    const previous = new Map(flattenRawValues(prevAll))
+    // 已渲染字段名：值树在**恰为该字段名**的节点上整值下发（不拍平成下标叶子）。
+    // 标量数组字段（array of enum → oas-checkbox-group 单字段 `tags`）宿主写
+    // `{ tags: ['a'] }` 时按 `tags` 整写；对象数组的容器键（`users`）不在字段表内，
+    // 照常下钻到行字段 `users.0.nick`。
+    const rendered = new Set(flattenValues(form.getValues()).map(([path]) => path))
+    const current = new Map(flattenRawValues(nextAll, '', rendered))
+    const previous = new Map(flattenRawValues(prevAll, '', rendered))
     for (const [path, value] of current) {
       const before = previous.get(path)
       if (before !== undefined && String(before) === String(value)) continue
@@ -1332,23 +1339,35 @@ function flattenValues(values: unknown, prefix = ''): Array<[string, string]> {
   return out
 }
 
-/** 嵌套值 → [点号路径, 原始叶子值]（受控 diff 用：保留数字/布尔原值以便按类型写入） */
-function flattenRawValues(values: unknown, prefix = ''): Array<[string, unknown]> {
+/**
+ * 嵌套值 → [点号路径, 原始叶子值]（受控 diff 用：保留数字/布尔原值以便按类型写入）。
+ * `whole` 命中（路径恰为已渲染字段名）时该子树整值作叶子下发：数组值字段不能按下标拍平，
+ * 否则会得到 `tags.0` 这类不存在的字段名，写入被静默丢弃。
+ */
+function flattenRawValues(
+  values: unknown,
+  prefix = '',
+  whole?: { has(key: string): boolean },
+): Array<[string, unknown]> {
   const out: Array<[string, unknown]> = []
   if (values === null || values === undefined) return out
   if (typeof values !== 'object') {
     if (prefix !== '') out.push([prefix, values])
     return out
   }
+  if (prefix !== '' && whole?.has(prefix)) {
+    out.push([prefix, values])
+    return out
+  }
   if (Array.isArray(values)) {
     values.forEach((item, index) => {
-      out.push(...flattenRawValues(item, prefix === '' ? String(index) : `${prefix}.${index}`))
+      out.push(...flattenRawValues(item, prefix === '' ? String(index) : `${prefix}.${index}`, whole))
     })
     return out
   }
   for (const [key, value] of Object.entries(values as Record<string, unknown>)) {
     if (key === '__proto__' || key === 'prototype' || key === 'constructor') continue
-    out.push(...flattenRawValues(value, prefix === '' ? key : `${prefix}.${key}`))
+    out.push(...flattenRawValues(value, prefix === '' ? key : `${prefix}.${key}`, whole))
   }
   return out
 }

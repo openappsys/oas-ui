@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { compileExpression, evaluateExpression, registerExprFunction } from './expr.js'
 import { parseDslPath } from './path.js'
 
@@ -127,7 +127,22 @@ describe('expr 比较 / 逻辑 / 算术', () => {
   })
 })
 
-describe('expr 冻结函数库（8 个）', () => {
+describe('expr 冻结函数库（9 个）', () => {
+  it('iif 惰性：未命中的分支不求值（会抛错的宿主函数也不触发）', () => {
+    const boom = vi.fn(() => {
+      throw new Error('boom')
+    })
+    const unregister = registerExprFunction('boom', boom)
+    try {
+      expect(run("iif(true, 'hit', boom())")).toBe('hit')
+      expect(run("iif(false, boom(), 'hit')")).toBe('hit')
+      expect(run("iif(empty({v}), 'empty', boom())", { v: '' })).toBe('empty')
+      expect(boom).not.toHaveBeenCalled()
+    } finally {
+      unregister()
+    }
+  })
+
   it('iif 惰性分支 / empty / len', () => {
     expect(run("iif(true, 'a', 'b')")).toBe('a')
     expect(run("iif(false, 'a', 'b')")).toBe('b')
@@ -144,11 +159,26 @@ describe('expr 冻结函数库（8 个）', () => {
   it('sum / min / max / lower / upper', () => {
     expect(run('sum({nums})', { nums: [1, 2, 3] })).toBe(6)
     expect(run('sum({items[].price})', { items: [{ price: 2 }, { price: 3 }] })).toBe(5)
+    // 非数组宽容口径（写死固化为测试）：单值按一项累加，非数值项按 0 计
+    expect(run('sum(5)')).toBe(5)
+    expect(run("sum('abc')")).toBe(0)
+    expect(run("sum('5')")).toBe(0)
+    expect(run('sum({missing})')).toBe(0)
     expect(run('min(3, 1, 2)')).toBe(1)
     expect(run('max(3, 1, 2)')).toBe(3)
     expect(run('min(2, 5, 1)')).toBe(1)
     expect(run("lower('AbC')")).toBe('abc')
     expect(run("upper('AbC')")).toBe('ABC')
+  })
+
+  it('concat：字符串拼接（非字符串参数按字符串宽容转换，null/undefined 为空串）', () => {
+    expect(run("concat('a', 'b')")).toBe('ab')
+    expect(run("concat('v', 2)")).toBe('v2')
+    expect(run("concat('v', true)")).toBe('vtrue')
+    expect(run("concat('v', null)")).toBe('v')
+    expect(run("concat('v', {n})", { n: 3 })).toBe('v3')
+    expect(run("concat('a', 'b', 'c', 'd')")).toBe('abcd')
+    expect(compileError('concat()')).toContain('参数个数')
   })
 
   it('参数个数错误编译报错', () => {
@@ -175,7 +205,7 @@ describe('expr 排除项一律编译期报错', () => {
 
   it('未知函数 / 未知字段（提供存在性校验时）报错', () => {
     expect(compileError('now()')).toContain('未知函数')
-    expect(compileError('concat("a", "b")')).toContain('未知函数')
+    expect(compileError('trim("a")')).toContain('未知函数')
     const result = compileExpression('{unknown} == 1', { exists: (path) => path !== 'unknown' })
     expect(result.error).toContain('未知字段')
   })

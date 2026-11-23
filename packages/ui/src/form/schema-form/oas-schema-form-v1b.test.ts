@@ -37,6 +37,15 @@ const schema = {
   },
 }
 
+/** 标量数组字段（array of enum → 单控件 oas-checkbox-group）：受控整写回归用 */
+const enumArraySchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', title: '姓名' },
+    tags: { type: 'array', title: '标签', items: { enum: ['a', 'b', 'c'] } },
+  },
+}
+
 describe('oas-schema-form 受控 values（V1b）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -115,6 +124,30 @@ describe('oas-schema-form 受控 values（V1b）', () => {
     el.setValues({ name: 'AB' })
     expect(widgetOf(el, 'name')!.getAttribute('value')).toBe('AB')
     expect(el.dirty).toBe(true)
+  })
+
+  it('受控 values 对数组值字段（array of enum）整写：换值不静默失效', () => {
+    const el = mount(enumArraySchema, { values: { tags: ['a', 'b'] } })
+    const group = widgetOf(el, 'tags')!
+    expect(group.tagName.toLowerCase()).toBe('oas-checkbox-group')
+    expect(group.getAttribute('value')).toBe('["a","b"]')
+
+    el.values = { tags: ['c'] }
+    expect(group.getAttribute('value')).toBe('["c"]')
+  })
+
+  it('受控 values 删除数组值字段键 → 整字段清空（不残留旧勾选）', () => {
+    const el = mount(enumArraySchema, { values: { tags: ['a', 'b'] } })
+    const group = widgetOf(el, 'tags')!
+    el.values = {}
+    expect(group.getAttribute('value')).toBe('')
+    expect(el.getValues().tags).toBe('')
+  })
+
+  it('setValues 对数组值字段整写（不按下标拆成 tags.0 假路径）', () => {
+    const el = mount(enumArraySchema, { values: {} })
+    el.setValues({ tags: ['a', 'c'] })
+    expect(widgetOf(el, 'tags')!.getAttribute('value')).toBe('["a","c"]')
   })
 })
 

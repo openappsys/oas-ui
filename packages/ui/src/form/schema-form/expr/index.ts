@@ -5,9 +5,10 @@
  * - 值：`{path}` 占位（点号 + `[i]`，数组通配 `[]`）/ 字符串 / 数字 / `true` / `false` / `null` /
  *   `$self`（本字段，编译期解析为源字段路径）。
  * - 比较：`==` `!=` `>` `>=` `<` `<=`——两侧同为数字按数值比，其余按字符串比（写死）。
- * - 逻辑：`&&` `||` `!` + 括号；算术：`+` `-` `*` `/` `%`（仅数值）；成员：`in` / `contains()`。
- * - 函数库冻结 8 个：`iif(cond, a, b)` / `empty(x)` / `len(x)` / `sum(arr)` / `min(...nums)` /
- *   `max(...nums)` / `lower(s)` / `upper(s)`；`contains(c, x)` 为成员运算的函数形态。
+ * - 逻辑：`&&` `||` `!` + 括号；算术：`+` `-` `*` `/` `%`（仅数值，非数值操作数得 NaN）；
+ *   成员：`in` / `contains()`。
+ * - 函数库冻结 9 个：`iif(cond, a, b)` / `empty(x)` / `len(x)` / `sum(arr)` / `min(...nums)` /
+ *   `max(...nums)` / `lower(s)` / `upper(s)` / `concat(...strings)`；`contains(c, x)` 为成员运算的函数形态。
  * - 排除（编译期报错）：赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则字面量 / 属性访问链 / 日期函数。
  *
  * 本文件即公开子路径入口 `@oas-ui/ui/form/schema-form/expr` 的实现（单文件链，便于独立计量）；
@@ -336,6 +337,8 @@ const FNS: Record<string, [number, number, ExprFunction]> = {
   max: [1, Infinity, (...args) => extreme(args, Math.max)],
   lower: [1, 1, (s) => asString(s).toLowerCase()],
   upper: [1, 1, (s) => asString(s).toUpperCase()],
+  // 字符串拼接走函数形态（`+` 只做数值加法，避免二义）：非字符串参数按字符串宽容转换
+  concat: [1, Infinity, (...args) => args.map(asString).join('')],
   contains: [2, 2, (container, item) => membership(item, container)],
 }
 

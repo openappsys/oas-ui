@@ -241,19 +241,28 @@ test('schema-form 受控 values：宿主换值 diff 写入 / 删键清空 / dirt
   await up(page, '#sf-controlled')
 
   const name = page.locator('#sf-controlled oas-input[name="name"]')
+  const tags = page.locator('#sf-controlled oas-checkbox-group[name="tags"]')
   await expect(name).toHaveAttribute('value', '张三')
+  // 标量数组字段（array of enum → 单控件）整值写入：挂载基线即生效
+  await expect(tags).toHaveAttribute('value', '["a","b"]')
   await expect(page.locator('#sf-controlled-output')).toContainText('dirty=false')
 
-  // 宿主导入一批新值：diff 写入，输出可见
+  // 宿主导入一批新值：diff 写入，输出可见（数组值字段按整值写，不静默停旧值）
   await page.locator('#sf-controlled-next').click()
   await expect(name).toHaveAttribute('value', '李四')
   await expect(page.locator('#sf-controlled oas-input[name="mail"]')).toHaveAttribute('value', 'li@example.com')
+  await expect(tags).toHaveAttribute('value', '["c"]')
   await expect(page.locator('#sf-controlled-output')).toContainText('dirty=true')
 
   // 宿主删除 mail 键 → 字段清空
   await page.locator('#sf-controlled-clear').click()
   await expect(page.locator('#sf-controlled oas-input[name="mail"]')).toHaveAttribute('value', '')
   await expect(page.locator('#sf-controlled-output')).toContainText('mail')
+
+  // 宿主删除 tags 键 → 数组值字段整清空（不残留旧勾选）
+  await page.locator('#sf-controlled-clear-tags').click()
+  await expect(tags).toHaveAttribute('value', '')
+  await expect(page.locator('#sf-controlled oas-checkbox-group[name="tags"] oas-checkbox[checked]')).toHaveCount(0)
 
   // 宿主写不产生回环事件：输出仍是脚本主动写的文案（不是 values-change 文案）
   await expect(page.locator('#sf-controlled-output')).not.toContainText('用户编辑后')

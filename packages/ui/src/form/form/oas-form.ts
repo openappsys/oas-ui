@@ -138,16 +138,29 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /**
  * 把嵌套 patch 展开为 [路径段, 叶子值] 并逐个回调：数组按下标展开，对象按键递归；
  * 保留键段跳过（与 parseNamePath 同判据，防原型污染）；空对象/空数组不产生叶子。
+ *
+ * `stopAt` 命中即整值回调并停止下钻：字段名本身就是数组值容器时（array of enum →
+ * `oas-checkbox-group` 单字段 `tags`），按下标展开会得到 `tags.0` 等不存在的字段名，
+ * 值静默丢失。容器（如 `oas-form-list` 的 `users`）不在字段表内，照常下钻写行字段。
  */
-function walkPatch(value: unknown, segments: string[], apply: (segments: string[], value: unknown) => void): void {
+function walkPatch(
+  value: unknown,
+  segments: string[],
+  apply: (segments: string[], value: unknown) => void,
+  stopAt?: { has(key: string): boolean },
+): void {
+  if (segments.length > 0 && stopAt?.has(segments.join('.'))) {
+    apply(segments, value)
+    return
+  }
   if (Array.isArray(value)) {
-    value.forEach((item, index) => walkPatch(item, [...segments, String(index)], apply))
+    value.forEach((item, index) => walkPatch(item, [...segments, String(index)], apply, stopAt))
     return
   }
   if (isPlainObject(value)) {
     for (const key of Object.keys(value)) {
       if (FORBIDDEN_SEGMENT.has(key)) continue
-      walkPatch(value[key], [...segments, key], apply)
+      walkPatch(value[key], [...segments, key], apply, stopAt)
     }
     return
   }
@@ -1207,6 +1220,9 @@ export class OASForm extends OASElement {
    *
    * - `patch` 可嵌套（对象 / 数组）；叶子按点号路径逐字段写入，`users[0].name` 与
    *   `users.0.name` 命中同一字段（经 `parseNamePath` 归一）；
+   * - 路径**恰为已渲染字段名**时整值写入（含数组值：`{ tags: ['a', 'b'] }` 写进单字段
+   *   `tags`，不按下标拆成 `tags.0` 假路径）；容器键（如 `oas-form-list` 的 `users`）不在
+   *   字段表内，照常下钻写行字段；
    * - 只写**已渲染**的字段；未渲染路径（隐藏字段 / 数组新增行尚未建立）静默跳过——
    *   行数仍由容器（form-list）维护，不在此通道创建 DOM；
    * - 程序化写不派发 `oas-values-change`（与 initial-values 同口径：只有用户交互才派发），
@@ -1224,11 +1240,16 @@ export class OASForm extends OASElement {
       const key = canonicalNamePath(name)
       if (key !== null && !fields.has(key)) fields.set(key, element)
     }
-    walkPatch(patch, [], (segments, value) => {
-      const element = fields.get(segments.join('.'))
-      if (!element) return
-      this.writeValue(element, this.stringifyInitial(value))
-    })
+    walkPatch(
+      patch,
+      [],
+      (segments, value) => {
+        const element = fields.get(segments.join('.'))
+        if (!element) return
+        this.writeValue(element, this.stringifyInitial(value))
+      },
+      fields,
+    )
   }
 
   /**

@@ -56,8 +56,10 @@ are re-evaluated.
 `when` is the restricted expression track (V1b): the condition is a string, paths use `{path}` placeholders
 (dot notation plus `[i]`, array wildcard `[]`) and the source field is `$self`. Frozen syntax: values
 (string / number / `true/false/null`), comparisons `== != > >= < <=` (numeric when both sides are numbers,
-otherwise string comparison), logic `&& || !` with parentheses, arithmetic `+ - * / %` (numbers only),
-membership `in` / `contains()`, and the function library `iif / empty / len / sum / min / max / lower / upper`.
+otherwise string comparison), logic `&& || !` with parentheses, arithmetic `+ - * / %` (numbers only — a
+non-numeric operand yields `NaN` at runtime, and `NaN` comparisons are always false), membership `in` /
+`contains()`, and the function library `iif / empty / len / sum / min / max / lower / upper / concat`
+(`iif` is lazy; concatenate strings with `concat(...strings)` — `+` is numeric addition only).
 **Assignments / statements / loops / arrow functions / template strings / regex literals / property access
 chains are compile-time errors**; syntax errors, unknown fields and unknown functions only disable that single
 reaction (dev warning) while the rest keep working. The two tracks differ in expressiveness — they are not
@@ -144,12 +146,14 @@ no `aria-invalid`); an error on the same path takes exclusive precedence.
 ## Controlled `values` and dirty state
 
 In controlled mode the `values` property is the source of truth: it acts as the baseline on mount, and each
-later change is written as a **leaf-level diff** (only changed paths, no DOM rebuild, no focus loss). Keys
-removed by the host clear the corresponding field. Host writes never emit `oas-values-change` (no echo loop);
-only user interaction does. Arrays grow via `min` (rows are never removed by this channel — row removal stays
-with form-list). `setValues(patch)` is the method form of the same channel; `dirty` compares against the
-component-held pristine snapshot (a small explicit piece outside the kernel). When both `values` and
-`initialValues` are provided, `values` wins.
+later change is written as a **leaf-level diff** (only changed paths, no DOM rebuild, no focus loss). A value
+tree node that **exactly matches a rendered field name** is written as a whole value — array-valued fields
+(`array of enum` → a single `oas-checkbox-group`) accept `{ tags: ['a', 'b'] }` directly, while object-array
+container keys still descend to row fields. Keys removed by the host clear the corresponding field. Host
+writes never emit `oas-values-change` (no echo loop); only user interaction does. Arrays grow via `min` (rows
+are never removed by this channel — row removal stays with form-list). `setValues(patch)` is the method form
+of the same channel; `dirty` compares against the component-held pristine snapshot (a small explicit piece
+outside the kernel). When both `values` and `initialValues` are provided, `values` wins.
 
 <DemoBlock title="Controlled values: host change → diff write; setValues() and dirty">
   <oas-schema-form id="sf-controlled" style="width: 100%; max-width: 640px"></oas-schema-form>
@@ -157,6 +161,7 @@ component-held pristine snapshot (a small explicit piece outside the kernel). Wh
   <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
     <oas-button id="sf-controlled-next" type="primary">Host writes new values</oas-button>
     <oas-button id="sf-controlled-clear">Clear email</oas-button>
+    <oas-button id="sf-controlled-clear-tags">Clear tags</oas-button>
     <oas-button id="sf-controlled-dirty">dirty?</oas-button>
   </oas-space>
 </DemoBlock>
@@ -547,13 +552,15 @@ onMounted(() => {
   // ---- controlled values ----
   onUpgraded(document.getElementById('sf-controlled'), () => {
     const controlled = document.getElementById('sf-controlled')
-    controlled.values = { name: 'Alice', mail: 'alice@example.com', level: 'basic' }
+    controlled.values = { name: 'Alice', mail: 'alice@example.com', level: 'basic', tags: ['a', 'b'] }
     controlled.schema = {
       type: 'object',
       properties: {
         name: { type: 'string', title: 'Name' },
         mail: { type: 'string', title: 'Email', format: 'email' },
         level: { type: 'string', title: 'Level', enum: ['basic', 'pro'] },
+        // array of enum → a single oas-checkbox-group: array-valued field written as a whole
+        tags: { type: 'array', title: 'Tags', items: { enum: ['a', 'b', 'c'] } },
       },
     }
     const out = document.getElementById('sf-controlled-output')
@@ -563,7 +570,7 @@ onMounted(() => {
     report('Mounted (host values are the baseline)')
     controlled.addEventListener('oas-values-change', () => report('After user edit (event still fires)'))
     document.getElementById('sf-controlled-next')?.addEventListener('click', () => {
-      controlled.values = { name: 'Bob', mail: 'bob@example.com', level: 'pro' }
+      controlled.values = { name: 'Bob', mail: 'bob@example.com', level: 'pro', tags: ['c'] }
       report('Host writes new values → diff write')
     })
     document.getElementById('sf-controlled-clear')?.addEventListener('click', () => {
@@ -571,6 +578,12 @@ onMounted(() => {
       delete next.mail
       controlled.values = next
       report('Removed mail key → field cleared')
+    })
+    document.getElementById('sf-controlled-clear-tags')?.addEventListener('click', () => {
+      const next = { ...controlled.values }
+      delete next.tags
+      controlled.values = next
+      report('Removed tags key → array-valued field cleared')
     })
     document.getElementById('sf-controlled-dirty')?.addEventListener('click', () => report('dirty check'))
   })
@@ -665,7 +678,7 @@ onMounted(() => {
 | `size` | Forwarded to the inner oas-form size. | — | — |
 | `ui-schema` | UI annotation layer (bare keys: `widget` / `layout` / `options` / `reactions` / `keepValueOnHidden`). Dual channel; every path is verified against the data schema at compile time. | `unknown` | — |
 | `validate-trigger` | Forwarded to the inner oas-form field validation trigger (input / change / blur). | — | — |
-| `values` | Controlled values (V1b): dual channel — property (object) and attribute (JSON string). Applied as the baseline on mount; later changes are written as a leaf-level diff (no DOM rebuild, no focus loss). Host writes never emit `oas-values-change` (no echo loop). Takes precedence over `initialValues` when both are provided. | `Record<string, unknown> \| string` | — |
+| `values` | Controlled values (V1b): object property plus JSON-string attribute channel. Acts as the baseline on mount, then each change is written as a leaf-level diff (no DOM rebuild, no focus loss); a node that exactly matches a rendered field name is written as a whole value (array-valued fields such as `array of enum` → `oas-checkbox-group` take `["a","b"]` directly, while object-array container keys still descend to row fields); host writes never emit `oas-values-change` (no echo loop); wins over `initialValues` when both are provided. | `Record<string, unknown> \| string` | — |
 
 #### Methods
 
@@ -674,7 +687,7 @@ onMounted(() => {
 | `submit` | `submit(): void` | Submit: evaluates reactions, runs kernel field validation, then array-level validation and injects its errors, and finally delegates to the kernel (design order: kernel first, array-level second; oas-submit / oas-validate-fail are dispatched by the kernel and bubble out, failure payload = field errors ∪ array-level errors). |
 | `validate` | `validate(): Promise<boolean>` | Validate: reactions → kernel field validation → array-level validation (union of errors); returns whether everything passes. |
 | `getValues` | `getValues(): Record<string, unknown>` | Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings). |
-| `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel (V1b): writes field values by nested path through the kernel `oas-form.setValues` and the control writer registry. Only rendered fields are written, no events are emitted and no DOM is rebuilt; unrendered paths are skipped (array row counts stay with form-list). |
+| `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel (V1b): writes field values by nested path through the kernel `oas-form.setValues` and the control writer registry; a path that exactly matches a rendered field name is written as a whole value (array-valued fields are not split into index paths), container keys still descend; only rendered fields are written, no events are emitted and no DOM is rebuilt; unrendered paths are skipped (row count stays with form-list). |
 | `setErrors` | `setErrors(list: FormError[]): void` | Inject errors (for server validation). Path normalization and precedence are handled by the form kernel. |
 | `clearErrors` | `clearErrors(paths?: string[]): void` | Clear injected errors (omit paths to clear all); affected fields fall back to rule errors. |
 | `reset` | `reset(): void` | Reset: back to initial values, clear errors, array rows back to their initial length (no events). |

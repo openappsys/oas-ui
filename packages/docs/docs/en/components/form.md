@@ -613,7 +613,7 @@ onMounted(() => {
 | --- | --- | --- |
 | `reapplyInitialValues` | `reapplyInitialValues(): void` | Writes initial-values for fields that appear only after the initial-value baseline is established (dynamic field containers such as oas-form-list) |
 | `getValues` | `getValues(): Record<string, unknown>` | Public value getter: a snapshot of the current values for the whole form (nested structure), with the same shape as detail.values dispatched by submit() |
-| `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel: writes field values by nested path through the control writer registry; only rendered fields are written, no events are emitted and the reset baseline is unchanged |
+| `setValues` | `setValues(patch: Record<string, unknown>): void` | Controlled write channel: writes field values by nested path through the control writer registry; a path that exactly matches a rendered field name is written as a whole value (array-valued fields such as `oas-checkbox-group` are not split into index paths) while container keys still descend; only rendered fields are written, no events are emitted and the reset baseline is unchanged |
 | `validate` | `validate(): Promise<boolean>` | Public validation entry: validates all fields and syncs error state (aria-invalid + error message), returning whether everything passed |
 | `submit` | `submit(): void` | Public submit entry: delegates to requestSubmit() on the internal form |
 | `reset` | `reset(): void` | Reset to the initial values (matching form-associated reset baseline semantics: restores initial values, clears validation errors, dispatches no events) |

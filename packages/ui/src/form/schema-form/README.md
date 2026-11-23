@@ -121,9 +121,13 @@
 - 值：`{path}` 占位（点号 + `[i]`，通配 `[]`）/ 字符串 / 数字 / `true/false/null` / `$self`。
   通配路径在表达式里读成匹配值数组（`sum({items[].price})`、`len({users[].name})`）。
 - 比较 `== != > >= < <=`：两侧同为数字按数值，其余按字符串（写死，避开 `"9" > "100"`）。
-- 逻辑 `&& || !` + 括号；算术 `+ - * / %` 仅数值（字符串不隐式转数）；成员 `in` / `contains(c, x)`。
-- 函数库 8 个：`iif(c, a, b)` / `empty(x)` / `len(x)` / `sum(arr)` / `min(...nums)` / `max(...nums)` /
-  `lower(s)` / `upper(s)`。
+- 逻辑 `&& || !` + 括号；算术 `+ - * / %` 仅数值（字符串不隐式转数，`'1' + 2` 得 `NaN`
+  （运行时），`NaN` 参与比较恒为假）；成员 `in` / `contains(c, x)`。
+- 函数库 9 个：`iif(c, a, b)`（**惰性**：未命中的分支不求值）/ `empty(x)` / `len(x)` / `sum(arr)` /
+  `min(...nums)` / `max(...nums)` / `lower(s)` / `upper(s)` / `concat(...strings)`。
+- `concat(...strings)` 是字符串拼接的唯一形态（`+` 只做数值加法）：参数 ≥ 1，非字符串参数按字符串
+  宽容转换（数字 / 布尔转字面量，`null` / `undefined` 为空串），不报错。
+- `sum(x)` 对非数组宽容处理：单值按一项累加，非数值项按 0 计（`sum('abc')` → 0），不抛错。
 - 排除项一律**编译期报错**：赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则字面量 / 属性访问链。
   语法错 / 未知字段 / 未知函数只让**该条** reaction 降级（devWarn），其余联动照常。
 - 宿主函数：`registerExprFunction(name, fn)`（注册需在设置 schema 之前）。用到宿主函数的 reaction
@@ -136,8 +140,9 @@
 
 - 非受控 = `initialValues` 一次性基线（schema `default` 兜底，宿主值优先）。
 - 受控 = property `values`（对象 / attribute JSON 双通道）：挂载时作为基线，之后**按叶子路径 diff 写**
-  （不重建 DOM、不打断焦点）；宿主删除的键 → 对应字段清空；数组按长度补行（`min` 只增，删行仍走
-  form-list 交互）。
+  （不重建 DOM、不打断焦点）；值树在**恰为已渲染字段名**的节点整值下发——数组值字段（`array of enum`
+  → 单控件 `oas-checkbox-group`）宿主写 `{ tags: ['a', 'b'] }` 即整写，对象数组容器键照常下钻到行字段；
+  宿主删除的键 → 对应字段清空；数组按长度补行（`min` 只增，删行仍走 form-list 交互）。
 - 宿主写**不派发** `oas-values-change`（程序化写与 initial-values 同口径，防回环）；用户交互照常派发。
 - `setValues(patch)` 是同一写通道的方法形态（走内核 `oas-form.setValues` → 控件 writer 注册表）。
 - `dirty` = 当前扁平值与挂载基线比较（组件自持 `pristineSnapshot`，内核之外明确的一小块）。

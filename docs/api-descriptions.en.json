@@ -5856,13 +5856,13 @@
       "size": "Forwarded to the inner oas-form size.",
       "disabled": "Disables the whole form through the kernel form chain (fields and array add/remove buttons).",
       "validate-trigger": "Forwarded to the inner oas-form field validation trigger (input / change / blur).",
-      "values": "Controlled values (V1b): dual channel — property (object) and attribute (JSON string). Applied as the baseline on mount; later changes are written as a leaf-level diff (no DOM rebuild, no focus loss). Host writes never emit `oas-values-change` (no echo loop). Takes precedence over `initialValues` when both are provided."
+      "values": "Controlled values (V1b): object property plus JSON-string attribute channel. Acts as the baseline on mount, then each change is written as a leaf-level diff (no DOM rebuild, no focus loss); a node that exactly matches a rendered field name is written as a whole value (array-valued fields such as `array of enum` → `oas-checkbox-group` take `[\"a\",\"b\"]` directly, while object-array container keys still descend to row fields); host writes never emit `oas-values-change` (no echo loop); wins over `initialValues` when both are provided."
     },
     "methods": {
       "submit": "Submit: evaluates reactions, runs kernel field validation, then array-level validation and injects its errors, and finally delegates to the kernel (design order: kernel first, array-level second; oas-submit / oas-validate-fail are dispatched by the kernel and bubble out, failure payload = field errors ∪ array-level errors).",
       "validate": "Validate: reactions → kernel field validation → array-level validation (union of errors); returns whether everything passes.",
       "getValues": "Current form values using the kernel string semantics (leaves are always strings, arrays are JSON strings).",
-      "setValues": "Controlled write channel (V1b): writes field values by nested path through the kernel `oas-form.setValues` and the control writer registry. Only rendered fields are written, no events are emitted and no DOM is rebuilt; unrendered paths are skipped (array row counts stay with form-list).",
+      "setValues": "Controlled write channel (V1b): writes field values by nested path through the kernel `oas-form.setValues` and the control writer registry; a path that exactly matches a rendered field name is written as a whole value (array-valued fields are not split into index paths), container keys still descend; only rendered fields are written, no events are emitted and no DOM is rebuilt; unrendered paths are skipped (row count stays with form-list).",
       "setErrors": "Inject errors (for server validation). Path normalization and precedence are handled by the form kernel.",
       "clearErrors": "Clear injected errors (omit paths to clear all); affected fields fall back to rule errors.",
       "reset": "Reset: back to initial values, clear errors, array rows back to their initial length (no events)."

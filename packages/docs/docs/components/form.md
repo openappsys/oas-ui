@@ -609,7 +609,7 @@ onMounted(() => {
 | --- | --- | --- |
 | `reapplyInitialValues` | `reapplyInitialValues(): void` | 为「初始值基线建立后才出现的字段」补写 initial-values（oas-form-list 等动态字段容器 |
 | `getValues` | `getValues(): Record<string, unknown>` | 公开取值入口：全表当前值快照（嵌套结构），与 submit() 派发的 detail.values 同口径 |
-| `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道：按嵌套路径写字段值（走控件 writer 注册表），只写已渲染字段、不派发事件、不改变 reset 基线 |
+| `setValues` | `setValues(patch: Record<string, unknown>): void` | 受控写通道：按嵌套路径写字段值（走控件 writer 注册表）；路径恰为已渲染字段名时整值写入（数组值字段如 `oas-checkbox-group` 不按下标拆路径），容器键照常下钻；只写已渲染字段、不派发事件、不改变 reset 基线 |
 | `validate` | `validate(): Promise<boolean>` | 公开校验入口：校验全部字段并同步错误态（aria-invalid + 错误文案），返回是否全部通过。 |
 | `submit` | `submit(): void` | 公开提交入口：委托内部 form 的 requestSubmit()。 |
 | `reset` | `reset(): void` | 重置回初始值（与 form-associated reset 基线语义一致：回初始值、清除校验错误态、不派发任何事件） |

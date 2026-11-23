@@ -5600,13 +5600,13 @@
       "size": "透传给内层 oas-form 的尺寸档位。",
       "disabled": "整表禁用（经内核表单链路下发到字段与数组增删按钮）。",
       "validate-trigger": "透传给内层 oas-form 的字段校验触发时机（input / change / blur）。",
-      "values": "受控值（V1b）：property（对象）与 attribute（JSON 字符串）双通道。挂载时作为基线，之后按叶子路径 diff 写（不重建 DOM、不打断焦点）；宿主写不派发 `oas-values-change`（防回环）；与 `initialValues` 同时提供时本属性优先。"
+      "values": "受控值（V1b）：property（对象）与 attribute（JSON 字符串）双通道。挂载时作为基线，之后按叶子路径 diff 写（不重建 DOM、不打断焦点）；值树在恰为已渲染字段名的节点整值下发（数组值字段如 `array of enum` → `oas-checkbox-group` 直接写 `[\"a\",\"b\"]`，对象数组容器键照常下钻到行字段）；宿主写不派发 `oas-values-change`（防回环）；与 `initialValues` 同时提供时本属性优先。"
     },
     "methods": {
       "submit": "提交：联动求值 → 内核字段校验 → 数组级校验并注入错误 → 委托内核提交（时序对齐设计稿：先内核、后数组级；oas-submit / oas-validate-fail 由内核派发并穿出，失败载荷含字段错误 ∪ 数组级错误）。",
       "validate": "校验：联动求值 → 内核字段校验 → 数组级校验（错误并集），返回是否全部通过。",
       "getValues": "全表当前值（form 内核字符串语义：叶子恒为字符串，数组出 JSON 串）。",
-      "setValues": "受控写通道（V1b）：按嵌套路径写字段值（走内核 `oas-form.setValues` 与控件 writer 注册表）；只写已渲染字段、不派发事件、不重建 DOM；未渲染路径跳过（数组行数由 form-list 维护）。",
+      "setValues": "受控写通道（V1b）：按嵌套路径写字段值（走内核 `oas-form.setValues` 与控件 writer 注册表）；路径恰为已渲染字段名时整值写入（数组值字段不按下标拆路径），容器键照常下钻；只写已渲染字段、不派发事件、不重建 DOM；未渲染路径跳过（数组行数由 form-list 维护）。",
       "setErrors": "注入错误（服务端校验结果）；路径归一与优先级语义由 form 内核承载。",
       "clearErrors": "清除注入错误（省略 paths = 清全部）；受影响字段回落规则错误。",
       "reset": "重置：回初始值、清错误、数组行数回初始长度（不派发事件）。"
