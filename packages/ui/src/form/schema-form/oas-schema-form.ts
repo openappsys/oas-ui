@@ -43,6 +43,10 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+.body {
+  /* 透传参与内层 form 的布局：grid 模式下 span 才能落到字段/容器（否则 body 自身占一列） */
+  display: contents;
+}
 .group {
   display: flex;
   flex-direction: column;
@@ -554,6 +558,13 @@ export class OASSchemaForm extends OASElement {
     title.hidden = node.label === ''
     container.appendChild(title)
 
+    const empty = document.createElement('div')
+    empty.className = 'array-empty'
+    empty.setAttribute('part', 'array-empty')
+    empty.textContent = this.t('schemaForm.emptyArray')
+    // 空态提示放在列表之前：列表的「添加一项」按钮在其下方，文案里的方向词才成立
+    container.appendChild(empty)
+
     const list = document.createElement('oas-form-list')
     list.setAttribute('part', 'list')
     list.setAttribute('data-schema-array-key', node.key)
@@ -573,12 +584,6 @@ export class OASSchemaForm extends OASElement {
     error.setAttribute('role', 'alert')
     error.hidden = true
     container.appendChild(error)
-
-    const empty = document.createElement('div')
-    empty.className = 'array-empty'
-    empty.setAttribute('part', 'array-empty')
-    empty.textContent = this.t('schemaForm.emptyArray')
-    container.appendChild(empty)
     return container
   }
 

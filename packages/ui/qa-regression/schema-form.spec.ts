@@ -163,6 +163,16 @@ test('schema-form 标签页键盘可达：方向键切换 aria-selected 与面�
   await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true')
   await expect(tabs.first()).toHaveAttribute('aria-selected', 'false')
   await expect(page.locator('#sf-layout [role="tabpanel"]').nth(1)).toBeVisible()
+
+  // 栅格 span 生效：两个 span=12 容器并排（同顶、左右分布；body 不得成为中间层占列）
+  const geom = await page.evaluate(() => {
+    const host = document.getElementById('sf-layout')!
+    const group = host.shadowRoot!.querySelector('[part="group"]')!.getBoundingClientRect()
+    const tabsBox = host.shadowRoot!.querySelector('[part="tabs"]')!.getBoundingClientRect()
+    return { groupTop: group.top, groupRight: group.right, tabsTop: tabsBox.top, tabsLeft: tabsBox.left }
+  })
+  expect(Math.abs(geom.groupTop - geom.tabsTop)).toBeLessThan(4)
+  expect(geom.tabsLeft).toBeGreaterThanOrEqual(geom.groupRight - 1)
 })
 
 test('schema-form 宿主桥接：Vue 下 schema/uiSchema 走 property 通道（未被序列化成 attribute）', async ({ page }) => {
