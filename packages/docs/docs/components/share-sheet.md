@@ -29,14 +29,30 @@ description: 底部弹出的分享面板，宫格渠道 + 取消/关闭，点击
 
 ## 自定义标题与取消文案
 
-<DemoBlock title="heading / cancel-text 覆盖">
+`description` 在标题下方补一行描述文案（分享说明等），缺省不渲染：
+
+<DemoBlock title="heading / description / cancel-text 覆盖">
   <oas-share-sheet
     id="ss-custom"
     heading="发给好友"
+    description="分享后好友可直接查看该商品"
     cancel-text="算了"
     channels='[{"key":"copy","name":"复制链接","icon":"copy"},{"key":"mail","name":"邮件","icon":"mail"}]'
   ></oas-share-sheet>
   <oas-button id="ss-custom-open" size="small">打开自定义面板</oas-button>
+</DemoBlock>
+
+## 渠道描述
+
+`channels[].description` 在渠道名下方渲染描述小字（渠道用途说明），缺省不渲染：
+
+<DemoBlock title="channels[].description">
+  <oas-share-sheet
+    id="ss-desc"
+    heading="分享到"
+    channels='[{"key":"wechat","name":"微信","description":"分享到聊天"},{"key":"weibo","name":"微博","description":"发帖分享"},{"key":"copy","name":"复制链接"}]'
+  ></oas-share-sheet>
+  <oas-button id="ss-desc-open" size="small">打开带渠道描述的面板</oas-button>
 </DemoBlock>
 
 ## 无图标渠道
@@ -77,6 +93,7 @@ onMounted(() => {
     })
     document.querySelector('#ss-custom-open')?.addEventListener('click', () => document.querySelector('#ss-custom')?.show())
     document.querySelector('#ss-fallback-open')?.addEventListener('click', () => document.querySelector('#ss-fallback')?.show())
+    document.querySelector('#ss-desc-open')?.addEventListener('click', () => document.querySelector('#ss-desc')?.show())
   })
 })
 </script>
@@ -91,6 +108,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `cancel-text` | 取消按钮文案；缺省走 i18n `shareSheet.cancel` | `string` | — |
 | `channels` | 渠道 JSON 数组 `[{ key, name, icon? }]`：`icon` 为 `oas-icon` 图标名，缺省用名称首字符占位；非法 JSON 忽略并 dev 告警一次 | `ShareSheetChannel[] \| string` | — |
+| `description` | 标题下方描述文案（分享说明等；缺省不渲染） | `string` | — |
 | `heading` | 面板标题；缺省走 i18n `shareSheet.title` | `string` | — |
 | `open` | 受控显隐（在场=展开；宿主直接写入静默） | — | — |
 

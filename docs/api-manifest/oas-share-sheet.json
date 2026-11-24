@@ -13,6 +13,12 @@
       "observed": true
     },
     {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "cancel-text",
       "type": "string",
       "default": "",

@@ -10,3 +10,8 @@
 ## 定版前评审记档（不修项）
 
 - **z-index 无覆盖通道**：浮层固定层叠档（内部常量），不暴露 `z-index` 属性 / CSS 自定义属性。宿主若把它与更高层的自定义浮层叠放，只能靠自身 DOM 顺序或包一层 stacking context 调整。本批不新增通道：开放任意 z-index 会绕过全库统一的层叠阶梯（modal / drawer / popover 的相互次序），需要与 ui-spec 的层级规范一起设计。
+
+## description 增量（能力补强批）
+
+- description：标题下方描述文案（缺省不渲染，无空块占位）。
+- channels[].description：渠道名下方描述小字（缺省不渲染）；随 oas-select 的 detail.channel 完整回传。

@@ -29,14 +29,30 @@ A share panel that rises from the bottom: heading + channel grid + cancel button
 
 ## Custom Heading / Cancel Text
 
-<DemoBlock title="heading / cancel-text overrides">
+`description` renders a descriptive line under the heading (share notes and the like); it is not rendered by default:
+
+<DemoBlock title="heading / description / cancel-text overrides">
   <oas-share-sheet
     id="ss-custom"
     heading="Send to a friend"
+    description="Friends can view the item right after opening the share"
     cancel-text="Not now"
     channels='[{"key":"copy","name":"Copy link","icon":"copy"},{"key":"mail","name":"Email","icon":"mail"}]'
   ></oas-share-sheet>
   <oas-button id="ss-custom-open" size="small">Open custom sheet</oas-button>
+</DemoBlock>
+
+## Channel Descriptions
+
+`channels[].description` renders a small description under each channel name (what the channel does); it is not rendered by default:
+
+<DemoBlock title="channels[].description">
+  <oas-share-sheet
+    id="ss-desc"
+    heading="Share to"
+    channels='[{"key":"wechat","name":"WeChat","description":"Share to a chat"},{"key":"weibo","name":"Weibo","description":"Post to your feed"},{"key":"copy","name":"Copy link"}]'
+  ></oas-share-sheet>
+  <oas-button id="ss-desc-open" size="small">Open sheet with channel descriptions</oas-button>
 </DemoBlock>
 
 ## Channels Without Icons
@@ -77,6 +93,7 @@ onMounted(() => {
     })
     document.querySelector('#ss-custom-open')?.addEventListener('click', () => document.querySelector('#ss-custom')?.show())
     document.querySelector('#ss-fallback-open')?.addEventListener('click', () => document.querySelector('#ss-fallback')?.show())
+    document.querySelector('#ss-desc-open')?.addEventListener('click', () => document.querySelector('#ss-desc')?.show())
   })
 })
 </script>
@@ -91,6 +108,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `cancel-text` | Cancel button copy; defaults to i18n `shareSheet.cancel` | `string` | — |
 | `channels` | Channel JSON array `[{ key, name, icon? }]`: `icon` is an `oas-icon` name; missing icons fall back to the first character; invalid JSON is ignored with one dev warning | `ShareSheetChannel[] \| string` | — |
+| `description` | Descriptive line under the heading (share notes and the like; not rendered by default) | `string` | — |
 | `heading` | Panel heading; defaults to i18n `shareSheet.title` | `string` | — |
 | `open` | Controlled visibility (present = open; host writes are silent) | — | — |
 

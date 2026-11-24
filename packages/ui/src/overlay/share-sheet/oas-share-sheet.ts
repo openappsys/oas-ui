@@ -12,8 +12,10 @@ import { devWarn } from '../../shared/dev-warn.js'
  * 属性（kebab-case）：
  * - `open`：受控显隐（在场=展开）
  * - `heading`：面板标题；缺省走 i18n `shareSheet.title`
+ * - `description`：标题下方描述文案（分享说明等；缺省不渲染）
  * - `cancel-text`：取消按钮文案；缺省走 i18n `shareSheet.cancel`
- * - `channels`：渠道 JSON 数组 `[{ key, name, icon? }]`；非法 JSON 忽略并告警一次
+ * - `channels`：渠道 JSON 数组 `[{ key, name, icon?, description? }]`；`description` 渲染在
+ *   渠道名下方的描述小字；非法 JSON 忽略并告警一次
  *
  * property 通道：`channels`（get/set）——与 attribute 同一数据源，赋数组时自动 JSON
  * 序列化反射回属性（框架按 `key in el` 走 property 写入，属性通道不会丢值）。
@@ -98,6 +100,16 @@ const STYLE = `
   font-weight: 600;
   color: var(--oas-color-text-primary);
 }
+.desc {
+  margin: 0;
+  padding: 0 var(--oas-space-4);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.5;
+}
+.desc[hidden] {
+  display: none;
+}
 .close-btn {
   display: inline-flex;
   align-items: center;
@@ -172,6 +184,18 @@ const STYLE = `
   white-space: nowrap;
   line-height: 1.3;
 }
+.channel-desc {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-xs);
+  line-height: 1.3;
+}
+.channel-desc[hidden] {
+  display: none;
+}
 .cancel {
   flex-shrink: 0;
   margin-block-start: var(--oas-space-1);
@@ -204,6 +228,8 @@ export interface ShareSheetChannel {
   key: string
   name: string
   icon?: string
+  /** 渠道描述小字（渲染在渠道名下方；缺省不渲染） */
+  description?: string
 }
 
 type CloseReason = 'cancel' | 'close' | 'backdrop' | 'esc' | 'select' | 'api'
@@ -215,11 +241,12 @@ const warnedChannels = new Set<string>()
 
 export class OASShareSheet extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['open', 'heading', 'cancel-text', 'channels']
+    return ['open', 'heading', 'description', 'cancel-text', 'channels']
   }
 
   private sheetEl: HTMLElement | null = null
   private headingEl: HTMLElement | null = null
+  private descEl: HTMLElement | null = null
   private gridEl: HTMLElement | null = null
   private cancelEl: HTMLButtonElement | null = null
   private closeEl: HTMLButtonElement | null = null
@@ -242,6 +269,7 @@ export class OASShareSheet extends OASElement {
           <h2 class="heading" part="heading"></h2>
           <button class="close-btn" part="close" type="button"><svg viewBox="0 0 16 16" aria-hidden="true">${closePath}</svg></button>
         </div>
+        <p class="desc" part="description" hidden></p>
         <div class="grid" part="grid" role="group"></div>
         <button class="cancel" part="cancel" type="button"></button>
       </div>
@@ -268,6 +296,7 @@ export class OASShareSheet extends OASElement {
   private bind(): void {
     this.sheetEl = this.shadow.querySelector<HTMLElement>('.sheet')
     this.headingEl = this.shadow.querySelector<HTMLElement>('.heading')
+    this.descEl = this.shadow.querySelector<HTMLElement>('.desc')
     this.gridEl = this.shadow.querySelector<HTMLElement>('.grid')
     this.cancelEl = this.shadow.querySelector<HTMLButtonElement>('.cancel')
     this.closeEl = this.shadow.querySelector<HTMLButtonElement>('.close-btn')
@@ -383,7 +412,9 @@ export class OASShareSheet extends OASElement {
       const name = typeof value.name === 'string' ? value.name.trim() : ''
       if (key === '' || name === '') continue
       const icon = typeof value.icon === 'string' && value.icon.trim() !== '' ? value.icon.trim() : undefined
-      out.push(icon === undefined ? { key, name } : { key, name, icon })
+      const description =
+        typeof value.description === 'string' && value.description.trim() !== '' ? value.description.trim() : undefined
+      out.push({ key, name, ...(icon !== undefined && { icon }), ...(description !== undefined && { description }) })
     }
     return out
   }
@@ -423,7 +454,13 @@ export class OASShareSheet extends OASElement {
       label.className = 'channel-name'
       label.textContent = channel.name
 
-      button.append(iconWrap, label)
+      const desc = document.createElement('span')
+      desc.className = 'channel-desc'
+      desc.setAttribute('part', 'channel-desc')
+      desc.textContent = channel.description ?? ''
+      desc.hidden = channel.description == null || channel.description === ''
+
+      button.append(iconWrap, label, desc)
       grid.appendChild(button)
     })
   }
@@ -431,6 +468,11 @@ export class OASShareSheet extends OASElement {
   protected override update(): void {
     const heading = this.getAttr('heading', '').trim() || this.t('shareSheet.title')
     if (this.headingEl) this.headingEl.textContent = heading
+    if (this.descEl) {
+      const description = this.getAttr('description', '').trim()
+      this.descEl.textContent = description
+      this.descEl.hidden = description === ''
+    }
     if (this.sheetEl) this.sheetEl.setAttribute('aria-label', heading)
     if (this.gridEl) this.gridEl.setAttribute('aria-label', heading)
     if (this.cancelEl) {
