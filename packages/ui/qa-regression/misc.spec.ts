@@ -41,6 +41,40 @@ test('docs chrome：语言入口/侧栏条目保留原生 reset（无 UA 边框/
   await ctxMob.close()
 })
 
+test('硬隐私模式（storage 禁用）：横幅静默不出现、切换器可用、无空让位残留', async ({ browser }) => {
+  // localStorage 读写抛异常（「阻止所有 Cookie」类硬隐私配置）：全部语言触点（head 脚本 /
+  // LangHint / LocaleSwitch / Layout watcher）都必须静默降级——横幅不出现、页面不崩、
+  // 切换器照常跳转、预测让位类无残留。注意：VitePress 框架自身的外观持久化读取在此场景
+  // 会抛 SecurityError（上游行为，非本项目代码），故本用例不断言 console 干净。
+  const ctx = await browser.newContext({ locale: 'en-US' })
+  await ctx.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', {
+      get() {
+        throw new DOMException('Access denied for this document', 'SecurityError')
+      },
+      configurable: true,
+    })
+  })
+  const p = await ctx.newPage()
+  const pageErrors: string[] = []
+  p.on('pageerror', (e) => pageErrors.push(String(e)))
+  await p.goto('/guide/getting-started', { waitUntil: 'domcontentloaded' })
+  // 页面本身正常渲染（不受语言层影响）
+  await expect(p.locator('.vp-doc h1').first()).toBeVisible({ timeout: 15000 })
+  // 横幅静默不出现（v-if 移除节点）
+  await expect(p.locator('.oas-lang-hint')).toHaveCount(0)
+  // 预测让位类无残留（head 脚本在异常路径不添加；LangHint 对账撤除）
+  expect(await p.evaluate(() => document.documentElement.classList.contains('oas-lang-hint-predict'))).toBe(false)
+  // 切换器可用：点击跳对应英文页（偏好写入静默失败，导航不受影响）
+  await expect(p.locator('.oas-locale-switch')).toBeVisible()
+  await p.locator('.oas-locale-switch a[lang="en"]').click()
+  await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/guide/getting-started')
+  // 未捕获异常只允许来自框架 bundle（ Appearance 持久化，上游行为）；断言没有指向
+  // 本项目 head 内联脚本/组件的页面级异常（head 脚本与组件都在 try/catch 内）
+  expect(pageErrors.filter((e) => e.includes('oas-lang')).length, '语言层不得产生未捕获异常').toBe(0)
+  await ctx.close()
+})
+
 test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => {
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
