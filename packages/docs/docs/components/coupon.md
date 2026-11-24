@@ -95,6 +95,33 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
   </p>
 </DemoBlock>
 
+## 多选叠加规则（max-select / 互斥组）
+
+多选模式下可叠加两条组合规则（都会在 `oas-select` 之外给出明确反馈）：
+
+- `max-select`：已选张数上限（正整数；`0` / 非法 = 不限并告警一次）。到达上限后再勾选**不生效**——勾选态回滚、已选集合不变，派发 `oas-select-invalid`（`detail: { reason: 'max-select', limit, code, codes, coupons }`）。触发按钮显示 `已选 n/m 张`。
+- **互斥组**：列表条目写 `exclusiveGroup`，同组券互斥——选中一张会自动取消同组其他已选券（自动解决的组合不阻塞，被取消的 code 随 `oas-select` 的 `removed` 字段回传）。不同组与无组券可并存。
+- 两条规则叠加时按**换选后的净张数**判定：同组换选先淘汰同组其他券，不额外占名额（已满 2 张时换选同组另一张不会触发拒绝）。
+- 单选模式天然互斥，忽略 `max-select` 与 `exclusiveGroup`。
+
+<DemoBlock title="max-select=2 + 互斥组（store 组只能留一张）">
+  <oas-coupon
+    id="cp-combo"
+    multiple
+    max-select="2"
+    list='[{"code":"s1","amount":30,"exclusiveGroup":"store"},{"code":"s2","amount":20,"exclusiveGroup":"store"},{"code":"p1","amount":10,"exclusiveGroup":"platform"},{"code":"f1","amount":5}]'
+  ></oas-coupon>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="cp-combo-open" size="small">打开弹层</oas-button>
+  </div>
+  <p
+    id="cp-combo-out"
+    style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"
+  >
+    勾选观察：上限拒绝派发 oas-select-invalid，换选同组券时 removed 回传被取消的券。
+  </p>
+</DemoBlock>
+
 ## 命令式开合与清空选择
 
 `open` 是受控属性（宿主写 attribute / property 静默生效），`openOverlay()` / `closeOverlay()` 是命令式开合（派发 `oas-open-change`）；`clearSelection()` 清空已选券（静默，供宿主重置选择状态）。`z-index` 数值叠加在 `--oas-z-index-base` 之上（缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态），下方 demo 给 1300。
@@ -125,6 +152,7 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 | `end` | 有效期结束（`YYYY-MM-DD`） | — | — |
 | `list` | 选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态 | `CouponData[] \| string` | — |
 | `locale` | 金额与日期格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN` | — | — |
+| `max-select` | 多选已选张数上限（正整数；0 / 非法 = 不限并告警一次）：到达上限后再勾选不生效（勾选态回滚、已选集合不变、派发 `oas-select-invalid`）；触发按钮显示 `已选 n/m 张`。单选模式忽略 | `string` | — |
 | `multiple` | 多选模式：选项变 checkbox，每次勾选/取消派发数组 detail `{ codes, coupons }` 且弹层不自动关闭；缺省单选不变 | `boolean` | — |
 | `open` | 弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`） | `boolean \| string` | — |
 | `reason` | 不可用原因文案（`status="unavailable"` 时展示） | — | — |
@@ -152,6 +180,7 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 | `oas-clear` | 点击「不使用优惠券」出口派发（紧随其后是空选 oas-select，两个事件成对） |
 | `oas-open-change` | 交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发） |
 | `oas-select` | 选中可用券时派发。单选（默认）detail `{ code, coupon }` 并随后关闭弹层；multiple 模式 detail `{ codes, coupons }`（数组，弹层不关）；「不使用优惠券」出口派发空选——单选 `{ code: 空串, coupon: null }` / 多选 `{ codes: [], coupons: [] }` |
+| `oas-select-invalid` | 多选组合校验拒绝（超过 `max-select`）派发，本次选择未生效、已选集合不变；`detail: { reason: "max-select", limit, code, codes, coupons }` |
 
 <script setup>
 import { onMounted } from 'vue'
@@ -188,6 +217,20 @@ onMounted(() => {
     })
     api?.addEventListener('oas-open-change', (e) => {
       out.textContent = 'oas-open-change：open=' + e.detail.open
+    })
+    // 多选叠加规则：上限拒绝 / 互斥替换的可见反馈
+    const combo = document.getElementById('cp-combo')
+    const comboOut = document.getElementById('cp-combo-out')
+    document.getElementById('cp-combo-open')?.addEventListener('click', () => {
+      combo?.openOverlay()
+    })
+    combo?.addEventListener('oas-select', (e) => {
+      const removed = e.detail.removed ?? []
+      comboOut.textContent =
+        'oas-select：已选 [' + e.detail.codes.join(', ') + ']' + (removed.length ? '；互斥取消 ' + removed.join(', ') : '')
+    })
+    combo?.addEventListener('oas-select-invalid', (e) => {
+      comboOut.textContent = 'oas-select-invalid：超过 max-select=' + e.detail.limit + '，券 ' + e.detail.code + ' 未被选中'
     })
   })
 })

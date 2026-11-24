@@ -6,7 +6,7 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
 
 步骤驱动的表单流程编排组件：步骤头 + 进度（「第 n / m 步」）+ 每步内容面板 + 单步校验门控。适合向导式表单 / 问卷 / 多步结算等场景。校验复用 `oas-form` 内核——**每步面板内放一个 `<oas-form>`**，下一步前对当前步校验、未过不放行；回退不校验、面板常驻不卸载（已填值保留）。
 
-> 边界：线性门控 + 可选步跳过 + `oas-before-change` 宿主自定义跳转 + **条件分支走宿主组合通道**（`hidden` 数据位 + `oas-before-change` + `oas-values-change`，见下文）；谓词 / 表达式引擎不内置（宿主持有全量答案数据，分支决策留在宿主可 veto、可测试的应用层）。起始页/完成页暂不内置；草稿持久化请用 `current` + `getValues()` 自行实现。
+> 边界：线性门控 + 可选步跳过 + `oas-before-change` 宿主自定义跳转 + 两条条件分支通道（**声明式** `steps[].when` / `goto`，与 `oas-schema-form` 同一套受限表达式引擎；**宿主组合** `hidden` 数据位 + `oas-values-change`）——两条通道正交，宿主显式 `hidden` 优先。起始页/完成页暂不内置；草稿持久化请用 `current` + `getValues()` 自行实现。
 
 ## 基础用法
 
@@ -82,10 +82,17 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
 
 ## 条件分支（按答案跳步）
 
-条件分支走**宿主组合通道**，不内置谓词引擎：宿主监听 `oas-values-change` 拿到答案，按业务规则改写 `steps` 翻转 `hidden` 位即生效——被隐藏步退出头部与进度、`next()` 自动跳过、其值退出取值与校验口径。若翻转的是用户所在步，组件自动把 `current` 对齐到最近可见步并派发 `oas-change`（宿主无需再手动跳转）。分支决策留宿主的好处：规则可单测、可在 `oas-before-change` 里再 veto、避免在组件内重造一套表达式语言。
+条件分支有两种正交通道：
 
-<DemoBlock title="按答案隐藏/恢复步骤">
-  <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"是否开票"},{"key":"invoice","title":"发票信息"},{"key":"done","title":"确认提交"}]'>
+1. **声明式**（推荐）：`steps` 条目写 `when` 表达式，条件不成立即自动隐藏该步——见下一节「声明式条件与跳转」；
+2. **宿主组合**：宿主监听 `oas-values-change` 拿到答案，按业务规则改写 `steps` 翻转 `hidden` 位即生效——被隐藏步退出头部与进度、`next()` 自动跳过、其值退出取值与校验口径。若翻转的是用户所在步，组件自动把 `current` 对齐到最近可见步并派发 `oas-change`（宿主无需再手动跳转）。分支规则极复杂或需要跨系统决策时走这条：规则可单测、可在 `oas-before-change` 里再 veto。
+
+两条通道**正交**：`hidden: true` 恒隐藏（宿主优先），条件只决定「未被宿主显式隐藏」的步。
+
+> 下方 demo 故意用 `conditions="false"` 关掉引擎，同时给「发票信息」步写了一条 `when`：因为引擎关闭，这条条件**不生效**（该步恒显示），分支完全由宿主的 `hidden` 位决定——这就是「完全由宿主控制分支」的写法。去掉 `conditions` 属性再作答一次，即可对比两种通道的差别。
+
+<DemoBlock title="按答案隐藏/恢复步骤（宿主组合通道 · 条件引擎关闭）">
+  <oas-questionnaire id="q-cond" conditions="false" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"是否开票"},{"key":"invoice","title":"发票信息","when":"{need} == \"no\""},{"key":"done","title":"确认提交"}]'>
     <oas-form slot="step-need" initial-values='{"need":"yes"}'>
       <oas-radio-group name="need">
         <oas-radio value="yes">需要开票</oas-radio>
@@ -100,6 +107,86 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
     </oas-form>
   </oas-questionnaire>
   <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 声明式条件与跳转（when / goto）
+
+`steps` 条目可直接写条件表达式，求值复用 `oas-schema-form` 的受限表达式引擎（同一套冻结语法：`{字段路径}` 取值、`== != > >= < <=`、`&& || !`、`in` / `contains()` 与文本 / 数学函数库；不引第三方依赖）：
+
+- `when`：条件不成立 → 该步自动隐藏（头部项、进度总数、导航、取值与校验一律按隐藏口径，`next()` 自动跳过）。表达式读取**跨步汇总答案**（含隐藏步——面板常驻、值保留）；作答变化时按依赖路径定向重算，未命中依赖的字段变化不触发整树重算。
+- `goto`：前进时按条件跳转——`{ when, target }`（`target` 为 0 起索引或步骤 `key`），或直接写 `target` 简写（条件恒成立）。命中且切步成功（未被 `oas-before-change` 否决）后派发 `oas-goto`（`detail: { index, key?, from, target }`）；跳转仍走单步校验与 `oas-before-change`（可 veto）。目标步被条件隐藏时落到其后最近的可见步。
+- `conditions="false"`：关闭引擎，`when` / `goto` 全部失效，仅认宿主 `hidden`（完全由宿主控制分支时用）。
+- 与宿主 `hidden` **正交**：`hidden: true` 恒隐藏（宿主优先），`hidden: false` / 缺省才由 `when` 决定。
+- 容错：表达式语法错 / 未知函数一次性 `devWarn`，该条降级（`when` 不生效 = 步骤可见、`goto` 不跳转），不连坐其它步骤；宿主在 `oas-change` 里回写 `current` / 答案形成同步回环时，级联 8 轮截断并告警（不死循环）。
+
+> 步骤内容里的 `oas-schema-form` 值变化同样驱动 `when`——步骤内容只要是「实现 `getValues()` / `validate()` 且派发 `oas-values-change`」的 duck-typed 元素即可。
+
+<DemoBlock title="when 条件步 + goto 直达（换选项观察步骤数与跳转）">
+  <oas-questionnaire
+    id="q-when"
+    style="width: 100%; max-width: 560px"
+    steps='[{"key":"extend","title":"是否延保","goto":{"when":"{extend} == \"no\"","target":"done"}},{"key":"warranty","title":"延保方案","when":"{extend} == \"yes\""},{"key":"invoice","title":"发票信息"},{"key":"done","title":"完成"}]'
+  >
+    <oas-form slot="step-extend" initial-values='{"extend":"yes"}'>
+      <oas-radio-group name="extend">
+        <oas-radio value="yes">需要延保</oas-radio>
+        <oas-radio value="no">不需要（点「下一步」直达完成）</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-warranty" rules='{"years":[{"required":true,"message":"请选择延保年限"}]}'>
+      <oas-radio-group name="years">
+        <oas-radio value="1">1 年</oas-radio>
+        <oas-radio value="2">2 年</oas-radio>
+        <oas-radio value="3">3 年</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-invoice">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">发票信息（选填，点「下一步」直达完成）。</p>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">完成。</p>
+    </oas-form>
+  </oas-questionnaire>
+  <span id="q-when-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## 评分汇总（score-rules）
+
+`score-rules` 传**规则列表** `[{ when, score }]`：条件成立即把分值累加进总分。规则只有这一种形态——「字段 → 每选项分值」的映射等价于若干条 `{ when: "{字段} == \"选项\"", score: n }`，因此不另设一套语法。
+
+- **只读 property `score`**：读即按当前跨步答案（含隐藏步答案——面板常驻、值保留）求和，永远是最新值；
+- **事件 `oas-score`**：作答变化后派发（`detail: { score }`），80 ms 防抖合并连续作答；分数未变化不派发；`score-rules` 变更静默（改规则后宿主自行读取 property）；
+- **引擎只算不渲染**：分数展示、题型组合（`oas-rate` / `oas-slider` / 选项组等既有件）全由宿主决定，本组件不内置题型；
+- 非法规则（非对象 / `when` 非字符串 / `score` 非数值 / 表达式语法错）逐条跳过并一次性 `devWarn`，不连坐其它规则；表达式求值抛错（宿主函数）按条件不成立处理。
+
+<DemoBlock title="评分汇总（作答后看总分与 oas-score 事件）">
+  <oas-questionnaire
+    id="q-score"
+    style="width: 100%; max-width: 560px"
+    score-rules='[{"when":"{satisfaction} == \"5\"","score":5},{"when":"{satisfaction} == \"4\"","score":3},{"when":"{recommend} == \"yes\"","score":2}]'
+    steps='[{"key":"s","title":"满意度"},{"key":"r","title":"是否推荐"},{"key":"done","title":"完成"}]'
+  >
+    <oas-form slot="step-s">
+      <oas-radio-group name="satisfaction">
+        <oas-radio value="5">非常满意</oas-radio>
+        <oas-radio value="4">满意</oas-radio>
+        <oas-radio value="1">不满意</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-r">
+      <oas-radio-group name="recommend">
+        <oas-radio value="yes">愿意推荐</oas-radio>
+        <oas-radio value="no">暂不推荐</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">点击「完成」查看汇总分数。</p>
+    </oas-form>
+  </oas-questionnaire>
+  <oas-space align="center" style="margin-top: var(--oas-space-3)">
+    <oas-button id="q-score-read">读取 score</oas-button>
+    <span id="q-score-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </oas-space>
 </DemoBlock>
 
 ## 切换动画（animated）
@@ -295,7 +382,8 @@ onMounted(() => {
   const condSteps = (invoiceHidden) =>
     JSON.stringify([
       { key: 'need', title: '是否开票' },
-      { key: 'invoice', title: '发票信息', hidden: invoiceHidden },
+      // 引擎已关闭（conditions="false"）：这条 when 不生效，可见性只认宿主写的 hidden
+      { key: 'invoice', title: '发票信息', when: '{need} == "no"', hidden: invoiceHidden },
       { key: 'done', title: '确认提交' },
     ])
   cond?.addEventListener('oas-values-change', (e) => {
@@ -306,6 +394,27 @@ onMounted(() => {
     condOut.textContent = hide
       ? '已隐藏「发票信息」步：点「下一步」将自动跳过；选回「需要开票」即恢复'
       : '「发票信息」步已恢复显示'
+  })
+
+  // 声明式条件与跳转：when 切步反馈 + goto 命中反馈（goto 在切步成功后派发，覆盖前一条 change 文案）
+  const whenOut = document.getElementById('q-when-output')
+  document.getElementById('q-when')?.addEventListener('oas-goto', (e) => {
+    whenOut.textContent = `goto 命中：第 ${e.detail.from + 1} 步 → 第 ${e.detail.index + 1} 步（中间可见步被跳过）`
+  })
+  document.getElementById('q-when')?.addEventListener('oas-change', (e) => {
+    // 内层字段 oas-change 同名冒泡：只处理带 index 的切步事件
+    if (typeof e.detail?.index !== 'number') return
+    whenOut.textContent = `已到第 ${e.detail.index + 1} 步（条件步骤按答案自动显隐）`
+  })
+
+  // 评分汇总：oas-score 事件与只读 property 读取
+  const scoreOut = document.getElementById('q-score-output')
+  const scoreEl = document.getElementById('q-score')
+  scoreEl?.addEventListener('oas-score', (e) => {
+    scoreOut.textContent = `oas-score：${e.detail.score} 分（作答变化后 80ms 内派发）`
+  })
+  document.getElementById('q-score-read')?.addEventListener('click', () => {
+    scoreOut.textContent = `score property：${scoreEl.score} 分`
   })
 
   // 键盘快捷导航：切步反馈
@@ -389,6 +498,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `animated` | 题目切换过渡（opt-in，存在且非 `"false"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像 | `boolean` | — |
+| `conditions` | 步骤条件引擎开关（默认开，`conditions="false"` 关闭）：关闭后 `steps[].when` / `steps[].goto` 全部失效，只认宿主 `hidden` | `string` | `true` |
 | `current` | 当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取 | `string` | `0` |
 | `finish-text` | 末步主按钮文案（覆盖 locale 缺省「完成」） | — | — |
 | `hide-header` | 隐藏内置步骤头（宿主自组合） | `boolean` | — |
@@ -398,11 +508,18 @@ onMounted(() => {
 | `prev-text` | 「上一步」按钮文案（覆盖 locale 缺省） | — | — |
 | `progress` | 进度区显隐（`progress="false"` 隐藏） | `string` | `true` |
 | `progress-variant` | 进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both` | `string` | `both` |
+| `score-rules` | 评分规则 JSON 数组 `[{ when, score }]`：条件成立即把 `score` 累加进总分（表达式读取跨步全量答案，含隐藏步）；非法规则逐条跳过并告警。只算不渲染，题型由宿主组合 | `string` | — |
 | `shortcuts` | 键盘快捷导航（opt-in，存在且非 `"false"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标） | `boolean` | — |
 | `size` | 尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + 告警一次（同值去重）） | `string` | `medium` |
 | `skip-text` | 「跳过本步」按钮文案（覆盖 locale 缺省） | — | — |
 | `steps` | 步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]` | `QuestionnaireStep[] \| string` | `[]` |
 | `validation` | 单步校验门控（默认开，`validation="false"` 纯导航；`submit()` 不受此开关影响、始终重校） | `string` | `true` |
+
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `score` | 当前总分（只读）：读即按 `score-rules` 与当前跨步答案（含隐藏步——面板常驻、值保留）求和，永远最新；引擎只算不渲染 | `number` | — |
 
 #### 方法
 
@@ -423,6 +540,8 @@ onMounted(() => {
 | --- | --- |
 | `oas-before-change` | 跳步前（按钮 / 头部点击 / next / prev / goto / 跳过）可取消；`detail: { index, key?, from }`，`preventDefault()` 否决本次跳转 |
 | `oas-change` | 切步成功后；`detail: { index, key? }` |
+| `oas-goto` | `steps[].goto` 条件命中且切步成功（未被 `oas-before-change` 否决）后派发；`detail: { index, key?, from, target }`（`target` 为步骤条目里声明的原始引用） |
+| `oas-score` | 评分重算后派发（作答变化 80ms 防抖，分数未变不派发）；`detail: { score }`。规则变更静默，宿主改规则后自行读只读 property `score` |
 | `oas-skip` | 跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复） |
 | `oas-step-validate` | 单步校验结束时；`detail: { index, key?, valid, errors }` |
 | `oas-submit` | 末步完成（全部参与步校验通过）；`detail: { values }`（跨步汇总值，仅参与步——hidden / 已跳过步不计入） |

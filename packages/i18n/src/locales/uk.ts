@@ -613,6 +613,7 @@ export const uk: LocaleMessages = {
   'coupon.groupUnavailable': 'Недоступні купони',
   'coupon.notUse': 'Без купона',
   'coupon.selectedCount': 'Вибрано: {count}',
+  'coupon.selectedCountLimit': 'Вибрано {count} з {limit}',
   'goodsAction.label': 'Дії з товаром',
   'goodsAction.favorite': 'Обране',
   'goodsAction.shop': 'Магазин',
@@ -789,4 +790,8 @@ export const uk: LocaleMessages = {
   'orderCard.discount': 'Зекономлено',
   'orderCard.payable': 'До сплати',
   'productCard.noImage': 'Немає зображення',
+
+  // barrage（弹幕）
+  'barrage.like': 'Вподобайка',
+  'barrage.unlike': 'Прибрати вподобайку',
 }

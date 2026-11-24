@@ -1003,11 +1003,14 @@ function main() {
   const verbose = process.env.QA_AUDIT_VERBOSE === '1'
   // 阈值 = 已收口的历史债快照（2026-11-01 收尾）：waitForTimeout 440 → 26（四批清理后仅剩
   // 已登记的时间流逝/否定断言/测量仪器例外，逐处带 audit-exception 注释；2026-11-14 上限
-  // 随降至实测 26）；弱断言 1967 → **0**
+  // 随降至实测 26）；2026-11-24 → 27：合并批次新增 barrage 循环回归 1 处多轮采样仪器
+  // （qa-regression/barrage.spec.ts，已带 audit-exception 注释——循环重灌是定时动画行为，
+  // 「观察到 N 轮重灌」的语义就是采样足够长的墙钟时间，无单一 DOM 信号可等，与 carousel
+  // autoplay 多轮等待同型）；弱断言 1967 → **0**
   // （单测 1549 + e2e 418 全部换成精确契约；2026-11-01 归 0，maxWeak=0 = 零增量容忍——
   // 新测试不得引入弱断言，确属合理例外须在提交说明写清并调整阈值）。
   // 口径不变：**只防增量、不要求清零**；再改阈值必须在提交说明写清为什么。
-  const maxWait = argValue('--max-wait', 26)
+  const maxWait = argValue('--max-wait', 27)
   const maxWeak = argValue('--max-weak', 0)
   const maxEventLen = argValue('--max-event-len', 105)
   // OS 绝对量维度：默认上限 = 收口后的存量快照（2026-11-02：79 → 40 → 82；2026-11-14 清理

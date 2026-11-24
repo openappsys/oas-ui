@@ -853,9 +853,25 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#q-skip [part="next"]', 'click', '下一步 → oas-before-change + oas-step-validate + oas-change'],
     ['#q-skip [part="skip"]', 'click', '跳过可选步 → oas-skip（不校验直接前进）'],
     ['#q-skip [part="next"]', 'click', '末步完成 → 重校全部步后 oas-submit'],
+    // q-when：切「不需要延保」把延保方案步按 when 隐藏，再点下一步让声明式 goto 命中直达完成
+    ['#q-when oas-radio[value="no"] input', 'click', '选「不需要（直达完成）」→ when 隐藏延保方案步'],
+    ['#q-when [part="next"]', 'click', '下一步 → goto 命中（跳转成功）→ oas-goto'],
+    // q-score：作答变化 80ms 防抖后派发 oas-score，需显式等过防抖窗口
+    ['#q-score oas-radio[value="5"] input', 'click', '选「非常满意」→ 作答变化触发评分重算'],
+    ['wait:200', 'wait', '等 80ms 防抖窗口过去 → oas-score'],
   ],
   'scroll-area': [
     ['oas-scroll-area', 'scrollbottom', '视口确定性滚到底（shadow .viewport scrollTop=scrollHeight）→ oas-end-reached'],
+  ],
+  // barrage：弹幕随时间漂移，先补发一条再暂停舞台，点赞控件位置才稳定（真点 → oas-like）
+  barrage: [
+    ['#bg-like-send', 'domclick', '点「发一条正常弹幕」补一条带点赞控件的条目'],
+    [
+      `(() => { const el = document.getElementById('bg-like'); if (!el) return false; el.setAttribute('paused', ''); return true })()`,
+      'waitfor',
+      '暂停舞台（弹幕静止后点赞控件可稳定命中）',
+    ],
+    ['#bg-like [part="like"]', 'click', '点弹幕心形点赞控件 → oas-like'],
   ],
   tour: [
     ['oas-tour .beacon', 'click', '点信标 → 打开气泡'],
@@ -873,6 +889,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-coupon[list] input[type="radio"]', 'domclick', 'DOM click 首个可用券 radio → oas-select（选中即关闭）'],
     ['oas-coupon[list] [part="trigger"]', 'domclick', '再次展开弹层（分组 / 出口探针）'],
     ['oas-coupon[list] [part="clear-entry"]', 'domclick', '点「不使用优惠券」出口 → oas-clear + 空选 oas-select'],
+    // 多选叠加规则：cp-combo（max-select=2；列表 s1/s2 同属 store 互斥组，p1 独立组，f1 无组）
+    // 路径：选 s1 → 选 s2（同组换选，s1 被淘汰）→ 选 p1（满 2 张）→ 点 f1（净 3 张）→ oas-select-invalid
+    ['#cp-combo-open', 'domclick', '命令式打开叠加规则 demo 弹层'],
+    ['#cp-combo input[type="checkbox"]', 'click:n0', '勾选 store 组 s1'],
+    ['#cp-combo input[type="checkbox"]', 'click:n1', '勾选同组 s2 → 互斥换选（removed 回传 s1）'],
+    ['#cp-combo input[type="checkbox"]', 'click:n2', '勾选 platform 组 p1 → 已满 max-select=2'],
+    ['#cp-combo input[type="checkbox"]', 'click:n3', '再勾无组券 f1 → 净 3 张超上限 → oas-select-invalid'],
   ],
   sku: [
     ['#sku-basic [part="option"]', 'domclick', 'DOM click 基础内嵌 demo 首个规格选项 → oas-change'],

@@ -120,3 +120,39 @@ test('coupon 打开态断开重连：滚动锁与 Esc 层重获，二次断开�
   await expect(overlay).toBeHidden()
   await page.waitForFunction(() => document.body.style.overflow !== 'hidden', undefined, { timeout: 5000 })
 })
+
+test('coupon：max-select 上限拒绝（勾选回滚 + oas-select-invalid）与互斥组换选（removed 回传）', async ({ page }) => {
+  await page.goto('/components/coupon.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-combo')
+
+  const host = page.locator('#cp-combo')
+  await page.click('#cp-combo-open')
+  const overlay = host.locator('[part="overlay"]')
+  await expect(overlay).toBeVisible()
+
+  const options = host.locator('[part="option"]')
+  // s1（store 组）与 p1（platform 组）：两张不同组 → 已满 2 张
+  await options.nth(0).click()
+  await options.nth(2).click()
+  await expect(host.locator('[part="trigger-text"]')).toHaveText('已选 2/2 张')
+
+  // 第三张（非同组、非同码）必须被拒：勾选回滚 + 可见反馈
+  await options.nth(3).click()
+  await expect(options.nth(3).locator('input')).not.toBeChecked()
+  await expect(page.locator('#cp-combo-out')).toContainText('oas-select-invalid')
+  await expect(host.locator('[part="trigger-text"]')).toHaveText('已选 2/2 张')
+
+  // 同组换选：s1 → s2，净张数不变、被取消的券回传
+  await options.nth(1).click()
+  await expect(options.nth(1).locator('input')).toBeChecked()
+  await expect(options.nth(0).locator('input')).not.toBeChecked()
+  await expect(page.locator('#cp-combo-out')).toContainText('互斥取消 s1')
+  await expect(host.locator('[part="trigger-text"]')).toHaveText('已选 2/2 张')
+
+  // 选中态视觉：数据属性按值写 true（CSS 命中）
+  const selected = await host.evaluate((el) => {
+    const cards = [...(el as HTMLElement).shadowRoot!.querySelectorAll('[part="option"] [part="coupon"]')]
+    return cards.map((card) => card.getAttribute('data-selected'))
+  })
+  expect(selected.filter((value) => value === 'true')).toHaveLength(2)
+})

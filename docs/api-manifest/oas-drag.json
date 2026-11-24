@@ -47,6 +47,24 @@
       "observed": true
     },
     {
+      "name": "snap",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "snap-targets",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "snap-threshold",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "aria-label",
       "type": "string",
       "default": "",

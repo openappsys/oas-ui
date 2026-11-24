@@ -609,6 +609,7 @@ export const es: LocaleMessages = {
   'coupon.groupUnavailable': 'Cupones no disponibles',
   'coupon.notUse': 'No usar cupón',
   'coupon.selectedCount': '{count} seleccionados',
+  'coupon.selectedCountLimit': '{count} de {limit} seleccionados',
   'goodsAction.label': 'Acciones del producto',
   'goodsAction.favorite': 'Favoritos',
   'goodsAction.shop': 'Tienda',
@@ -785,4 +786,8 @@ export const es: LocaleMessages = {
   'orderCard.discount': 'Ahorrado',
   'orderCard.payable': 'A pagar',
   'productCard.noImage': 'Sin imagen',
+
+  // barrage（弹幕）
+  'barrage.like': 'Me gusta',
+  'barrage.unlike': 'Ya no me gusta',
 }

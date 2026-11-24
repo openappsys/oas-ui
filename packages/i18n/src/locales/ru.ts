@@ -610,6 +610,7 @@ export const ru: LocaleMessages = {
   'coupon.groupUnavailable': 'Недоступные купоны',
   'coupon.notUse': 'Без купона',
   'coupon.selectedCount': 'Выбрано: {count}',
+  'coupon.selectedCountLimit': 'Выбрано {count} из {limit}',
   'goodsAction.label': 'Действия с товаром',
   'goodsAction.favorite': 'Избранное',
   'goodsAction.shop': 'Магазин',
@@ -786,4 +787,8 @@ export const ru: LocaleMessages = {
   'orderCard.discount': 'Сэкономлено',
   'orderCard.payable': 'К оплате',
   'productCard.noImage': 'Нет изображения',
+
+  // barrage（弹幕）
+  'barrage.like': 'Нравится',
+  'barrage.unlike': 'Убрать отметку',
 }

@@ -75,6 +75,39 @@ description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针�
   <span id="dg-chip-out" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## 吸附（网格与吸附点）
+
+- `snap`：网格吸附——正整数值为网格尺寸（px），字面量 `grid` 按 8px。松手（含惯性滑行收尾）时把位移对齐到最近的网格点，并补一次 `oas-drag` 反映吸附后的终值。
+- `snap-targets`：吸附点 JSON 数组 `[{ x, y }]`（相对初始布局位置的位移坐标）。松手时距最近吸附点小于等于 `snap-threshold`（默认 12px）即**精确吸附**；拖拽过程中接近吸附点会显示提示环（`part="snap-hint"`，虚线主色圆环，纯视觉、不参与命中）。
+- 吸附只作用于**指针拖拽的落点**：键盘微调（1px / Shift 10px）与 `position` 写入保持精确，不被吸附改写；`axis` 单轴约束仍然生效（吸附加钳制的先后顺序不会绕过 axis）。
+- 非法 `snap` / `snap-targets` / `snap-threshold` 一次性 devWarn 并按不吸附处理（拖拽本身照常工作）。
+
+<DemoBlock title="网格吸附 snap=20 与吸附点 snap-targets">
+  <div
+    id="dg-stage-snap"
+    style="position: relative; width: 100%; height: 220px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); overflow: hidden"
+  >
+    <oas-drag
+      id="dg-snap-grid"
+      boundary="#dg-stage-snap"
+      snap="20"
+      style="position: absolute; inset-block-start: 16px; inset-inline-start: 16px"
+    >
+      <span style="display: inline-block; padding: var(--oas-space-2) var(--oas-space-3); background: var(--oas-color-bg-hover); border-radius: var(--oas-radius-md)">网格吸附 20px</span>
+    </oas-drag>
+    <oas-drag
+      id="dg-snap-target"
+      boundary="#dg-stage-snap"
+      snap-targets='[{"x":200,"y":30},{"x":60,"y":60}]'
+      snap-threshold="16"
+      style="position: absolute; inset-block-start: 120px; inset-inline-start: 16px"
+    >
+      <span style="display: inline-block; padding: var(--oas-space-2) var(--oas-space-3); background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); border-radius: var(--oas-radius-md)">吸附点（拖近看提示环）</span>
+    </oas-drag>
+  </div>
+  <span id="dg-snap-out" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## 无障碍与交互约定
 
 - 整宿主拖拽形态下宿主是焦点停靠点（`tabindex="0"`，可访问名 i18n `drag.label`，操作提示经 `aria-describedby` 关联）；方向键微调 1px，Shift+方向键 10px，受 `axis` 与边界约束
@@ -109,6 +142,20 @@ onMounted(() => {
   }
   report('dg-button', '客服钮位置')
   report('dg-chip', '横向拖动位置')
+  // 吸附：落点反馈（网格 / 吸附点的终值）
+  const snapOut = document.getElementById('dg-snap-out')
+  for (const [id, label] of [
+    ['dg-snap-grid', '网格吸附'],
+    ['dg-snap-target', '吸附点'],
+  ]) {
+    const el = document.getElementById(id)
+    if (!el) continue
+    onUpgraded(el, () => {
+      el.addEventListener('oas-drag-end', (event) => {
+        snapOut.textContent = `${label}落点：x ${event.detail.x}, y ${event.detail.y}`
+      })
+    })
+  }
 })
 </script>
 
@@ -128,6 +175,9 @@ onMounted(() => {
 | `inertia` | 松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停）；`prefers-reduced-motion: reduce` 下瞬停 | `boolean` | — |
 | `keyboard` | 键盘微调：缺省开启（`tabindex="0"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭 | `string` | — |
 | `remember` | 把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级 | `boolean` | — |
+| `snap` | 吸附网格尺寸：正整数值为网格 px，字面量 `grid` = 8px；松手（含惯性收尾）时位移对齐到最近网格点，键盘微调不受影响 | `string` | — |
+| `snap-targets` | 吸附点 JSON 数组 `[{ x, y }]`（相对初始布局位置的位移坐标）：松手时距最近吸附点 ≤ `snap-threshold` 即精确吸附；拖拽中接近吸附点显示提示环（`part="snap-hint"`） | `string` | — |
+| `snap-threshold` | 吸附点距离阈值（px，默认 12）；非法值告警一次并回落默认 | `string` | — |
 | `storage-key` | 位置记忆的存储键（缺省 `oas-drag`） | `string` | `oas-drag` |
 
 #### Property（JS property；是否写回 attribute 见各行说明）

@@ -213,4 +213,6 @@ export const dataMessages: Partial<LocaleMessages> = {
   'diffViewer.removedLine': '删除行 {n}',
   'diffViewer.before': '修改前',
   'diffViewer.after': '修改后',
+  'barrage.like': '点赞',
+  'barrage.unlike': '取消点赞',
 }

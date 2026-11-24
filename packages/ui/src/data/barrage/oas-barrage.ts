@@ -20,18 +20,24 @@ import { isRtl } from '../../shared/direction.js'
  * - `items`：声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐
  *   `addBatch`：属性变化时把数组条目批量入队（追加，不清空在场）；另有同名 get/set
  *   访问器（赋数组自动 JSON 序列化反射 attribute），框架双向绑定不用手写 stringify
- * - `auto-play`：布尔，循环播放——声明条目队列耗尽后自动重新入队（只循环 `items`
- *   声明的数据；`add()` 手动加的条目不参与循环；`clear()` 只清在场与排队，声明数据
- *   仍在，想要永久停止请移除 `items` 或 `auto-play`）
+ * - `auto-play`：布尔，循环播放——**本轮声明条目全部播完**（队列空且无在场循环条目）后把
+ *   `items` 重新入队（只循环声明的数据；`add()` 手动加的条目不参与循环也不阻塞轮次；
+ *   `clear()` 只清在场与排队，声明数据仍在，想要永久停止请移除 `items` 或 `auto-play`）
+ * - `banned-words`：屏蔽词（逗号分隔，或 JSON 数组字符串；大小写不敏感）。命中的条目
+ *   **不入队不渲染**（`add` / `addBatch` / `items` / auto-play 重灌同一入队判据）；已在场的条目不回溯移除
+ * - `likeable`：每条弹幕带点赞控件（心形按钮，点按切换点赞态）——点赞状态按 `key`（缺省按文本）
+ *   记忆，消失后重新出现仍保留；派发 `oas-like`。未开该属性时渲染与现状一致（零视觉漂移）
  *
  * 方法：
  * - `add(text, options?)`：追加一条（options: `{ color?, key? }`）
  * - `addBatch(items)`：批量追加（字符串或 `{ text, color?, key? }`）
  * - `pause()` / `resume()`：暂停 / 继续（写入/移除 paused 属性）
  * - `clear()`：清空在场与排队弹幕
+ * - `isLiked(key)` / `likeCount(key)`：查询点赞态与点赞数（`likeable` 场景宿主回显）
  *
  * 事件（bubbles + composed）：
  * - `oas-item-click`：点击弹幕，detail `{ text, key, color }`
+ * - `oas-like`：点按点赞控件，detail `{ text, key, color, liked, count }`（liked = 切换后的状态）
  *
  * 无障碍：默认舞台 `aria-hidden="true"`（装饰性弹幕，弹幕项不可聚焦）；`accessible` 开启后为
  * `role="log"` 活区，每条弹幕为 `role="button"` + `tabindex="0"`，Enter / Space 等价点击派发
@@ -93,6 +99,51 @@ const STYLE = `
 .item:hover {
   background: var(--oas-barrage-item-hover-bg, color-mix(in srgb, var(--oas-color-overlay) 36%, transparent));
 }
+.text {
+  display: inline;
+}
+/* 点赞控件：与文本同基线的小按钮；未赞描边心形，点赞后实心主色（形状差异即状态差异） */
+.like {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-inline-start: var(--oas-space-1);
+  padding: 0;
+  width: 1.35em;
+  height: 1.35em;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  flex: none;
+}
+.like svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.like svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.like[data-liked='true'] svg path {
+  fill: currentColor;
+  stroke: currentColor;
+}
+.like:hover {
+  color: var(--oas-color-primary);
+}
+.like[data-liked='true'] {
+  color: var(--oas-color-primary);
+}
+.like:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
 @keyframes oas-barrage-move {
   from {
     transform: translate(0, -50%);
@@ -147,6 +198,8 @@ interface QueuedItem {
   text: string
   key: string
   color: string
+  /** 来自 `items` 声明数据（auto-play 的循环轮次归属；`add()` 手动条目不带） */
+  loop?: boolean
 }
 
 interface ActiveItem extends QueuedItem {
@@ -246,7 +299,19 @@ const LENGTH_RE = /^(?:\d*\.?\d+(?:px|rem|em|vh|vw|vmin|vmax|%)?|(?:calc|min|max
 
 export class OASBarrage extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['tracks', 'speed', 'gap', 'max-active', 'paused', 'height', 'accessible', 'items', 'auto-play']
+    return [
+      'tracks',
+      'speed',
+      'gap',
+      'max-active',
+      'paused',
+      'height',
+      'accessible',
+      'items',
+      'auto-play',
+      'likeable',
+      'banned-words',
+    ]
   }
 
   private stageEl: HTMLElement | null = null
@@ -265,6 +330,10 @@ export class OASBarrage extends OASElement {
   private lastItemsRaw = ''
   /** 声明式条目（auto-play 循环的数据源） */
   private declaredItems: BarrageItemInput[] = []
+  /** 点赞态与计数（键 = key ‖ text）；跨条目生命周期保留 */
+  private likes = new Map<string, { liked: boolean; count: number }>()
+  /** 屏蔽词解析缓存（按 banned-words 原文） */
+  private bannedCache: { raw: string; words: string[] } = { raw: '', words: [] }
 
   // -------------------------------------------------------------------------
   // property 通道（items：框架把静态属性写成 property 时的数据入口）
@@ -327,15 +396,31 @@ export class OASBarrage extends OASElement {
 
   // ---- 公开 API ----
 
-  /** 追加一条弹幕；空文本忽略 */
+  /** 追加一条弹幕；空文本与被屏蔽词命中的文本忽略 */
   add(text: string, options: BarrageItemOptions = {}): void {
-    if (typeof text !== 'string' || text.trim() === '') return
-    this.queue.push({
-      text,
-      key: options.key ?? '',
-      color: options.color ?? '',
-    })
+    if (!this.enqueue({ text, key: options.key ?? '', color: options.color ?? '' })) return
     this.pump()
+  }
+
+  /**
+   * 入队唯一收口：空文本与屏蔽词判据（`add` / `addBatch` / `items` / auto-play 重灌共用）。
+   * 返回是否真的入队。
+   */
+  private enqueue(item: QueuedItem): boolean {
+    if (typeof item.text !== 'string' || item.text.trim() === '') return false
+    if (this.isBanned(item.text)) return false
+    this.queue.push(item)
+    return true
+  }
+
+  /** 查询点赞态（键 = key，缺省按文本；与 oas-like 的 detail 口径一致） */
+  isLiked(key: string): boolean {
+    return this.likes.get(key)?.liked === true
+  }
+
+  /** 查询点赞数 */
+  likeCount(key: string): number {
+    return this.likes.get(key)?.count ?? 0
   }
 
   /** 批量追加（字符串或 `{ text, color?, key? }`） */
@@ -438,7 +523,6 @@ export class OASBarrage extends OASElement {
       this.pumpTimer = null
     }
     const max = this.resolveMaxActive()
-    const loop = this.hasAttribute('auto-play')
     while (this.queue.length > 0) {
       if (max > 0 && this.active.length >= max) return
       const now = Date.now()
@@ -463,13 +547,25 @@ export class OASBarrage extends OASElement {
       const item = this.queue.shift()
       if (!item) return
       this.mount(item, index, now)
-      // auto-play：队列耗尽时重播声明条目（只循环 items 声明的数据）
-      if (loop && this.queue.length === 0 && this.declaredItems.length > 0) {
-        for (const declared of this.declaredItems) {
-          this.queue.push({ text: declared.text, key: declared.key ?? '', color: declared.color ?? '' })
-        }
-      }
     }
+    this.refillDeclared()
+  }
+
+  /**
+   * auto-play 重灌。两个守卫都是必须的：
+   * - **屏蔽词**：重灌与 `add` / `addBatch` / `items` 走同一 `enqueue` 判据，否则循环会把已过滤掉的内容重新灌回来；
+   * - **时机**：只在本轮声明条目**全部播完**（队列空 + 无在场循环条目）时重灌。首轮排空的瞬间就补，
+   *   会让同一条弹幕双份在场、独占双倍轨道。
+   */
+  private refillDeclared(): void {
+    if (this.pausedInternal) return
+    if (!this.hasAttribute('auto-play') || this.declaredItems.length === 0) return
+    if (this.queue.length > 0) return
+    if (this.active.some((item) => item.loop)) return
+    for (const declared of this.declaredItems) {
+      this.enqueue({ text: declared.text, key: declared.key ?? '', color: declared.color ?? '', loop: true })
+    }
+    if (this.queue.length > 0) this.pump()
   }
 
   private mount(item: QueuedItem, track: number, now: number): void {
@@ -479,7 +575,11 @@ export class OASBarrage extends OASElement {
     const el = document.createElement('span')
     el.className = 'item'
     el.setAttribute('part', 'item')
-    el.textContent = item.text
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = item.text
+    el.appendChild(text)
+    if (this.hasAttribute('likeable')) el.appendChild(this.renderLike(item))
     if (item.key) el.dataset.key = item.key
     if (item.color) el.style.setProperty('--oas-barrage-item-color', resolveItemColor(item.color))
     this.applyItemA11y(el)
@@ -511,13 +611,15 @@ export class OASBarrage extends OASElement {
 
   /**
    * 弹幕项的可交互无障碍形态：
-   * - `accessible` 开启（舞台为 role="log" 活区）→ 项为 `role="button"` + tabindex=0，
+   * - `accessible` 开启（舞台为 role="log" 活区）且未开 `likeable` → 项为 `role="button"` + tabindex=0，
    *   Enter / Space 等价点击派发 `oas-item-click`（键盘可达）；
+   * - `accessible` + `likeable` → 项本身不再承载 button 语义（避免嵌套交互控件触发 axe
+   *   nested-interactive），改由点赞控件承担键盘交互；
    * - 缺省（装饰性弹幕，舞台 aria-hidden）→ 不加 tabindex：aria-hidden 容器内不得含
    *   可聚焦元素（axe `aria-hidden-focus`），装饰态不提供键盘焦点。
    */
   private applyItemA11y(el: HTMLElement): void {
-    if (this.isAccessible()) {
+    if (this.isAccessible() && !this.hasAttribute('likeable')) {
       el.setAttribute('role', 'button')
       el.tabIndex = 0
     } else {
@@ -528,7 +630,107 @@ export class OASBarrage extends OASElement {
 
   /** accessible 切换后同步既有在场项的可聚焦形态 */
   private syncItemsA11y(): void {
-    for (const item of this.active) this.applyItemA11y(item.el)
+    for (const item of this.active) {
+      this.applyItemA11y(item.el)
+      const like = item.el.querySelector<HTMLElement>('[part="like"]')
+      if (like) this.syncLikeA11y(like, item)
+    }
+  }
+
+  // ---------- 点赞 / 屏蔽词 ----------
+
+  /** 点赞身份：显式 key 优先，缺省按文本（与 oas-like detail 的 key 口径一致） */
+  private likeIdentity(item: { text: string; key: string }): string {
+    return item.key !== '' ? item.key : item.text
+  }
+
+  /** 点赞控件：语义与可聚焦性按 accessible 切换；装饰态鼠标可点但读屏不可达。
+   * 心形路径为本库自绘（16 视口），未赞描边 / 已赞实心由 CSS 按 `data-liked` 切换 */
+  private renderLike(item: QueuedItem): HTMLElement {
+    const like = document.createElement('span')
+    like.className = 'like'
+    like.setAttribute('part', 'like')
+    like.innerHTML =
+      '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' +
+      '<path d="M8 13.4 C6.1 11.8 2.9 9.3 2.9 6.6 C2.9 4.9 4.2 3.7 5.8 3.7 C6.7 3.7 7.5 4.1 8 4.8 C8.5 4.1 9.3 3.7 10.2 3.7 C11.8 3.7 13.1 4.9 13.1 6.6 C13.1 9.3 9.9 11.8 8 13.4 Z" />' +
+      '</svg>'
+    this.syncLikeA11y(like, item)
+    return like
+  }
+
+  /** 同步点赞控件的状态与语义（accessible 下为键盘可达的 button 角色） */
+  private syncLikeA11y(like: HTMLElement, item: { text: string; key: string }): void {
+    const state = this.likes.get(this.likeIdentity(item)) ?? { liked: false, count: 0 }
+    if (state.liked) like.setAttribute('data-liked', 'true')
+    else like.removeAttribute('data-liked')
+    if (this.isAccessible()) {
+      like.removeAttribute('aria-hidden')
+      like.setAttribute('role', 'button')
+      like.setAttribute('tabindex', '0')
+      like.setAttribute('aria-pressed', String(state.liked))
+      like.setAttribute('aria-label', this.t(state.liked ? 'barrage.unlike' : 'barrage.like'))
+    } else {
+      like.setAttribute('aria-hidden', 'true')
+      like.removeAttribute('role')
+      like.removeAttribute('tabindex')
+      like.removeAttribute('aria-pressed')
+      like.removeAttribute('aria-label')
+    }
+  }
+
+  /** 运行时切换 likeable：既有在场条目补 / 撤点赞控件，状态按记忆回填 */
+  private syncLikeControls(): void {
+    const likeable = this.hasAttribute('likeable')
+    for (const item of this.active) {
+      const existing = item.el.querySelector<HTMLElement>('[part="like"]')
+      if (likeable && !existing) item.el.appendChild(this.renderLike(item))
+      else if (!likeable && existing) existing.remove()
+      else if (existing) this.syncLikeA11y(existing, item)
+    }
+  }
+
+  /** 切换点赞态并派发 oas-like（detail: { text, key, color, liked, count }） */
+  private toggleLike(active: ActiveItem): void {
+    const id = this.likeIdentity(active)
+    const prev = this.likes.get(id) ?? { liked: false, count: 0 }
+    const next = { liked: !prev.liked, count: Math.max(0, prev.count + (prev.liked ? -1 : 1)) }
+    this.likes.set(id, next)
+    const like = active.el.querySelector<HTMLElement>('[part="like"]')
+    if (like) this.syncLikeA11y(like, active)
+    this.emit('like', { text: active.text, key: active.key, color: active.color, liked: next.liked, count: next.count })
+  }
+
+  /** 屏蔽词解析（逗号分隔或 JSON 数组；按属性原文缓存） */
+  private bannedWords(): string[] {
+    const raw = this.getAttr('banned-words', '')
+    if (raw === this.bannedCache.raw) return this.bannedCache.words
+    let words: string[] = []
+    const trimmed = raw.trim()
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed: unknown = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) {
+          words = parsed.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.trim())
+        } else {
+          warnNumeric('banned-words', raw, '逗号分隔字符串或 JSON 数组')
+        }
+      } catch {
+        warnNumeric('banned-words', raw, '逗号分隔字符串或 JSON 数组')
+      }
+    } else if (trimmed !== '') {
+      words = trimmed.split(/[,，]/).map((entry) => entry.trim())
+    }
+    words = words.filter((entry) => entry !== '')
+    this.bannedCache = { raw, words }
+    return words
+  }
+
+  /** 文本是否命中屏蔽词（大小写不敏感；命中即不入队不渲染） */
+  private isBanned(text: string): boolean {
+    const words = this.bannedWords()
+    if (words.length === 0) return false
+    const lowered = text.toLowerCase()
+    return words.some((word) => lowered.includes(word.toLowerCase()))
   }
 
   private armTimer(item: ActiveItem, ms: number): void {
@@ -630,14 +832,27 @@ export class OASBarrage extends OASElement {
   }
 
   private onStageClick = (e: Event): void => {
+    const like = (e.target as HTMLElement | null)?.closest?.('[part="like"]') as HTMLElement | null
+    if (like) {
+      const item = this.itemByEl.get(like.closest('.item') as HTMLElement)
+      if (item) this.toggleLike(item)
+      return
+    }
     const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
     if (!target) return
     this.emitItemClick(target)
   }
 
-  /** Enter / Space 等价点击（accessible 下弹幕项可聚焦，键盘必须能触发同一条事件） */
+  /** Enter / Space 等价点击（accessible 下弹幕项 / 点赞控件可聚焦，键盘必须能触发同一条事件） */
   private onStageKeydown = (e: KeyboardEvent): void => {
     if (e.key !== 'Enter' && e.key !== ' ') return
+    const like = (e.target as HTMLElement | null)?.closest?.('[part="like"]') as HTMLElement | null
+    if (like) {
+      e.preventDefault()
+      const item = this.itemByEl.get(like.closest('.item') as HTMLElement)
+      if (item) this.toggleLike(item)
+      return
+    }
     const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
     if (!target) return
     e.preventDefault()
@@ -679,6 +894,7 @@ export class OASBarrage extends OASElement {
         stage.removeAttribute('aria-live')
       }
       this.syncItemsA11y()
+      this.syncLikeControls()
     }
 
     // RTL 镜像钩子：仅 toggle 属性，:host([data-rtl]) 就地切换镜像关键帧
@@ -733,6 +949,10 @@ export class OASBarrage extends OASElement {
     const previous = new Set(this.declaredItems.map(identity))
     const fresh = normalized.filter((item) => !previous.has(identity(item)))
     this.declaredItems = normalized
-    this.addBatch(fresh)
+    // 声明条目带 loop 标记：auto-play 的重灌时机按「本轮声明条目是否全部离场」判定，
+    // 手动 add() 的条目不计入轮次（不阻塞循环）。
+    for (const item of fresh) {
+      this.enqueue({ text: item.text, key: item.key ?? '', color: item.color ?? '', loop: true })
+    }
   }
 }

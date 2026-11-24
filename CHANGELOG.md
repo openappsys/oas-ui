@@ -4,6 +4,30 @@
 
 ### 新增
 
+**批 D 交互长尾（coupon 叠加规则 / barrage 点赞与屏蔽词 / drag 吸附，全部向后兼容：未启用新属性时渲染与行为不变）**
+
+- **oas-coupon 多选叠加规则**：`max-select`（已选张数上限，到达上限后勾选不生效——勾选态回滚 + 已选集合不变 + 派发新增事件 `oas-select-invalid`（`{ reason: 'max-select', limit, code, codes, coupons }`）；触发按钮显示 `已选 n/m 张`）+ **互斥组**（列表条目 `exclusiveGroup` 标记：选中同组另一张自动取消前一张，被取消的 code 随 `oas-select` 的 `removed` 字段回传）+ 两条规则叠加按**换选后净张数**判定（同组换选不额外占名额）。单选模式忽略两者（天然互斥）。单测 +7；zh/en 文档补「多选叠加规则」段与 demo。
+- **oas-barrage 弹幕交互**：`likeable` per-item 点赞（心形控件、切换点赞态、派发 `oas-like` `{ text, key, color, liked, count }`；点赞态按 `key`/文本跨条目生命周期记忆，`isLiked()` / `likeCount()` 供宿主回显；运行时开关对在场条目增量补/撤控件）+ `banned-words` 屏蔽词（逗号分隔或 JSON 数组、大小写不敏感，命中条目不入队不渲染，`add`/`addBatch`/`items` 三通道同一判据）。无障碍：装饰态点赞控件 `aria-hidden` 且不可聚焦（鼠标可点、读屏不可达）；`accessible` 下升级为键盘可达的 `role="button"`（`aria-pressed` + i18n 可访问名），且条目本身不再叠 button 语义（避免嵌套交互控件）。barrage 首次接入 data 族 i18n 切片。单测 +10；zh/en 文档补「点赞与屏蔽词」段与 demo。
+- **oas-drag 吸附**：`snap` 网格吸附（正整数网格尺寸，字面量 `grid` = 8px）、`snap-targets` 吸附点 JSON（`[{ x, y }]`，`snap-threshold` 默认 12px 阈值内精确吸附）、拖拽中接近吸附点显示提示环（`part="snap-hint"`，纯视觉不参与命中）。吸附只作用于指针落点（含惯性滑行收尾），键盘微调与 `position` 写入保持精确；`axis` 约束仍然生效；非法值一次性 devWarn 并关闭吸附。单测 +7；zh/en 文档补「吸附」段与 demo。
+- **Z1 测试长尾核对**：`qa-regression/drag.spec.ts` 真实鼠标拖拽 `oas-drag-start` 断言（阈值内不派发 / 越阈值恰好一次）与 `time-select.spec.ts` RTL 模式组方向键镜像 e2e 均已在既有用例存在，本批核对通过（无需新增）。
+- **登记**：i18n 新增 3 键（`coupon.selectedCountLimit` / `barrage.like` / `barrage.unlike`）× 16 语言 + 切片重生成；api 语料补齐 12 条（新属性 / 事件 / property）；`api:scan` + `api:gen`、`stats:gen`、`llms:gen` 产物同步。
+
+**oas-questionnaire 评分汇总（批 C，向后兼容：未写 `score-rules` 时无事件、`score` 恒 0）**
+
+- **`score-rules` 规则列表**：`[{ when, score }]`，条件成立即累加分值。**只提供这一种形态**——「字段 → 每选项分值」映射等价于若干条 `{ when: "{字段} == \"选项\"", score: n }`，不另设语法（两种形态择一后冻结并写入文档）。表达式复用受限表达式轨，读取跨步全量答案（含隐藏步）。
+- **只读 property `score`**：读即按当前答案求和（永远最新），引擎只算不渲染——分数展示与题型组合由宿主决定（`oas-rate` / `oas-slider` / 选项组等既有件）。
+- **事件 `oas-score`**：作答变化后派发，80 ms 防抖合并连续作答；分数未变不派发；规则变更静默（不派发，宿主改规则后自行读 property）。
+- **容错**：非法规则（非对象 / `when` 非字符串 / `score` 非有限数值 / 表达式语法错）逐条跳过 + 一次性 devWarn，不连坐；求值抛错按条件不成立；浮点累加按 1e-6 归一（`0.1 + 0.2` 不出展示噪声）。
+- 单测新增 11（引擎编译/求和 3 + 组件行为 8：只读即时求和 / 防抖派发 / 未变不派发 / 无规则零事件 / 非法规则 / reset 重算 / 规则变更静默 / 编译失败降级）；zh/en 文档补「评分汇总」段与 demo；`score-rules` attr、只读 property `score` 与 `oas-score` 事件进 API 表，无新增 i18n 键。
+
+**oas-questionnaire 逻辑跳转谓词引擎（批 C，向后兼容：未写 `when` / `goto` 的问卷行为不变）**
+
+- **步骤条件 `when`**：`steps` 条目可写表达式（复用 `oas-schema-form` 的受限表达式轨——同一 parser / 求值器，直接 import 不复制实现），条件不成立即自动隐藏该步：头部项、进度总数、导航、取值与校验统一按隐藏口径，`next()` 自动跳过。表达式读取跨步汇总答案（含隐藏步——面板常驻、值保留）；作答变化按依赖路径（`pathDependencyMatches` 同判据，含通配与数组重编号）定向重算，未命中依赖不触发整树同步。
+- **跳转目标 `goto`**：前进时按条件跳转——`{ when, target }`（索引或步骤 key）或 `target` 简写（条件恒成立）；命中且切步成功（未被 `oas-before-change` 否决）后派发新增事件 `oas-goto`（`{ index, key?, from, target }`），仍走单步校验与可取消的 `oas-before-change`。目标步被条件隐藏时落到其后最近可见步。
+- **正交与开关**：`hidden: true` 恒隐藏（宿主优先），`hidden: false` / 缺省才由 `when` 决定；`conditions="false"` 关闭引擎（只认宿主 `hidden`）。
+- **容错与守卫**：表达式语法错 / 未知函数一次性 devWarn 并降级单条（`when` 不生效、`goto` 不跳转），不连坐其它步骤；值变化 → 条件 → 对齐 → `oas-change` 的同步级联 8 轮截断并告警（宿主在 `oas-change` 里回写 `current` / 答案形成回环时不死循环）。
+- 单测新增 25（条件引擎纯函数 9 + 组件行为 16：显隐 / 自动跳过 / goto 三种书写面 / 依赖重算 / 与手动 `hidden` 正交 / 关闭引擎 / current 对齐 / 循环守卫 / 语法错降级 / goto 被 veto 不派发事件 / schema-form 契约元素驱动 / reset 重算）；zh/en 文档补「声明式条件与跳转」段与 demo；无新增 i18n 键，`conditions` attr 与 `oas-goto` 事件进 API 表。
+
 **交易链路批：commerce 族新组件 ×3（购物车 / 订单卡片 / 商品卡片）**
 
 - **oas-cart（购物车列表）**：`items` JSON 数组驱动（attribute / property 双通道），条目 = 勾选（行选择）+ 内建数量步进（低于 1 钳到 1、超过 `maxQuantity` 钳到上限，到顶加号自动禁用）+ 删除（`delete-mode="button|swipe|none"`，滑动档向行首拖出删除钮且钮始终在 Tab 序、聚焦自动露出）。全选联动（全选框 `indeterminate` 半选态）+ 选中合计（`disabled` 条目恒不选中、不计合计、不参与全选判定）+ 选中计数。`oas-change`（detail `items/total/selectedCount/allSelected/indeterminate`）在勾选 / 全选 / 改数量 / 删除后派发；`oas-remove` **cancelable**（删除前拦下接确认框）；`oas-item-click` 进详情。用户交互后组件回写 `items`（非受控开箱即用，受控宿主忽略回写即可）；空态走 `empty` 插槽（缺省 i18n 文案）；图片缺失 / 加载失败回落虚线占位；`currency` / `locale` / `precision` 透传内嵌 `oas-price`，合计按 `precision` 收敛。条目增删 / 删除形态切换才重建列表，勾选 / 数量走增量同步（保焦点与滚动）。
@@ -104,6 +128,17 @@
 - **oas-image-cropper 图片平移**：激活此前未生效的 `offset`——在裁剪框外的舞台区域按住拖动可平移图片取景（框内拖动仍是移动裁剪框，按目标区分），舞台内滚轮按 10% 步进缩放且**以光标为锚点**（`Ctrl`/`⌘`+滚轮为浏览器页面缩放，不接管），`Alt`+方向键平移图片（`Shift` 加速 10px）；平移恒受「**图片覆盖裁剪框**」约束——覆盖区间在图片局部坐标推导（裁剪框四角反旋取交集），拖动 / 缩放 / 旋转出界自动钳回，`pointercancel` 回退到本次平移起点；`offset` 只读 property + `oas-change` / `oas-crop` 的 detail 携带 `offset`（导出 canvas 反算同一份位移，所见即所得）；`reset()` 归位位移。单测 +7（拖拽平移 / 裁剪框互斥 / 越界钳回与取消回退 / 光标锚点缩放 / 缩小与旋转后重钳 / Alt+方向键与 reset / 无图与禁用不接管）+ qa-regression 真实拖拽（裁剪框不动 + 图片矩形包住裁剪框）+ zh/en 文档与 demo。
 
 - **oas-sku 弹层形态**：`layout="embedded|popup"`——同一份面板两种承载（面板节点在「内嵌容器」与 `oas-bottom-sheet` 默认 slot 之间搬移，选中态 / 焦点 / 数量输入随节点走，不重建不复制）；`layout` 缺省按视口自动（`matchMedia('(max-width: 480px)')` 越界即时重判，显式值不被视口覆盖，非法值告警回落 embedded）；开合走 bottom-sheet 协议——`open` 受控属性（宿主写入静默）、下滑 / 遮罩 / Esc 由承载件派发 `oas-close` 后组件自动收起、交互与命令式 `openOverlay()` / `closeOverlay()` 派发 `oas-open-change`（内嵌形态调用只告警一次，不产生幽灵 open 态）；打开即聚焦面板首个可聚焦控件、Tab 循环由 bottom-sheet 承载；内嵌形态承载件 `hidden`（空 dialog 不进读屏树）。单测 +7（缺省内嵌 / 面板搬移复用 / 开合协议 / 焦点 / 窄屏自动 + 显式优先 + 回宽屏 / 非法值 / 内嵌命令式告警 / 切换不丢选中）+ qa-regression 真实弹层（面板贴底可见、面板内选择联动、Esc 关闭回写）+ zh/en 文档与 demo。
+
+### 修复
+
+**批 C / D 修复批（review 收口）**
+
+- **oas-barrage auto-play × 屏蔽词**：循环重灌此前直接写入队列，绕过 `banned-words` 判据——开启 `auto-play` 后命中屏蔽词的声明条目会随循环重新进场。现重灌与 `add` / `addBatch` / `items` 共用同一入队判据（空文本 + 屏蔽词命中即不入队）。
+- **oas-barrage auto-play 首轮重复 mount**：重灌时机由「队列排空瞬间」收紧为「本轮声明条目全部播完」（队列空且无在场循环条目；`add()` 手动条目不计入轮次）——修复前首轮排空即重灌，同一条弹幕双份在场、独占双倍轨道。单测 +2，`qa-regression/barrage.spec.ts` +1（真实浏览器多轮循环采样）。
+- **oas-questionnaire 断开重连清理对称**：`onReconnect` 注册的清理补上评分防抖定时器（与 `bind()` 对齐）——修复前重连后再断开，待派的 `oas-score` 仍会在已脱离文档的宿主上派发。单测 +1。
+- **问卷 demo 补 `conditions="false"` 实演示**：宿主组合通道 demo 改为关闭条件引擎（该实例给「发票信息」步写了 `when`，引擎关闭后条件不生效、分支只认宿主 `hidden`），并把 when/goto demo 的下拉换成选项组、去掉隐藏面板里的多余输入——axe「无法评分节点」回落，感知对比度 ratchet 只许降。
+- **demo-coverage 探针补齐登记配套**：questionnaire `oas-goto` / `oas-score`、barrage `oas-like`、coupon `oas-select-invalid` 与 questionnaire `conditions` 属性演示全部补上。
+- **PRD 措辞对齐实现**：coupon 互斥组落点写 `exclusiveGroup`（列表条目字段，非 `exclusive-group` 属性）。
 
 ### 文档站（语言机制后续增强）
 

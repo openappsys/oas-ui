@@ -612,6 +612,7 @@ export const hi: LocaleMessages = {
   'coupon.groupUnavailable': 'अनुपलब्ध कूपन',
   'coupon.notUse': 'कूपन न इस्तेमाल करें',
   'coupon.selectedCount': '{count} चयनित',
+  'coupon.selectedCountLimit': '{limit} में से {count} चयनित',
   'goodsAction.label': 'उत्पाद क्रियाएँ',
   'goodsAction.favorite': 'पसंदीदा',
   'goodsAction.shop': 'स्टोर',
@@ -788,4 +789,8 @@ export const hi: LocaleMessages = {
   'orderCard.discount': 'बचत',
   'orderCard.payable': 'देय राशि',
   'productCard.noImage': 'कोई छवि नहीं',
+
+  // barrage（弹幕）
+  'barrage.like': 'पसंद करें',
+  'barrage.unlike': 'पसंद हटाएँ',
 }

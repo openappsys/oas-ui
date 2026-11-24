@@ -4,7 +4,7 @@
   "attrs": [
     {
       "name": "steps",
-      "default": "[]",
+      "default": "",
       "observed": true
     },
     {
@@ -78,6 +78,18 @@
       "type": "string",
       "default": "medium",
       "observed": true
+    },
+    {
+      "name": "conditions",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "score-rules",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -85,6 +97,11 @@
       "name": "steps",
       "type": "QuestionnaireStep[] | string",
       "default": "[]"
+    },
+    {
+      "name": "score",
+      "type": "number",
+      "api": true
     }
   ],
   "methods": [
@@ -135,8 +152,16 @@
       "detail": "{ index: eff, ...this.keyOf(eff) } | { index: idx, ...this.keyOf(idx) } | { index: target, ...this.keyOf(target) }"
     },
     {
+      "name": "oas-score",
+      "detail": "{ score: next }"
+    },
+    {
       "name": "oas-before-change",
       "detail": "{ index: idx, ...this.keyOf(idx), from } | { index: target, ...this.keyOf(target), from }"
+    },
+    {
+      "name": "oas-goto",
+      "detail": "{ index: jump.target, ...this.keyOf(jump.target), from, target: jump.rule.target }"
     },
     {
       "name": "oas-skip",

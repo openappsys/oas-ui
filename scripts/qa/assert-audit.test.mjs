@@ -640,7 +640,7 @@ test('qa:audit CLI：文本、阈值与 --json 都带 hygiene 三维度，既有
   assert.ok(thresholdLine, '阈值行必须存在')
   const thresholdSegments = thresholdLine.replace('[qa:audit] 阈值（防增量，非清零）：', '').split('；')
   for (const segment of [
-    'waitForTimeout ≤ 26',
+    'waitForTimeout ≤ 27',
     '弱断言 ≤ 0',
     '事件只断 length ≤ 105',
     '硬编码色值 ≤ 0',

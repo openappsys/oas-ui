@@ -17,6 +17,11 @@ import { stableHash36 } from '../../shared/stable-id.js'
  * - `keyboard`：键盘微调（缺省开启，写 `keyboard="false"` 关闭）；宿主可聚焦，方向键 1px、Shift+方向键 10px
  * - `announce`：位置变化经 `aria-live` 播报（缺省关闭）
  * - `disabled`：关闭拖拽（子元素保持原有交互）
+ * - `snap`：吸附网格尺寸（正整数 px；字面量 `grid` = 8px 网格）。松手（含惯性收尾）时把位移
+ *   对齐到最近的网格点；键盘微调不受影响
+ * - `snap-targets`：吸附点 JSON 数组 `[{ x, y }]`（相对初始布局位置的位移坐标）——松手时距最近的
+ *   吸附点小于等于 `snap-threshold` 即精确吸附；拖拽过程中接近吸附点会显示吸附提示（`part="snap-hint"`）
+ * - `snap-threshold`：吸附点距离阈值（px，默认 12）；非法值告警一次回落默认
  *
  * 事件（bubbles + composed）：
  * - `oas-drag-start`：指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }`
@@ -30,8 +35,9 @@ import { stableHash36 } from '../../shared/stable-id.js'
  * 指针位移 < 4px 视为点击，不阻止子元素的 click / 默认行为；越过阈值的拖拽结束后，
  * 紧随的那一次 click 被吞掉（松手恰好停在子按钮上不会误触），下一次正常点击不受影响。
  * `pointercancel`（滚动 / 手势中断）只收尾拖拽，不写位置记忆、不起惯性。
+ * 吸附只作用于指针拖拽的落点（松手 / 惯性收尾）：键盘微调与 `position` 写入保持 1px 精确。
  *
- * @summary 子元素自由拖拽浮块（边界钳制 / 惯性 / 位置记忆 / 键盘微调）
+ * @summary 子元素自由拖拽浮块（边界钳制 / 惯性 / 位置记忆 / 键盘微调 / 网格与吸附点）
  */
 
 export type DragAxis = 'both' | 'x' | 'y'
@@ -69,6 +75,10 @@ const MIN_VELOCITY = 0.02
 /** 惯性滑行帧数上限（约 1 秒）：长距离甩动不无限滑行，超出即收尾 */
 const MAX_COAST_FRAMES = 60
 const VALID_AXES: readonly string[] = ['both', 'x', 'y']
+/** `snap="grid"` 字面量的默认网格尺寸（px） */
+const DEFAULT_SNAP_GRID = 8
+/** 吸附点距离阈值缺省值（px） */
+const DEFAULT_SNAP_THRESHOLD = 12
 
 const warned = new Set<string>()
 let instanceSeq = 0
@@ -152,6 +162,24 @@ const STYLE = `
   white-space: nowrap;
   border: 0;
 }
+/* 吸附提示：拖拽中接近吸附点时的视觉落点标记（不参与命中，纯提示；自中心对齐用 transform）。
+   尺寸大于常见拖拽块的热区，保证吸附落点被宿主内容遮挡时仍可见 */
+.snap-hint {
+  position: absolute;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 2px dashed var(--oas-color-primary);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+  pointer-events: none;
+  opacity: 0.9;
+  transform: translate(-50%, -50%);
+}
+.snap-hint[hidden] {
+  display: none;
+}
 @media (forced-colors: active) {
   .handle:focus-visible,
   :host(:focus-visible) {
@@ -163,7 +191,19 @@ const STYLE = `
 
 export class OASDrag extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['boundary', 'axis', 'inertia', 'remember', 'storage-key', 'keyboard', 'announce', 'disabled']
+    return [
+      'boundary',
+      'axis',
+      'inertia',
+      'remember',
+      'storage-key',
+      'keyboard',
+      'announce',
+      'disabled',
+      'snap',
+      'snap-targets',
+      'snap-threshold',
+    ]
   }
 
   private surfaceEl: HTMLElement | null = null
@@ -172,6 +212,7 @@ export class OASDrag extends OASElement {
   private contentSlot: HTMLSlotElement | null = null
   private liveEl: HTMLElement | null = null
   private hintEl: HTMLElement | null = null
+  private snapHintEl: HTMLElement | null = null
 
   /** 当前位移（相对初始布局位置） */
   private offsetX = 0
@@ -220,6 +261,7 @@ export class OASDrag extends OASElement {
         <div class="content" part="content"><slot></slot></div>
         <span class="sr-only" part="hint"></span>
         <span class="sr-only" part="live" aria-live="polite"></span>
+        <span class="snap-hint" part="snap-hint" aria-hidden="true" hidden></span>
       </div>
     `
   }
@@ -242,6 +284,7 @@ export class OASDrag extends OASElement {
     this.contentSlot = this.shadow.querySelector('slot:not([name])')
     this.liveEl = this.shadow.querySelector('[part="live"]')
     this.hintEl = this.shadow.querySelector('[part="hint"]')
+    this.snapHintEl = this.shadow.querySelector('[part="snap-hint"]')
     this.addEventListener('pointerdown', this.onPointerDown)
     this.addEventListener('pointermove', this.onPointerMove)
     this.addEventListener('pointerup', this.onPointerUp)
@@ -434,6 +477,125 @@ export class OASDrag extends OASElement {
     this.style.transform = `translate3d(${x}px, ${y}px, 0)`
   }
 
+  // ---------- 吸附（网格 / 吸附点） ----------
+
+  /** 网格尺寸：`snap` 数值或字面量 `grid`（= 8px）；未写 / 非法 = 不吸附（非法告警一次） */
+  private snapGrid(): number {
+    const raw = this.getAttr('snap', '').trim()
+    if (raw === '') return 0
+    if (raw === 'grid') return DEFAULT_SNAP_GRID
+    const value = Number(raw)
+    if (!Number.isFinite(value) || value <= 0) {
+      warnOnce(`[oas-drag] 非法 snap "${raw}"，已按不吸附处理；合法值：正整数（网格尺寸）或 "grid"`)
+      return 0
+    }
+    return value
+  }
+
+  /** 吸附点数组：JSON `[{ x, y }]`；非法形态告警一次并忽略 */
+  private snapTargets(): DragPosition[] {
+    const raw = this.getAttr('snap-targets', '').trim()
+    if (raw === '') return []
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      warnOnce(`[oas-drag] snap-targets 不是合法 JSON，已忽略；示例：[{ "x": 100, "y": 40 }]`)
+      return []
+    }
+    if (!Array.isArray(parsed)) {
+      warnOnce('[oas-drag] snap-targets 必须是数组，已忽略')
+      return []
+    }
+    const out: DragPosition[] = []
+    for (const entry of parsed) {
+      const record = entry as { x?: unknown; y?: unknown } | null
+      if (!record || typeof record !== 'object') continue
+      if (typeof record.x !== 'number' || !Number.isFinite(record.x)) continue
+      if (typeof record.y !== 'number' || !Number.isFinite(record.y)) continue
+      out.push({ x: record.x, y: record.y })
+    }
+    return out
+  }
+
+  /** 吸附点距离阈值（px）：非负；非法告警一次回落 12 */
+  private snapThreshold(): number {
+    const raw = this.getAttr('snap-threshold', '').trim()
+    if (raw === '') return DEFAULT_SNAP_THRESHOLD
+    const value = Number(raw)
+    if (!Number.isFinite(value) || value < 0) {
+      warnOnce(`[oas-drag] 非法 snap-threshold "${raw}"，已回落 ${DEFAULT_SNAP_THRESHOLD}`)
+      return DEFAULT_SNAP_THRESHOLD
+    }
+    return value
+  }
+
+  /** 吸附落点：吸附点优先（阈值内取最近），其次网格取整；都不适用返回 null */
+  private snapPosition(x: number, y: number): DragPosition | null {
+    const targets = this.snapTargets()
+    if (targets.length > 0) {
+      const threshold = this.snapThreshold()
+      let best: DragPosition | null = null
+      let bestDistance = Number.POSITIVE_INFINITY
+      for (const target of targets) {
+        const distance = Math.hypot(target.x - x, target.y - y)
+        if (distance < bestDistance) {
+          bestDistance = distance
+          best = target
+        }
+      }
+      if (best && bestDistance <= threshold) return { x: best.x, y: best.y }
+    }
+    const grid = this.snapGrid()
+    if (grid > 0) return { x: Math.round(x / grid) * grid, y: Math.round(y / grid) * grid }
+    return null
+  }
+
+  /** 执行吸附（松手 / 惯性收尾）：命中则写位移并返回 true（调用方据此补一次 oas-drag） */
+  private applySnap(): boolean {
+    const snapped = this.snapPosition(this.offsetX, this.offsetY)
+    if (!snapped) return false
+    const clamped = this.clampOffset(snapped.x, snapped.y)
+    if (clamped.x === this.offsetX && clamped.y === this.offsetY) return false
+    this.offsetX = clamped.x
+    this.offsetY = clamped.y
+    this.applyTransform()
+    this.announcePosition()
+    return true
+  }
+
+  /** 拖拽中的吸附提示：接近吸附点时在目标位置画提示环（绝对定位在宿主坐标系内） */
+  private syncSnapHint(): void {
+    const hint = this.snapHintEl
+    if (!hint) return
+    const targets = this.snapTargets()
+    if (!this.drag || targets.length === 0) {
+      hint.hidden = true
+      return
+    }
+    const threshold = this.snapThreshold()
+    let best: DragPosition | null = null
+    let bestDistance = Number.POSITIVE_INFINITY
+    for (const target of targets) {
+      const distance = Math.hypot(target.x - this.offsetX, target.y - this.offsetY)
+      if (distance < bestDistance) {
+        bestDistance = distance
+        best = target
+      }
+    }
+    if (!best || bestDistance > threshold) {
+      hint.hidden = true
+      return
+    }
+    hint.hidden = false
+    hint.style.left = `${best.x - this.offsetX}px`
+    hint.style.top = `${best.y - this.offsetY}px`
+  }
+
+  private hideSnapHint(): void {
+    if (this.snapHintEl) this.snapHintEl.hidden = true
+  }
+
   /** 写入位移（钳制 → 期望态与执行态同步 → 事件；赋值通道 emit=false 不派发） */
   private applyOffset(x: number, y: number, source: DragSource, emit = true): void {
     const clamped = this.clampOffset(x, y)
@@ -513,14 +675,21 @@ export class OASDrag extends OASElement {
     drag.lastY = ev.clientY
     drag.lastT = ev.timeStamp
     this.applyOffset(drag.originX + dx, drag.originY + dy, 'pointer')
+    this.syncSnapHint()
   }
 
   private onPointerUp = (event: Event): void => {
     const drag = this.endPointerDrag(event)
     if (!drag) return
+    this.hideSnapHint()
+    const willCoast = this.willCoast(drag.velocityX, drag.velocityY)
+    // 无惯性：松手即吸附落点（补一次 oas-drag，让宿主拿到吸附后的终值）
+    if (!willCoast && this.applySnap()) {
+      this.emit('drag', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
+    }
     this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
     this.savePosition()
-    this.startCoast(drag.velocityX, drag.velocityY)
+    if (willCoast) this.startCoast(drag.velocityX, drag.velocityY)
   }
 
   /**
@@ -530,6 +699,7 @@ export class OASDrag extends OASElement {
   private onPointerCancel = (event: Event): void => {
     const drag = this.endPointerDrag(event)
     if (!drag) return
+    this.hideSnapHint()
     this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
   }
 
@@ -595,10 +765,19 @@ export class OASDrag extends OASElement {
 
   /**
    * 惯性滑行：按最后采样速度逐帧衰减（摩擦 0.95/帧，最多 60 帧），边界钳制照常——
-   * 触边即截停。`prefers-reduced-motion: reduce` 下整段降级为瞬停（不请求动画帧）。
+   * 触边即截停。`prefers-reduced-motion: reduce` 下整段降级为瞬停（不请求动画帧）；
+   * 收尾时补一次吸附（网格 / 吸附点），让滑行终值同样落在吸附位上。
    */
+  private willCoast(velocityX: number, velocityY: number): boolean {
+    if (!this.hasAttr('inertia') || this.reducedMotion) return false
+    const axis = this.resolveAxis()
+    const vx = axis === 'y' ? 0 : velocityX
+    const vy = axis === 'x' ? 0 : velocityY
+    return Math.hypot(vx, vy) >= MIN_VELOCITY && typeof requestAnimationFrame === 'function'
+  }
+
   private startCoast(velocityX: number, velocityY: number): void {
-    if (!this.hasAttr('inertia') || this.reducedMotion) return
+    if (!this.willCoast(velocityX, velocityY)) return
     const axis = this.resolveAxis()
     let vx = axis === 'y' ? 0 : velocityX
     let vy = axis === 'x' ? 0 : velocityY
@@ -609,6 +788,8 @@ export class OASDrag extends OASElement {
     this.setAttribute('data-coasting', '')
     const stop = (): void => {
       this.stopCoast()
+      // 滑行收尾吸附：终值落在网格 / 吸附点上（补一次 oas-drag 反映终值）
+      if (this.applySnap()) this.emit('drag', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
       this.announcePosition()
       this.savePosition()
       this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })

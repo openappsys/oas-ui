@@ -537,6 +537,7 @@ export const en: LocaleMessages = {
   'coupon.groupUnavailable': 'Unavailable coupons',
   'coupon.notUse': 'No coupon',
   'coupon.selectedCount': '{count} selected',
+  'coupon.selectedCountLimit': '{count} of {limit} selected',
   'goodsAction.label': 'Product actions',
   'goodsAction.favorite': 'Favourites',
   'goodsAction.shop': 'Shop',
@@ -713,4 +714,8 @@ export const en: LocaleMessages = {
   'orderCard.discount': 'Saved',
   'orderCard.payable': 'Paid',
   'productCard.noImage': 'No image',
+
+  // barrage（弹幕）
+  'barrage.like': 'Like',
+  'barrage.unlike': 'Unlike',
 }

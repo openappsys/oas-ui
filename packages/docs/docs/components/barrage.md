@@ -50,7 +50,7 @@ description: 弹幕组件，多条弹幕在轨道上按速度漂过，同轨道�
 
 ## 声明式数据 items 与循环 auto-play
 
-`items` 用 JSON 数组声明弹幕（字符串或 `{ text, color?, key? }`），语义对齐 `addBatch`：属性变化时把新条目批量入队（追加，不清空在场）。另有同名 property 通道（赋数组自动序列化反射），框架双向绑定不用手写 `JSON.stringify`。`auto-play` 开启循环：声明条目播完后自动重播（只循环 `items` 声明的数据，`add()` 手动加的不参与；`clear()` 只清在场与排队，想永久停止请移除 `items` 或 `auto-play`）：
+`items` 用 JSON 数组声明弹幕（字符串或 `{ text, color?, key? }`），语义对齐 `addBatch`：属性变化时把新条目批量入队（追加，不清空在场）。另有同名 property 通道（赋数组自动序列化反射），框架双向绑定不用手写 `JSON.stringify`。`auto-play` 开启循环：本轮声明条目全部播完（队列空且无在场循环条目）后自动重播（只循环 `items` 声明的数据，`add()` 手动加的不参与；`clear()` 只清在场与排队，想永久停止请移除 `items` 或 `auto-play`）：
 
 <DemoBlock title="items 声明 + auto-play 循环">
   <oas-barrage
@@ -63,6 +63,33 @@ description: 弹幕组件，多条弹幕在轨道上按速度漂过，同轨道�
     accessible
     style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
   ></oas-barrage>
+</DemoBlock>
+
+## 点赞与屏蔽词
+
+- `likeable`：每条弹幕带心形点赞控件，点按切换点赞态并派发 `oas-like`（`detail: { text, key, color, liked, count }`）。点赞状态按 `key`（缺省按文本）**跨条目生命周期记忆**：弹幕离场后同 key 再入场仍是已赞，计数保留；`isLiked(key)` / `likeCount(key)` 供宿主回显。未开该属性时渲染与现状一致（零视觉漂移）。
+- 无障碍：缺省弹幕是装饰性内容（舞台 `aria-hidden`），点赞控件同样 `aria-hidden` 且不可聚焦（鼠标可点、读屏不可达）；开 `accessible` 后舞台进读屏，点赞控件变成键盘可达的 `role="button"`（`aria-pressed` + i18n 可访问名），且条目本身不再叠 button 语义（避免嵌套交互控件）。
+- `banned-words`：屏蔽词，逗号分隔（全角逗号亦可）或 JSON 数组字符串，**大小写不敏感**。命中的条目**不入队不渲染**（`add` / `addBatch` / `items` / auto-play 重灌四条入队通道同一判据）；已在场的条目不会回溯移除，入场后插入的屏蔽词对之后的条目生效。
+
+<DemoBlock title="likeable + banned-words（「广告」类弹幕被过滤）">
+  <oas-barrage
+    id="bg-like"
+    items='["这条可以点赞","组件库真好用","广告弹幕会被过滤","再来一条看看点赞保持"]'
+    likeable
+    accessible
+    banned-words="广告,刷屏"
+    tracks="2"
+    speed="100"
+    height="120"
+    style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
+  ></oas-barrage>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="bg-like-send" size="small">发一条正常弹幕</oas-button>
+    <oas-button id="bg-like-banned" size="small">发一条广告弹幕</oas-button>
+  </div>
+  <span id="bg-like-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    点弹幕里的心形点赞；「广告」弹幕不会出现。
+  </span>
 </DemoBlock>
 
 ## 书写方向（RTL）
@@ -117,6 +144,20 @@ onMounted(() => {
       add(rtl, texts[i % texts.length])
     })
     document.querySelector('#bg-clear')?.addEventListener('click', () => demo?.clear())
+    // 点赞与屏蔽词：oas-like 反馈 + 两条发送入口（命中屏蔽词的那条不会出现）
+    const likeEl = document.querySelector('#bg-like')
+    const likeOut = document.querySelector('#bg-like-out')
+    likeEl?.addEventListener('oas-like', (event) => {
+      const { liked, count, text } = event.detail
+      likeOut.textContent = `${liked ? '已点赞' : '已取消点赞'}「${text}」，当前 ${count} 个赞`
+    })
+    document.querySelector('#bg-like-send')?.addEventListener('click', () => {
+      likeEl?.add('这条是正常弹幕', { key: 'normal-' + Date.now() })
+    })
+    document.querySelector('#bg-like-banned')?.addEventListener('click', () => {
+      likeEl?.add('这是一条广告弹幕')
+      likeOut.textContent = '已尝试发送含屏蔽词的弹幕（不会渲染）'
+    })
     document.querySelector('#bg-pause')?.addEventListener('click', (event) => {
       if (!demo) return
       const button = event.currentTarget
@@ -144,10 +185,12 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `accessible` | 布尔，存在时弹幕进入读屏（`role="log"` + `aria-live="polite"`）；缺省 `aria-hidden` | — | — |
-| `auto-play` | 循环播放：声明条目队列耗尽后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play） | — | — |
+| `auto-play` | 循环播放：本轮声明条目全部播完（队列空且无在场循环条目）后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play） | — | — |
+| `banned-words` | 屏蔽词（逗号分隔或 JSON 数组字符串；大小写不敏感）：命中的条目不入队不渲染（`add` / `addBatch` / `items` / auto-play 重灌四条入队通道同一判据）；已在场条目不回溯移除 | `string` | — |
 | `gap` | 同轨道相邻弹幕的最小水平间距（px，默认 48） | `string` | — |
 | `height` | 舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px） | `string` | — |
 | `items` | 声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute） | `Array<string \| BarrageItemInput> \| string` | `[]` |
+| `likeable` | 每条弹幕带心形点赞控件（点按切换点赞态并派发 `oas-like`；点赞態按 `key` / 文本跨条目生命周期记忆） | — | — |
 | `max-active` | 同屏最大条数（0 = 不限，默认 0） | `string` | — |
 | `paused` | 受控暂停（在场=暂停；CSS 动画与排期计时同时冻结） | — | — |
 | `speed` | 漂移速度（像素/秒，默认 120） | `string` | — |
@@ -158,6 +201,8 @@ onMounted(() => {
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
 | `add` | `add(text: string, options: BarrageItemOptions): void` | 追加一条弹幕（options: `{ color?, key? }`） |
+| `isLiked` | `isLiked(key: string): boolean` | 查询点赞态（键 = `key`，缺省按文本；与 `oas-like` 的 `key` 口径一致） |
+| `likeCount` | `likeCount(key: string): number` | 查询点赞数 |
 | `addBatch` | `addBatch(items: Array<string \| BarrageItemInput>): void` | 批量追加（字符串或 `{ text, color?, key? }`） |
 | `pause` | `pause(): void` | 暂停（写入 `paused` 属性） |
 | `resume` | `resume(): void` | 继续（移除 `paused` 属性） |
@@ -168,6 +213,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-item-click` | 点击弹幕时派发，`detail: { text: item.text, key: item.key, color: item.color }` |
+| `oas-like` | 点按点赞控件派发；`detail: { text, key, color, liked, count }`（`liked` 为切换后的状态） |
 
 #### CSS 变量
 

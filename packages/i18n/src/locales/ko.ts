@@ -609,6 +609,7 @@ export const ko: LocaleMessages = {
   'coupon.groupUnavailable': '사용 불가 쿠폰',
   'coupon.notUse': '쿠폰 사용 안 함',
   'coupon.selectedCount': '{count}개 선택됨',
+  'coupon.selectedCountLimit': '{count}/{limit}장 선택됨',
   'goodsAction.label': '상품 작업',
   'goodsAction.favorite': '찜',
   'goodsAction.shop': '스토어',
@@ -785,4 +786,8 @@ export const ko: LocaleMessages = {
   'orderCard.discount': '할인됨',
   'orderCard.payable': '결제 금액',
   'productCard.noImage': '이미지 없음',
+
+  // barrage（弹幕）
+  'barrage.like': '좋아요',
+  'barrage.unlike': '좋아요 취소',
 }

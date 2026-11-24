@@ -287,3 +287,56 @@ test('questionnaire 跳过：optional 步点跳过按钮不校验直接前进', 
   expect(Object.keys(values)).not.toContain('invite')
   expect(values).toHaveProperty('nickname')
 })
+
+test('questionnaire 声明式条件 + goto：when 条件步自动显隐、goto 直达目标并派发 oas-goto（真实浏览器）', async ({
+  page,
+}) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-when')
+  const q = page.locator('#q-when')
+  const headerCount = () => q.evaluate((el) => el.shadowRoot!.querySelectorAll('.steps .item').length)
+  await page.evaluate(() => {
+    const el = document.getElementById('q-when')!
+    const w = window as unknown as { __gotos: Array<Record<string, unknown>> }
+    w.__gotos = []
+    el.addEventListener('oas-goto', (event) => {
+      w.__gotos.push({ ...(event as CustomEvent).detail })
+    })
+  })
+
+  // 初始 extend=yes：条件步「延保方案」可见 → 4 步；切「不需要」→ 条件步隐藏 → 3 步
+  expect(await headerCount()).toBe(4)
+  await page.locator('#q-when oas-radio[value="no"]').click()
+  await expect.poll(headerCount).toBe(3)
+  await expect(q.locator('.progress')).toHaveAttribute('aria-valuemax', '3')
+
+  // goto 命中：从第 1 步直达「完成」（跳过可见的「发票信息」），并派发 oas-goto
+  await realClick(page, '#q-when', '[part="next"]')
+  await expect(q).toHaveAttribute('current', '3')
+  const gotos = await page.evaluate(() => (window as unknown as { __gotos: Array<Record<string, unknown>> }).__gotos)
+  expect(gotos).toHaveLength(1)
+  expect(gotos[0]).toMatchObject({ from: 0, index: 3 })
+  await expect(page.locator('#q-when-output')).toContainText('goto 命中')
+
+  // 回到第一步切「需要延保」：条件步恢复，头部回到 4
+  await realClick(page, '#q-when', '[part="prev"]')
+  await realClick(page, '#q-when', '[part="prev"]')
+  await expect(q).toHaveAttribute('current', '0')
+  await page.locator('#q-when oas-radio[value="yes"]').click()
+  await expect.poll(headerCount).toBe(4)
+})
+
+test('questionnaire 评分汇总：作答后 oas-score 防抖派发、只读 score property 读到最新总分', async ({ page }) => {
+  await page.goto('/components/questionnaire.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#q-score')
+  const q = page.locator('#q-score')
+
+  await page.locator('#q-score oas-radio[value="5"]').click()
+  await expect(page.locator('#q-score-output')).toContainText('oas-score')
+  expect(await q.evaluate((el) => (el as HTMLElement & { score: number }).score)).toBe(5)
+
+  // 换低分选项：分数回到 3（事件与 property 同步）
+  await page.locator('#q-score oas-radio[value="4"]').click()
+  await expect.poll(() => q.evaluate((el) => (el as HTMLElement & { score: number }).score)).toBe(3)
+  await expect(page.locator('#q-score-output')).toContainText('oas-score')
+})

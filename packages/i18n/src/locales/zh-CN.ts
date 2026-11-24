@@ -614,6 +614,7 @@ export const zhCN = {
   'coupon.groupUnavailable': '不可用优惠券',
   'coupon.notUse': '不使用优惠券',
   'coupon.selectedCount': '已选 {count} 张',
+  'coupon.selectedCountLimit': '已选 {count}/{limit} 张',
   'goodsAction.label': '商品操作',
   'goodsAction.favorite': '收藏',
   'goodsAction.shop': '店铺',
@@ -790,4 +791,8 @@ export const zhCN = {
   'orderCard.discount': '已优惠',
   'orderCard.payable': '实付',
   'productCard.noImage': '暂无图片',
+
+  // barrage（弹幕）
+  'barrage.like': '点赞',
+  'barrage.unlike': '取消点赞',
 } as const

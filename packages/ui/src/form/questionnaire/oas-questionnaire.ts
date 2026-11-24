@@ -1,11 +1,25 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import {
+  affectedSteps,
+  compileStepLogic,
+  testCondition,
+  type CompiledGoto,
+  type CompiledStepLogic,
+  type StepGoto,
+} from './when-engine.js'
+import { compileScoreRules, computeScore, type CompiledScoreRule } from './score-engine.js'
+
+export type { StepGoto } from './when-engine.js'
 
 /**
- * 步骤数据契约：线性门控 + 可选跳过 + 条件分支（宿主组合通道）。
- * 条件分支不内置谓词 / 表达式引擎：宿主监听 oas-values-change 按答案改写 steps 翻转 hidden，
- * 组件负责 hidden 的全部导航/取值/校验口径（含 current 落在 hidden 步时的自动对齐）；
+ * 步骤数据契约：线性门控 + 可选跳过 + 条件分支两条通道。
+ * - **声明式条件轨**（`when` / `goto`）：表达式由 schema-form 的受限表达式引擎求值，
+ *   步骤条目的 `when` 不成立即自动隐藏；`goto` 在前进时按条件跳转到指定步。
+ * - **宿主组合通道**（`hidden`）：宿主监听 oas-values-change 按答案改写 steps 翻转 hidden。
+ *   两条通道**正交**：`hidden: true` 恒隐藏（宿主优先），条件引擎只决定「未被宿主显式隐藏」的步。
+ * 组件负责隐藏态的全部导航/取值/校验口径（含 current 落在隐藏步时的自动对齐）；
  * oas-before-change 保留宿主 veto 与自定义跳转挂点。
  */
 export interface QuestionnaireStep {
@@ -15,9 +29,16 @@ export interface QuestionnaireStep {
   description?: string
   /** 可跳过：显示 Skip 按钮，未答亦放行（跳过不触发校验；跳过后该步退出取值/校验口径，重新进入恢复） */
   optional?: boolean
-  /** 可见性数据位（条件分支的组合通道）：宿主按答案预算/运行时改写——隐藏步不渲染头部、
-   * 不计进度、导航自动跳过、值与校验不计入；用户所在步被隐藏时 current 自动对齐到最近可见步 */
+  /** 可见性数据位（组合通道）：宿主按答案预算/运行时改写——隐藏步不渲染头部、
+   * 不计进度、导航自动跳过、值与校验不计入；用户所在步被隐藏时 current 自动对齐到最近可见步。
+   * **优先于 `when`**：置 true 时条件不再参与判定 */
   hidden?: boolean
+  /** 条件表达式（声明式通道）：求值为假 → 本步自动隐藏；表达式读取跨步汇总答案，
+   * 依赖路径作答变化时重算。`conditions="false"` 关闭引擎后本字段失效 */
+  when?: string
+  /** 前进时的跳转目标：`{ when, target }`，或 `target` 简写（索引 / 步骤 key，条件恒成立）。
+   * 条件成立时 next()/主按钮直接跳到目标步（仍走单步校验与 oas-before-change；切步成功后派发 `oas-goto`） */
+  goto?: StepGoto | number | string
 }
 
 /** 非法 size 告警：回落 medium 并在 dev 下 console.warn 一次（同值去重，对齐 oas-steps 惯例） */
@@ -29,6 +50,20 @@ function warnInvalidSize(raw: string): void {
 }
 
 const VALID_PROGRESS_VARIANTS = new Set(['text', 'bar', 'both'])
+
+/** 值变化级联的定点迭代上限（与 schema-form 联动同一档位） */
+const MAX_CASCADE_ROUNDS = 8
+
+/** 评分事件防抖窗口（ms）：连续作答合并为一次 oas-score */
+const SCORE_DEBOUNCE_MS = 80
+
+/** 条件引擎告警去重（编译 / 求值同一份文案只报一次） */
+const warnedLogic = new Set<string>()
+function warnLogic(message: string): void {
+  if (warnedLogic.has(message)) return
+  warnedLogic.add(message)
+  devWarn(`[oas-questionnaire] ${message}`)
+}
 
 /** 值合并安全：保留键段整块跳过（原型污染防护，与 oas-form parseNamePath 同判据） */
 const FORBIDDEN_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
@@ -361,10 +396,38 @@ export class OASQuestionnaire extends OASElement {
       'shortcuts',
       // size 五档（字号密度档位，几何恒定）
       'size',
+      // 步骤条件引擎开关（when / goto；conditions="false" 关闭，只认宿主 hidden）
+      'conditions',
+      // 评分规则（表达式 + 分值列表；只算不渲染）
+      'score-rules',
     ]
   }
 
   private _steps: QuestionnaireStep[] = []
+
+  /** 已编译的步骤逻辑（when / goto）；steps 或 conditions 变化时重编译 */
+  private logic: CompiledStepLogic = { when: [], goto: [], warnings: [] }
+
+  /** 逻辑编译签名（steps 原文 + conditions）——相同签名跳过重编译 */
+  private logicSignature = ''
+
+  /** 条件可见性缓存（下标 = 步骤索引；true = 可见）；evalVisibility 写入 */
+  private visibleCache: boolean[] = []
+
+  /** 值变化 → 重算 → 对齐 → 派发 change 的同步级联轮次（8 轮守卫，防宿主回环死循环） */
+  private cascadePasses = 0
+
+  /** 已编译的评分规则（score-rules） */
+  private scoreRules: CompiledScoreRule[] = []
+
+  /** 评分规则编译签名（属性原文） */
+  private scoreSignature = ''
+
+  /** 上一次派发过的总分（相同则不再派发 oas-score） */
+  private lastScore = 0
+
+  /** 评分派发的防抖计时器（作答连续变化合并为一次） */
+  private scoreTimer: ReturnType<typeof setTimeout> | null = null
 
   /** 门控在途标志：next/submit 重入保护（异步 validator 未落地时不重复推进） */
   private busy = false
@@ -449,6 +512,8 @@ export class OASQuestionnaire extends OASElement {
     }
     // 断开时摘除内层 form 上的值跟踪监听（重连后由 update 重挂，同引用去重）
     this.onCleanup(() => {
+      if (this.scoreTimer !== null) clearTimeout(this.scoreTimer)
+      this.scoreTimer = null
       for (const { form } of this.stepForms()) {
         form.removeEventListener('oas-values-change', this.onInnerValues as EventListener)
       }
@@ -473,8 +538,11 @@ export class OASQuestionnaire extends OASElement {
     this.addEventListener('keydown', this.onKeydown)
     this.onCleanup(() => this.removeEventListener('keydown', this.onKeydown))
     this.bindValueListeners()
-    // 值与 bind() 对称：断开时摘除内层 form 值跟踪监听（否则第 2 次断开不再清理）
+    // 与 bind() 的清理对称：断开时摘除内层 form 值跟踪监听、并清掉待派的评分防抖定时器
+    //（否则断开后 80ms 内那次 emit 仍会在已脱离文档的宿主上派发，第 2 次断开也不会清）
     this.onCleanup(() => {
+      if (this.scoreTimer !== null) clearTimeout(this.scoreTimer)
+      this.scoreTimer = null
       for (const { form } of this.stepForms()) {
         form.removeEventListener('oas-values-change', this.onInnerValues as EventListener)
       }
@@ -490,6 +558,8 @@ export class OASQuestionnaire extends OASElement {
     const { value: size, isValid: sizeValid } = normalizeSizeStrict(sizeRaw, ALL_SIZES, 'medium')
     if (!sizeValid) warnInvalidSize(sizeRaw)
     for (const s of ALL_SIZES) this.classList.toggle(`oas-questionnaire--${s}`, s === size)
+    // 条件引擎：先按当前答案重算可见性（hidden 判据的唯一事实源），再解析有效步
+    this.evaluateVisibility()
     const eff = this.effectiveIndex()
     // 重新进入被跳过的步即恢复参与：导航（next/prev/goto）与宿主直接写 current 两条路径
     // 都汇经 update，统一在此清除该步的跳过记录
@@ -535,7 +605,8 @@ export class OASQuestionnaire extends OASElement {
    * current 对齐：raw current 解析后落在 hidden 步（宿主按答案翻转 hidden）时，
    * 写回 current = 解析步并派发 oas-change（宿主同步自身状态，无需再手动 goto）。
    * 非用户导航动作：不派发 before-change（视图已随解析步渲染，无可 veto 的跳步）；
-   * 全部步 hidden 的退化路径（解析步 = 原 clamp）不动。写回触发一次重入 update 即收敛。
+   * 全部步 hidden 的退化路径（解析步 = 原 clamp）不动。写回触发一次重入 update 即收敛；
+   * 宿主在 change 里回写 current / hidden 形成的同步回环由级联守卫截断（8 轮）。
    */
   private alignCurrent(eff: number): void {
     const n = this._steps.length
@@ -543,6 +614,7 @@ export class OASQuestionnaire extends OASElement {
     const raw = Number(this.getAttr('current', '0'))
     const clamp = Math.min(Math.max(Number.isFinite(raw) ? Math.floor(raw) : 0, 0), n - 1)
     if (clamp === eff) return
+    if (!this.beginCascadeRound()) return
     this.setAttribute('current', String(eff))
     this.emit('change', { index: eff, ...this.keyOf(eff) })
   }
@@ -561,12 +633,197 @@ export class OASQuestionnaire extends OASElement {
     }
     // steps 配置变更后清理越界的跳过记录（索引不跨配置复用，防误标新步骤）
     for (const i of this.skipped) if (i >= this._steps.length) this.skipped.delete(i)
+    this.compileLogic()
+    this.compileScore()
+  }
+
+  // ---------- 条件引擎（when / goto） ----------
+
+  /** 表达式轨开关：`conditions="false"` 关闭（只认宿主 hidden；when/goto 全部失效） */
+  private conditionsEnabled(): boolean {
+    return this.getAttr('conditions', 'true') !== 'false'
+  }
+
+  /** 编译步骤逻辑（签名不变则跳过）；编译告警一次性 devWarn，不阻断渲染 */
+  private compileLogic(): void {
+    const enabled = this.conditionsEnabled()
+    const signature = `${enabled ? 'on' : 'off'}|${this.getAttr('steps', '')}`
+    if (signature === this.logicSignature) return
+    this.logicSignature = signature
+    this.logic = compileStepLogic(this._steps, enabled)
+    for (const message of this.logic.warnings) warnLogic(message)
+    // 步骤集合或开关变化：可见性缓存整体失效，交由 evaluateVisibility 重建
+    this.visibleCache = []
+  }
+
+  /**
+   * 条件可见性求值（每次 update 全量重算；值变化路径的定向重算走 scheduleReconcile 先行过滤）：
+   * - 宿主显式 `hidden: true` 直接判隐藏（条件不参与）；
+   * - 引擎关闭 / 无 when → 全部可见；
+   * - 表达式求值抛错（宿主函数）→ 按条件不成立处理（步骤隐藏）+ 一次性 devWarn。
+   */
+  private evaluateVisibility(): void {
+    const count = this._steps.length
+    const cache = new Array<boolean>(count).fill(true)
+    if (this.conditionsEnabled() && this.logic.when.length > 0) {
+      const values = this.conditionValues()
+      for (const clause of this.logic.when) {
+        if (this._steps[clause.index]?.hidden === true) continue
+        const { value, error } = testCondition(clause, values)
+        if (error !== null) warnLogic(`第 ${clause.index + 1} 步的 when 求值失败（${error}），已按条件不成立处理`)
+        cache[clause.index] = value
+      }
+    }
+    this.visibleCache = cache
+  }
+
+  /** 条件求值用的跨步答案：全部步骤当前值深合并（含隐藏步——面板常驻、值保留） */
+  private conditionValues(): Record<string, unknown> {
+    return this.collectValues(true)
+  }
+
+  /**
+   * 值变化 → 重算（依赖图定向）：
+   * - 无变化路径（宿主直接改属性等）→ 全量重算；
+   * - 有路径时只对依赖命中的 when 重算；未命中则跳过（不触发 update，省一次整树同步）；
+   * - 级联守卫：同步级联最多 8 轮，超出一次性 devWarn 并停止（宿主在 change 里回写值形成
+   *   回环时不会死循环，代价是回环最后一轮的重算被丢弃）。
+   */
+  private scheduleReconcile(changedPath?: string): void {
+    // 无 when 条件（或引擎关闭）：作答变化不影响可见性，零额外同步（与未启用引擎的路径等价）
+    if (!this.conditionsEnabled() || this.logic.when.length === 0) return
+    if (changedPath !== undefined && changedPath !== '') {
+      const hit = affectedSteps(this.logic.when, changedPath)
+      if (hit.length === 0) return
+    }
+    if (!this.beginCascadeRound()) return
+    this.update()
+  }
+
+  /**
+   * 级联轮次计数（8 轮守卫）：一轮 = 一次「同步重算 / 对齐回写」。计数按微任务重置——
+   * 一次同步回环内累计，用户下一次交互重新计数。超出预算即一次性 devWarn 并拒绝本轮，
+   * 回环被截断（宿主在 oas-change 里回写答案或 current 形成回环时不会死循环）。
+   */
+  private beginCascadeRound(): boolean {
+    if (this.cascadePasses >= MAX_CASCADE_ROUNDS) {
+      warnLogic(
+        `同步级联在 ${MAX_CASCADE_ROUNDS} 轮内未稳定，已停止本轮重算（请检查宿主是否在 oas-change 里回写答案 / current 形成回环）`,
+      )
+      return false
+    }
+    this.cascadePasses += 1
+    if (typeof queueMicrotask === 'function') queueMicrotask(() => (this.cascadePasses = 0))
+    else void Promise.resolve().then(() => (this.cascadePasses = 0))
+    return true
+  }
+
+  /** 前进目标：goto 条件成立时返回目标步（已解析为可见步），否则 null */
+  private gotoTargetFrom(from: number): { rule: CompiledGoto; target: number } | null {
+    if (!this.conditionsEnabled()) return null
+    const rule = this.logic.goto.find((entry) => entry.index === from)
+    if (!rule) return null
+    if (rule.program !== null) {
+      const { value, error } = testCondition({ program: rule.program }, this.conditionValues())
+      if (error !== null) {
+        warnLogic(`第 ${from + 1} 步的 goto 条件求值失败（${error}），已按条件不成立处理`)
+        return null
+      }
+      if (!value) return null
+    }
+    const resolved = this.resolveStepRef(rule.target)
+    if (resolved === null || resolved === from) return null
+    const target = this.isHidden(resolved) ? this.nearestVisible(resolved) : resolved
+    if (target === -1 || target === from) return null
+    return { rule, target }
+  }
+
+  /** 目标引用解析：索引或步骤 key（数字字符串按索引）；越界 / 未命中返回 null */
+  private resolveStepRef(target: number | string): number | null {
+    const count = this._steps.length
+    if (typeof target === 'number') {
+      const index = Math.trunc(target)
+      return index >= 0 && index < count ? index : null
+    }
+    const key = target.trim()
+    const byKey = this._steps.findIndex((step) => step.key === key)
+    if (byKey >= 0) return byKey
+    if (/^\d+$/.test(key)) {
+      const index = Number(key)
+      return index >= 0 && index < count ? index : null
+    }
+    warnLogic(`goto 目标 "${key}" 未命中任何步骤 key，已忽略`)
+    return null
+  }
+
+  /** 隐藏目标的可见落点：先向后、再向前（与 current 解析同口径）；全隐藏返回 -1 */
+  private nearestVisible(index: number): number {
+    const forward = this.nextVisibleIndex(index)
+    if (forward !== -1) return forward
+    return this.prevVisibleIndex(index)
+  }
+
+  // ---------- 评分汇总（score-rules） ----------
+
+  /**
+   * @apiProperty 当前总分（只读 property）：按 `score-rules` 与当前跨步答案（含隐藏步）即时求和。
+   * 引擎只算不渲染——分数展示与题型组合由宿主决定；作答变化后另派发防抖的 `oas-score`。
+   */
+  get score(): number {
+    return this.computeScoreNow()
+  }
+
+  /** 评分规则编译（签名不变跳过）；编译告警一次性 devWarn，坏规则单独跳过 */
+  private compileScore(): void {
+    const raw = this.getAttr('score-rules', '')
+    if (raw === this.scoreSignature) return
+    this.scoreSignature = raw
+    let parsed: unknown
+    try {
+      parsed = raw.trim() === '' ? null : JSON.parse(raw)
+    } catch {
+      warnLogic('score-rules 不是合法 JSON，已忽略')
+      parsed = null
+    }
+    const compiled = compileScoreRules(parsed)
+    for (const message of compiled.warnings) warnLogic(message)
+    this.scoreRules = compiled.rules
+    // 基线快照：规则变更静默（不派发 oas-score），后续仅真实变化才派发
+    this.lastScore = this.computeScoreNow()
+  }
+
+  private computeScoreNow(): number {
+    if (this.scoreRules.length === 0) return 0
+    const { score, failed } = computeScore(this.scoreRules, this.conditionValues())
+    for (const message of failed) warnLogic(message)
+    return score
+  }
+
+  /** 作答变化 → 防抖派发（同一任务内连续作答合并为一次；值未变不派发） */
+  private scheduleScore(): void {
+    if (this.scoreRules.length === 0) return
+    if (this.scoreTimer !== null) clearTimeout(this.scoreTimer)
+    this.scoreTimer = setTimeout(() => {
+      this.scoreTimer = null
+      const next = this.computeScoreNow()
+      if (next === this.lastScore) return
+      this.lastScore = next
+      this.emit('score', { score: next })
+    }, SCORE_DEBOUNCE_MS)
   }
 
   // ---------- 索引解析（hidden 步不进流程） ----------
 
+  /**
+   * 隐藏判据（头部 / 进度 / 导航 / 取值 / 校验共用的唯一事实源）：
+   * - 宿主显式 `hidden: true` 恒隐藏（优先于条件引擎）；
+   * - 引擎开启时叠加条件结果（`when` 不成立 = 隐藏）；
+   * - `conditions="false"` 时只认宿主 hidden。
+   */
   private isHidden(idx: number): boolean {
-    return this._steps[idx]?.hidden === true
+    if (this._steps[idx]?.hidden === true) return true
+    if (!this.conditionsEnabled()) return false
+    return this.visibleCache[idx] === false
   }
 
   /**
@@ -658,7 +915,7 @@ export class OASQuestionnaire extends OASElement {
     for (let i = 0; i < this._steps.length; i++) if (!this.isHidden(i)) ordinalOf.set(i, ++ord)
     for (let idx = 0; idx < this._steps.length; idx++) {
       const step = this._steps[idx]!
-      if (step.hidden) continue
+      if (this.isHidden(idx)) continue
       const li = document.createElement('li')
       li.className = 'item'
       li.setAttribute('part', 'item')
@@ -764,7 +1021,7 @@ export class OASQuestionnaire extends OASElement {
       panel.setAttribute('part', 'panel')
       panel.setAttribute('data-step', String(idx))
       if (idx === eff && anim) panel.setAttribute('data-anim', anim)
-      if (idx !== eff || step.hidden) panel.setAttribute('hidden', '')
+      if (idx !== eff || this.isHidden(idx)) panel.setAttribute('hidden', '')
       const slot = document.createElement('slot')
       slot.setAttribute('name', step.key ? `step-${step.key}` : `step-${idx}`)
       panel.appendChild(slot)
@@ -844,14 +1101,17 @@ export class OASQuestionnaire extends OASElement {
     }
   }
 
-  /** 内层 form 值变化 → 跟踪该步快照（事件本身 composed 冒泡穿出，宿主可直接收听，不重复派发） */
+  /** 内层 form 值变化 → 跟踪该步快照（事件本身 composed 冒泡穿出，宿主可直接收听，不重复派发）
+   * + 条件引擎按依赖路径重算（变更路径取 detail.name） */
   private readonly onInnerValues = (e: Event): void => {
     const form = e.currentTarget as Element | null
     if (!form) return
     const idx = this.formIndex.get(form)
     if (idx === undefined) return
-    const detail = (e as CustomEvent<{ values?: unknown }>).detail
+    const detail = (e as CustomEvent<{ values?: unknown; name?: unknown }>).detail
     if (detail && isPlainObject(detail.values)) this.tracked.set(idx, detail.values)
+    this.scheduleReconcile(typeof detail?.name === 'string' ? detail.name : undefined)
+    this.scheduleScore()
   }
 
   // ---------- 导航与门控 ----------
@@ -929,6 +1189,16 @@ export class OASQuestionnaire extends OASElement {
       } finally {
         this.busy = false
       }
+    }
+    // 跳转规则（goto）：条件成立则直达目标步，否则按步骤顺序前进。
+    // 事件在切步成功后派发——被 oas-before-change 否决的跳转不产生 oas-goto（避免误报）
+    const jump = this.gotoTargetFrom(from)
+    if (jump) {
+      const moved = this.moveTo(jump.target)
+      if (moved) {
+        this.emit('goto', { index: jump.target, ...this.keyOf(jump.target), from, target: jump.rule.target })
+      }
+      return moved
     }
     return this.moveTo(target)
   }
@@ -1042,9 +1312,14 @@ export class OASQuestionnaire extends OASElement {
    * 需全量数据（含 hidden / 已跳过步）的宿主可直接读取各面板内的 oas-form。
    */
   getValues(): Record<string, unknown> {
+    return this.collectValues(false)
+  }
+
+  /** 跨步值汇总内核：`includeHidden` 为 true 时含隐藏 / 已跳过步（条件求值用全量答案） */
+  private collectValues(includeHidden: boolean): Record<string, unknown> {
     const out: Record<string, unknown> = {}
     for (const { idx, form } of this.stepForms()) {
-      if (!this.participates(idx)) continue
+      if (!includeHidden && !this.participates(idx)) continue
       const f = form as { getValues?: () => unknown }
       if (typeof f.getValues === 'function') {
         const values = f.getValues()
@@ -1072,5 +1347,9 @@ export class OASQuestionnaire extends OASElement {
     this.tracked.clear()
     this.skipped.clear()
     if (this.getAttr('current', '0') !== '0') this.setAttribute('current', '0')
+    // 条件引擎：作答回初始值后重算可见性（current 未变时属性写入不触发 update，这里显式重算）
+    else this.scheduleReconcile()
+    // 评分：reset 后分数回初始值（防抖派发，避免与 form 自身 reset 的多次值事件叠发）
+    this.scheduleScore()
   }
 }

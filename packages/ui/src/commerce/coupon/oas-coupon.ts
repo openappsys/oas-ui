@@ -32,6 +32,11 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `z-index`：弹层层级（数值叠加 `--oas-z-index-base`，缺省沿用层叠阶梯）
  * - `multiple`：多选模式——选项变 checkbox，勾选即派发 `oas-select`（detail 为数组）且弹层
  *   不自动关闭（由宿主决定何时收起）；触发按钮显示已选张数；缺省单选（行为不变）
+ * - `max-select`：多选上限（正整数；0 / 非法 = 不限并告警一次）。到达上限后再勾选被拒绝——
+ *   勾选态回滚、已选集合不变，派发 `oas-select-invalid`（`{ reason: 'max-select', limit, code, codes, coupons }`）；
+ *   触发按钮显示 `已选 n/m 张`（i18n）。单选模式忽略该属性
+ * - 互斥组：列表条目可写 `exclusiveGroup`，多选模式下同组互斥——选中一张自动取消同组其他已选券
+ *   （自动解决的组合不阻塞，变化随 `oas-select` 的 `removed` 字段回传）。单选模式天然互斥，忽略该字段
  * - `show-count`：可用 / 不可用分组标题带计数胶囊
  *
  * 列表弹层结构：「不使用优惠券」出口（`part="clear-entry"`）+ 可用 / 不可用两个分组
@@ -46,8 +51,11 @@ import { devWarn } from '../../shared/dev-warn.js'
  *
  * 事件（bubbles + composed）：
  * - `oas-select`：选中可用券派发。单选（默认）detail `{ code, coupon }` 并随后关闭弹层；
- *   `multiple` 模式 detail `{ codes, coupons }`（数组，弹层不关）；「不使用优惠券」出口
- *   派发空选——单选 `{ code: '', coupon: null }` / 多选 `{ codes: [], coupons: [] }`
+ *   `multiple` 模式 detail `{ codes, coupons, removed? }`（数组，弹层不关；`removed` = 被互斥组
+ *   自动取消的券 code）；「不使用优惠券」出口派发空选——单选 `{ code: '', coupon: null }` /
+ *   多选 `{ codes: [], coupons: [] }`
+ * - `oas-select-invalid`：组合校验拒绝（多选超过 `max-select`）派发，detail
+ *   `{ reason, limit, code, codes, coupons }`；选择未生效、已选集合不变
  * - `oas-clear`：点击「不使用优惠券」出口派发（紧随其后是空选 `oas-select`，两个事件成对）
  * - `oas-open-change`：交互/命令式开合，detail `{ open }`（受控属性写入不派发）
  *
@@ -71,6 +79,8 @@ export interface CouponData {
   validity: string
   status: CouponStatus
   reason: string
+  /** 互斥组名（多选模式）：同组券互斥，选中一张会自动取消同组已选的其他券 */
+  exclusiveGroup: string
 }
 
 export interface CouponSelectDetail {
@@ -82,6 +92,20 @@ export interface CouponSelectDetail {
 export interface CouponMultiSelectDetail {
   codes: string[]
   coupons: CouponData[]
+  /** 因互斥组被自动取消的券 code（无互斥替换时不出现该键） */
+  removed?: string[]
+}
+
+/** 组合校验拒绝 detail（本次选择未生效，已选集合保持原样） */
+export interface CouponSelectInvalidDetail {
+  reason: 'max-select'
+  /** 生效上限（max-select 解析后的正整数值） */
+  limit: number
+  /** 被拒绝的券 code */
+  code: string
+  /** 拒绝时的已选集合（不含被拒券） */
+  codes: string[]
+  coupons: CouponData[]
 }
 
 export interface CouponOpenChangeDetail {
@@ -90,6 +114,14 @@ export interface CouponOpenChangeDetail {
 
 const VALID_STATUS: readonly CouponStatus[] = ['available', 'expired', 'used', 'unavailable']
 const DIALOG_TITLE_ID = 'oas-coupon-title'
+
+/** 属性告警去重（同值只报一次） */
+const warnedCoupon = new Set<string>()
+function warnCoupon(message: string): void {
+  if (warnedCoupon.has(message)) return
+  warnedCoupon.add(message)
+  devWarn(`[oas-coupon] ${message}`)
+}
 
 const STYLE = `
 :host {
@@ -474,6 +506,7 @@ export class OASCoupon extends OASElement {
       'z-index',
       'multiple',
       'show-count',
+      'max-select',
     ]
   }
 
@@ -654,19 +687,41 @@ export class OASCoupon extends OASElement {
     }
   }
 
-  /** 列表选择：单选 radio（选中即派发并关闭）；multiple checkbox（切换派发数组、弹层不关） */
+  /** 列表选择：单选 radio（选中即派发并关闭）；multiple checkbox（切换派发数组、弹层不关）。
+   * 多选叠加组合规则：`max-select` 超限拒绝（勾选态回滚 + oas-select-invalid），
+   * 同 `exclusiveGroup` 互斥（自动取消同组其他已选，removed 随 oas-select 回传）。 */
   private onListChange = (event: Event): void => {
     const input = event.target as HTMLInputElement | null
     if (!input || !input.value) return
-    const coupon = this.parseList().find((item) => item.code === input.value)
+    const list = this.parseList()
+    const coupon = list.find((item) => item.code === input.value)
     if (!coupon || coupon.status !== 'available') return
     if (input.type === 'checkbox') {
-      if (input.checked) this.selectedCodes.add(coupon.code)
-      else this.selectedCodes.delete(coupon.code)
-      this.emit('select', {
-        codes: [...this.selectedCodes],
-        coupons: this.parseList().filter((item) => this.selectedCodes.has(item.code)),
-      } satisfies CouponMultiSelectDetail)
+      if (!input.checked) {
+        this.selectedCodes.delete(coupon.code)
+        this.emitMultiSelect(list)
+        this.update()
+        return
+      }
+      const limit = this.maxSelect()
+      const peers = this.exclusivePeerCodes(list, coupon)
+      // 上限判定按「换选后的净张数」：同组换选先淘汰同组其他券，不额外占名额
+      if (limit > 0 && this.selectedCodes.size - peers.length >= limit && !this.selectedCodes.has(coupon.code)) {
+        // 超限：本次勾选不生效，勾选态回滚到已选集合（update 的原位同步会复位 checked）
+        input.checked = false
+        this.emit('select-invalid', {
+          reason: 'max-select',
+          limit,
+          code: coupon.code,
+          codes: [...this.selectedCodes],
+          coupons: list.filter((item) => this.selectedCodes.has(item.code)),
+        } satisfies CouponSelectInvalidDetail)
+        this.update()
+        return
+      }
+      const removed = this.dropExclusivePeers(peers)
+      this.selectedCodes.add(coupon.code)
+      this.emitMultiSelect(list, removed)
       this.update()
       return
     }
@@ -674,6 +729,49 @@ export class OASCoupon extends OASElement {
     this.emit('select', { code: coupon.code, coupon } satisfies CouponSelectDetail)
     this.closeOverlay()
     this.update()
+  }
+
+  /** 多选派发（互斥替换时带 removed） */
+  private emitMultiSelect(list: CouponData[], removed: string[] = []): void {
+    const detail: CouponMultiSelectDetail = {
+      codes: [...this.selectedCodes],
+      coupons: list.filter((item) => this.selectedCodes.has(item.code)),
+    }
+    if (removed.length > 0) detail.removed = removed
+    this.emit('select', detail)
+  }
+
+  /** 互斥组：本次选中的券会淘汰的同组已选券 code（不改状态，供上限判定与后续淘汰共用） */
+  private exclusivePeerCodes(list: CouponData[], coupon: CouponData): string[] {
+    if (coupon.exclusiveGroup === '') return []
+    const out: string[] = []
+    for (const code of this.selectedCodes) {
+      if (code === coupon.code) continue
+      const peer = list.find((item) => item.code === code)
+      if (peer?.exclusiveGroup === coupon.exclusiveGroup) out.push(code)
+    }
+    return out
+  }
+
+  /** 执行互斥淘汰：取消给定 code 的已选状态，返回被取消列表（顺序与入参一致） */
+  private dropExclusivePeers(codes: string[]): string[] {
+    const removed: string[] = []
+    for (const code of codes) {
+      if (this.selectedCodes.delete(code)) removed.push(code)
+    }
+    return removed
+  }
+
+  /** max-select 解析：正整数；0 / 未写 = 不限；非法告警一次并回落不限 */
+  private maxSelect(): number {
+    const raw = this.getAttr('max-select', '')
+    if (raw.trim() === '') return 0
+    const value = Number.parseInt(raw, 10)
+    if (!Number.isFinite(value) || value <= 0) {
+      warnCoupon(`max-select="${raw}" 非法，已按不限处理（正整数）`)
+      return 0
+    }
+    return value
   }
 
   /** 「不使用优惠券」出口：派发 oas-clear + 空选 oas-select（成对），随后关闭弹层 */
@@ -713,6 +811,7 @@ export class OASCoupon extends OASElement {
       validity: this.getAttr('validity'),
       status: normalizeChoice(rawStatus, 'available', VALID_STATUS) as CouponStatus,
       reason: this.getAttr('reason'),
+      exclusiveGroup: '',
     }
   }
 
@@ -740,6 +839,8 @@ export class OASCoupon extends OASElement {
       validity: typeof raw.validity === 'string' ? raw.validity : '',
       status,
       reason: typeof raw.reason === 'string' ? raw.reason : '',
+      exclusiveGroup:
+        typeof raw.exclusiveGroup === 'string' && raw.exclusiveGroup.trim() !== '' ? raw.exclusiveGroup.trim() : '',
     }
   }
 
@@ -942,10 +1043,15 @@ export class OASCoupon extends OASElement {
     }
   }
 
-  /** 触发按钮文案：单选已选显示面额；multiple 显示已选张数；否则 trigger-text / i18n */
+  /** 触发按钮文案：单选已选显示面额；multiple 显示已选张数（有 max-select 时显示 n/m）；否则 trigger-text / i18n */
   private triggerLabel(list: CouponData[], locale: string, currency: string, multiple: boolean): string {
     if (multiple) {
-      if (this.selectedCodes.size > 0) return this.t('coupon.selectedCount', { count: String(this.selectedCodes.size) })
+      if (this.selectedCodes.size > 0) {
+        const limit = this.maxSelect()
+        return limit > 0
+          ? this.t('coupon.selectedCountLimit', { count: String(this.selectedCodes.size), limit: String(limit) })
+          : this.t('coupon.selectedCount', { count: String(this.selectedCodes.size) })
+      }
       return this.getAttr('trigger-text') || this.t('coupon.select')
     }
     const selected = this.selectedCode ? list.find((item) => item.code === this.selectedCode) : undefined

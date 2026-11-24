@@ -50,7 +50,7 @@ With `tracks="1"` all items share one track and scheduling guarantees no overlap
 
 ## Declarative items and auto-play
 
-`items` declares the bullets as a JSON array (strings or `{ text, color?, key? }`), aligned with `addBatch`: when the attribute changes, new entries are batch-enqueued (append semantics; on-screen items are kept). A same-name property channel exists as well (assigning an array serializes and reflects the attribute automatically), so framework bindings need no manual `JSON.stringify`. `auto-play` loops the stream: once the declared items finish playing they re-enqueue automatically (only `items`-declared data loops — bullets added via `add()` are not part of the loop; `clear()` only clears on-screen and queued items, so to stop for good remove `items` or `auto-play`):
+`items` declares the bullets as a JSON array (strings or `{ text, color?, key? }`), aligned with `addBatch`: when the attribute changes, new entries are batch-enqueued (append semantics; on-screen items are kept). A same-name property channel exists as well (assigning an array serializes and reflects the attribute automatically), so framework bindings need no manual `JSON.stringify`. `auto-play` loops the stream: once every declared item of the current round has finished playing (queue empty and no looping item on stage) they re-enqueue automatically (only `items`-declared data loops — bullets added via `add()` are not part of the loop; `clear()` only clears on-screen and queued items, so to stop for good remove `items` or `auto-play`):
 
 <DemoBlock title="items + auto-play loop">
   <oas-barrage
@@ -63,6 +63,33 @@ With `tracks="1"` all items share one track and scheduling guarantees no overlap
     accessible
     style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
   ></oas-barrage>
+</DemoBlock>
+
+## Likes and banned words
+
+- `likeable`: every bullet carries a heart control; tapping it toggles the like state and dispatches `oas-like` (`detail: { text, key, color, liked, count }`). Like state is remembered **by `key`** (text when no key) across the item lifecycle — when the same key re-enters, it is still liked and the count is kept; `isLiked(key)` / `likeCount(key)` let the host mirror it. Without this attribute the rendering is byte-identical to before (zero visual drift).
+- Accessibility: by default bullets are decorative (stage `aria-hidden`), so the like control is `aria-hidden` and not focusable (mouse-only, invisible to screen readers). With `accessible` the stage joins the accessibility tree and the like control becomes a keyboard-reachable `role="button"` (`aria-pressed` + i18n accessible name); the item itself no longer carries button semantics, avoiding nested interactive controls.
+- `banned-words`: comma-separated words (full-width commas work too) or a JSON array string, **case-insensitive**. Matching bullets are **never queued or rendered** (the same rule for `add` / `addBatch` / `items` / auto-play refill — four enqueue channels, one gate); items already on stage are not retroactively removed, and words added later apply to subsequent bullets.
+
+<DemoBlock title="likeable + banned-words (bullets with 'ad' are filtered)">
+  <oas-barrage
+    id="bg-like-en"
+    items='["This one can be liked","The component library works","ad bullets never render","One more to check the like state"]'
+    likeable
+    accessible
+    banned-words="ad,spam"
+    tracks="2"
+    speed="100"
+    height="120"
+    style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
+  ></oas-barrage>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="bg-like-send-en" size="small">Send a normal bullet</oas-button>
+    <oas-button id="bg-like-banned-en" size="small">Send an ad bullet</oas-button>
+  </div>
+  <span id="bg-like-out-en" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    Tap the heart on a bullet; the ad bullet never shows up.
+  </span>
 </DemoBlock>
 
 ## Writing Direction (RTL)
@@ -117,6 +144,20 @@ onMounted(() => {
       add(rtl, texts[i % texts.length])
     })
     document.querySelector('#bg-clear')?.addEventListener('click', () => demo?.clear())
+    // Likes and banned words: oas-like feedback + two send entries (the banned one never renders)
+    const likeEl = document.querySelector('#bg-like-en')
+    const likeOut = document.querySelector('#bg-like-out-en')
+    likeEl?.addEventListener('oas-like', (event) => {
+      const { liked, count, text } = event.detail
+      likeOut.textContent = `${liked ? 'Liked' : 'Unliked'} "${text}" (${count} likes)`
+    })
+    document.querySelector('#bg-like-send-en')?.addEventListener('click', () => {
+      likeEl?.add('A perfectly normal bullet', { key: 'normal-' + Date.now() })
+    })
+    document.querySelector('#bg-like-banned-en')?.addEventListener('click', () => {
+      likeEl?.add('this is an ad bullet')
+      likeOut.textContent = 'Tried to send a banned bullet (it will not render)'
+    })
     document.querySelector('#bg-pause')?.addEventListener('click', (event) => {
       if (!demo) return
       const button = event.currentTarget
@@ -144,10 +185,12 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accessible` | Boolean; when present the barrage is exposed to screen readers (`role="log"` + `aria-live="polite"`); `aria-hidden` by default | — | — |
-| `auto-play` | Loop playback: once the declared queue drains the items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good) | — | — |
+| `auto-play` | Loop playback: once every declared item of the current round has finished playing (queue empty and no looping item on stage), items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good) | — | — |
+| `banned-words` | Banned words (comma-separated or a JSON array string; case-insensitive): matching bullets are never queued or rendered (same rule for `add` / `addBatch` / `items` / auto-play refill — four enqueue channels, one gate); on-screen items are not retroactively removed | `string` | — |
 | `gap` | Minimum horizontal gap between items on the same track (px, default 48) | `string` | — |
 | `height` | Stage height (plain numbers are px, CSS lengths accepted; default 200px) | `string` | — |
 | `items` | Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute | `Array<string \| BarrageItemInput> \| string` | `[]` |
+| `likeable` | Each bullet carries a heart like control (tapping toggles the like state and dispatches `oas-like`; state is remembered by `key` / text across the item lifecycle) | — | — |
 | `max-active` | Maximum on-screen items (0 = unlimited, default 0) | `string` | — |
 | `paused` | Controlled pause (present = paused; CSS animations and scheduling timers freeze together) | — | — |
 | `speed` | Drift speed in pixels per second (default 120) | `string` | — |
@@ -158,6 +201,8 @@ onMounted(() => {
 | Method | Signature | Description |
 | --- | --- | --- |
 | `add` | `add(text: string, options: BarrageItemOptions): void` | Append one item (options: `{ color?, key? }`) |
+| `isLiked` | `isLiked(key: string): boolean` | Reads the like state (key = `key`, or the text when no key; same identity as `oas-like`) |
+| `likeCount` | `likeCount(key: string): number` | Reads the like count |
 | `addBatch` | `addBatch(items: Array<string \| BarrageItemInput>): void` | Append many (strings or `{ text, color?, key? }`) |
 | `pause` | `pause(): void` | Pause (writes the `paused` attribute) |
 | `resume` | `resume(): void` | Resume (removes the `paused` attribute) |
@@ -168,6 +213,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-item-click` | Dispatched when an item is clicked, `detail: { text: item.text, key: item.key, color: item.color }` |
+| `oas-like` | Fired when the like control is tapped; `detail: { text, key, color, liked, count }` (`liked` is the state after the toggle) |
 
 #### CSS Variables
 

@@ -614,6 +614,7 @@ export const zhHant: LocaleMessages = {
   'coupon.groupUnavailable': '不可用優惠券',
   'coupon.notUse': '不使用優惠券',
   'coupon.selectedCount': '已選 {count} 張',
+  'coupon.selectedCountLimit': '已選 {count}/{limit} 張',
   'goodsAction.label': '商品操作',
   'goodsAction.favorite': '收藏',
   'goodsAction.shop': '店鋪',
@@ -790,4 +791,8 @@ export const zhHant: LocaleMessages = {
   'orderCard.discount': '已優惠',
   'orderCard.payable': '實付',
   'productCard.noImage': '暫無圖片',
+
+  // barrage（弹幕）
+  'barrage.like': '按讚',
+  'barrage.unlike': '取消按讚',
 }

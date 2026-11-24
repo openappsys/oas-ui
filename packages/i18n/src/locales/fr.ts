@@ -609,6 +609,7 @@ export const fr: LocaleMessages = {
   'coupon.groupUnavailable': 'Coupons indisponibles',
   'coupon.notUse': 'Ne pas utiliser de coupon',
   'coupon.selectedCount': '{count} sélectionnés',
+  'coupon.selectedCountLimit': '{count} sur {limit} sélectionnés',
   'goodsAction.label': 'Actions produit',
   'goodsAction.favorite': 'Favoris',
   'goodsAction.shop': 'Boutique',
@@ -785,4 +786,8 @@ export const fr: LocaleMessages = {
   'orderCard.discount': 'Économisé',
   'orderCard.payable': 'À payer',
   'productCard.noImage': 'Aucune image',
+
+  // barrage（弹幕）
+  'barrage.like': "J'aime",
+  'barrage.unlike': "Je n'aime plus",
 }

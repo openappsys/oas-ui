@@ -75,6 +75,39 @@ With a `handle` slot only the handle starts a drag; the rest of the block keeps 
   <span id="dg-chip-out" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## Snapping (grid and snap points)
+
+- `snap`: grid snapping — a positive integer sets the grid size in px, the literal `grid` means 8px. On release (and when an inertia glide settles) the offset is aligned to the nearest grid point, followed by one extra `oas-drag` carrying the snapped value.
+- `snap-targets`: a JSON array of snap points `[{ x, y }]` (offset coordinates relative to the initial layout position). On release, if the nearest point is within `snap-threshold` (default 12px) the offset **snaps exactly** to it; while dragging near a point a hint ring appears (`part="snap-hint"`, dashed primary circle, purely visual and hit-test transparent).
+- Snapping only applies to **pointer release points**: keyboard nudges (1px / Shift 10px) and `position` writes stay exact, and the `axis` constraint still holds (snap-then-clamp never bypasses it).
+- Invalid `snap` / `snap-targets` / `snap-threshold` produce one `devWarn` each and disable snapping (dragging itself keeps working).
+
+<DemoBlock title="Grid snap=20 and snap points">
+  <div
+    id="dg-stage-snap-en"
+    style="position: relative; width: 100%; height: 220px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); overflow: hidden"
+  >
+    <oas-drag
+      id="dg-snap-grid-en"
+      boundary="#dg-stage-snap-en"
+      snap="20"
+      style="position: absolute; inset-block-start: 16px; inset-inline-start: 16px"
+    >
+      <span style="display: inline-block; padding: var(--oas-space-2) var(--oas-space-3); background: var(--oas-color-bg-hover); border-radius: var(--oas-radius-md)">Grid 20px</span>
+    </oas-drag>
+    <oas-drag
+      id="dg-snap-target-en"
+      boundary="#dg-stage-snap-en"
+      snap-targets='[{"x":200,"y":30},{"x":60,"y":60}]'
+      snap-threshold="16"
+      style="position: absolute; inset-block-start: 120px; inset-inline-start: 16px"
+    >
+      <span style="display: inline-block; padding: var(--oas-space-2) var(--oas-space-3); background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); border-radius: var(--oas-radius-md)">Snap point (drag near it)</span>
+    </oas-drag>
+  </div>
+  <span id="dg-snap-out-en" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
 ## Accessibility and interaction contract
 
 - In whole-host mode the host is the focus stop (`tabindex="0"`, accessible name from i18n `drag.label`, hint wired through `aria-describedby`); arrow keys nudge 1px, Shift+arrow 10px, constrained by `axis` and the boundary
@@ -109,6 +142,20 @@ onMounted(() => {
   }
   report('dg-button', 'Support button position')
   report('dg-chip', 'Horizontal position')
+  // Snapping: report the released position (grid / snap point end value)
+  const snapOut = document.getElementById('dg-snap-out-en')
+  for (const [id, label] of [
+    ['dg-snap-grid-en', 'Grid snap position'],
+    ['dg-snap-target-en', 'Snap point position'],
+  ]) {
+    const el = document.getElementById(id)
+    if (!el) continue
+    onUpgraded(el, () => {
+      el.addEventListener('oas-drag-end', (event) => {
+        snapOut.textContent = `${label}: x ${event.detail.x}, y ${event.detail.y}`
+      })
+    })
+  }
 })
 </script>
 
@@ -128,6 +175,9 @@ onMounted(() => {
 | `inertia` | Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary); instant stop under `prefers-reduced-motion: reduce` | `boolean` | — |
 | `keyboard` | Keyboard nudging: on by default (`tabindex="0"`, 1px with arrow keys, 10px with Shift); write `false` to disable | `string` | — |
 | `remember` | Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota) | `boolean` | — |
+| `snap` | Snap grid size: a positive integer is the grid in px, the literal `grid` means 8px; on release (including the inertia tail) the offset aligns to the nearest grid point; keyboard nudges are unaffected | `string` | — |
+| `snap-targets` | Snap points JSON array `[{ x, y }]` (offsets relative to the initial layout position): releasing within `snap-threshold` of the nearest point snaps exactly to it; a hint ring (`part="snap-hint"`) appears while dragging near one | `string` | — |
+| `snap-threshold` | Snap point distance threshold (px, default 12); invalid values warn once and fall back to the default | `string` | — |
 | `storage-key` | Storage key for position memory (default `oas-drag`) | `string` | `oas-drag` |
 
 #### Property (JS property; see each row for attribute reflection)

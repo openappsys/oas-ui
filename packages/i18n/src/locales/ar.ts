@@ -609,6 +609,7 @@ export const ar: LocaleMessages = {
   'coupon.groupUnavailable': 'كوبونات غير متاحة',
   'coupon.notUse': 'بدون كوبون',
   'coupon.selectedCount': 'تم اختيار {count}',
+  'coupon.selectedCountLimit': 'تم اختيار {count} من {limit}',
   'goodsAction.label': 'إجراءات المنتج',
   'goodsAction.favorite': 'المفضلة',
   'goodsAction.shop': 'المتجر',
@@ -785,4 +786,8 @@ export const ar: LocaleMessages = {
   'orderCard.discount': 'تم التوفير',
   'orderCard.payable': 'المبلغ المدفوع',
   'productCard.noImage': 'لا توجد صورة',
+
+  // barrage（弹幕）
+  'barrage.like': 'إعجاب',
+  'barrage.unlike': 'إلغاء الإعجاب',
 }

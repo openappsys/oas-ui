@@ -440,3 +440,66 @@ test('drag：prefers-reduced-motion 下 inertia 瞬停（松手跟手位置即�
   expect(final.coastEvents, '瞬停不出现滑行标记').toEqual([])
   expect(final.feedback, '结束事件仍要派发（demo 反馈可见）').toContain('结束')
 })
+
+// ---------------------------------------------------------------------------
+// 吸附（snap / snap-targets）：真实拖拽后的落点必须落在网格 / 吸附点上，且提示环可见
+// ---------------------------------------------------------------------------
+
+test('drag：snap 网格吸附真实落点对齐（拖拽松手后位移是网格倍数）+ demo 反馈可见', async ({ page }) => {
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-snap-grid')
+  await page.evaluate(() => {
+    ;(document.querySelector('#dg-stage-snap') as HTMLElement).scrollIntoView({ block: 'center', behavior: 'instant' })
+  })
+  const box = await page.locator('#dg-snap-grid').boundingBox()
+  if (!box) throw new Error('#dg-snap-grid 无可见矩形')
+  const startX = box.x + box.width / 2
+  const startY = box.y + box.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX + 34, startY + 26, { steps: 4 })
+  await page.mouse.move(startX + 47, startY + 33, { steps: 4 })
+  await page.mouse.up()
+
+  const position = await page.evaluate(
+    () => (document.querySelector('#dg-snap-grid') as HTMLElement & { position: { x: number; y: number } }).position,
+  )
+  expect(position.x % 20, '松手落点必须对齐 20px 网格（x）').toBe(0)
+  expect(position.y % 20, '松手落点必须对齐 20px 网格（y）').toBe(0)
+  await expect(page.locator('#dg-snap-out')).toContainText('网格吸附落点')
+})
+
+test('drag：snap-targets 阈值内精确吸附 + 拖拽中提示环可见（视觉提示）', async ({ page }) => {
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-snap-target')
+  await page.evaluate(() => {
+    ;(document.querySelector('#dg-stage-snap') as HTMLElement).scrollIntoView({ block: 'center', behavior: 'instant' })
+  })
+  const box = await page.locator('#dg-snap-target').boundingBox()
+  if (!box) throw new Error('#dg-snap-target 无可见矩形')
+  const startX = box.x + box.width / 2
+  const startY = box.y + box.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  // 拖到吸附点 (200,30) 附近（相对宿主原点的位移）：提示环应出现
+  await page.mouse.move(startX + 196, startY + 26, { steps: 6 })
+  const hintVisible = await page.evaluate(() => {
+    const el = document.querySelector('#dg-snap-target') as HTMLElement
+    const hint = el.shadowRoot!.querySelector('[part="snap-hint"]') as HTMLElement
+    return !hint.hidden
+  })
+  expect(hintVisible, '接近吸附点时提示环可见').toBe(true)
+  await page.mouse.move(startX + 198, startY + 28, { steps: 2 })
+  await page.mouse.up()
+
+  const position = await page.evaluate(
+    () => (document.querySelector('#dg-snap-target') as HTMLElement & { position: { x: number; y: number } }).position,
+  )
+  expect(position, '阈值内必须精确吸附到吸附点').toEqual({ x: 200, y: 30 })
+  await expect(page.locator('#dg-snap-out')).toContainText('吸附点落点')
+  const hintHidden = await page.evaluate(() => {
+    const el = document.querySelector('#dg-snap-target') as HTMLElement
+    return (el.shadowRoot!.querySelector('[part="snap-hint"]') as HTMLElement).hidden
+  })
+  expect(hintHidden, '松手后提示环隐藏').toBe(true)
+})

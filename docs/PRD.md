@@ -145,7 +145,7 @@
 
 ### 批 D：交互长尾与测试补齐
 
-- **coupon 多券叠加规则** 📋：`max-select` / 互斥组标记（`exclusive-group`）+ 组合校验事件。
+- **coupon 多券叠加规则** 📋：`max-select` / 列表条目互斥组标记（`exclusiveGroup`）+ 组合校验事件。
 - **barrage 弹幕交互** 📋：per-item 点赞（`oas-like`）/ 屏蔽（关键字过滤 `banned-words`）。
 - **oas-drag 吸附点/网格** 📋：`snap`（targets 数组或 grid 尺寸）+ 吸附阈值与视觉提示。
 - **Z1 测试长尾** 📋：drag-start 真实拖拽 e2e / 模式组 RTL 键盘 e2e（随批 D time-select/drag 触达后自然覆盖，不足则补）。

@@ -609,6 +609,7 @@ export const ja: LocaleMessages = {
   'coupon.groupUnavailable': '利用不可のクーポン',
   'coupon.notUse': 'クーポンを使わない',
   'coupon.selectedCount': '{count} 枚選択中',
+  'coupon.selectedCountLimit': '{count}/{limit} 枚選択済み',
   'goodsAction.label': '商品の操作',
   'goodsAction.favorite': 'お気に入り',
   'goodsAction.shop': 'ショップ',
@@ -785,4 +786,8 @@ export const ja: LocaleMessages = {
   'orderCard.discount': '割引済み',
   'orderCard.payable': '支払額',
   'productCard.noImage': '画像がありません',
+
+  // barrage（弹幕）
+  'barrage.like': 'いいね',
+  'barrage.unlike': 'いいねを取り消す',
 }
