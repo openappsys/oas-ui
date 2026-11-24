@@ -872,6 +872,10 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-coupon[list] [part="trigger"]', 'domclick', 'DOM click 触发按钮展开弹层 → oas-open-change'],
     ['oas-coupon[list] input[type="radio"]', 'domclick', 'DOM click 首个可用券 radio → oas-select（选中即关闭）'],
   ],
+  sku: [
+    ['#sku-basic [part="option"]', 'domclick', 'DOM click 基础内嵌 demo 首个规格选项 → oas-change'],
+    ['#sku-popup-open', 'click', '点击打开弹层 → oas-open-change（双形态 demo）'],
+  ],
   'goods-action': [
     ['oas-goods-action [part="icon-button"]', 'domclick', '点 icon 项 → oas-action-click（source=icon）'],
     ['oas-goods-action [part="button"]', 'domclick', '点主按钮 → oas-action-click（source=button）'],
