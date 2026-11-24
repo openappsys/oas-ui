@@ -729,6 +729,11 @@ export const ko: LocaleMessages = {
   'schemaForm.rowDuplicated': '{index}번째 행에 복제했습니다',
   'schemaForm.rowMoved': '{from}번째 행을 {to}번째 행으로 이동했습니다',
   'schemaForm.tableLabel': '데이터 표',
+  'schemaForm.resizeColumn': '열 너비 조정',
+  'schemaForm.reorderColumn': '드래그하여 열 순서 변경',
+  'schemaForm.columnsReordered': '{column} 열 순서를 변경했습니다',
+  'schemaForm.pasted': '{rows}행 × {cols}열을 붙여넣었습니다',
+  'schemaForm.pasteTruncated': '붙여넣은 내용이 상한을 초과하여 {max}행으로 잘랐습니다',
   // matrix / rank
   'matrix.group': '매트릭스 질문',
   'matrix.requiredAll': '각 행에서 하나씩 선택하세요',

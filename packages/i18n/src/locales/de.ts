@@ -729,6 +729,11 @@ export const de: LocaleMessages = {
   'schemaForm.rowDuplicated': 'Zeile {index} dupliziert',
   'schemaForm.rowMoved': 'Zeile {from} nach Zeile {to} verschoben',
   'schemaForm.tableLabel': 'Datentabelle',
+  'schemaForm.resizeColumn': 'Spaltenbreite anpassen',
+  'schemaForm.reorderColumn': 'Zum Umsortieren der Spalten ziehen',
+  'schemaForm.columnsReordered': 'Spaltenreihenfolge geändert: {column}',
+  'schemaForm.pasted': '{rows} Zeilen × {cols} Spalten eingefügt',
+  'schemaForm.pasteTruncated': 'Einfügung überschreitet das Zeilenlimit, auf {max} Zeilen gekürzt',
   // matrix / rank
   'matrix.group': 'Matrixfrage',
   'matrix.requiredAll': 'Bitte jede Zeile beantworten',

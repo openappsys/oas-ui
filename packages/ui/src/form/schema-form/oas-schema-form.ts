@@ -2,7 +2,7 @@ import { OASElement } from '@oas-ui/core/oas-element'
 import { devWarn } from '../../shared/dev-warn.js'
 import { stableHash36 } from '../../shared/stable-id.js'
 import { OASForm } from '../form/index.js'
-import { writeFormControlValue } from '../form/index.js'
+import { readFormControlValue, writeFormControlValue } from '../form/index.js'
 import type { FormError } from '../form/index.js'
 import {
   canonicalDslPath,
@@ -257,6 +257,10 @@ export class OASSchemaForm extends OASElement {
   /** 异步选项：路径级请求序号（晚到响应丢弃） + 代次（卸载/重连后一律丢弃） */
   private optionSeq = new Map<string, number>()
   private optionGeneration = 0
+  /** 异步 convert：路径级序号（晚到丢弃）+ 代次（结构重建后整批作废） */
+  private convertSeq = new Map<string, number>()
+  private convertGeneration = 0
+  private asyncTransformWarned = false
   /** 重建期间去重：同名 + 同路径 + 同依赖值的请求复用同一 Promise */
   private optionPending = new Map<string, Promise<unknown[]>>()
   /** bind() 的清理函数是否已登记（重连再 bind 时不重复登记，避免 cleanupFns 无限增长） */
@@ -387,6 +391,8 @@ export class OASSchemaForm extends OASElement {
     form.addEventListener('oas-remove', this.handleArrayMutationEvent)
     form.addEventListener('oas-duplicate', this.handleArrayMutationEvent)
     form.addEventListener('oas-move', this.handleArrayMutationEvent)
+    // 跨行粘贴会改值但不派发 values-change（值写入走控件通道）：与行操作同一套刷新语义
+    form.addEventListener('oas-paste', this.handleArrayMutationEvent)
     // 出向变换：提交 / 校验失败载荷就地改写（内层监听 → 先于宿主拿到事件）
     form.addEventListener('oas-submit', this.handleOutboundEvent)
     form.addEventListener('oas-validate-fail', this.handleOutboundEvent)
@@ -399,6 +405,7 @@ export class OASSchemaForm extends OASElement {
       form.removeEventListener('oas-remove', this.handleArrayMutationEvent)
       form.removeEventListener('oas-duplicate', this.handleArrayMutationEvent)
       form.removeEventListener('oas-move', this.handleArrayMutationEvent)
+      form.removeEventListener('oas-paste', this.handleArrayMutationEvent)
       form.removeEventListener('oas-submit', this.handleOutboundEvent)
       form.removeEventListener('oas-validate-fail', this.handleOutboundEvent)
       this.optionGeneration += 1
@@ -543,6 +550,7 @@ export class OASSchemaForm extends OASElement {
    * `restoreRows: false` = 忽略快照（reset 行数回初始；受控 values 写入 / 初始值通道变化由 update 传入）。
    */
   private rebuild(options: { restoreRows?: boolean } = {}): void {
+    this.convertGeneration += 1
     const form = this.formEl
     const body = this.bodyEl
     const compiled = this.compiled
@@ -577,10 +585,11 @@ export class OASSchemaForm extends OASElement {
     form.reapplyInitialValues()
     this.applySnapshotValues(snapshot, merged, controlled || initialChanged)
     this.appliedValues = controlled ? (cloneJson(this.values) as Record<string, unknown>) : null
-    this.pristineSnapshot = new Map(flattenValues(this.kernelValues()))
-    this.syncDirty()
     this.syncRules()
     this.evaluateEffects()
+    // 值联动可能改写初始值 → 基线（pristine）取联动生效后的状态，避免一挂载就判脏
+    this.pristineSnapshot = new Map(flattenValues(this.kernelValues()))
+    this.syncDirty()
     this.syncArrayStates()
     // 异步选项源：结构重建后统一加载（同一轮内重复请求按去重键合并）
     this.loadAllOptionSources()
@@ -765,6 +774,10 @@ export class OASSchemaForm extends OASElement {
     list.setAttribute('duplicate-text', this.t('schemaForm.rowDuplicate'))
     list.setAttribute('move-up-text', this.t('schemaForm.rowUp'))
     list.setAttribute('move-down-text', this.t('schemaForm.rowDown'))
+    // maxItems 下发到容器：新增 / 复制 / 粘贴的截断边界都要和数组校验同一口径
+    if (typeof node.arrayRules.maxItems === 'number') {
+      list.setAttribute('max', String(node.arrayRules.maxItems))
+    }
     if (node.table === true) {
       list.setAttribute('label', node.label)
       list.setAttribute('columns', JSON.stringify(node.columns ?? []))
@@ -845,6 +858,9 @@ export class OASSchemaForm extends OASElement {
   /**
    * 按编译产物把钩子应用到整棵值树：**在字段路径处整值替换并停止下钻**（convert/transform 的
    * 输出即该字段的组件值，继续下钻会把结果当容器再拆），其余节点递归。
+   *
+   * 异步 convert（V2 批 4）：钩子返回 thenable 时保留宿主原值（陈旧窗口），落地后按路径序号写回；
+   * 出向 transform 仍只支持同步（异步结果对事件载荷无意义），返回 Promise 按恒等处理并告警一次。
    */
   private mapHookValues(
     tree: Record<string, unknown>,
@@ -855,7 +871,21 @@ export class OASSchemaForm extends OASElement {
     const walk = (value: unknown, path: string): unknown => {
       if (path !== '') {
         const hook = this.hookFor(path, kind)
-        if (hook) return this.runHook(hook, value, path, whole)
+        if (hook) {
+          const result = this.runHook(hook, value, path, whole)
+          if (isThenable(result)) {
+            if (kind === 'convert') {
+              this.scheduleAsyncConvert(path, result)
+              return value
+            }
+            if (!this.asyncTransformWarned) {
+              this.asyncTransformWarned = true
+              devWarn(`[oas-schema-form] transform 不支持异步返回（${path}），已按恒等处理`)
+            }
+            return value
+          }
+          return result
+        }
       }
       if (Array.isArray(value)) {
         return value.map((item, index) => walk(item, `${path === '' ? '' : `${path}.`}${index}`))
@@ -897,10 +927,46 @@ export class OASSchemaForm extends OASElement {
     }
   }
 
-  /** 单叶子入向换算（受控 diff 写用；通配路径命中） */
+  /** 单叶子入向换算（受控 diff 写用；通配路径命中）；异步结果按序号落地 */
   private convertLeaf(path: string, value: unknown, whole: Record<string, unknown>): unknown {
     const hook = this.hookFor(path, 'convert')
-    return hook ? this.runHook(hook, value, path, whole) : value
+    if (!hook) return value
+    const result = this.runHook(hook, value, path, whole)
+    if (isThenable(result)) {
+      this.scheduleAsyncConvert(path, result)
+      return value
+    }
+    return result
+  }
+
+  /**
+   * 异步 convert 落地：按路径序号 + 代次守卫（晚到 / 重建期间 / 已离场一律丢弃）。
+   * 失败只告警并保留宿主原值（不静默写入错误结果）。
+   */
+  private scheduleAsyncConvert(path: string, pending: Promise<unknown>): void {
+    const seq = (this.convertSeq.get(path) ?? 0) + 1
+    this.convertSeq.set(path, seq)
+    const generation = this.convertGeneration
+    pending.then(
+      (resolved) => {
+        if (generation !== this.convertGeneration || this.convertSeq.get(path) !== seq) return
+        const widget = this.widgetByPath(path)
+        if (!widget?.isConnected) return
+        this.writeWidgetValue(widget, serializeEffectValue(resolved))
+      },
+      (error: unknown) => {
+        if (generation !== this.convertGeneration || this.convertSeq.get(path) !== seq) return
+        devWarn(`[oas-schema-form] 异步 convert 失败（${path}）：${String(error)}，保留宿主原值`)
+      },
+    )
+  }
+
+  /** 具体路径 → 已渲染控件（数组行路径即控件 name） */
+  private widgetByPath(path: string): HTMLElement | null {
+    const form = this.formEl
+    if (!form) return null
+    const escaped = path.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+    return form.querySelector<HTMLElement>(`[name="${escaped}"]`)
   }
 
   // ---------- 异步选项源（V2 批 2 窄面）----------
@@ -1307,25 +1373,28 @@ export class OASSchemaForm extends OASElement {
     if (!engine || typeof name !== 'string') return
     // 宿主写入期间的合成事件按来源标记跳过（宿主写不回派事件防回环）
     if (this.applyingHostValues) return
+    // 用户编辑优先：作废该字段在途的异步换算，避免晚到结果覆盖用户新输入
+    this.convertSeq.set(name, (this.convertSeq.get(name) ?? 0) + 1)
     this.syncDirty()
     const next = engine.evaluateChanged(this.projectedValues(), name)
     // 值依赖的异步选项：命中声明的 sourceDeps 才 reload（A 变 → 重载 B 的选项）
     this.reloadOptionDependents(name)
     if (next === null) return
     this.effects = next
-    const cleared = this.applyEffects()
-    if (cleared.length > 0) this.propagateClearedEffects(cleared)
+    const changed = this.applyEffects()
+    if (changed.length > 0) this.propagateChangedEffects(changed)
   }
 
   /**
-   * 清值二次传播：联动把字段值清空（隐藏字段 → 空串）后，依赖该字段的下游 reaction 必须重算。
+   * 联动改写二次传播：联动把字段值清空（隐藏字段 → 空串）或写入新值（值联动 `fulfill.value`）后，
+   * 依赖该字段的下游 reaction 必须重算。
    *
-   * 定向刷新只重算「依赖本次变更路径」的 reactions；被清值的字段是**下游**（如 A 隐藏 B，
+   * 定向刷新只重算「依赖本次变更路径」的 reactions；被改写值的字段是**下游**（如 A 隐藏 B，
    * C 的条件读 B），它的值变化没有对应的 values-change 事件，若不补一轮求值，C 会停在
    * 「B 还有值」时算出的旧效果（星号/禁用残留）。按轮次推进并限制往返次数，
    * 与全量求值的定点迭代同口径（8 轮上限）。
    */
-  private propagateClearedEffects(names: string[]): void {
+  private propagateChangedEffects(names: string[]): void {
     const engine = this.engine
     if (!engine) return
     const pending = [...names]
@@ -1339,10 +1408,10 @@ export class OASSchemaForm extends OASElement {
       }
       if (next === null) continue
       this.effects = next
-      for (const cleared of this.applyEffects()) {
-        if (visited.has(cleared)) continue
-        visited.add(cleared)
-        pending.push(cleared)
+      for (const changed of this.applyEffects()) {
+        if (visited.has(changed)) continue
+        visited.add(changed)
+        pending.push(changed)
       }
     }
   }
@@ -1395,25 +1464,25 @@ export class OASSchemaForm extends OASElement {
     return merged
   }
 
-  /** 应用可见/禁用/必填效果（文档序遍历，容器效果通过祖先标记向下传导）；返回本轮被清值的字段名 */
+  /** 应用可见/禁用/必填/值效果（文档序遍历，容器效果通过祖先标记向下传导）；返回值被联动改写的字段名 */
   private applyEffects(): string[] {
     const body = this.bodyEl
     if (!body) return []
-    const cleared: string[] = []
+    const changed: string[] = []
     for (const element of body.querySelectorAll<HTMLElement>('[data-schema-key]')) {
       const name = this.applyNodeEffect(element)
-      if (name !== null) cleared.push(name)
+      if (name !== null) changed.push(name)
     }
     // 被卸载（不在文档里）的字段仍需按效果复显：非行内字段卸载后由占位注释保留位置
     for (const element of this.unmountedFields) {
       if (element.isConnected) continue
       const name = this.applyNodeEffect(element)
-      if (name !== null) cleared.push(name)
+      if (name !== null) changed.push(name)
     }
-    return cleared
+    return changed
   }
 
-  /** 单节点效果应用（字段态 / 容器态）；返回被清值的字段名（无清值返回 null） */
+  /** 单节点效果应用（字段态 / 容器态）；返回值被清空或改写的字段名（无变化返回 null） */
   private applyNodeEffect(element: HTMLElement): string | null {
     const key = element.getAttribute('data-schema-key') ?? ''
     const node = this.nodeByKey.get(key)
@@ -1432,7 +1501,15 @@ export class OASSchemaForm extends OASElement {
     element.toggleAttribute('data-schema-disabled', disabled)
 
     if (isField) {
-      return this.applyFieldState(element, node as FieldPlan, visible, disabled, required)
+      return this.applyFieldState(
+        element,
+        node as FieldPlan,
+        visible,
+        disabled,
+        required,
+        Object.hasOwn(own, 'value') ? own.value : undefined,
+        Object.hasOwn(own, 'value'),
+      )
     }
     element.hidden = !visible
     if (node.kind === 'array') {
@@ -1442,13 +1519,20 @@ export class OASSchemaForm extends OASElement {
     return null
   }
 
-  /** 字段态：可见（卸载/清值/保键位）、禁用、必填 + aria-required 同步；返回被清值的字段名 */
+  /**
+   * 字段态：可见（卸载/清值/保键位）、禁用、必填 + aria-required 同步；返回被清空或改写的字段名。
+   *
+   * 值联动（V2）：可见且效果带 `value` 时写入控件（走内核 writer 通道），值与当前一致则不写
+   * （避免每次求值都触发无意义写入）；隐藏目标不写值（卸载/清值语义优先）。
+   */
   private applyFieldState(
     item: HTMLElement,
     node: FieldPlan,
     visible: boolean,
     disabled: boolean,
     required: boolean,
+    effectValue: unknown,
+    hasEffectValue: boolean,
   ): string | null {
     const widget = item.querySelector<HTMLElement>('[data-schema-widget]')
     // 表格单元格不渲染自身标签：必填标记由列头 `*` 承担（避免单元格里出现孤立星号）
@@ -1458,13 +1542,20 @@ export class OASSchemaForm extends OASElement {
       if (required) widget.setAttribute('aria-required', 'true')
       else widget.removeAttribute('aria-required')
     }
+    // 生效字段名按控件上的 name 属性取（数组行由 form-list 重绑为具体路径，node.name 是模板名）
+    const fieldName = widget?.getAttribute('name') ?? node.name
     if (visible) {
       this.remount(item)
       item.hidden = false
+      if (hasEffectValue && widget) {
+        const next = serializeEffectValue(effectValue)
+        if (readFormControlValue(widget) !== next) {
+          this.writeWidgetValue(widget, next)
+          return fieldName
+        }
+      }
       return null
     }
-    // 生效字段名按控件上的 name 属性取（数组行由 form-list 重绑为具体路径，node.name 是模板名）
-    const fieldName = widget?.getAttribute('name') ?? node.name
     if (node.inArrayRow || node.keepValueOnHidden) {
       // 数组行内字段卸载保留键位（空串而非删键，行间键形状一致）；keepValueOnHidden 保留值只隐藏
       if (!node.keepValueOnHidden && widget) {
@@ -1794,6 +1885,29 @@ function mergeDeep(target: Record<string, unknown>, source: Record<string, unkno
     }
   }
   return target
+}
+
+/** thenable 判断（不引 Promise 类型体操：跨 realm 的 Promise 也能识别） */
+function isThenable(value: unknown): value is Promise<unknown> {
+  return (
+    value !== null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    typeof (value as { then?: unknown }).then === 'function'
+  )
+}
+
+/** 值联动的写入值 → 内核字符串语义（null/undefined → 空串；对象/数组 → JSON 串） */ function serializeEffectValue(
+  value: unknown,
+): string {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    const json = JSON.stringify(value)
+    return typeof json === 'string' ? json : ''
+  } catch {
+    return ''
+  }
 }
 
 /** 嵌套值按点号路径读取 */

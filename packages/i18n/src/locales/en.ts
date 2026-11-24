@@ -657,6 +657,11 @@ export const en: LocaleMessages = {
   'schemaForm.rowDuplicated': 'Row {index} duplicated',
   'schemaForm.rowMoved': 'Row {from} moved to row {to}',
   'schemaForm.tableLabel': 'Data table',
+  'schemaForm.resizeColumn': 'Resize column',
+  'schemaForm.reorderColumn': 'Drag to reorder columns',
+  'schemaForm.columnsReordered': 'Column order changed: {column}',
+  'schemaForm.pasted': 'Pasted {rows} rows × {cols} columns',
+  'schemaForm.pasteTruncated': 'Paste exceeds the row limit, truncated to {max} rows',
   // matrix / rank
   'matrix.group': 'Matrix question',
   'matrix.requiredAll': 'Please answer every row',

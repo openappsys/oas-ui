@@ -729,6 +729,11 @@ export const ja: LocaleMessages = {
   'schemaForm.rowDuplicated': '{index} 行目に複製しました',
   'schemaForm.rowMoved': '{from} 行目を {to} 行目へ移動しました',
   'schemaForm.tableLabel': 'データテーブル',
+  'schemaForm.resizeColumn': '列幅を調整',
+  'schemaForm.reorderColumn': 'ドラッグで列の順序を変更',
+  'schemaForm.columnsReordered': '{column} 列の順序を変更しました',
+  'schemaForm.pasted': '{rows} 行 × {cols} 列を貼り付けました',
+  'schemaForm.pasteTruncated': '貼り付け内容が上限を超えたため、{max} 行に切り詰めました',
   // matrix / rank
   'matrix.group': 'マトリックス質問',
   'matrix.requiredAll': '各行に1つ選択してください',

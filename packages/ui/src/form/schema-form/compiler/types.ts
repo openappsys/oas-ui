@@ -63,11 +63,13 @@ export interface UiNode {
   [key: string]: unknown
 }
 
-/** 联动效果词表（V1 封闭：visible / disabled / required；value 保留但未实现） */
+/** 联动效果词表（V1 封闭 + V2 值联动：visible / disabled / required / value） */
 export interface ReactionEffects {
   visible?: boolean
   disabled?: boolean
   required?: boolean
+  /** 值联动：满足时写入目标字段的值（表达式结果或字面量；字符串按内核字符串语义落地） */
+  value?: unknown
 }
 
 export interface CompiledReaction {
@@ -92,6 +94,10 @@ export interface CompiledReaction {
   fulfill: ReactionEffects
   /** 显式 otherwise；缺省键回落静态注解值（幂等、与求值顺序无关） */
   otherwise: ReactionEffects
+  /** `fulfill.value` 表达式（字符串按表达式编译；字面量直接存于 fulfill.value） */
+  valueExpr?: ExprProgram
+  /** `otherwise.value` 表达式（与 fulfill 同一编译口径） */
+  otherwiseValueExpr?: ExprProgram
 }
 
 /** 单字段校验关键字（编译产物，供迷你校验器按序求值） */

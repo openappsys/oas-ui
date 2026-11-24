@@ -729,6 +729,11 @@ export const es: LocaleMessages = {
   'schemaForm.rowDuplicated': 'Fila {index} duplicada',
   'schemaForm.rowMoved': 'Fila {from} movida a la fila {to}',
   'schemaForm.tableLabel': 'Tabla de datos',
+  'schemaForm.resizeColumn': 'Ajustar ancho de columna',
+  'schemaForm.reorderColumn': 'Arrastrar para reordenar columnas',
+  'schemaForm.columnsReordered': 'Orden de columnas modificado: {column}',
+  'schemaForm.pasted': 'Se pegaron {rows} filas × {cols} columnas',
+  'schemaForm.pasteTruncated': 'El pegado supera el límite, truncado a {max} filas',
   // matrix / rank
   'matrix.group': 'Pregunta matricial',
   'matrix.requiredAll': 'Responda todas las filas',

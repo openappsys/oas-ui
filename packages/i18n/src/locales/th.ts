@@ -637,6 +637,11 @@ export const th: LocaleMessages = {
   'schemaForm.rowDuplicated': 'ทำสำเนาแถวที่ {index} แล้ว',
   'schemaForm.rowMoved': 'ย้ายแถวที่ {from} ไปยังแถวที่ {to}',
   'schemaForm.tableLabel': 'ตารางข้อมูล',
+  'schemaForm.resizeColumn': 'ปรับความกว้างคอลัมน์',
+  'schemaForm.reorderColumn': 'ลากเพื่อจัดลำดับคอลัมน์ใหม่',
+  'schemaForm.columnsReordered': 'เปลี่ยนลำดับคอลัมน์ {column} แล้ว',
+  'schemaForm.pasted': 'วางแล้ว {rows} แถว × {cols} คอลัมน์',
+  'schemaForm.pasteTruncated': 'เนื้อหาที่วางเกินขีดจำกัด ตัดเหลือ {max} แถว',
   // matrix / rank
   'matrix.group': 'คำถามแบบเมทริกซ์',
   'matrix.requiredAll': 'โปรดตอบทุกแถว',

@@ -733,6 +733,11 @@ export const fa: LocaleMessages = {
   'schemaForm.rowDuplicated': 'ردیف {index} تکثیر شد',
   'schemaForm.rowMoved': 'ردیف {from} به ردیف {to} منتقل شد',
   'schemaForm.tableLabel': 'جدول داده',
+  'schemaForm.resizeColumn': 'تنظیم عرض ستون',
+  'schemaForm.reorderColumn': 'برای تغییر ترتیب ستون‌ها بکشید',
+  'schemaForm.columnsReordered': 'ترتیب ستون {column} تغییر کرد',
+  'schemaForm.pasted': '{rows} سطر × {cols} ستون جای‌گذاری شد',
+  'schemaForm.pasteTruncated': 'محتوای جای‌گذاری‌شده از حد بیشتر است و به {max} سطر کوتاه شد',
   // matrix / rank
   'matrix.group': 'پرسش ماتریسی',
   'matrix.requiredAll': 'لطفاً به هر سطر پاسخ دهید',

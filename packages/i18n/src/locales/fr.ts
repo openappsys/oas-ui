@@ -729,6 +729,11 @@ export const fr: LocaleMessages = {
   'schemaForm.rowDuplicated': 'Ligne {index} dupliquée',
   'schemaForm.rowMoved': 'Ligne {from} déplacée vers la ligne {to}',
   'schemaForm.tableLabel': 'Tableau de données',
+  'schemaForm.resizeColumn': 'Ajuster la largeur de colonne',
+  'schemaForm.reorderColumn': 'Glisser pour réordonner les colonnes',
+  'schemaForm.columnsReordered': 'Ordre des colonnes modifié : {column}',
+  'schemaForm.pasted': '{rows} lignes × {cols} colonnes collées',
+  'schemaForm.pasteTruncated': 'Le collage dépasse la limite, tronqué à {max} lignes',
   // matrix / rank
   'matrix.group': 'Question matricielle',
   'matrix.requiredAll': 'Veuillez répondre à chaque ligne',

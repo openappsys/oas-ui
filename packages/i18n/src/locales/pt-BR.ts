@@ -729,6 +729,11 @@ export const ptBR: LocaleMessages = {
   'schemaForm.rowDuplicated': 'Linha {index} duplicada',
   'schemaForm.rowMoved': 'Linha {from} movida para a linha {to}',
   'schemaForm.tableLabel': 'Tabela de dados',
+  'schemaForm.resizeColumn': 'Ajustar largura da coluna',
+  'schemaForm.reorderColumn': 'Arraste para reordenar colunas',
+  'schemaForm.columnsReordered': 'Ordem das colunas alterada: {column}',
+  'schemaForm.pasted': 'Coladas {rows} linhas × {cols} colunas',
+  'schemaForm.pasteTruncated': 'A colagem excede o limite, truncada em {max} linhas',
   // matrix / rank
   'matrix.group': 'Pergunta matricial',
   'matrix.requiredAll': 'Responda todas as linhas',

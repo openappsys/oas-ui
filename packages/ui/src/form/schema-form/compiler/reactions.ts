@@ -13,11 +13,11 @@
 import type { CompiledReaction, JsonSchema, PlanNode, ReactionEffects } from './types.js'
 import { canonicalDslPath, parseDslPath, pathDependencyMatches, pathPatternMatches, WILDCARD } from './path.js'
 import { projectValues, validateValue } from './validate.js'
-import { compileExpression, evaluateCondition, type ExprProgram } from './expr.js'
+import { compileExpression, evaluateCondition, evaluateExpression, type ExprProgram } from './expr.js'
 
-const ALLOWED_FULFILL = new Set(['visible', 'disabled', 'required'])
-/** `value` 键保留但 V1 未实现（V1 无值联动，避免半吊子语义） */
-const RESERVED_FULFILL = new Set(['value'])
+const ALLOWED_FULFILL = new Set(['visible', 'disabled', 'required', 'value'])
+/** `value` 自 V2 起转正：字符串按表达式编译，字面量（数字 / 布尔 / null）直接写入 */
+const VALUE_KEY = 'value'
 const MAX_ROUNDS = 8
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -50,12 +50,49 @@ function collectDependencyPaths(schema: unknown, scope: string, out: Set<string>
   if (isPlainObject(s.else)) collectDependencyPaths(s.else, scope, out)
 }
 
-function effectsOf(raw: unknown): ReactionEffects {
+/**
+ * 值联动表达式的编译口径（fulfill / otherwise 共用）：
+ * - 字符串 → 表达式（静态依赖并入 reaction 依赖图；宿主函数轨道标 dynamic）；
+ * - 数字 / 布尔 / null → 字面量（不进表达式，靠 effectsOf 带入）；
+ * - 其它形态 → 告警丢弃。
+ * 编译失败只返回 undefined（丢弃该值效果），不影响同一 reaction 的其余效果。
+ */
+function compileValueExpression(
+  raw: unknown,
+  slot: 'fulfill' | 'otherwise',
+  key: string,
+  sourcePath: string,
+  exists: ((path: string) => boolean) | undefined,
+  deps: Set<string>,
+  warnings: string[],
+  markDynamic: () => void,
+): ExprProgram | undefined {
+  if (typeof raw === 'string') {
+    const compiled = compileExpression(raw, { self: sourcePath, exists })
+    if (!compiled.program) {
+      warnings.push(`reaction.${slot}.value 表达式编译失败（${key}）：${compiled.error}`)
+      return undefined
+    }
+    for (const dep of compiled.deps) deps.add(dep)
+    if (compiled.dynamic) markDynamic()
+    return compiled.program
+  }
+  if (raw === null || typeof raw === 'number' || typeof raw === 'boolean') return undefined
+  warnings.push(`reaction.${slot}.value 只支持表达式字符串或数字/布尔/null 字面量（${key}）：${JSON.stringify(raw)}`)
+  return undefined
+}
+
+function effectsOf(raw: unknown, withValue = false): ReactionEffects {
   const out: ReactionEffects = {}
   if (!isPlainObject(raw)) return out
   for (const key of ['visible', 'disabled', 'required'] as const) {
     const value = raw[key]
     if (typeof value === 'boolean') out[key] = value
+  }
+  // 值联动：字面量（数字 / 布尔 / null）直接带出；字符串在编译处按表达式接管（不进 fulfill）
+  if (withValue && Object.hasOwn(raw, VALUE_KEY)) {
+    const value = raw[VALUE_KEY]
+    if (value === null || typeof value === 'number' || typeof value === 'boolean') out.value = value
   }
   return out
 }
@@ -155,16 +192,47 @@ export function compileReactions(
         return
       }
       for (const effectKey of Object.keys(fulfillRaw)) {
-        if (RESERVED_FULFILL.has(effectKey)) {
-          warnings.push(`reaction.fulfill.value 为保留键，V1 未实现（不影响其余效果；${key}）`)
-        } else if (!ALLOWED_FULFILL.has(effectKey)) {
+        if (!ALLOWED_FULFILL.has(effectKey)) {
           warnings.push(`reaction.fulfill 未知键 "${effectKey}" 已忽略（${key}）`)
         }
       }
-      const fulfill = effectsOf(fulfillRaw)
-      const otherwise = effectsOf(raw.otherwise)
+      const fulfill = effectsOf(fulfillRaw, true)
+      const otherwise = effectsOf(raw.otherwise, true)
+      // 值联动（V2 转正）：字符串 = 表达式轨（与 when 同一编译器），数字/布尔/null = 字面量。
+      // 表达式编译失败只丢弃 value（其余效果照常生效），避免一条写值语法错连坐可见性效果。
+      let valueExpr: ExprProgram | undefined
+      if (Object.hasOwn(fulfillRaw, VALUE_KEY)) {
+        valueExpr = compileValueExpression(
+          fulfillRaw.value,
+          'fulfill',
+          key,
+          sourcePath,
+          options.pathExists,
+          deps,
+          warnings,
+          () => {
+            dynamic = true
+          },
+        )
+      }
+      let otherwiseValueExpr: ExprProgram | undefined
+      if (isPlainObject(raw.otherwise) && Object.hasOwn(raw.otherwise, VALUE_KEY)) {
+        otherwiseValueExpr = compileValueExpression(
+          raw.otherwise.value,
+          'otherwise',
+          key,
+          sourcePath,
+          options.pathExists,
+          deps,
+          warnings,
+          () => {
+            dynamic = true
+          },
+        )
+      }
       for (const target of targets) {
-        for (const effectKey of Object.keys(fulfill) as Array<keyof ReactionEffects>) {
+        const effectKeys = valueExpr !== undefined ? [...Object.keys(fulfill), VALUE_KEY] : Object.keys(fulfill)
+        for (const effectKey of effectKeys) {
           const claim = `${target}|${effectKey}`
           if (claimed.has(claim)) {
             warnings.push(`多条 reactions 写同一目标同一属性（${target}.${effectKey}），后者胜`)
@@ -184,6 +252,8 @@ export function compileReactions(
         targets,
         fulfill,
         otherwise,
+        valueExpr,
+        otherwiseValueExpr,
       })
     })
   }
@@ -248,6 +318,23 @@ function clearPath(target: Record<string, unknown>, segments: string[]): void {
   else delete (cursor as Record<string, unknown>)[last]
 }
 
+/** 按路径写入嵌套值（值联动的反馈通道：写入的值参与下一轮求值） */
+function writePath(target: Record<string, unknown>, segments: string[], value: unknown): void {
+  if (segments.length === 0) return
+  let cursor: unknown = target
+  for (let i = 0; i < segments.length - 1; i++) {
+    if (cursor === null || typeof cursor !== 'object') return
+    const segment = segments[i]!
+    const next = (cursor as Record<string, unknown>)[segment]
+    if (next === null || typeof next !== 'object') {
+      ;(cursor as Record<string, unknown>)[segment] = {}
+    }
+    cursor = (cursor as Record<string, unknown>)[segment]
+  }
+  if (cursor === null || typeof cursor !== 'object') return
+  ;(cursor as Record<string, unknown>)[segments[segments.length - 1]!] = value
+}
+
 export type ReactionEffectsMap = Map<string, ReactionEffects>
 
 export interface ReactionEngine {
@@ -275,12 +362,22 @@ function collectStatic(nodes: PlanNode[], out: Array<{ path: string; effects: Re
 function staticEffect(
   statics: Array<{ path: string; effects: ReactionEffects }>,
   target: string,
-  key: keyof ReactionEffects,
+  key: 'visible' | 'disabled' | 'required',
 ): boolean | undefined {
   for (const entry of statics) {
     if (pathPatternMatches(target, entry.path)) return entry.effects[key]
   }
   return undefined
+}
+
+/** 该条 reaction 是否声明了值联动（表达式 / fulfill 字面量 / otherwise 字面量） */
+function hasValueEffect(reaction: CompiledReaction): boolean {
+  return (
+    reaction.valueExpr !== undefined ||
+    reaction.otherwiseValueExpr !== undefined ||
+    Object.hasOwn(reaction.fulfill, VALUE_KEY) ||
+    Object.hasOwn(reaction.otherwise, VALUE_KEY)
+  )
 }
 
 /** 单个 reaction 的一轮求值结果 */
@@ -332,7 +429,51 @@ function evaluateReaction(
           ? (fallback ?? staticEffect(statics, targetPattern, effectKey))
           : (matched ?? fallback)
       }
-      out.set(key, effects)
+      // 值联动：条件成立写 fulfill.value（表达式优先）；不成立时若声明了 otherwise.value
+      // （表达式或字面量）则写回落值；都没有 → 不产生值效果（保持当前值）。
+      if (hasValueEffect(reaction)) {
+        let valueFailed = false
+        let next: unknown
+        let hasNext = false
+        if (!failed) {
+          if (reaction.valueExpr) {
+            try {
+              next = evaluateExpression(reaction.valueExpr, { values, self: value })
+              hasNext = true
+            } catch (error) {
+              valueFailed = true
+              const warnKey = `${reaction.key}#value`
+              if (!warnedScopes.has(warnKey)) {
+                warnedScopes.add(warnKey)
+                warnings(`reaction ${reaction.key} 的写值表达式求值失败（${String(error)}），按无值处理`)
+              }
+            }
+          } else if (Object.hasOwn(reaction.fulfill, VALUE_KEY)) {
+            next = reaction.fulfill[VALUE_KEY]
+            hasNext = true
+          }
+        }
+        if (failed || valueFailed) {
+          if (reaction.otherwiseValueExpr) {
+            try {
+              next = evaluateExpression(reaction.otherwiseValueExpr, { values, self: value })
+              hasNext = true
+            } catch (error) {
+              const warnKey = `${reaction.key}#otherwiseValue`
+              if (!warnedScopes.has(warnKey)) {
+                warnedScopes.add(warnKey)
+                warnings(`reaction ${reaction.key} 的否则值表达式求值失败（${String(error)}），按无值处理`)
+              }
+            }
+          } else if (Object.hasOwn(reaction.otherwise, VALUE_KEY)) {
+            next = reaction.otherwise[VALUE_KEY]
+            hasNext = true
+          }
+        }
+        if (hasNext) effects.value = next
+      }
+      // 没有任何效果键命中的目标不产生空条目（否则 get(target) 会返回 {}）
+      if (Object.keys(effects).length > 0) out.set(key, effects)
     }
   }
   if (scopeSegments.includes(WILDCARD) && scopes.length === 0) {
@@ -399,13 +540,27 @@ export function createReactionEngine(
         warn(`reactions 依赖在 ${maxRounds} 轮内未收敛，保留最后一轮结果`)
         break
       }
-      // 反馈：visible:false 的目标在下一轮求值前清值（模拟卸载后的值语义）
-      const hidden = [...next.values()].flatMap((map) => [...map].filter(([, effects]) => effects.visible === false))
-      if (hidden.length === 0) continue
-      const clone = JSON.parse(JSON.stringify(values)) as Record<string, unknown>
-      for (const [path] of hidden) {
+      // 反馈：visible:false 的目标在下一轮求值前清值（模拟卸载后的值语义）；
+      // 值联动写入的目标在下一轮参与求值（模拟真实写值后的重算）。
+      // 隐藏优先于写值：卸载目标的写值不反馈，否则「隐藏但被写值」会让下游读到不该存在的值。
+      const hidden = new Set<string>()
+      const writes = new Map<string, unknown>()
+      for (const map of next.values()) {
+        for (const [path, effects] of map) {
+          if (effects.visible === false) hidden.add(path)
+          if (Object.hasOwn(effects, 'value')) writes.set(path, effects.value)
+        }
+      }
+      if (hidden.size === 0 && writes.size === 0) continue
+      const clone = JSON.parse(JSON.stringify(working)) as Record<string, unknown>
+      for (const path of hidden) {
         const segments = parseDslPath(path)
         if (segments !== null) clearPath(clone, segments)
+      }
+      for (const [path, value] of writes) {
+        if (hidden.has(path)) continue
+        const segments = parseDslPath(path)
+        if (segments !== null) writePath(clone, segments, value)
       }
       working = clone
     }

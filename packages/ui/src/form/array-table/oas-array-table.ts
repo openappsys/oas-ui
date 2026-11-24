@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { devWarn } from '../../shared/dev-warn.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import {
   applyRowNaming,
@@ -8,6 +9,7 @@ import {
   swapRowValues,
   type NamedRowField,
 } from '../shared/list-row-ops.js'
+import { writeFormControlValue } from '../form/index.js'
 
 /**
  * oas-array-table —— 对象数组的行内编辑表格（schema-form 的 `uiSchema.widget: 'array-table'` 承载件）。
@@ -58,12 +60,55 @@ const STYLE = `
 }
 .head-cell {
   min-width: 0;
+  position: relative;
   font-size: var(--oas-font-size-sm);
   font-weight: 600;
   color: var(--oas-color-text-secondary-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-inline-end: var(--oas-space-2);
+}
+/* 列头可拖拽重排（运行时展示态；uiSchema 顺序仍权威） */
+.head-cell[draggable='true'] {
+  cursor: grab;
+}
+.head-cell[data-drag-over] {
+  box-shadow: inset 2px 0 0 var(--oas-color-primary);
+}
+.head-cell[aria-hidden='true'] {
+  display: none;
+}
+/* 列宽拖拽手柄：贴列头分隔线，指针与键盘都可调 */
+.col-resize {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.col-resize::before {
+  content: '';
+  width: 1px;
+  height: 60%;
+  background: var(--oas-color-border);
+}
+.col-resize:hover::before {
+  width: 2px;
+  background: var(--oas-color-primary);
+}
+.col-resize:focus-visible::before {
+  width: 2px;
+  background: var(--oas-color-primary);
+}
+.col-resize:focus-visible {
+  box-shadow: var(--oas-focus-ring);
+  border-radius: var(--oas-radius-sm);
 }
 .head-actions {
   text-align: end;
@@ -154,6 +199,8 @@ export interface ArrayTableColumn {
 
 /** 行操作列固定宽度（表头与每行同值，保证末列对齐） */
 const ACTIONS_TRACK = 'var(--oas-array-table-actions-width, 148px)'
+/** 列宽拖拽下限（px）：低于此值控件会挤到不可用 */
+const MIN_COLUMN_WIDTH = 48
 
 interface TableItem {
   uid: number
@@ -198,6 +245,16 @@ export class OASArrayTable extends OASElement {
   private frameKey = ''
   /** 列定义原文缓存（变更才重排表头/单元格几何） */
   private columnsRaw: string | null = null
+  /** 列宽内存态（key → px；**不序列化**，uiSchema `width` 只作初始值） */
+  private columnWidths = new Map<string, number>()
+  /** 列顺序内存态（key 数组；uiSchema 顺序仍权威，这里只是运行时展示顺序） */
+  private columnOrder: string[] = []
+  /** 列头拖拽重排：按下时的列 key（无 DataTransfer 时也能工作） */
+  private dragColumnKey: string | null = null
+  /** 列宽拖拽会话（指针移动期间） */
+  private resizeSession: { key: string; startX: number; startWidth: number } | null = null
+  /** 粘贴超限告警只提示一次（实例级） */
+  private pasteTruncationWarned = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板 */
   private template(): string {
@@ -223,6 +280,9 @@ export class OASArrayTable extends OASElement {
     this.addBtn = this.shadow.querySelector('.add')
     this.liveEl = this.shadow.querySelector('.live')
     this.addBtn?.addEventListener('click', this.handleAddClick)
+    // 跨行粘贴：事件从单元格控件（light DOM）冒泡到宿主；处理器幂等绑定（重连会再次 bind）
+    this.removeEventListener('paste', this.handlePasteEvent)
+    this.addEventListener('paste', this.handlePasteEvent)
 
     if (!this.childObserver) {
       const observer = new MutationObserver(() => this.handleDomMutation())
@@ -447,15 +507,19 @@ export class OASArrayTable extends OASElement {
     )
   }
 
-  /** 表头 + 行/单元格几何（列定义或行集合变化才重排；文案与禁用态每次刷新） */
+  /** 表头 + 行/单元格几何（列定义 / 列序 / 列宽变化才重排；文案与禁用态每次刷新） */
   private syncLayout(): void {
     const raw = this.getAttr('columns', '')
     const columns = this.columns
-    const tracks = columns.filter((col) => col.hidden !== true).map((col) => columnTrack(col.width))
-    const gridTemplate = `${tracks.length > 0 ? tracks.join(' ') : 'minmax(0, 1fr)'} ${ACTIONS_TRACK}`
-    if (raw !== this.columnsRaw) {
+    const display = this.displayColumns(columns)
+    const gridTemplate = this.gridTemplate(display)
+    const orderKey = display.map((column) => column.key).join('\u0000')
+    if (raw !== this.columnsRaw || orderKey !== this.headOrderKey) {
       this.columnsRaw = raw
-      this.renderHead(columns, gridTemplate)
+      this.headOrderKey = orderKey
+      this.renderHead(display, gridTemplate)
+    } else {
+      this.applyHeadMetrics(display, gridTemplate)
     }
     for (const item of this.items) {
       item.wrapper.style.cssText = [
@@ -469,8 +533,10 @@ export class OASArrayTable extends OASElement {
       ].join(';')
       item.cells.forEach((cell, index) => {
         const column = columns[index]
+        const position = column ? display.findIndex((entry) => entry.key === column.key) : -1
         const style = ['min-width:0']
-        if (column?.hidden === true) style.push('display:none')
+        if (!column || column.hidden === true || position < 0) style.push('display:none')
+        else style.push(`grid-column:${position + 1}`)
         if (column?.align) style.push(`text-align:${column.align}`)
         cell.style.cssText = style.join(';')
         // 控件宽度不得越出单元格：固定像素宽度的控件（如 select 默认 220px）会被 max-width 收窄，
@@ -482,8 +548,46 @@ export class OASArrayTable extends OASElement {
     }
   }
 
-  /** 表头（shadow 内）：列头 + 行操作列头；零行时隐藏表头（空态优先） */
-  private renderHead(columns: ArrayTableColumn[], gridTemplate: string): void {
+  /** 显示顺序的列（内存态顺序优先；新增列按 uiSchema 顺序追加） */
+  private displayColumns(columns: ArrayTableColumn[]): ArrayTableColumn[] {
+    const byKey = new Map(columns.map((column) => [column.key, column]))
+    const out: ArrayTableColumn[] = []
+    for (const key of this.columnOrder) {
+      const column = byKey.get(key)
+      if (column) {
+        out.push(column)
+        byKey.delete(key)
+      }
+    }
+    for (const column of byKey.values()) out.push(column)
+    return out
+  }
+
+  /** 列宽（内存态优先；uiSchema 数值作初始宽；缺省 120px 作为拖拽基准） */
+  private columnWidth(column: ArrayTableColumn): number {
+    const stored = this.columnWidths.get(column.key)
+    if (stored !== undefined) return stored
+    if (typeof column.width === 'number' && Number.isFinite(column.width) && column.width > 0) {
+      return Math.round(column.width)
+    }
+    return 120
+  }
+
+  /** 网格轨道串：可见列（显示顺序）+ 行操作列 */
+  private gridTemplate(display: ArrayTableColumn[]): string {
+    const tracks = display
+      .filter((column) => column.hidden !== true)
+      .map((column) => {
+        const stored = this.columnWidths.get(column.key)
+        return stored !== undefined ? `${stored}px` : columnTrack(column.width)
+      })
+    return `${tracks.length > 0 ? tracks.join(' ') : 'minmax(0, 1fr)'} ${ACTIONS_TRACK}`
+  }
+
+  private headOrderKey = ''
+
+  /** 表头（shadow 内）：列头 + 分割线手柄 + 行操作列头；零行时隐藏表头（空态优先） */
+  private renderHead(display: ArrayTableColumn[], gridTemplate: string): void {
     const head = this.headEl
     if (!head) return
     head.textContent = ''
@@ -496,11 +600,13 @@ export class OASArrayTable extends OASElement {
       'background:var(--oas-color-bg-hover)',
       'border-bottom:1px solid var(--oas-color-border)',
     ].join(';')
-    for (const column of columns) {
+    let visibleIndex = 0
+    for (const column of display) {
       const cell = document.createElement('div')
       cell.className = 'head-cell'
       cell.setAttribute('part', 'columnheader')
       cell.setAttribute('role', 'columnheader')
+      cell.setAttribute('data-column-key', column.key)
       const title = document.createElement('span')
       title.textContent = column.label !== '' ? column.label : column.key
       cell.appendChild(title)
@@ -512,7 +618,33 @@ export class OASArrayTable extends OASElement {
         mark.textContent = ' *'
         cell.appendChild(mark)
       }
-      if (column.hidden === true) cell.style.display = 'none'
+      if (column.hidden === true) {
+        cell.style.display = 'none'
+        cell.setAttribute('aria-hidden', 'true')
+      } else {
+        visibleIndex += 1
+        cell.style.gridColumn = String(visibleIndex)
+        cell.setAttribute('draggable', 'true')
+        cell.setAttribute('title', this.t('schemaForm.reorderColumn'))
+        cell.addEventListener('dragstart', this.handleHeadDragStart)
+        cell.addEventListener('dragover', this.handleHeadDragOver)
+        cell.addEventListener('dragleave', this.handleHeadDragLeave)
+        cell.addEventListener('drop', this.handleHeadDrop)
+        cell.addEventListener('dragend', this.handleHeadDragEnd)
+        const handle = document.createElement('div')
+        handle.className = 'col-resize'
+        handle.setAttribute('part', 'column-resize')
+        handle.setAttribute('role', 'separator')
+        handle.setAttribute('aria-orientation', 'vertical')
+        handle.setAttribute('aria-label', `${this.t('schemaForm.resizeColumn')}：${title.textContent}`)
+        handle.setAttribute('aria-valuemin', String(MIN_COLUMN_WIDTH))
+        handle.setAttribute('aria-valuenow', String(this.columnWidth(column)))
+        handle.tabIndex = 0
+        handle.addEventListener('pointerdown', this.handleResizeStart)
+        handle.addEventListener('dragstart', (event) => event.preventDefault())
+        handle.addEventListener('keydown', this.handleResizeKeydown)
+        cell.appendChild(handle)
+      }
       if (column.align) cell.style.textAlign = column.align
       head.appendChild(cell)
     }
@@ -522,6 +654,134 @@ export class OASArrayTable extends OASElement {
     actions.setAttribute('role', 'columnheader')
     actions.textContent = this.t('schemaForm.rowActions')
     head.appendChild(actions)
+  }
+
+  /** 已存在表头的轻量刷新（列宽变化：只改轨道与 aria 值，不重建节点 → 焦点不丢） */
+  private applyHeadMetrics(display: ArrayTableColumn[], gridTemplate: string): void {
+    const head = this.headEl
+    if (!head) return
+    head.style.gridTemplateColumns = gridTemplate
+    let visibleIndex = 0
+    for (const cell of head.querySelectorAll<HTMLElement>('[data-column-key]')) {
+      const key = cell.getAttribute('data-column-key') ?? ''
+      const column = display.find((entry) => entry.key === key)
+      if (!column || column.hidden === true) continue
+      visibleIndex += 1
+      cell.style.gridColumn = String(visibleIndex)
+      const handle = cell.querySelector<HTMLElement>('[part="column-resize"]')
+      if (handle) handle.setAttribute('aria-valuenow', String(this.columnWidth(column)))
+    }
+  }
+
+  // ---------- 列宽拖拽（指针 + 键盘） ----------
+
+  private readonly handleResizeStart = (event: Event): void => {
+    const pointer = event as PointerEvent
+    if (pointer.button !== undefined && pointer.button !== 0) return
+    // 阻止列头原生拖拽（同一区块上的两个手势必须分开）
+    pointer.preventDefault()
+    pointer.stopPropagation()
+    const cell = (pointer.currentTarget as HTMLElement | null)?.closest<HTMLElement>('[data-column-key]')
+    const key = cell?.getAttribute('data-column-key') ?? ''
+    const column = this.columns.find((entry) => entry.key === key)
+    if (!column) return
+    this.resizeSession = { key, startX: pointer.clientX, startWidth: this.columnWidth(column) }
+    this.addEventListener('pointermove', this.handleResizeMove)
+    this.addEventListener('pointerup', this.handleResizeEnd)
+    this.addEventListener('pointercancel', this.handleResizeEnd)
+  }
+
+  private readonly handleResizeMove = (event: Event): void => {
+    const session = this.resizeSession
+    if (!session) return
+    const pointer = event as PointerEvent
+    const next = Math.max(MIN_COLUMN_WIDTH, Math.round(session.startWidth + (pointer.clientX - session.startX)))
+    if (this.columnWidths.get(session.key) === next) return
+    this.columnWidths.set(session.key, next)
+    this.syncLayout()
+  }
+
+  private readonly handleResizeEnd = (): void => {
+    this.resizeSession = null
+    this.removeEventListener('pointermove', this.handleResizeMove)
+    this.removeEventListener('pointerup', this.handleResizeEnd)
+    this.removeEventListener('pointercancel', this.handleResizeEnd)
+  }
+
+  /** 键盘调宽：左右键 ±8px（step），到下限即停；Home 回落到 uiSchema 初始宽 */
+  private readonly handleResizeKeydown = (event: Event): void => {
+    const key = event as KeyboardEvent
+    if (!['ArrowLeft', 'ArrowRight', 'Home'].includes(key.key)) return
+    key.preventDefault()
+    const cell = (key.currentTarget as HTMLElement | null)?.closest<HTMLElement>('[data-column-key]')
+    const columnKey = cell?.getAttribute('data-column-key') ?? ''
+    const column = this.columns.find((entry) => entry.key === columnKey)
+    if (!column) return
+    const step = key.shiftKey ? 24 : 8
+    if (key.key === 'Home') {
+      this.columnWidths.delete(columnKey)
+    } else {
+      const base = this.columnWidth(column)
+      this.columnWidths.set(columnKey, Math.max(MIN_COLUMN_WIDTH, base + (key.key === 'ArrowRight' ? step : -step)))
+    }
+    this.syncLayout()
+  }
+
+  // ---------- 列顺序重排（列头拖拽，运行时展示态） ----------
+
+  private readonly handleHeadDragStart = (event: Event): void => {
+    const cell = event.currentTarget as HTMLElement
+    const key = cell.getAttribute('data-column-key') ?? ''
+    this.dragColumnKey = key
+    cell.style.opacity = '0.6'
+    const dataTransfer = (event as DragEvent).dataTransfer
+    // 真实浏览器路径：写入纯文本（Firefox 需要 setData 才会启动拖拽）；测试环境无 DataTransfer 时靠实例态
+    dataTransfer?.setData('text/plain', key)
+    if (dataTransfer) dataTransfer.effectAllowed = 'move'
+  }
+
+  private readonly handleHeadDragOver = (event: Event): void => {
+    const cell = event.currentTarget as HTMLElement
+    if (!this.dragColumnKey || cell.getAttribute('data-column-key') === this.dragColumnKey) return
+    event.preventDefault()
+    cell.setAttribute('data-drag-over', '')
+  }
+
+  private readonly handleHeadDragLeave = (event: Event): void => {
+    ;(event.currentTarget as HTMLElement).removeAttribute('data-drag-over')
+  }
+
+  private readonly handleHeadDrop = (event: Event): void => {
+    const cell = event.currentTarget as HTMLElement
+    cell.removeAttribute('data-drag-over')
+    const from = this.dragColumnKey ?? (event as DragEvent).dataTransfer?.getData('text/plain') ?? ''
+    const to = cell.getAttribute('data-column-key') ?? ''
+    this.dragColumnKey = null
+    if (!from || !to || from === to) return
+    event.preventDefault()
+    const order = this.displayColumns(this.columns).map((column) => column.key)
+    const fromIndex = order.indexOf(from)
+    const toIndex = order.indexOf(to)
+    if (fromIndex < 0 || toIndex < 0) return
+    order.splice(fromIndex, 1)
+    order.splice(toIndex, 0, from)
+    this.columnOrder = order
+    this.syncLayout()
+    this.announce(this.t('schemaForm.columnsReordered', { column: this.columnLabel(to) }))
+  }
+
+  private readonly handleHeadDragEnd = (event: Event): void => {
+    this.dragColumnKey = null
+    for (const cell of this.headEl?.querySelectorAll<HTMLElement>('[data-column-key]') ?? []) {
+      cell.style.opacity = ''
+      cell.removeAttribute('data-drag-over')
+    }
+    ;(event.currentTarget as HTMLElement).style.opacity = ''
+  }
+
+  private columnLabel(key: string): string {
+    const column = this.columns.find((entry) => entry.key === key)
+    return column ? column.label || column.key : key
   }
 
   private syncShadow(): void {
@@ -675,6 +935,108 @@ export class OASArrayTable extends OASElement {
   }
 
   private readonly handleAddClick = (): void => this.handleAdd()
+
+  // ---------- 跨行粘贴（TSV） ----------
+
+  private readonly handlePasteEvent = (event: Event): void => this.handlePaste(event as ClipboardEvent)
+
+  /**
+   * 表格区粘贴 TSV：按 `\t` 分列、换行分行，从当前单元格起向右下填充。
+   *
+   * 纪律：
+   * - 单值粘贴（无制表符 / 换行）不接管——原生输入行为保持不变；
+   * - 目标行不足时补行，超过 `max` 截断并以**实例级一次** devWarn + aria-live 提示；
+   * - 值按单元格控件现有写入通道落地（类型校验由 schema-form 既有投影 / 校验链承接）；
+   * - 隐藏列不参与粘贴（视觉上没有列，写进去会变成「看不见的值」）。
+   */
+  private handlePaste(event: ClipboardEvent): void {
+    if (this.hasAttr('disabled')) return
+    const text = event.clipboardData?.getData('text/plain') ?? ''
+    if (text === '') return
+    const normalized = text.replace(/\r\n?/g, '\n')
+    if (!normalized.includes('\t') && !normalized.includes('\n')) return
+    const anchor = this.pasteAnchor(event)
+    if (!anchor) return
+    const lines = normalized.split('\n')
+    while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
+    if (lines.length === 0) return
+    const matrix = lines.map((line) => line.split('\t'))
+    const columns = this.columns
+    const visibleColumns = this.displayColumns(columns).filter((column) => column.hidden !== true)
+    const startColumn = visibleColumns.findIndex((column) => column.key === anchor.columnKey)
+    if (startColumn < 0) return
+    const max = this.maxValue()
+    const wanted = anchor.rowIndex + matrix.length
+    const targetRows = Math.min(wanted, Number.isFinite(max) ? max : wanted)
+    const truncated = wanted > targetRows
+    event.preventDefault()
+    if (targetRows > this.items.length) {
+      while (this.items.length < targetRows) this.addItem()
+      this.pendingInitialReplay = true
+      this.applyNaming()
+      this.syncLayout()
+      this.syncShadow()
+      this.replayInitialValues()
+    }
+    let filledColumns = 0
+    for (let offset = 0; offset < targetRows - anchor.rowIndex; offset++) {
+      const values = matrix[offset] ?? []
+      const item = this.items[anchor.rowIndex + offset]
+      if (!item) continue
+      const limit = Math.min(values.length, visibleColumns.length - startColumn)
+      for (let c = 0; c < limit; c++) {
+        const column = visibleColumns[startColumn + c]!
+        const cellIndex = columns.findIndex((entry) => entry.key === column.key)
+        const cell = item.cells[cellIndex]
+        const widget = cell?.querySelector<HTMLElement>('[name]')
+        if (!widget) continue
+        this.writePastedValue(widget, values[c] ?? '')
+        filledColumns = Math.max(filledColumns, c + 1)
+      }
+    }
+    const rowsFilled = Math.max(0, Math.min(matrix.length, targetRows - anchor.rowIndex))
+    if (truncated) {
+      if (!this.pasteTruncationWarned) {
+        this.pasteTruncationWarned = true
+        devWarn(`[oas-array-table] 粘贴内容超过行数上限（${Number.isFinite(max) ? max : '∞'}），已截断到上限`)
+      }
+      this.announce(this.t('schemaForm.pasteTruncated', { max: Number.isFinite(max) ? max : wanted }))
+    } else {
+      this.announce(this.t('schemaForm.pasted', { rows: rowsFilled, cols: filledColumns }))
+    }
+    this.syncShadow()
+    // 数组容器不知道值被改写（写入走控件通道）：事件供 schema-form 做值同步 / 联动重算 / 脏态刷新
+    this.emit('paste', {
+      startRow: anchor.rowIndex,
+      startColumn,
+      rows: rowsFilled,
+      columns: filledColumns,
+      truncated,
+    })
+  }
+
+  /** 粘贴锚点：命中的单元格（role=cell）→ 行号 + 列 key */
+  private pasteAnchor(event: ClipboardEvent): { rowIndex: number; columnKey: string } | null {
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : []
+    const cell = path.find(
+      (node): node is HTMLElement =>
+        node instanceof HTMLElement && node.getAttribute('role') === 'cell' && this.contains(node),
+    )
+    if (!cell) return null
+    const item = this.items.find((entry) => entry.wrapper.contains(cell))
+    if (!item) return null
+    const cellIndex = item.cells.indexOf(cell)
+    const column = this.columns[cellIndex]
+    if (!column) return null
+    return { rowIndex: this.items.indexOf(item), columnKey: column.key }
+  }
+
+  /** 粘贴值写入控件：优先内核 writer，未注册 writer 时回落 value 属性（与快照回填同判据） */
+  private writePastedValue(widget: HTMLElement, value: string): void {
+    if (widget.tagName.toLowerCase() === 'oas-upload') return
+    if (writeFormControlValue(widget, value)) return
+    widget.setAttribute('value', value)
+  }
 
   /** 行操作分派（按钮点击 / 键盘激活同一入口） */
   private runAction(action: RowAction, index: number): void {

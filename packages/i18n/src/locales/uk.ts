@@ -733,6 +733,11 @@ export const uk: LocaleMessages = {
   'schemaForm.rowDuplicated': 'Рядок {index} продубльовано',
   'schemaForm.rowMoved': 'Рядок {from} переміщено на позицію {to}',
   'schemaForm.tableLabel': 'Таблиця даних',
+  'schemaForm.resizeColumn': 'Змінити ширину стовпця',
+  'schemaForm.reorderColumn': 'Перетягніть, щоб змінити порядок стовпців',
+  'schemaForm.columnsReordered': 'Порядок стовпців змінено: {column}',
+  'schemaForm.pasted': 'Вставлено рядків: {rows}, стовпців: {cols}',
+  'schemaForm.pasteTruncated': 'Вставка перевищує ліміт, обрізано до {max} рядків',
   // matrix / rank
   'matrix.group': 'Матричне питання',
   'matrix.requiredAll': 'Дайте відповідь на кожен рядок',

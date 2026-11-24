@@ -36,13 +36,24 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
 ## 联动（whenSchema）
 
 `reactions` 挂在**源字段**的 uiSchema 节点上；`whenSchema` 的条件即一段 JSON Schema 校验，`scope` 缺省 = 本字段（`$self`）。
-`fulfill` 封闭词表：`visible` / `disabled` / `required`；`otherwise` 缺省回到静态注解值。
+`fulfill` 词表：`visible` / `disabled` / `required` / `value`；`otherwise` 缺省回到静态注解值。
 `visible: false` 是**卸载**（值不提交、不参与校验）；数组行内字段卸载保留键位（空串）。依赖图定向刷新——
 只有条件依赖的字段变化才会重算视觉。
+
+**值联动（`fulfill.value`）**：条件成立时把表达式结果写入 `target` 字段（字符串按内核字符串语义落地，
+数字 / 布尔 / `null` 也可直接写字面量）。`value` 表达式与 `when` 同一编译器、同一依赖图（表达式里读到的
+字段变化会重算）；写入的值参与定点迭代（**8 轮上限**，不收敛开发期告警并保留最后一轮），并驱动下游
+联动重算。条件不成立时：声明了 `otherwise.value` 就写回落值，否则**保持当前值**（不回收）。
+写值只作用于可见目标——`visible: false` 的隐藏 / 卸载语义优先。
 
 <DemoBlock title="按国家隐藏/必填字段，按套餐锁定输入">
   <oas-schema-form id="sf-react" style="width: 100%; max-width: 640px"></oas-schema-form>
   <span id="sf-react-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="值联动：数量 × 单价自动写入合计，合计达标再解锁折扣（改数量试试）">
+  <oas-schema-form id="sf-react-value" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-react-value-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 联动（when 表达式）
@@ -54,7 +65,8 @@ description: 一份 JSON schema + uiSchema 声明式描述表单：运行时编�
 `iif / empty / len / sum / min / max / lower / upper / concat / join / split / substring / replace / trim /
 round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性求值；字符串拼接用
 `concat(...strings)`，`+` 只做数值加法；`formatDate` 冻结 token 表 `yyyy MM dd HH mm ss`、本地时区、
-未知 token 原样输出并开发期告警；`dateAdd` 单位冻结 `day / hour / minute`；**不提供 `now()`**——
+未知 token 原样输出并开发期告警；`dateAdd` 单位 `day / hour / minute / month`——月加减按**月末钳制**
+（1-31 加 1 个月 → 2-28，闰年 2-29；负向同样生效），时分秒保留；**不提供 `now()`**——
 非确定性与 reaction 静态重算模型冲突，需要当前时间请走受控值）。
 **赋值 / 语句 / 循环 / 箭头函数 / 模板串 / 正则 / 属性访问链一律编译期报错**；语法错 / 未知字段 /
 未知函数只影响该条 reaction（开发期告警并降级），其余联动照常生效。表达式轨与 `whenSchema` 表达力不同，
@@ -121,15 +133,24 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
   约束在单元格内（固定像素宽度的控件不会溢出到行操作列）。
 - 行操作列（表格尾列）：删除 / 复制 / 上移 / 下移；末尾追加行走表格下方的按钮。语义与 `oas-form-list`
   行尾操作完全一致（值深拷贝 / 值交换、焦点按行位回归、`aria-live` 播报）。
-- 事件：`oas-add` / `oas-remove`（`detail: { index }`）、`oas-duplicate` / `oas-move`（`detail: { from, to }`）。
+- **列宽拖拽**：列头右侧分隔线可拖拽调宽（指针拖动，或键盘聚焦手柄后 `←` / `→` 每次 8px、`Shift` 24px、
+  `Home` 回到 `width` 初始值）；`width` 数值只作初始宽。宽度是**运行时展示态**，不写回 `uiSchema`。
+- **列顺序重排**：拖列头可调整列顺序（拖拽中目标列显示插入位提示）；重排同样是展示态，
+  `uiSchema` / `items.properties` 顺序仍是权威——字段名、值与校验都不动。
+- **跨行粘贴**：在任一单元格粘贴 TSV（`\t` 分列、换行分行）会从当前单元向右下填充，行不足自动补行；
+  超过 `maxItems` 截断并以 aria-live + 开发期告警（每实例一次）提示；隐藏列不参与粘贴；
+  单值粘贴不接管（原生输入照常）。粘贴值走控件既有写入通道，类型不符由校验链拦下。
+  粘贴会派发 `oas-paste`（`detail: { startRow, startColumn, rows, columns, truncated }`），
+  组件在同一轮刷新 `dirty` / 联动效果。
+- 事件：`oas-add` / `oas-remove`（`detail: { index }`）、`oas-duplicate` / `oas-move`（`detail: { from, to }`）、
+  `oas-paste`（粘贴批量填充）。
 - 行操作会改值但**不派发 `oas-values-change`**（事件契约不变）；组件在同一轮里刷新 `dirty`、联动效果与
   受控写基线，宿主只需在自己的 `values` 里跟进（受控模式下组件也不会把行操作结果冲掉）。
 - 结构重建（`schema` / `uiSchema` 变化）按**行数快照**恢复行数；`initialValues` 改写与 `reset()`
-  则回到初始行数。两个 widget 互相切换不丢数据。
+  则回到初始行数。两个 widget 互相切换不丢数据（行数 + 值快照组合保障）。
 - 表格语义用 ARIA（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 承载几何，不使用原生
   `<table>`（slot 产不出 `td`，行内容必须留在 light DOM 才能被主表收集）。
-- 与全功能 `oas-table` 的分工：本 widget 面向轻量表单场景，不做列宽拖拽 / 列排序 / 分页 / 虚拟滚动 /
-  跨行粘贴 / 批量操作 / 单元格合并。
+- 与全功能 `oas-table` 的分工：本 widget 面向轻量表单场景，不做分页 / 虚拟滚动 / 批量操作 / 单元格合并。
 
 <DemoBlock title="行内编辑表格：列级注解 + 行操作（复制 / 上移 / 下移 / 删除）">
   <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
@@ -138,6 +159,14 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
     <oas-button id="sf-table-submit" type="primary">submit()</oas-button>
   </oas-space>
   <span id="sf-table-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="列宽拖拽 / 列序重排 / 跨行粘贴（拖动列头右侧分隔线调宽，拖动列头换序；在单元格里粘贴 TSV 如「王五→29→pm」多行）">
+  <oas-schema-form id="sf-table-enhance" style="width: 100%; max-width: 760px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-table-enhance-values">getValues()</oas-button>
+  </oas-space>
+  <span id="sf-table-enhance-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 布局：栅格 / 分组 / 标签页
@@ -208,6 +237,8 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
 
 - `convert`（入向）：`initialValues` 回填、受控 `values`、`setValues()` 三条入向通道在**写入组件前**换算一次；
   键入交互、结构重建的快照回填、schema `default` 都不经过（否则会二次换算）。空串不调用。
+  **钩子可返回 Promise**（如汇率查询）：落地前字段保持宿主原值（陈旧窗口），晚到结果按路径序号守卫丢弃，
+  用户编辑优先于在途换算，失败只开发期告警并保留宿主值；`transform` 仍只支持同步（异步返回按恒等处理并告警一次）。
 - `transform`（出向）：`getValues()`、`oas-submit` / `oas-validate-fail` / `oas-values-change` 的载荷
   （**就地改写 `detail.values` / `detail.value`**，不停冒泡、`target` 不变）统一换回宿主语义。
 - 签名 `(value, fieldPath, wholeValues) => value`；只对**叶子字段**生效（容器节点上写会告警忽略）；
@@ -223,6 +254,12 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
     <oas-button id="sf-transform-values">getValues()</oas-button>
   </oas-space>
   <span id="sf-transform-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="异步换算：convert 返回 Promise（模拟汇率请求，落地前字段保持宿主原值）">
+  <oas-schema-form id="sf-transform-async" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-button id="sf-transform-async-rerun" style="margin-top: 12px">换一批值（重新换算）</oas-button>
+  <span id="sf-transform-async-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## 异步选项（options.source）
@@ -360,6 +397,35 @@ onMounted(() => {
     }
     const out = document.getElementById('sf-react-output')
     react.addEventListener('oas-values-change', (e) => {
+      out.textContent = `当前值：${JSON.stringify(e.detail.values)}`
+    })
+  })
+
+  // ---- 值联动（fulfill.value） ----
+  onUpgraded(document.getElementById('sf-react-value'), () => {
+    const form = document.getElementById('sf-react-value')
+    form.schema = {
+      type: 'object',
+      properties: {
+        qty: { type: 'integer', title: '数量' },
+        price: { type: 'integer', title: '单价' },
+        total: { type: 'integer', title: '合计（自动计算）' },
+        discount: { type: 'string', title: '折扣（合计满 100 解锁）' },
+      },
+    }
+    form.uiSchema = {
+      qty: {
+        reactions: [{ when: '{qty} > 0', target: 'total', fulfill: { value: '{qty} * {price}' } }],
+      },
+      price: {
+        reactions: [
+          { when: '{total} >= 100', target: 'discount', fulfill: { visible: true }, otherwise: { visible: false } },
+        ],
+      },
+    }
+    form.initialValues = { qty: 2, price: 30 }
+    const out = document.getElementById('sf-react-value-output')
+    form.addEventListener('oas-values-change', (e) => {
       out.textContent = `当前值：${JSON.stringify(e.detail.values)}`
     })
   })
@@ -507,6 +573,54 @@ onMounted(() => {
     table.addEventListener('oas-validate-fail', (e) => {
       tableOut.textContent = `oas-validate-fail：${Object.entries(e.detail.errors).map(([k, v]) => `${k}=${v}`).join('；')}`
     })
+  })
+
+  // ---- 表格增强（列宽拖拽 / 列序重排 / 跨行粘贴） ----
+  onUpgraded(document.getElementById('sf-table-enhance'), () => {
+    const table = document.getElementById('sf-table-enhance')
+    table.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: '成员（可调宽 / 换序 / 粘贴）',
+          maxItems: 6,
+          items: {
+            type: 'object',
+            required: ['nick'],
+            properties: {
+              nick: { type: 'string', title: '昵称' },
+              age: { type: 'integer', title: '年龄' },
+              role: { type: 'string', title: '角色', enum: ['dev', 'ops', 'pm'] },
+            },
+          },
+        },
+      },
+    }
+    table.uiSchema = {
+      users: { widget: 'array-table' },
+      'users[].nick': { width: 160 },
+      'users[].age': { width: 96, align: 'right' },
+      'users[].role': { width: 120 },
+    }
+    table.initialValues = {
+      users: [
+        { nick: '张三', age: 28, role: 'dev' },
+        { nick: '李四', age: 32, role: 'ops' },
+      ],
+    }
+    const out = document.getElementById('sf-table-enhance-output')
+    const report = (label) => {
+      out.textContent = `${label}：${JSON.stringify(table.getValues())}（dirty=${table.dirty}）`
+    }
+    table.addEventListener('oas-paste', (e) => {
+      const detail = e.detail
+      report(
+        `oas-paste 从第 ${detail.startRow + 1} 行第 ${detail.startColumn + 1} 列起，填充 ${detail.rows} 行 × ${detail.columns} 列` +
+          (detail.truncated ? '（超出 maxItems 已截断）' : ''),
+      )
+    })
+    document.getElementById('sf-table-enhance-values')?.addEventListener('click', () => report('getValues()'))
   })
 
   // ---- 布局 ----
@@ -748,6 +862,33 @@ onMounted(() => {
       })
       transform.addEventListener('oas-submit', (e) => {
         out.textContent = `oas-submit（transform 后）：${JSON.stringify(e.detail.values)}`
+      })
+    })
+  })
+
+  // ---- 异步换算（convert 返回 Promise）----
+  onUpgraded(document.getElementById('sf-transform-async'), () => {
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaConverter }) => {
+      // 模拟汇率接口：600ms 后返回换算结果；异步窗口内字段保持宿主原值
+      registerSchemaConverter(
+        'asyncRate',
+        (value) => new Promise((resolve) => setTimeout(() => resolve(String(Math.round(Number(value) * 7.2))), 600)),
+      )
+      const form = document.getElementById('sf-transform-async')
+      form.schema = { type: 'object', properties: { usd: { type: 'number', title: '美元金额（换算为人民币分）' } } }
+      form.uiSchema = { usd: { convert: 'asyncRate' } }
+      form.initialValues = { usd: 10 }
+      const out = document.getElementById('sf-transform-async-output')
+      out.textContent = '换算中…（字段暂时显示宿主原值）'
+      setTimeout(() => {
+        out.textContent = `换算完成：${JSON.stringify(form.getValues())}`
+      }, 900)
+      document.getElementById('sf-transform-async-rerun')?.addEventListener('click', () => {
+        out.textContent = '换算中…（新值写入后 600ms 落地）'
+        form.setValues({ usd: Math.round(Math.random() * 90 + 10) })
+        setTimeout(() => {
+          out.textContent = `换算完成：${JSON.stringify(form.getValues())}`
+        }, 900)
       })
     })
   })

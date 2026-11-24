@@ -730,6 +730,11 @@ export const ru: LocaleMessages = {
   'schemaForm.rowDuplicated': 'Строка {index} дублирована',
   'schemaForm.rowMoved': 'Строка {from} перемещена на позицию {to}',
   'schemaForm.tableLabel': 'Таблица данных',
+  'schemaForm.resizeColumn': 'Изменить ширину столбца',
+  'schemaForm.reorderColumn': 'Перетащите, чтобы изменить порядок столбцов',
+  'schemaForm.columnsReordered': 'Порядок столбцов изменён: {column}',
+  'schemaForm.pasted': 'Вставлено строк: {rows}, столбцов: {cols}',
+  'schemaForm.pasteTruncated': 'Вставка превышает лимит, обрезано до {max} строк',
   // matrix / rank
   'matrix.group': 'Матричный вопрос',
   'matrix.requiredAll': 'Ответьте на каждую строку',

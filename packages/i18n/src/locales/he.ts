@@ -732,6 +732,11 @@ export const he: LocaleMessages = {
   'schemaForm.rowDuplicated': 'שורה {index} שוכפלה',
   'schemaForm.rowMoved': 'שורה {from} הועברה לשורה {to}',
   'schemaForm.tableLabel': 'טבלת נתונים',
+  'schemaForm.resizeColumn': 'כוונון רוחב עמודה',
+  'schemaForm.reorderColumn': 'גרור כדי לשנות את סדר העמודות',
+  'schemaForm.columnsReordered': 'סדר העמודות שונה: {column}',
+  'schemaForm.pasted': 'הודבקו {rows} שורות × {cols} עמודות',
+  'schemaForm.pasteTruncated': 'ההדבקה חורגת מהמגבלה, קוצרה ל-{max} שורות',
   // matrix / rank
   'matrix.group': 'שאלת מטריצה',
   'matrix.requiredAll': 'נא לענות על כל שורה',

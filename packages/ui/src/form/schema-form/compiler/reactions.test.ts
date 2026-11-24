@@ -45,23 +45,54 @@ function engineOf(ui: Record<string, unknown>, options: { maxRounds?: number } =
 }
 
 describe('reactions 编译（封闭词表 / otherwise / 冲突）', () => {
-  it('fulfill 非封闭键与保留键 value 均告警', () => {
+  it('fulfill 非封闭键告警；value 已转正（表达式轨，不再告警保留）', () => {
     const result = compile({
       country: {
         reactions: [
           {
             whenSchema: { schema: { const: 'US' } },
             target: 'province',
-            fulfill: { visible: true, color: 'red', value: 'x' },
+            fulfill: { visible: true, color: 'red', value: '{city}' },
           },
         ],
       },
     })
     const text = result.warnings.join('\n')
     expect(text).toContain('未知键 "color"')
-    expect(text).toContain('fulfill.value 为保留键')
+    expect(text).not.toContain('保留键')
     expect(result.reactions).toHaveLength(1)
     expect(result.reactions[0]!.fulfill).toEqual({ visible: true })
+    // value 表达式参与依赖图（城市变化要重算这条 reaction）
+    expect(result.reactions[0]!.valueExpr).toEqual(expect.any(Function))
+    expect(result.reactions[0]!.deps).toContain('city')
+  })
+
+  it('fulfill.value 表达式编译失败：只丢弃 value（其余效果保留）+ 告警', () => {
+    const result = compile({
+      country: {
+        reactions: [
+          {
+            whenSchema: { schema: { const: 'US' } },
+            target: 'province',
+            fulfill: { required: true, value: '{country} +' },
+          },
+        ],
+      },
+    })
+    expect(result.warnings.join('\n')).toContain('fulfill.value 表达式编译失败')
+    expect(result.reactions).toHaveLength(1)
+    expect(result.reactions[0]!.fulfill).toEqual({ required: true })
+    expect(result.reactions[0]!.valueExpr).toBeUndefined()
+  })
+
+  it('fulfill.value 字面量（数字 / 布尔）：直接作为写入值', () => {
+    const result = compile({
+      country: {
+        reactions: [{ whenSchema: { schema: { const: 'US' } }, target: 'province', fulfill: { value: 42 } }],
+      },
+    })
+    expect(result.reactions[0]!.fulfill).toEqual({ value: 42 })
+    expect(result.reactions[0]!.valueExpr).toBeUndefined()
   })
 
   it('缺少条件（when / whenSchema 都没有）：告警且不生效', () => {
@@ -328,5 +359,93 @@ describe('reactions 表达式轨（when）：求值 / 依赖图 / 宿主函数',
     } finally {
       unregister()
     }
+  })
+})
+
+describe('reactions 值联动（fulfill.value）', () => {
+  it('条件成立写入表达式结果；条件不成立无 otherwise 时不产生值效果', () => {
+    const { engine } = engineOf({
+      country: {
+        reactions: [
+          {
+            when: "{country} == 'US'",
+            target: 'city',
+            fulfill: { value: '{province}' },
+          },
+        ],
+      },
+    })
+    const us = engine.evaluate({ country: 'US', province: 'NY' })
+    expect(us.get('city')).toEqual({ value: 'NY' })
+    const cn = engine.evaluate({ country: 'CN', province: 'ZJ' })
+    expect(cn.get('city')).toBeUndefined()
+  })
+
+  it('otherwise.value：条件不成立时写回落值', () => {
+    const { engine } = engineOf({
+      plan: {
+        reactions: [
+          {
+            when: "{plan} == 'pro'",
+            target: 'team',
+            fulfill: { value: "'vip'" },
+            otherwise: { value: "'free'" },
+          },
+        ],
+      },
+    })
+    expect(engine.evaluate({ plan: 'pro' }).get('team')).toEqual({ value: 'vip' })
+    expect(engine.evaluate({ plan: 'free' }).get('team')).toEqual({ value: 'free' })
+  })
+
+  it('写值参与定点迭代：value 写入的字段驱动下游条件（同一次全量求值内）', () => {
+    const { engine } = engineOf({
+      country: {
+        reactions: [
+          { when: "{country} == 'US'", target: 'city', fulfill: { value: '{province}' } },
+          { when: "{city} == 'NY'", target: 'note', fulfill: { visible: false } },
+        ],
+      },
+    })
+    const effects = engine.evaluate({ country: 'US', province: 'NY' })
+    expect(effects.get('city')).toEqual({ value: 'NY' })
+    expect(effects.get('note')).toEqual({ visible: false })
+  })
+
+  it('写值不覆盖 visible:false 的卸载清值语义（隐藏目标不参与写值反馈）', () => {
+    const { engine } = engineOf({
+      country: {
+        reactions: [
+          { when: "{country} == 'US'", target: 'city', fulfill: { visible: false } },
+          { when: "{country} == 'US'", target: 'city', fulfill: { value: "'x'" } },
+          { when: "{city} == 'x'", target: 'note', fulfill: { visible: false } },
+        ],
+      },
+    })
+    const effects = engine.evaluate({ country: 'US', city: 'NY' })
+    expect(effects.get('city')).toEqual({ visible: false, value: 'x' })
+    // city 被隐藏 → 值已清（下游条件按「无值」求值），值写入不得把 x 反馈回去
+    expect(effects.get('note')).toEqual({ visible: true })
+  })
+
+  it('写值循环守卫：振荡不收敛在 8 轮内告警并保留最后一轮', () => {
+    const { engine, warnings } = engineOf(
+      {
+        plan: {
+          reactions: [
+            { when: "{plan} == 'x'", target: 'note', fulfill: { value: "'a'" } },
+            { when: "{note} == 'a'", target: 'plan', fulfill: { value: "'y'" } },
+            { when: "{plan} == 'y'", target: 'note', fulfill: { value: "'b'" } },
+            { when: "{note} == 'b'", target: 'plan', fulfill: { value: "'x'" } },
+          ],
+        },
+      },
+      { maxRounds: 2 },
+    )
+    const effects = engine.evaluate({ plan: 'x' })
+    // 第 2 轮（maxRounds 用满）即告警；保留该轮结果（note 写入 a、plan 写入 y）
+    expect(effects.get('note')).toEqual({ value: 'a' })
+    expect(effects.get('plan')).toEqual({ value: 'y' })
+    expect(warnings.join('\n')).toContain('未收敛')
   })
 })

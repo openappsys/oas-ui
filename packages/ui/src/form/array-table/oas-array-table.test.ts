@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OASArrayTable } from './index.js'
 import { OASForm } from '../form/index.js'
 import '../input/index.js'
@@ -59,6 +59,18 @@ function liveText(table: OASArrayTable): string {
 function setRowValues(table: OASArrayTable, index: number, nick: string, age: string): void {
   rows(table)[index]!.querySelector('oas-input')!.setAttribute('value', nick)
   rows(table)[index]!.querySelector('oas-input-number')!.setAttribute('value', age)
+}
+
+function paste(table: OASArrayTable, text: string, target: Element): void {
+  const event = new Event('paste', { bubbles: true, composed: true, cancelable: true })
+  Object.defineProperty(event, 'clipboardData', {
+    value: { getData: (type: string) => (type === 'text/plain' ? text : '') },
+  })
+  target.dispatchEvent(event)
+}
+
+function pointer(type: string, target: Element, clientX: number): void {
+  target.dispatchEvent(new PointerEvent(type, { bubbles: true, composed: true, clientX, clientY: 0, pointerId: 1 }))
 }
 
 describe('oas-array-table 结构与布局', () => {
@@ -241,6 +253,173 @@ describe('oas-array-table 行操作', () => {
     expect(actionBtn(table, 0, 'move-up').getAttribute('aria-label')).toBe('上移成员')
     expect(actionBtn(table, 0, 'move-down').getAttribute('aria-label')).toBe('下移成员')
     expect(actionBtn(table, 0, 'remove').getAttribute('aria-label')).toBe('删除成员')
+  })
+})
+
+describe('oas-array-table 列宽拖拽与列顺序重排（展示态，不序列化）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function splitter(table: OASArrayTable, index: number): HTMLElement {
+    return table.shadowRoot!.querySelectorAll<HTMLElement>('[part="column-resize"]')[index]!
+  }
+
+  it('列头分割线可见且可键盘聚焦（role=separator + aria 值）', () => {
+    const { table } = makeTable({ name: 'users', rows: '1' })
+    const handle = splitter(table, 0)
+    expect(handle.getAttribute('role')).toBe('separator')
+    expect(handle.getAttribute('aria-orientation')).toBe('vertical')
+    expect(handle.tabIndex).toBe(0)
+    expect(handle.getAttribute('aria-label')).toContain('调整列宽')
+    expect(handle.getAttribute('aria-valuenow')).toBe('120')
+    // 隐藏列不提供分割线
+    expect(table.shadowRoot!.querySelectorAll('[part="column-resize"]')).toHaveLength(2)
+  })
+
+  it('指针拖拽调宽：轨道变为像素宽，列定义（columns 属性）不被改写', () => {
+    const { table } = makeTable({ name: 'users', rows: '2' })
+    const before = rows(table)[0]!.style.gridTemplateColumns
+    pointer('pointerdown', splitter(table, 0), 100)
+    pointer('pointermove', splitter(table, 0), 160)
+    pointer('pointerup', splitter(table, 0), 160)
+    const after = rows(table)[0]!.style.gridTemplateColumns
+    expect(after).not.toBe(before)
+    expect(after).toContain('180px')
+    expect(splitter(table, 0).getAttribute('aria-valuenow')).toBe('180')
+    // 内存态：列定义原样（不序列化）
+    expect(table.columns[0]!.width).toBeUndefined()
+    // 表头与行使用同一份轨道串（严格对齐）
+    expect(table.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.style.gridTemplateColumns).toBe(after)
+  })
+
+  it('键盘左右键调宽（±8px，下限截断）', () => {
+    const { table } = makeTable({ name: 'users', rows: '1' })
+    const handle = splitter(table, 0)
+    const start = Number(handle.getAttribute('aria-valuenow'))
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, composed: true }))
+    expect(Number(splitter(table, 0).getAttribute('aria-valuenow'))).toBe(start + 8)
+    splitter(table, 0).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(Number(splitter(table, 0).getAttribute('aria-valuenow'))).toBe(start)
+    // 下限：连续左移不会低于最小宽度
+    for (let i = 0; i < 40; i++) {
+      splitter(table, 0).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    }
+    expect(Number(splitter(table, 0).getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(48)
+  })
+
+  it('列头拖拽重排：表头顺序与单元格网格位置变化，列定义与字段值不变', () => {
+    const { table, form } = makeTable({ name: 'users', rows: '1' })
+    setRowValues(table, 0, 'A', '20')
+    const cells = [...rows(table)[0]!.querySelectorAll<HTMLElement>('[role="cell"]')]
+    expect(cells[0]!.querySelector('oas-input')!.getAttribute('name')).toBe('users.0.nick')
+
+    const heads = headCells(table)
+    heads[0]!.dispatchEvent(new Event('dragstart', { bubbles: true, composed: true }))
+    heads[1]!.dispatchEvent(new Event('dragover', { bubbles: true, composed: true, cancelable: true }))
+    heads[1]!.dispatchEvent(new Event('drop', { bubbles: true, composed: true }))
+
+    // 昵称列现在排第 2（网格列位置显式），年龄列第 1
+    const nickCell = cells[0]!
+    const ageCell = cells[1]!
+    expect(nickCell.style.gridColumn).toBe('2')
+    expect(ageCell.style.gridColumn).toBe('1')
+    const labels = headCells(table).map((cell) => cell.textContent)
+    expect(labels[0]).toContain('年龄')
+    expect(labels[1]).toContain('昵称')
+    // uiSchema 顺序仍权威：columns 属性与行内字段名不变，值不错位
+    expect(table.columns.map((column) => column.key)).toEqual(['nick', 'age', 'note'])
+    expect(form.getValues()).toEqual({ users: [{ nick: 'A', age: '20', note: '' }] })
+  })
+})
+
+describe('oas-array-table 跨行粘贴 TSV', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function firstCell(table: OASArrayTable, row = 0, col = 0): HTMLElement {
+    return rows(table)[row]!.querySelectorAll<HTMLElement>('[role="cell"]')[col]!
+  }
+
+  it('多行多列：从当前单元开始填充，缺行自动补行', () => {
+    const { table, form } = makeTable({ name: 'users', rows: '1' })
+    const events: Array<Record<string, unknown>> = []
+    table.addEventListener('oas-paste', (event) => events.push((event as CustomEvent).detail))
+    paste(table, 'A\t20\nB\t30', firstCell(table))
+    expect(rows(table)).toHaveLength(2)
+    expect(form.getValues()).toEqual({
+      users: [
+        { nick: 'A', age: '20', note: '' },
+        { nick: 'B', age: '30', note: '' },
+      ],
+    })
+    expect(events[0]).toMatchObject({ startRow: 0, startColumn: 0, rows: 2, columns: 2 })
+    expect(liveText(table)).toContain('已粘贴 2 行 × 2 列')
+  })
+
+  it('从中间单元粘贴：起始行列偏移正确', () => {
+    const { table, form } = makeTable({ name: 'users', rows: '2' })
+    paste(table, 'X\nY', firstCell(table, 1, 1))
+    expect(form.getValues()).toEqual({
+      users: [
+        { nick: '', age: '', note: '' },
+        { nick: '', age: 'X', note: '' },
+        { nick: '', age: 'Y', note: '' },
+      ],
+    })
+  })
+
+  it('单值粘贴（无制表符 / 换行）不改写默认输入行为', () => {
+    const { table, form } = makeTable({ name: 'users', rows: '1' })
+    paste(table, 'plain', firstCell(table))
+    expect(form.getValues()).toEqual({ users: [{ nick: '', age: '', note: '' }] })
+  })
+
+  it('超过 max：截断到上限 + 一次性告警（不抛错）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { table, form } = makeTable({ name: 'users', rows: '1', max: '2' })
+      paste(table, 'A\nB\nC', firstCell(table))
+      expect(rows(table)).toHaveLength(2)
+      expect(form.getValues()).toEqual({
+        users: [
+          { nick: 'A', age: '', note: '' },
+          { nick: 'B', age: '', note: '' },
+        ],
+      })
+      const warnings = warn.mock.calls.filter((call) => String(call[0]).includes('粘贴'))
+      expect(warnings.length).toBe(1)
+      // 再粘一次：告警不重复（一次性）
+      paste(table, 'D\nE\nF', firstCell(table))
+      expect(warn.mock.calls.filter((call) => String(call[0]).includes('粘贴')).length).toBe(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('超出列数的单元格忽略（不写到行操作列 / 不产生多余字段）', () => {
+    const { table, form } = makeTable({ name: 'users', rows: '1' })
+    table.columns = [
+      { key: 'nick', label: '昵称' },
+      { key: 'age', label: '年龄' },
+      { key: 'note', label: '备注' },
+    ]
+    paste(table, 'A\tB\tC\tD', firstCell(table))
+    expect(form.getValues()).toEqual({ users: [{ nick: 'A', age: 'B', note: 'C' }] })
+  })
+
+  it('空单元格写入空串（清值语义）', () => {
+    const { table, form } = makeTable({ name: 'users', rows: '1' })
+    setRowValues(table, 0, 'A', '20')
+    paste(table, 'B\t', firstCell(table))
+    expect(form.getValues()).toEqual({ users: [{ nick: 'B', age: '', note: '' }] })
   })
 })
 

@@ -90,6 +90,12 @@
   `align` / `hidden`；`hidden` 列保留单元格与值，只隐藏视觉。`width` / `align` / `hidden` 用在非表格节点
   上会 devWarn 忽略。**单元格不渲染自身标签**（列头承载；必填 `*` 上移列头），控件宽 `max-width: 100%`
   约束在单元格内。
+- **列宽拖拽 / 列序重排（展示态）**：列头右侧 `role="separator"` 手柄可指针拖拽或键盘调宽（`←` / `→` 8px、
+  `Shift` 24px、`Home` 回 `width` 初始值）；列头可拖拽换序（目标列显示插入位）。两者都是**内存展示态**：
+  不改 `columns` 属性、不写回 uiSchema，字段名 / 值 / 校验不受影响（单元格用显式 `grid-column` 落位）。
+- **跨行粘贴 TSV**：表格区粘贴 `\t` / 换行分隔文本，从当前单元格向右下填充（行不足补行）；超过 `maxItems`
+  截断 + `aria-live` + 每实例一次 devWarn；隐藏列不参与、单值粘贴不接管；值走内核写入通道（类型校验由
+  schema-form 承接）。事件 `oas-paste`（`detail: { startRow, startColumn, rows, columns, truncated }`）。
 - **行操作**：容器内建 复制 / 上移 / 下移 / 删除（`array-table` 另有表下列头内的追加按钮）。契约与
   容器同源（`form/shared/list-row-ops`）：值读写走内核通道（`oas-upload` 跳过）、操作后焦点按行位回归、
   `aria-live` 播报；事件 `oas-add` / `oas-remove` `{ index }` + `oas-duplicate` / `oas-move` `{ from, to }`。
@@ -110,8 +116,12 @@
 
 - `convert`（入向）：只在 `initialValues` 回填、受控 `values`、`setValues()` 三条写入通道上换算；
   键入交互 / 快照回填 / schema `default` 都不经过，空串不调用。
+  **可返回 Promise**（V2 批 4）：落地前字段保持宿主原值——这是**已知的异步陈旧窗口**（界面短暂显示
+  宿主原始值，落地后替换为换算值）；晚到结果按路径序号丢弃，用户编辑优先于在途换算，结构重建整批作废，
+  失败只 devWarn 并保留宿主值。
 - `transform`（出向）：`getValues()` 与 `oas-submit` / `oas-validate-fail` / `oas-values-change` 的载荷
   就地改写；内部脏态 / 快照 / 受控写基线走内核原始值。**空串 / 缺省同样不调用**（两钩子共用同一调用口径）。
+  **只支持同步**——返回 Promise 按恒等处理并 devWarn 一次。
 - 签名 `(value, fieldPath, wholeValues) => value`；仅叶子字段（容器上声明会告警忽略）；数组行用通配路径。
   抛错 / 未注册 → devWarn + 恒等回落。
 - 注册：`registerSchemaConverter` / `registerSchemaTransformer`。
@@ -137,7 +147,8 @@
 原有 10（`iif` / `empty` / `len` / `sum` / `min` / `max` / `lower` / `upper` / `concat` / `contains`）+
 V2 新增 10：`join` / `split` / `substring` / `replace` / `trim` / `round` / `abs` / `floor` / `ceil` /
 `formatDate` / `dateAdd`（`formatDate` 冻结 token `yyyy MM dd HH mm ss`、本地时区、未知 token 原样 + devWarn；
-`dateAdd` 单位 `day / hour / minute`；**不做 `now()`**）。宿主函数与内置同名时**宿主优先 + devWarn**。
+`dateAdd` 单位 `day / hour / minute / month`（月加减月末钳制：1-31 → 2-28/29）；**不做 `now()`**）。
+宿主函数与内置同名时**宿主优先 + devWarn**。
 
 ## 联动注解（双轨：`whenSchema` / `when`）
 
@@ -157,7 +168,10 @@ V2 新增 10：`join` / `split` / `substring` / `replace` / `trim` / `round` / `
 ```
 
 - `reactions` 挂在**源字段**的 uiSchema 节点；条件路径恒为根路径，本字段用 `$self`（`scope` 缺省 = `$self`）。
-- `fulfill` 词表 V1 = `visible` / `disabled` / `required`；`value` 保留键（V1 未实现，编译期 devWarn）。
+- `fulfill` 词表 = `visible` / `disabled` / `required` / `value`；`value` 为**值联动**（V2 批 4 转正）：
+  字符串按表达式编译（与 `when` 同一编译器与依赖图），数字 / 布尔 / `null` 直接作字面量写入 `target`；
+  `otherwise.value` 提供不成立时的回落值（缺省保持当前值）。写入值参与 8 轮定点迭代（不收敛保留最后一轮 +
+  devWarn）并驱动下游联动；只写可见目标（`visible:false` 的隐藏 / 卸载语义优先）。
   **`required` 同时参与校验**（字段规则与数组级 `required` 判据都合并联动效果）：`fulfill: { required: true }`
   会真拦截提交，不只是加星号/`aria-required`。
 - `otherwise` 缺省 = 回到静态注解值；跨 reactions 写同一目标同一属性后者胜 + devWarn。

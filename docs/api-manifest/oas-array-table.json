@@ -84,6 +84,10 @@
   ],
   "events": [
     {
+      "name": "oas-paste",
+      "detail": "{ startRow: anchor.rowIndex, startColumn, rows: rowsFilled, columns: filledColumns, truncated, }"
+    },
+    {
       "name": "oas-add",
       "detail": "{ index }"
     },

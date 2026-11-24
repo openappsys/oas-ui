@@ -41,14 +41,27 @@ text from `description`; `required` on a parent object is compiled into child fi
 
 `reactions` live on the **source field's** uiSchema node. A `whenSchema` condition is a JSON Schema
 validation; `scope` defaults to the field itself (`$self`). `fulfill` accepts `visible` / `disabled` /
-`required`; `otherwise` falls back to the static annotation. `visible: false` **unmounts** the field (its
-value is not submitted and not validated); inside array rows the key slot is kept as an empty string.
+`required` / `value`; `otherwise` falls back to the static annotation. `visible: false` **unmounts** the field
+(its value is not submitted and not validated); inside array rows the key slot is kept as an empty string.
 Refresh is directed by a dependency graph — only fields whose conditions depend on the changed path
 are re-evaluated.
+
+**Value reactions (`fulfill.value`)**: when the condition holds, the expression result is written into the
+`target` field (strings follow the kernel string semantics; numbers / booleans / `null` may also be written
+as literals). The `value` expression shares the compiler and dependency graph with `when`; written values
+participate in the fixed-point iteration (**8-round cap**, a dev warning keeps the last round when it does not
+converge) and drive downstream reactions. When the condition is false, `otherwise.value` is written if
+declared; otherwise the current value is **kept**. Writes only apply to visible targets — the hidden /
+unmounted semantics of `visible: false` take precedence.
 
 <DemoBlock title="Hide/require fields by country, lock input by plan">
   <oas-schema-form id="sf-react" style="width: 100%; max-width: 640px"></oas-schema-form>
   <span id="sf-react-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="Value reaction: qty × price writes the total, and reaching the threshold unlocks the discount">
+  <oas-schema-form id="sf-react-value" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <span id="sf-react-value-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Reactions (`when` expressions)
@@ -62,8 +75,10 @@ non-numeric operand yields `NaN` at runtime, and `NaN` comparisons are always fa
 join / split / substring / replace / trim / round / abs / floor / ceil / formatDate / dateAdd` (`iif` is lazy;
 concatenate strings with `concat(...strings)` — `+` is numeric addition only; `formatDate` freezes the tokens
 `yyyy MM dd HH mm ss`, uses the local timezone, prints unknown tokens verbatim with a dev warning; `dateAdd`
-supports `day / hour / minute`; **there is no `now()`** — non-determinism conflicts with the static
-recomputation model, feed the current time through a controlled value instead).
+supports `day / hour / minute / month` — month arithmetic **clamps to the month end** (Jan 31 + 1 month →
+Feb 28, Feb 29 in leap years; negative amounts behave the same) and keeps the time of day; **there is no
+`now()`** — non-determinism conflicts with the static recomputation model, feed the current time through a
+controlled value instead).
 **Assignments / statements / loops / arrow functions / template strings / regex literals / property access
 chains are compile-time errors**; syntax errors, unknown fields and unknown functions only disable that single
 reaction (dev warning) while the rest keep working. The two tracks differ in expressiveness — they are not
@@ -137,16 +152,31 @@ row-action column — it is the same value semantics as `oas-form-list` in a dif
 - The action column holds remove / duplicate / move-up / move-down; the add button appends below the table.
   Semantics match `oas-form-list` row operations (deep copy / value swap, focus returns by row position,
   `aria-live` announcements).
-- Events: `oas-add` / `oas-remove` (`detail: { index }`), `oas-duplicate` / `oas-move` (`detail: { from, to }`).
+- **Column resizing**: drag the divider at the right edge of a header (or focus the handle and press
+  `←` / `→` for 8px, `Shift` for 24px, `Home` to restore the annotation `width`). The numeric `width` is only
+  an initial value; the runtime width is **display state** and is never written back to the uiSchema.
+- **Column reordering**: drag a header cell to change the display order (the drop target shows an insertion
+  hint). This is display state too: the `items.properties` / uiSchema order remains authoritative, and field
+  names, values and validation are untouched.
+- **Cross-row paste**: pasting TSV (`\t` separates columns, newlines separate rows) into any cell fills
+  right/down from that cell and appends rows as needed. Content beyond `maxItems` is truncated with an
+  `aria-live` announcement and a one-time dev warning per instance; hidden columns are skipped; a single-value
+  paste is left to the native input. Pasted values go through the existing widget write channel, so type
+  mismatches are caught by the validation chain. Paste emits `oas-paste`
+  (`detail: { startRow, startColumn, rows, columns, truncated }`) and refreshes `dirty` / reactions in the
+  same turn.
+- Events: `oas-add` / `oas-remove` (`detail: { index }`), `oas-duplicate` / `oas-move` (`detail: { from, to }`),
+  `oas-paste` (bulk TSV fill).
 - Row operations change values but do **not** emit `oas-values-change` (contract preserved); the component
   refreshes `dirty`, reactions and the controlled write baseline in the same turn, so the host only needs to
   follow along in its own `values` (a controlled host write will not roll the operation back).
 - Structure changes (`schema` / `uiSchema`) restore the current row counts; rewriting `initialValues` and
-  `reset()` go back to the initial row count. Switching between the two widgets keeps the data.
+  `reset()` go back to the initial row count. Switching between the two widgets keeps the data (row-count and
+  value snapshots combined).
 - Table semantics use ARIA (`role="table"` / `columnheader` / `row` / `cell`) plus CSS grid for geometry; no
   native `<table>` (slots cannot produce `td`, and row content must stay in light DOM for the form kernel).
 - Division of labour with the full-featured `oas-table`: this widget targets lightweight forms and does not do
-  column resizing / reordering / paging / virtual scrolling / cross-row paste / bulk operations / cell merging.
+  paging / virtual scrolling / bulk operations / cell merging.
 
 <DemoBlock title="Inline-edit table: column annotations + row actions (duplicate / move / remove)">
   <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
@@ -155,6 +185,14 @@ row-action column — it is the same value semantics as `oas-form-list` in a dif
     <oas-button id="sf-table-submit" type="primary">submit()</oas-button>
   </oas-space>
   <span id="sf-table-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="Resize columns / reorder columns / paste TSV (drag the header divider or header cells; paste multi-line TSV into a cell)">
+  <oas-schema-form id="sf-table-enhance" style="width: 100%; max-width: 760px"></oas-schema-form>
+  <oas-space style="margin-top: 12px; display: flex; flex-wrap: wrap">
+    <oas-button id="sf-table-enhance-values">getValues()</oas-button>
+  </oas-space>
+  <span id="sf-table-enhance-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Layout: grid / group / tabs
@@ -233,7 +271,10 @@ name):
 - `convert` (inbound): applied once **before writing into the component** on the three inbound channels —
   `initialValues` backfill, controlled `values`, `setValues()`. Typing, snapshot restore after a structure
   change and schema `default` never pass through it (otherwise values would be converted twice). Empty values
-  are not passed to the hook.
+  are not passed to the hook. The hook **may return a Promise** (e.g. an exchange-rate lookup): the field keeps
+  the host value until it resolves (documented stale window), late results are discarded by a per-path
+  sequence guard, a user edit supersedes an in-flight conversion, and a rejection only logs a dev warning while
+  keeping the host value. `transform` remains synchronous (an async transform is ignored with a dev warning).
 - `transform` (outbound): applied to `getValues()` and to the `oas-submit` / `oas-validate-fail` /
   `oas-values-change` payloads (**`detail.values` / `detail.value` are rewritten in place**, bubbling continues,
   `target` unchanged).
@@ -252,6 +293,12 @@ name):
     <oas-button id="sf-transform-values">getValues()</oas-button>
   </oas-space>
   <span id="sf-transform-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="Async conversion: convert returns a Promise (simulated exchange-rate call; the field keeps the host value until it lands)">
+  <oas-schema-form id="sf-transform-async" style="width: 100%; max-width: 640px"></oas-schema-form>
+  <oas-button id="sf-transform-async-rerun" style="margin-top: 12px">Write new values (re-convert)</oas-button>
+  <span id="sf-transform-async-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Async options (`options.source`)
@@ -397,6 +444,34 @@ onMounted(() => {
     })
   })
 
+  onUpgraded(document.getElementById('sf-react-value'), () => {
+    const form = document.getElementById('sf-react-value')
+    form.schema = {
+      type: 'object',
+      properties: {
+        qty: { type: 'integer', title: 'Quantity' },
+        price: { type: 'integer', title: 'Unit price' },
+        total: { type: 'integer', title: 'Total (computed)' },
+        discount: { type: 'string', title: 'Discount (unlocked at total ≥ 100)' },
+      },
+    }
+    form.uiSchema = {
+      qty: {
+        reactions: [{ when: '{qty} > 0', target: 'total', fulfill: { value: '{qty} * {price}' } }],
+      },
+      price: {
+        reactions: [
+          { when: '{total} >= 100', target: 'discount', fulfill: { visible: true }, otherwise: { visible: false } },
+        ],
+      },
+    }
+    form.initialValues = { qty: 2, price: 30 }
+    const out = document.getElementById('sf-react-value-output')
+    form.addEventListener('oas-values-change', (e) => {
+      out.textContent = `Current values: ${JSON.stringify(e.detail.values)}`
+    })
+  })
+
   onUpgraded(document.getElementById('sf-array'), () => {
     const array = document.getElementById('sf-array')
     array.schema = {
@@ -537,6 +612,53 @@ onMounted(() => {
     table.addEventListener('oas-validate-fail', (e) => {
       tableOut.textContent = `oas-validate-fail: ${Object.entries(e.detail.errors).map(([k, v]) => `${k}=${v}`).join('; ')}`
     })
+  })
+
+  onUpgraded(document.getElementById('sf-table-enhance'), () => {
+    const table = document.getElementById('sf-table-enhance')
+    table.schema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: 'Members (resizable / reorderable / paste-enabled)',
+          maxItems: 6,
+          items: {
+            type: 'object',
+            required: ['nick'],
+            properties: {
+              nick: { type: 'string', title: 'Nickname' },
+              age: { type: 'integer', title: 'Age' },
+              role: { type: 'string', title: 'Role', enum: ['dev', 'ops', 'pm'] },
+            },
+          },
+        },
+      },
+    }
+    table.uiSchema = {
+      users: { widget: 'array-table' },
+      'users[].nick': { width: 160 },
+      'users[].age': { width: 96, align: 'right' },
+      'users[].role': { width: 120 },
+    }
+    table.initialValues = {
+      users: [
+        { nick: 'Alice', age: 28, role: 'dev' },
+        { nick: 'Bob', age: 32, role: 'ops' },
+      ],
+    }
+    const out = document.getElementById('sf-table-enhance-output')
+    const report = (label) => {
+      out.textContent = `${label}: ${JSON.stringify(table.getValues())} (dirty=${table.dirty})`
+    }
+    table.addEventListener('oas-paste', (e) => {
+      const detail = e.detail
+      report(
+        `oas-paste from row ${detail.startRow + 1}, column ${detail.startColumn + 1}: filled ${detail.rows} rows × ${detail.columns} columns` +
+          (detail.truncated ? ' (truncated to maxItems)' : ''),
+      )
+    })
+    document.getElementById('sf-table-enhance-values')?.addEventListener('click', () => report('getValues()'))
   })
 
   onUpgraded(document.getElementById('sf-layout'), () => {
@@ -773,6 +895,33 @@ onMounted(() => {
       })
       transform.addEventListener('oas-submit', (e) => {
         out.textContent = `oas-submit (after transform): ${JSON.stringify(e.detail.values)}`
+      })
+    })
+  })
+
+  // ---- async conversion (convert returns a Promise) ----
+  onUpgraded(document.getElementById('sf-transform-async'), () => {
+    void import('@oas-ui/ui/form/schema-form').then(({ registerSchemaConverter }) => {
+      // Simulated rate API: resolves after 600ms; the field keeps the host value during the stale window
+      registerSchemaConverter(
+        'asyncRate',
+        (value) => new Promise((resolve) => setTimeout(() => resolve(String(Math.round(Number(value) * 7.2))), 600)),
+      )
+      const form = document.getElementById('sf-transform-async')
+      form.schema = { type: 'object', properties: { usd: { type: 'number', title: 'USD amount (converted to cents)' } } }
+      form.uiSchema = { usd: { convert: 'asyncRate' } }
+      form.initialValues = { usd: 10 }
+      const out = document.getElementById('sf-transform-async-output')
+      out.textContent = 'Converting… (the field temporarily shows the host value)'
+      setTimeout(() => {
+        out.textContent = `Converted: ${JSON.stringify(form.getValues())}`
+      }, 900)
+      document.getElementById('sf-transform-async-rerun')?.addEventListener('click', () => {
+        out.textContent = 'Converting… (the new value lands after 600ms)'
+        form.setValues({ usd: Math.round(Math.random() * 90 + 10) })
+        setTimeout(() => {
+          out.textContent = `Converted: ${JSON.stringify(form.getValues())}`
+        }, 900)
       })
     })
   })

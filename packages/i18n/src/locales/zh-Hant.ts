@@ -734,6 +734,11 @@ export const zhHant: LocaleMessages = {
   'schemaForm.rowDuplicated': '已複製第 {index} 行',
   'schemaForm.rowMoved': '第 {from} 行已移至第 {to} 行',
   'schemaForm.tableLabel': '資料表格',
+  'schemaForm.resizeColumn': '調整欄寬',
+  'schemaForm.reorderColumn': '拖曳調整欄順序',
+  'schemaForm.columnsReordered': '{column} 欄已調整順序',
+  'schemaForm.pasted': '已貼上 {rows} 列 × {cols} 欄',
+  'schemaForm.pasteTruncated': '貼上內容超過上限，已截斷到 {max} 列',
   // matrix / rank
   'matrix.group': '矩陣題',
   'matrix.requiredAll': '請為每一列選擇一項',

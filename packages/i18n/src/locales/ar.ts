@@ -729,6 +729,11 @@ export const ar: LocaleMessages = {
   'schemaForm.rowDuplicated': 'تم تكرار الصف {index}',
   'schemaForm.rowMoved': 'تم نقل الصف {from} إلى الصف {to}',
   'schemaForm.tableLabel': 'جدول بيانات',
+  'schemaForm.resizeColumn': 'ضبط عرض العمود',
+  'schemaForm.reorderColumn': 'اسحب لإعادة ترتيب الأعمدة',
+  'schemaForm.columnsReordered': 'تم تغيير ترتيب العمود {column}',
+  'schemaForm.pasted': 'تم لصق {rows} صف × {cols} عمود',
+  'schemaForm.pasteTruncated': 'يتجاوز اللصق الحد، تم الاقتصار على {max} صفوف',
   // matrix / rank
   'matrix.group': 'سؤال مصفوفة',
   'matrix.requiredAll': 'يرجى الإجابة عن كل صف',

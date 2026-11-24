@@ -732,6 +732,11 @@ export const hi: LocaleMessages = {
   'schemaForm.rowDuplicated': 'पंक्ति {index} डुप्लिकेट की गई',
   'schemaForm.rowMoved': 'पंक्ति {from} को पंक्ति {to} पर ले जाया गया',
   'schemaForm.tableLabel': 'डेटा तालिका',
+  'schemaForm.resizeColumn': 'स्तंभ चौड़ाई समायोजित करें',
+  'schemaForm.reorderColumn': 'स्तंभ क्रम बदलने के लिए खींचें',
+  'schemaForm.columnsReordered': 'स्तंभ क्रम बदला गया: {column}',
+  'schemaForm.pasted': '{rows} पंक्तियाँ × {cols} स्तंभ चिपकाए गए',
+  'schemaForm.pasteTruncated': 'चिपकाया गया डेटा सीमा से अधिक है, {max} पंक्तियों तक सीमित',
   // matrix / rank
   'matrix.group': 'मैट्रिक्स प्रश्न',
   'matrix.requiredAll': 'कृपया प्रत्येक पंक्ति का उत्तर दें',

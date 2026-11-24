@@ -472,17 +472,39 @@ function formatDate(value: unknown, format: string): string | null {
   return out
 }
 
-/** 日期加减（单位冻结 day / hour / minute；未知单位 devWarn 并返回原时间戳） */
+/** 日期加减（单位 day / hour / minute / month；未知单位 devWarn 并返回原时间戳） */
 function dateAdd(value: unknown, amount: number, unit: string): number | null {
   const date = toDate(value)
   if (!date) return null
   if (Number.isNaN(amount)) return date.getTime()
+  if (unit === 'month') return addMonths(date, Math.trunc(amount))
   const unitMs = unit === 'day' ? 86_400_000 : unit === 'hour' ? 3_600_000 : unit === 'minute' ? 60_000 : null
   if (unitMs === null) {
-    warnOnce(`unit:${unit}`, `[oas-schema-form] dateAdd 单位 "${unit}" 不受支持（day / hour / minute），已按原值返回`)
+    warnOnce(
+      `unit:${unit}`,
+      `[oas-schema-form] dateAdd 单位 "${unit}" 不受支持（day / hour / minute / month），已按原值返回`,
+    )
     return date.getTime()
   }
   return date.getTime() + amount * unitMs
+}
+
+/**
+ * 月加减（本地时区日期数学）：**月末钳制**——目标月没有原日号时落到该月最后一天
+ * （1-31 + 1 月 → 2-28/29，闰年 2-29；负向同样生效），时分秒与毫秒保留。
+ */
+function addMonths(date: Date, months: number): number {
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const day = date.getDate()
+  const targetMonth = month + months
+  const targetYear = year + Math.floor(targetMonth / 12)
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12
+  // 目标月天数：下个月「第 0 天」= 本月最后一天（本地时区，跨年自动归一）
+  const daysInTarget = new Date(targetYear, normalizedMonth + 1, 0).getDate()
+  const next = new Date(targetYear, normalizedMonth, Math.min(day, daysInTarget))
+  next.setHours(date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds())
+  return next.getTime()
 }
 
 /** 比较：两侧同为数字按数值，其余按字符串（写死，避开 "9" > "100" 陷阱） */

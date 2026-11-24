@@ -252,6 +252,29 @@ describe('expr 冻结函数库（20 个）', () => {
     expect(run('dateAdd({ts}, 1, "week")', { ts: base })).toBe(base)
     expect(run('dateAdd("not-a-date", 1, "day")')).toBeNull()
   })
+
+  it('dateAdd month：月加减按本地日期数学（保留日期与时分秒）', () => {
+    const local = (y: number, m: number, d: number, h = 9, min = 5, s = 7): number =>
+      new Date(y, m - 1, d, h, min, s).getTime()
+    expect(run('dateAdd({ts}, 1, "month")', { ts: local(2026, 11, 15) })).toBe(local(2026, 12, 15))
+    expect(run('dateAdd({ts}, 2, "month")', { ts: local(2026, 11, 15) })).toBe(local(2027, 1, 15))
+    expect(run('dateAdd({ts}, -3, "month")', { ts: local(2026, 2, 10) })).toBe(local(2025, 11, 10))
+  })
+
+  it('dateAdd month：月末钳制到目标月最后一天（含闰年 2 月）', () => {
+    const local = (y: number, m: number, d: number): number => new Date(y, m - 1, d, 12, 0, 0).getTime()
+    // 平年：1-31 + 1 月 → 2-28；闰年：1-31 + 1 月 → 2-29
+    expect(run('dateAdd({ts}, 1, "month")', { ts: local(2023, 1, 31) })).toBe(local(2023, 2, 28))
+    expect(run('dateAdd({ts}, 1, "month")', { ts: local(2024, 1, 31) })).toBe(local(2024, 2, 29))
+    // 30 → 31 天长月不钳制；31 → 30 天月钳制；跨年
+    expect(run('dateAdd({ts}, 1, "month")', { ts: local(2023, 3, 31) })).toBe(local(2023, 4, 30))
+    expect(run('dateAdd({ts}, 1, "month")', { ts: local(2023, 12, 31) })).toBe(local(2024, 1, 31))
+    // 负向同样钳制：3-31 减 1 月 → 2-28（平年）/ 2-29（闰年）
+    expect(run('dateAdd({ts}, -1, "month")', { ts: local(2023, 3, 31) })).toBe(local(2023, 2, 28))
+    expect(run('dateAdd({ts}, -1, "month")', { ts: local(2024, 3, 31) })).toBe(local(2024, 2, 29))
+    // 小数 / 非整数月：按整数月截断（与 day/hour/minute 的加法口径一致）
+    expect(run('dateAdd({ts}, 1.9, "month")', { ts: local(2023, 1, 15) })).toBe(local(2023, 2, 15))
+  })
 })
 
 describe('expr 排除项一律编译期报错', () => {
