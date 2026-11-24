@@ -43,14 +43,20 @@
       "selected-id": "Selected list id (controlled); defaults to the isDefault item, otherwise the first item",
       "regions": "Region data (host-injected contract): JSON array [{ name, code?, children? }], up to three levels; the component ships no administrative-division dataset",
       "disabled": "Disables all inputs and actions (including list selection and add)",
-      "readonly": "Read-only: focusable and copyable, but cannot edit / submit / select"
+      "readonly": "Read-only: focusable and copyable, but cannot edit / submit / select",
+      "show-delete": "Renders a Delete button on each address card; clicking emits oas-delete (the confirm dialog is composed by the host with oas-popconfirm)",
+      "saving": "Save busy state: save button disabled with aria-busy + spinner (orthogonal to disabled; set while the host is submitting)",
+      "deleting": "Delete busy state: delete buttons disabled with aria-busy + spinner (orthogonal to disabled; set while the host is deleting)",
+      "value-format": "Region value tier: name (default, outputs names) / code (outputs region codes, nodes without code fall back to the name; prefill matches by code)"
     },
     "events": {
       "oas-add": "Emitted when “Add address” is clicked in list mode; no detail",
       "oas-change": "Emitted on field input or region change; detail { field, value } (value is the current address draft)",
       "oas-invalid": "Emitted when submit validation fails; detail { fields } (field names), marks errors and focuses the first invalid field",
       "oas-submit": "Emitted when edit-mode validation passes; detail { value } (full address object)",
-      "oas-select": "Emitted when an address is selected in list mode; detail { id, item }"
+      "oas-select": "Emitted when an address is selected in list mode; detail { id, item }",
+      "oas-edit": "Emitted when the row Edit button is clicked, detail { id, item } — the host switches to the editor accordingly",
+      "oas-delete": "Emitted when the row Delete button is clicked (requires show-delete), detail { id, item } — the confirm dialog is composed by the host"
     },
     "slots": {}
   },
@@ -425,7 +431,9 @@
       "max-active": "Maximum on-screen items (0 = unlimited, default 0)",
       "paused": "Controlled pause (present = paused; CSS animations and scheduling timers freeze together)",
       "height": "Stage height (plain numbers are px, CSS lengths accepted; default 200px)",
-      "accessible": "Boolean; when present the barrage is exposed to screen readers (`role=\"log\"` + `aria-live=\"polite\"`); `aria-hidden` by default"
+      "accessible": "Boolean; when present the barrage is exposed to screen readers (`role=\"log\"` + `aria-live=\"polite\"`); `aria-hidden` by default",
+      "items": "Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute",
+      "auto-play": "Loop playback: once the declared queue drains the items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good)"
     },
     "events": {
       "oas-item-click": "Dispatched when an item is clicked"
@@ -1306,11 +1314,14 @@
       "list": "Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form",
       "trigger-text": "Trigger label (defaults to i18n `coupon.select`; shows the selected amount once picked)",
       "open": "Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change)",
-      "z-index": "Overlay stacking level (numeric value added on top of `--oas-z-index-base`; default keeps the `--oas-z-modal` step, same shape as modal / drawer)"
+      "z-index": "Overlay stacking level (numeric value added on top of `--oas-z-index-base`; default keeps the `--oas-z-modal` step, same shape as modal / drawer)",
+      "multiple": "Multiple mode: options become checkboxes; every toggle dispatches an array detail `{ codes, coupons }` and the sheet stays open; default single-select unchanged",
+      "show-count": "Adds a count pill to the available / unavailable group titles"
     },
     "events": {
-      "oas-select": "Dispatched when an available coupon is selected with `{ code, coupon }`, then the sheet closes",
-      "oas-open-change": "Dispatched on interaction or imperative open/close with `{ open }` (attribute writes are silent)"
+      "oas-select": "Dispatched when an available coupon is picked. Single mode (default) detail `{ code, coupon }` and the sheet closes; multiple mode detail `{ codes, coupons }` (arrays, sheet stays open); the No-coupon exit dispatches an empty selection — single `{ code: empty string, coupon: null }` / multiple `{ codes: [], coupons: [] }`",
+      "oas-open-change": "Dispatched on interaction or imperative open/close with `{ open }` (attribute writes are silent)",
+      "oas-clear": "Dispatched when the No-coupon exit is clicked (immediately followed by an empty-selection oas-select; the two events come as a pair)"
     },
     "slots": {},
     "methods": {
@@ -3304,7 +3315,8 @@
       "random": "Shuffle the digit key order (secure keypad); reorders when toggled",
       "layout": "Keyboard layout: `number` (default) / `plate` (license plate: province + letters + digits)",
       "disabled": "Disabled: all keys disabled and no events are dispatched",
-      "readonly": "Readonly: keys stay focusable but the value is locked; `oas-done` still fires"
+      "readonly": "Readonly: keys stay focusable but the value is locked; `oas-done` still fires",
+      "extra-key": "Extra keys attached to the right side of the digit area (an ID-card X key and the like) — a single character or a JSON string array (at most 2, extras truncated with a devWarn); the 0 key narrows automatically; extra characters join the physical-keyboard whitelist"
     },
     "events": {
       "oas-input": "A character is appended, `detail: { value, key }`",
@@ -3516,7 +3528,9 @@
       "pattern": "Per-character regex constraint (overrides type filter; invalid regex warns and falls back)",
       "autofocus": "Focus the first empty cell on first connection",
       "auto-submit": "Auto-submit when full (calls requestSubmit on the closest form; no-op without one)",
-      "success": "Success green border (error wins when both set)"
+      "success": "Success green border (error wins when both set)",
+      "info": "Neutral hint under the cells (secondary channel); the error message wins when error-info is also set; linked to cells via aria-describedby",
+      "error-info": "Error message under the cells (danger channel); takes precedence over info; the message slot is an aria-live=polite region"
     },
     "events": {
       "oas-change": "Commit on blur: dispatched when focus leaves the component and the value differs from the focus-time snapshot, `detail: { value }`",
@@ -3972,7 +3986,9 @@
       "prefix-text": "Prefix text (e.g. a currency symbol)",
       "suffix-text": "Suffix text (e.g. a unit)",
       "duration": "Per-column roll duration (ms, default 600); invalid or non-positive falls back to the default",
-      "live": "Boolean; when present the screen-reader live region is `polite` (off by default to avoid frequent announcements)"
+      "live": "Boolean; when present the screen-reader live region is `polite` (off by default to avoid frequent announcements)",
+      "direction": "Roll direction: up (always upward) / down (always downward); default keeps the shortest path (unchanged), invalid values fall back with a devWarn",
+      "stop-order": "Per-digit stopping: each column gets an increasing delay (stagger = duration × 12%), settling left to right"
     },
     "events": {},
     "slots": {},
@@ -3981,6 +3997,10 @@
       "--oas-rolling-text-height": "Column height",
       "--oas-rolling-text-font": "Font size",
       "--oas-rolling-text-separator-color": "Color of non-digit columns (decimal point / signs)"
+    },
+    "methods": {
+      "start": "Replays a full roll for the current value (columns first drop to zero / char columns empty, then roll to the target)",
+      "reset": "Stops any roll in progress and renders the current value instantly without transitions"
     }
   },
   "oas-safe-area": {
@@ -4190,7 +4210,8 @@
       "open": "Controlled visibility (present = open; host writes are silent)",
       "heading": "Panel heading; defaults to i18n `shareSheet.title`",
       "cancel-text": "Cancel button copy; defaults to i18n `shareSheet.cancel`",
-      "channels": "Channel JSON array `[{ key, name, icon? }]`: `icon` is an `oas-icon` name; missing icons fall back to the first character; invalid JSON is ignored with one dev warning"
+      "channels": "Channel JSON array `[{ key, name, icon? }]`: `icon` is an `oas-icon` name; missing icons fall back to the first character; invalid JSON is ignored with one dev warning",
+      "description": "Descriptive line under the heading (share notes and the like; not rendered by default)"
     },
     "events": {
       "oas-select": "Dispatched when a channel is clicked; the sheet then closes automatically",

@@ -43,14 +43,20 @@
       "selected-id": "列表选中项 id（受控）；缺省选 isDefault 项，否则选第一项",
       "regions": "省市区数据（宿主注入契约）：JSON 数组 [{ name, code?, children? }]，最多三级；组件不内置行政区划数据",
       "disabled": "禁用全部输入与操作（含列表单选与新增）",
-      "readonly": "只读：可聚焦与复制，不可编辑 / 提交 / 选择"
+      "readonly": "只读：可聚焦与复制，不可编辑 / 提交 / 选择",
+      "show-delete": "列表卡显示「删除」钮；点击派发 oas-delete（确认弹层归宿主用 oas-popconfirm 组合）",
+      "saving": "保存忙态：保存按钮禁用 + aria-busy + spinner（与 disabled 正交，宿主提交期间置位）",
+      "deleting": "删除忙态：删除钮禁用 + aria-busy + spinner（与 disabled 正交，宿主删除期间置位）",
+      "value-format": "地区值输出档位：name（默认，输出名称）/ code（输出区划编码，缺 code 的节点回退名称；回填按 code 匹配）"
     },
     "events": {
       "oas-add": "列表模式点击「新增地址」时派发，无 detail",
       "oas-change": "字段输入或地区选择变化时派发，detail { field, value }（value 为当前地址草稿）",
       "oas-invalid": "提交校验失败时派发，detail { fields }（字段名数组），同时标记错误并聚焦首个错误字段",
       "oas-submit": "编辑模式校验通过时派发，detail { value }（完整地址对象）",
-      "oas-select": "列表模式选中地址项时派发，detail { id, item }"
+      "oas-select": "列表模式选中地址项时派发，detail { id, item }",
+      "oas-edit": "列表行「编辑」钮点击派发，detail { id, item }——宿主据此进编辑模式",
+      "oas-delete": "列表行「删除」钮点击派发（需 show-delete 在场），detail { id, item }——确认弹层归宿主组合"
     },
     "slots": {}
   },
@@ -412,7 +418,9 @@
       "max-active": "同屏最大条数（0 = 不限，默认 0）",
       "paused": "受控暂停（在场=暂停；CSS 动画与排期计时同时冻结）",
       "height": "舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px）",
-      "accessible": "布尔，存在时弹幕进入读屏（`role=\"log\"` + `aria-live=\"polite\"`）；缺省 `aria-hidden`"
+      "accessible": "布尔，存在时弹幕进入读屏（`role=\"log\"` + `aria-live=\"polite\"`）；缺省 `aria-hidden`",
+      "items": "声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute）",
+      "auto-play": "循环播放：声明条目队列耗尽后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play）"
     },
     "events": {
       "oas-item-click": "点击弹幕时派发"
@@ -1260,11 +1268,14 @@
       "list": "选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态",
       "trigger-text": "触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额）",
       "open": "弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）",
-      "z-index": "浮层层级（数值叠加在 `--oas-z-index-base` 之上；缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态）"
+      "z-index": "浮层层级（数值叠加在 `--oas-z-index-base` 之上；缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态）",
+      "multiple": "多选模式：选项变 checkbox，每次勾选/取消派发数组 detail `{ codes, coupons }` 且弹层不自动关闭；缺省单选不变",
+      "show-count": "可用 / 不可用分组标题带计数胶囊"
     },
     "events": {
-      "oas-select": "选中可用券时派发，detail `{ code, coupon }`，随后关闭弹层",
-      "oas-open-change": "交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发）"
+      "oas-select": "选中可用券时派发。单选（默认）detail `{ code, coupon }` 并随后关闭弹层；multiple 模式 detail `{ codes, coupons }`（数组，弹层不关）；「不使用优惠券」出口派发空选——单选 `{ code: 空串, coupon: null }` / 多选 `{ codes: [], coupons: [] }`",
+      "oas-open-change": "交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发）",
+      "oas-clear": "点击「不使用优惠券」出口派发（紧随其后是空选 oas-select，两个事件成对）"
     },
     "slots": {},
     "methods": {
@@ -3161,7 +3172,8 @@
       "random": "数字键随机乱序（安全键盘）；切换时重新排列",
       "layout": "键盘布局：`number`（默认）/ `plate`（车牌号：省份简称 + 字母 + 数字）",
       "disabled": "禁用：按键全部禁用且不派发事件",
-      "readonly": "只读：按键可聚焦但不改动值，`oas-done` 仍可派发"
+      "readonly": "只读：按键可聚焦但不改动值，`oas-done` 仍可派发",
+      "extra-key": "附加键（挂数字区右侧，如身份证 X 键）——单个字符或 JSON 字符串数组（最多 2 个，超出截断并 devWarn 一次）；0 键自动收窄让位；附加字符并入物理键盘白名单"
     },
     "events": {
       "oas-input": "追加一个字符，`detail: { value, key }`",
@@ -3373,7 +3385,9 @@
       "pattern": "逐字符正则约束（覆盖 type 过滤；非法正则告警回落）",
       "autofocus": "首次连接聚焦首个空格",
       "auto-submit": "填满自动提交（找最近 form 调 requestSubmit；无 form 时 no-op）",
-      "success": "成功态绿边框（error 优先）"
+      "success": "成功态绿边框（error 优先）",
+      "info": "格子下方中性提示（次级色通道）；与 error-info 同时在场时错误优先；文案经 aria-describedby 关联到各格",
+      "error-info": "格子下方错误说明（danger 色通道）；优先于 info；message 槽为 aria-live=polite 活区"
     },
     "events": {
       "oas-change": "失焦提交：组件失焦且值相对获焦快照变化时派发，`detail: { value }`",
@@ -3795,7 +3809,9 @@
       "prefix-text": "前缀文本（如货币符号）",
       "suffix-text": "后缀文本（如单位）",
       "duration": "单列翻滚时长（ms，默认 600）；非法或非正回落默认",
-      "live": "布尔，存在时读屏活区为 `polite`（默认 off，避免频繁播报）"
+      "live": "布尔，存在时读屏活区为 `polite`（默认 off，避免频繁播报）",
+      "direction": "翻滚方向：up（恒向上）/ down（恒向下）；缺省最短路径（现状不变），非法值回落最短路径并 devWarn 一次",
+      "stop-order": "逐位停：各列按位次递增延迟（列间 stagger = 时长 × 12%），从左到右依次停稳"
     },
     "events": {},
     "slots": {},
@@ -3804,6 +3820,10 @@
       "--oas-rolling-text-height": "单列高度",
       "--oas-rolling-text-font": "字号",
       "--oas-rolling-text-separator-color": "小数点 / 符号等非数字列颜色"
+    },
+    "methods": {
+      "start": "按当前 value 重新播放一次完整翻滚（各列先落零档 / 字符列置空，再翻到目标）",
+      "reset": "清掉进行中的翻滚与延迟，无过渡直接呈现当前 value"
     }
   },
   "oas-safe-area": {
@@ -3999,7 +4019,8 @@
       "open": "受控显隐（在场=展开；宿主直接写入静默）",
       "heading": "面板标题；缺省走 i18n `shareSheet.title`",
       "cancel-text": "取消按钮文案；缺省走 i18n `shareSheet.cancel`",
-      "channels": "渠道 JSON 数组 `[{ key, name, icon? }]`：`icon` 为 `oas-icon` 图标名，缺省用名称首字符占位；非法 JSON 忽略并 dev 告警一次"
+      "channels": "渠道 JSON 数组 `[{ key, name, icon? }]`：`icon` 为 `oas-icon` 图标名，缺省用名称首字符占位；非法 JSON 忽略并 dev 告警一次",
+      "description": "标题下方描述文案（分享说明等；缺省不渲染）"
     },
     "events": {
       "oas-select": "点击渠道时派发，随后自动关闭",

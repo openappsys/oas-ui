@@ -871,6 +871,8 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   coupon: [
     ['oas-coupon[list] [part="trigger"]', 'domclick', 'DOM click 触发按钮展开弹层 → oas-open-change'],
     ['oas-coupon[list] input[type="radio"]', 'domclick', 'DOM click 首个可用券 radio → oas-select（选中即关闭）'],
+    ['oas-coupon[list] [part="trigger"]', 'domclick', '再次展开弹层（分组 / 出口探针）'],
+    ['oas-coupon[list] [part="clear-entry"]', 'domclick', '点「不使用优惠券」出口 → oas-clear + 空选 oas-select'],
   ],
   sku: [
     ['#sku-basic [part="option"]', 'domclick', 'DOM click 基础内嵌 demo 首个规格选项 → oas-change'],
@@ -887,6 +889,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#address-validate-demo input[name="name"]', 'fill:张三', '输入姓名 → oas-change'],
     ['#address-validate-demo input[name="phone"]', 'fill:13800000000', '补齐电话'],
     ['#address-validate-demo button[type="submit"]', 'click', '校验通过 → oas-submit'],
+    ['#address-edit-delete-demo [part="card-edit"]', 'domclick', '点行内编辑钮 → oas-edit'],
+    [
+      '#address-edit-delete-demo [part="card-delete"]',
+      'domclick',
+      '点行内删除钮 → oas-delete（确认归宿主 popconfirm）',
+    ],
+    ['#address-validator-demo button[type="submit"]', 'click', 'validator 拉黑手机号 → oas-invalid'],
   ],
   category: [
     ['#category-demo .node[data-key="home"]', 'click', '点左侧类目 → oas-change'],
