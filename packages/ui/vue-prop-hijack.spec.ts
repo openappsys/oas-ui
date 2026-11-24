@@ -100,6 +100,10 @@ interface ContractEntry {
 
 const CONTRACT: ContractEntry[] = [
   { page: 'index-bar', tag: 'oas-index-bar', attrContract: { sections: 'array' } },
+  // 交易链路：items / status-map 是属性 + property 双通道（list 型数据），
+  // 验证 Vue SPA 重渲染后 attribute 仍在（没被 property 赋值抢走）且值仍是合法 JSON
+  { page: 'cart', tag: 'oas-cart', attrContract: { items: 'array' } },
+  { page: 'order-card', tag: 'oas-order-card', attrContract: { items: 'array', 'status-map': 'object' } },
   { page: 'cascader', tag: 'oas-cascader', attrContract: { options: 'array', value: 'array' } },
   { page: 'select', tag: 'oas-select', attrContract: { options: 'array' } },
   { page: 'toggle-group', tag: 'oas-toggle-group', attrContract: { items: 'array' } },

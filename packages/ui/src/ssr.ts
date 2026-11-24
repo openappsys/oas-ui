@@ -259,6 +259,9 @@ export { OASInvoice } from './commerce/invoice/oas-invoice.js'
 export { OASECard } from './commerce/ecard/oas-ecard.js'
 export { OASCategory } from './commerce/category/oas-category.js'
 export { OASTimeSelect } from './commerce/time-select/oas-time-select.js'
+export { OASCart } from './commerce/cart/oas-cart.js'
+export { OASOrderCard } from './commerce/order-card/oas-order-card.js'
+export { OASProductCard } from './commerce/product-card/oas-product-card.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'

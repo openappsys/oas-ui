@@ -943,6 +943,15 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#ct-open', 'domclick', '打开幕帘'],
     ['oas-curtain[open] [part="close"]', 'domclick', '点关闭钮 → oas-close{reason:button}'],
   ],
+  // —— 交易链路三件：交互控件都在 shadow 内，通用探针够不到，按 part 定点 ——
+  cart: [
+    ['#cart-basic [part="item-check"]', 'click:n1', '点第二件勾选框 → oas-change'],
+    ['#cart-basic [part="plus"]', 'click', '点加号 → oas-change（数量 +1）'],
+    ['#cart-basic [part="item-body"]', 'click', '点条目主体 → oas-item-click'],
+    ['#cart-delete-button [part="remove"]', 'click', '点行尾删除钮 → oas-remove + oas-change'],
+    ['#cart-delete-swipe [part="swipe-remove"]', 'click', '点滑动删除钮（滑动档常驻 Tab 序）→ oas-remove'],
+  ],
+  'order-card': [['#oc-expand [part="toggle"]', 'click', '点「展开明细」→ oas-toggle']],
 }
 
 /** 真实点击，失败回落 DOM click（隐藏/浮层关闭态下 handler 仍会执行） */
