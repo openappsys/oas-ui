@@ -18,6 +18,14 @@
 | **批 5：测试长尾** | drag-start e2e / 模式组 RTL e2e / a11y 生成器断言重构 | 📋 待开发 |
 | **批 6：组件级转正** | coupon z-index / 嵌套极限测试 / barrage RTL 重连与 reduced-motion / drag 惯性 e2e | 📋 待开发 |
 
+## 未发布（新组件能力补强批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **P0 4 条** | submit-bar 安全区+占位 / goods-action loading / address 编辑入口 / address 删除+saving 态 | 📋 待开发 |
+| **P1 7 条** | submit-bar tip / coupon 分组与「不用券」出口 / coupon 多选 / number-keyboard 附加键 / barrage items+auto-play / share-sheet 描述 / address 自定义校验 | 📋 待开发 |
+| **P2 4 条** | rolling-text 方向与手动控制 / pin-input 说明栏 / goods-action 类型与自定义色 / address 区划编码档 | 📋 待开发 |
+
 ## v2.6.9（文档站 SEO：语言机制去跳转化）
 
 | 范围 | 内容 | 状态 |
