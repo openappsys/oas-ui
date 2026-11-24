@@ -99,5 +99,6 @@ onMounted(async () => {
 | `--oas-glass-ring` | `transparent` |
 
 - `open` 为受控属性：组件手势（下滑/遮罩/Esc）只派发 `oas-close`，收起由宿主移除 `open` 完成。
-- 焦点陷阱内置：打开时焦点移到面板内首个可聚焦元素并锁在面板内；safe-area-inset-bottom 自动适配刘海屏手势区。
+- Esc 走共享浮层 Esc 层栈（文档级监听）：不依赖焦点路由——点击面板空白、焦点落 body 后按 Esc 仍能关闭；多层浮层同开时后开者先关；`open` 态才压栈，关闭/断开连接即退栈。
+- 焦点陷阱内置：打开时焦点移到面板内首个可聚焦元素；浏览器首帧焦点时序异常（如 WebKit）时自动重试一次，仍失败则聚焦面板容器（`tabindex="-1"`）——焦点保证落在面板内并锁在面板内；safe-area-inset-bottom 自动适配刘海屏手势区。
 - `passive` 模式面向浮层组件的 PC 形态结构复用（select/date-picker 等移动形态的承载底座），单独使用时即静态面板。
