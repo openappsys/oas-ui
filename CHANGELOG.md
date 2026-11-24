@@ -4,6 +4,19 @@
 
 ### 新增
 
+**新组件能力补强批（15 条既有组件小增量，全部向后兼容：缺省/未启用路径与现状逐字节等价）**
+
+- **oas-submit-bar**：底部安全区（栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`，刘海屏/手势条自动避让）+ `placeholder` 占位开关（宿主把栏体覆写为 fixed 时渲染等高占位块防页尾遮挡，sticky 布局无需开启）+ `tip` / `tip-icon` 提示行（运费/发票高频位；图标走注册表查表，未注册告警一次并跳过图标、文案照常可读）。单测 +5；zh/en 文档补「提示行」「安全区与占位」段与 demo。
+- **oas-goods-action**：`actions[].loading`（禁用点击 + `aria-busy` + spinner，与 `disabled` 正交可并存）+ `actions[].type` 视觉档位（default/primary/success/warning/danger，缺省按 `primary` 标志、未写 type 渲染与现状等价）+ `items[].color` 自定义色（预设名走 `--oas-preset-<name>-text` token 安全档，其余按宿主声明透传；上色后 base/hover/按下态钉在该色）。单测 +4；zh/en 文档补「主按钮 loading / 视觉档位」「自定义图标色」段与 demo。
+- **oas-address**：列表行编辑钮（`oas-edit { id, item }`，宿主据此进编辑模式）+ `show-delete` / `oas-delete { id, item }`（确认弹层归宿主 `oas-popconfirm` 组合，README 写配方）+ `saving` / `deleting` 忙态（保存钮/删除钮禁用 + `aria-busy` + spinner，与 disabled 正交）+ `validator` function property（`(key, value) => 错误串`，失败并入 `oas-invalid` 与字段标记；抛错 devWarn 一次不锁死表单）+ `value-format="name|code"`（缺省 name 与现状等价；code 档提交与 change 输出 `regions` 的区划编码、回填按 code 匹配）。卡结构微调：操作钮独立出 label（不误触选中）。单测 +6；zh/en 文档补「行编辑与删除」「忙态」「validator」「value-format」段与 demo。
+- **oas-coupon**：可用/不可用分组标题（空组不渲染）+ `show-count` 计数胶囊 + 「不使用优惠券」出口（`oas-clear` + 空选 `oas-select` 成对派发后关闭）+ `multiple` 多选（checkbox + 数组 detail `{ codes, coupons }`、弹层不自动关、触发按钮显示已选张数；缺省单选不变）。列表按签名重建、仅勾选态原位同步（多选连续点击不丢节点）。i18n +4 键 ×16 语言；单测新增 8；zh/en 文档补「分组计数出口」「多选」段与 demo。
+- **oas-number-keyboard**：`extra-key` 附加键（数字区右侧，身份证 X 键等；单字符或 JSON 数组，最多 2 个超出截断告警；0 键自动收窄让位；附加字符并入物理键盘白名单）。单测新增 7；zh/en 文档补「附加键」段与 demo。
+- **oas-barrage**：`items` 声明式数据（JSON 数组，语义对齐 `addBatch`——属性变化只追加新条目按身份去重；同名 property 通道赋数组自动反射）+ `auto-play` 循环（只循环声明数据，`clear()` 不清声明源）。单测新增 7；zh/en 文档补「声明式数据与循环」段与 demo。
+- **oas-share-sheet**：`description` 标题描述 + `channels[].description` 渠道描述（均缺省不渲染；detail.channel 完整回传）。单测新增 3；zh/en 文档补「标题描述」「渠道描述」段与 demo。
+- **oas-rolling-text**：`direction`（up/down 恒向翻滚，缺省最短路径不变）+ `stop-order` 逐位停（列间 stagger = 时长 × 12%）+ `start()` / `reset()` 手动控制（重播完整翻滚 / 无过渡静态呈现）。单测新增 8；zh/en 文档补「方向与逐位停」「手动控制」段与 demo。
+- **oas-pin-input**：`info` / `error-info` 语义说明栏（统一 message 槽，错误优先；`aria-describedby` 关联各格 + `aria-live="polite"` 活区）。单测新增 5；zh/en 文档补「语义说明栏」段与 demo。
+- i18n 合计 +6 键（16 语言全量同步）；全批单测新增 53；zh/en 文档全部新属性带 demo 块；api 语料与 demo-coverage 探针同步。
+
 **schema-form V2 批 1：数组体系**
 
 - **oas-array-table（form 族，行内编辑表格容器）**：对象数组用 `uiSchema.widget: 'array-table'` 渲染成行内编辑表格——**行模板仍由 schema-form 渲染**（每个单元格是一个 `form-item`，`data-schema-key` / 行内字段名 / 行容器 `[data-oas-form-list-item]` 契约齐全），表格只多做 ARIA 表格语义（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 二维布局 + 表头 + 行操作列（增 / 删 / 复制 / 上移 / 下移，可访问名走 i18n 且可用 `*-text` 覆盖）。列定义来自 `items.properties` 声明顺序 + 列级注解 `width`（数字 px / 字符串轨道）/ `align` / `hidden`（隐藏视觉但保留单元格与值）；`hidden` 列同列头一起不占轨道；零行时隐藏表头显示表体空态。行 wrapper 与单元格在 light DOM（主表只收集 light DOM），几何以行内样式承载（shadow 样式够不到 light DOM，表头与行用同一份轨道串保证对齐）；不使用原生 `<table>`（slot 产不出 `td`）。name 重编号与 form-list 共用同一实现（`form/shared/list-row-ops`）。
