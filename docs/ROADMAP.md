@@ -10,6 +10,14 @@
 | **批 2：V2 数据流** | convert/transform 双钩子 / 异步选项加载窄面 / 表达式函数库扩至 ~20 | 📋 待开发（设计稿先行） |
 | **批 3：组件完善** | cropper 平移 / SKU 弹层 / drag 惯性 / coupon 层叠 / barrage 重连 | 📋 待开发 |
 
+## 未发布（V2 增强与长尾清欠批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **批 4：schema-form V2 增强** | array-table 列宽拖拽 / 列序重排 / 跨行粘贴 / 值联动 value / 异步 convert / dateAdd month / 切换不丢数据 | 📋 待开发 |
+| **批 5：测试长尾** | drag-start e2e / 模式组 RTL e2e / a11y 生成器断言重构 | 📋 待开发 |
+| **批 6：组件级转正** | coupon z-index / 嵌套极限测试 / barrage RTL 重连与 reduced-motion / drag 惯性 e2e | 📋 待开发 |
+
 ## v2.6.9（文档站 SEO：语言机制去跳转化）
 
 | 范围 | 内容 | 状态 |
