@@ -1971,8 +1971,8 @@
   },
   "oas-goods-action": {
     "attrs": {
-      "items": "icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射",
-      "actions": "主按钮 JSON 数组 `[{ key, text, primary?, disabled? }]`",
+      "items": "icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active?, color? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射；`color` 预设名走 `--oas-preset-<name>-text` token，其余按宿主声明透传",
+      "actions": "主按钮 JSON 数组 `[{ key, text, primary?, disabled?, loading?, type? }]`；`loading` 禁用点击 + `aria-busy` + spinner（与 disabled 正交）；`type` 视觉档位 default / primary / success / warning / danger，缺省按 primary 标志",
       "label": "导航区可访问名称，缺省走 i18n `goodsAction.label`",
       "disabled": "全局禁用（兼容 config-provider 注入禁用）"
     },

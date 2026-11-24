@@ -207,4 +207,79 @@ describe('oas-goods-action', () => {
     expect(css).not.toMatch(/margin-(left|right)/)
     expect(css).not.toMatch(/padding-(left|right)/)
   })
+
+  it('actions[].loading：禁用点击 + aria-busy + spinner，且与 disabled 正交', () => {
+    const el = mount({
+      items: ITEMS,
+      actions: JSON.stringify([{ key: 'buy', text: '立即购买', loading: true }]),
+    })
+    let fired = 0
+    el.addEventListener('oas-action-click', () => {
+      fired++
+    })
+    const btn = actionButtons(el)[0]!
+    expect(btn.disabled).toBe(true)
+    expect(btn.getAttribute('aria-busy')).toBe('true')
+    expect(btn.querySelector<HTMLElement>('[part="button-spinner"]')).not.toBeNull()
+    expect(btn.querySelector<HTMLElement>('[part="button-spinner"]')!.hidden).toBe(false)
+    btn.click()
+    expect(fired).toBe(0)
+    // loading 移除后恢复可用且无 spinner
+    el.actions = [{ key: 'buy', text: '立即购买' }] as GoodsActionButton[]
+    const restored = actionButtons(el)[0]!
+    expect(restored.disabled).toBe(false)
+    expect(restored.hasAttribute('aria-busy')).toBe(false)
+    expect(restored.querySelector<HTMLElement>('[part="button-spinner"]')!.hidden).toBe(true)
+  })
+
+  it('loading 与 disabled 同时在场：仍是一个按钮，两态标记齐备', () => {
+    const el = mount({
+      actions: JSON.stringify([{ key: 'buy', text: '已售罄', disabled: true, loading: true }]),
+    })
+    const btn = actionButtons(el)[0]!
+    expect(btn.disabled).toBe(true)
+    expect(btn.getAttribute('aria-busy')).toBe('true')
+    expect(btn.getAttribute('data-loading')).toBe('true')
+  })
+
+  it('actions[].type：合法值落 data-type；type=primary 不依赖 primary 标志', () => {
+    const el = mount({
+      actions: JSON.stringify([
+        { key: 'ok', text: '成功', type: 'success' },
+        { key: 'bad', text: '非法', type: 'nope' },
+        { key: 'pri', text: '主色', type: 'primary' },
+        { key: 'dgr', text: '危险', type: 'danger' },
+      ]),
+    })
+    const btns = actionButtons(el)
+    expect(btns[0]!.getAttribute('data-type')).toBe('success')
+    // 非法 type 回落 default（无 type 标记以外的视觉通道）
+    expect(btns[1]!.getAttribute('data-type')).toBe('default')
+    expect(btns[1]!.getAttribute('data-primary')).toBe('false')
+    // 显式 type=primary 等价主色（data-primary 保持原语义不受 type 影响）
+    expect(btns[2]!.getAttribute('data-type')).toBe('primary')
+    expect(btns[2]!.getAttribute('data-primary')).toBe('false')
+    expect(btns[3]!.getAttribute('data-type')).toBe('danger')
+    // 未写 type 时维持现状：default / primary 标志照旧
+    const plain = mount({ actions: ACTIONS })
+    const p = actionButtons(plain)
+    expect(p[0]!.getAttribute('data-type')).toBe('default')
+    expect(p[1]!.getAttribute('data-type')).toBe('primary')
+    expect(p[1]!.getAttribute('data-primary')).toBe('true')
+  })
+
+  it('items[].color：预设名走 preset token，任意色值按宿主声明透传', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { key: 'favorite', color: 'red' },
+        { key: 'custom', label: '自定义', color: '#0b6cff' },
+      ]),
+    })
+    const btns = iconButtons(el)
+    expect(btns[0]!.style.getPropertyValue('--oas-goods-action-item-color')).toBe('var(--oas-preset-red-text)')
+    expect(btns[1]!.style.getPropertyValue('--oas-goods-action-item-color')).toBe('#0b6cff')
+    // 未写 color 不注入变量（缺省通道与现状等价）
+    expect(btns[0]!.getAttribute('data-color')).toBe('true')
+    expect(iconButtons(mount({ items: ITEMS }))[0]!.getAttribute('data-color')).toBe('false')
+  })
 })

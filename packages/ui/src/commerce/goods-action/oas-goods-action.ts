@@ -13,14 +13,20 @@ import { devWarn } from '../../shared/dev-warn.js'
  * 右侧主按钮组（加入购物车 / 立即购买等）。数据通过 JSON 属性驱动，逐项可禁用。
  *
  * 属性（kebab-case）：
- * - `items`：JSON 数组——icon 按钮：`[{ key, label?, icon?, badge?, active? }]`
+ * - `items`：JSON 数组——icon 按钮：`[{ key, label?, icon?, badge?, active?, color? }]`
  *   - `key`：事件标识；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射
  *   - `label`：可访问名称（缺省取内置 key 文案，再回退 key 本身）
  *   - `icon`：图标名（lookupIcon 查表，自定义注册优先）；缺省按内置 key 取内置图标；
  *     未注册的名字告警一次并回退内置图标
  *   - `badge`：非负整数角标；>0 显示，>99 收敛 `99+`
  *   - `active`：收藏类开关项的按下态（`aria-pressed`）
- * - `actions`：JSON 数组——主按钮：`[{ key, text, primary?, disabled? }]`
+ *   - `color`：自定义色——预设名走 `--oas-preset-<name>-text` token（magenta/red/volcano/
+ *     orange/gold/lime/green/cyan/blue/geekblue/purple），其余按宿主声明的色值透传；
+ *     在场时 base / hover / 按下态都钉在该色上（custom 色不被状态色翻掉）
+ * - `actions`：JSON 数组——主按钮：`[{ key, text, primary?, disabled?, loading?, type? }]`
+ *   - `loading`：加载中——禁用点击 + `aria-busy` + spinner，与 `disabled` 正交（可并存）
+ *   - `type`：视觉档位 default / primary / success / warning / danger；缺省按 `primary`
+ *     标志（未写 type 时行为与现状一致）
  * - `label`：导航区可访问名称，缺省走 i18n `goodsAction.label`
  * - `disabled`：全局禁用（兼容 config-provider 注入禁用）
  *
@@ -42,13 +48,21 @@ export interface GoodsActionItem {
   icon?: string
   badge?: number
   active?: boolean
+  /** 自定义色：预设名（magenta/red/…）走 `--oas-preset-<name>-text` token，其余按宿主声明透传 */
+  color?: string
 }
+
+export type GoodsActionButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger'
 
 export interface GoodsActionButton {
   key: string
   text?: string
   primary?: boolean
   disabled?: boolean
+  /** 加载中：禁用点击 + `aria-busy` + spinner（与 disabled 正交，可并存） */
+  loading?: boolean
+  /** 视觉档位：default（默认）/ primary / success / warning / danger；缺省按 primary 标志 */
+  type?: GoodsActionButtonType
 }
 
 export interface GoodsActionDetail {
@@ -71,6 +85,24 @@ const DEFAULT_ICONS: Record<string, string> = {
 }
 
 const MAX_BADGE = 99
+
+/** 主按钮视觉档位（type 字段合法值） */
+const BUTTON_TYPES: readonly string[] = ['default', 'primary', 'success', 'warning', 'danger']
+
+/** 预设色名 → `--oas-preset-<name>-text` token（与弹幕预设同表；其余色值按宿主声明透传） */
+const PRESET_NAMES = new Set([
+  'magenta',
+  'red',
+  'volcano',
+  'orange',
+  'gold',
+  'lime',
+  'green',
+  'cyan',
+  'blue',
+  'geekblue',
+  'purple',
+])
 
 const STYLE = `
 :host {
@@ -137,6 +169,16 @@ const STYLE = `
 .icon-button[data-active='true'] {
   color: var(--oas-color-primary-text);
 }
+/* 自定义色项：base / hover / 按下态都钉在宿主声明的色上（缺省回退与无色项一致） */
+.icon-button[data-color='true'] {
+  color: var(--oas-goods-action-item-color, var(--oas-color-text-secondary));
+}
+.icon-button[data-color='true']:hover:not(:disabled) {
+  color: var(--oas-goods-action-item-color, var(--oas-color-text-primary));
+}
+.icon-button[data-color='true'][data-active='true'] {
+  color: var(--oas-goods-action-item-color, var(--oas-color-primary-text));
+}
 .icon-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -202,16 +244,44 @@ const STYLE = `
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
-.button[data-primary='true'] {
+.button[data-primary='true'],
+.button[data-type='primary'] {
   border-color: var(--oas-color-primary);
   background: var(--oas-color-primary);
   color: var(--oas-color-bg);
 }
-.button[data-primary='true']:hover:not(:disabled) {
+.button[data-primary='true']:hover:not(:disabled),
+.button[data-type='primary']:hover:not(:disabled) {
   background: var(--oas-color-primary-hover);
 }
-.button[data-primary='true']:active:not(:disabled) {
+.button[data-primary='true']:active:not(:disabled),
+.button[data-type='primary']:active:not(:disabled) {
   background: var(--oas-color-primary-active);
+}
+/* 语义档位（success / warning / danger）：实底 + 同族 hover 加深（对齐 danger 混色做法） */
+.button[data-type='success'] {
+  border-color: var(--oas-color-success);
+  background: var(--oas-color-success);
+  color: var(--oas-color-text-on-primary);
+}
+.button[data-type='success']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--oas-color-success) 85%, var(--oas-color-text-primary));
+}
+.button[data-type='warning'] {
+  border-color: var(--oas-color-warning);
+  background: var(--oas-color-warning);
+  color: var(--oas-color-text-on-primary);
+}
+.button[data-type='warning']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--oas-color-warning) 85%, var(--oas-color-text-primary));
+}
+.button[data-type='danger'] {
+  border-color: var(--oas-color-danger);
+  background: var(--oas-color-danger);
+  color: var(--oas-color-bg);
+}
+.button[data-type='danger']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--oas-color-danger) 85%, var(--oas-color-text-primary));
 }
 .button:disabled {
   cursor: not-allowed;
@@ -219,6 +289,34 @@ const STYLE = `
 }
 .button[hidden] {
   display: none;
+}
+/* 按钮内 spinner（loading 态）：文字不丢，旋转图形 aria-hidden */
+.button-spinner {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  border: 2px solid currentColor;
+  border-inline-start-color: transparent;
+  border-radius: 50%;
+  animation: oas-goods-action-spin 0.8s linear infinite;
+}
+.button-spinner[hidden] {
+  display: none;
+}
+@keyframes oas-goods-action-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.button-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-spinner {
+    animation-duration: 2.4s;
+  }
 }
 
 @media (pointer: coarse) {
@@ -349,6 +447,14 @@ export class OASGoodsAction extends OASElement {
     btn.setAttribute('aria-pressed', String(active))
     if (active) btn.setAttribute('data-active', 'true')
 
+    const color = typeof item.color === 'string' && item.color.trim() !== '' ? item.color.trim() : ''
+    btn.setAttribute('data-color', String(color !== ''))
+    if (color !== '') {
+      btn.style.setProperty('--oas-goods-action-item-color', resolveItemColor(color))
+    } else {
+      btn.style.removeProperty('--oas-goods-action-item-color')
+    }
+
     const badge = this.normalizeBadge(item.badge)
     const defaultKey = DEFAULT_LABEL_KEYS[item.key]
     const label = item.label || (defaultKey ? this.t(defaultKey) : item.key)
@@ -387,10 +493,29 @@ export class OASGoodsAction extends OASElement {
     btn.setAttribute('part', 'button')
     btn.setAttribute('data-key', action.key)
     btn.setAttribute('data-source', 'button')
-    btn.setAttribute('data-primary', String(action.primary === true))
-    btn.disabled = hostDisabled || action.disabled === true
+    const primary = action.primary === true
+    btn.setAttribute('data-primary', String(primary))
+    btn.setAttribute('data-type', resolveButtonType(action))
+    const loading = action.loading === true
+    btn.disabled = hostDisabled || action.disabled === true || loading
+    if (loading) {
+      btn.setAttribute('aria-busy', 'true')
+      btn.setAttribute('data-loading', 'true')
+    } else {
+      btn.removeAttribute('aria-busy')
+      btn.removeAttribute('data-loading')
+    }
     const text = (action.text ?? '').trim() || action.key
-    btn.textContent = text
+    const label = document.createElement('span')
+    label.className = 'button-text'
+    label.setAttribute('part', 'button-text')
+    label.textContent = text
+    const spinner = document.createElement('span')
+    spinner.className = 'button-spinner'
+    spinner.setAttribute('part', 'button-spinner')
+    spinner.setAttribute('aria-hidden', 'true')
+    spinner.hidden = !loading
+    btn.append(spinner, label)
     btn.setAttribute('aria-label', text)
     return btn
   }
@@ -416,4 +541,17 @@ export class OASGoodsAction extends OASElement {
     }
     return fallback
   }
+}
+
+/** 主按钮视觉档位：显式 type 合法值优先；否则按 primary 标志；非法 type 回落 default */
+function resolveButtonType(action: GoodsActionButton): GoodsActionButtonType {
+  if (typeof action.type === 'string' && BUTTON_TYPES.includes(action.type)) {
+    return action.type as GoodsActionButtonType
+  }
+  return action.primary === true ? 'primary' : 'default'
+}
+
+/** 预设名取 -text 安全档，其余按宿主声明色值直接注入 */
+function resolveItemColor(raw: string): string {
+  return PRESET_NAMES.has(raw) ? `var(--oas-preset-${raw}-text)` : raw
 }

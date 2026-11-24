@@ -50,6 +50,33 @@ description: "商品底部导航：icon 按钮组（收藏 / 店铺 / 购物车�
   ></oas-goods-action>
 </DemoBlock>
 
+## 主按钮 loading / 视觉档位
+
+`actions[].loading` 让单个主按钮进入加载态：禁用点击 + `aria-busy` + spinner，与 `disabled` 正交（可并存）；`actions[].type` 切换视觉档位（`default` / `primary` / `success` / `warning` / `danger`），缺省按 `primary` 标志，未写 `type` 时行为与现状一致：
+
+<DemoBlock title="单项加载态 + 语义档位">
+  <oas-goods-action
+    items='[{"key":"favorite"},{"key":"cart","badge":1}]'
+    actions='[{"key":"add","text":"加入购物车","primary":true},{"key":"buy","text":"提交中","loading":true}]'
+  ></oas-goods-action>
+  <oas-goods-action
+    items='[{"key":"favorite"}]'
+    actions='[{"key":"ok","text":"成功","type":"success"},{"key":"warn","text":"警示","type":"warning"},{"key":"del","text":"删除","type":"danger"}]'
+    style="margin-top: var(--oas-space-2)"
+  ></oas-goods-action>
+</DemoBlock>
+
+## 自定义图标色
+
+`items[].color` 给 icon 项上色：预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`）走 `--oas-preset-<name>-text` 安全档 token，其余按宿主声明的色值透传；上色后 base / hover / 按下态都钉在该色上：
+
+<DemoBlock title="icon 自定义色">
+  <oas-goods-action
+    items='[{"key":"favorite","color":"red","active":true},{"key":"shop","color":"green"},{"key":"custom","label":"客服","icon":"mail","color":"blue"}]'
+    actions='[{"key":"buy","text":"立即购买","primary":true}]'
+  ></oas-goods-action>
+</DemoBlock>
+
 ## 导航可访问名称
 
 `label` 覆盖导航区（`<nav>`）的可访问名称，缺省走 i18n `goodsAction.label`；一个页面有多条操作栏时用它区分：
@@ -70,9 +97,9 @@ description: "商品底部导航：icon 按钮组（收藏 / 店铺 / 购物车�
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions` | 主按钮 JSON 数组 `[{ key, text, primary?, disabled? }]` | `GoodsActionButton[] \| string` | — |
+| `actions` | 主按钮 JSON 数组 `[{ key, text, primary?, disabled?, loading?, type? }]`；`loading` 禁用点击 + `aria-busy` + spinner（与 disabled 正交）；`type` 视觉档位 default / primary / success / warning / danger，缺省按 primary 标志 | `GoodsActionButton[] \| string` | — |
 | `disabled` | 全局禁用（兼容 config-provider 注入禁用） | `boolean` | — |
-| `items` | icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射 | `GoodsActionItem[] \| string` | — |
+| `items` | icon 按钮 JSON 数组 `[{ key, label?, icon?, badge?, active?, color? }]`；内置 key（`favorite` / `shop` / `cart`）缺省文案与图标走内置映射；`color` 预设名走 `--oas-preset-<name>-text` token，其余按宿主声明透传 | `GoodsActionItem[] \| string` | — |
 | `label` | 导航区可访问名称，缺省走 i18n `goodsAction.label` | — | — |
 
 #### 事件
@@ -80,6 +107,12 @@ description: "商品底部导航：icon 按钮组（收藏 / 店铺 / 购物车�
 | 事件 | 说明 |
 | --- | --- |
 | `oas-action-click` | 任一项点击派发，detail `{ key, source: 'icon' \| 'button' }` |
+
+#### CSS 变量
+
+| CSS 变量 | 默认值 |
+| --- | --- |
+| `--oas-goods-action-item-color` | `var(--oas-color-text-secondary)` |
 
 <script setup>
 import { onMounted } from 'vue'

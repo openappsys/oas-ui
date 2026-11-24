@@ -50,6 +50,33 @@ An item's `key` is its event identity; built-in keys (`favorite` / `shop` / `car
   ></oas-goods-action>
 </DemoBlock>
 
+## Primary-button loading / visual tiers
+
+`actions[].loading` puts a single primary button into its loading state: clicks are blocked + `aria-busy` + spinner, orthogonal to `disabled` (they can coexist); `actions[].type` switches the visual tier (`default` / `primary` / `success` / `warning` / `danger`), defaulting to the `primary` flag. Without `type` the behavior is unchanged:
+
+<DemoBlock title="Per-item loading + semantic tiers">
+  <oas-goods-action
+    items='[{"key":"favorite"},{"key":"cart","badge":1}]'
+    actions='[{"key":"add","text":"Add to cart","primary":true},{"key":"buy","text":"Submitting","loading":true}]'
+  ></oas-goods-action>
+  <oas-goods-action
+    items='[{"key":"favorite"}]'
+    actions='[{"key":"ok","text":"Success","type":"success"},{"key":"warn","text":"Warning","type":"warning"},{"key":"del","text":"Delete","type":"danger"}]'
+    style="margin-top: var(--oas-space-2)"
+  ></oas-goods-action>
+</DemoBlock>
+
+## Custom icon colors
+
+`items[].color` tints an icon button: preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`) map to the `--oas-preset-<name>-text` safe tokens, other values pass through as declared by the host; once colored, base / hover / pressed states stay pinned to that color:
+
+<DemoBlock title="Custom icon color">
+  <oas-goods-action
+    items='[{"key":"favorite","color":"red","active":true},{"key":"shop","color":"green"},{"key":"custom","label":"Support","icon":"mail","color":"blue"}]'
+    actions='[{"key":"buy","text":"Buy now","primary":true}]'
+  ></oas-goods-action>
+</DemoBlock>
+
 ## Navigation accessible name
 
 `label` overrides the accessible name of the navigation region (`<nav>`), which defaults to the i18n `goodsAction.label`; use it to tell several action bars on one page apart:
@@ -70,9 +97,9 @@ An item's `key` is its event identity; built-in keys (`favorite` / `shop` / `car
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions` | Main button JSON array `[{ key, text, primary?, disabled? }]` | `GoodsActionButton[] \| string` | — |
+| `actions` | Primary buttons JSON array `[{ key, text, primary?, disabled?, loading?, type? }]`; `loading` blocks clicks with `aria-busy` + spinner (orthogonal to disabled); `type` visual tier default / primary / success / warning / danger, defaults to the primary flag | `GoodsActionButton[] \| string` | — |
 | `disabled` | Disables everything (honours config-provider injected disabled) | `boolean` | — |
-| `items` | Icon button JSON array `[{ key, label?, icon?, badge?, active? }]`; built-in keys (`favorite` / `shop` / `cart`) get default labels and icons | `GoodsActionItem[] \| string` | — |
+| `items` | Icon buttons JSON array `[{ key, label?, icon?, badge?, active?, color? }]`; built-in keys (`favorite` / `shop` / `cart`) fall back to built-in labels and icons; `color` preset names map to `--oas-preset-<name>-text` tokens, other values pass through as declared | `GoodsActionItem[] \| string` | — |
 | `label` | Navigation accessible name, defaults to the i18n `goodsAction.label` | — | — |
 
 #### Events
@@ -80,6 +107,12 @@ An item's `key` is its event identity; built-in keys (`favorite` / `shop` / `car
 | Event | Description |
 | --- | --- |
 | `oas-action-click` | Dispatched when any item is clicked with `{ key, source: 'icon' \| 'button' }`, `detail: { key, source } satisfies GoodsActionDetail` |
+
+#### CSS Variables
+
+| CSS Variable | Default |
+| --- | --- |
+| `--oas-goods-action-item-color` | `var(--oas-color-text-secondary)` |
 
 <script setup>
 import { onMounted } from 'vue'

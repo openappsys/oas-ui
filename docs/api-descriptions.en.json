@@ -2048,8 +2048,8 @@
   },
   "oas-goods-action": {
     "attrs": {
-      "items": "Icon button JSON array `[{ key, label?, icon?, badge?, active? }]`; built-in keys (`favorite` / `shop` / `cart`) get default labels and icons",
-      "actions": "Main button JSON array `[{ key, text, primary?, disabled? }]`",
+      "items": "Icon buttons JSON array `[{ key, label?, icon?, badge?, active?, color? }]`; built-in keys (`favorite` / `shop` / `cart`) fall back to built-in labels and icons; `color` preset names map to `--oas-preset-<name>-text` tokens, other values pass through as declared",
+      "actions": "Primary buttons JSON array `[{ key, text, primary?, disabled?, loading?, type? }]`; `loading` blocks clicks with `aria-busy` + spinner (orthogonal to disabled); `type` visual tier default / primary / success / warning / danger, defaults to the primary flag",
       "label": "Navigation accessible name, defaults to the i18n `goodsAction.label`",
       "disabled": "Disables everything (honours config-provider injected disabled)"
     },
