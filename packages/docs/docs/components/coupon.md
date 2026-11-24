@@ -67,12 +67,13 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 
 ## 命令式开合与清空选择
 
-`open` 是受控属性（宿主写 attribute / property 静默生效），`openOverlay()` / `closeOverlay()` 是命令式开合（派发 `oas-open-change`）；`clearSelection()` 清空已选券（静默，供宿主重置选择状态）。
+`open` 是受控属性（宿主写 attribute / property 静默生效），`openOverlay()` / `closeOverlay()` 是命令式开合（派发 `oas-open-change`）；`clearSelection()` 清空已选券（静默，供宿主重置选择状态）。`z-index` 数值叠加在 `--oas-z-index-base` 之上（缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态），下方 demo 给 1300。
 
 <DemoBlock title="openOverlay() / closeOverlay() / clearSelection()">
   <oas-coupon
     id="cp-api"
     list='[{"code":"x","amount":15,"threshold":0,"validity":"长期有效"}]'
+    z-index="1300"
   ></oas-coupon>
   <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
     <oas-button id="cp-open" size="small">打开弹层</oas-button>

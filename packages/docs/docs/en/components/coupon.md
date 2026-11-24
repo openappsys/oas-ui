@@ -67,10 +67,10 @@ Both forms share the same card rendering:
 
 ## Imperative open/close and selection reset
 
-`open` is a controlled attribute (host attribute / property writes are silent); `openOverlay()` / `closeOverlay()` are the imperative calls (they dispatch `oas-open-change`), and `clearSelection()` clears the picked coupon silently for hosts that need to reset the selection.
+`open` is a controlled attribute (host attribute / property writes are silent); `openOverlay()` / `closeOverlay()` are the imperative calls (they dispatch `oas-open-change`), and `clearSelection()` clears the picked coupon silently for hosts that need to reset the selection. `z-index` adds a numeric level on top of `--oas-z-index-base` (the default keeps the `--oas-z-modal` step, same shape as modal / drawer); the demo below uses 1300.
 
 <DemoBlock title="openOverlay() / closeOverlay() / clearSelection()">
-  <oas-coupon id="cp-api-en" list='[{"code":"x","amount":15,"threshold":0,"validity":"No expiry"}]'></oas-coupon>
+  <oas-coupon id="cp-api-en" list='[{"code":"x","amount":15,"threshold":0,"validity":"No expiry"}]' z-index="1300"></oas-coupon>
   <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
     <oas-button id="cp-open-en" size="small">Open sheet</oas-button>
     <oas-button id="cp-clear-en" size="small">Clear selection</oas-button>
