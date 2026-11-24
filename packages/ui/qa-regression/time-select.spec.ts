@@ -118,6 +118,53 @@ test('time-select：模式组方向键可切换模式并迁移焦点（另一模
   expect(after.feedback).toContain('oas-change')
 })
 
+test('time-select：RTL 下模式组方向键镜像（ArrowLeft 前进 / ArrowRight 后退）且焦点落位', async ({ page }) => {
+  await page.goto('/components/time-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-express')
+  // 进入 RTL（宿主在页面内，方向由祖先 dir 计算）：组件据此镜像方向键
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('dir', 'rtl')
+  })
+  await page.evaluate(() => {
+    const root = (document.querySelector('#ts-express') as HTMLElement).shadowRoot!
+    root.querySelector<HTMLElement>('.mode')!.focus()
+  })
+
+  // RTL：ArrowLeft = 前进（express → schedule），焦点跟到新钮
+  await page.keyboard.press('ArrowLeft')
+  const forward = await page.evaluate(() => {
+    const host = document.querySelector('#ts-express') as HTMLElement
+    const root = host.shadowRoot!
+    const active = root.activeElement as HTMLButtonElement | null
+    return {
+      rtlFlag: host.hasAttribute('data-rtl'),
+      mode: host.getAttribute('mode'),
+      focused: active?.dataset.mode ?? null,
+      checked: root.querySelector<HTMLButtonElement>('.mode[aria-checked="true"]')?.dataset.mode ?? null,
+      tabStops: [...root.querySelectorAll<HTMLButtonElement>('.mode')].filter((b) => b.tabIndex === 0).length,
+    }
+  })
+  expect(forward.rtlFlag, 'RTL 生效时宿主应标记 data-rtl').toBe(true)
+  expect(forward.mode, 'RTL 下 ArrowLeft 前进到预约配送').toBe('schedule')
+  expect(forward.focused, '焦点必须跟到新选中的模式钮').toBe('schedule')
+  expect(forward.checked).toBe('schedule')
+  expect(forward.tabStops, '模式组保持单一 roving tab stop').toBe(1)
+
+  // RTL：ArrowRight = 后退（schedule → express），焦点回到 express
+  await page.keyboard.press('ArrowRight')
+  const backward = await page.evaluate(() => {
+    const host = document.querySelector('#ts-express') as HTMLElement
+    const root = host.shadowRoot!
+    const active = root.activeElement as HTMLButtonElement | null
+    return { mode: host.getAttribute('mode'), focused: active?.dataset.mode ?? null }
+  })
+  expect(backward.mode, 'RTL 下 ArrowRight 后退回尽快送达').toBe('express')
+  expect(backward.focused).toBe('express')
+
+  // 恢复 LTR，避免影响同页其它用例（worker 内同一 page 复用）
+  await page.evaluate(() => document.documentElement.removeAttribute('dir'))
+})
+
 test('time-select：次要文字（相对日 / 尽快送达详情）在浅色下满足 4.5:1', async ({ page }) => {
   await page.goto('/components/time-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-express')

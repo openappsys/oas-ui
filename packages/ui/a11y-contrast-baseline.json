@@ -1,15 +1,15 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 54884,
+    "sampled": 61776,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 286,
-    "exempt": 692,
+    "ratio": 291,
+    "exempt": 700,
     "skipped": {
-      "local": 4032,
-      "ci": 4338
+      "local": 4050,
+      "ci": 4370
     }
   },
   "topPairs": [],
@@ -293,7 +293,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 5,
+      "ratio": 1,
       "exempt": 0,
       "skipped": {
         "local": 2,
@@ -331,6 +331,17 @@
       "skipped": {
         "local": 38,
         "ci": 38
+      }
+    },
+    "category.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 3,
+      "exempt": 0,
+      "skipped": {
+        "local": 0,
+        "ci": 0
       }
     },
     "chart.html": {
@@ -375,6 +386,28 @@
       "skipped": {
         "local": 2,
         "ci": 2
+      }
+    },
+    "chips-input.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
+    "chips-input.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
       }
     },
     "code.html": {
@@ -437,7 +470,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 0,
+      "exempt": 2,
       "skipped": {
         "local": 9,
         "ci": 9
@@ -448,7 +481,7 @@
       "below45": 0,
       "below60": 0,
       "ratio": 0,
-      "exempt": 0,
+      "exempt": 2,
       "skipped": {
         "local": 9,
         "ci": 9
@@ -518,6 +551,28 @@
       "skipped": {
         "local": 12,
         "ci": 12
+      }
+    },
+    "coupon.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 2,
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
+    },
+    "coupon.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 2,
+      "skipped": {
+        "local": 0,
+        "ci": 0
       }
     },
     "descriptions.html": {
@@ -619,6 +674,28 @@
         "ci": 2
       }
     },
+    "ecard.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
+    "ecard.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
     "editable.html": {
       "below30": 0,
       "below45": 0,
@@ -659,8 +736,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 3,
-        "ci": 3
+        "local": 4,
+        "ci": 4
       }
     },
     "equation.html::dark": {
@@ -670,8 +747,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 3,
-        "ci": 3
+        "local": 4,
+        "ci": 4
       }
     },
     "flex.html": {
@@ -758,8 +835,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 17,
-        "ci": 17
+        "local": 19,
+        "ci": 19
       }
     },
     "gantt.html::dark": {
@@ -769,8 +846,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 17,
-        "ci": 17
+        "local": 19,
+        "ci": 19
       }
     },
     "gradient-text.html": {
@@ -806,17 +883,6 @@
         "ci": 0
       }
     },
-    "image.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 16,
-      "exempt": 0,
-      "skipped": {
-        "local": 0,
-        "ci": 0
-      }
-    },
     "image-picker.html": {
       "below30": 0,
       "below45": 0,
@@ -837,6 +903,17 @@
       "skipped": {
         "local": 3,
         "ci": 3
+      }
+    },
+    "image.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 16,
+      "exempt": 0,
+      "skipped": {
+        "local": 0,
+        "ci": 0
       }
     },
     "input.html": {
@@ -883,6 +960,28 @@
         "ci": 4
       }
     },
+    "invoice.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 1,
+      "exempt": 0,
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
+    },
+    "invoice.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
+    },
     "json-viewer.html": {
       "below30": 0,
       "below45": 0,
@@ -909,7 +1008,7 @@
       "below30": 0,
       "below45": 0,
       "below60": 0,
-      "ratio": 0,
+      "ratio": 2,
       "exempt": 0,
       "skipped": {
         "local": 2,
@@ -1400,6 +1499,39 @@
         "ci": 12
       }
     },
+    "rolling-text.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
+    },
+    "rolling-text.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
+    },
+    "scanner.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 3,
+      "exempt": 0,
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
+    },
     "scheduler.html": {
       "below30": 0,
       "below45": 0,
@@ -1407,8 +1539,8 @@
       "ratio": 0,
       "exempt": 88,
       "skipped": {
-        "local": 9,
-        "ci": 9
+        "local": 12,
+        "ci": 12
       }
     },
     "scheduler.html::dark": {
@@ -1418,8 +1550,30 @@
       "ratio": 0,
       "exempt": 88,
       "skipped": {
-        "local": 9,
-        "ci": 9
+        "local": 12,
+        "ci": 12
+      }
+    },
+    "schema-form.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 17,
+        "ci": 17
+      }
+    },
+    "schema-form.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 17,
+        "ci": 17
       }
     },
     "scroll-area.html": {
@@ -1486,6 +1640,28 @@
       "skipped": {
         "local": 6,
         "ci": 6
+      }
+    },
+    "signature.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 8,
+        "ci": 8
+      }
+    },
+    "signature.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 8,
+        "ci": 8
       }
     },
     "slider.html": {
@@ -1902,8 +2078,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 27,
-        "ci": 27
+        "local": 28,
+        "ci": 28
       }
     },
     "upload.html::dark": {
@@ -1913,8 +2089,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 27,
-        "ci": 27
+        "local": 28,
+        "ci": 28
       }
     },
     "virtual-list.html": {
@@ -2034,7 +2210,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 8,
+        "local": 5,
         "ci": 8
       }
     },
@@ -2045,7 +2221,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 8,
+        "local": 5,
         "ci": 8
       }
     },
@@ -2265,7 +2441,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 10,
+        "local": 5,
         "ci": 10
       }
     },
@@ -2276,7 +2452,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 10,
+        "local": 5,
         "ci": 10
       }
     },
@@ -2386,7 +2562,7 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 14,
+        "local": 15,
         "ci": 27
       }
     },
@@ -2397,52 +2573,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 14,
+        "local": 15,
         "ci": 27
-      }
-    },
-    "signature.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": {
-        "local": 8,
-        "ci": 8
-      }
-    },
-    "signature.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": {
-        "local": 8,
-        "ci": 8
-      }
-    },
-    "schema-form.html": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": {
-        "local": 15,
-        "ci": 15
-      }
-    },
-    "schema-form.html::dark": {
-      "below30": 0,
-      "below45": 0,
-      "below60": 0,
-      "ratio": 0,
-      "exempt": 0,
-      "skipped": {
-        "local": 15,
-        "ci": 15
       }
     }
   }

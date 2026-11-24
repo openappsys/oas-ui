@@ -17,6 +17,39 @@ async function dragBy(page: import('@playwright/test').Page, host: string, dx: n
   await page.mouse.up()
 }
 
+test('drag：真实鼠标拖拽越过阈值派发一次 oas-drag-start（source=pointer），阈值内点击不派发', async ({ page }) => {
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-button')
+  await page.evaluate(() => {
+    const el = document.querySelector('#dg-button')!
+    const w = window as unknown as { __starts: Array<Record<string, unknown>> }
+    w.__starts = []
+    el.addEventListener('oas-drag-start', (event) => {
+      w.__starts.push({ ...(event as CustomEvent).detail })
+    })
+  })
+  const box = await page.locator('#dg-button').boundingBox()
+  if (!box) throw new Error('#dg-button 无可见矩形')
+  const startX = box.x + box.width / 2
+  const startY = box.y + box.height / 2
+
+  // 阈值内（2px）：视为点击，不得派发 drag-start
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX + 2, startY + 1)
+  await page.mouse.up()
+  expect(
+    await page.evaluate(() => (window as unknown as { __starts: unknown[] }).__starts.length),
+    '阈值内点击不得派发 oas-drag-start',
+  ).toBe(0)
+
+  // 真实鼠标拖拽（越过 4px）：恰好一次，detail 为起点坐标 + pointer 来源
+  await dragBy(page, '#dg-button', -50, -30)
+  const starts = await page.evaluate(() => (window as unknown as { __starts: Array<Record<string, unknown>> }).__starts)
+  expect(starts, '一次拖拽只派发一次 oas-drag-start').toHaveLength(1)
+  expect(starts[0]).toEqual({ x: 0, y: 0, source: 'pointer' })
+})
+
 test('drag：真实鼠标拖动客服钮，位移生效、位置记忆落盘、demo 反馈可见', async ({ page }) => {
   await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#dg-button')
@@ -196,6 +229,76 @@ test('drag：越过阈值拖完后，紧随的 click 被吞掉（落在子按钮
   expect(result.movedX, '拖拽本身要生效').toBeLessThan(-20)
   expect(result.afterDrag, '拖拽结束的 click 不得误触子按钮').toBe(0)
   expect(result.afterAll, '之后的正常点击不得被吞掉').toBe(1)
+})
+
+test('drag：惯性滑行真实几何终值（松手后继续前进、方向轴约束、最终停稳不回弹）', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-chip')
+
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#dg-chip') as HTMLElement & { position: { x: number; y: number } }
+      const stage = document.querySelector('#dg-stage-axis') as HTMLElement
+      const chipRect = el.getBoundingClientRect()
+      const stageRect = stage.getBoundingClientRect()
+      return {
+        x: el.position.x,
+        y: el.position.y,
+        // 元素右缘相对舞台右缘的余量（边界钳制的几何证据）
+        edgeGap: stageRect.right - chipRect.right,
+        coasting: el.hasAttribute('data-coasting'),
+      }
+    })
+
+  const box = await page.locator('#dg-chip').boundingBox()
+  if (!box) throw new Error('#dg-chip 无可见矩形')
+  const startX = box.x + box.width / 2
+  const startY = box.y + box.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  // 快速右移（少量步数 → 高速度），松手后应继续滑行
+  await page.mouse.move(startX + 40, startY, { steps: 2 })
+  await page.mouse.move(startX + 90, startY, { steps: 2 })
+  await page.mouse.up()
+  const release = await read()
+
+  // 滑行窗口：等到 x 明显超过松手位置或已撞边界停下（条件等待，不用固定 sleep）
+  await page.waitForFunction(
+    (rx) => {
+      const el = document.querySelector('#dg-chip') as HTMLElement & { position: { x: number } }
+      return el.position.x > rx + 15 || !el.hasAttribute('data-coasting')
+    },
+    release.x,
+    { timeout: 5000 },
+  )
+  const glided = await read()
+  expect(glided.x, '松手后必须继续前进（惯性生效）').toBeGreaterThan(release.x + 15)
+  expect(glided.y, 'axis="x" 下纵向不得漂移').toBe(0)
+  expect(glided.edgeGap, '滑行终值不得越过舞台边界').toBeGreaterThanOrEqual(-1)
+
+  // 停稳：再等一段时间后位置不再变化（衰减到停止，不回弹）
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#dg-chip') as HTMLElement
+      return !el.hasAttribute('data-coasting')
+    },
+    undefined,
+    { timeout: 5000 },
+  )
+  const settled = await read()
+  await page.waitForFunction(
+    (sx) => {
+      const el = document.querySelector('#dg-chip') as HTMLElement & { position: { x: number } }
+      return Math.abs(el.position.x - sx) < 0.5
+    },
+    settled.x,
+    { timeout: 2000 },
+  )
+  const stable = await read()
+  expect(Math.abs(stable.x - settled.x), '停稳后位置不得继续漂移').toBeLessThan(0.5)
+  expect(stable.x, '惯性只前进不倒退（不得回弹到起点）').toBeGreaterThanOrEqual(glided.x - 0.5)
+  expect(stable.x).toBeGreaterThan(release.x)
 })
 
 test('drag：真实鼠标拖拽后的 click 抑制不泄漏到下一次真实点击', async ({ page }) => {

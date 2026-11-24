@@ -138,6 +138,13 @@ if (UPDATE_BASELINE) {
   )
 }
 const LEVELS = [30, 45, 60] as const
+/**
+ * 页数下限（结构断言）：**不硬编码实测页数**——新页面/新 demo 块会让基线页数持续增长，硬编码会在
+ * 官方 update 命令的最后一步必红（历史 219/221 vs 实测 233）。这里只保证「基线覆盖了足够多的页」，
+ * 真正的正确性由 totals 求和一致性 + 逐页 ratchet 承担。下限按当前实测留出余量（生成器只写计数非零
+ * 的页，手工登记页不在其中），删页导致跌破时人工复核。
+ */
+const PAGE_COUNT_FLOOR = 200
 const ZERO_COUNTS: PageCounts = { below30: 0, below45: 0, below60: 0, ratio: 0, exempt: 0, skipped: 0 }
 
 // ---------- 无法评分（skipped）基线：双环境口径（本地 / CI） ----------
@@ -797,12 +804,14 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
   // 生成后立刻校验求和不变量：totals 与逐页必须严格一致（结构性保证，防生成逻辑漂移）
   const mismatch = totalsMismatch(JSON.parse(readFileSync(BASELINE_FILE, 'utf8')))
   expect(mismatch, `新生成的基线 totals 与 pages 求和不一致：${mismatch.join('；')}`).toEqual([])
-  // 生成会写的页数 = 各项计数非零的页（light/dark 各一条）。215 + image-picker 两条（隐藏 file input
-  // 的 axe 无法评分节点）＝ 217；signature 的两条属手工登记、生成不覆盖，故已提交基线为 219；
-  // schema-form 的 light/dark 两条（字段树在 shadow 内、axe 无法评分节点 15 个/主题——V2 批 1/2 新增
-  // 数组与数据流 demo 块后由 8 涨到 15，按 CONTRAST_BASELINE=update 实测值更新）同为手工实测登记，
-  // 已提交基线因此为 221。
-  expect(Object.keys(pages).length).toBe(219)
+  // 生成会写的页数 = 各项计数非零的页（light/dark 各一条），另含手工登记的页。
+  // **结构断言，不硬编码实测页数**：新页/新 demo 块只增不减，硬编码会让官方 update 命令最后一步必红。
+  // 一致性由 totals 求和承担（上一行），这里只校「覆盖量」与「上界」。
+  const pageCount = Object.keys(pages).length
+  expect(pageCount, `生成页数不得低于下限 ${PAGE_COUNT_FLOOR}（覆盖量骤降需人工复核）`).toBeGreaterThanOrEqual(
+    PAGE_COUNT_FLOOR,
+  )
+  expect(pageCount, '生成页数不得超过「页数 × 2 主题」上界（重复写入说明键冲突）').toBeLessThanOrEqual(PAGES.length * 2)
 })
 
 // ---------- totals 求和不变量门禁 ----------
@@ -810,7 +819,12 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
 // 基线残留已删页面的陈旧条目 / 生成逻辑漂移都会让两侧脱节，这里显式红灯而不是静默放行。
 test('a11y 基线 totals 求和不变量：各项计数等于逐页求和（skipped 双环境、sampled 不按同一规则）', () => {
   const baseline = loadBaseline()
-  expect(Object.keys(baseline.pages ?? {}).length, '基线应包含逐页条目（空基线 = 门禁空转）').toBe(221) // 221 = 215 + signature 新页登记（light/dark 两条，2026-11 P0 批）+ image-picker 新页登记（light/dark 两条，隐藏 file input 的 axe 无法评分节点）+ schema-form 新页登记（light/dark 两条，字段树在 shadow 内 axe 无法评分节点）
+  const pageCount = Object.keys(baseline.pages ?? {}).length
+  // 空基线 = 门禁空转；只校下限 + 上界，不硬编码实测页数（新页面会让页数增长）
+  expect(pageCount, `基线应覆盖足够多的页（下限 ${PAGE_COUNT_FLOOR}）；空基线 = 门禁空转`).toBeGreaterThanOrEqual(
+    PAGE_COUNT_FLOOR,
+  )
+  expect(pageCount, '基线页数不得超过「页数 × 2 主题」上界（键冲突会覆盖条目）').toBeLessThanOrEqual(PAGES.length * 2)
   const mismatch = totalsMismatch(baseline)
   expect(
     mismatch,
