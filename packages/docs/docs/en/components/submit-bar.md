@@ -39,6 +39,37 @@ The default slot renders before the total — useful for agreement checkboxes or
   <oas-submit-bar id="sb-danger-en" total="99" action-text="Delete order" danger></oas-submit-bar>
 </DemoBlock>
 
+## Tip line
+
+`tip` renders a notice line above the main row (shipping fee / invoice notes and similar), and `tip-icon` takes a registered icon name (unregistered names warn once in dev and skip the icon; the text stays readable):
+
+<DemoBlock title="Shipping-fee tip">
+  <oas-submit-bar
+    id="sb-tip-en"
+    total="86"
+    action-text="Checkout"
+    tip="Shipping 8, free over 99"
+    tip-icon="info"
+  ></oas-submit-bar>
+  <oas-submit-bar
+    total="129"
+    action-text="Checkout"
+    tip="E-invoice supported"
+    style="margin-top: var(--oas-space-2)"
+  ></oas-submit-bar>
+</DemoBlock>
+
+## Safe area and placeholder
+
+The bar's block-end padding uses `max(spacing, env(safe-area-inset-bottom))` (notches and gesture bars are avoided automatically). The bar is `position: sticky` by default (it already occupies the flow); when the host overrides it to `fixed` with CSS, enable `placeholder` and the component renders a spacer as tall as the bar so the page tail is not covered:
+
+<DemoBlock title="Placeholder spacer (fixed layouts)">
+  <oas-submit-bar placeholder total="66" action-text="Checkout"></oas-submit-bar>
+  <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    With placeholder present the component appends an equal-height spacer (demo-only toggle under the default sticky layout).
+  </p>
+</DemoBlock>
+
 ## Currency and precision
 
 The total is formatted by the same code path as `oas-price`: `currency` switches the currency, `locale` decides symbol placement and grouping and `precision` sets the decimal places.
@@ -78,7 +109,10 @@ Hosts can toggle loading by writing the attribute; no `oas-submit` fires while l
 | `label` | Total label, defaults to the i18n `submitBar.total` | — | — |
 | `loading` | Loading: button disabled + spinner + `aria-busy`, no events dispatched | `boolean` | — |
 | `locale` | Amount formatting locale; defaults to the document `<html lang>`, then `en` | — | — |
+| `placeholder` | Placeholder switch: renders a spacer as tall as the bar (use it when the host overrides the bar to fixed positioning so page tail content is not covered; not needed for sticky layout) | `boolean` | — |
 | `precision` | Amount decimal places, default 2 | `string` | `2` |
+| `tip` | Tip line text (shipping fee / invoice notices shown above the main row) | — | — |
+| `tip-icon` | Tip icon name (resolved through the icon registry, custom registration wins); unregistered names warn once in dev and skip the icon, the text stays readable | — | — |
 | `total` | Total amount (numeric string); omitted renders no amount | — | — |
 
 #### Events

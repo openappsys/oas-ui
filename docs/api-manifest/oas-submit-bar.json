@@ -44,6 +44,19 @@
       "name": "danger",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "tip",
+      "observed": true
+    },
+    {
+      "name": "tip-icon",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

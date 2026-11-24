@@ -54,6 +54,37 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
   <oas-submit-bar id="sb-danger" total="99" action-text="删除订单" danger></oas-submit-bar>
 </DemoBlock>
 
+## 提示行
+
+`tip` 在主行上方渲染一条提示（运费 / 发票等高频位），`tip-icon` 传已注册的图标名（未注册时开发态告警一次且不渲染图标，文案照常可读）：
+
+<DemoBlock title="运费提示">
+  <oas-submit-bar
+    id="sb-tip"
+    total="86"
+    action-text="去结算"
+    tip="运费 8 元，满 99 元免运费"
+    tip-icon="info"
+  ></oas-submit-bar>
+  <oas-submit-bar
+    total="129"
+    action-text="去结算"
+    tip="该商品支持开具电子发票"
+    style="margin-top: var(--oas-space-2)"
+  ></oas-submit-bar>
+</DemoBlock>
+
+## 底部安全区与占位
+
+栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`（刘海屏 / 手势条自动避让）。栏体缺省 `position: sticky`（文档流内自带占位）；宿主用 CSS 覆写为 `fixed` 时开启 `placeholder`，组件会渲染一块与栏体等高的占位块防止页尾内容被遮挡：
+
+<DemoBlock title="占位块（fixed 布局防遮挡）">
+  <oas-submit-bar placeholder total="66" action-text="结算"></oas-submit-bar>
+  <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    placeholder 在场时组件尾部渲染等高占位块（demo 中 sticky 布局下仅为演示开关）。
+  </p>
+</DemoBlock>
+
 ## 状态切换
 
 宿主可通过写属性切换加载态；组件在加载态不派发 `oas-submit`。
@@ -78,7 +109,10 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
 | `label` | 合计标签，缺省走 i18n `submitBar.total` | — | — |
 | `loading` | 加载中：按钮禁用 + spinner + `aria-busy`，不派发事件 | `boolean` | — |
 | `locale` | 金额格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN` | — | — |
+| `placeholder` | 占位开关：渲染与栏体等高的占位块（宿主把栏体覆写为 fixed 定位时防止页尾内容被遮挡；sticky 布局无需开启） | `boolean` | — |
 | `precision` | 金额小数位，默认 2 | `string` | `2` |
+| `tip` | 提示行文案（运费 / 发票等高频提示，显示在主行上方） | — | — |
+| `tip-icon` | 提示行图标名（图标注册表查表，自定义注册优先）；未注册时开发态告警一次且不渲染图标，文案照常可读 | — | — |
 | `total` | 合计金额（数字字符串）；缺省不渲染金额 | — | — |
 
 #### 事件

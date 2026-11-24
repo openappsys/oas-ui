@@ -1,10 +1,12 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { lookupIcon } from '@oas-ui/icons/runtime'
+import { devWarn } from '../../shared/dev-warn.js'
 import '../price/index.js'
 
 /**
  * oas-submit-bar —— 结算栏（commerce 族）。
  *
- * 页面/区块底部的固定操作栏：左侧扩展区（默认插槽）+ 合计金额 + 主操作按钮。
+ * 页面/区块底部的固定操作栏：提示行（可选）+ 左侧扩展区（默认插槽）+ 合计金额 + 主操作按钮。
  * 合计金额内嵌 `<oas-price>` 渲染（币种/千分位/小数位与价格组件同源），
  * 按钮覆盖 loading / disabled / danger 三态。
  *
@@ -18,6 +20,11 @@ import '../price/index.js'
  * - `loading`：加载中——按钮禁用 + spinner + `aria-busy`，不派发事件
  * - `disabled`：禁用——按钮禁用、不可聚焦，不派发事件（兼容 config-provider 注入禁用）
  * - `danger`：主按钮危险色（删除/取消类主操作）
+ * - `tip`：提示行文案（运费 / 发票等高频提示，渲染在主行上方）
+ * - `tip-icon`：提示行图标名（lookupIcon 查表，自定义注册优先）；未注册告警一次且不渲染图标
+ * - `placeholder`：占位开关——渲染与栏体等高的占位块。栏体缺省 `sticky`（本就占据文档流，
+ *   无需占位）；宿主用 CSS 覆写为 `fixed` 时开启，防止固定栏遮挡页尾内容。
+ *   占位块 `aria-hidden`，高度在可测量环境下同步栏体实际高度（含提示行）
  *
  * 插槽：
  * - 默认：合计左侧扩展区（勾选协议、备注入口等）
@@ -27,8 +34,9 @@ import '../price/index.js'
  * - `oas-submit`：主按钮点击（非 loading / disabled）派发，detail `{ total, currency }`
  *
  * 布局：宿主默认 `position: sticky; inset-block-end: 0`（滚动容器内吸底），
- * 宿主可用 CSS 覆盖为 `fixed` 实现整页固定。a11y：合计区 `aria-live="polite"`，
- * 按钮 loading 时 `aria-busy="true"`，spinner `aria-hidden`。
+ * 宿主可用 CSS 覆盖为 `fixed` 实现整页固定。栏体底部内边距走
+ * `max(间距 token, env(safe-area-inset-bottom))`（刘海屏 / 手势条安全区）。
+ * a11y：合计区 `aria-live="polite"`，按钮 loading 时 `aria-busy="true"`，spinner `aria-hidden`。
  */
 
 export interface SubmitBarDetail {
@@ -50,14 +58,50 @@ const STYLE = `
 }
 .bar {
   display: flex;
-  align-items: center;
-  gap: var(--oas-space-3);
+  flex-direction: column;
   box-sizing: border-box;
-  min-height: var(--oas-submit-bar-height, var(--oas-control-height-xl, 48px));
   padding: var(--oas-space-2) var(--oas-space-4);
+  padding-block-end: max(var(--oas-space-2), env(safe-area-inset-bottom, 0px));
   background: var(--oas-color-bg);
   border-block-start: 1px solid var(--oas-color-border);
   box-shadow: var(--oas-shadow-sm);
+}
+.tip {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  padding-block-end: var(--oas-space-2);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.tip[hidden] {
+  display: none;
+}
+.tip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: var(--oas-font-size-md);
+  line-height: 1;
+}
+.tip-icon svg {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+.tip-icon[hidden] {
+  display: none;
+}
+.tip-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-3);
+  min-height: var(--oas-submit-bar-height, var(--oas-control-height-xl, 48px));
 }
 .extra {
   flex: 1 1 auto;
@@ -137,6 +181,13 @@ const STYLE = `
     transform: rotate(1turn);
   }
 }
+.placeholder {
+  box-sizing: border-box;
+  background: transparent;
+}
+.placeholder[hidden] {
+  display: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .spinner {
@@ -155,36 +206,66 @@ const STYLE = `
 
 export class OASSubmitBar extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['total', 'currency', 'locale', 'precision', 'label', 'action-text', 'loading', 'disabled', 'danger']
+    return [
+      'total',
+      'currency',
+      'locale',
+      'precision',
+      'label',
+      'action-text',
+      'loading',
+      'disabled',
+      'danger',
+      'tip',
+      'tip-icon',
+      'placeholder',
+    ]
   }
 
   private barEl: HTMLElement | null = null
+  private tipEl: HTMLElement | null = null
+  private tipIconEl: HTMLElement | null = null
+  private tipTextEl: HTMLElement | null = null
+  private placeholderEl: HTMLElement | null = null
   private extraEl: HTMLElement | null = null
   private labelEl: HTMLElement | null = null
   private priceEl: HTMLElement | null = null
   private actionEl: HTMLButtonElement | null = null
   private spinnerEl: HTMLElement | null = null
   private actionTextEl: HTMLElement | null = null
+  /** 未注册 tip-icon 名的 dev 告警去重（实例级；同一名字只报一次） */
+  private warnedTipIcons = new Set<string>()
 
   private template(): string {
     return `
       <style>${STYLE}</style>
       <div class="bar" part="bar">
-        <div class="extra" part="extra" hidden><slot></slot></div>
-        <div class="total" part="total" aria-live="polite">
-          <span class="label" part="label"></span>
-          <slot name="total"><oas-price class="amount" size="lg"></oas-price></slot>
+        <div class="tip" part="tip" hidden>
+          <span class="tip-icon" part="tip-icon" aria-hidden="true" hidden></span>
+          <span class="tip-text" part="tip-text"></span>
         </div>
-        <button class="action" part="action" type="button" hidden>
-          <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
-          <span class="action-text" part="action-text"></span>
-        </button>
+        <div class="row" part="row">
+          <div class="extra" part="extra" hidden><slot></slot></div>
+          <div class="total" part="total" aria-live="polite">
+            <span class="label" part="label"></span>
+            <slot name="total"><oas-price class="amount" size="lg"></oas-price></slot>
+          </div>
+          <button class="action" part="action" type="button" hidden>
+            <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
+            <span class="action-text" part="action-text"></span>
+          </button>
+        </div>
       </div>
+      <div class="placeholder" part="placeholder" aria-hidden="true" hidden></div>
     `
   }
 
   private bind(): void {
     this.barEl = this.shadow.querySelector<HTMLElement>('[part="bar"]')
+    this.tipEl = this.shadow.querySelector<HTMLElement>('[part="tip"]')
+    this.tipIconEl = this.shadow.querySelector<HTMLElement>('[part="tip-icon"]')
+    this.tipTextEl = this.shadow.querySelector<HTMLElement>('[part="tip-text"]')
+    this.placeholderEl = this.shadow.querySelector<HTMLElement>('[part="placeholder"]')
     this.extraEl = this.shadow.querySelector<HTMLElement>('[part="extra"]')
     this.labelEl = this.shadow.querySelector<HTMLElement>('[part="label"]')
     this.priceEl = this.shadow.querySelector<HTMLElement>('oas-price')
@@ -250,9 +331,59 @@ export class OASSubmitBar extends OASElement {
     if (this.actionTextEl) this.actionTextEl.textContent = actionText
     if (this.spinnerEl) this.spinnerEl.hidden = !loading
 
+    this.syncTip()
+    this.syncPlaceholder()
+
     // 扩展区：有默认插槽内容才占位（无内容不挤压合计右对齐）
     const slot = this.shadow.querySelector<HTMLSlotElement>('slot:not([name])')
     if (this.extraEl)
       this.extraEl.hidden = !(slot?.assignedNodes().some((n) => (n.textContent ?? '').trim() !== '') ?? false)
+  }
+
+  /** 提示行：tip 文案在场才渲染；tip-icon 查表（未注册告警一次、不渲染图标，文案保留） */
+  private syncTip(): void {
+    if (!this.tipEl || !this.tipTextEl || !this.tipIconEl) return
+    const text = this.getAttr('tip').trim()
+    this.tipTextEl.textContent = text
+    this.tipEl.hidden = text === ''
+    if (text === '') {
+      this.tipIconEl.hidden = true
+      this.tipIconEl.replaceChildren()
+      return
+    }
+    const name = this.getAttr('tip-icon').trim()
+    if (name === '') {
+      this.tipIconEl.hidden = true
+      this.tipIconEl.replaceChildren()
+      return
+    }
+    const path = lookupIcon(name)
+    if (!path) {
+      if (!this.warnedTipIcons.has(name)) {
+        this.warnedTipIcons.add(name)
+        devWarn(`[oas-submit-bar] tip-icon "${name}" 未注册，已跳过图标（自定义图标需先 registerIcon）`)
+      }
+      this.tipIconEl.hidden = true
+      this.tipIconEl.replaceChildren()
+      return
+    }
+    this.tipIconEl.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${path}</svg>`
+    this.tipIconEl.hidden = false
+  }
+
+  /**
+   * 占位块：`placeholder` 在场时渲染；高度同步栏体实际高度（含提示行，真实浏览器逐帧精确）。
+   * 测量不可用（SSR / 无头环境 offsetHeight 为 0）时不写死像素，元素仅占位存在。
+   */
+  private syncPlaceholder(): void {
+    if (!this.placeholderEl) return
+    this.placeholderEl.hidden = !this.hasAttr('placeholder')
+    if (this.placeholderEl.hidden) {
+      this.placeholderEl.style.removeProperty('height')
+      return
+    }
+    const height = this.barEl?.offsetHeight ?? 0
+    if (height > 0) this.placeholderEl.style.height = `${height}px`
+    else this.placeholderEl.style.removeProperty('height')
   }
 }

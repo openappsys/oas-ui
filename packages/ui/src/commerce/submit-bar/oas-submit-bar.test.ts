@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OASSubmitBar } from './index.js'
 
 function mount(attrs: Record<string, string> = {}, html = ''): OASSubmitBar {
@@ -110,5 +110,64 @@ describe('oas-submit-bar', () => {
     expect(css).toContain('var(--oas-color-')
     expect(css).not.toMatch(/margin-(left|right)/)
     expect(css).not.toMatch(/padding-(left|right)/)
+  })
+
+  it('底部安全区：padding-block-end 走 env(safe-area-inset-bottom) 与 max() 兜底', () => {
+    const el = mount({ total: '10' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const barRule = css.match(/\.bar\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(barRule).toContain('padding-block-end: max(')
+    expect(barRule).toContain('env(safe-area-inset-bottom')
+  })
+
+  it('placeholder：缺省不渲染占位块；属性在场时渲染并随栏体高度同步', () => {
+    const el = mount({ total: '10', 'action-text': '结算' })
+    const ph = part(el, 'placeholder')!
+    expect(ph.hidden).toBe(true)
+    el.setAttribute('placeholder', '')
+    expect(ph.hidden).toBe(false)
+    // 可测量环境（真实浏览器）下高度同步栏体；happy-dom 测量为 0 时不写死像素
+    const barHeight = part(el, 'bar')!.offsetHeight
+    if (barHeight > 0) expect(ph.style.height).toBe(`${barHeight}px`)
+    else expect(ph.style.height).toBe('')
+    el.removeAttribute('placeholder')
+    expect(ph.hidden).toBe(true)
+  })
+
+  it('tip：提示行渲染在主行上方，属性移除即隐藏', () => {
+    const el = mount({ total: '86', tip: '运费 8 元，满 99 免运费' })
+    const tip = part(el, 'tip')!
+    expect(tip.hidden).toBe(false)
+    expect(part(el, 'tip-text')!.textContent).toBe('运费 8 元，满 99 免运费')
+    expect(part(el, 'tip-icon')!.hidden).toBe(true)
+    el.removeAttribute('tip')
+    expect(part(el, 'tip')!.hidden).toBe(true)
+  })
+
+  it('tip-icon：已注册图标渲染 svg；未注册告警一次且不渲染图标（文案保留）', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ total: '86', tip: '提示', 'tip-icon': 'info' })
+      expect(part(el, 'tip-icon')!.hidden).toBe(false)
+      expect(part(el, 'tip-icon')!.querySelector('svg')).not.toBeNull()
+      const el2 = mount({ total: '86', tip: '提示', 'tip-icon': 'no-such-icon' })
+      const icon2 = part(el2, 'tip-icon')!
+      expect(icon2.hidden).toBe(true)
+      // 同实例重复 update 只告警一次
+      el2.setAttribute('total', '87')
+      el2.setAttribute('total', '88')
+      const iconWarns = warnSpy.mock.calls.filter((args) => String(args[0]).includes('no-such-icon'))
+      expect(iconWarns.length).toBe(1)
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  it('tip 与 action 行共存：主行结构完整（extra/total/action 仍在 bar 内）', () => {
+    const el = mount({ total: '86', 'action-text': '结算', tip: '提示' })
+    expect(part(el, 'extra')).not.toBeNull()
+    expect(part(el, 'total')).not.toBeNull()
+    expect(part(el, 'action')).not.toBeNull()
+    expect(part(el, 'tip')!.hidden).toBe(false)
   })
 })
