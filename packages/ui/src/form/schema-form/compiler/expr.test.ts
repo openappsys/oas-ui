@@ -272,7 +272,7 @@ describe('expr 冻结函数库（20 个）', () => {
     // 负向同样钳制：3-31 减 1 月 → 2-28（平年）/ 2-29（闰年）
     expect(run('dateAdd({ts}, -1, "month")', { ts: local(2023, 3, 31) })).toBe(local(2023, 2, 28))
     expect(run('dateAdd({ts}, -1, "month")', { ts: local(2024, 3, 31) })).toBe(local(2024, 2, 29))
-    // 小数 / 非整数月：按整数月截断（与 day/hour/minute 的加法口径一致）
+    // month 特有：非整数月按整数截断（day/hour/minute 的加法允许小数乘数，不做截断）
     expect(run('dateAdd({ts}, 1.9, "month")', { ts: local(2023, 1, 15) })).toBe(local(2023, 2, 15))
   })
 })

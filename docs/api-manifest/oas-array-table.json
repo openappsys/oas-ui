@@ -85,7 +85,7 @@
   "events": [
     {
       "name": "oas-paste",
-      "detail": "{ startRow: anchor.rowIndex, startColumn, rows: rowsFilled, columns: filledColumns, truncated, }"
+      "detail": "{ startRow: anchor.rowIndex, startColumn, rows: rowsFilled, columns: filledColumns, truncated, addedRows: Math.max(0, targetRows - rowsBefore), }"
     },
     {
       "name": "oas-add",

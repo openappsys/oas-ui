@@ -140,8 +140,9 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
 - **跨行粘贴**：在任一单元格粘贴 TSV（`\t` 分列、换行分行）会从当前单元向右下填充，行不足自动补行；
   超过 `maxItems` 截断并以 aria-live + 开发期告警（每实例一次）提示；隐藏列不参与粘贴；
   单值粘贴不接管（原生输入照常）。粘贴值走控件既有写入通道，类型不符由校验链拦下。
-  粘贴会派发 `oas-paste`（`detail: { startRow, startColumn, rows, columns, truncated }`），
-  组件在同一轮刷新 `dirty` / 联动效果。
+  粘贴会派发 `oas-paste`（`detail: { startRow, startColumn, rows, columns, truncated, addedRows }`，
+  `addedRows` 为本次补出的行数），组件在同一轮刷新 `dirty` / 联动效果；错误视觉只在**补行粘贴**
+  （`addedRows > 0`）时清除，纯值粘贴保持未修复字段的错误提示。
 - 事件：`oas-add` / `oas-remove`（`detail: { index }`）、`oas-duplicate` / `oas-move`（`detail: { from, to }`）、
   `oas-paste`（粘贴批量填充）。
 - 行操作会改值但**不派发 `oas-values-change`**（事件契约不变）；组件在同一轮里刷新 `dirty`、联动效果与

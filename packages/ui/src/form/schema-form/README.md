@@ -95,15 +95,18 @@
   不改 `columns` 属性、不写回 uiSchema，字段名 / 值 / 校验不受影响（单元格用显式 `grid-column` 落位）。
 - **跨行粘贴 TSV**：表格区粘贴 `\t` / 换行分隔文本，从当前单元格向右下填充（行不足补行）；超过 `maxItems`
   截断 + `aria-live` + 每实例一次 devWarn；隐藏列不参与、单值粘贴不接管；值走内核写入通道（类型校验由
-  schema-form 承接）。事件 `oas-paste`（`detail: { startRow, startColumn, rows, columns, truncated }`）。
+  schema-form 承接）。事件 `oas-paste`（`detail: { startRow, startColumn, rows, columns, truncated, addedRows }`，
+  `addedRows` = 本次补出的行数）。
 - **行操作**：容器内建 复制 / 上移 / 下移 / 删除（`array-table` 另有表下列头内的追加按钮）。契约与
   容器同源（`form/shared/list-row-ops`）：值读写走内核通道（`oas-upload` 跳过）、操作后焦点按行位回归、
   `aria-live` 播报；事件 `oas-add` / `oas-remove` `{ index }` + `oas-duplicate` / `oas-move` `{ from, to }`。
   **不引入 `oas-change` 的 `op` 字段**（已发布契约）。
-- **值同步**：行操作不派发 `oas-values-change`；本组件在 `oas-add/remove/duplicate/move` 监听里刷新
+- **值同步**：行操作不派发 `oas-values-change`；本组件在 `oas-add/remove/duplicate/move/paste` 监听里刷新
   索引 / 规则 / 错误视觉 / 脏态 / 联动效果，受控模式下并把内核当前值当作新的 `appliedValues` 基线。
 - **错误清理**：重编号后旧 name 的错误会错位，因此行变更时清「数组级 + 该数组字段级」错误视觉
-  （注入错误走内核 `clearErrors`，规则错误在下次校验重算）。
+  （注入错误走内核 `clearErrors`，规则错误在下次校验重算）。**纯值粘贴例外**：`addedRows === 0`
+  （只在现有单元格填值）不清错误——行号未变，按内核「该字段值再次变化才清」契约保持错误视觉；
+  补行粘贴与行操作同口径清除。
 - **`min` 一物二用拆分**：容器 `rows` = 初始行数（本组件按数组长度下发），`min` = 删行下界（本组件
   不再下发，默认 0）。`minItems` 违规由数组级校验报错，不再锁住唯一行。
 - **结构重建行数快照**：`schema` / `uiSchema` 变化触发的重建按重建前 DOM 行数恢复（超出初始长度的

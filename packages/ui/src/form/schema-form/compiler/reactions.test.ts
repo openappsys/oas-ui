@@ -165,6 +165,32 @@ describe('reactions 编译（封闭词表 / otherwise / 冲突）', () => {
     expect(result.reactions).toHaveLength(2)
   })
 
+  it('仅声明 otherwise.value 也登记 value claim：同目标写 otherwise.value 告警冲突', () => {
+    // 无 fulfill.value 表达式、只有 otherwise.value 时，value 同样是声明过的效果键——
+    // 两条 reactions 对同目标写 otherwise.value 必须与 fulfill 写值同口径检出冲突
+    const result = compile({
+      country: {
+        reactions: [
+          {
+            whenSchema: { schema: { const: 'US' } },
+            target: 'province',
+            fulfill: { visible: true },
+            otherwise: { value: "'us'" },
+          },
+          {
+            whenSchema: { schema: { const: 'CN' } },
+            target: 'province',
+            fulfill: { visible: true },
+            otherwise: { value: "'cn'" },
+          },
+        ],
+      },
+    })
+    expect(result.warnings.join()).toContain('province.value')
+    expect(result.warnings.join()).toContain('后者胜')
+    expect(result.reactions).toHaveLength(2)
+  })
+
   it('scope 缺省 = $self（本字段），显式绝对路径照写', () => {
     const result = compile({
       country: {

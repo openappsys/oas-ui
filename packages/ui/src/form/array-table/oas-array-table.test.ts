@@ -310,6 +310,28 @@ describe('oas-array-table 列宽拖拽与列顺序重排（展示态，不序列
     expect(splitter(table, 0).getAttribute('aria-valuenow')).toBe('160')
   })
 
+  it('RTL：手柄贴列左缘，拖拽方向镜像（右移收窄，与 LTR 相反）', () => {
+    const { table } = makeTable({ name: 'users', rows: '1', dir: 'rtl' })
+    const handle = splitter(table, 0)
+    expect(handle.getAttribute('aria-valuenow')).toBe('120')
+    pointer('pointerdown', handle, 100)
+    // 同一手势（右移 40px）：LTR 下是加宽到 160；RTL 手柄在列左缘 → 取反收窄到 80
+    document.body.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 140, clientY: 0 }))
+    expect(splitter(table, 0).getAttribute('aria-valuenow')).toBe('80')
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 140, clientY: 0 }))
+  })
+
+  it('断开清理：拖拽中表格被移除后 document 监听随之摘除（悬挂移动不再调宽）', () => {
+    const { table } = makeTable({ name: 'users', rows: '1' })
+    const handle = splitter(table, 0)
+    pointer('pointerdown', handle, 100)
+    // 拖拽中宿主被移除：断开清理应结束会话并摘除 document 级监听
+    table.remove()
+    // 若监听悬挂，这次移动会在已移除的实例上继续调宽（120 → 220）
+    document.body.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 200, clientY: 0 }))
+    expect(splitter(table, 0).getAttribute('aria-valuenow')).toBe('120')
+  })
+
   it('键盘左右键调宽（±8px，下限截断）', () => {
     const { table } = makeTable({ name: 'users', rows: '1' })
     const handle = splitter(table, 0)
@@ -374,8 +396,20 @@ describe('oas-array-table 跨行粘贴 TSV', () => {
         { nick: 'B', age: '30', note: '' },
       ],
     })
-    expect(events[0]).toMatchObject({ startRow: 0, startColumn: 0, rows: 2, columns: 2 })
+    expect(events[0]).toMatchObject({ startRow: 0, startColumn: 0, rows: 2, columns: 2, addedRows: 1 })
     expect(liveText(table)).toContain('已粘贴 2 行 × 2 列')
+  })
+
+  it('oas-paste detail.addedRows 区分补行粘贴与纯值粘贴', () => {
+    const { table } = makeTable({ name: 'users', rows: '2' })
+    const events: Array<Record<string, unknown>> = []
+    table.addEventListener('oas-paste', (event) => events.push((event as CustomEvent).detail))
+    // 补行粘贴：已有 2 行，粘贴 3 行 → 补 1 行（addedRows > 0）
+    paste(table, 'A\t20\nB\t30\nC\t40', firstCell(table))
+    expect(events[0]).toMatchObject({ rows: 3, addedRows: 1 })
+    // 纯值粘贴：行数足够，只在现有单元格填值（addedRows = 0）
+    paste(table, 'X\t1', firstCell(table))
+    expect(events[1]).toMatchObject({ rows: 1, addedRows: 0 })
   })
 
   it('从中间单元粘贴：起始行列偏移正确', () => {

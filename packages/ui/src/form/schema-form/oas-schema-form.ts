@@ -1430,13 +1430,25 @@ export class OASSchemaForm extends OASElement {
     const mutatedPath = list ? this.arrayPathOf.get(list) : undefined
     this.indexArrayNodes()
     this.syncRules()
-    this.clearArrayErrorVisuals()
-    if (list) this.clearArrayFieldErrors(list, mutatedPath)
+    // 纯值粘贴（不补行，addedRows === 0）不清错误：行号未重排，内核契约是「该字段值再次变化
+    // 才清」，盲清会让未修复字段的错误视觉无声消失（错误消失但值没修好）。补行粘贴与行操作
+    // 同口径（新行改变行的值面，错误视觉随行数变化一起清）。其余刷新（联动 / 脏态 / 受控
+    // 基线）对两种粘贴都照常执行。
+    if (!(event.type === 'oas-paste' && this.pasteAddedRows(event) === 0)) {
+      this.clearArrayErrorVisuals()
+      if (list) this.clearArrayFieldErrors(list, mutatedPath)
+    }
     this.syncArrayStates()
     this.evaluateEffects()
     this.syncDirty()
     // 受控模式：行操作后把内核当前值当作新的写基线（宿主下次写树时只 diff 真实差异）
     if (this.hasHostValues()) this.appliedValues = cloneJson(this.kernelValues()) as Record<string, unknown>
+  }
+
+  /** 读取 `oas-paste` detail 的 addedRows（补行数；缺失或非法按 0 = 纯值粘贴） */
+  private pasteAddedRows(event: Event): number {
+    const detail = (event as CustomEvent).detail as { addedRows?: unknown } | null
+    return typeof detail?.addedRows === 'number' && Number.isFinite(detail.addedRows) ? detail.addedRows : 0
   }
 
   /** 清该数组的字段级错误视觉（注入项走内核，规则错误在下次校验时重算） */

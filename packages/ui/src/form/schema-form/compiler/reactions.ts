@@ -230,17 +230,7 @@ export function compileReactions(
           },
         )
       }
-      for (const target of targets) {
-        const effectKeys = valueExpr !== undefined ? [...Object.keys(fulfill), VALUE_KEY] : Object.keys(fulfill)
-        for (const effectKey of effectKeys) {
-          const claim = `${target}|${effectKey}`
-          if (claimed.has(claim)) {
-            warnings.push(`多条 reactions 写同一目标同一属性（${target}.${effectKey}），后者胜`)
-          }
-          claimed.add(claim)
-        }
-      }
-      out.push({
+      const compiled: CompiledReaction = {
         key,
         sourcePath,
         scope,
@@ -254,7 +244,22 @@ export function compileReactions(
         otherwise,
         valueExpr,
         otherwiseValueExpr,
-      })
+      }
+      for (const target of targets) {
+        // claim 登记：只要声明了值效果（fulfill/otherwise 的表达式或字面量任一）就登记 value——
+        // 仅 otherwise.value 也要进 claim，否则两条 reactions 对同目标写 otherwise.value 的
+        // 冲突告警失效（hasValueEffect 是求值期的同一判据）
+        const effectKeys = Object.keys(fulfill)
+        if (hasValueEffect(compiled) && !effectKeys.includes(VALUE_KEY)) effectKeys.push(VALUE_KEY)
+        for (const effectKey of effectKeys) {
+          const claim = `${target}|${effectKey}`
+          if (claimed.has(claim)) {
+            warnings.push(`多条 reactions 写同一目标同一属性（${target}.${effectKey}），后者胜`)
+          }
+          claimed.add(claim)
+        }
+      }
+      out.push(compiled)
     })
   }
   return out

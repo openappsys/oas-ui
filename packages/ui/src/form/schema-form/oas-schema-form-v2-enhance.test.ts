@@ -342,6 +342,53 @@ describe('array-table 跨行粘贴（schema-form 集成：值同步 / 校验承�
     pasteText(el, 'A\nB')
     expect(widget(el, 'hint')!.hasAttribute('aria-required')).toBe(false)
   })
+
+  it('纯值粘贴（不补行）不清错误视觉：未修复字段的 aria-invalid 保持', async () => {
+    const el = mount(typedSchema, {
+      uiSchema: { users: { widget: 'array-table' } },
+      initialValues: { users: [{}, {}] },
+    })
+    // 两行 nick 均空：validate 后错误视觉挂上
+    await expect(el.validate()).resolves.toBe(false)
+    expect(widget(el, 'users.0.nick')!.getAttribute('aria-invalid')).toBe('true')
+    expect(widget(el, 'users.1.nick')!.getAttribute('aria-invalid')).toBe('true')
+    // 纯值粘贴：1 行 × 2 列落在已有第 1 行（不补行，addedRows = 0）
+    pasteText(el, 'A\t20')
+    expect(rows(el)).toHaveLength(2)
+    // 值照常落地、刷新链照常跑（脏态 / 联动 / 受控基线不受影响）
+    expect(widget(el, 'users.0.nick')!.getAttribute('value')).toBe('A')
+    expect(el.dirty).toBe(true)
+    // 行号未重排：未修复字段（第 2 行 nick 仍空）的错误视觉按内核契约保持
+    expect(widget(el, 'users.1.nick')!.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('补行粘贴清数组级错误（minItems 违规错误条随补行清除）', async () => {
+    const minItemsSchema = {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          title: '成员',
+          minItems: 2,
+          items: {
+            type: 'object',
+            properties: { nick: { type: 'string', title: '昵称' } },
+          },
+        },
+      },
+    }
+    const el = mount(minItemsSchema, { uiSchema: { users: { widget: 'array-table' } }, initialValues: { users: [{}] } })
+    await expect(el.validate()).resolves.toBe(false)
+    const bar = (): HTMLElement | null => el.shadowRoot!.querySelector<HTMLElement>('[part="array-error"]')
+    // 数组级错误条可见（minItems: 2，当前 1 行）
+    expect(bar()?.hidden).toBe(false)
+    expect(bar()?.textContent).not.toBe('')
+    // 粘贴 2 行 → 补 1 行（addedRows > 0）→ 数组级错误与行操作同口径清除
+    pasteText(el, 'A\nB')
+    expect(rows(el)).toHaveLength(2)
+    expect(bar()?.hidden).toBe(true)
+    await expect(el.validate()).resolves.toBe(true)
+  })
 })
 
 describe('嵌套数组深度极限（行数快照 4 轮上限）', () => {

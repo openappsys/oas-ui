@@ -163,8 +163,9 @@ row-action column — it is the same value semantics as `oas-form-list` in a dif
   `aria-live` announcement and a one-time dev warning per instance; hidden columns are skipped; a single-value
   paste is left to the native input. Pasted values go through the existing widget write channel, so type
   mismatches are caught by the validation chain. Paste emits `oas-paste`
-  (`detail: { startRow, startColumn, rows, columns, truncated }`) and refreshes `dirty` / reactions in the
-  same turn.
+  (`detail: { startRow, startColumn, rows, columns, truncated, addedRows }`, where `addedRows` is the number
+  of appended rows) and refreshes `dirty` / reactions in the same turn. Error visuals are cleared only for
+  **row-appending pastes** (`addedRows > 0`); value-only pastes keep the error state of unfixed fields.
 - Events: `oas-add` / `oas-remove` (`detail: { index }`), `oas-duplicate` / `oas-move` (`detail: { from, to }`),
   `oas-paste` (bulk TSV fill).
 - Row operations change values but do **not** emit `oas-values-change` (contract preserved); the component

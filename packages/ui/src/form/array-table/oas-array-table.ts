@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isRtl } from '../../shared/direction.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import {
   applyRowNaming,
@@ -293,6 +294,9 @@ export class OASArrayTable extends OASElement {
         this.childObserver = null
       })
     }
+    // 列宽拖拽会话挂 document：拖拽中宿主被移除/重建时，监听必须随断开一起摘除，
+    // 否则悬挂的 pointermove 会在重连后的新实例布局上调宽（幂等：无会话时是空操作）
+    this.onCleanup(() => this.handleResizeEnd())
     // 行状态（items / lastTemplate）不随断开清理：行 wrapper 仍在 light DOM，清空记录会让重连时再建一遍
   }
 
@@ -698,7 +702,9 @@ export class OASArrayTable extends OASElement {
     const session = this.resizeSession
     if (!session) return
     const pointer = event as PointerEvent
-    const next = Math.max(MIN_COLUMN_WIDTH, Math.round(session.startWidth + (pointer.clientX - session.startX)))
+    // RTL 镜像：手柄贴 inline-end（RTL 下在列**左**缘），拖拽方向与 LTR 相反 → delta 取反
+    const delta = (pointer.clientX - session.startX) * (isRtl(this) ? -1 : 1)
+    const next = Math.max(MIN_COLUMN_WIDTH, Math.round(session.startWidth + delta))
     if (this.columnWidths.get(session.key) === next) return
     this.columnWidths.set(session.key, next)
     this.syncLayout()
@@ -974,7 +980,8 @@ export class OASArrayTable extends OASElement {
     const targetRows = Math.min(wanted, Number.isFinite(max) ? max : wanted)
     const truncated = wanted > targetRows
     event.preventDefault()
-    if (targetRows > this.items.length) {
+    const rowsBefore = this.items.length
+    if (targetRows > rowsBefore) {
       while (this.items.length < targetRows) this.addItem()
       this.pendingInitialReplay = true
       this.applyNaming()
@@ -1009,13 +1016,16 @@ export class OASArrayTable extends OASElement {
       this.announce(this.t('schemaForm.pasted', { rows: rowsFilled, cols: filledColumns }))
     }
     this.syncShadow()
-    // 数组容器不知道值被改写（写入走控件通道）：事件供 schema-form 做值同步 / 联动重算 / 脏态刷新
+    // 数组容器不知道值被改写（写入走控件通道）：事件供 schema-form 做值同步 / 联动重算 / 脏态刷新。
+    // `addedRows` = 本次粘贴补出的行数：schema-form 据此区分「补行粘贴」（行号面变化，错误视觉
+    // 随重编号一起清）与「纯值粘贴」（只在现有单元格填值，错误视觉按内核契约保持）。
     this.emit('paste', {
       startRow: anchor.rowIndex,
       startColumn,
       rows: rowsFilled,
       columns: filledColumns,
       truncated,
+      addedRows: Math.max(0, targetRows - rowsBefore),
     })
   }
 
