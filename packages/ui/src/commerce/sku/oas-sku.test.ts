@@ -500,6 +500,20 @@ describe('oas-sku', () => {
     dispatchSlideEnd(sheet)
     expect(sheet.hasAttribute('hidden')).toBe(false)
   })
+
+  it('收尾窗口内 observed 属性更新不砍断滑出动画（update 重入不得同帧 hidden）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    el.openOverlay()
+    el.closeOverlay()
+    expect(el.hasAttribute('open')).toBe(false)
+    // 滑出播放中（收尾未落定）受控宿主回写 value/quantity → update() 重入
+    el.setAttribute('quantity', '2')
+    expect(sheet.hasAttribute('hidden'), '滑出播放中 update 重入不得同帧隐藏（砍断动画）').toBe(false)
+    // 收尾完成（滑出结束事件）才落 hidden
+    dispatchSlideEnd(sheet)
+    expect(sheet.hasAttribute('hidden')).toBe(true)
+  })
 })
 
 /** 视口桩：窄屏判定走 matchMedia('(max-width: 480px)')，可即时切换并触发 change */

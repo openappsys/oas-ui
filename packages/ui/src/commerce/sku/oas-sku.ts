@@ -640,8 +640,10 @@ export class OASSku extends OASElement {
         this.restoreFocusToTrigger()
         this.scheduleSheetHide(sheet)
       } else {
-        // 从未开过（初始 / 形态切回）：直接隐藏，不留可达窗口
-        sheet.setAttribute('hidden', '')
+        // 从未开过（初始 / 形态切回）：直接隐藏，不留可达窗口。
+        // 收尾窗口内（滑出动画播放中）update() 重入不得同帧 hidden——否则砍断滑出动画；
+        // 收尾完成会自行落 hidden（scheduleSheetHide 的 finish）。
+        if (this.sheetHideCleanup == null) sheet.setAttribute('hidden', '')
       }
     } else {
       this.cancelSheetHide()
