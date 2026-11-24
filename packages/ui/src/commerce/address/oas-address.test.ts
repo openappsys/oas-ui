@@ -413,7 +413,7 @@ describe('OASAddress', () => {
     const del = list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')[0]!
     expect(del.disabled).toBe(true)
     expect(del.getAttribute('aria-busy')).toBe('true')
-    expect(del.querySelector('[part="card-delete-spinner"]')).not.toBeNull()
+    expect(del.querySelector('[part="card-delete-spinner"]')?.getAttribute('part')).toBe('card-delete-spinner')
     const edit = list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-edit"]')[0]!
     expect(edit.disabled).toBe(false)
     list.removeAttribute('deleting')
@@ -423,7 +423,7 @@ describe('OASAddress', () => {
     const submitBtn = q<HTMLButtonElement>(form, 'button[type="submit"]')
     expect(submitBtn.disabled).toBe(true)
     expect(submitBtn.getAttribute('aria-busy')).toBe('true')
-    expect(submitBtn.querySelector('[part="save-spinner"]')).not.toBeNull()
+    expect(submitBtn.querySelector('[part="save-spinner"]')?.getAttribute('part')).toBe('save-spinner')
     form.removeAttribute('saving')
     expect(q<HTMLButtonElement>(form, 'button[type="submit"]').disabled).toBe(false)
   })

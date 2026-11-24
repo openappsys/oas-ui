@@ -149,7 +149,7 @@ describe('oas-submit-bar', () => {
     try {
       const el = mount({ total: '86', tip: '提示', 'tip-icon': 'info' })
       expect(part(el, 'tip-icon')!.hidden).toBe(false)
-      expect(part(el, 'tip-icon')!.querySelector('svg')).not.toBeNull()
+      expect(part(el, 'tip-icon')!.querySelector('svg')?.tagName.toLowerCase()).toBe('svg')
       const el2 = mount({ total: '86', tip: '提示', 'tip-icon': 'no-such-icon' })
       const icon2 = part(el2, 'tip-icon')!
       expect(icon2.hidden).toBe(true)
@@ -165,9 +165,9 @@ describe('oas-submit-bar', () => {
 
   it('tip 与 action 行共存：主行结构完整（extra/total/action 仍在 bar 内）', () => {
     const el = mount({ total: '86', 'action-text': '结算', tip: '提示' })
-    expect(part(el, 'extra')).not.toBeNull()
-    expect(part(el, 'total')).not.toBeNull()
-    expect(part(el, 'action')).not.toBeNull()
+    expect(part(el, 'extra')?.getAttribute('part')).toBe('extra')
+    expect(part(el, 'total')?.getAttribute('part')).toBe('total')
+    expect(part(el, 'action')?.getAttribute('part')).toBe('action')
     expect(part(el, 'tip')!.hidden).toBe(false)
   })
 })

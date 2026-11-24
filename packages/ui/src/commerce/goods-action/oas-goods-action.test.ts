@@ -220,7 +220,6 @@ describe('oas-goods-action', () => {
     const btn = actionButtons(el)[0]!
     expect(btn.disabled).toBe(true)
     expect(btn.getAttribute('aria-busy')).toBe('true')
-    expect(btn.querySelector<HTMLElement>('[part="button-spinner"]')).not.toBeNull()
     expect(btn.querySelector<HTMLElement>('[part="button-spinner"]')!.hidden).toBe(false)
     btn.click()
     expect(fired).toBe(0)
