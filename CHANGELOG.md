@@ -26,7 +26,7 @@
 - **跳转目标 `goto`**：前进时按条件跳转——`{ when, target }`（索引或步骤 key）或 `target` 简写（条件恒成立）；命中且切步成功（未被 `oas-before-change` 否决）后派发新增事件 `oas-goto`（`{ index, key?, from, target }`），仍走单步校验与可取消的 `oas-before-change`。目标步被条件隐藏时落到其后最近可见步。
 - **正交与开关**：`hidden: true` 恒隐藏（宿主优先），`hidden: false` / 缺省才由 `when` 决定；`conditions="false"` 关闭引擎（只认宿主 `hidden`）。
 - **容错与守卫**：表达式语法错 / 未知函数一次性 devWarn 并降级单条（`when` 不生效、`goto` 不跳转），不连坐其它步骤；值变化 → 条件 → 对齐 → `oas-change` 的同步级联 8 轮截断并告警（宿主在 `oas-change` 里回写 `current` / 答案形成回环时不死循环）。
-- 单测新增 25（条件引擎纯函数 10 + 组件行为 15：显隐 / 自动跳过 / goto 三种书写面 / 依赖重算 / 与手动 `hidden` 正交 / 关闭引擎 / current 对齐 / 循环守卫 / 语法错降级 / schema-form 契约元素驱动 / reset 重算）；zh/en 文档补「声明式条件与跳转」段与 demo；无新增 i18n 键，`conditions` attr 与 `oas-goto` 事件进 API 表。
+- 单测新增 25（条件引擎纯函数 9 + 组件行为 16：显隐 / 自动跳过 / goto 三种书写面 / 依赖重算 / 与手动 `hidden` 正交 / 关闭引擎 / current 对齐 / 循环守卫 / 语法错降级 / goto 被 veto 不派发事件 / schema-form 契约元素驱动 / reset 重算）；zh/en 文档补「声明式条件与跳转」段与 demo；无新增 i18n 键，`conditions` attr 与 `oas-goto` 事件进 API 表。
 
 **新组件能力补强批（15 条既有组件小增量，全部向后兼容：缺省/未启用路径与现状逐字节等价）**
 
