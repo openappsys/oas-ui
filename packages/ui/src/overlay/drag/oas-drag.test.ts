@@ -515,6 +515,46 @@ describe('OAS drag 自由拖拽浮块', () => {
     expect(raf.requests()).toBe(0)
     expect(el.hasAttribute('data-coasting')).toBe(false)
   })
+
+  // ---------------------------------------------------------------------------
+  // 修复批回归（R1 补审）：停顿后松手不得用陈旧速度滑出去
+  // ---------------------------------------------------------------------------
+
+  it('停顿后松手：陈旧速度作废，不进入滑行（也不再请求动画帧）', () => {
+    const raf = installFakeRaf()
+    const el = mount({ inertia: '' })
+    stubRect(el)
+    // 快速拖动 32px / 16ms（2 px/ms），随后按住不动 1 秒才松手
+    el.dispatchEvent(pointerAt('pointerdown', 100, 100, 0))
+    el.dispatchEvent(pointerAt('pointermove', 132, 100, 16))
+    el.dispatchEvent(pointerAt('pointerup', 132, 100, 1016))
+    expect(el.hasAttribute('data-coasting'), '停顿后松手不得进入滑行').toBe(false)
+    expect(raf.requests(), '不得为陈旧速度起动画帧').toBe(0)
+    expect(el.position.x, '松手位置即最终位置').toBe(32)
+  })
+
+  it('停顿后松手仍按落点吸附（速度作废不影响吸附口径）', () => {
+    const raf = installFakeRaf()
+    const el = mount({ inertia: '', snap: '20' })
+    stubRect(el, 0, 0, 80, 40)
+    el.dispatchEvent(pointerAt('pointerdown', 100, 100, 0))
+    el.dispatchEvent(pointerAt('pointermove', 155, 133, 16))
+    el.dispatchEvent(pointerAt('pointerup', 155, 133, 1016))
+    expect(el.hasAttribute('data-coasting')).toBe(false)
+    expect(raf.requests()).toBe(0)
+    expect(el.position, '无滑行时松手即吸附到 20 栅格').toEqual({ x: 60, y: 40 })
+  })
+
+  it('快速松手仍滑行（停顿判定不得误伤正常甩动）', () => {
+    const raf = installFakeRaf()
+    const el = mount({ inertia: '' })
+    stubRect(el, 0, 0, 10, 10)
+    el.dispatchEvent(pointerAt('pointerdown', 0, 0, 0))
+    el.dispatchEvent(pointerAt('pointermove', 32, 0, 16))
+    el.dispatchEvent(pointerAt('pointerup', 32, 0, 32))
+    expect(el.hasAttribute('data-coasting'), '16ms 内松手属正常甩动，必须滑行').toBe(true)
+    expect(raf.requests()).toBe(1)
+  })
 })
 
 // ---------------------------------------------------------------------------

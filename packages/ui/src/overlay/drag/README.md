@@ -13,7 +13,7 @@
 
 **样式约定**：组件接管宿主的 `transform` 与 `touch-action`。宿主用 CSS 决定自身定位（如 `position: fixed; inset-block-end: 24px; inset-inline-end: 24px`），组件只负责位移；`prefers-reduced-motion: reduce` 下惯性降级为瞬停、过渡关闭。位置记忆恢复的首帧会临时挂 `data-restoring` 关掉过渡（下一帧撤除），避免「页面加载即从原点滑到记忆位置」的可见滑入。
 
-**惯性口径**：松手按最后一次采样的指针速度 × 16ms 起步，每帧乘 0.95（`dt` 按 16ms 归一，掉帧时按实际时长折算），低于 0.02 px/ms 或触边即停，最长 60 帧（约 1 秒）；滑行期间挂 `data-coasting` 禁用过渡（位移由 rAF 直接驱动），收尾统一派发一次 `oas-drag-end` 并落盘位置。`prefers-reduced-motion: reduce` 不请求任何动画帧（瞬停）。
+**惯性口径**：松手按最后一次采样的指针速度 × 16ms 起步（**该采样距今超过 100ms 视为已停住、速度归零**——按住不动再松手不会滑出去），每帧乘 0.95（`dt` 按 16ms 归一，掉帧时按实际时长折算），低于 0.02 px/ms 或触边即停，最长 60 帧（约 1 秒）；滑行期间挂 `data-coasting` 禁用过渡（位移由 rAF 直接驱动），收尾统一派发一次 `oas-drag-end` 并落盘位置。`prefers-reduced-motion: reduce` 不请求任何动画帧（瞬停）。
 
 **已知边界（旧实现既有，本轮记录不改）**：① 滑行中被 pointerdown 打断时 `stopCoast()` 静默收场——不派滑行收尾的 `oas-drag-end`、不落盘（随后的新拖拽有自己的完整链路）；手柄形态在手柄区外按下、或 `disabled` 下按下，则连滑行都不停（拦截发生在停滑行之前），滑行自然滑完。② `disabled` 落下不中断进行中的滑行——同①的后半段，滑行继续到自然收尾。
 

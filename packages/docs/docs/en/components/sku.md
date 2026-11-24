@@ -137,7 +137,7 @@ The price inside the panel is rendered by an embedded `oas-price`, so `currency`
 | Event | Description |
 | --- | --- |
 | `oas-change` | Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' \| 'quantity' }` (sku is the matched object or null), `detail: { value: { ...this.selected }, quantity: qty, sku, change: 'quantity', } satisfies SkuChangeDetail \| { value: { ...this.selected }, quantity, sku, change, } satisfies SkuChangeDetail` |
-| `oas-close` | Close request bubbled from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component collapses itself |
+| `oas-close` | Close request **passed through** from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component already collapses itself, so hosts need no handler (listen only for observation) |
 | `oas-open-change` | Sheet open state changed (interactive / imperative), `detail: { open }`; attribute writes stay silent |
 
 <script setup>
@@ -156,7 +156,8 @@ onMounted(() => {
       qtyOut.textContent = 'Quantity: ' + e.detail.quantity + ' (' + e.detail.change + ')'
     })
 
-    // Popup form: imperative open, close request arrives as oas-close from the sheet
+    // Popup form: imperative open; oas-close is passed through from the sheet (the component already
+    // collapses itself — listen only for observation / analytics)
     const popup = document.getElementById('sku-popup-en')
     const popupOut = document.getElementById('sku-popup-out-en')
     document.getElementById('sku-popup-open-en')?.addEventListener('click', () => popup?.openOverlay())

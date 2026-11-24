@@ -4401,7 +4401,7 @@
     "events": {
       "oas-change": "Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' | 'quantity' }` (sku is the matched object or null)",
       "oas-open-change": "Sheet open state changed (interactive / imperative), `detail: { open }`; attribute writes stay silent",
-      "oas-close": "Close request bubbled from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component collapses itself"
+      "oas-close": "Close request **passed through** from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component already collapses itself, so hosts need no handler (listen only for observation)"
     },
     "slots": {},
     "props": {
@@ -6016,7 +6016,7 @@
     "attrs": {
       "boundary": "Drag boundary: `viewport` (default) or a CSS selector whose element rect is the boundary (a miss warns once and falls back to the viewport)",
       "axis": "Drag axis: `both` (default) / `x` horizontal only / `y` vertical only; invalid values fall back to `both` with a warning",
-      "inertia": "Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary); instant stop under `prefers-reduced-motion: reduce`",
+      "inertia": "Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary; a last velocity sample older than 100ms counts as stopped, so no glide); instant stop under `prefers-reduced-motion: reduce`",
       "remember": "Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota)",
       "storage-key": "Storage key for position memory (default `oas-drag`)",
       "keyboard": "Keyboard nudging: on by default (`tabindex=\"0\"`, 1px with arrow keys, 10px with Shift); write `false` to disable",

@@ -137,7 +137,7 @@ description: "商品规格选择：specs + skus 数据契约、选中组合精�
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' \| 'quantity' }`（sku 为完整匹配对象或 null） |
-| `oas-close` | 由承载件 `oas-bottom-sheet` 冒泡出的关闭请求（下滑 / 遮罩 / Esc），`detail: { reason }`；组件收到后自动收起 |
+| `oas-close` | 承载件 **透传** 的关闭请求（下滑 / 遮罩 / Esc），`detail: { reason }`；组件收到后已自行收起，宿主无需再处理（监听仅用于观测 / 联动） |
 | `oas-open-change` | 弹层开合变化（交互 / 命令式），`detail: { open }`；受控属性写入不派发 |
 
 <script setup>
@@ -156,7 +156,7 @@ onMounted(() => {
       qtyOut.textContent = '数量：' + e.detail.quantity + '（' + e.detail.change + '）'
     })
 
-    // 弹层形态：命令式打开，关闭请求由 bottom-sheet 派发 oas-close
+    // 弹层形态：命令式打开；oas-close 由承载件透传（组件已自行收起，这里只做观测 / 埋点）
     const popup = document.getElementById('sku-popup')
     const popupOut = document.getElementById('sku-popup-out')
     document.getElementById('sku-popup-open')?.addEventListener('click', () => popup?.openOverlay())

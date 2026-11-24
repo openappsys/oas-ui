@@ -513,6 +513,26 @@ describe('oas-sku', () => {
     dispatchSlideEnd(sheet)
     expect(sheet.hasAttribute('hidden')).toBe(true)
   })
+
+  // ---------------------------------------------------------------------------
+  // 修复批回归（R1 补审）：反复开合不得累积断开清理回调
+  // ---------------------------------------------------------------------------
+
+  it('反复开合弹层不累积 onCleanup 注册（隐藏收尾用单次句柄）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    // cleanupFns 是 OASElement 的私有成员（运行时是普通字段），这里直接读长度做泄漏观测
+    const internals = el as unknown as { cleanupFns: Array<() => void> }
+    expect(internals.cleanupFns.length, '前置：bind 只注册一条断开清理').toBe(1)
+    const base = internals.cleanupFns.length
+    for (let i = 0; i < 4; i++) {
+      el.openOverlay()
+      el.closeOverlay()
+    }
+    expect(internals.cleanupFns.length, '开合不得追加 onCleanup 注册（否则随交互次数单调增长）').toBe(base)
+    // 末次关闭的滑出动画仍在播（收尾未到点，不得提前 hidden）
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    expect(sheet.hasAttribute('hidden')).toBe(false)
+  })
 })
 
 /** 视口桩：窄屏判定走 matchMedia('(max-width: 480px)')，可即时切换并触发 change */

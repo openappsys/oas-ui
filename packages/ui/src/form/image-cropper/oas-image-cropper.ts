@@ -60,12 +60,14 @@ interface DragState {
   base: CropRect
 }
 
-/** 图片平移状态（pointerdown 落点 + 起始位移） */
+/** 图片平移状态（pointerdown 落点 + 起始位移 + 是否真的产生过位移） */
 interface PanState {
   startX: number
   startY: number
   baseX: number
   baseY: number
+  /** 本次平移是否真的改过位移（单击 / 抖动不派发 oas-change） */
+  moved: boolean
 }
 
 /** 舞台内坐标点（缩放锚点） */
@@ -402,12 +404,21 @@ export class OASImageCropper extends OASElement {
   private observeResize(): void {
     if (typeof ResizeObserver === 'undefined' || !this.stageEl) return
     this.resizeObserver?.disconnect()
-    this.resizeObserver = new ResizeObserver(() => {
-      this.measureStage()
-      this.syncFrame()
-      this.syncImage()
-    })
+    this.resizeObserver = new ResizeObserver(() => this.handleStageResize())
     this.resizeObserver.observe(this.stageEl)
+  }
+
+  /**
+   * 舞台尺寸变化后的统一收口（ResizeObserver 回调与单测共同入口）：
+   * 重测尺寸 → 重排裁剪框 → **按覆盖约束重新钳回位移**。
+   *
+   * 最后一步必须走 `applyOffset`：`measureStage` 会按比例缩放裁剪框、`fitScale` 也会随舞台变化，
+   * 位移的可行区间因此改变；漏掉它就会出现「尺寸变小后裁剪框内露出舞台底色」。
+   */
+  private handleStageResize(): void {
+    this.measureStage()
+    this.syncFrame()
+    this.applyOffset(this.offsetValue.x, this.offsetValue.y)
   }
 
   private ensureCleanup(): void {
@@ -469,11 +480,7 @@ export class OASImageCropper extends OASElement {
     this.frameEl?.setAttribute('aria-label', this.t('imageCropper.label'))
     if (this.frameEl) this.frameEl.tabIndex = disabled ? -1 : 0
     // 可平移光标提示：只有「有图 + 未禁用」时舞台才可抓取
-    if (this.loaded && !disabled) stage.setAttribute('data-pannable', '')
-    else {
-      stage.removeAttribute('data-pannable')
-      stage.removeAttribute('data-panning')
-    }
+    this.syncPannable()
 
     const maxZoom = this.resolveMaxZoom()
     if (this.zoomRangeEl) {
@@ -689,6 +696,8 @@ export class OASImageCropper extends OASElement {
     this.failed = false
     img.hidden = false
     this.syncEmptyState()
+    // load 是异步事件，不会触发 update()：抓取光标必须在这里补
+    this.syncPannable()
     this.syncImage()
     this.emit('load', { width: img.naturalWidth, height: img.naturalHeight })
   }
@@ -698,6 +707,8 @@ export class OASImageCropper extends OASElement {
     this.failed = true
     if (this.imgEl) this.imgEl.hidden = true
     this.syncEmptyState()
+    // 破图不得残留「可抓取」提示（同理：错误事件不经过 update()）
+    this.syncPannable()
     this.emit('error', { src: this.lastSrc })
   }
 
@@ -722,11 +733,31 @@ export class OASImageCropper extends OASElement {
     }
   }
 
+  /**
+   * 可平移光标提示（舞台 `data-pannable` → `cursor: grab`）。
+   *
+   * 状态来源是 `loaded && !disabled`，但**加载完成不经过 `update()`**（load 事件是异步到达的），
+   * 所以 `onImageLoad` / `onImageError` 也必须调用它——只靠 `update()` 会让真机里始终没有抓取光标。
+   */
+  private syncPannable(): void {
+    const stage = this.stageEl
+    if (!stage) return
+    if (this.loaded && !this.injectDisabled()) stage.setAttribute('data-pannable', '')
+    else {
+      stage.removeAttribute('data-pannable')
+      stage.removeAttribute('data-panning')
+    }
+  }
+
   private onPointerDown = (e: Event): void => {
     if (this.injectDisabled() || !this.lastSrc || this.failed) return
     const target = e.target as HTMLElement | null
     if (!target) return
     const pe = e as PointerEvent
+    // 只认主键：右键 / 中键拖拽不得平移图片或移动裁剪框（与 oas-drag 口径一致）
+    if (pe.button !== undefined && pe.button !== 0) return
+    // 已有会话在跑（第二根手指 / 漏收 pointerup）时不抢占：否则旧起点会被覆盖，坐标跳变
+    if (this.drag || this.pan) return
     const inFrame = this.frameEl?.contains(target) === true
     if (inFrame) {
       const handle = target.dataset?.handle ?? ''
@@ -752,6 +783,7 @@ export class OASImageCropper extends OASElement {
       startY: pe.clientY ?? 0,
       baseX: this.offsetValue.x,
       baseY: this.offsetValue.y,
+      moved: false,
     }
     try {
       this.stageEl?.setPointerCapture(pe.pointerId)
@@ -769,6 +801,8 @@ export class OASImageCropper extends OASElement {
       const dx = (pe.clientX ?? 0) - pan.startX
       const dy = (pe.clientY ?? 0) - pan.startY
       this.applyOffset(pan.baseX + dx, pan.baseY + dy)
+      // 位移真的变了才算「动过」（钳制后仍等于起点说明没动，例如已在边界上）
+      if (this.offsetValue.x !== pan.baseX || this.offsetValue.y !== pan.baseY) pan.moved = true
       return
     }
     const drag = this.drag
@@ -790,10 +824,12 @@ export class OASImageCropper extends OASElement {
 
   private onPointerUp = (): void => {
     if (this.pan) {
+      const moved = this.pan.moved
       this.pan = null
       this.stageEl?.removeAttribute('data-panning')
       this.syncImage()
-      this.emitChange()
+      // 框外单击（按下即抬起、位移没变）不是一次「图片平移」，不派事件
+      if (moved) this.emitChange()
       return
     }
     if (!this.drag) return
@@ -813,7 +849,8 @@ export class OASImageCropper extends OASElement {
       this.pan = null
       this.stageEl?.removeAttribute('data-panning')
       this.applyOffset(pan.baseX, pan.baseY)
-      this.emitChange()
+      // 没动过就没有「回退」，不派事件（与 pointerup 同一口径）
+      if (pan.moved) this.emitChange()
       return
     }
     if (!this.drag) return

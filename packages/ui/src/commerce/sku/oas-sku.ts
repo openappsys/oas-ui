@@ -45,8 +45,8 @@ import '../../feedback/bottom-sheet/index.js'
  * - `oas-change`：规格或数量变化，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`
  *   （`sku` 为完整匹配对象或 `null`；程序性写入属性不回派事件）
  * - `oas-open-change`：交互 / 命令式开合弹层，detail `{ open }`（受控属性写入静默不派发）
- * - `oas-close`：由承载件 `oas-bottom-sheet` 冒泡出的关闭请求（下滑 / 遮罩 / Esc），
- *   detail `{ reason }`；本组件收到后自动收起
+ * - `oas-close`：**承载件透传事件**——由 `oas-bottom-sheet` 冒泡出的关闭请求（下滑 / 遮罩 / Esc），
+ *   detail `{ reason }`；本组件收到后已自行收起，宿主**无需**再处理（监听它只用于观测 / 联动埋点）
  *
  * a11y：每组 `fieldset` + `legend` 组织，选项为原生 radio（方向键/空格原生可用）；
  * 缺货选项 `disabled` 且文本含「缺货」；数量按 spinbutton 语义（number input + 加减按钮，
@@ -538,6 +538,8 @@ export class OASSku extends OASElement {
       this.releaseViewportWatch?.()
       this.releaseViewportWatch = null
       this.sheetEl?.removeEventListener('oas-close', this.onSheetClose)
+      // 待生效的隐藏收尾随断连取消（句柄存在成员里，不按次注册清理回调，避免 cleanupFns 单调增长）
+      this.cancelSheetHide()
     })
   }
 
@@ -719,7 +721,6 @@ export class OASSku extends OASElement {
       this.sheetHideCleanup = null
       this.sheetHideSeq++ // 使排队中的旧收尾失效
     }
-    this.onCleanup(() => this.cancelSheetHide())
   }
 
   private cancelSheetHide(): void {
