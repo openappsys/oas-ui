@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { closePath } from '@oas-ui/icons/icons/close'
 import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
+import { lockBodyScroll, pushEscapeLayer } from '../../shared/overlay-stack.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import { normalizeChoice } from '../../shared/choice.js'
 import { devWarn } from '../../shared/dev-warn.js'
@@ -43,6 +44,10 @@ import { devWarn } from '../../shared/dev-warn.js'
  * a11y：触发按钮 `aria-haspopup="dialog"` + `aria-expanded`；弹层 `role="dialog"` +
  * `aria-modal` + 标题关联；列表用原生 radio（方向键切换）；Esc 关闭并归还焦点；
  * 遮罩点击关闭；打开时焦点移入弹层，Tab 在弹层内循环。
+ *
+ * 层叠协议（对齐 modal）：弹层打开即持 body 滚动锁（跨组件引用计数）并压入共享 Esc 层栈，
+ * 关闭/断开时释放。多层浮层同开时一次 Esc 只关最上层（后开者先关），不再由组件自建的
+ * 面板 keydown 抢走 Esc。
  */
 
 export type CouponStatus = 'available' | 'expired' | 'used' | 'unavailable'
@@ -421,6 +426,10 @@ export class OASCoupon extends OASElement {
   private lastFocus: HTMLElement | null = null
   /** 卡片模式缺少 amount 的 dev 告警去重（实例级一次） */
   private warnedMissingAmount = false
+  /** 打开态的共享层栈退栈函数（关闭/断开连接时释放） */
+  private releaseEscapeLayer: (() => void) | null = null
+  /** 打开态的 body 滚动锁释放函数（跨组件引用计数） */
+  private releaseScrollLock: (() => void) | null = null
 
   // -------------------------------------------------------------------------
   // property 通道（框架把模板静态属性写成 property 时的数据入口）
@@ -491,6 +500,9 @@ export class OASCoupon extends OASElement {
     this.closeEl?.addEventListener('click', this.onCloseClick)
     this.panelEl?.addEventListener('keydown', this.onPanelKeydown)
     this.listEl?.addEventListener('change', this.onListChange)
+    // 断开连接必须退栈并解锁（否则残留幽灵 Esc 层 + body 永久锁死）；
+    // 重连走 bind() 重新注册，打开态由 syncOpenState 重新持锁
+    this.onCleanup(() => this.releaseOverlay())
   }
 
   protected override render(): void {
@@ -541,13 +553,8 @@ export class OASCoupon extends OASElement {
     this.closeOverlay()
   }
 
-  /** 面板键盘：Esc 关闭；Tab 在面板内循环（焦点陷阱） */
+  /** 面板键盘：Tab 在面板内循环（焦点陷阱）；Esc 由共享层栈统一处理（不再本地拦截） */
   private onPanelKeydown = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      this.closeOverlay()
-      return
-    }
     if (event.key !== 'Tab' || !this.panelEl) return
     const focusables = [
       ...this.panelEl.querySelectorAll<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])'),
@@ -749,9 +756,13 @@ export class OASCoupon extends OASElement {
   /** 开合同步：显隐 + aria + 焦点迁移（只在真实跳变时执行，避免 locale 重刷抢焦点） */
   private syncOpenState(): void {
     if (!this.overlayEl || !this.triggerEl) return
-    const open = this.hasAttribute('open')
+    // 弹层只在列表形态下成立：卡片形态写 open 不应弹出空对话框
+    const open = this.hasAttribute('open') && this.hasAttribute('list')
     this.overlayEl.hidden = !open
     this.triggerEl.setAttribute('aria-expanded', String(open))
+    // 每次同步都过一遍持锁（幂等）：重连后 lastOpen 仍为 true 也须重新持锁
+    if (open) this.acquireOverlay()
+    else this.releaseOverlay()
     if (open === this.lastOpen) return
     this.lastOpen = open
     if (open) {
@@ -767,5 +778,33 @@ export class OASCoupon extends OASElement {
       if (focus && focus.isConnected) focus.focus()
       else this.triggerEl.focus()
     }
+  }
+
+  /**
+   * 持锁（幂等）：body 滚动锁 + 共享 Esc 层栈。
+   * Esc 交给层栈统一排定——多层浮层同开时只关最上层（后开者先关），
+   * 弹层被上层覆盖时也不抢 Esc（层栈按后进先出，本层自然排在下面）。
+   */
+  private acquireOverlay(): void {
+    if (!this.releaseScrollLock) this.releaseScrollLock = lockBodyScroll()
+    if (!this.releaseEscapeLayer) {
+      this.releaseEscapeLayer = pushEscapeLayer({
+        name: 'coupon',
+        // 兜底：已断开/已关闭时跳过本层，不吞后续 Esc
+        active: () => this.isConnected && this.hasAttribute('open'),
+        handle: () => {
+          this.closeOverlay()
+          return true
+        },
+      })
+    }
+  }
+
+  /** 释放锁（幂等）：关闭、断开连接都走这里 */
+  private releaseOverlay(): void {
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
+    this.releaseScrollLock?.()
+    this.releaseScrollLock = null
   }
 }

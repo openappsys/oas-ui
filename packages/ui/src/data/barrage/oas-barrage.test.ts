@@ -266,6 +266,130 @@ describe('OASBarrage 数据与无障碍', () => {
   })
 })
 
+describe('OASBarrage 断开重连计时（epoch 重算）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('重连不整体清空在场弹幕：CSS 动画按剩余时间定位到对应进度', () => {
+    const el = mount({ tracks: '1', speed: '400' })
+    el.add('重连口径')
+    const item = items(el)[0]!
+    // happy-dom 下舞台宽度取回退值 800、条目宽度按估宽：时长 = (800 + 估宽) / speed
+    const expected = ((800 + estimateBarrageWidth('重连口径')) / 400) * 1000
+    expect(item.style.animationDuration).toBe(`${expected}ms`)
+
+    el.remove()
+    vi.advanceTimersByTime(1000)
+    document.body.appendChild(el)
+
+    // 在场条目保留（同一条 DOM 节点，不重建、不丢 key），动画从已流逝进度起播
+    expect(items(el)).toHaveLength(1)
+    expect(items(el)[0]).toBe(item)
+    expect(item.style.animationDelay).toBe('-1000ms')
+  })
+
+  it('重连后离场计时按剩余时间对齐：不提前移除、也不滞后滞留', () => {
+    const el = mount({ tracks: '1', speed: '400' })
+    el.add('对齐口径')
+    const item = items(el)[0]!
+    const duration = Number.parseFloat(item.style.animationDuration)
+    const elapsed = 1000
+
+    el.remove()
+    vi.advanceTimersByTime(elapsed)
+    document.body.appendChild(el)
+
+    const remaining = duration - elapsed
+    vi.advanceTimersByTime(remaining - 1)
+    expect(items(el), '剩余时间未到不得提前退场').toHaveLength(1)
+    vi.advanceTimersByTime(2)
+    expect(items(el), '剩余时间到点必须退场').toHaveLength(0)
+  })
+
+  it('断开时长超过动画时长：重连时按 epoch 立即退场，排队项接棒（不留冻结弹幕占容量）', () => {
+    const el = mount({ tracks: '1', speed: '400', 'max-active': '1' })
+    el.add('已过期')
+    el.add('排队项')
+    expect(items(el)).toHaveLength(1)
+
+    el.remove()
+    vi.advanceTimersByTime(20000)
+    document.body.appendChild(el)
+
+    expect(items(el)).toHaveLength(1)
+    expect(items(el)[0]!.textContent).toBe('排队项')
+  })
+
+  it('暂停中断开重连：按暂停时的剩余时间定位，不倒退到起点', () => {
+    const el = mount({ tracks: '1', speed: '400' })
+    el.add('暂停重连')
+    const item = items(el)[0]!
+    vi.advanceTimersByTime(500)
+    el.pause()
+
+    el.remove()
+    vi.advanceTimersByTime(5000)
+    document.body.appendChild(el)
+
+    expect(items(el)).toHaveLength(1)
+    expect(item.style.animationDelay).toBe('-500ms')
+    expect(stage(el).classList.contains('paused')).toBe(true)
+    // 恢复后按剩余时间继续，不重新计时
+    el.resume()
+    const duration = Number.parseFloat(item.style.animationDuration)
+    vi.advanceTimersByTime(duration - 500 - 1)
+    expect(items(el)).toHaveLength(1)
+    vi.advanceTimersByTime(2)
+    expect(items(el)).toHaveLength(0)
+  })
+
+  it('二次断开仍清理计时器（清理钩子在重连后重新注册）', () => {
+    const el = mount({ tracks: '1', speed: '400' })
+    el.add('二次重连')
+    // 单条在场：恰好一个离场计时器
+    expect(vi.getTimerCount()).toBe(1)
+
+    el.remove()
+    expect(vi.getTimerCount(), '断开连接必须清空计时器').toBe(0)
+
+    document.body.appendChild(el)
+    expect(vi.getTimerCount(), '重连后重新计时').toBe(1)
+
+    // 修复前：cleanup 钩子只在 bind() 注册一次，首轮断开已被消费 → 二次断开留下后台计时器
+    el.remove()
+    expect(vi.getTimerCount(), '二次断开仍须清空计时器').toBe(0)
+
+    document.body.appendChild(el)
+    expect(items(el)).toHaveLength(1)
+  })
+
+  it('重连后重新观察舞台尺寸（ResizeObserver 随重连重挂，不随断开永久丢失）', () => {
+    const observe = vi.fn()
+    const disconnect = vi.fn()
+    class FakeResizeObserver {
+      constructor(_cb: ResizeObserverCallback) {}
+      observe = observe
+      disconnect = disconnect
+      unobserve(): void {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+
+    const el = mount({ tracks: '1' })
+    expect(observe).toHaveBeenCalledTimes(1)
+    el.remove()
+    expect(disconnect).toHaveBeenCalled()
+    document.body.appendChild(el)
+    expect(observe, '重连后必须重新观察舞台').toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('OASBarrage RTL 与键盘可达', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

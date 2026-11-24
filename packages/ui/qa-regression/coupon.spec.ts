@@ -22,3 +22,66 @@ test('coupon：选择弹层可用券可选、不可用券禁用、选中后派�
   // 已选券面额回显在触发按钮
   await expect(host.locator('[part="trigger"]')).toContainText('30')
 })
+
+// 层叠协议回归：弹层接入共享 overlay-stack（body 滚动锁 + Esc 层栈），不再自建 Esc 处理。
+test('coupon 与 oas-modal 同开：一次 Esc 只关最上层（modal 先关、coupon 保持），body 锁按引用计数释放', async ({
+  page,
+}) => {
+  await page.goto('/components/coupon.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-select')
+
+  const host = page.locator('#cp-select')
+  const overlay = host.locator('[part="overlay"]')
+  const bodyOverflow = () => page.evaluate(() => document.body.style.overflow)
+
+  await host.locator('[part="trigger"]').click()
+  await expect(overlay).toBeVisible()
+  // 打开即锁 body 滚动（跨组件共享引用计数锁）
+  expect(await bodyOverflow()).toBe('hidden')
+
+  // 后开 modal：Esc 应先关 modal（层栈后进先出），coupon 弹层不得被同一次 Esc 连带关闭
+  await page.evaluate(() => {
+    document.getElementById('e2e-cp-modal')?.remove()
+    const modal = document.createElement('oas-modal')
+    modal.id = 'e2e-cp-modal'
+    modal.setAttribute('visible', '')
+    modal.innerHTML = '<p>modal</p>'
+    document.body.appendChild(modal)
+  })
+  await page.waitForFunction(() => !!document.querySelector('oas-modal#e2e-cp-modal[visible]'))
+
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => !document.querySelector('oas-modal#e2e-cp-modal[visible]'), undefined, {
+    timeout: 5000,
+  })
+  await expect(overlay, 'coupon 弹层此时必须仍然打开').toBeVisible()
+  expect(await bodyOverflow(), 'coupon 仍打开时 body 必须保持锁定').toBe('hidden')
+
+  // 再按一次 Esc：coupon 关闭（层栈下一层），锁释放
+  await page.keyboard.press('Escape')
+  await expect(overlay).toBeHidden()
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden', undefined, { timeout: 5000 })
+  await page.evaluate(() => document.getElementById('e2e-cp-modal')?.remove())
+})
+
+test('coupon 打开态断开重连：滚动锁与 Esc 层重获，二次断开不遗留', async ({ page }) => {
+  await page.goto('/components/coupon.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-select')
+
+  const overlay = page.locator('#cp-select [part="overlay"]')
+  await page.locator('#cp-select [part="trigger"]').click()
+  await expect(overlay).toBeVisible()
+  await page.waitForFunction(() => document.body.style.overflow === 'hidden')
+
+  // 打开态摘挂（路由缓存 / 条件渲染）：重连后必须重新持锁，Esc 仍能关闭
+  await page.evaluate(() => {
+    const el = document.getElementById('cp-select')!
+    const parent = el.parentElement!
+    el.remove()
+    parent.appendChild(el)
+  })
+  await page.waitForFunction(() => document.body.style.overflow === 'hidden', undefined, { timeout: 5000 })
+  await page.keyboard.press('Escape')
+  await expect(overlay).toBeHidden()
+  await page.waitForFunction(() => document.body.style.overflow !== 'hidden', undefined, { timeout: 5000 })
+})

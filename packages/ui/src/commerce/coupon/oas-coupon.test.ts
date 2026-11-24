@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { pushEscapeLayer } from '../../shared/overlay-stack.js'
 import { OASCoupon, type CouponData } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASCoupon {
@@ -193,15 +194,17 @@ describe('oas-coupon 选择弹层（list 模式）', () => {
     expect(part(el, 'empty')!.textContent).toBe('暂无可用优惠券')
   })
 
-  it('Esc 关闭弹层并把焦点还给触发按钮', () => {
+  it('Esc 关闭弹层并把焦点还给触发按钮（经共享层栈的文档级 Esc）', () => {
     const el = mount({ list: LIST })
     const trigger = part(el, 'trigger') as HTMLButtonElement
     trigger.focus()
     trigger.click()
     expect(el.hasAttribute('open')).toBe(true)
-    const panel = part(el, 'panel')!
     expect(part(el, 'panel')!.contains(el.shadowRoot!.activeElement)).toBe(true)
-    panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    // 面板内的 keydown 是 composed 的真实键盘事件（穿出 shadow 到 document 的层栈）
+    part(el, 'panel')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true, cancelable: true }),
+    )
     expect(el.hasAttribute('open')).toBe(false)
     expect(el.shadowRoot!.activeElement).toBe(trigger)
   })
@@ -283,5 +286,95 @@ describe('oas-coupon 卡片空态与可读性', () => {
     expect(css).toMatch(
       /\.coupon\[data-status='expired'\]\s+\.state,\s*\.coupon\[data-status='used'\]\s+\.state\s*\{[^}]*color:\s*var\(--oas-color-text-secondary-strong\)/,
     )
+  })
+})
+
+describe('oas-coupon 层叠协议（共享 overlay-stack）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
+  })
+
+  it('打开弹层锁定 body 滚动，关闭后精确恢复宿主 inline 原值（不抹成空）', () => {
+    document.body.style.overflow = 'scroll'
+    const el = mount({ list: LIST })
+    ;(part(el, 'trigger') as HTMLButtonElement).click()
+    expect(document.body.style.overflow).toBe('hidden')
+    el.closeOverlay()
+    expect(document.body.style.overflow).toBe('scroll')
+  })
+
+  it('Esc 走共享层栈：一次只关最上层，弹层在别人之下时不抢 Esc', () => {
+    const el = mount({ list: LIST, open: '' })
+    let childOpen = true
+    const release = pushEscapeLayer({
+      name: 'child-overlay',
+      // 真实浮层关掉后本层不再活跃（active 短路），Esc 交给下一层
+      active: () => childOpen,
+      handle: () => {
+        childOpen = false
+        return true
+      },
+    })
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(childOpen).toBe(false)
+    // 同一次 Esc 不得连带关闭下层的优惠券弹层（旧自制 listener 的缺陷）
+    expect(el.hasAttribute('open')).toBe(true)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+    release()
+  })
+
+  it('关闭后如实退栈：Esc 不再被已关闭浮层消费（无幽灵层）', () => {
+    const el = mount({ list: LIST, open: '' })
+    el.closeOverlay()
+    const event = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true })
+    document.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('断开连接释放滚动锁与 Esc 层；打开态重连后重获两者', () => {
+    const el = mount({ list: LIST, open: '' })
+    expect(document.body.style.overflow).toBe('hidden')
+
+    el.remove()
+    expect(document.body.style.overflow).toBe('')
+    const detachedEsc = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true })
+    document.dispatchEvent(detachedEsc)
+    expect(detachedEsc.defaultPrevented).toBe(false)
+
+    // 打开态重连：lastOpen 已为 true 也不得跳过持锁（否则重连后 body 可滚 / Esc 失效）
+    document.body.appendChild(el)
+    expect(document.body.style.overflow).toBe('hidden')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('卡片形态写 open 不弹空对话框、也不锁滚动（弹层只在 list 形态成立）', () => {
+    const el = mount({ amount: '30', open: '' })
+    expect(part(el, 'overlay')!.hidden).toBe(true)
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('面板内 Tab 焦点陷阱仍在（Esc 分支移除不影响键盘循环）', () => {
+    const el = mount({ list: LIST, open: '' })
+    const focusables = [
+      ...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="panel"] button, [part="panel"] input:not(:disabled)'),
+    ]
+    const last = focusables[focusables.length - 1]!
+    last.focus()
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, composed: true, cancelable: true })
+    part(el, 'panel')!.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+    expect(el.shadowRoot!.activeElement).toBe(focusables[0])
   })
 })

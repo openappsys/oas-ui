@@ -40,6 +40,85 @@ test('barrage 发一条 → 出现；暂停 → 冻结；清空 → 移除', asy
   await expect(items).toHaveCount(0)
 })
 
+test('barrage 断开重连：在场弹幕保留，动画按剩余时间定位（不回到起点）', async ({ page }) => {
+  await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#bg-single')
+
+  await page.evaluate(() => {
+    const el = document.getElementById('bg-single') as HTMLElement & { add: (t: string) => void }
+    // 慢速拉长动画窗口，便于测量「已流逝进度」
+    el.setAttribute('speed', '200')
+    el.add('断开重连回归')
+  })
+
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.getElementById('bg-single')
+      const item = el?.shadowRoot?.querySelector('.item') as HTMLElement | null
+      if (!item) return null
+      // 动画位移（translateX）：负值越大表示漂得越远
+      const x = new DOMMatrix(getComputedStyle(item).transform).m41
+      return { x, delay: item.style.animationDelay, count: el!.shadowRoot!.querySelectorAll('.item').length }
+    })
+
+  await expect.poll(async () => (await read())?.count ?? 0).toBe(1)
+  // 等动画真正漂离进场位（条件等待，不用固定 sleep）
+  await page.waitForFunction(
+    () => {
+      const item = document.querySelector('#bg-single')?.shadowRoot?.querySelector('.item') as HTMLElement | null
+      return !!item && new DOMMatrix(getComputedStyle(item).transform).m41 < -100
+    },
+    undefined,
+    { timeout: 8000 },
+  )
+  const before = await read()
+
+  // 摘挂宿主（路由缓存 / 条件渲染）：CSS 动画在重挂后从头播放，组件须按剩余时间校正进度。
+  // 摘挂前在页面内记时间戳，重挂后按实测流逝时长换算期望位移——不依赖固定等待值。
+  const detachedAt = await page.evaluate(() => {
+    const w = window as unknown as { __bgSingle?: { el: Element; parent: Element } }
+    const el = document.getElementById('bg-single')!
+    w.__bgSingle = { el, parent: el.parentElement! }
+    const t = performance.now()
+    el.remove()
+    return t
+  })
+  // 真实时间流逝 ≥600ms 后才挂回（CSS 动画进度由合成器时钟驱动，必须等真实时间）
+  await page.evaluate(
+    (target) =>
+      new Promise<void>((resolve) => {
+        const t0 = performance.now()
+        const tick = () => (performance.now() - t0 >= target ? resolve() : requestAnimationFrame(tick))
+        requestAnimationFrame(tick)
+        setTimeout(resolve, target + 200)
+      }),
+    600,
+  )
+  const after = await page.evaluate((t0) => {
+    const w = window as unknown as { __bgSingle?: { el: Element; parent: Element } }
+    const held = w.__bgSingle!
+    held.parent.appendChild(held.el)
+    const el = document.getElementById('bg-single')
+    const item = el?.shadowRoot?.querySelector('.item') as HTMLElement | null
+    if (!item) return null
+    return {
+      x: new DOMMatrix(getComputedStyle(item).transform).m41,
+      delay: item.style.animationDelay,
+      count: el!.shadowRoot!.querySelectorAll('.item').length,
+      elapsed: performance.now() - t0,
+    }
+  }, detachedAt)
+
+  expect(after!.count, '重连不得清空在场弹幕').toBe(1)
+  expect(after!.delay, 'CSS 动画必须按剩余时间负向延迟').toMatch(/^-\d+(?:\.\d+)?ms$/)
+  // 重挂后位移 = 摘挂时位移 - 摘挂期间应走的距离（speed=200px/s）；重置到起点会差一整个已流逝距离
+  const travel = (200 * after!.elapsed) / 1000
+  expect(Math.abs(after!.x - (before!.x - travel)), '重连后动画必须续接到原进度').toBeLessThan(30)
+
+  // JS 离场计时同口径：之后按原定时刻消失（不滞留、不提前）
+  await expect.poll(async () => (await read())?.count ?? 0, { timeout: 15000 }).toBe(0)
+})
+
 test('barrage 点击弹幕派发 oas-item-click（暂停后点，目标位置固定）', async ({ page }) => {
   await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#bg-demo')

@@ -59,6 +59,10 @@ On RTL pages (ancestor `dir="rtl"`, `oas-config-provider direction="rtl"`, or an
   </div>
 </DemoBlock>
 
+## Detach and re-attach
+
+When the host leaves the document and comes back (route caching, conditional rendering, collapsed panels), the on-screen items are **kept**. Each one is re-timed from its remaining duration (`endAt - now`): the CSS animation is re-positioned through a negative `animation-delay` so it continues from the correct progress and stays aligned with the JS exit timer — items neither restart from the entry edge nor linger. Items whose time already expired while detached leave immediately on re-attach, freeing their tracks for queued items; re-attaching while paused stays paused and keeps the paused progress.
+
 ## Methods
 
 See the "Methods" table in the API section below (`add` / `addBatch` / `pause` / `resume` / `clear`).

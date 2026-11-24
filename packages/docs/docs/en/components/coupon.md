@@ -47,6 +47,8 @@ Both forms share the same card rendering:
 
 `list` takes the coupon array; the trigger opens a bottom sheet (`role="dialog"`, focus moved in, Esc / backdrop closes). Picking an available coupon dispatches `oas-select` and closes the sheet; the selected amount is shown on the trigger and `trigger-text` overrides the trigger label (shown while nothing is picked):
 
+> The sheet follows the shared overlay stacking protocol: opening it locks page scrolling (a cross-component reference-counted lock that restores the host's original value when the last overlay closes), and Esc is resolved by the shared layer stack — topmost first. With `oas-modal` / `oas-drawer` open at the same time, one Esc closes only the top layer. Re-attaching the host while open re-acquires both.
+
 <DemoBlock title="Select a coupon + event feedback">
   <oas-coupon
     id="cp-select-en"

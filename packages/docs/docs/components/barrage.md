@@ -59,6 +59,10 @@ RTL 页面（祖先 `dir="rtl"`、`oas-config-provider direction="rtl"` 或阿�
   </div>
 </DemoBlock>
 
+## 断开重连
+
+宿主被摘挂（路由缓存、条件渲染、折叠面板）后再挂回时，在场弹幕**不清空**：每条按剩余时间（`endAt - now`）重算，CSS 动画以负向 `animation-delay` 定位到对应进度，与离场计时重新对齐——不会「从起点重跑」也不会滞留。断开期间已超时的条目重连时立即退场，轨道随即放行排队项；暂停中重连保持暂停并按暂停时的剩余时间定位。
+
 ## 方法
 
 见下方 API 的「方法」表（`add` / `addBatch` / `pause` / `resume` / `clear`）。

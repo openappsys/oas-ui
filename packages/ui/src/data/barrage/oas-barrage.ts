@@ -147,6 +147,8 @@ interface ActiveItem extends QueuedItem {
   el: HTMLElement
   track: number
   endAt: number
+  /** 完整动画时长（ms）：重连时按剩余时间反推应处的动画进度 */
+  duration: number
   /** 暂停时保存的剩余时长（ms）；运行时为 null */
   remaining: number | null
   timer: ReturnType<typeof setTimeout> | null
@@ -263,17 +265,10 @@ export class OASBarrage extends OASElement {
 
   private bind(): void {
     this.stageEl = this.shadow.querySelector<HTMLElement>('.stage')
-    this.stageEl?.addEventListener('click', (e) => this.onStageClick(e))
-    this.stageEl?.addEventListener('keydown', (e) => this.onStageKeydown(e as KeyboardEvent))
-    if (typeof ResizeObserver !== 'undefined' && this.stageEl) {
-      this.resizeObserver = new ResizeObserver(() => this.syncStageWidth())
-      this.resizeObserver.observe(this.stageEl)
-    }
-    this.onCleanup(() => {
-      this.clearTimers()
-      this.resizeObserver?.disconnect()
-      this.resizeObserver = null
-    })
+    this.stageEl?.addEventListener('click', this.onStageClick)
+    this.stageEl?.addEventListener('keydown', this.onStageKeydown)
+    this.observeStage()
+    this.onCleanup(() => this.teardown())
   }
 
   protected override render(): void {
@@ -282,9 +277,30 @@ export class OASBarrage extends OASElement {
     this.update()
   }
 
+  /**
+   * 断开重连：disconnectedCallback 已摘掉计时器 / 观察器 / 清理钩子，重连必须重新挂上
+   * （否则二次断开开始泄漏），并按 epoch 重算在场弹幕的动画进度与离场计时。
+   */
   protected override onReconnect(): void {
+    this.observeStage()
+    this.onCleanup(() => this.teardown())
+    this.resyncActive()
     this.armActiveTimers()
     this.pump()
+  }
+
+  /** 观察舞台尺寸（幂等：复用已建实例，从不重复观察） */
+  private observeStage(): void {
+    if (!this.stageEl || typeof ResizeObserver === 'undefined') return
+    if (!this.resizeObserver) this.resizeObserver = new ResizeObserver(() => this.syncStageWidth())
+    this.resizeObserver.observe(this.stageEl)
+  }
+
+  /** 断开连接的统一清理（重连后由 onReconnect 重新注册，二次断开同样生效） */
+  private teardown(): void {
+    this.clearTimers()
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = null
   }
 
   // ---- 公开 API ----
@@ -453,6 +469,7 @@ export class OASBarrage extends OASElement {
       el,
       track,
       endAt: now + duration,
+      duration,
       remaining: null,
       timer: null,
     }
@@ -500,6 +517,38 @@ export class OASBarrage extends OASElement {
       const remaining = item.remaining ?? Math.max(0, item.endAt - now)
       this.armTimer(item, remaining)
     }
+  }
+
+  /**
+   * 断开重连的计时对齐（epoch 重算）：CSS 动画在宿主脱离文档再挂回后会从头播放，
+   * 而 JS 离场计时按绝对时间（`endAt`）继续——只重挂不定进度，弹幕会从起点重跑却在
+   * 原定时刻被移除。重连时按每条的实际剩余时间（暂停中取暂停快照）把动画定到对应进度，
+   * 剩余 ≤ 0 的立即退场；其余在场条目一律保留（不整体清空）。
+   * 轨道排期用绝对 epoch，过期轨道自然放行排队项，无需重排。
+   */
+  private resyncActive(): void {
+    const now = Date.now()
+    for (const item of [...this.active]) {
+      const remaining = item.remaining ?? Math.max(0, item.endAt - now)
+      if (remaining <= 0) {
+        this.endItem(item)
+        continue
+      }
+      const duration = item.duration > 0 ? item.duration : remaining
+      this.restartAnimationAt(item.el, Math.max(0, duration - remaining))
+    }
+  }
+
+  /**
+   * 重启 CSS 动画并定位到指定进度（负向 animation-delay）。
+   * 先置 `animation-name: none` 并强制重排，让浏览器丢弃上一轮动画状态，
+   * 再恢复样式表关键帧（内联名移除）并按已流逝时长负延迟起播。
+   */
+  private restartAnimationAt(el: HTMLElement, offset: number): void {
+    el.style.animationName = 'none'
+    void el.offsetWidth
+    el.style.removeProperty('animation-name')
+    el.style.animationDelay = offset > 0 ? `-${offset}ms` : ''
   }
 
   private endItem(item: ActiveItem): void {
@@ -551,14 +600,14 @@ export class OASBarrage extends OASElement {
     this.pump()
   }
 
-  private onStageClick(e: Event): void {
+  private onStageClick = (e: Event): void => {
     const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
     if (!target) return
     this.emitItemClick(target)
   }
 
   /** Enter / Space 等价点击（accessible 下弹幕项可聚焦，键盘必须能触发同一条事件） */
-  private onStageKeydown(e: KeyboardEvent): void {
+  private onStageKeydown = (e: KeyboardEvent): void => {
     if (e.key !== 'Enter' && e.key !== ' ') return
     const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
     if (!target) return
