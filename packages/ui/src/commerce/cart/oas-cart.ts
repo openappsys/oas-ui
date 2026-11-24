@@ -97,6 +97,9 @@ const SWIPE_REVEAL = 72
 /** 判定「这是一次滑动而非点击」的水平位移阈值（px） */
 const SWIPE_SLOP = 4
 
+/** 失败图片记忆键：id + src——同 id 换新图 URL 时应重试加载，不沿用旧失败记录 */
+const imageFailKey = (id: string, src: string): string => `${id}\n${src}`
+
 /** 归一后的行数据（渲染与事件共用同一份） */
 interface CartRow {
   item: CartItem
@@ -140,6 +143,16 @@ export function resolveSwipeOffset(input: { dx: number; open: boolean; reveal: n
   const amount = Math.max(0, Math.min(reveal, base + sign * dx))
   // amount 为 0 时统一返回 +0（避免 -0 进入 transform 产生 "-0px"）
   return { offset: amount === 0 ? 0 : sign * amount, open: amount >= reveal / 2 }
+}
+
+/**
+ * 松手落定：过半吸附到完全露出（sign×reveal），未过半回弹关闭（0）。
+ * 与跟手 `resolveSwipeOffset` 分离——落定值取吸附/回弹终点，
+ * 不取 clamp 跟手值（否则拖到一半松手会停半路：过半时删除钮半露、未过半时不回弹）。
+ */
+export function resolveSwipeSettle(input: { open: boolean; reveal: number; rtl: boolean }): number {
+  const sign = input.rtl ? 1 : -1
+  return input.open ? sign * input.reveal : 0
 }
 
 const STYLE = `
@@ -764,7 +777,7 @@ export class OASCart extends OASElement {
       image.addEventListener('error', () => {
         image.hidden = true
         thumb.setAttribute('data-empty', 'true')
-        this.failedImages.add(row.item.id)
+        this.failedImages.add(imageFailKey(row.item.id, image.getAttribute('src') ?? ''))
       })
       thumb.appendChild(img)
     }
@@ -874,7 +887,7 @@ export class OASCart extends OASElement {
       refs.check.disabled = disabledAll || row.disabled
       refs.check.setAttribute('aria-label', this.t('cart.selectItem', { title }))
 
-      const imageMissing = !row.item.image || this.failedImages.has(row.item.id)
+      const imageMissing = !row.item.image || this.failedImages.has(imageFailKey(row.item.id, row.item.image))
       refs.thumb.setAttribute('data-empty', String(imageMissing))
       if (refs.img) {
         const src = row.item.image ?? ''
@@ -1055,6 +1068,16 @@ export class OASCart extends OASElement {
       return
     }
     if (Math.abs(dx) < SWIPE_SLOP) return
+    if (!drag.moved) {
+      // 横向意图确立：捕获指针。此后指针移出列表再松手，pointerup 仍会派发到 inner
+      // （capture 目标在列表内，事件冒泡仍途经 listEl），滑动状态不会卡在半途。
+      // 纯点击不会走到这里（无 moved 即无捕获），click 目标不受影响。
+      try {
+        drag.inner.setPointerCapture(event.pointerId)
+      } catch {
+        /* 指针已失效或环境不支持捕获（如 happy-dom）时忽略 */
+      }
+    }
     drag.moved = true
     const { offset } = resolveSwipeOffset({
       dx,
@@ -1068,16 +1091,20 @@ export class OASCart extends OASElement {
   private onPointerUp = (event: PointerEvent): void => {
     const drag = this.drag
     if (!drag || event.pointerId !== drag.pointerId) return
-    const { offset, open } = resolveSwipeOffset({
+    const { open } = resolveSwipeOffset({
       dx: event.clientX - drag.startX,
       open: this.openSwipeId === drag.id,
       reveal: SWIPE_REVEAL,
       rtl: this.swipeSign() === 1,
     })
     this.openSwipeId = open ? drag.id : ''
-    drag.inner.style.transform = offset === 0 ? '' : `translateX(${offset}px)`
     if (drag.moved) this.suppressClick = true
+    // 先清拖拽态（恢复 transform 过渡动画），再写落定位置：
+    // 过半吸附到完全露出、未过半回弹关闭。落定值不能复用跟手 clamp 值——
+    // 否则拖到一半松手会停半路（过半时删除钮半露、未过半时不回弹）。
     this.endDrag()
+    const settle = resolveSwipeSettle({ open, reveal: SWIPE_REVEAL, rtl: this.swipeSign() === 1 })
+    drag.inner.style.transform = settle === 0 ? '' : `translateX(${settle}px)`
   }
 
   private endDrag(): void {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OASCart } from './index.js'
-import { resolveSwipeOffset } from './oas-cart.js'
+import { resolveSwipeOffset, resolveSwipeSettle } from './oas-cart.js'
 import type { CartChangeDetail, CartItem, CartRemoveDetail } from './oas-cart.js'
 
 function mount(attrs: Record<string, string> = {}): OASCart {
@@ -112,13 +112,14 @@ describe('oas-cart', () => {
   })
 
   it('浮点合计按精度收敛，不把浮点尾巴写进 detail', () => {
+    // 0.1×3 是 IEEE754 非整倍口径（0.1*3 = 0.30000000000000004）——能真正抓住 toFixed 收敛缺失
     const el = mount({
-      items: JSON.stringify([{ id: 'x', title: '称重', price: 0.1, quantity: 3, selected: true }]),
+      items: JSON.stringify([{ id: 'x', title: '称重', price: 0.1, quantity: 2, selected: true }]),
     })
     const details: CartChangeDetail[] = []
     el.addEventListener('oas-change', (e) => details.push((e as CustomEvent<CartChangeDetail>).detail))
     plusOf(el, 0).click()
-    expect(details.at(-1)!.total).toBe(0.4)
+    expect(details.at(-1)!.total).toBe(0.3)
   })
 
   it('数量步进：加减各一次并夹到 [1, maxQuantity]，合计随之变化', () => {
@@ -234,6 +235,15 @@ describe('oas-cart', () => {
     })
   })
 
+  it('松手落定纯函数：过半吸附到完全露出，未过半回弹关闭（不取跟手 clamp 值）', () => {
+    // LTR 过半（如 dx=-50，跟手 offset=-50 但落定必须是满露出 -72）
+    expect(resolveSwipeSettle({ open: true, reveal: 72, rtl: false })).toBe(-72)
+    // LTR 未过半（如 dx=-20，回弹 0 而非停半路的 -20）
+    expect(resolveSwipeSettle({ open: false, reveal: 72, rtl: false })).toBe(0)
+    // RTL 镜像吸附
+    expect(resolveSwipeSettle({ open: true, reveal: 72, rtl: true })).toBe(72)
+  })
+
   it('滑动删除钮聚焦时自动露出（键盘可达，焦点环不被内容层遮挡）', () => {
     const el = mount({ items: JSON_ITEMS, 'delete-mode': 'swipe' })
     const swipeRemove = itemEl(el, 0).querySelector<HTMLButtonElement>('[part="swipe-remove"]')!
@@ -301,6 +311,27 @@ describe('oas-cart', () => {
     // 后续 update 不把占位态闪回原图
     el.setAttribute('currency', 'USD')
     expect(itemEl(el, 1).querySelector<HTMLElement>('[part="thumb"]')!.getAttribute('data-empty')).toBe('true')
+  })
+
+  it('失败记忆按 id+src 记：同 id 换新图 URL 后恢复显示，再次失败才重新回落', () => {
+    const el = mount({
+      items: JSON.stringify([{ id: 'p', title: 'P', price: 1, image: 'https://example.invalid/old.png' }]),
+    })
+    const thumb = () => itemEl(el, 0).querySelector<HTMLElement>('[part="thumb"]')!
+    const img = itemEl(el, 0).querySelector<HTMLImageElement>('[part="image"]')!
+    img.dispatchEvent(new Event('error'))
+    expect(thumb().getAttribute('data-empty')).toBe('true')
+
+    // 宿主换新图 URL（如换 SKU 图）：不得沿用旧失败记录，应重试显示
+    el.setAttribute('items', JSON.stringify([{ id: 'p', title: 'P', price: 1, image: 'https://example.com/new.png' }]))
+    const img2 = itemEl(el, 0).querySelector<HTMLImageElement>('[part="image"]')!
+    expect(img2.getAttribute('src')).toBe('https://example.com/new.png')
+    expect(img2.hidden).toBe(false)
+    expect(thumb().getAttribute('data-empty')).toBe('false')
+
+    // 新 URL 再次失败 → 记入新键，回落占位；旧键不再影响该条目
+    img2.dispatchEvent(new Event('error'))
+    expect(thumb().getAttribute('data-empty')).toBe('true')
   })
 
   it('非法数据：items 非 JSON / price 非法 / maxQuantity 非法各告警一次并降级不抛错', () => {

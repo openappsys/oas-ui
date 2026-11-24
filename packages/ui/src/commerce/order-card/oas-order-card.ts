@@ -616,7 +616,9 @@ export class OASOrderCard extends OASElement {
     const locale = this.getAttr('locale').trim()
     const precision = String(this.resolvePrecision())
 
-    if (this.amountEl) this.amountEl.hidden = payable === null && discount === null && original === null
+    // original 只经 payable 通道渲染（划线原价），自身无独立出口——
+    // 只设 original 不设 payable 时容器必须隐藏，否则渲染出只有边框内距的空壳条
+    if (this.amountEl) this.amountEl.hidden = payable === null && discount === null
 
     if (this.discountEl && this.discountPriceEl) {
       this.discountEl.hidden = discount === null

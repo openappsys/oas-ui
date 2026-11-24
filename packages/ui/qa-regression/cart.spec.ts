@@ -109,6 +109,37 @@ test('cart：滑动删除——真实拖拽露出删除钮，再点删除即移�
   await expect(page.locator('#cart-delete-out')).toContainText('删除后剩 1 件')
 })
 
+test('cart：滑动拖拽移出列表后松手仍正确结算（pointer capture）', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cart')
+
+  const host = page.locator('#cart-delete-swipe')
+  const inner = host.locator('[part="item-inner"]').first()
+  await inner.scrollIntoViewIfNeeded()
+  const box = (await inner.boundingBox())!
+  // 按住向左拖过阈值（吸附展开），然后把指针移出列表范围（下方）继续拖回，再松手
+  await page.mouse.move(box.x + 120, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 30, box.y + box.height / 2, { steps: 6 })
+  await page.mouse.move(box.x + 100, box.y + box.height + 120, { steps: 6 })
+  await page.mouse.up()
+
+  // 捕获生效：结算照常发生——最终 dx = -20 未过吸附阈值 → 回弹关闭（无位移），
+  // 且无 data-dragging 残留。修复前 pointerup 落在列表外，滑动状态卡在半途
+  // （data-dragging 残留 + transform 停留在列表内最后一次的 translateX(-72px)）。
+  await expect
+    .poll(() =>
+      inner.evaluate((el) => {
+        const row = el as HTMLElement
+        return `${row.getAttribute('data-dragging') ?? ''}|${row.style.transform}`
+      }),
+    )
+    .toBe('|')
+
+  // 结算后条目仍可正常交互（点击不误触删除）
+  await expect(host.locator('[part="item"]')).toHaveCount(2)
+})
+
 test('cart：禁用条目不计合计且不可勾选；空态渲染文案与插槽', async ({ page }) => {
   await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-cart')

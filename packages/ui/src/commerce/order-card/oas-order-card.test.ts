@@ -133,6 +133,19 @@ describe('oas-order-card', () => {
     expect(q(el, 'amount')!.hidden).toBe(true)
   })
 
+  it('只设 original 不设 payable：金额区整体隐藏，不留空壳条', () => {
+    // original 只经 payable 通道渲染（划线原价），自身无独立渲染出口
+    const el = mount({ original: '229' })
+    expect(q(el, 'amount')!.hidden).toBe(true)
+    expect(q(el, 'payable')!.hidden).toBe(true)
+    expect(q(el, 'discount')!.hidden).toBe(true)
+
+    // 补上 payable 后恢复：original 转为划线价渲染
+    el.setAttribute('payable', '199')
+    expect(q(el, 'amount')!.hidden).toBe(false)
+    expect(q(el, 'payable-price')!.getAttribute('original')).toBe('229')
+  })
+
   it('金额透传 currency / precision / locale 到内嵌价格件', () => {
     const el = mount({ payable: '99.5', currency: 'USD', locale: 'en-US', precision: '1' })
     const price = q(el, 'payable-price')!
