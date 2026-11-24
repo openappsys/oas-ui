@@ -62,20 +62,15 @@ function onSelect(toEn: boolean): void {
 
 <style scoped>
 .oas-locale-switch {
-  /* 导航栏右侧空间紧张时不收缩：菜单项先折进 ? 菜单（VitePress nav-overflow），切换器保持可见 */
-  display: none;
+  /* 移动端同样显示：横幅关闭后的移动端二访客只剩此处语言入口（紧凑 22px 高不挤导航栏）；
+     DOM 序在汉堡前，无需 order（order 归位规则仅桌面断点，见 style.css） */
   flex: none;
+  display: flex;
   align-items: center;
   padding: 2px;
   border: 1px solid var(--vp-c-border);
   border-radius: 999px;
   background: var(--vp-c-bg-soft);
-}
-
-@media (min-width: 48rem) {
-  .oas-locale-switch {
-    display: flex;
-  }
 }
 
 .oas-locale-switch-item {

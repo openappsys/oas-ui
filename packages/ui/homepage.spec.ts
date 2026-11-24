@@ -426,21 +426,20 @@ test.describe('官网首页（重设计版）', () => {
       await ctx.close()
     })
 
-    test('移动端：切换器隐藏，汉堡菜单保留语言入口且点击写偏好', async ({ browser }) => {
+    test('移动端：紧凑切换器可见可用，汉堡菜单语言入口保留', async ({ browser }) => {
       const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } })
       const p = await ctx.newPage()
       await p.goto('/components/button', { waitUntil: 'domcontentloaded' })
-      await expect(p.locator('.oas-locale-switch')).toBeHidden()
-      await p.locator('.VPNavBarHamburger').click()
-      const trans = p.locator('.VPNavScreenTranslations')
-      await expect(trans).toBeVisible()
-      // 移动菜单语言入口是手风琴：先展开再点（未展开时列表 hidden，直接点会超时）
-      await trans.locator('button.title').click()
-      // 点击入口是 Layout watcher「点击才写偏好」的唯一可达路径，须断言落库。
-      // 中文态菜单只渲染对侧语言一项（「English」→ /en/ 同页）
-      await trans.locator('a[href="/en/components/button"]').click()
+      // 横幅关闭后的移动端二访客唯一语言入口就是此切换器，必须常驻可见
+      const sw = p.locator('.oas-locale-switch')
+      await expect(sw).toBeVisible()
+      await sw.locator('a[lang="en"]').click()
       await expect.poll(() => new URL(p.url()).pathname, { timeout: 15000 }).toBe('/en/components/button')
       await expect.poll(() => p.evaluate(() => localStorage.getItem('oas-lang')), { timeout: 15000 }).toBe('en')
+      // 汉堡菜单内默认语言入口保留（切换器的补充路径）
+      await p.goto('/components/button', { waitUntil: 'domcontentloaded' })
+      await p.locator('.VPNavBarHamburger').click()
+      await expect(p.locator('.VPNavScreenTranslations')).toBeVisible()
       await ctx.close()
     })
   })

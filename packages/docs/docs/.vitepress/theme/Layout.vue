@@ -2,7 +2,7 @@
   <DefaultTheme.Layout>
     <!-- 语言提示条：固定置顶，框架经 --vp-layout-top-height 让位（VPNav/VPContent/VPSidebar 均消费） -->
     <template #layout-top><LangHint /></template>
-    <!-- 桌面导航栏右侧分段语言切换（中 / EN）；移动端经汉堡菜单内默认语言下拉 -->
+    <!-- 桌面/移动导航栏分段语言切换（中 / EN，移动端紧凑同款）；汉堡菜单内默认语言入口保留为补充 -->
     <template #nav-bar-content-after><LocaleSwitch /></template>
     <!-- 官网首页（layout: home）专用 slot；非 home 页面这些 slot 不会被渲染 -->
     <template #home-hero-before><HomeHero /></template>
