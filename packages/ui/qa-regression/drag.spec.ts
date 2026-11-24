@@ -251,6 +251,8 @@ test('drag：惯性滑行真实几何终值（松手后继续前进、方向轴�
       }
     })
 
+  // 屏外元素先滚入视口（demo 在页面下方；真实鼠标坐标基于视口）
+  await page.locator('#dg-stage-axis').scrollIntoViewIfNeeded()
   const box = await page.locator('#dg-chip').boundingBox()
   if (!box) throw new Error('#dg-chip 无可见矩形')
   const startX = box.x + box.width / 2

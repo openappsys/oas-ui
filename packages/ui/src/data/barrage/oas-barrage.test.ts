@@ -195,6 +195,18 @@ describe('OASBarrage 数据与无障碍', () => {
     expect(second.dataset.key).toBe('b')
   })
 
+  it('深层嵌套数组（≥4 层）批量输入：只做一层扫描、不递归、不抛错，后续正常项照常入队', () => {
+    const el = mount({ tracks: '1' })
+    const nested = [['a', ['b', ['c', ['d', ['e']]]]], [['f']], { text: 5 }, null] as unknown as Array<
+      string | { text: string }
+    >
+    expect(() => el.addBatch(nested)).not.toThrow()
+    expect(items(el), '嵌套数组不是合法条目：不得递归展开或渲染').toHaveLength(0)
+    el.addBatch(['正常项'])
+    expect(items(el)).toHaveLength(1)
+    expect(items(el)[0]!.textContent).toBe('正常项')
+  })
+
   it('空文本忽略', () => {
     const el = mount()
     el.add('   ')

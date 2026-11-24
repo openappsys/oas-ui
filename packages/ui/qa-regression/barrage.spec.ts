@@ -119,6 +119,159 @@ test('barrage 断开重连：在场弹幕保留，动画按剩余时间定位（
   await expect.poll(async () => (await read())?.count ?? 0, { timeout: 15000 }).toBe(0)
 })
 
+test('barrage RTL 断开重连：镜像关键帧保持 + 负延迟续播（自原进度继续向右）', async ({ page }) => {
+  await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#bg-rtl')
+
+  await page.evaluate(() => {
+    const el = document.getElementById('bg-rtl') as HTMLElement & { add: (t: string) => void }
+    // 拉长动画窗口，便于测量已流逝进度
+    el.setAttribute('speed', '200')
+    el.add('RTL 重连回归')
+  })
+
+  const read = () =>
+    page.evaluate(() => {
+      const el = document.getElementById('bg-rtl')
+      const item = el?.shadowRoot?.querySelector('.item') as HTMLElement | null
+      if (!item) return null
+      return {
+        x: new DOMMatrix(getComputedStyle(item).transform).m41,
+        delay: item.style.animationDelay,
+        name: getComputedStyle(item).animationName,
+        rtl: el!.hasAttribute('data-rtl'),
+        count: el!.shadowRoot!.querySelectorAll('.item').length,
+      }
+    })
+
+  await expect.poll(async () => (await read())?.count ?? 0).toBe(1)
+  // RTL 弹幕向右推进（正向位移）：等它真正离开进场位
+  await page.waitForFunction(
+    () => {
+      const item = document.querySelector('#bg-rtl')?.shadowRoot?.querySelector('.item') as HTMLElement | null
+      return !!item && new DOMMatrix(getComputedStyle(item).transform).m41 > 60
+    },
+    undefined,
+    { timeout: 8000 },
+  )
+  const before = (await read())!
+  expect(before.name, 'RTL 下必须使用镜像关键帧').toBe('oas-barrage-move-rtl')
+  expect(before.rtl).toBe(true)
+
+  const detachedAt = await page.evaluate(() => {
+    const w = window as unknown as { __bgRtl?: { el: Element; parent: Element } }
+    const el = document.getElementById('bg-rtl')!
+    w.__bgRtl = { el, parent: el.parentElement! }
+    const t = performance.now()
+    el.remove()
+    return t
+  })
+  await page.evaluate(
+    (target) =>
+      new Promise<void>((resolve) => {
+        const t0 = performance.now()
+        const tick = () => (performance.now() - t0 >= target ? resolve() : requestAnimationFrame(tick))
+        requestAnimationFrame(tick)
+        setTimeout(resolve, target + 200)
+      }),
+    600,
+  )
+  const after = await page.evaluate((t0) => {
+    const w = window as unknown as { __bgRtl?: { el: Element; parent: Element } }
+    const held = w.__bgRtl!
+    held.parent.appendChild(held.el)
+    const el = document.getElementById('bg-rtl')
+    const item = el?.shadowRoot?.querySelector('.item') as HTMLElement | null
+    if (!item) return null
+    return {
+      x: new DOMMatrix(getComputedStyle(item).transform).m41,
+      delay: item.style.animationDelay,
+      name: getComputedStyle(item).animationName,
+      rtl: el!.hasAttribute('data-rtl'),
+      count: el!.shadowRoot!.querySelectorAll('.item').length,
+      elapsed: performance.now() - t0,
+    }
+  }, detachedAt)
+
+  expect(after!.count, 'RTL 重连不得清空在场弹幕').toBe(1)
+  expect(after!.rtl, '重连后 RTL 标记仍在（镜像关键帧不回落 LTR）').toBe(true)
+  expect(after!.name, '重连后仍是 RTL 镜像关键帧').toBe('oas-barrage-move-rtl')
+  expect(after!.delay, 'RTL 重连同样按剩余时间负向延迟').toMatch(/^-\d+(?:\.\d+)?ms$/)
+  // 向右位移继续累加（speed=200px/s）；重置到起点会明显偏小
+  const travel = (200 * after!.elapsed) / 1000
+  expect(Math.abs(after!.x - (before!.x + travel)), 'RTL 重连后动画必须续接到原进度').toBeLessThan(30)
+  await expect.poll(async () => (await read())?.count ?? 0, { timeout: 15000 }).toBe(0)
+})
+
+test('barrage reduced-motion 重连：20ms 时长显式生效（不按舞台宽度重算）', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#bg-single')
+  // 同一次任务内：挂载（20ms 时长）→ 立即暂停（冻结剩余时间并清计时器），保证重连时有在场弹幕
+  await page.evaluate(() => {
+    const el = document.getElementById('bg-single') as HTMLElement & { add: (t: string) => void }
+    el.removeAttribute('paused')
+    el.add('降级重连')
+    el.setAttribute('paused', '')
+  })
+  const mounted = await page.evaluate(() => {
+    const el = document.getElementById('bg-single')!
+    const item = el.shadowRoot!.querySelector('.item') as HTMLElement | null
+    return item
+      ? { duration: item.style.animationDuration, count: el.shadowRoot!.querySelectorAll('.item').length }
+      : null
+  })
+  expect(mounted, 'reduced-motion 下仍需有在场弹幕（暂停冻结）').toEqual({ duration: '20ms', count: 1 })
+
+  await page.evaluate(() => {
+    const w = window as unknown as { __bgReduced?: { el: Element; parent: Element } }
+    const el = document.getElementById('bg-single')!
+    w.__bgReduced = { el, parent: el.parentElement! }
+    el.remove()
+  })
+  await page.waitForFunction(() => {
+    const w = window as unknown as { __bgReduced?: { el: Element } }
+    return !!w.__bgReduced && !document.body.contains(w.__bgReduced.el)
+  })
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const t0 = performance.now()
+        const tick = () => (performance.now() - t0 >= 250 ? resolve() : requestAnimationFrame(tick))
+        requestAnimationFrame(tick)
+      }),
+  )
+  const after = await page.evaluate(() => {
+    const w = window as unknown as { __bgReduced?: { el: Element; parent: Element } }
+    const held = w.__bgReduced!
+    held.parent.appendChild(held.el)
+    const el = document.getElementById('bg-single')!
+    const item = el.shadowRoot!.querySelector('.item') as HTMLElement | null
+    return item
+      ? {
+          count: el.shadowRoot!.querySelectorAll('.item').length,
+          duration: item.style.animationDuration,
+          delay: item.style.animationDelay,
+          paused: el.shadowRoot!.querySelector('.stage')!.classList.contains('paused'),
+        }
+      : { count: 0, duration: '', delay: '', paused: false }
+  })
+  expect(after.count, 'reduced-motion 重连保留在场弹幕').toBe(1)
+  expect(after.duration, '重连后仍是 20ms 降级时长（不按舞台宽度重算）').toBe('20ms')
+  // 负延迟不得超过 20ms 窗口（冻结位置在窗口内）
+  expect(Math.abs(Number.parseFloat(after.delay || '0')), '负延迟应落在 20ms 窗口内').toBeLessThanOrEqual(20)
+  expect(after.paused, '重连后暂停态保持').toBe(true)
+
+  // 恢复：JS 离场计时按剩余时间（≤20ms）重挂，弹幕不滞留
+  await page.evaluate(() => document.getElementById('bg-single')!.removeAttribute('paused'))
+  await expect
+    .poll(
+      () => page.evaluate(() => document.getElementById('bg-single')!.shadowRoot!.querySelectorAll('.item').length),
+      { timeout: 3000 },
+    )
+    .toBe(0)
+})
+
 test('barrage 点击弹幕派发 oas-item-click（暂停后点，目标位置固定）', async ({ page }) => {
   await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#bg-demo')

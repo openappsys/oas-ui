@@ -102,6 +102,7 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 | `threshold` | 使用门槛（数字，0 或缺省 = 无门槛） | — | — |
 | `trigger-text` | 触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额） | — | — |
 | `validity` | 有效期文案覆盖（如「长期有效」），优先于 start/end 格式化结果 | — | — |
+| `z-index` | 浮层层级（数值叠加在 `--oas-z-index-base` 之上；缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态） | — | — |
 
 #### 方法
 

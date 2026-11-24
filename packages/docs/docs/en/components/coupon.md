@@ -99,6 +99,7 @@ Both forms share the same card rendering:
 | `threshold` | Minimum spend (number, 0 or absent = no minimum) | — | — |
 | `trigger-text` | Trigger label (defaults to i18n `coupon.select`; shows the selected amount once picked) | — | — |
 | `validity` | Validity text override (e.g. "No expiry"), wins over the formatted start/end | — | — |
+| `z-index` | Overlay stacking level (numeric value added on top of `--oas-z-index-base`; default keeps the `--oas-z-modal` step, same shape as modal / drawer) | — | — |
 
 #### Methods
 

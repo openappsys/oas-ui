@@ -48,6 +48,15 @@
 - **drag 真实拖拽 `oas-drag-start` 断言**：qa-regression 补真实鼠标路径——阈值内（2px）点击不派发、越过 4px 的真实拖拽恰好派发一次且 `detail` 为起点坐标 + `source: 'pointer'`。
 - **time-select RTL 模式组键盘 e2e**：`dir=rtl` 下 `ArrowLeft` 前进（express → schedule）、`ArrowRight` 后退，焦点落位到新选中的模式钮，roving tab stop 保持唯一；同时断言宿主 `data-rtl` 标记。
 
+**组件级转正（批 6）**
+
+- **coupon `z-index` 属性通道**：对齐 modal / drawer——数值叠加在 `--oas-z-index-base` 之上，缺省 / 非法值回落 `--oas-z-modal` 层叠阶梯；浮层容器一处生效（遮罩同层）。单测覆盖缺省 / 显式 / 非法 / 移除四种形态。
+- **行数快照 4 轮上限固化**：4 层嵌套数组（恰在上限）结构重建后各层行数与值完整保留；5 层嵌套固化当前行为（前 4 层 1 行、第 5 层 0 行，不抛错）；README 写明深度上限。
+- **barrage 深层嵌套批量输入固化**：`addBatch` 收到 ≥4 层嵌套数组只做一层扫描、不递归、不抛错，后续合法条目照常入队。
+- **barrage RTL 重连 e2e**：RTL 弹幕断开重连后仍用镜像关键帧、`data-rtl` 保持、负延迟续播（实测位移与「摘挂期间应走距离」一致），按原定时刻离场。
+- **barrage reduced-motion 重连 e2e**：`prefers-reduced-motion: reduce` 下重连保留在场弹幕，动画时长恒为 20ms（不按舞台宽度重算）、负延迟落在 20ms 窗口内、暂停态保持，恢复后按剩余时间快速离场。
+- **drag 惯性 e2e**：真实鼠标拖拽松手后继续前进（几何终值 > 松手位置）、`axis="x"` 下纵向零漂移、终值不越过舞台边界、衰减停稳后位置不再漂移且不回弹。
+
 
 ## [2.6.9] - 2026-11-23
 

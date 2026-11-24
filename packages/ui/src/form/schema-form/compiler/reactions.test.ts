@@ -428,6 +428,16 @@ describe('reactions 值联动（fulfill.value）', () => {
     expect(effects.get('note')).toEqual({ visible: true })
   })
 
+  it('表达式结果 undefined（字段无值）不产生值效果（不静默清空目标）', () => {
+    const { engine } = engineOf({
+      country: {
+        reactions: [{ when: "{country} == 'US'", target: 'city', fulfill: { value: '{province}' } }],
+      },
+    })
+    const effects = engine.evaluate({ country: 'US', city: 'NY' })
+    expect(effects.get('city')).toBeUndefined()
+  })
+
   it('写值循环守卫：振荡不收敛在 8 轮内告警并保留最后一轮', () => {
     const { engine, warnings } = engineOf(
       {

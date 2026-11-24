@@ -1259,7 +1259,8 @@
       "selected": "选中态标记（供外层组合排版）",
       "list": "选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态",
       "trigger-text": "触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额）",
-      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）"
+      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）",
+      "z-index": "浮层层级（数值叠加在 `--oas-z-index-base` 之上；缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态）"
     },
     "events": {
       "oas-select": "选中可用券时派发，detail `{ code, coupon }`，随后关闭弹层",

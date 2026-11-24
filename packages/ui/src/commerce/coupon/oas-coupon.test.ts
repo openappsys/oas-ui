@@ -238,6 +238,23 @@ describe('oas-coupon 选择弹层（list 模式）', () => {
     expect(css).toContain('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050))')
     expect(css).not.toMatch(/z-index:\s*\d{3,}/)
   })
+
+  it('z-index 属性通道：数值叠加在 --oas-z-index-base 上；缺省 / 非法值回落层叠阶梯', () => {
+    const overlay = (el: OASCoupon): HTMLElement => el.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')!
+    const el = mount({ list: LIST })
+    // 缺省：不写内联（CSS token 阶梯生效，与 modal / drawer 同形态）
+    expect(overlay(el).style.zIndex).toBe('')
+    // 显式数值：叠加在 base 之上（与 modal 的 applyZ 同公式）
+    el.setAttribute('z-index', '2000')
+    expect(overlay(el).style.zIndex).toBe('calc(var(--oas-z-index-base, 0) + 2000)')
+    // 非法值：回落缺省阶梯（不静默写 0）
+    el.setAttribute('z-index', 'abc')
+    expect(overlay(el).style.zIndex).toBe('')
+    // 移除属性：同样回到缺省
+    el.setAttribute('z-index', '1200')
+    el.removeAttribute('z-index')
+    expect(overlay(el).style.zIndex).toBe('')
+  })
 })
 
 describe('oas-coupon 卡片空态与可读性', () => {

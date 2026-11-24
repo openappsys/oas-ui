@@ -1305,7 +1305,8 @@
       "selected": "Selected marker for outer layout composition",
       "list": "Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form",
       "trigger-text": "Trigger label (defaults to i18n `coupon.select`; shows the selected amount once picked)",
-      "open": "Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change)"
+      "open": "Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change)",
+      "z-index": "Overlay stacking level (numeric value added on top of `--oas-z-index-base`; default keeps the `--oas-z-modal` step, same shape as modal / drawer)"
     },
     "events": {
       "oas-select": "Dispatched when an available coupon is selected with `{ code, coupon }`, then the sheet closes",

@@ -401,6 +401,7 @@ export class OASCoupon extends OASElement {
       'list',
       'trigger-text',
       'open',
+      'z-index',
     ]
   }
 
@@ -710,6 +711,7 @@ export class OASCoupon extends OASElement {
 
   protected override update(): void {
     if (!this.cardHostEl || !this.triggerEl) return
+    this.applyZ()
     const locale = this.resolveLocale()
     const currency = this.getAttr('currency', 'CNY').trim().toUpperCase() || 'CNY'
     const listMode = this.hasAttribute('list')
@@ -754,6 +756,21 @@ export class OASCoupon extends OASElement {
   }
 
   /** 开合同步：显隐 + aria + 焦点迁移（只在真实跳变时执行，避免 locale 重刷抢焦点） */
+  /**
+   * z-index 显式属性通道（对齐 modal / drawer）：数值叠加在 `--oas-z-index-base` 之上，
+   * 缺省（未写 / 非数值）沿用层叠阶梯 token `--oas-z-modal`，与 CSS 缺省同值——动态切换无跳变。
+   * 弹层本体（含遮罩）是同一个 fixed 定位容器，因此只改 `.overlay` 一处。
+   */
+  private applyZ(): void {
+    const overlay = this.overlayEl
+    if (!overlay) return
+    const explicit = this.getAttr('z-index')
+    overlay.style.zIndex =
+      explicit !== '' && Number.isFinite(Number(explicit))
+        ? `calc(var(--oas-z-index-base, 0) + ${Number(explicit)})`
+        : ''
+  }
+
   private syncOpenState(): void {
     if (!this.overlayEl || !this.triggerEl) return
     // 弹层只在列表形态下成立：卡片形态写 open 不应弹出空对话框

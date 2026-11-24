@@ -62,6 +62,10 @@
     {
       "name": "open",
       "observed": true
+    },
+    {
+      "name": "z-index",
+      "observed": true
     }
   ],
   "props": [

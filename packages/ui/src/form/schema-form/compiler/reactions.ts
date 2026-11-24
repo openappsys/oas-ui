@@ -470,7 +470,7 @@ function evaluateReaction(
             hasNext = true
           }
         }
-        if (hasNext) effects.value = next
+        if (hasNext && next !== undefined) effects.value = next
       }
       // 没有任何效果键命中的目标不产生空条目（否则 get(target) 会返回 {}）
       if (Object.keys(effects).length > 0) out.set(key, effects)

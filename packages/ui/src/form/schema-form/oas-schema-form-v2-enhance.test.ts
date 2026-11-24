@@ -90,6 +90,20 @@ describe('reactions 值联动（fulfill.value 转正）', () => {
     expect('discount' in el.getValues()).toBe(true)
   })
 
+  it('值表达式依赖的其它字段变化同样触发重算（依赖图纳入 value 表达式路径）', () => {
+    const el = mount(schema, {
+      uiSchema: {
+        qty: {
+          reactions: [{ when: '{qty} > 0', target: 'total', fulfill: { value: '{qty} * {price}' } }],
+        },
+      },
+      initialValues: { qty: 2, price: 3 },
+    })
+    expect(widget(el, 'total')!.getAttribute('value')).toBe('6')
+    typeInto(el, 'price', '5')
+    expect(widget(el, 'total')!.getAttribute('value')).toBe('10')
+  })
+
   it('otherwise.value：条件不成立时写入回落值', () => {
     const el = mount(schema, {
       uiSchema: {
@@ -327,6 +341,60 @@ describe('array-table 跨行粘贴（schema-form 集成：值同步 / 校验承�
     expect(widget(el, 'hint')!.hasAttribute('aria-required')).toBe(true)
     pasteText(el, 'A\nB')
     expect(widget(el, 'hint')!.hasAttribute('aria-required')).toBe(false)
+  })
+})
+
+describe('嵌套数组深度极限（行数快照 4 轮上限）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** depth 层「数组套对象」链：L1 → child(L2) → child(L3) → ... → leaf 字符串 */
+  function chain(depth: number): { schema: unknown; value: unknown } {
+    let leaf: Record<string, unknown> = { type: 'string', title: '叶子' }
+    let value: unknown = 'x'
+    for (let level = depth; level >= 1; level--) {
+      leaf = {
+        type: 'array',
+        title: `L${level}`,
+        items: { type: 'object', properties: { child: leaf } },
+      }
+      value = [{ child: value }]
+    }
+    return { schema: { type: 'object', properties: { root: leaf } }, value: { root: value } }
+  }
+
+  it('4 层嵌套（恰在 4 轮上限）：结构重建后各层行数与值都保留', () => {
+    const { schema, value } = chain(4)
+    const el = mount(schema, { initialValues: value as Record<string, unknown> })
+    const lists = () => [...el.shadowRoot!.querySelectorAll<HTMLElement>('[data-schema-array-key]')]
+    const counts = () => lists().map((list) => list.querySelectorAll(':scope > [data-oas-form-list-item]').length)
+    expect(counts()).toEqual([1, 1, 1, 1])
+    expect(el.getValues()).toEqual(value)
+
+    // 结构变化触发重建：4 层都要按快照恢复（4 轮 pass 恰好覆盖）
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    el.schema = { ...(schema as Record<string, unknown>), title: '深度极限' }
+    expect(counts()).toEqual([1, 1, 1, 1])
+    expect(el.getValues()).toEqual(value)
+  })
+
+  it('5 层嵌套（超出 4 轮上限）：不抛错、前 4 层按快照恢复，第 5 层按初始长度重建（行为固化）', () => {
+    const { schema, value } = chain(5)
+    const el = mount(schema, { initialValues: value as Record<string, unknown> })
+    const lists = () => [...el.shadowRoot!.querySelectorAll<HTMLElement>('[data-schema-array-key]')]
+    const counts = () => lists().map((list) => list.querySelectorAll(':scope > [data-oas-form-list-item]').length)
+    // 首帧：syncArrayRows 的 4 轮 pass 上限写死——第 5 层容器已建但行数补不到（固化：前 4 层 1 行、第 5 层 0 行）；
+    // 第 5 层没有行 ⇒ 没有叶子字段 ⇒ getValues() 为空对象（数组容器本身不收集值）
+    const initial = counts()
+    expect(initial, '4 轮上限下 5 层嵌套的行数形态固定').toEqual([1, 1, 1, 1, 0])
+    expect(el.getValues()).toEqual({})
+
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    el.schema = { ...(schema as Record<string, unknown>), title: '五层极限' }
+    // 重建同样不抛错；形态稳定（不会因快照回填出现半层错位）
+    expect(counts()).toEqual([1, 1, 1, 1, 0])
+    expect(el.getValues()).toEqual({})
   })
 })
 
