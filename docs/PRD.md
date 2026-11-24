@@ -128,7 +128,7 @@
 ### 批 A：大数组虚拟化 + 上传体验（form 族增强）
 
 - **form-list / array-table 虚拟滚动** 📋：大数据集窗口化渲染（千行级数组表单），只渲染可视窗口 + overscan；行高动态测量；受控/校验/快照/name 重编号语义不变；与既有 `rows`/`min`/行操作共存。
-- **image-picker 自动压缩 + EXIF 方向** 📋：`compress`（quality / max-dimension）与 EXIF Orientation 修正（canvas 重绘），输出 File 通道不变；压缩元信息进 detail。
+- **image-picker 自动压缩 + EXIF 方向** 📋：`compress`（quality / max-dimension），输出 File 通道不变；浏览器解码已按 EXIF 正立渲染，压缩重编码不做二次转正（避免方向写坏），EXIF 方向作为元信息进 detail。
 - **image-cropper 触控板细粒度缩放** 📋：deltaMode 像素级缩放 + Ctrl/Cmd+滚轮步进保留（修复触控板跳变）。
 - **number-keyboard 长按连删** 📋：删除键长按 400ms 起连删（间隔递减），pointerup 释放停止。
 
