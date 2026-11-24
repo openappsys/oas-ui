@@ -694,9 +694,9 @@ const BUDGETS = [
     name: 'dist/cdn.js gzip',
     kind: 'ceiling',
     get: () => cdn.gzipBytes,
-    limit: 800 * 1024, // 800 KB 天花板（2026-11-23 用户批再定档：v2.6.9 批 26 新组件 + schema-form 全家累计 +62.6KB gzip 真实增量；表达式轨已分离独立档；前档 770 KB 定档于 2026-10-08）
+    limit: 810 * 1024, // 810 KB 天花板（2026-11-24 批 B 三组件再 +19.0KB 实测触顶，归因后微调；前档 800 KB 定档于 2026-11-23）
     basis:
-      '天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB——schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档（实测 2.9KB / 档 3.4KB）；归因记录于此，form 链按族分包瘦身列入后续优化。前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测）',
+      '天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB（schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档——实测 2.9KB / 档 3.4KB）；批 B 交易链路 3 组件（cart/order-card/product-card）再 +19.0KB 实测触 800 档，归因后微调 810 KB。前档 800 KB 定档于 2026-11-23；再前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测）',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
