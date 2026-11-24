@@ -943,7 +943,7 @@ export class OASArrayTable extends OASElement {
     return this.hasAttr('virtual')
   }
 
-  /** 虚拟滚动：窗口计算 → 挂载 → 实测校准 → 重算收敛 → spacer 占位 */
+  /** 虚拟滚动：窗口计算 → 挂载 → 实测校准 → spacer 占位 → 盒高定稿后再收敛一次 */
   private syncVirtual(): void {
     const rowsEl = this.rowsEl
     if (!rowsEl) return
@@ -951,18 +951,32 @@ export class OASArrayTable extends OASElement {
     this.applyViewportHeight(rowsEl)
     this.applyEstimatedAttr()
     this.vmodel.setCount(this.items.length)
-    const viewport = this.resolveViewportHeight(rowsEl)
     const overscan = this.resolveOverscan()
+    let viewport = this.resolveViewportHeight(rowsEl)
+    let win = this.layoutWindow(rowsEl, viewport, overscan)
+    this.updateSpacers(rowsEl, win)
+    // 盒高定稿重读：spacer 落位前 clientHeight 是上一次同步留下的内容高（空表撑不满 max-height
+    // 时只剩几 px），首帧按旧内容高算窗口只挂兜底行 → 下方大段空白（滚动 1px 才自愈）。
+    // 视口差 >1px 即用定稿视口重排一次——至多两轮（第二轮盒高不再变，不构成反馈循环）
+    const settled = this.resolveViewportHeight(rowsEl)
+    if (Math.abs(settled - viewport) > 1) {
+      viewport = settled
+      win = this.layoutWindow(rowsEl, viewport, overscan)
+      this.updateSpacers(rowsEl, win)
+    }
+  }
+
+  /** 一次窗口布局：算窗 → 挂载 → 实测校准 → 重算收敛（不循环——高度只细化，窗口单调收敛） */
+  private layoutWindow(rowsEl: HTMLElement, viewport: number, overscan: number): VirtualWindow {
     let win = windowFor(this.vmodel, rowsEl.scrollTop, viewport, overscan)
     this.mountWindow(win)
     this.measureMounted()
-    // 实测校准可能挪动窗口边界：重算一次收敛（高度只细化，窗口单调收敛，不循环）
     const recalculated = windowFor(this.vmodel, rowsEl.scrollTop, viewport, overscan)
     if (recalculated.start !== win.start || recalculated.end !== win.end) {
       win = recalculated
       this.mountWindow(win)
     }
-    this.updateSpacers(rowsEl, win)
+    return win
   }
 
   /**
@@ -1056,13 +1070,16 @@ export class OASArrayTable extends OASElement {
   }
 
   /** spacer 占位：上 = 窗口首行偏移，下 = 总高 − 窗口末行偏移 + 窗口尾 gap（行帧无 gap，恒为
-      总高差；与 form-list 同构公式，未来引入行间距不再脱节） */
+      总高差；与 form-list 同构公式，未来引入行间距不再脱节）。空表取 0：total() 已为 0，
+      加 gap 会凭空造出末行悬挂间距，且这点内容高正是首帧把视口量小的放大器。 */
   private updateSpacers(rowsEl: HTMLElement, win: VirtualWindow): void {
     const top = rowsEl.querySelector<HTMLElement>('[data-vspacer="top"]')
     const bottom = rowsEl.querySelector<HTMLElement>('[data-vspacer="bottom"]')
     if (top) top.style.height = `${Math.round(this.vmodel.offsetOf(win.start))}px`
-    if (bottom)
-      bottom.style.height = `${Math.max(0, Math.round(this.vmodel.total() - this.vmodel.offsetOf(win.end) + this.vGap))}px`
+    if (bottom) {
+      const tail = this.items.length === 0 ? 0 : this.vmodel.total() - this.vmodel.offsetOf(win.end) + this.vGap
+      bottom.style.height = `${Math.max(0, Math.round(tail))}px`
+    }
   }
 
   /** overscan：上下各额外渲染行数（缺省 5；非法回落缺省并单次告警） */
@@ -1081,7 +1098,8 @@ export class OASArrayTable extends OASElement {
    * 视口高度：单一数据源 = 滚动容器实际 `clientHeight`（`viewport-height` 属性已由
    * applyViewportHeight 同步成内联 max-height，盒高即属性值）。CSS
    * `--oas-array-table-viewport-height` 覆盖同样经盒高生效。量不到（首帧 / happy-dom 无布局）
-   * 按 0 处理——窗口计算有兜底（从顶部起渲染固定行数）。
+   * 按 0 处理——窗口计算有兜底（从顶部起渲染固定行数）；syncVirtual 在 spacer 落位后会
+   * 再调一次本方法，取「内容撑满 max-height 后」的定稿盒高。
    */
   private resolveViewportHeight(rowsEl: HTMLElement): number {
     const measured = rowsEl.clientHeight

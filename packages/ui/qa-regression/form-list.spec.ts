@@ -271,3 +271,145 @@ test('array-table 虚拟态添加行：新行滚入视口、可见且焦点落�
   expect(after.visible, '新行在视口内可见').toBe(true)
   expect(after.focusInNewRow, '焦点落新行首字段').toBe(true)
 })
+
+// —— 首帧窗口回归（真实浏览器：首同步量到的是上一次同步的内容高，窗口按旧视口算）——
+
+test('form-list 虚拟首帧（0 行 → 300 行，不滚动）：挂载帧覆盖可视区、无大段空白', async ({ page }) => {
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#form-list-virtual')
+  // 视口高改 600：空列表撑不满 max-height，盒高只有内容高——正是「首帧按旧内容高算窗口」的复现条件
+  await page.evaluate(() => {
+    document.querySelector('#form-list-virtual')!.setAttribute('viewport-height', '600')
+  })
+
+  const empty = await page.evaluate(() => {
+    const sc = document.querySelector('#form-list-virtual')!.shadowRoot!.querySelector<HTMLElement>('.items')!
+    const bottom = sc.querySelector<HTMLElement>('[data-vspacer="bottom"]')
+    return {
+      clientHeight: sc.clientHeight,
+      frames: sc.querySelectorAll('.item').length,
+      bottomSpacer: parseFloat(bottom?.style.height ?? '-1'),
+    }
+  })
+  expect(empty.frames, '空列表无帧').toBe(0)
+  expect(empty.bottomSpacer, '空列表下 spacer 无悬挂 gap（不再凭空 8px 内容高）').toBe(0)
+  expect(empty.clientHeight, '空列表撑不满 max-height（盒高 = 内容高）').toBeLessThan(600)
+
+  await realClick(page, '#form-list-virtual-fill', null)
+  await page.waitForFunction(
+    () => (document.querySelector('#form-list-virtual') as unknown as { rowCount: number }).rowCount === 300,
+  )
+
+  // 关键：不滚动、不等待，直接量首同步结果（旧实现只挂 1+overscan 帧，下方留出数百 px 空白）
+  const first = await page.evaluate(() => {
+    const sc = document.querySelector('#form-list-virtual')!.shadowRoot!.querySelector<HTMLElement>('.items')!
+    const frames = [...sc.querySelectorAll<HTMLElement>('.item')]
+    const box = sc.getBoundingClientRect()
+    const last = frames[frames.length - 1]!.getBoundingClientRect()
+    return {
+      clientHeight: sc.clientHeight,
+      frames: frames.length,
+      firstIndex: Number(frames[0]!.dataset.rowIndex),
+      scrollTop: sc.scrollTop,
+      covered: frames.reduce((sum, f) => sum + f.getBoundingClientRect().height, 0),
+      blankBelow: box.bottom - last.bottom,
+      rowHeight: frames[0]!.getBoundingClientRect().height,
+    }
+  })
+  expect(first.scrollTop, '未滚动（复现条件：首同步而非滚动后自愈）').toBe(0)
+  expect(first.firstIndex, '窗口从首行起').toBe(0)
+  expect(first.clientHeight, '盒高 = viewport-height 属性值（窗口计算同源）').toBe(600)
+  expect(
+    first.covered,
+    `挂载帧总高 ${first.covered} 覆盖可视区 ${first.clientHeight}（${first.frames} 帧）`,
+  ).toBeGreaterThanOrEqual(first.clientHeight)
+  expect(first.blankBelow, `末帧下方空白 ${first.blankBelow} ≤ 行高 ${first.rowHeight}`).toBeLessThanOrEqual(
+    first.rowHeight,
+  )
+})
+
+test('array-table 虚拟首帧（0 行 → 300 行，不滚动）：挂载帧覆盖可视区、无大段空白', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-array-table-virtual')
+  // 900 而非 600：兜底窗口（8 + overscan 4 = 12 帧）在 600 下几乎铺满，判不出差异；900 下旧实现
+  // 只覆盖约 590px，下方空白约 310px
+  await page.evaluate(() => {
+    document.querySelector('#sf-array-table-virtual')!.setAttribute('viewport-height', '900')
+  })
+
+  const empty = await page.evaluate(() => {
+    const sc = document.querySelector('#sf-array-table-virtual')!.shadowRoot!.querySelector<HTMLElement>('.rows')!
+    const bottom = sc.querySelector<HTMLElement>('[data-vspacer="bottom"]')
+    return {
+      clientHeight: sc.clientHeight,
+      frames: sc.querySelectorAll('.row-frame').length,
+      bottomSpacer: parseFloat(bottom?.style.height ?? '-1'),
+    }
+  })
+  expect(empty.frames, '空表无行帧').toBe(0)
+  expect(empty.bottomSpacer, '空表下 spacer 无悬挂 gap').toBe(0)
+  expect(empty.clientHeight, '空表撑不满 max-height（盒高 = 内容高）').toBeLessThan(900)
+
+  await realClick(page, '#sf-array-table-virtual-fill', null)
+  await page.waitForFunction(
+    () => (document.querySelector('#sf-array-table-virtual') as unknown as { rowCount: number }).rowCount === 300,
+  )
+
+  const first = await page.evaluate(() => {
+    const sc = document.querySelector('#sf-array-table-virtual')!.shadowRoot!.querySelector<HTMLElement>('.rows')!
+    const frames = [...sc.querySelectorAll<HTMLElement>('.row-frame')]
+    const box = sc.getBoundingClientRect()
+    const last = frames[frames.length - 1]!.getBoundingClientRect()
+    return {
+      clientHeight: sc.clientHeight,
+      frames: frames.length,
+      firstIndex: Number(frames[0]!.dataset.rowIndex),
+      scrollTop: sc.scrollTop,
+      covered: frames.reduce((sum, f) => sum + f.getBoundingClientRect().height, 0),
+      blankBelow: box.bottom - last.bottom,
+      rowHeight: frames[0]!.getBoundingClientRect().height,
+    }
+  })
+  expect(first.scrollTop, '未滚动（复现条件：首同步而非滚动后自愈）').toBe(0)
+  expect(first.firstIndex, '窗口从首行起').toBe(0)
+  expect(first.clientHeight, '盒高 = viewport-height 属性值（窗口计算同源）').toBe(900)
+  expect(
+    first.covered,
+    `挂载帧总高 ${first.covered} 覆盖可视区 ${first.clientHeight}（${first.frames} 帧）`,
+  ).toBeGreaterThanOrEqual(first.clientHeight)
+  expect(first.blankBelow, `末帧下方空白 ${first.blankBelow} ≤ 行高 ${first.rowHeight}`).toBeLessThanOrEqual(
+    first.rowHeight,
+  )
+})
+
+test('array-table 虚拟滚动到底：末行（index 299）帧挂载且在视口内可见（尾部可达）', async ({ page }) => {
+  await page.goto('/components/schema-form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sf-array-table-virtual')
+  await realClick(page, '#sf-array-table-virtual-fill', null)
+  await page.waitForFunction(
+    () => (document.querySelector('#sf-array-table-virtual') as unknown as { rowCount: number }).rowCount === 300,
+  )
+
+  const box = await page.evaluate(() => {
+    const sc = document.querySelector('#sf-array-table-virtual')!.shadowRoot!.querySelector<HTMLElement>('.rows')!
+    return { inlineMaxHeight: sc.style.maxHeight, clientHeight: sc.clientHeight }
+  })
+  expect(box.inlineMaxHeight, 'viewport-height 属性写进内联 max-height').toBe('240px')
+  expect(box.clientHeight, '盒高 = 属性值（与窗口计算同源）').toBe(240)
+
+  await page.evaluate(() => {
+    const sc = document.querySelector('#sf-array-table-virtual')!.shadowRoot!.querySelector<HTMLElement>('.rows')!
+    sc.scrollTop = sc.scrollHeight
+    sc.dispatchEvent(new Event('scroll'))
+  })
+  const tail = await page.evaluate(() => {
+    const sc = document.querySelector('#sf-array-table-virtual')!.shadowRoot!.querySelector<HTMLElement>('.rows')!
+    const last = sc.querySelector<HTMLElement>('.row-frame[data-row-index="299"]')
+    if (!last) return { mounted: false, visible: false }
+    const box = sc.getBoundingClientRect()
+    const rect = last.getBoundingClientRect()
+    return { mounted: true, visible: rect.bottom > box.top && rect.top < box.bottom }
+  })
+  expect(tail.mounted, '滚动到底后末行帧已挂载').toBe(true)
+  expect(tail.visible, '末行在视口内可见（尾部不再永久不可达）').toBe(true)
+})

@@ -705,7 +705,7 @@ export class OASFormList extends OASElement {
     return this.hasAttr('virtual')
   }
 
-  /** 虚拟滚动：窗口计算 → 挂载 → 实测校准 → 重算收敛 → spacer 占位 */
+  /** 虚拟滚动：窗口计算 → 挂载 → 实测校准 → spacer 占位 → 盒高定稿后再收敛一次 */
   private syncVirtual(itemsEl: HTMLElement): void {
     this.ensureVirtualSkeleton(itemsEl)
     this.applyViewportHeight(itemsEl)
@@ -715,18 +715,32 @@ export class OASFormList extends OASElement {
     // var() 未解析）回落 0——与无间距布局一致
     this.vGap = this.readRowGap(itemsEl)
     this.vmodel.setGap(this.vGap)
-    const viewport = this.resolveViewportHeight(itemsEl)
     const overscan = this.resolveOverscan()
+    let viewport = this.resolveViewportHeight(itemsEl)
+    let win = this.layoutWindow(itemsEl, viewport, overscan)
+    this.updateSpacers(itemsEl, win)
+    // 盒高定稿重读：spacer 落位前 clientHeight 是上一次同步留下的内容高（空列表只有几个 px），
+    // 首帧按旧内容高算窗口会只挂 1 行 → 下方大段空白（滚动 1px 才自愈）。视口差 >1px 即用
+    // 定稿视口重排一次——至多两轮（spacer 已占满全量高度，第二轮盒高不再变，不构成反馈循环）
+    const settled = this.resolveViewportHeight(itemsEl)
+    if (Math.abs(settled - viewport) > 1) {
+      viewport = settled
+      win = this.layoutWindow(itemsEl, viewport, overscan)
+      this.updateSpacers(itemsEl, win)
+    }
+  }
+
+  /** 一次窗口布局：算窗 → 挂载 → 实测校准 → 重算收敛（不循环——高度只细化，窗口单调收敛） */
+  private layoutWindow(itemsEl: HTMLElement, viewport: number, overscan: number): VirtualWindow {
     let win = windowFor(this.vmodel, itemsEl.scrollTop, viewport, overscan)
     this.mountWindow(itemsEl, win)
     this.measureMounted()
-    // 实测校准可能挪动窗口边界：重算一次收敛（不循环——高度只细化，窗口单调收敛）
     const recalculated = windowFor(this.vmodel, itemsEl.scrollTop, viewport, overscan)
     if (recalculated.start !== win.start || recalculated.end !== win.end) {
       win = recalculated
       this.mountWindow(itemsEl, win)
     }
-    this.updateSpacers(itemsEl, win)
+    return win
   }
 
   /** 窗口帧容器实际行间距（px；解析失败回落 0——测试环境无布局，与无间距一致） */
@@ -821,13 +835,17 @@ export class OASFormList extends OASElement {
   }
 
   /** spacer 占位：上 = 窗口首行偏移，下 = 总高 − 窗口末行偏移 + 窗口尾 gap（窗口内末行与
-      下一行之间的间隙不在窗口里渲染，落在下 spacer 顶上——总高与全量渲染严格一致） */
+      下一行之间的间隙不在窗口里渲染，落在下 spacer 顶上——总高与全量渲染严格一致）。
+      空列表取 0：total() 已为 0，加 gap 会凭空造出末行悬挂间距（虚拟空列表 8px ≠ 非虚拟 0），
+      而这点内容高正是首帧把视口量成 8px、窗口退化成 1 行的放大器。 */
   private updateSpacers(itemsEl: HTMLElement, win: VirtualWindow): void {
     const top = itemsEl.querySelector<HTMLElement>('[data-vspacer="top"]')
     const bottom = itemsEl.querySelector<HTMLElement>('[data-vspacer="bottom"]')
     if (top) top.style.height = `${Math.round(this.vmodel.offsetOf(win.start))}px`
-    if (bottom)
-      bottom.style.height = `${Math.max(0, Math.round(this.vmodel.total() - this.vmodel.offsetOf(win.end) + this.vGap))}px`
+    if (bottom) {
+      const tail = this.items.length === 0 ? 0 : this.vmodel.total() - this.vmodel.offsetOf(win.end) + this.vGap
+      bottom.style.height = `${Math.max(0, Math.round(tail))}px`
+    }
   }
 
   /** overscan：上下各额外渲染行数（缺省 5；非法回落缺省并单次告警） */
@@ -846,7 +864,8 @@ export class OASFormList extends OASElement {
    * 视口高度：单一数据源 = 滚动容器实际 `clientHeight`（`viewport-height` 属性已由
    * applyViewportHeight 同步成内联 max-height，盒高即属性值）。CSS
    * `--oas-form-list-viewport-height` 覆盖同样经盒高生效。量不到（首帧 / happy-dom 无布局）
-   * 按 0 处理——窗口计算有兜底（从顶部起渲染固定行数）。
+   * 按 0 处理——窗口计算有兜底（从顶部起渲染固定行数）；syncVirtual 在 spacer 落位后会
+   * 再调一次本方法，取「内容撑满 max-height 后」的定稿盒高。
    */
   private resolveViewportHeight(itemsEl: HTMLElement): number {
     const measured = itemsEl.clientHeight

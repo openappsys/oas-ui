@@ -181,6 +181,38 @@ describe('OASArrayTable 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     expect(scroller(table).classList.contains('vscroll')).toBe(false)
   })
 
+  it('空表 spacer 无悬挂间隙：virtual + 0 行 → 上下 spacer 均 0', () => {
+    const table = makeBig(0, { virtual: '', 'viewport-height': '320' })
+    expect(spacerHeight(table, 'top')).toBe(0)
+    expect(spacerHeight(table, 'bottom'), '空表不凭空产生末行悬挂 gap').toBe(0)
+  })
+
+  it('首帧盒高重读：0 行 → 大表后按定稿视口重排（不再只挂兜底行 + 下方大段空白）', () => {
+    const table = makeBig(0, { virtual: '', 'viewport-height': '600', 'estimated-row-height': '40' })
+    const sc = scroller(table)
+    let reads = 0
+    // 真实浏览器盒高 = min(内容高, max-height)：空表撑不满 max-height（内容高 0），
+    // spacer 落位后内容高够长、盒高才等于 600。getter 忠实模拟这条布局反馈。
+    Object.defineProperty(sc, 'clientHeight', {
+      configurable: true,
+      get() {
+        reads += 1
+        const content = [...sc.querySelectorAll<HTMLElement>('[data-vspacer]')].reduce(
+          (sum, node) => sum + (parseFloat(node.style.height) || 0),
+          0,
+        )
+        return content > 0 ? 600 : 0
+      },
+    })
+    table.setRowCount(60)
+    // 600 / 40 = 15 行可视 + overscan 5 → 帧覆盖整屏（旧实现按 0 视口只挂兜底 8+5 = 13 帧，
+    // 一屏 600px 装不下）
+    expect(frames(table).length).toBeGreaterThanOrEqual(15)
+    // 下 spacer = 总高 60×40 − 窗口末行偏移 20×40 = 1600（全量高度由窗口 + 上下 spacer 拼齐）
+    expect(spacerHeight(table, 'bottom'), '下 spacer 用定稿窗口补齐总高').toBe(1600)
+    expect(reads, '盒高重读收敛有界（至多两轮）').toBeLessThanOrEqual(3)
+  })
+
   it('viewport-height 与盒高同源：属性写进内联 max-height；overscan 扩窗有确定规模', () => {
     // 属性在场 → 内联 max-height 同步（盒高不再停留 CSS 缺省 320px——尾部行不可达的根因）
     const narrow = makeBig(200, { virtual: '', 'viewport-height': '100', 'estimated-row-height': '50', overscan: '0' })

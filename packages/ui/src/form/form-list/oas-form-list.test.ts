@@ -565,6 +565,44 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     expect(mountFrames(large).length).toBe(23)
   })
 
+  it('空列表 spacer 无悬挂间隙：virtual + 0 行 → 上下 spacer 均 0（不凭空造末行 gap）', () => {
+    // 真实主题里窗口容器是 flex + gap 8px；happy-dom 的 getComputedStyle 不解析 gap，这里桩供给
+    // 「行间距 8px」——旧实现空列表的 bottom = 0 − 0 + gap = 8px 可被判出
+    vi.stubGlobal('getComputedStyle', () => ({ rowGap: '8px' }) as unknown as CSSStyleDeclaration)
+    try {
+      const el = makeBig(0, { virtual: '', 'viewport-height': '320' })
+      expect(spacerHeight(el, 'top')).toBe(0)
+      expect(spacerHeight(el, 'bottom'), '空列表不凭空产生末行悬挂 gap').toBe(0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('首帧盒高重读：0 行 → 300 行后按定稿视口重排（不再只挂 1 行 + 下方大段空白）', () => {
+    const el = makeBig(0, { virtual: '', 'viewport-height': '600', 'estimated-row-height': '40' })
+    const sc = scroller(el)
+    let reads = 0
+    // 真实浏览器盒高 = min(内容高, max-height)：空列表撑不满 max-height（只剩几个 px），
+    // spacer 落位后内容高够长、盒高才等于 600。getter 忠实模拟这条布局反馈。
+    Object.defineProperty(sc, 'clientHeight', {
+      configurable: true,
+      get() {
+        reads += 1
+        const content = [...sc.querySelectorAll<HTMLElement>('[data-vspacer]')].reduce(
+          (sum, node) => sum + (parseFloat(node.style.height) || 0),
+          0,
+        )
+        return content > 0 ? 600 : 8
+      },
+    })
+    el.setRowCount(300)
+    // 600 / 40 = 15 行可视 + overscan 5 → 帧覆盖整屏（旧实现按 8px 旧视口只挂 1+5 = 6 帧）
+    expect(mountFrames(el).length).toBeGreaterThanOrEqual(15)
+    // 下 spacer = 总高 300×40 − 窗口末行偏移 20×40 = 11200（全量高度由窗口 + 上下 spacer 拼齐）
+    expect(spacerHeight(el, 'bottom'), '下 spacer 用定稿窗口补齐总高').toBe(11200)
+    expect(reads, '盒高重读收敛有界（至多两轮）').toBeLessThanOrEqual(3)
+  })
+
   it('viewport-height 属性移除 / 非法：清内联回落实测盒高，非法值单次告警', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
