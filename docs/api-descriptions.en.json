@@ -3321,7 +3321,8 @@
       "layout": "Keyboard layout: `number` (default) / `plate` (license plate: province + letters + digits)",
       "disabled": "Disabled: all keys disabled and no events are dispatched",
       "readonly": "Readonly: keys stay focusable but the value is locked; `oas-done` still fires",
-      "extra-key": "Extra keys attached to the right side of the digit area (an ID-card X key and the like) — a single character or a JSON string array (at most 2, extras truncated with a devWarn); the 0 key narrows automatically; extra characters join the physical-keyboard whitelist"
+      "extra-key": "Extra keys attached to the right side of the digit area (an ID-card X key and the like) — a single character or a JSON string array (at most 2, extras truncated with a devWarn); the 0 key narrows automatically; extra characters join the physical-keyboard whitelist",
+      "no-repeat-delete": "Disables long-press repeat delete on the delete key (on by default: hold 400ms to start repeating, interval 300ms decreasing to 150ms; pointerup / leaving / cancelling stops it) — turn off for strictly single-shot deletes (per-cell verified OTP inputs); physical Backspace is unaffected"
     },
     "events": {
       "oas-input": "A character is appended, `detail: { value, key }`",

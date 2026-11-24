@@ -215,3 +215,140 @@ describe('OASNumberKeyboard', () => {
     expect(warn).toHaveBeenCalled()
   })
 })
+
+describe('OASNumberKeyboard 长按连删（v2.6.9 批 A）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  function pointer(type: string): Event {
+    return new PointerEvent(type, { bubbles: true, composed: true, cancelable: true, pointerId: 1, button: 0 })
+  }
+
+  /** 长按删除键一段时间 */
+  function hold(del: HTMLButtonElement, ms: number): void {
+    del.dispatchEvent(pointer('pointerdown'))
+    vi.advanceTimersByTime(ms)
+  }
+
+  it('按住 400ms 起连删：间隔 300 起步、每次递减 50、150 触底', () => {
+    const el = mount({ value: '123456789' })
+    hold(byAction(el, 'delete'), 399)
+    expect(el.getAttribute('value'), '未到 400ms 不连删').toBe('123456789')
+    vi.advanceTimersByTime(1)
+    expect(el.getAttribute('value'), '400ms 触发首次连删').toBe('12345678')
+    vi.advanceTimersByTime(300)
+    expect(el.getAttribute('value'), '首个连删间隔 300ms').toBe('1234567')
+    vi.advanceTimersByTime(250)
+    expect(el.getAttribute('value'), '间隔递减 250ms').toBe('123456')
+    vi.advanceTimersByTime(200)
+    expect(el.getAttribute('value'), '间隔递减 200ms').toBe('12345')
+    vi.advanceTimersByTime(150)
+    expect(el.getAttribute('value'), '间隔触底 150ms').toBe('1234')
+    vi.advanceTimersByTime(150)
+    expect(el.getAttribute('value'), '触底后保持 150ms').toBe('123')
+  })
+
+  it('pointerup / pointerleave / pointercancel 停止连删', () => {
+    for (const stop of ['pointerup', 'pointerleave', 'pointercancel'] as const) {
+      const el = mount({ value: '12345' })
+      const del = byAction(el, 'delete')
+      hold(del, 400)
+      expect(el.getAttribute('value')).toBe('1234')
+      del.dispatchEvent(pointer(stop))
+      vi.advanceTimersByTime(2000)
+      expect(el.getAttribute('value'), `${stop} 后停止连删`).toBe('1234')
+    }
+  })
+
+  it('每次连删派发 oas-delete（与单击删除同事件通道）', () => {
+    const el = mount({ value: '12' })
+    const values: string[] = []
+    el.addEventListener('oas-delete', (e) => values.push((e as CustomEvent<{ value: string }>).detail.value))
+    hold(byAction(el, 'delete'), 700)
+    expect(values).toEqual(['1', ''])
+  })
+
+  it('值删空后连删静默（不再派发 oas-delete）', () => {
+    const el = mount({ value: '1' })
+    let fired = 0
+    el.addEventListener('oas-delete', () => fired++)
+    hold(byAction(el, 'delete'), 400)
+    expect(el.getAttribute('value')).toBe('')
+    vi.advanceTimersByTime(2000)
+    expect(fired, '空值继续长按不派发事件').toBe(1)
+  })
+
+  it('no-repeat-delete 属性关闭长按连删（按住 2s 不删）', () => {
+    const el = mount({ value: '123', 'no-repeat-delete': '' })
+    hold(byAction(el, 'delete'), 2000)
+    expect(el.getAttribute('value'), '连删关闭：按住不连删').toBe('123')
+  })
+
+  it('readonly 下长按无效；disabled 下不启动计时', () => {
+    const ro = mount({ value: '123', readonly: '' })
+    hold(byAction(ro, 'delete'), 800)
+    expect(ro.getAttribute('value')).toBe('123')
+    const dis = mount({ value: '123', disabled: '' })
+    hold(byAction(dis, 'delete'), 800)
+    expect(dis.getAttribute('value')).toBe('123')
+  })
+
+  it('键盘 Backspace 行为不变（keydown 单删一次，不进入长按连删）', () => {
+    const el = mount({ value: '123' })
+    physical(el, 'Backspace')
+    vi.advanceTimersByTime(2000)
+    expect(el.getAttribute('value')).toBe('12')
+  })
+
+  it('长按期间阻止 contextmenu（长按弹菜单会打断连删）', () => {
+    const el = mount({ value: '123' })
+    const del = byAction(el, 'delete')
+    const notPrevented = del.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true }),
+    )
+    expect(notPrevented, '删除键 contextmenu 必须被阻止').toBe(false)
+    // 数字键不阻止 contextmenu
+    const digit = keyOf(el, '5')
+    expect(digit.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))).toBe(true)
+  })
+
+  it('collision-guard：原型不得有 noRepeatDelete / repeatDelete 成员（撞属性 camelCase）', () => {
+    const proto = OASNumberKeyboard.prototype as unknown as Record<string, unknown>
+    expect(proto['noRepeatDelete']).toBeUndefined()
+    expect(proto['repeatDelete']).toBeUndefined()
+  })
+
+  it('长按后的收尾 click 不多删一次（pointerup 补发 click 被抑制），下次单击恢复正常', () => {
+    const el = mount({ value: '1234' })
+    const del = byAction(el, 'delete')
+    // 长按一轮：400ms 首删 + 300ms 二删，随后 pointerup + 浏览器补发的 click
+    hold(del, 700)
+    expect(el.getAttribute('value')).toBe('12')
+    del.dispatchEvent(pointer('pointerup'))
+    press(del)
+    expect(el.getAttribute('value'), '收尾 click 被抑制（不重复删除）').toBe('12')
+    // 新的按下重置抑制：单击恢复正常删除
+    del.dispatchEvent(pointer('pointerdown'))
+    press(del)
+    expect(el.getAttribute('value')).toBe('1')
+    del.dispatchEvent(pointer('pointerup'))
+  })
+
+  it('pointerleave 结束长按后（无补发 click），下一次单击仍正常删除', () => {
+    const el = mount({ value: '123' })
+    const del = byAction(el, 'delete')
+    hold(del, 400)
+    expect(el.getAttribute('value')).toBe('12')
+    del.dispatchEvent(pointer('pointerleave'))
+    press(del)
+    expect(el.getAttribute('value')).toBe('1')
+  })
+})

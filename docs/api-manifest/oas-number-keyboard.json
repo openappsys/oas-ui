@@ -36,6 +36,11 @@
     {
       "name": "extra-key",
       "observed": true
+    },
+    {
+      "name": "no-repeat-delete",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

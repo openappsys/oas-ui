@@ -19,7 +19,7 @@ Drag the crop frame to move it and its corners to resize; drag anywhere outside 
 
 The image can be panned: press and drag on the stage **outside the crop frame** (dragging inside the frame still moves the frame), or use `Alt` + arrow keys (`Shift` steps 10px). Panning always honours **the image covers the crop frame** — going past the allowed range is clamped back, so the stage never shows its background.
 
-Scrolling the wheel over the stage zooms in 10% steps **anchored at the cursor** (the content under the cursor stays put); `Ctrl` / `⌘` + wheel is the browser page-zoom gesture and is left alone. The zoom slider and `+` / `−` buttons zoom around the stage centre.
+Scrolling the wheel over the stage zooms **anchored at the cursor** (the content under the cursor stays put). Wheel handling is tiered: trackpad two-finger scrolls (pixel deltas) zoom continuously — 100px per 10% step, clamped to 20% per event, so small movements no longer jump a whole step; a classic mouse-wheel notch (deltaY 100) is exactly one 10% step (unchanged); Firefox line-mode wheels keep the discrete step too. `Ctrl` / `⌘` + wheel is the browser page-zoom gesture and is left alone. The zoom slider and `+` / `−` buttons zoom around the stage centre.
 
 <DemoBlock title="Drag to pan + wheel zoom (16:9)">
   <oas-image-cropper id="ic-pan" src="/assets/demo-wide-2.svg" aspect-ratio="16/9"></oas-image-cropper>
