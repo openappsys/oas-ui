@@ -641,6 +641,45 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     expect(rows(el)[0]!.querySelector('input')!.getAttribute('value')).not.toBe('doomed')
   })
 
+  // 跨引擎回归（Firefox 全量 e2e 抓到）：窗口重算时若先挂窗口、后落 spacer，过渡态容器高少一行
+  // （measureMounted 的 offsetHeight 读完即强制布局坐实），Firefox 会就地按这个更矮的内容高
+  // 夹紧 scrollTop——滚到底后每次重算都被拉回一行，新行永远差一行进不了视口
+  // （qa-regression/form-list.spec.ts「虚拟态添加行」）。断言：每次 mountWindow 发生时，
+  // 上下 spacer 必须已经等于本次窗口的定稿值。
+  it('窗口挂载时 spacer 必须已按目标窗口落位（滚动夹紧跨引擎回归）', () => {
+    const el = makeBig(300, { virtual: '', 'viewport-height': '240', 'estimated-row-height': '40' })
+    stubViewport(el, 240)
+    const api = el as unknown as {
+      mountWindow: (win: { start: number; end: number }) => void
+      vmodel: { offsetOf: (i: number) => number; total: () => number }
+      vGap: number
+    }
+    const snaps: { win: string; top: number; bottom: number; topWant: number; bottomWant: number }[] = []
+    const original = api.mountWindow as (...args: unknown[]) => void
+    api.mountWindow = function (this: unknown, ...args: unknown[]): void {
+      const win = args[args.length - 1] as { start: number; end: number }
+      snaps.push({
+        win: `${win.start}-${win.end}`,
+        top: spacerHeight(el, 'top'),
+        bottom: spacerHeight(el, 'bottom'),
+        topWant: Math.round(api.vmodel.offsetOf(win.start)),
+        bottomWant: Math.max(0, Math.round(api.vmodel.total() - api.vmodel.offsetOf(win.end) + api.vGap)),
+      })
+      original.apply(this, args)
+    }
+    // 滚到中段：窗口相对上一窗整体下移（旧实现此处挂载时 spacer 还是上一窗的值）
+    scrollTo(el, 4000)
+    // 回归夹具自证：scrollTop 4000 / 估高 40 → 首可见行 100，overscan 5 → 窗口 95-111
+    expect(
+      snaps.map((s) => s.win),
+      '回归夹具：滚动后必须真的发生窗口挂载且落在预期窗口',
+    ).toEqual(['95-111'])
+    for (const s of snaps) {
+      expect(s.top, `窗口 ${s.win} 挂载时上 spacer 必须已落位`).toBe(s.topWant)
+      expect(s.bottom, `窗口 ${s.win} 挂载时下 spacer 必须已落位`).toBe(s.bottomWant)
+    }
+  })
+
   it('虚拟态程序化通道：setRowCount / insertRowAt（越窗行）正常且不派发事件', () => {
     const el = makeBig(50, { virtual: '', 'viewport-height': '320' })
     const events: string[] = []

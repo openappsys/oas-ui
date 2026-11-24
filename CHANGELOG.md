@@ -139,6 +139,14 @@
 
 ### 修复
 
+**跨引擎收口（main 全量 e2e 抓到：撞名守卫 5 条 + 虚拟滚动滚动夹紧 + Firefox 用例时序）**
+
+- **撞名守卫（5 条，对外 attribute 名全部不变）**：attribute 的 camelCase 名撞同类实例成员时，框架按「key in el」把静态 attribute 写成 property，会遮蔽原型方法（内部 `this.xxx()` 直接 TypeError）或污染数据字段。现只改组件内部成员名：`max-select` 的解析方法 `maxSelect()` → `parseMaxSelect()`（oas-coupon，调用点 2）、`banned-words` 的解析方法 `bannedWords()` → `parseBannedWords()`（oas-barrage，1）、`score-rules` 的编译结果字段 `scoreRules` → `compiledScoreRules`（oas-questionnaire，4）、`snap-targets` / `snap-threshold` 的解析方法 `snapTargets()` / `snapThreshold()` → `parseSnapTargets()` / `parseSnapThreshold()`（oas-drag，各 2）。`collision-guard.spec.ts` 源码级守卫归零。
+- **oas-form-list / oas-array-table 虚拟态滚到底后新行进不了视口（Firefox）**：窗口重算此前「先挂窗口帧、后落 spacer」，挂载后 `measureMounted` 的 `offsetHeight` 读取把过渡态布局坐实——此时 spacer 还是上一窗偏移，容器高少一行；Firefox 会就地按这个更矮的内容高夹紧 `scrollTop`（Chromium 把夹紧推迟到下一次滚动更新），滚到底后每次重算都被拉回一行，`oas-add` 的新行永远差一行在视口外（焦点已落进去，用户看不到）。现改为 spacer 先按目标窗口落位再挂载（过渡态只可能偏高，不触发夹紧），两引擎统一。单测 +2（窗口挂载时上下 spacer 必须已是本次窗口的定稿值，撤掉排序即红）；`qa-regression/form-list.spec.ts` 两条「虚拟态添加行」在 Chromium / Firefox / WebKit 三引擎全绿。
+- **qa-regression/goods-action hover 底色跨引擎不稳（用例时序，非样式差异）**：hover 底色（`transition-fast`）此前只按「computed 值是 `color()` 记法」判稳态——Chromium 过渡中走 oklab 插值该判据才有效，Firefox 一开始就是 `color(srgb …)`，判据立刻通过、读到过渡中途值（实测 g 通道 133.7/134.5 波动，稳态 129.6）。现改为等「连续两次采样同值且已离开基色」，稳态逐通道锚定断言不变。
+- **qa-regression/image-cropper 舞台撑高用例跨引擎不稳（用例时序，非钳制缺陷）**：① 注入舞台高度后只等「舞台变高」，裁剪框的 ResizeObserver 重排可能还没落定（Chromium 读到旧的 304 高框、Firefox 读到新的 494 高框，两引擎起跑几何不同）——补等裁剪框按新高度落定；② 拖拽距离 600px 会越出视口，Firefox 对窗口外的 `pointermove` 送来无效坐标（实测 `clientX=0 / clientY=-85`），位移被算到负方向——改为把拖拽限制在视口内并断言仍有足够下拖空间。位移钳回的用户可见断言（裁剪框内不露舞台底色）不变。
+- **oas-number-keyboard 补 `no-repeat-delete` 演示**：zh/en 文档新增「严格单发（关闭长按连删）」demo 块（带值回显），`demo-coverage` 属性覆盖闭环。
+
 **组件完善批 3 修复批（review 补审收口：平移覆盖约束 / 光标提示 / 惯性陈旧速度）**
 
 - **oas-image-cropper 舞台尺寸变化后位移未按覆盖约束重钳**：`ResizeObserver` 回调此前只重测尺寸并同步样式，位移可行区间随舞台变化后不重新钳制——舞台变矮时裁剪框内露出舞台底色。现抽出 `handleStageResize()`（RO 回调与单测共同入口）：重测 → 重排裁剪框 → `applyOffset` 重钳。单测 +1（舞台 480×320 → 400×320，位移 208 → 168）。

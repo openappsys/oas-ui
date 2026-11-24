@@ -106,6 +106,42 @@ describe('OASArrayTable 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     expect(rows(table)[999]!.querySelector('oas-input')!.getAttribute('name')).toBe('users.999.nick')
   }, 30000)
 
+  // 跨引擎回归：同 oas-form-list（先挂窗口后落 spacer 会让过渡态容器高少一行，Firefox 就地夹紧
+  // scrollTop）。断言：每次 mountWindow 发生时上下 spacer 已等于本次窗口的定稿值。
+  it('窗口挂载时 spacer 必须已按目标窗口落位（滚动夹紧跨引擎回归）', () => {
+    const table = makeBig(80, { virtual: '', 'viewport-height': '240', 'estimated-row-height': '40' })
+    stubViewport(table, 240)
+    const api = table as unknown as {
+      mountWindow: (win: { start: number; end: number }) => void
+      vmodel: { offsetOf: (i: number) => number; total: () => number }
+      vGap: number
+    }
+    const snaps: { win: string; top: number; bottom: number; topWant: number; bottomWant: number }[] = []
+    const original = api.mountWindow
+    api.mountWindow = function (this: unknown, win: { start: number; end: number }): void {
+      snaps.push({
+        win: `${win.start}-${win.end}`,
+        top: spacerHeight(table, 'top'),
+        bottom: spacerHeight(table, 'bottom'),
+        topWant: Math.round(api.vmodel.offsetOf(win.start)),
+        bottomWant: Math.max(0, Math.round(api.vmodel.total() - api.vmodel.offsetOf(win.end) + api.vGap)),
+      })
+      return original.call(this, win)
+    }
+    const sc = scroller(table)
+    sc.scrollTop = 4000
+    sc.dispatchEvent(new Event('scroll'))
+    // 回归夹具自证：scrollTop 4000 / 估高 40 → 首可见行 100，overscan 5 → 窗口 69-80（80 行封顶）
+    expect(
+      snaps.map((s) => s.win),
+      '回归夹具：滚动后必须真的发生窗口挂载且落在预期窗口',
+    ).toEqual(['69-80'])
+    for (const s of snaps) {
+      expect(s.top, `窗口 ${s.win} 挂载时上 spacer 必须已落位`).toBe(s.topWant)
+      expect(s.bottom, `窗口 ${s.win} 挂载时下 spacer 必须已落位`).toBe(s.bottomWant)
+    }
+  })
+
   it('滚动重算：scrollTop 变化 → 帧窗口平移、spacer 更新', () => {
     const table = makeBig(200, {
       virtual: '',

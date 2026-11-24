@@ -966,14 +966,19 @@ export class OASArrayTable extends OASElement {
     }
   }
 
-  /** 一次窗口布局：算窗 → 挂载 → 实测校准 → 重算收敛（不循环——高度只细化，窗口单调收敛） */
+  /** 一次窗口布局：算窗 → 落 spacer → 挂载 → 实测校准 → 重算收敛（不循环——高度只细化，窗口单调收敛） */
   private layoutWindow(rowsEl: HTMLElement, viewport: number, overscan: number): VirtualWindow {
     let win = windowFor(this.vmodel, rowsEl.scrollTop, viewport, overscan)
+    // spacer 必须先于窗口挂载落位：挂载整窗换帧时若 spacer 仍是上一窗偏移，过渡态容器高少一行
+    // （measureMounted 的 offsetHeight 读完即强制布局坐实）。Firefox 会按这个更矮的内容高就地
+    // 夹紧 scrollTop——滚到底后每次重算都被拉回一行，新行永远差一行进不了视口。见 oas-form-list 同名注释。
+    this.updateSpacers(rowsEl, win)
     this.mountWindow(win)
     this.measureMounted()
     const recalculated = windowFor(this.vmodel, rowsEl.scrollTop, viewport, overscan)
     if (recalculated.start !== win.start || recalculated.end !== win.end) {
       win = recalculated
+      this.updateSpacers(rowsEl, win)
       this.mountWindow(win)
     }
     return win

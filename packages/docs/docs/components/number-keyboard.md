@@ -52,6 +52,11 @@ description: 数字键盘：随机乱序安全键盘、完成/删除键、车牌
 
 「删除」键长按 400ms 起连删：间隔 300ms 起步、每次递减 50ms、150ms 触底——触屏输错多位时不用连点（键盘类 App 的既成惯例，故缺省开启）。`pointerup` / 移出按键 / 手势取消即停；**长按只认主键**（右键 / 中键按下不启动连删）；长按期间删除键的 contextmenu 被阻止（长按弹菜单会打断连删），其余按键不受影响。长按与单击互不串扰：长按释放后的收尾 click 不会多删一次。宿主如需「严格单发」（逐格验证的验证码框等）加 `no-repeat-delete` 关闭；物理键盘 `Backspace` 不受影响（连删随系统按键重复自然发生）。
 
+<DemoBlock title="no-repeat-delete：严格单发（关闭长按连删）">
+  <oas-number-keyboard id="nk-single" no-repeat-delete maxlength="6" value="123"></oas-number-keyboard>
+  <p id="nk-single-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">value：123（长按删除键只删一位）</p>
+</DemoBlock>
+
 ## 事件与键盘输入
 
 组件内聚焦时可直接用物理键盘输入：数字（车牌布局下含字母）、`Backspace` 删除；按键本身为原生 `<button>`，Tab / Enter / Space 均可操作。
@@ -113,6 +118,13 @@ onMounted(() => {
   const showExtra = (detail) => log(extraOut, `value：${detail.value || '（空）'}`)
   extra?.addEventListener('oas-input', (e) => showExtra(e.detail))
   extra?.addEventListener('oas-delete', (e) => showExtra(e.detail))
+
+  // 严格单发（no-repeat-delete：长按删除键不连删）
+  const single = document.getElementById('nk-single')
+  const singleOut = document.getElementById('nk-single-out')
+  const showSingle = (detail) => log(singleOut, `value：${detail.value || '（空）'}`)
+  single?.addEventListener('oas-input', (e) => showSingle(e.detail))
+  single?.addEventListener('oas-delete', (e) => showSingle(e.detail))
 
   // 事件演示
   const ev = document.getElementById('nk-event')

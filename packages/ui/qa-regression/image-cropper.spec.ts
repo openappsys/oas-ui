@@ -316,6 +316,16 @@ test('image-cropper：舞台尺寸变小后位移钳回，裁剪框内不露舞�
     },
     { timeout: 5000 },
   )
+  // 舞台撑高后 ResizeObserver 回调才按新尺寸重排裁剪框：只等「舞台变高」会读到回调前的旧框
+  // （Chromium 常读到 304 高的旧框、Firefox 已读到 494 高的新框——起始几何跨引擎不一致，
+  // 位移可行区间也就不同）。等裁剪框也按新高度落定，两引擎才从同一几何起跑。
+  await page.waitForFunction(
+    () => {
+      const frame = document.querySelector('#ic-pan')!.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
+      return frame.getBoundingClientRect().height > 400
+    },
+    { timeout: 5000 },
+  )
   await page.evaluate(() => {
     const host = document.querySelector('#ic-pan') as HTMLElement & { zoom: number }
     host.zoom = 2
@@ -324,9 +334,14 @@ test('image-cropper：舞台尺寸变小后位移钳回，裁剪框内不露舞�
   // 高位舞台下裁剪框左右各留 ~49px、上下仅 ~13px——从左侧空白带起拖才是平移（顶部会落进框内）
   const sx = start.stage.left + 12
   const sy = start.stage.top + start.stage.height / 2
+  // 拖拽必须留在视口内：越过窗口边界后 Firefox 送来的 pointermove 坐标是无效值
+  // （实测 clientX=0 / clientY=-85），位移会跳到负方向——这是指针工具的投递限制，不是平移语义。
+  const viewportH = page.viewportSize()!.height
+  const dy = Math.min(600, Math.floor(viewportH - sy - 8))
+  expect(dy, '前置：视口内还有足够下拖空间把图片拖到纵向边界').toBeGreaterThan(start.stage.height / 2)
   await page.mouse.move(sx, sy)
   await page.mouse.down()
-  await page.mouse.move(sx, sy + 600, { steps: 8 })
+  await page.mouse.move(sx, sy + dy, { steps: 8 })
   await page.mouse.up()
   const dragged = await readCropper(page, '#ic-pan')
   expect(dragged.offset.y, '前置：向下拖动确实平移了图片（位移增大）').toBeGreaterThan(start.offset.y)

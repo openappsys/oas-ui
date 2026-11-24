@@ -52,6 +52,11 @@ With `random` the digit order is shuffled (secure keypad scenarios); `randomize(
 
 Hold the delete key for 400ms and repeat-deleting starts: the interval begins at 300ms, decreases by 50ms each fire and bottoms out at 150ms — fixing several wrong digits no longer means tap-tap-tap (an established convention of keyboard apps, hence on by default). `pointerup`, moving off the key or gesture cancellation stops it; **long-press only reacts to the primary button** (right / middle button presses never start it); the delete key suppresses its context menu while held (a popping menu would interrupt the repeat), other keys are unaffected. Long-press and single taps do not interfere: the trailing click after a long-press release never deletes twice. Hosts needing strictly single-shot deletes (per-cell verified OTP inputs and the like) add `no-repeat-delete`. The physical `Backspace` key is untouched (its repeat comes from the OS key-repeat naturally).
 
+<DemoBlock title="no-repeat-delete: strictly single-shot (repeat disabled)">
+  <oas-number-keyboard id="nk-single-en" no-repeat-delete maxlength="6" value="123"></oas-number-keyboard>
+  <p id="nk-single-en-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">value: 123 (holding delete removes one digit)</p>
+</DemoBlock>
+
 ## Events and physical keyboard
 
 While focus is inside the component, a physical keyboard works too: digits (plus letters in plate layout) and `Backspace`. Keys are native `<button>` elements, so Tab / Enter / Space work.
@@ -115,6 +120,13 @@ onMounted(() => {
   const showExtraEn = (detail) => log(extraOutEn, `value: ${detail.value || '(empty)'}`)
   extraEn?.addEventListener('oas-input', (e) => showExtraEn(e.detail))
   extraEn?.addEventListener('oas-delete', (e) => showExtraEn(e.detail))
+
+  // Strictly single-shot (no-repeat-delete: holding delete never repeats)
+  const singleEn = document.getElementById('nk-single-en')
+  const singleOutEn = document.getElementById('nk-single-en-out')
+  const showSingleEn = (detail) => log(singleOutEn, `value: ${detail.value || '(empty)'}`)
+  singleEn?.addEventListener('oas-input', (e) => showSingleEn(e.detail))
+  singleEn?.addEventListener('oas-delete', (e) => showSingleEn(e.detail))
 
   const ev = document.getElementById('nk-event')
   const evOut = document.getElementById('nk-event-out')

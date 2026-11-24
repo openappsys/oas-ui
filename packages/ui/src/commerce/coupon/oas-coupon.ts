@@ -703,7 +703,7 @@ export class OASCoupon extends OASElement {
         this.update()
         return
       }
-      const limit = this.maxSelect()
+      const limit = this.parseMaxSelect()
       const peers = this.exclusivePeerCodes(list, coupon)
       // 上限判定按「换选后的净张数」：同组换选先淘汰同组其他券，不额外占名额
       if (limit > 0 && this.selectedCodes.size - peers.length >= limit && !this.selectedCodes.has(coupon.code)) {
@@ -762,8 +762,9 @@ export class OASCoupon extends OASElement {
     return removed
   }
 
-  /** max-select 解析：正整数；0 / 未写 = 不限；非法告警一次并回落不限 */
-  private maxSelect(): number {
+  /** max-select 解析：正整数；0 / 未写 = 不限；非法告警一次并回落不限
+   * （名字刻意避开 `maxSelect`：框架按「key in el」把 attribute 写成 property 时会遮蔽同名方法） */
+  private parseMaxSelect(): number {
     const raw = this.getAttr('max-select', '')
     if (raw.trim() === '') return 0
     const value = Number.parseInt(raw, 10)
@@ -1047,7 +1048,7 @@ export class OASCoupon extends OASElement {
   private triggerLabel(list: CouponData[], locale: string, currency: string, multiple: boolean): string {
     if (multiple) {
       if (this.selectedCodes.size > 0) {
-        const limit = this.maxSelect()
+        const limit = this.parseMaxSelect()
         return limit > 0
           ? this.t('coupon.selectedCountLimit', { count: String(this.selectedCodes.size), limit: String(limit) })
           : this.t('coupon.selectedCount', { count: String(this.selectedCodes.size) })

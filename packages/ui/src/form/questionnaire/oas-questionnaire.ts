@@ -417,8 +417,9 @@ export class OASQuestionnaire extends OASElement {
   /** 值变化 → 重算 → 对齐 → 派发 change 的同步级联轮次（8 轮守卫，防宿主回环死循环） */
   private cascadePasses = 0
 
-  /** 已编译的评分规则（score-rules） */
-  private scoreRules: CompiledScoreRule[] = []
+  /** 已编译的评分规则（score-rules）
+   * （名字刻意避开 `scoreRules`：框架按「key in el」把 attribute 写成 property 会污染该字段） */
+  private compiledScoreRules: CompiledScoreRule[] = []
 
   /** 评分规则编译签名（属性原文） */
   private scoreSignature = ''
@@ -787,21 +788,21 @@ export class OASQuestionnaire extends OASElement {
     }
     const compiled = compileScoreRules(parsed)
     for (const message of compiled.warnings) warnLogic(message)
-    this.scoreRules = compiled.rules
+    this.compiledScoreRules = compiled.rules
     // 基线快照：规则变更静默（不派发 oas-score），后续仅真实变化才派发
     this.lastScore = this.computeScoreNow()
   }
 
   private computeScoreNow(): number {
-    if (this.scoreRules.length === 0) return 0
-    const { score, failed } = computeScore(this.scoreRules, this.conditionValues())
+    if (this.compiledScoreRules.length === 0) return 0
+    const { score, failed } = computeScore(this.compiledScoreRules, this.conditionValues())
     for (const message of failed) warnLogic(message)
     return score
   }
 
   /** 作答变化 → 防抖派发（同一任务内连续作答合并为一次；值未变不派发） */
   private scheduleScore(): void {
-    if (this.scoreRules.length === 0) return
+    if (this.compiledScoreRules.length === 0) return
     if (this.scoreTimer !== null) clearTimeout(this.scoreTimer)
     this.scoreTimer = setTimeout(() => {
       this.scoreTimer = null

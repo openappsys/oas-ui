@@ -105,25 +105,43 @@ test('goods-action：loading spinner 是 1em 圆环（修复前为 4px 竖线）
   const okBtn = page.locator('oas-goods-action [part="button"][data-key="ok"]').first()
   const warnBtn = page.locator('oas-goods-action [part="button"][data-key="warn"]').first()
   // 等 background transition（transition-fast ≈150ms）结束再读稳态：过渡中 Chromium 走
-  // oklab 插值、computed 序列化为 oklab(...)，稳态才回到 color(srgb …) 记法
-  const bgSteady = (key: string) =>
-    expect
+  // oklab 插值、computed 序列化为 oklab(...)，稳态才回到 color(srgb …) 记法。
+  // 但「序列化形态」只在 Chromium 过渡中才有区别——Firefox 一开始就是 color(srgb …)，
+  // 该判据立刻通过、读到的是过渡中途值（实测 g 通道 133.7/134.5 波动，稳态应 129.6），
+  // 故必须再等「连续两次采样同值」的稳态，否则同一份样式的 hover 断言跨引擎不稳定。
+  const bgOf = (key: string) =>
+    page.evaluate((k) => {
+      const btn = [...document.querySelectorAll('oas-goods-action')]
+        .map((el) => el.shadowRoot!.querySelector(`[part="button"][data-key="${k}"]`))
+        .find(Boolean)!
+      return getComputedStyle(btn).backgroundColor
+    }, key)
+  const bgSteady = async (key: string, base: string): Promise<void> => {
+    // 连续两次采样同值 + 已离开基色：mid-transition 的两次背靠背采样可能同值（同一帧内
+    // 过渡还没推进），只等「同值」会在 Firefox 读到 ≈基色（实测 g 133.7/134.5、r 173.5）
+    let last = ''
+    let stable = 0
+    await expect
       .poll(
-        () =>
-          page.evaluate((k) => {
-            const btn = [...document.querySelectorAll('oas-goods-action')]
-              .map((el) => el.shadowRoot!.querySelector(`[part="button"][data-key="${k}"]`))
-              .find(Boolean)!
-            return getComputedStyle(btn).backgroundColor
-          }, key),
-        { timeout: 2000 },
+        async () => {
+          const cur = await bgOf(key)
+          stable = cur === last && cur !== base ? stable + 1 : 0
+          last = cur
+          return stable > 0
+        },
+        { timeout: 3000, message: 'hover 底色过渡落定（已离开基色且连续两次采样同值）' },
       )
-      .toMatch(/^color\(/)
+      .toBe(true)
+    // 稳态记法复核（Chromium 过渡中走 oklab，稳态回到 color(srgb …)）
+    expect(last, '稳态 hover 底色应为 color() 记法').toMatch(/^color\(/)
+  }
+  const baseOk = await bgOf('ok')
+  const baseWarn = await bgOf('warn')
   await okBtn.hover()
-  await bgSteady('ok')
+  await bgSteady('ok', baseOk)
   const okHover = await readHoverBg('ok')
   await warnBtn.hover()
-  await bgSteady('warn')
+  await bgSteady('warn', baseWarn)
   const warnHover = await readHoverBg('warn')
   // hover bg 逐通道锚定：success 76% ≈ (22.5,129.6,62.7)；warning 74% ≈ (166.8,94.3,11.5)
   expect(okHover[0]).toBeCloseTo(22.5, 0)

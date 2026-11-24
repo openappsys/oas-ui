@@ -700,8 +700,9 @@ export class OASBarrage extends OASElement {
     this.emit('like', { text: active.text, key: active.key, color: active.color, liked: next.liked, count: next.count })
   }
 
-  /** 屏蔽词解析（逗号分隔或 JSON 数组；按属性原文缓存） */
-  private bannedWords(): string[] {
+  /** 屏蔽词解析（逗号分隔或 JSON 数组；按属性原文缓存）
+   * （名字刻意避开 `bannedWords`：框架按「key in el」把 attribute 写成 property 时会遮蔽同名方法） */
+  private parseBannedWords(): string[] {
     const raw = this.getAttr('banned-words', '')
     if (raw === this.bannedCache.raw) return this.bannedCache.words
     let words: string[] = []
@@ -727,7 +728,7 @@ export class OASBarrage extends OASElement {
 
   /** 文本是否命中屏蔽词（大小写不敏感；命中即不入队不渲染） */
   private isBanned(text: string): boolean {
-    const words = this.bannedWords()
+    const words = this.parseBannedWords()
     if (words.length === 0) return false
     const lowered = text.toLowerCase()
     return words.some((word) => lowered.includes(word.toLowerCase()))

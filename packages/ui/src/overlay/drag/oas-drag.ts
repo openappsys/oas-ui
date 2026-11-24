@@ -497,8 +497,9 @@ export class OASDrag extends OASElement {
     return value
   }
 
-  /** 吸附点数组：JSON `[{ x, y }]`；非法形态告警一次并忽略 */
-  private snapTargets(): DragPosition[] {
+  /** 吸附点数组：JSON `[{ x, y }]`；非法形态告警一次并忽略
+   * （名字刻意避开 `snapTargets`：框架按「key in el」把 attribute 写成 property 时会遮蔽同名方法） */
+  private parseSnapTargets(): DragPosition[] {
     const raw = this.getAttr('snap-targets', '').trim()
     if (raw === '') return []
     let parsed: unknown
@@ -523,8 +524,9 @@ export class OASDrag extends OASElement {
     return out
   }
 
-  /** 吸附点距离阈值（px）：非负；非法告警一次回落 12 */
-  private snapThreshold(): number {
+  /** 吸附点距离阈值（px）：非负；非法告警一次回落 12
+   * （名字刻意避开 `snapThreshold`：框架按「key in el」把 attribute 写成 property 时会遮蔽同名方法） */
+  private parseSnapThreshold(): number {
     const raw = this.getAttr('snap-threshold', '').trim()
     if (raw === '') return DEFAULT_SNAP_THRESHOLD
     const value = Number(raw)
@@ -537,9 +539,9 @@ export class OASDrag extends OASElement {
 
   /** 吸附落点：吸附点优先（阈值内取最近），其次网格取整；都不适用返回 null */
   private snapPosition(x: number, y: number): DragPosition | null {
-    const targets = this.snapTargets()
+    const targets = this.parseSnapTargets()
     if (targets.length > 0) {
-      const threshold = this.snapThreshold()
+      const threshold = this.parseSnapThreshold()
       let best: DragPosition | null = null
       let bestDistance = Number.POSITIVE_INFINITY
       for (const target of targets) {
@@ -573,12 +575,12 @@ export class OASDrag extends OASElement {
   private syncSnapHint(): void {
     const hint = this.snapHintEl
     if (!hint) return
-    const targets = this.snapTargets()
+    const targets = this.parseSnapTargets()
     if (!this.drag || targets.length === 0) {
       hint.hidden = true
       return
     }
-    const threshold = this.snapThreshold()
+    const threshold = this.parseSnapThreshold()
     let best: DragPosition | null = null
     let bestDistance = Number.POSITIVE_INFINITY
     for (const target of targets) {

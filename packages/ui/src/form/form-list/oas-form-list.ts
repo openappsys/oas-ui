@@ -730,14 +730,21 @@ export class OASFormList extends OASElement {
     }
   }
 
-  /** 一次窗口布局：算窗 → 挂载 → 实测校准 → 重算收敛（不循环——高度只细化，窗口单调收敛） */
+  /** 一次窗口布局：算窗 → 落 spacer → 挂载 → 实测校准 → 重算收敛（不循环——高度只细化，窗口单调收敛） */
   private layoutWindow(itemsEl: HTMLElement, viewport: number, overscan: number): VirtualWindow {
     let win = windowFor(this.vmodel, itemsEl.scrollTop, viewport, overscan)
+    // spacer 必须先于窗口挂载落位：挂载会整窗换帧，若 spacer 仍按上一窗偏移，过渡态容器高
+    // 少一行（measureMounted 的 offsetHeight 读完即强制布局坐实）。Firefox 会就地按这个更矮的
+    // 内容高夹紧 scrollTop——滚到底后每次窗口重算都被拉回一行，新行永远差一行进不了视口
+    // （Chromium 把夹紧推迟到下一次滚动更新，故只在 Firefox 暴露）。先落 spacer 时过渡态
+    // 只可能偏高（旧窗帧还在），不触发夹紧。
+    this.updateSpacers(itemsEl, win)
     this.mountWindow(itemsEl, win)
     this.measureMounted()
     const recalculated = windowFor(this.vmodel, itemsEl.scrollTop, viewport, overscan)
     if (recalculated.start !== win.start || recalculated.end !== win.end) {
       win = recalculated
+      this.updateSpacers(itemsEl, win)
       this.mountWindow(itemsEl, win)
     }
     return win
