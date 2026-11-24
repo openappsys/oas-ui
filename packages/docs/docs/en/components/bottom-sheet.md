@@ -99,5 +99,6 @@ onMounted(async () => {
 | `--oas-glass-ring` | `transparent` |
 
 - `open` is controlled: component gestures (drag / backdrop / Esc) only emit `oas-close`; the host completes closing by removing `open`.
-- Focus trap built in: on open, focus moves to the first focusable element inside the panel and stays trapped there; `safe-area-inset-bottom` is honored for gesture-bar devices.
+- Esc goes through the shared overlay escape-layer stack (document-level listener): it does not depend on focus routing — pressing Esc still closes the sheet after a blank-area click leaves focus on body; with multiple overlays open the last one opened closes first; the layer is pushed only while `open` and released on close/disconnect.
+- Focus trap built in: on open, focus moves to the first focusable element inside the panel; if the browser drops the first-frame focus (e.g., WebKit timing), it retries once and finally focuses the panel container (`tabindex="-1"`) — focus always ends up inside the panel and stays trapped there; `safe-area-inset-bottom` is honored for gesture-bar devices.
 - `passive` mode is meant for overlay components' PC-form structure reuse (the carrier behind select/date-picker mobile forms); standalone it is simply a static panel.

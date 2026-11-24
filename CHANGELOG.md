@@ -136,6 +136,7 @@
 
 ### 修复
 
+- **oas-bottom-sheet（WebKit 焦点路由缺陷）**：Esc 监听原挂在 shadowRoot 上依赖焦点路由——用户点击面板空白、焦点落 body 后按 Esc 关不掉弹层（用户可感知）。改走 `overlay-stack` 共享 Esc 层栈（文档级监听，对齐 modal/drawer/coupon 先例）：焦点落在任何位置都能关、多层浮层同开时后开者先关（LIFO）、每实例 `open` 才压栈 / 关闭与断开连接即退栈（`active` 守卫防幽灵层吞 Esc）；Tab 焦点陷阱监听从 shadowRoot 移到宿主（light DOM slot 控件的 keydown 冒泡路径不含 shadowRoot，原挂点漏掉全部真实焦点场景，与 Esc 缺陷同源）。打开态聚焦补 WebKit 时序兜底：首控件 `focus()` 首帧未生效（焦点掉 body）时 rAF 重试一次，仍失败聚焦面板容器（新增 `tabindex="-1"`，`:focus` outline 与 glass-ring 接线一致不闪 UA 焦点环）；Chromium/Firefox 首帧即成功的路径零行为变化（幂等）。回归：单测（文档层 Esc / 层栈 LIFO / 退栈守卫 / 焦点兜底）+ qa-regression（点空白后 Esc 关闭、打开后焦点在面板内、两层 LIFO + 无幽灵层），连带跑 modal / drawer / confirm / sku / overlay-stack 三引擎不漂移。
 - **oas-schema-form（发布前修复批）**：断开重连后联动求值与数组增删监听失效（覆写 `onReconnect()` 调幂等 `bind()`，处理器改为稳定引用免叠双份）；联动 `required` 不参与校验（字段规则与数组级必填判据合并联动效果——`fulfill:{required:true}` 会真拦截提交，README 数组示例从「只加星号」变为生效）；结构重建回压用户编辑（仅当 `initialValues` 通道本次变化时初始值才覆盖快照，加无关字段不再把已编辑字段重置）；校验时序对齐设计稿（先内核字段校验、后数组级校验，事件载荷仍为错误并集）；`uniqueItems` 改深比较（键序不同不再漏判重复）；`$ref` 深度上限只计引用链（深层普通嵌套不再误判循环）；uiSchema 根路径死代码删除（明确不支持根级注解，README 记录决策）。
 - **oas-form-list**：`add-text` / `remove-text` 的 camelCase 撞私有解析方法（框架 property 写入会遮蔽方法致 TypeError）——方法改名 `resolveAddText` / `resolveRemoveText`，公开属性名不变；补属性覆盖与撞名守卫单测。
 - **e2e 门禁口径**：`vue-prop-hijack` 的 schema-form 契约改按结构选择器判定渲染（`oas-form-item` ∪ `[part="array"]`，零字段空态实例单独豁免）；`a11y` 登记 schema-form light/dark 无法评分节点基线（8/主题）；DSD 快照验收撤下 oas-schema-form（字段树在客户端渲染进自身 shadow，DSD 只覆盖宿主一层 → 快照零高度且水合后布局漂移；SSR 白名单登记保留，待 light DOM 渲染改造后再纳入）。

@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { pushEscapeLayer } from '../../shared/overlay-stack.js'
 
 /**
  * oas-bottom-sheet —— 移动端底部抽屉容器（浮层组件移动形态的统一承载件）。
@@ -7,6 +8,10 @@ import { OASElement } from '@oas-ui/core/oas-element'
  * safe-area-inset 刘海屏手势区适配 + 焦点陷阱。浮层组件（select/date-picker/
  * cascader/tree-select 等）在移动形态下把 panel 内容放进默认 slot，由本组件
  * 统一承载容器/手势/安全区；关闭时派发 `oas-close`，宿主据此同步自身 openState。
+ *
+ * Esc 处理走 overlay-stack 共享层栈（文档级监听）：不依赖焦点路由——用户点面板空白
+ * 焦点落 body 后按 Esc 也能关闭；多层浮层同开时后开者先关。每实例 open 才压栈、
+ * 关闭/断开即退栈（active 守卫防幽灵层）。
  *
  * 属性（kebab-case）：
  * - `open`：受控显隐（在场=展开、移除=收起；宿主手势只派发 oas-close，由宿主决定开合）
@@ -90,6 +95,11 @@ const STYLE = `
 :host([open]) .sheet {
   transform: translateY(0);
 }
+/* 焦点兜底容器（tabindex=-1 程序化聚焦）：outline 声明与基础态一致——
+ * 不闪 UA 焦点环，也不破坏 glass-ring 接线 */
+.sheet:focus {
+  outline: 1px solid var(--oas-glass-ring, transparent);
+}
 .sheet.dragging {
   transition: none;
 }
@@ -133,13 +143,24 @@ export class OASBottomSheet extends OASElement {
   private dragStartY = 0
   private dragDeltaY = 0
   private dragging = false
+  /** 共享 Esc 层释放句柄（open 时压栈、关闭/passive/断开退栈；幂等） */
+  private releaseEscapeLayer: (() => void) | null = null
+  /** 聚焦兜底重试的 rAF 句柄（null = 未排程） */
+  private focusRetryFrame: number | null = null
+
+  // 事件监听用稳定引用：断开重连时 bind() 重入，addEventListener 同引用自动去重
+  private onBackdropClick = (): void => {
+    if (this.hasAttr('open')) this.requestClose('backdrop')
+  }
+  private onHandlePointerDown = (e: PointerEvent): void => this.startDrag(e)
+  private onHostKeydown = (e: Event): void => this.onKey(e as KeyboardEvent)
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
       <div class="backdrop" part="backdrop" aria-hidden="true"></div>
-      <div class="sheet" part="sheet" role="dialog" aria-modal="true">
+      <div class="sheet" part="sheet" role="dialog" aria-modal="true" tabindex="-1">
         <div class="handle" part="handle" aria-hidden="true"></div>
         <div class="content" part="content"><slot></slot></div>
       </div>
@@ -150,11 +171,18 @@ export class OASBottomSheet extends OASElement {
     this.backdrop = this.shadow.querySelector<HTMLElement>('.backdrop')
     this.sheet = this.shadow.querySelector<HTMLElement>('.sheet')
     const handle = this.shadow.querySelector<HTMLElement>('.handle')
-    this.backdrop?.addEventListener('click', () => {
-      if (this.hasAttr('open')) this.requestClose('backdrop')
+    this.backdrop?.addEventListener('click', this.onBackdropClick)
+    handle?.addEventListener('pointerdown', this.onHandlePointerDown)
+    // 键盘监听挂宿主而非 shadowRoot：面板控件是 light DOM slot 内容，其 keydown 冒泡
+    // 路径不经过本组件 shadowRoot——挂 shadowRoot 会漏掉全部真实焦点场景（与 Esc 焦点
+    // 路由缺陷同源）。Esc 已移交 overlay-stack 文档级层栈，这里只承载 Tab 焦点陷阱。
+    this.addEventListener('keydown', this.onHostKeydown)
+    // 断开连接必须退 Esc 层 + 弃挂起的聚焦重试（否则残留幽灵层吞掉后续 Esc）；
+    // 重连走 onReconnect() → bind() 重新注册，打开态由 update() 重新压栈
+    this.onCleanup(() => {
+      this.cancelFocusRetry()
+      this.releaseOverlay()
     })
-    handle?.addEventListener('pointerdown', (e) => this.startDrag(e))
-    this.shadow.addEventListener('keydown', (e) => this.onKey(e as KeyboardEvent))
     this.onCleanup(() => this.endDrag())
   }
 
@@ -162,6 +190,11 @@ export class OASBottomSheet extends OASElement {
     this.shadow.innerHTML = this.template()
     this.bind()
     this.update()
+  }
+
+  /** 断开重连：重绑交互 + 重新注册断开清理（disconnectedCallback 已清空 cleanup 列表） */
+  protected override onReconnect(): void {
+    this.bind()
   }
 
   /** 真水合：校验 SSR 快照结构（backdrop/sheet/content 存在）后直接接管，跳过 shadow 重建 */
@@ -175,8 +208,12 @@ export class OASBottomSheet extends OASElement {
   protected override update(): void {
     const sheet = this.sheet
     if (!sheet) return
-    // passive 被动透传：不做任何容器行为（max-height/聚焦均跳过）
-    if (this.hasAttr('passive')) return
+    // passive 被动透传：不做任何容器行为（max-height/聚焦/Esc 层均跳过）
+    if (this.hasAttr('passive')) {
+      this.releaseOverlay()
+      this.cancelFocusRetry()
+      return
+    }
     // max-height：vh 数值（如 "85"）或带单位值（如 "600px"）
     const raw = this.getAttr('max-height', '')
     if (raw) {
@@ -185,10 +222,15 @@ export class OASBottomSheet extends OASElement {
     } else {
       sheet.style.maxHeight = ''
     }
-    // 展开时聚焦到面板首个可聚焦元素（焦点陷阱的可达性基础）
     if (this.hasAttr('open')) {
-      const first = this.getFocusables()[0]
-      if (first instanceof HTMLElement) first.focus()
+      // open 才压 Esc 层（文档级监听，不依赖焦点路由）；关闭即退栈防幽灵层
+      this.acquireOverlay()
+      // 展开时聚焦面板首个可聚焦元素（焦点陷阱的可达性基础）；
+      // 首帧尝试失败（WebKit 焦点时序）走 rAF 兜底重试，仍失败聚焦面板容器
+      this.focusInitial()
+    } else {
+      this.releaseOverlay()
+      this.cancelFocusRetry()
     }
   }
 
@@ -199,12 +241,74 @@ export class OASBottomSheet extends OASElement {
 
   private onKey(e: KeyboardEvent): void {
     if (!this.hasAttr('open')) return
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      this.requestClose('esc')
+    // Esc 不在这里处理：移交 overlay-stack 文档级层栈（焦点落在任何位置都能关；
+    // 多层浮层同开时后开者先关）。原 shadowRoot 监听依赖焦点路由，WebKit 下焦点
+    // 掉 body 时按 Esc 关不掉弹层（用户可感知缺陷，已修）。
+    if (e.key === 'Tab') this.trapFocus(e)
+  }
+
+  // ---- Esc 层栈（overlay-stack 协议，对齐 modal/coupon 先例） ----
+
+  /** 压入共享 Esc 层（幂等）：文档级监听承接 Esc，焦点无论在哪都能触发关闭请求 */
+  private acquireOverlay(): void {
+    if (this.releaseEscapeLayer) return
+    this.releaseEscapeLayer = pushEscapeLayer({
+      name: 'bottom-sheet',
+      // open 态守卫：已关闭/断开/passive 时跳过本层，不吞后续 Esc（防幽灵层）
+      active: () => this.isConnected && this.hasAttr('open') && !this.hasAttr('passive'),
+      handle: () => {
+        this.requestClose('esc')
+        return true
+      },
+    })
+  }
+
+  /** 退 Esc 层（幂等）：关闭、passive、断开连接都走这里 */
+  private releaseOverlay(): void {
+    this.releaseEscapeLayer?.()
+    this.releaseEscapeLayer = null
+  }
+
+  // ---- 打开态聚焦（首帧同步尝试 + rAF 兜底重试，WebKit 焦点时序修复） ----
+
+  /** 打开态聚焦：先试首个可聚焦控件；焦点未落面板则 rAF 兜底重试一次，仍失败聚焦面板容器（tabindex=-1） */
+  private focusInitial(): void {
+    const first = this.getFocusables()[0]
+    if (first instanceof HTMLElement) first.focus()
+    if (this.isFocusInPanel()) {
+      this.cancelFocusRetry()
       return
     }
-    if (e.key === 'Tab') this.trapFocus(e)
+    this.scheduleFocusRetry()
+  }
+
+  /** 焦点是否已落在面板内（轻 DOM slot 控件 / 面板容器；shadow 内聚焦时 document.activeElement retarget 到 host） */
+  private isFocusInPanel(): boolean {
+    const root = this.getRootNode()
+    const active = root instanceof ShadowRoot ? root.activeElement : document.activeElement
+    if (!active) return false
+    return active === this.sheet || (this.sheet?.contains(active) ?? false) || this.contains(active)
+  }
+
+  /** rAF 兜底重试（幂等排程）：首帧 focus 被浏览器焦点时序吞掉时二次尝试；仍失败则聚焦面板容器 */
+  private scheduleFocusRetry(): void {
+    if (this.focusRetryFrame != null) return
+    this.focusRetryFrame = requestAnimationFrame(() => {
+      this.focusRetryFrame = null
+      // 排程期间已关闭/断开/passive：直接弃单，不得在关闭后还抢焦点
+      if (!this.isConnected || !this.hasAttr('open') || this.hasAttr('passive')) return
+      if (this.isFocusInPanel()) return
+      const first = this.getFocusables()[0]
+      if (first instanceof HTMLElement) first.focus()
+      if (this.isFocusInPanel()) return
+      this.sheet?.focus()
+    })
+  }
+
+  private cancelFocusRetry(): void {
+    if (this.focusRetryFrame == null) return
+    cancelAnimationFrame(this.focusRetryFrame)
+    this.focusRetryFrame = null
   }
 
   // ---- 下滑手势：pointerdown 起步，move 跟手，up 判定（超阈值关 / 未超回弹） ----
