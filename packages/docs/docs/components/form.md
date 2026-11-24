@@ -80,7 +80,7 @@ description: 原生 <form> 增强，支持按 rules 规则对内部字段做校�
 
 ### form-list 虚拟滚动（大数据集）
 
-千行级数组开 `virtual`：只渲染可视窗口 + overscan（上下各 5 行，`overscan` 可调），滚动用上下 spacer 占位（总高不变、滚动条真实），行高首渲染估高、窗口内实测校准（`estimated-row-height` 给初始估高）。**字段全部留在 light DOM**——校验 / 提交 / name 重编号 / 行操作 / 受控 `setRowCount` 语义不变，虚拟化只发生在阴影帧层：未窗口化的行不渲染、零布局成本，值照常被主表收集。视口高度用 `viewport-height` 属性（或 CSS `--oas-form-list-viewport-height` 覆盖）。
+千行级数组开 `virtual`：只渲染可视窗口 + overscan（上下各 5 行，`overscan` 可调），滚动用上下 spacer 占位（总高不变、滚动条真实），行高首渲染估高、窗口内实测校准（`estimated-row-height` 给初始估高，缺省估高会被实测自校准覆盖）。**字段全部留在 light DOM**——校验 / 提交 / name 重编号 / 行操作 / 受控 `setRowCount` 语义不变，虚拟化只发生在阴影帧层：未窗口化的行不渲染、零布局成本，值照常被主表收集。视口高度 `viewport-height` 属性在场时同步写进容器内联 `max-height`（盒高与窗口计算同源，滚动到底尾部行可达；移除属性即回落 CSS 缺省 320px，CSS `--oas-form-list-viewport-height` 可覆盖）。行间距（缺省主题 8px）计入高度节距，虚拟内容总高与全量渲染一致；虚拟态「添加行」自动把新行滚入视口并聚焦首字段。读屏的逐行遍历只覆盖当前窗口行（虚拟化的通用取舍；行总量由 `rowCount` property 与行操作 `aria-live` 播报承担）。
 
 <DemoBlock title="form-list 虚拟滚动（点按钮填充 300 行，滚动观察窗口化）">
   <oas-space direction="vertical" style="width: 100%">

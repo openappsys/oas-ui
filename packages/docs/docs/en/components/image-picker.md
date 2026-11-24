@@ -52,8 +52,9 @@ Automatic compression of picked images (default off; when enabled it only applie
 
 - `compress=""`: enable with defaults (quality 0.8 / max-dimension 4096)
 - `compress='{"quality":0.8,"max-dimension":1920}'`: JSON overrides (quality 0–1, longest-edge pixel cap with proportional downscale)
-- JPEG / WebP are re-encoded at the configured quality; PNG keeps transparency and re-encodes as png (kept as-is when no resize and no orientation fix is needed); GIF / SVG and other types pass through untouched
-- EXIF Orientation 1–8 fully supported: canvas redraw uprights oriented photos (no more sideways phone shots)
+- JPEG / WebP are re-encoded at the configured quality; PNG keeps transparency (kept as-is when no resize is needed); GIF / SVG and other types pass through untouched
+- EXIF orientation: modern browsers already decode `<img>` upright per EXIF (sideways phone shots display correctly), so compression only scales proportionally and **never re-applies a rotation**; re-encoded output is upright (JPEG/WebP/PNG re-encoding carries no orientation marker)
+- The source file's EXIF Orientation is reported as **meta info**: `compressed[].orientation` (1 = no orientation marker), so hosts can tell whether the original carried one
 - Decode failure / canvas unavailable: graceful degradation keeps the original file (meta entry stays null)
 - While enabled, `oas-change` detail carries a `compressed` array (aligned with `files`): each entry is `{ originalWidth, originalHeight, width, height, orientation, quality }` (original → compressed size) or `null` (untouched)
 - Invalid configuration warns once in dev and behaves as off (detail returns to the current shape without `compressed`)
@@ -114,7 +115,7 @@ onMounted(() => {
   acceptOnly?.addEventListener('oas-change', (e) => log(acceptOut, `Selected ${e.detail.count} .jpg / .jpeg image(s)`))
   acceptOnly?.addEventListener('oas-reject', (e) => log(acceptOut, `Ignored ${e.detail.files.length} non-jpg file(s)`))
 
-  // Auto compression: oas-change detail.compressed aligns with files (original → compressed size / EXIF fix)
+  // Auto compression: oas-change detail.compressed aligns with files (original → compressed size / source orientation marker)
   const compress = document.getElementById('ip-compress')
   const compressOut = document.getElementById('ip-compress-out')
   compress?.addEventListener('oas-change', (e) => {
@@ -122,8 +123,8 @@ onMounted(() => {
     const parts = e.detail.files.map((f, i) => {
       const m = metas[i]
       if (!m) return `${f.name} (untouched)`
-      const fixed = m.orientation > 1 ? `, EXIF ${m.orientation} uprighted` : ''
-      return `${f.name} (${m.originalWidth}×${m.originalHeight} → ${m.width}×${m.height}${fixed})`
+      const marked = m.orientation > 1 ? `, source carried EXIF ${m.orientation} marker (output is upright)` : ''
+      return `${f.name} (${m.originalWidth}×${m.originalHeight} → ${m.width}×${m.height}${marked})`
     })
     log(compressOut, parts.join('; ') || 'No images selected yet')
   })
@@ -140,7 +141,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accept` | File type filter (native `accept` syntax, default `image/*`) | `string` | `image/*` |
 | `capture` | Passes through native `capture`: opens the camera directly on mobile | `boolean` | — |
-| `compress` | Auto compression + EXIF orientation fix for picked images (default off = byte-identical to current behavior): empty string = defaults (quality 0.8 / max-dimension 4096); JSON `{"quality":0.8,"max-dimension":1920}` overrides; invalid warns once and behaves as off. Only applies to newly picked files (controlled files writes are never compressed); while active oas-change detail carries the compressed meta array | `string` | — |
+| `compress` | Auto compression for picked images (default off = byte-identical to current behavior): empty string = defaults (quality 0.8 / max-dimension 4096); JSON `{"quality":0.8,"max-dimension":1920}` overrides; invalid warns once and behaves as off. Only applies to newly picked files (controlled files writes are never compressed); EXIF orientation is handled by the browser's upright decoding — output is always upright, with the source orientation marker reported as orientation meta; while active oas-change detail carries the compressed meta array | `string` | — |
 | `disabled` | Disabled: adding, reordering and removing are all unavailable | `boolean` | — |
 | `max` | Max image count (default 9); invalid/non-positive values fall back with a warning | `string` | — |
 | `readonly` | Preview only: add entry hidden and action buttons disabled | `boolean` | — |

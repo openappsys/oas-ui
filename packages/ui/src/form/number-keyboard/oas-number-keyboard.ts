@@ -308,6 +308,11 @@ export class OASNumberKeyboard extends OASElement {
     this.onCleanup(() => this.stopRepeat())
   }
 
+  /** 断开重连：cleanup 注册表随上次断开清空 → 重新注册连删清理（否则再断开时悬挂计时不停） */
+  protected override onReconnect(): void {
+    this.ensureRepeatCleanup()
+  }
+
   protected override render(): void {
     this.shadow.innerHTML = this.template()
     this.bind()
@@ -550,6 +555,9 @@ export class OASNumberKeyboard extends OASElement {
   // ---------- 长按连删（缺省开，no-repeat-delete 关闭） ----------
 
   private onPointerDownOnDelete = (e: Event): void => {
+    // 非主键（右键 / 中键）不启动长按会话（右键弹菜单与连删互不相干）
+    const pointer = e as PointerEvent
+    if (pointer.button !== undefined && pointer.button !== 0) return
     this.stopRepeat()
     this.longPressActive = false
     if (this.injectDisabled() || this.hasAttr('readonly') || this.hasAttr('no-repeat-delete')) return

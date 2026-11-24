@@ -128,6 +128,85 @@ describe('RowHeightModel 行增删的下标平移（数组表单行操作语义�
   })
 })
 
+describe('RowHeightModel 行间距（gap 计入节距；末行后无悬挂 gap）', () => {
+  it('setGap 后节距 = 行高 + gap：offsetOf 含间距、total() 去掉末行悬挂 gap', () => {
+    const model = new RowHeightModel(50)
+    model.setGap(8)
+    model.setCount(3)
+    // offsetOf(1) = 50+8；offsetOf(2) = 50+8+50+8
+    expect(model.offsetOf(1)).toBe(58)
+    expect(model.offsetOf(2)).toBe(116)
+    // 总高 = 150 + 2×8（行间 2 个 gap，末行后没有）；offsetOf(3) 含末行后的悬挂槽位（174）
+    expect(model.total()).toBe(166)
+    expect(model.offsetOf(3)).toBe(174)
+    expect(model.offsetOf(3) - model.total()).toBe(8)
+  })
+
+  it('gap=0（缺省 / 解析失败回落）与旧行为逐值一致', () => {
+    const model = new RowHeightModel(50)
+    model.setCount(3)
+    expect(model.offsetOf(2)).toBe(100)
+    expect(model.total()).toBe(150)
+    model.setGap(Number.NaN)
+    expect(model.total()).toBe(150)
+    model.setGap(-4)
+    expect(model.total()).toBe(150)
+  })
+
+  it('实测高与 gap 混合：measure 后节距按新行高 + gap', () => {
+    const model = new RowHeightModel(50)
+    model.setGap(8)
+    model.setCount(3)
+    model.measure(1, 70)
+    expect(model.offsetOf(2)).toBe(50 + 8 + 70 + 8)
+    expect(model.total()).toBe(50 + 8 + 70 + 8 + 50)
+  })
+
+  it('行增删平移语义在 gap 下保持：insertAt / removeAt 后总高含新行数的 gap 数', () => {
+    const model = new RowHeightModel(50)
+    model.setGap(8)
+    model.setCount(3)
+    model.measure(0, 60)
+    model.measure(1, 70)
+    model.measure(2, 80)
+    model.insertAt(1)
+    expect(model.length).toBe(4)
+    expect(model.heightAt(1)).toBe(50)
+    // 总高 = 60+50+70+80 + 3×8
+    expect(model.total()).toBe(260 + 24)
+    model.removeAt(1)
+    expect(model.total()).toBe(60 + 70 + 80 + 16)
+  })
+
+  it('setGap 变化使前缀和失效：新 gap 全表生效（实测高不变）', () => {
+    const model = new RowHeightModel(50)
+    model.setGap(8)
+    model.setCount(2)
+    expect(model.total()).toBe(108)
+    model.setGap(12)
+    expect(model.total()).toBe(112)
+    expect(model.heightAt(0)).toBe(50)
+  })
+
+  it('windowFor 在 gap 下窗口定位正确（可视行 + overscan）', () => {
+    const model = new RowHeightModel(50)
+    model.setGap(10)
+    model.setCount(100)
+    // 节距 60：scrollTop=0，viewport 120 → 可视行 0..1（行 2 顶 120 恰在视口底不计）→ +overscan 5 = 7
+    expect(windowFor(model, 0, 120, 5)).toEqual({ start: 0, end: 7 })
+    // scrollTop=600 → 首可见行 10（600/60）；viewport 120 → limit 720 = 行 12 顶 → 可视 10..11 → 5..17
+    expect(windowFor(model, 600, 120, 5)).toEqual({ start: 5, end: 17 })
+  })
+
+  it('空列表 / 单行：gap 不产生负总高', () => {
+    const model = new RowHeightModel(50)
+    model.setGap(8)
+    expect(model.total()).toBe(0)
+    model.setCount(1)
+    expect(model.total()).toBe(50)
+  })
+})
+
 describe('windowFor 窗口计算', () => {
   it('全估高：scrollTop=0 → 首窗口，含上下 overscan', () => {
     const model = new RowHeightModel(50)

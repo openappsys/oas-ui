@@ -14,14 +14,18 @@ import { compressImageFile, parseCompressAttr, type CompressMeta, type CompressO
  * - `capture`：在场时透传原生 `capture`（移动端直接拉起相机）
  * - `disabled`：禁用（不可选、不可排序/删除）
  * - `readonly`：只读预览（隐藏添加入口，操作按钮禁用但可见）
- * - `compress`：选图自动压缩 + EXIF 方向修正（v2.6.9，缺省关 = 现状逐字节等价）——
+ * - `compress`：选图自动压缩（v2.6.9，缺省关 = 现状逐字节等价）——
  *   空串 = 开启缺省档（quality 0.8 / max-dimension 4096）；JSON `{"quality":0.8,"max-dimension":1920}`
  *   覆盖档位；非法 JSON / 字段越界 devWarn 一次并按关闭处理。开启后用户选入的 JPEG/PNG/WebP
- *   会被 canvas 重绘（EXIF Orientation 1-8 修正方向、超 `max-dimension` 等比缩）并重编码为
+ *   会被 canvas 重绘（按浏览器解码已正立的位图等比缩到 `max-dimension` 内）并重编码为
  *   **同类型 File**（PNG 保留透明；GIF/SVG 等不动）；解码失败 / canvas 不可用优雅降级保留原文件。
+ *   EXIF 方向：浏览器 `<img>` 解码已按 EXIF 正立渲染，压缩输出恒为正立图（重编码不携带
+ *   方向标记，手机竖拍照片不会躺倒）；源文件的 EXIF Orientation 以**元信息**进
+ *   detail.compressed[].orientation（宿主可据此区分原始方向标记）。
  *   压缩只作用于**用户新选入**的文件（受控 `files` property 写入不压缩——宿主给的即最终值）。
  *   开启期间 `oas-change` detail 增加 `compressed` 数组（与 `files` 对齐：每项为压缩元信息
  *   `{ originalWidth, originalHeight, width, height, orientation, quality }` 或 null=未处理）。
+ *   并发选入（两次连续选文件都在压缩在途）按最新列表重算余量截断，终态不越过 `max`。
  *
  * Property（仅 JS，不反射 attribute）：
  * - `files`：当前图片列表（`File[]`，受控；赋值即刷新且**不派发**事件）
@@ -233,6 +237,8 @@ export class OASImagePicker extends OASElement {
   private urls = new Map<File, string>()
   /** 文件 → 压缩元信息（compress 开启时随 oas-change 对齐输出；WeakMap 随文件回收） */
   private compressMeta = new WeakMap<File, CompressMeta>()
+  /** compress 属性原文 → 解析结果缓存（同原文不重复 JSON.parse；原文变化即失效） */
+  private compressParsed: { raw: string; value: CompressOptions | null } | null = null
   /** 上次渲染指纹：文件列表 / 上限 / 禁用态不变则不重建缩略图（避免闪烁与焦点丢失） */
   private lastSig = ''
 
@@ -523,51 +529,59 @@ export class OASImagePicker extends OASElement {
     if (rejected.length > 0) this.emit('reject', { files: rejected })
     if (accepted.length === 0) return
 
+    // 余量按当前列表乐观预截（只压缩可能入选的文件）；压缩是异步的，落地后必须按最新
+    // this.items 重算余量再截断——并发两次选入都用旧余量会越过 max 上限（回归锁定）
     const max = this.maxCount()
     const room = Math.max(0, max - this.items.length)
-    const taken = accepted.slice(0, room)
-    const totalRequested = this.items.length + accepted.length
-    if (taken.length > 0) {
-      // compress 开启：压缩 + EXIF 修正（异步；失败/不支持类型保留原文件——元信息位记 null）
-      const options = this.compressOptions()
-      let added = taken
-      if (options) {
-        const results = await Promise.all(taken.map((file) => compressImageFile(file, options)))
-        added = results.map((result, index) => result?.file ?? taken[index]!)
-        results.forEach((result, index) => {
-          if (result) this.compressMeta.set(result.file, result.meta)
-        })
-      }
+    const candidates = accepted.slice(0, room)
+    let added = candidates
+    const options = this.compressOptions()
+    if (options && candidates.length > 0) {
+      const results = await Promise.all(candidates.map((file) => compressImageFile(file, options)))
+      added = results.map((result, index) => {
+        const resolved = results[index]
+        if (resolved) this.compressMeta.set(resolved.file, resolved.meta)
+        return resolved?.file ?? candidates[index]!
+      })
+      // await 落地：列表可能已被并发批次推进，按最新余量截断（终态 ≤ max）
+      const latestRoom = Math.max(0, this.maxCount() - this.items.length)
+      added = added.slice(0, latestRoom)
+    }
+    if (added.length > 0) {
       this.replaceItems([...this.items, ...added])
       this.update()
       this.emitChange()
     }
-    // exceed-limit 在 oas-change 之后派发：宿主先收到新列表，再收到「有文件被丢弃」的提示
-    if (accepted.length > room) {
-      this.emit('exceed-limit', { count: totalRequested, max })
+    // exceed-limit 在 oas-change 之后派发：宿主先收到新列表，再收到「有文件被丢弃」的提示。
+    // 丢弃数按落地后的实际插入量核对（并发批次推进列表后旧余量已过期）
+    if (accepted.length > added.length) {
+      const count = this.items.length - added.length + accepted.length
+      this.emit('exceed-limit', { count, max })
     }
   }
 
   /**
    * compress 档位：属性缺省 = null（关闭，现状等价）；空串 = 缺省档；
    * JSON = 覆盖档位；非法 = null + 单次告警（成员名带 resolve 前缀，避开 compress 撞名）。
+   * 同一属性原文解析结果缓存（emitChange 每次读 compressActive，不重复 JSON.parse）。
    */
   private compressOptions(): CompressOptions | null {
     if (!this.hasAttr('compress')) return null
     const raw = this.getAttr('compress', '')
+    if (this.compressParsed?.raw === raw) return this.compressParsed.value
     const parsed = parseCompressAttr(raw)
     if (!parsed) {
       warnOnce(
         `[oas-image-picker] 非法 compress "${raw || '（空）'}"，已按关闭处理；示例：compress="" 或 compress='{"quality":0.8,"max-dimension":1920}'`,
       )
-      return null
     }
+    this.compressParsed = { raw, value: parsed }
     return parsed
   }
 
   /** compress 是否实际生效（属性在场且 JSON 合法；非法 = 关闭，detail 不带 compressed） */
   private compressActive(): boolean {
-    return this.hasAttr('compress') && parseCompressAttr(this.getAttr('compress', '')) !== null
+    return this.compressOptions() !== null
   }
 
   /** accept 匹配：支持 `image/*` / MIME / 扩展名列表 */

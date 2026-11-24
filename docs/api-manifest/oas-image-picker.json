@@ -73,7 +73,7 @@
     },
     {
       "name": "oas-exceed-limit",
-      "detail": "{ count: totalRequested, max }"
+      "detail": "{ count, max }"
     },
     {
       "name": "oas-change",

@@ -3,6 +3,8 @@
  *
  * 与表单数组行匹配的模型（借鉴 data/virtual-list 的「高度表 + 前缀和」思路，按行操作语义重写）：
  * - 每行高度 = 实测值（窗口内挂载后量得）或预估高；
+ * - 行间距（gap）计入节距：`offsetOf(i)` = 行高前缀和 + `gap × i`（每行后跟一个 gap 槽位），
+ *   `total()` 去掉末行后的悬挂 gap（末行之后视觉上没有间距）——虚拟内容总高与全量渲染一致；
  * - `offsetOf(i)` / `total()` 用前缀和增量缓存维持 O(1) 查询；
  * - **行增删按下标平移实测高**（数组表单的插入 / 删除 / 受控缩容是常态操作，
  *   通用虚拟列表的「整表 reset」会丢光实测值 → 滚动条跳动，这里按操作语义精确平移）；
@@ -28,6 +30,8 @@ export class RowHeightModel {
   private dirtyFrom = 0
   private estimated: number
   private count = 0
+  /** 行间距（px，行与行的视觉间隙）；计入节距，末行后的悬挂 gap 由 total() 去除 */
+  private gap = 0
 
   constructor(estimated = 56) {
     this.estimated = Math.max(1, Number.isFinite(estimated) ? estimated : 56)
@@ -35,6 +39,14 @@ export class RowHeightModel {
 
   get length(): number {
     return this.count
+  }
+
+  /** 行间距变化：全部前缀和失效（实测高不受影响） */
+  setGap(px: number): void {
+    const next = Number.isFinite(px) && px > 0 ? px : 0
+    if (next === this.gap) return
+    this.gap = next
+    this.dirtyFrom = 0
   }
 
   /** 行数收敛：增长保留既有实测高，缩减截掉越界实测高 */
@@ -116,12 +128,12 @@ export class RowHeightModel {
     this.dirtyFrom = Math.min(this.dirtyFrom, Math.min(a, b) + 1)
   }
 
-  /** 增量重算前缀和（从 dirtyFrom 起） */
+  /** 增量重算前缀和（从 dirtyFrom 起）：节距 = 行高 + 行间距（每行后跟一个 gap 槽位） */
   private sync(): void {
     const from = Math.min(this.dirtyFrom, this.count)
     if (from === 0) this.prefix[0] = 0
     for (let i = Math.max(1, from); i <= this.count; i++) {
-      this.prefix[i] = (this.prefix[i - 1] ?? 0) + this.heightAt(i - 1)
+      this.prefix[i] = (this.prefix[i - 1] ?? 0) + this.heightAt(i - 1) + this.gap
     }
     this.dirtyFrom = this.count
   }
@@ -132,9 +144,10 @@ export class RowHeightModel {
     return this.prefix[Math.min(Math.max(0, i), this.count)] ?? 0
   }
 
-  /** 全部行总高（滚动内容总高） */
+  /** 滚动内容总高 = 行高前缀和 + 行间 gap 总数（末行之后没有 gap，悬挂槽位去除） */
   total(): number {
-    return this.offsetOf(this.count)
+    if (this.count <= 0) return 0
+    return Math.max(0, this.offsetOf(this.count) - this.gap)
   }
 }
 

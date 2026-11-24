@@ -351,4 +351,36 @@ describe('OASNumberKeyboard 长按连删（v2.6.9 批 A）', () => {
     press(del)
     expect(el.getAttribute('value')).toBe('1')
   })
+
+  it('非主键按下（右键 button=2）不启动长按会话', () => {
+    const el = mount({ value: '123' })
+    const del = byAction(el, 'delete')
+    del.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+        pointerId: 1,
+        button: 2,
+      }),
+    )
+    vi.advanceTimersByTime(2000)
+    expect(el.getAttribute('value'), '右键不触发连删（长按只认主键）').toBe('123')
+  })
+
+  it('断开重连后再断开：连删清理重新注册（悬挂计时不再自续）', () => {
+    const el = mount({ value: '123' })
+    const del = byAction(el, 'delete')
+    // 第一次连接：按下启动计时 → 断开（cleanup 摘除计时）
+    del.dispatchEvent(pointer('pointerdown'))
+    el.remove()
+    vi.advanceTimersByTime(2000)
+    expect(el.getAttribute('value'), '断开时计时已摘除').toBe('123')
+    // 重连（cleanup 注册表已随断开清空，必须重新注册）→ 再按下 → 再断开
+    document.body.appendChild(el)
+    del.dispatchEvent(pointer('pointerdown'))
+    el.remove()
+    vi.advanceTimersByTime(2000)
+    expect(el.getAttribute('value'), '重连后再断开：悬挂计时仍被摘除（不自续）').toBe('123')
+  })
 })

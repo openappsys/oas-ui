@@ -355,4 +355,30 @@ describe('OASImagePicker compress 自动压缩（v2.6.9 批 A）', () => {
     const proto = OASImagePicker.prototype as unknown as Record<string, unknown>
     expect(proto['compress']).toBeUndefined()
   })
+
+  it('并发两次选入：压缩在途的旧余量不越过 max（落地后按最新列表重算截断）', async () => {
+    const el = mount({ compress: '', max: '6' })
+    const files6 = ['1.png', '2.png', '3.png', '4.png', '5.png', '6.png'].map(pngFile)
+    const files4 = ['7.png', '8.png', '9.png', '10.png'].map(pngFile)
+    // 两次选入同步连续派发：第二次在第一次 await 压缩期间启动（两次都用进入时的余量 = 6）
+    choose(el, files6)
+    choose(el, files4)
+    await flush()
+    // 终态必须 ≤ max：第二批按最新余量（6-6=0）截断为空
+    expect(el.files.length).toBeLessThanOrEqual(6)
+    expect(el.files.map((f) => f.name)).toEqual(['1.png', '2.png', '3.png', '4.png', '5.png', '6.png'])
+  })
+
+  it('并发两次选入部分可入：终态恰好填满 max 且派发 exceed-limit', async () => {
+    const el = mount({ compress: '', max: '9' })
+    const exceeds: unknown[] = []
+    el.addEventListener('oas-exceed-limit', (e) => exceeds.push((e as CustomEvent).detail))
+    const files6 = ['a.png', 'b.png', 'c.png', 'd.png', 'e.png', 'f.png'].map(pngFile)
+    const files4 = ['g.png', 'h.png', 'i.png', 'j.png'].map(pngFile)
+    choose(el, files6)
+    choose(el, files4)
+    await flush()
+    expect(el.files.length).toBe(9)
+    expect(exceeds.length).toBeGreaterThanOrEqual(1)
+  })
 })

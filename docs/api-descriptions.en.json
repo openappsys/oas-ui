@@ -2285,7 +2285,7 @@
       "capture": "Passes through native `capture`: opens the camera directly on mobile",
       "disabled": "Disabled: adding, reordering and removing are all unavailable",
       "readonly": "Preview only: add entry hidden and action buttons disabled",
-      "compress": "Auto compression + EXIF orientation fix for picked images (default off = byte-identical to current behavior): empty string = defaults (quality 0.8 / max-dimension 4096); JSON `{\"quality\":0.8,\"max-dimension\":1920}` overrides; invalid warns once and behaves as off. Only applies to newly picked files (controlled files writes are never compressed); while active oas-change detail carries the compressed meta array"
+      "compress": "Auto compression for picked images (default off = byte-identical to current behavior): empty string = defaults (quality 0.8 / max-dimension 4096); JSON `{\"quality\":0.8,\"max-dimension\":1920}` overrides; invalid warns once and behaves as off. Only applies to newly picked files (controlled files writes are never compressed); EXIF orientation is handled by the browser's upright decoding — output is always upright, with the source orientation marker reported as orientation meta; while active oas-change detail carries the compressed meta array"
     },
     "events": {
       "oas-change": "After the user adds / removes / reorders, `detail: { files, count }`",

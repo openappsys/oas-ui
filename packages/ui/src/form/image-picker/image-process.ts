@@ -1,10 +1,13 @@
 /**
- * image-process —— image-picker 自动压缩 + EXIF 方向修正（纯逻辑 + canvas 管线）。
+ * image-process —— image-picker 自动压缩（纯逻辑 + canvas 管线）。
  *
  * 纪律：
  * - `compress` 关闭（缺省）= 调用方不进本模块，文件通道逐字节等价；
  * - 输出仍为 File（PNG 保留透明走 png 重编码；JPEG/WebP 按 quality 重编码；其余类型不动）；
- * - EXIF Orientation 1-8 全支持（canvas 重绘矩阵）；方向 1 / 无 EXIF / 非 JPEG 不动方向；
+ * - **EXIF 方向不在本模块做矩阵转正**：现代浏览器 `<img>` 解码已按 EXIF 正立渲染
+ *   （naturalWidth/Height 已是正立尺寸、drawImage 画出的就是正立内容），裸 drawImage 缩放即可；
+ *   EXIF Orientation 只解析为**元信息**上报（detail.compressed[].orientation），帮助宿主
+ *   区分「原始文件带方向标记」；重编码（JPEG/WebP/PNG）会丢弃 EXIF 方向标记，输出即正立图；
  * - 任何一步不可用（无 canvas / 解码失败）→ 返回 null，调用方保留原文件（零破坏降级）。
  */
 
@@ -17,13 +20,13 @@ export interface CompressOptions {
 
 export const DEFAULT_COMPRESS_OPTIONS: CompressOptions = { quality: 0.8, maxDimension: 4096 }
 
-/** 压缩元信息（进 `oas-change` detail.compressed；原尺寸 → 压缩后尺寸 + 方向修正） */
+/** 压缩元信息（进 `oas-change` detail.compressed；原尺寸 → 压缩后尺寸 + EXIF 方向标记） */
 export interface CompressMeta {
   originalWidth: number
   originalHeight: number
   width: number
   height: number
-  /** 应用的 EXIF 方向（1 = 无修正） */
+  /** 源文件 EXIF Orientation（1 = 无方向标记；输出图恒为正立，重编码不携带方向标记） */
   orientation: number
   quality: number
 }
@@ -58,8 +61,8 @@ export function parseCompressAttr(raw: string): CompressOptions | null {
 }
 
 /**
- * 从 JPEG 字节读 EXIF Orientation（tag 0x0112，SHORT）。
- * 非 JPEG / 无 APP1 EXIF / 无该标签 / 数据截断 → 1（不做方向修正）。
+ * 从 JPEG 字节读 EXIF Orientation（tag 0x0112，SHORT）——仅作元信息上报，
+ * 正立渲染由浏览器解码承担。非 JPEG / 无 APP1 EXIF / 无该标签 / 数据截断 → 1（无方向标记）。
  */
 export function parseExifOrientation(bytes: Uint8Array): number {
   // JPEG 魔数 FFD8 + 保守长度校验
@@ -126,84 +129,15 @@ function readOrientationFromTiff(tiff: Uint8Array): number {
   return 1
 }
 
-export interface OrientationMatrix {
-  a: number
-  b: number
-  c: number
-  d: number
-  e: number
-  f: number
-  /** 重绘画布宽（方向 5-8 与源宽高互换） */
-  width: number
-  height: number
-}
-
-/**
- * EXIF 方向 → canvas setTransform 矩阵（把带方向的源绘制为视觉正立）。
- * 未知方向回落恒等（不抛错、不换轴）。
- */
-export function orientationTransform(orientation: number, w: number, h: number): OrientationMatrix {
-  switch (orientation) {
-    case 2: // 水平镜像
-      return { a: -1, b: 0, c: 0, d: 1, e: w, f: 0, width: w, height: h }
-    case 3: // 旋转 180°
-      return { a: -1, b: 0, c: 0, d: -1, e: w, f: h, width: w, height: h }
-    case 4: // 垂直镜像
-      return { a: 1, b: 0, c: 0, d: -1, e: 0, f: h, width: w, height: h }
-    case 5: // 主对角线转置
-      return { a: 0, b: 1, c: 1, d: 0, e: 0, f: 0, width: h, height: w }
-    case 6: // 旋转 90° CW
-      return { a: 0, b: 1, c: -1, d: 0, e: h, f: 0, width: h, height: w }
-    case 7: // 反对角线镜像
-      return { a: 0, b: -1, c: -1, d: 0, e: h, f: w, width: h, height: w }
-    case 8: // 旋转 90° CCW
-      return { a: 0, b: -1, c: 1, d: 0, e: 0, f: w, width: h, height: w }
-    default: // 1 / 未知：恒等
-      return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, width: w, height: h }
-  }
-}
-
 /** 可压缩类型：JPEG / PNG（透明保留）/ WebP；其余（GIF / SVG 等）不动 */
 const COMPRESSIBLE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
-interface DecodedImage {
-  width: number
-  height: number
-}
-
-/** 解码文件为可用位图（优先 Image.decode；失败返回 null） */
-async function decodeFile(file: File): Promise<DecodedImage | null> {
-  const url = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : ''
-  if (!url) return null
-  try {
-    const image = new Image()
-    image.src = url
-    if (typeof image.decode === 'function') {
-      await image.decode()
-    } else {
-      await new Promise<void>((resolve, reject) => {
-        image.onload = () => resolve()
-        image.onerror = () => reject(new Error('image-load-failed'))
-      })
-    }
-    const width = image.naturalWidth
-    const height = image.naturalHeight
-    if (!width || !height) return null
-    return { width, height }
-  } catch {
-    return null
-  } finally {
-    try {
-      URL.revokeObjectURL(url)
-    } catch {
-      // 环境不支持时忽略
-    }
-  }
-}
-
 /**
- * 单文件压缩 + EXIF 修正。返回 null = 不处理（类型不支持 / 解码失败 / canvas 不可用），
- * 调用方保留原文件、元信息位记 null。PNG 无缩放且方向 1 时保留原文件（重编码无收益）。
+ * 单文件压缩。返回 null = 不处理（类型不支持 / 解码失败 / canvas 不可用），
+ * 调用方保留原文件、元信息位记 null。PNG 无缩放时保留原文件（重编码无收益）。
+ *
+ * 方向口径：浏览器解码 `<img>` 已按 EXIF 正立（naturalWidth/Height = 正立尺寸），
+ * 裸 drawImage 只做等比缩放、不做任何矩阵变换；orientation 仅作为元信息上报。
  */
 export async function compressImageFile(
   file: File,
@@ -211,36 +145,36 @@ export async function compressImageFile(
 ): Promise<{ file: File; meta: CompressMeta } | null> {
   const type = (file.type || '').toLowerCase()
   if (!COMPRESSIBLE_TYPES.has(type)) return null
-  const decoded = await decodeFile(file)
-  if (!decoded) return null
+  const image = await decodeToImageElement(file)
+  if (!image) return null
+  const width = image.naturalWidth
+  const height = image.naturalHeight
+  if (!width || !height) return null
+  // EXIF 方向只读为元信息（正立渲染由浏览器解码承担；重编码后方向标记不保留）
   const orientation = type === 'image/jpeg' ? parseExifOrientation(await fileBytes(file)) : 1
-  const scale = Math.min(1, options.maxDimension / Math.max(decoded.width, decoded.height))
-  const targetWidth = Math.max(1, Math.round(decoded.width * scale))
-  const targetHeight = Math.max(1, Math.round(decoded.height * scale))
-  const needsResize = targetWidth !== decoded.width || targetHeight !== decoded.height
-  const needsOrientation = orientation !== 1
+  const scale = Math.min(1, options.maxDimension / Math.max(width, height))
+  const targetWidth = Math.max(1, Math.round(width * scale))
+  const targetHeight = Math.max(1, Math.round(height * scale))
+  const needsResize = targetWidth !== width || targetHeight !== height
   const meta: CompressMeta = {
-    originalWidth: decoded.width,
-    originalHeight: decoded.height,
-    width: needsOrientation && orientation >= 5 ? targetHeight : targetWidth,
-    height: needsOrientation && orientation >= 5 ? targetWidth : targetHeight,
+    originalWidth: width,
+    originalHeight: height,
+    width: targetWidth,
+    height: targetHeight,
     orientation,
     quality: options.quality,
   }
-  // PNG：无缩放且无方向修正 → 保留原文件（重编码无收益还可能变大）
-  if (type === 'image/png' && !needsResize && !needsOrientation) {
+  // PNG：无缩放 → 保留原文件（重编码无收益还可能变大；透明由原文件自身保留）
+  if (type === 'image/png' && !needsResize) {
     return { file, meta }
   }
   const canvas = document.createElement('canvas')
   const context: CanvasRenderingContext2D | null =
     typeof canvas.getContext === 'function' ? (canvas.getContext('2d') as CanvasRenderingContext2D | null) : null
   if (!context || typeof canvas.toBlob !== 'function') return null
-  const matrix = orientationTransform(orientation, targetWidth, targetHeight)
-  canvas.width = matrix.width
-  canvas.height = matrix.height
-  context.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
-  const image = await decodeToImageElement(file)
-  if (!image) return null
+  canvas.width = targetWidth
+  canvas.height = targetHeight
+  // 裸 drawImage：源已按 EXIF 正立解码，这里只缩放（绝不再做方向矩阵——二次施加会写坏照片）
   context.drawImage(image, 0, 0, targetWidth, targetHeight)
   const blob = await new Promise<Blob | null>((resolve) => {
     try {

@@ -24,10 +24,15 @@ import { RowHeightModel, windowFor, type VirtualWindow } from '../shared/virtual
  *
  * 虚拟滚动（`virtual` 属性，缺省关 = 现状逐字节等价）：千行级数组窗口化渲染——只挂载可视窗口
  * + overscan（上下各 5 行，`overscan` 可调）的阴影帧，滚动用上下 spacer 占位（总高不变、滚动条
- * 真实），行高动态测量（估高 → 实测校准，`estimated-row-height` 给初始估高）。**字段全部留在
- * light DOM 不窗口化**：主表收集/校验/提交、name 重编号、受控 `setRowCount` / `insertRowAt`
- * 与行操作语义完全不变；未 slot 的行 wrapper 不渲染、零布局成本。视口高度 `viewport-height`
- * 属性优先，缺省量测 `.items` 实际高度（CSS `--oas-form-list-viewport-height` 可覆盖）。
+ * 真实），行高动态测量（估高 → 实测校准，`estimated-row-height` 给初始估高，缺省估高会被
+ * 实测自校准覆盖）。**字段全部留在 light DOM 不窗口化**：主表收集/校验/提交、name 重编号、
+ * 受控 `setRowCount` / `insertRowAt` 与行操作语义完全不变；未 slot 的行 wrapper 不渲染、零布局
+ * 成本。视口高度 `viewport-height` 属性在场时同步写进 `.items` 内联 max-height（盒高与窗口
+ * 计算同源；移除即清内联回落 CSS 缺省，CSS `--oas-form-list-viewport-height` 可覆盖），窗口
+ * 计算取滚动容器实际 `clientHeight`（单一数据源）。行间距（`.v-window` 的 flex gap）计入
+ * 高度节距，虚拟内容总高与全量渲染一致。虚拟态「添加行」会把新行滚入视口并聚焦首字段。
+ * 添加按钮 / aria-live 播报与行数语义不变；读屏逐行遍历只覆盖当前窗口行（虚拟化的通用取舍，
+ * 总量信息由 `rowCount` property 与行操作播报承担）。
  *
  * name 索引化两条通路（可判定优先级：模板含 `{index}` 占位优先，否则按 `name` 属性前缀）：
  * 1. `{index}` 占位：模板字段 `name="users.{index}.name"` → 第 N 行为 `users.N.name`；
@@ -143,7 +148,9 @@ const STYLE = `
   white-space: nowrap;
 }
 
-/* 虚拟滚动（virtual 属性）：items 变滚动视口，窗口帧 + 上下 spacer 占位（总高稳定） */
+/* 虚拟滚动（virtual 属性）：items 变滚动视口，窗口帧 + 上下 spacer 占位（总高稳定）。
+   viewport-height 属性在场时由组件把值同步写进内联 max-height（盒高与窗口计算同源），
+   移除属性即清内联回落本缺省；CSS 变量覆盖由宿主侧 --oas-form-list-viewport-height 承担 */
 .items.vscroll {
   display: block;
   overflow-y: auto;
@@ -248,6 +255,8 @@ export class OASFormList extends OASElement {
   private frameKey = ''
   /** 虚拟滚动高度模型（无条件随行操作同步，保证 virtual 运行时开关不错位） */
   private vmodel = new RowHeightModel(DEFAULT_ESTIMATED_ROW_HEIGHT)
+  /** 当前生效的行间距（readRowGap 的缓存值；updateSpacers 组装 spacer 用） */
+  private vGap = 0
   /** 虚拟窗口容器（虚拟态创建；关闭时拆除） */
   private vWindowEl: HTMLElement | null = null
 
@@ -601,7 +610,25 @@ export class OASFormList extends OASElement {
     const index = this.items.length - 1
     this.emit('add', { index })
     this.announce(this.t('schemaForm.rowAdded', { index: index + 1 }))
+    // 虚拟态新行可能落在窗口外：先滚入视口并重算窗口（帧挂载后焦点才落得进去），再聚焦首字段
+    this.scrollRowIntoView(index)
     this.focusItem(index)
+  }
+
+  /** 新行滚入视口（仅虚拟态需要；非虚拟全量渲染由浏览器 focus 自带滚动）。幂等、越界安全 */
+  private scrollRowIntoView(index: number): void {
+    const itemsEl = this.itemsEl
+    if (!itemsEl || !this.virtualOn) return
+    const top = this.vmodel.offsetOf(index)
+    const height = Math.max(1, this.vmodel.heightAt(index))
+    const view = itemsEl.clientHeight
+    if (top < itemsEl.scrollTop) {
+      itemsEl.scrollTop = top
+    } else if (top + height > itemsEl.scrollTop + view) {
+      itemsEl.scrollTop = Math.max(0, top + height - view)
+    }
+    // scrollTop 变化后窗口可能整体平移：主动同步一次（scroll 事件在部分引擎是异步补发）
+    this.syncShadow()
   }
 
   /** 行操作点击（事件委托：帧在 shadow 内，路径取 button[data-action]） */
@@ -681,8 +708,13 @@ export class OASFormList extends OASElement {
   /** 虚拟滚动：窗口计算 → 挂载 → 实测校准 → 重算收敛 → spacer 占位 */
   private syncVirtual(itemsEl: HTMLElement): void {
     this.ensureVirtualSkeleton(itemsEl)
+    this.applyViewportHeight(itemsEl)
     this.applyEstimatedAttr()
     this.vmodel.setCount(this.items.length)
+    // 行间距计入节距（窗口帧容器是 flex + gap）：从计算样式读实际 gap，读不到（happy-dom /
+    // var() 未解析）回落 0——与无间距布局一致
+    this.vGap = this.readRowGap(itemsEl)
+    this.vmodel.setGap(this.vGap)
     const viewport = this.resolveViewportHeight(itemsEl)
     const overscan = this.resolveOverscan()
     let win = windowFor(this.vmodel, itemsEl.scrollTop, viewport, overscan)
@@ -695,6 +727,31 @@ export class OASFormList extends OASElement {
       this.mountWindow(itemsEl, win)
     }
     this.updateSpacers(itemsEl, win)
+  }
+
+  /** 窗口帧容器实际行间距（px；解析失败回落 0——测试环境无布局，与无间距一致） */
+  private readRowGap(itemsEl: HTMLElement): number {
+    const target = this.vWindowEl && itemsEl.contains(this.vWindowEl) ? this.vWindowEl : itemsEl
+    const raw = typeof getComputedStyle === 'function' ? getComputedStyle(target).rowGap : ''
+    const value = parseFloat(raw)
+    return Number.isFinite(value) && raw?.endsWith('px') ? value : 0
+  }
+
+  /**
+   * viewport-height 与盒高同源：属性在场时把值写进 `.items` 内联 max-height
+   * （属性非法 / 移除即清内联，回落 CSS 缺省或宿主 CSS 变量覆盖）——盒高与窗口计算
+   * 不再是两个数据源（缺省 CSS 320px 与属性值脱节曾致尾部行永久不可达）。
+   */
+  private applyViewportHeight(itemsEl: HTMLElement): void {
+    const raw = this.getAttr('viewport-height', '')
+    const n = raw === '' ? Number.NaN : Number(raw)
+    if (Number.isFinite(n) && n >= 0) itemsEl.style.maxHeight = `${n}px`
+    else {
+      if (raw !== '') {
+        warnOnce(`[oas-form-list] 非法 viewport-height "${raw}"，已按容器实测高度处理；应为非负数`)
+      }
+      itemsEl.style.removeProperty('max-height')
+    }
   }
 
   /** 虚拟骨架：items 变滚动视口 + 上下 spacer + 窗口容器（只建一次；SSR 快照含首窗） */
@@ -717,11 +774,12 @@ export class OASFormList extends OASElement {
     this.frameKey = ''
   }
 
-  /** 关闭虚拟：拆骨架，帧重建交回非虚拟路径（frameKey 清空强制全量重建） */
+  /** 关闭虚拟：拆骨架，帧重建交回非虚拟路径（frameKey 清空强制全量重建；内联视口高一并清除） */
   private teardownVirtual(itemsEl: HTMLElement): void {
     if (!this.vWindowEl) return
     this.vWindowEl = null
     itemsEl.classList.remove('vscroll')
+    itemsEl.style.removeProperty('max-height')
     itemsEl.textContent = ''
     this.frameKey = ''
   }
@@ -762,13 +820,14 @@ export class OASFormList extends OASElement {
     }
   }
 
-  /** spacer 占位：上 = 窗口首行偏移，下 = 总高 − 窗口末行偏移（总高不变、滚动条真实） */
+  /** spacer 占位：上 = 窗口首行偏移，下 = 总高 − 窗口末行偏移 + 窗口尾 gap（窗口内末行与
+      下一行之间的间隙不在窗口里渲染，落在下 spacer 顶上——总高与全量渲染严格一致） */
   private updateSpacers(itemsEl: HTMLElement, win: VirtualWindow): void {
     const top = itemsEl.querySelector<HTMLElement>('[data-vspacer="top"]')
     const bottom = itemsEl.querySelector<HTMLElement>('[data-vspacer="bottom"]')
     if (top) top.style.height = `${Math.round(this.vmodel.offsetOf(win.start))}px`
     if (bottom)
-      bottom.style.height = `${Math.max(0, Math.round(this.vmodel.total() - this.vmodel.offsetOf(win.end)))}px`
+      bottom.style.height = `${Math.max(0, Math.round(this.vmodel.total() - this.vmodel.offsetOf(win.end) + this.vGap))}px`
   }
 
   /** overscan：上下各额外渲染行数（缺省 5；非法回落缺省并单次告警） */
@@ -784,17 +843,12 @@ export class OASFormList extends OASElement {
   }
 
   /**
-   * 视口高度：`viewport-height` 属性优先（确定性，测试/SSR 可控）；缺省量测滚动容器实际高度
-   * （CSS `--oas-form-list-viewport-height` 覆盖生效）；量不到（首帧/测试环境）按 0 处理——
-   * 窗口计算有兜底（从顶部起渲染固定行数）。
+   * 视口高度：单一数据源 = 滚动容器实际 `clientHeight`（`viewport-height` 属性已由
+   * applyViewportHeight 同步成内联 max-height，盒高即属性值）。CSS
+   * `--oas-form-list-viewport-height` 覆盖同样经盒高生效。量不到（首帧 / happy-dom 无布局）
+   * 按 0 处理——窗口计算有兜底（从顶部起渲染固定行数）。
    */
   private resolveViewportHeight(itemsEl: HTMLElement): number {
-    const raw = this.getAttr('viewport-height', '')
-    if (raw !== '') {
-      const n = Number(raw)
-      if (Number.isFinite(n) && n >= 0) return n
-      warnOnce(`[oas-form-list] 非法 viewport-height "${raw}"，已按容器实测高度处理；应为非负数`)
-    }
     const measured = itemsEl.clientHeight
     return measured > 0 ? measured : 0
   }
@@ -811,9 +865,9 @@ export class OASFormList extends OASElement {
     return n
   }
 
-  /** 预估高属性权威（显式给定时压过自校准） */
+  /** 预估高属性权威：仅显式属性在场时压过自校准（缺省估高只是初值，实测校准不被缺省值反复覆盖） */
   private applyEstimatedAttr(): void {
-    this.vmodel.setEstimated(this.resolveEstimatedRowHeight())
+    if (this.hasAttr('estimated-row-height')) this.vmodel.setEstimated(this.resolveEstimatedRowHeight())
   }
 
   /** 虚拟滚动：用户滚动 → 窗口重算（被动监听） */

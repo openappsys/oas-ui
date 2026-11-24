@@ -52,8 +52,9 @@ description: 多图选择：点击或拖拽选图、缩略图网格预览、前�
 
 - `compress=""`：开启缺省档（quality 0.8 / max-dimension 4096）
 - `compress='{"quality":0.8,"max-dimension":1920}'`：JSON 覆盖档位（quality 0–1、最长边像素上限，超出等比缩）
-- JPEG / WebP 按档位重编码；PNG 保留透明走 png 重编码（无缩放且无方向修正时保留原文件不重编）；GIF / SVG 等不动
-- EXIF Orientation 1-8 全支持：canvas 重绘把带方向的照片转正（手机竖拍照片不再躺倒）
+- JPEG / WebP 按档位重编码；PNG 保留透明（无缩放时保留原文件不重编）；GIF / SVG 等不动
+- EXIF 方向：现代浏览器解码 `<img>` 已按 EXIF 正立渲染（手机竖拍照片不会躺倒），压缩只做等比缩放、**不做二次转正**；重编码输出正立图（JPEG/WebP/PNG 重编码不携带方向标记）
+- 源文件的 EXIF Orientation 以**元信息**上报：`compressed[].orientation`（1 = 无方向标记），宿主可据此区分原始方向标记
 - 解码失败 / canvas 不可用：优雅降级保留原文件（元信息位记 null）
 - 开启期间 `oas-change` detail 增加 `compressed` 数组（与 `files` 对齐）：每项为 `{ originalWidth, originalHeight, width, height, orientation, quality }`（原尺寸 → 压缩后尺寸）或 `null`（未处理）
 - 非法配置 devWarn 一次并按关闭处理（detail 恢复现状，不带 compressed）
@@ -114,7 +115,7 @@ onMounted(() => {
   acceptOnly?.addEventListener('oas-change', (e) => log(acceptOut, `已选 ${e.detail.count} 张 .jpg / .jpeg`))
   acceptOnly?.addEventListener('oas-reject', (e) => log(acceptOut, `已忽略 ${e.detail.files.length} 个非 .jpg / .jpeg 文件`))
 
-  // 自动压缩：oas-change detail.compressed 与 files 对齐（原尺寸 → 压缩后尺寸 / EXIF 修正）
+  // 自动压缩：oas-change detail.compressed 与 files 对齐（原尺寸 → 压缩后尺寸 / 源文件方向标记）
   const compress = document.getElementById('ip-compress')
   const compressOut = document.getElementById('ip-compress-out')
   compress?.addEventListener('oas-change', (e) => {
@@ -122,8 +123,8 @@ onMounted(() => {
     const parts = e.detail.files.map((f, i) => {
       const m = metas[i]
       if (!m) return `${f.name}（未处理）`
-      const fixed = m.orientation > 1 ? `，EXIF ${m.orientation} 转正` : ''
-      return `${f.name}（${m.originalWidth}×${m.originalHeight} → ${m.width}×${m.height}${fixed}）`
+      const marked = m.orientation > 1 ? `，源文件带 EXIF ${m.orientation} 方向标记（输出为正立图）` : ''
+      return `${f.name}（${m.originalWidth}×${m.originalHeight} → ${m.width}×${m.height}${marked}）`
     })
     log(compressOut, parts.join('；') || '尚未选择图片')
   })
@@ -140,7 +141,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accept` | 文件类型过滤（原生 `accept` 语法，默认 `image/*`） | `string` | `image/*` |
 | `capture` | 透传原生 `capture`：移动端直接拉起相机 | `boolean` | — |
-| `compress` | 选图自动压缩 + EXIF 方向修正（缺省关 = 现状逐字节等价）：空串 = 缺省档（quality 0.8 / max-dimension 4096）；JSON `{"quality":0.8,"max-dimension":1920}` 覆盖档位；非法 devWarn 一次按关闭处理。仅作用于用户新选入文件（受控 files 写入不压缩）；开启时 oas-change detail 附 compressed 元信息数组 | `string` | — |
+| `compress` | 选图自动压缩（缺省关 = 现状逐字节等价）：空串 = 缺省档（quality 0.8 / max-dimension 4096）；JSON `{"quality":0.8,"max-dimension":1920}` 覆盖档位；非法 devWarn 一次按关闭处理。仅作用于用户新选入文件（受控 files 写入不压缩）；EXIF 方向由浏览器解码正立渲染，压缩输出恒正立并以 orientation 元信息报告源方向标记；开启时 oas-change detail 附 compressed 元信息数组 | `string` | — |
 | `disabled` | 禁用：添加、排序、删除全部不可用 | `boolean` | — |
 | `max` | 数量上限（默认 9）；非法/非正数回落默认并告警 | `string` | — |
 | `readonly` | 只读预览：隐藏添加入口，操作按钮禁用 | `boolean` | — |

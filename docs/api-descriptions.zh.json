@@ -2203,7 +2203,7 @@
       "capture": "透传原生 `capture`：移动端直接拉起相机",
       "disabled": "禁用：添加、排序、删除全部不可用",
       "readonly": "只读预览：隐藏添加入口，操作按钮禁用",
-      "compress": "选图自动压缩 + EXIF 方向修正（缺省关 = 现状逐字节等价）：空串 = 缺省档（quality 0.8 / max-dimension 4096）；JSON `{\"quality\":0.8,\"max-dimension\":1920}` 覆盖档位；非法 devWarn 一次按关闭处理。仅作用于用户新选入文件（受控 files 写入不压缩）；开启时 oas-change detail 附 compressed 元信息数组"
+      "compress": "选图自动压缩（缺省关 = 现状逐字节等价）：空串 = 缺省档（quality 0.8 / max-dimension 4096）；JSON `{\"quality\":0.8,\"max-dimension\":1920}` 覆盖档位；非法 devWarn 一次按关闭处理。仅作用于用户新选入文件（受控 files 写入不压缩）；EXIF 方向由浏览器解码正立渲染，压缩输出恒正立并以 orientation 元信息报告源方向标记；开启时 oas-change detail 附 compressed 元信息数组"
     },
     "events": {
       "oas-change": "用户新增 / 删除 / 排序后派发，`detail: { files, count }`",

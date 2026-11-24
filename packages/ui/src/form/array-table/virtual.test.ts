@@ -52,6 +52,15 @@ function spacerHeight(table: OASArrayTable, which: 'top' | 'bottom'): number {
   return node ? Number(parseFloat(node.style.height)) : Number.NaN
 }
 
+/**
+ * 模拟真实浏览器的盒高：窗口计算与 `.rows` 盒高同源（clientHeight），happy-dom 无布局恒 0，
+ * 组件回落兜底窗口；需要确定窗口规模的用例用桩供给盒高（等价于真实浏览器的 max-height 生效）。
+ */
+function stubViewport(table: OASArrayTable, height: number): void {
+  Object.defineProperty(scroller(table), 'clientHeight', { value: height, configurable: true })
+  scroller(table).dispatchEvent(new Event('scroll'))
+}
+
 describe('OASArrayTable 虚拟滚动（virtual，v2.6.9 批 A）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -103,6 +112,7 @@ describe('OASArrayTable 虚拟滚动（virtual，v2.6.9 批 A）', () => {
       'viewport-height': '320',
       'estimated-row-height': '50',
     })
+    stubViewport(table, 320)
     expect(spacerHeight(table, 'top')).toBe(0)
     const sc = scroller(table)
     sc.scrollTop = 2000
@@ -171,10 +181,52 @@ describe('OASArrayTable 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     expect(scroller(table).classList.contains('vscroll')).toBe(false)
   })
 
-  it('overscan / viewport-height 属性控制窗口规模', () => {
+  it('viewport-height 与盒高同源：属性写进内联 max-height；overscan 扩窗有确定规模', () => {
+    // 属性在场 → 内联 max-height 同步（盒高不再停留 CSS 缺省 320px——尾部行不可达的根因）
     const narrow = makeBig(200, { virtual: '', 'viewport-height': '100', 'estimated-row-height': '50', overscan: '0' })
+    stubViewport(narrow, 100)
+    expect(scroller(narrow).style.maxHeight).toBe('100px')
     const wide = makeBig(200, { virtual: '', 'viewport-height': '900', 'estimated-row-height': '50', overscan: '20' })
-    expect(frames(narrow).length).toBeLessThan(frames(wide).length)
+    stubViewport(wide, 900)
+    expect(scroller(wide).style.maxHeight).toBe('900px')
+    // 确定帧数：viewport 100/50 → 行 0..1 可视（行 2 顶恰在视口底不计）→ 2 帧（overscan 0）；
+    // 900/50 → 18 行可视 + 底部 overscan 20 = 38 帧
+    expect(frames(narrow).length).toBe(2)
+    expect(frames(wide).length).toBe(38)
+    // 属性移除 → 清内联（回落 CSS 缺省 / 宿主 CSS 变量覆盖）
+    narrow.removeAttribute('viewport-height')
+    expect(scroller(narrow).style.maxHeight).toBe('')
+  })
+
+  it('虚拟态添加行：新行滚入视口、窗口重算挂载新帧、焦点落新行首字段（用户可见反馈）', () => {
+    const table = makeBig(30, { virtual: '', 'estimated-row-height': '50', overscan: '0' })
+    stubViewport(table, 150)
+    let added: unknown
+    table.addEventListener('oas-add', (e) => (added = (e as CustomEvent).detail))
+    table.shadowRoot!.querySelector<HTMLButtonElement>('[part="add"]')!.click()
+    expect(added).toEqual({ index: 30 })
+    expect(table.rowCount).toBe(31)
+    // 新行 30 顶 1500、高 50 > 视口底 150 → scrollTop 收到行底贴视口底：1500+50-150 = 1400
+    expect(scroller(table).scrollTop).toBe(1400)
+    const indexes = frames(table).map((f) => Number(f.dataset.rowIndex))
+    expect(indexes).toContain(30)
+    const newRowInput = rows(table)[30]!.querySelector('oas-input')!
+    const inner = newRowInput.shadowRoot?.querySelector<HTMLElement>('input')
+    expect(inner?.tagName).toBe('INPUT')
+    // document.activeElement 对 shadow 内焦点做宿主重定向（open shadow 同样重定向到 oas-input）
+    expect(document.activeElement).toBe(newRowInput)
+    expect(newRowInput.shadowRoot?.activeElement).toBe(inner)
+  })
+
+  it('默认 slot 不被虚拟骨架清掉：virtual 开/关往返后 <slot> 常驻（宿主默认插槽内容不丢）', () => {
+    const table = makeBig(3, { virtual: '', 'viewport-height': '320' })
+    const rowsEl = scroller(table)
+    expect(rowsEl.querySelector(':scope > slot')?.tagName, '虚拟开启后默认 slot 仍在').toBe('SLOT')
+    table.removeAttribute('virtual')
+    expect(rowsEl.querySelector(':scope > slot')?.tagName, '关闭虚拟后默认 slot 仍在').toBe('SLOT')
+    expect(rowsEl.querySelector('.v-window')).toBeNull()
+    expect(rowsEl.querySelectorAll('[data-vspacer]').length).toBe(0)
+    expect(frames(table).length).toBe(3)
   })
 
   it('行操作按钮在窗口内与行号对位：复制第 8 行 → oas-duplicate {from:8,to:9}', () => {
@@ -188,7 +240,7 @@ describe('OASArrayTable 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     expect(table.rowCount).toBe(61)
   })
 
-  it('virtual 属性缺省不存在时 observedAttributes 不影响既有行为（head/empty 照常）', () => {
+  it('非虚拟缺省行为零漂移：无 virtual 属性时表头列与空态照常渲染', () => {
     const table = makeBig(2)
     expect(table.shadowRoot!.querySelectorAll<HTMLElement>('[role="columnheader"]').length).toBeGreaterThan(1)
     const empty = makeBig(0)

@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_COMPRESS_OPTIONS,
   compressImageFile,
-  orientationTransform,
   parseCompressAttr,
   parseExifOrientation,
-  type CompressOptions,
 } from './image-process.js'
 
 /** 构造带 EXIF Orientation 的最小 JPEG：FFD8 + APP1(Exif IFD0 只含 Orientation 短整型) + FFD9 */
@@ -54,7 +52,7 @@ function jpegWithOrientation(orientation: number, byteOrder: 'MM' | 'II' = 'MM')
   return out
 }
 
-describe('parseExifOrientation', () => {
+describe('parseExifOrientation（元信息通道：正立渲染由浏览器解码承担，不再做矩阵转正）', () => {
   it('方向 1-8 全部正确读出（大端 MM）', () => {
     for (const o of [1, 2, 3, 4, 5, 6, 7, 8]) {
       expect(parseExifOrientation(jpegWithOrientation(o))).toBe(o)
@@ -67,7 +65,7 @@ describe('parseExifOrientation', () => {
     }
   })
 
-  it('无 EXIF / 无 Orientation 标签 / 非 JPEG / 截断数据 → 回落 1（不修正）', () => {
+  it('无 EXIF / 无 Orientation 标签 / 非 JPEG / 截断数据 → 回落 1（无方向标记）', () => {
     expect(parseExifOrientation(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]))).toBe(1)
     // PNG 魔数
     expect(parseExifOrientation(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe(1)
@@ -75,102 +73,6 @@ describe('parseExifOrientation', () => {
     expect(parseExifOrientation(jpegWithOrientation(6).slice(0, 12))).toBe(1)
     // 空数据
     expect(parseExifOrientation(new Uint8Array(0))).toBe(1)
-  })
-})
-
-describe('orientationTransform（EXIF 8 方向重绘矩阵）', () => {
-  it('方向 1-4：不换轴（输出尺寸 = 原尺寸）', () => {
-    // 1: 恒等
-    expect(orientationTransform(1, 400, 200)).toEqual({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0, width: 400, height: 200 })
-    // 2: 水平镜像（x 翻转，平移 w）
-    expect(orientationTransform(2, 400, 200)).toEqual({
-      a: -1,
-      b: 0,
-      c: 0,
-      d: 1,
-      e: 400,
-      f: 0,
-      width: 400,
-      height: 200,
-    })
-    // 3: 旋转 180°
-    expect(orientationTransform(3, 400, 200)).toEqual({
-      a: -1,
-      b: 0,
-      c: 0,
-      d: -1,
-      e: 400,
-      f: 200,
-      width: 400,
-      height: 200,
-    })
-    // 4: 垂直镜像
-    expect(orientationTransform(4, 400, 200)).toEqual({
-      a: 1,
-      b: 0,
-      c: 0,
-      d: -1,
-      e: 0,
-      f: 200,
-      width: 400,
-      height: 200,
-    })
-  })
-
-  it('方向 5-8：换轴（输出宽高互换）', () => {
-    // 5: 转置（主对角线镜像）：x'=y, y'=x
-    expect(orientationTransform(5, 400, 200)).toEqual({ a: 0, b: 1, c: 1, d: 0, e: 0, f: 0, width: 200, height: 400 })
-    // 6: 旋转 90° CW：x' = h - y, y' = x
-    expect(orientationTransform(6, 400, 200)).toEqual({
-      a: 0,
-      b: 1,
-      c: -1,
-      d: 0,
-      e: 200,
-      f: 0,
-      width: 200,
-      height: 400,
-    })
-    // 7: 反对角线镜像：x' = h - y, y' = w - x
-    expect(orientationTransform(7, 400, 200)).toEqual({
-      a: 0,
-      b: -1,
-      c: -1,
-      d: 0,
-      e: 200,
-      f: 400,
-      width: 200,
-      height: 400,
-    })
-    // 8: 旋转 90° CCW：x' = y, y' = w - x
-    expect(orientationTransform(8, 400, 200)).toEqual({
-      a: 0,
-      b: -1,
-      c: 1,
-      d: 0,
-      e: 0,
-      f: 400,
-      width: 200,
-      height: 400,
-    })
-  })
-
-  it('矩阵把源四角映射进输出画布内（方向 6 与 8 角点验证）', () => {
-    // o=6（90° CW）：源 (0,0) → (h,0)，(w,h) → (h-w, w)=(0,200)…… 全部落在 [0,h]×[0,w]
-    const t6 = orientationTransform(6, 400, 200)
-    const p6 = (x: number, y: number) => ({ x: t6.a * x + t6.c * y + t6.e, y: t6.b * x + t6.d * y + t6.f })
-    expect(p6(0, 0)).toEqual({ x: 200, y: 0 })
-    expect(p6(400, 200)).toEqual({ x: 0, y: 400 })
-    // o=8（90° CCW）：源 (0,0) → (0,w)，(w,0) → (0,0)
-    const t8 = orientationTransform(8, 400, 200)
-    const p8 = (x: number, y: number) => ({ x: t8.a * x + t8.c * y + t8.e, y: t8.b * x + t8.d * y + t8.f })
-    expect(p8(0, 0)).toEqual({ x: 0, y: 400 })
-    expect(p8(400, 0)).toEqual({ x: 0, y: 0 })
-  })
-
-  it('未知方向回落恒等（不抛错）', () => {
-    expect(orientationTransform(9, 100, 100).width).toBe(100)
-    expect(orientationTransform(0, 100, 100).a).toBe(1)
   })
 })
 
@@ -230,9 +132,8 @@ describe('compressImageFile（happy-dom：canvas 不可用 → 优雅降级）',
     expect(result).toBeNull()
   })
 
-  it('Options 接口字段完整（quality / maxDimension）', () => {
-    const options: CompressOptions = { quality: 0.6, maxDimension: 2048 }
-    expect(options.quality).toBe(0.6)
-    expect(options.maxDimension).toBe(2048)
+  it('缺省档位契约锁定（文档口径：quality 0.8 / max-dimension 4096）', () => {
+    expect(DEFAULT_COMPRESS_OPTIONS).toEqual({ quality: 0.8, maxDimension: 4096 })
+    expect(parseCompressAttr('')).toEqual(DEFAULT_COMPRESS_OPTIONS)
   })
 })

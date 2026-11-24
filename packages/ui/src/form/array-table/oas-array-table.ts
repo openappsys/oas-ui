@@ -37,8 +37,9 @@ import { RowHeightModel, windowFor, type VirtualWindow } from '../shared/virtual
  * `overscan` 可调）挂载、上下 spacer 占位（总高不变）、行高实测校准（`estimated-row-height`
  * 给初始估高）；`.rows` 变滚动视口，表头留在滚动区外（天然粘头）。语义铁律不变：aria-rowcount
  * 始终报总量（行数快照）、受控/校验/name 重编号/行操作全部照旧（行 wrapper 全量在 light DOM）。
- * 视口高度 `viewport-height` 属性优先，缺省量测 `.rows` 实际高度（CSS
- * `--oas-array-table-viewport-height` 可覆盖）。
+ * 视口高度 `viewport-height` 属性在场时同步写进 `.rows` 内联 max-height（盒高与窗口计算同源；
+ * 移除即清内联回落 CSS 缺省，CSS `--oas-array-table-viewport-height` 可覆盖），窗口计算取滚动
+ * 容器实际 `clientHeight`。虚拟态「添加行」会把新行滚入视口并聚焦首字段。
  */
 const STYLE = `
 :host {
@@ -283,6 +284,8 @@ export class OASArrayTable extends OASElement {
   private frameKey = ''
   /** 虚拟滚动高度模型（无条件随行操作同步，保证 virtual 运行时开关不错位） */
   private vmodel = new RowHeightModel(DEFAULT_ESTIMATED_ROW_HEIGHT)
+  /** 当前生效的行间距（行帧容器 display:block 无 gap，恒 0；与 form-list 同构保留字段） */
+  private vGap = 0
   /** 虚拟窗口容器（虚拟态创建；关闭时拆除） */
   private vWindowEl: HTMLElement | null = null
   /** 列定义原文缓存（变更才重排表头/单元格几何） */
@@ -945,6 +948,7 @@ export class OASArrayTable extends OASElement {
     const rowsEl = this.rowsEl
     if (!rowsEl) return
     this.ensureVirtualSkeleton(rowsEl)
+    this.applyViewportHeight(rowsEl)
     this.applyEstimatedAttr()
     this.vmodel.setCount(this.items.length)
     const viewport = this.resolveViewportHeight(rowsEl)
@@ -961,11 +965,28 @@ export class OASArrayTable extends OASElement {
     this.updateSpacers(rowsEl, win)
   }
 
-  /** 虚拟骨架：rows 变滚动视口 + 上下 spacer + 窗口容器（只建一次） */
+  /**
+   * viewport-height 与盒高同源：属性在场时把值写进 `.rows` 内联 max-height（属性非法 /
+   * 移除即清内联，回落 CSS 缺省或宿主 CSS 变量覆盖）——盒高与窗口计算不再是两个数据源。
+   */
+  private applyViewportHeight(rowsEl: HTMLElement): void {
+    const raw = this.getAttr('viewport-height', '')
+    const n = raw === '' ? Number.NaN : Number(raw)
+    if (Number.isFinite(n) && n >= 0) rowsEl.style.maxHeight = `${n}px`
+    else {
+      if (raw !== '') {
+        warnOnce(`[oas-array-table] 非法 viewport-height "${raw}"，已按容器实测高度处理；应为非负数`)
+      }
+      rowsEl.style.removeProperty('max-height')
+    }
+  }
+
+  /** 虚拟骨架：rows 变滚动视口 + 上下 spacer + 窗口容器（只建一次；默认 slot 保留不删） */
   private ensureVirtualSkeleton(rowsEl: HTMLElement): void {
     if (this.vWindowEl && rowsEl.contains(this.vWindowEl)) return
     rowsEl.classList.add('vscroll')
-    rowsEl.textContent = ''
+    // 只清行帧（非虚拟→虚拟切换的残留）；默认 <slot> 是常驻节点，textContent 清空会把它删掉
+    for (const node of [...rowsEl.querySelectorAll(':scope > .row-frame')]) node.remove()
     const top = document.createElement('div')
     top.className = 'v-spacer'
     top.setAttribute('data-vspacer', 'top')
@@ -981,13 +1002,14 @@ export class OASArrayTable extends OASElement {
     this.frameKey = ''
   }
 
-  /** 关闭虚拟：拆骨架，帧重建交回非虚拟路径（frameKey 清空强制全量重建） */
+  /** 关闭虚拟：拆骨架（只拆 spacer/窗口与行帧，默认 <slot> 保留），帧重建交回非虚拟路径 */
   private teardownVirtual(): void {
     const rowsEl = this.rowsEl
     if (!this.vWindowEl || !rowsEl) return
     this.vWindowEl = null
     rowsEl.classList.remove('vscroll')
-    rowsEl.textContent = ''
+    rowsEl.style.removeProperty('max-height')
+    for (const node of [...rowsEl.querySelectorAll(':scope > [data-vspacer], :scope > .v-window')]) node.remove()
     this.frameKey = ''
   }
 
@@ -1033,13 +1055,14 @@ export class OASArrayTable extends OASElement {
     }
   }
 
-  /** spacer 占位：上 = 窗口首行偏移，下 = 总高 − 窗口末行偏移（总高不变、滚动条真实） */
+  /** spacer 占位：上 = 窗口首行偏移，下 = 总高 − 窗口末行偏移 + 窗口尾 gap（行帧无 gap，恒为
+      总高差；与 form-list 同构公式，未来引入行间距不再脱节） */
   private updateSpacers(rowsEl: HTMLElement, win: VirtualWindow): void {
     const top = rowsEl.querySelector<HTMLElement>('[data-vspacer="top"]')
     const bottom = rowsEl.querySelector<HTMLElement>('[data-vspacer="bottom"]')
     if (top) top.style.height = `${Math.round(this.vmodel.offsetOf(win.start))}px`
     if (bottom)
-      bottom.style.height = `${Math.max(0, Math.round(this.vmodel.total() - this.vmodel.offsetOf(win.end)))}px`
+      bottom.style.height = `${Math.max(0, Math.round(this.vmodel.total() - this.vmodel.offsetOf(win.end) + this.vGap))}px`
   }
 
   /** overscan：上下各额外渲染行数（缺省 5；非法回落缺省并单次告警） */
@@ -1055,17 +1078,12 @@ export class OASArrayTable extends OASElement {
   }
 
   /**
-   * 视口高度：`viewport-height` 属性优先（确定性，测试/SSR 可控）；缺省量测滚动容器实际高度
-   * （CSS `--oas-array-table-viewport-height` 覆盖生效）；量不到（首帧/测试环境）按 0 处理——
-   * 窗口计算有兜底（从顶部起渲染固定行数）。
+   * 视口高度：单一数据源 = 滚动容器实际 `clientHeight`（`viewport-height` 属性已由
+   * applyViewportHeight 同步成内联 max-height，盒高即属性值）。CSS
+   * `--oas-array-table-viewport-height` 覆盖同样经盒高生效。量不到（首帧 / happy-dom 无布局）
+   * 按 0 处理——窗口计算有兜底（从顶部起渲染固定行数）。
    */
   private resolveViewportHeight(rowsEl: HTMLElement): number {
-    const raw = this.getAttr('viewport-height', '')
-    if (raw !== '') {
-      const n = Number(raw)
-      if (Number.isFinite(n) && n >= 0) return n
-      warnOnce(`[oas-array-table] 非法 viewport-height "${raw}"，已按容器实测高度处理；应为非负数`)
-    }
     const measured = rowsEl.clientHeight
     return measured > 0 ? measured : 0
   }
@@ -1082,9 +1100,9 @@ export class OASArrayTable extends OASElement {
     return n
   }
 
-  /** 预估高属性权威（显式给定时压过自校准） */
+  /** 预估高属性权威：仅显式属性在场时压过自校准（缺省估高只是初值，实测校准不被缺省值反复覆盖） */
   private applyEstimatedAttr(): void {
-    this.vmodel.setEstimated(this.resolveEstimatedRowHeight())
+    if (this.hasAttr('estimated-row-height')) this.vmodel.setEstimated(this.resolveEstimatedRowHeight())
   }
 
   /** 虚拟滚动：用户滚动 → 窗口重算（被动监听） */
@@ -1284,7 +1302,25 @@ export class OASArrayTable extends OASElement {
     const index = this.items.length - 1
     this.emit('add', { index })
     this.announce(this.t('schemaForm.rowAdded', { index: index + 1 }))
+    // 虚拟态新行可能落在窗口外：先滚入视口并重算窗口（帧挂载后焦点才落得进去），再聚焦首字段
+    this.scrollRowIntoView(index)
     this.focusItem(index)
+  }
+
+  /** 新行滚入视口（仅虚拟态需要；非虚拟全量渲染由浏览器 focus 自带滚动）。幂等、越界安全 */
+  private scrollRowIntoView(index: number): void {
+    const rowsEl = this.rowsEl
+    if (!rowsEl || !this.virtualOn) return
+    const top = this.vmodel.offsetOf(index)
+    const height = Math.max(1, this.vmodel.heightAt(index))
+    const view = rowsEl.clientHeight
+    if (top < rowsEl.scrollTop) {
+      rowsEl.scrollTop = top
+    } else if (top + height > rowsEl.scrollTop + view) {
+      rowsEl.scrollTop = Math.max(0, top + height - view)
+    }
+    // scrollTop 变化后窗口可能整体平移：主动同步一次（scroll 事件在部分引擎是异步补发）
+    this.syncShadow()
   }
 
   private removeRow(index: number): void {

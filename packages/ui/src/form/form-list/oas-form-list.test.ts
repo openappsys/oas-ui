@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASFormList } from './index.js'
 import { OASForm } from '../form/index.js'
 import '../input/index.js'
@@ -473,6 +473,16 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     sc.dispatchEvent(new Event('scroll'))
   }
 
+  /**
+   * 模拟真实浏览器的盒高：窗口计算与 `.items` 盒高同源（clientHeight），happy-dom 无布局恒 0，
+   * 组件回落兜底窗口；需要确定窗口规模的用例用桩供给盒高（等价于真实浏览器的 max-height 生效）。
+   * 桩设置后派发一次 scroll 触发重算（等价真实浏览器盒高变化后的同步）。
+   */
+  function stubViewport(el: OASFormList, height: number): void {
+    Object.defineProperty(scroller(el), 'clientHeight', { value: height, configurable: true })
+    scroller(el).dispatchEvent(new Event('scroll'))
+  }
+
   it('缺省关（零漂移）：无 spacer 节点、无滚动容器类、帧数=行数（全量帧）', () => {
     const el = makeBig(5)
     expect(el.shadowRoot!.querySelectorAll('[data-vspacer]').length).toBe(0)
@@ -483,6 +493,7 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
 
   it('virtual 开启：1000 行 light DOM 齐全（rowCount=1000）但挂载帧有界', () => {
     const el = makeBig(1000, { virtual: '', 'viewport-height': '320' })
+    stubViewport(el, 320)
     expect(el.rowCount).toBe(1000)
     expect(rows(el).length).toBe(1000)
     // viewport 320 / 预估 56 → 行 5 顶 280 < 320（部分可见）→ 基窗 6 行 + overscan 5×2 = 11 帧
@@ -507,6 +518,7 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
 
   it('滚动重算：scrollTop 变化 → 窗口平移、spacer 高度更新、首帧 spacer 反映偏移', () => {
     const el = makeBig(200, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50' })
+    stubViewport(el, 320)
     // 顶部：top spacer = 0
     expect(spacerHeight(el, 'top')).toBe(0)
     scrollTo(el, 2000)
@@ -520,6 +532,7 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
 
   it('总高稳定：bottom spacer + 窗口 + top spacer 对齐全量高度（滚动条真实）', () => {
     const el = makeBig(100, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50' })
+    stubViewport(el, 320)
     scrollTo(el, 1000)
     const top = spacerHeight(el, 'top')
     const bottom = spacerHeight(el, 'bottom')
@@ -532,13 +545,44 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
   it('overscan 属性可调：overscan=0 帧数收敛到可视行', () => {
     const wide = makeBig(200, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50', overscan: '0' })
     const narrow = makeBig(200, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50', overscan: '20' })
+    stubViewport(wide, 320)
+    stubViewport(narrow, 320)
     expect(mountFrames(wide).length).toBeLessThan(mountFrames(narrow).length)
   })
 
-  it('viewport-height 属性控制窗口大小：更高视口挂更多帧', () => {
+  it('viewport-height 与盒高同源：属性写进内联 max-height，窗口规模随盒高走', () => {
+    // 属性在场 → 内联 max-height 同步（盒高不再停留 CSS 缺省 320px——尾部行不可达的根因）
     const small = makeBig(200, { virtual: '', 'viewport-height': '100', 'estimated-row-height': '50' })
+    stubViewport(small, 100)
+    expect(scroller(small).style.maxHeight).toBe('100px')
     const large = makeBig(200, { virtual: '', 'viewport-height': '900', 'estimated-row-height': '50' })
+    stubViewport(large, 900)
+    expect(scroller(large).style.maxHeight).toBe('900px')
     expect(mountFrames(small).length).toBeLessThan(mountFrames(large).length)
+    // 确定帧数：viewport 100/50 → 行 0..1 可视（行 2 顶 100 = 视口底不计）→ 2 + 底部 overscan 5 = 7；
+    // 900/50 → 18 行可视 + 5 = 23（顶部 overscan 越过列表头被夹掉）
+    expect(mountFrames(small).length).toBe(7)
+    expect(mountFrames(large).length).toBe(23)
+  })
+
+  it('viewport-height 属性移除 / 非法：清内联回落实测盒高，非法值单次告警', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = makeBig(20, { virtual: '', 'viewport-height': '240' })
+      expect(scroller(el).style.maxHeight).toBe('240px')
+      el.removeAttribute('viewport-height')
+      expect(scroller(el).style.maxHeight, '属性移除清内联，回落 CSS 缺省').toBe('')
+      el.setAttribute('viewport-height', 'abc')
+      expect(scroller(el).style.maxHeight, '非法值清内联（按实测盒高处理）').toBe('')
+      expect(warnSpy.mock.calls.some((args) => String(args[0]).includes('viewport-height'))).toBe(true)
+      // 同原文只告警一次（换原文 'def' 不再计；'abc' 再次出现不重复告警）
+      el.setAttribute('viewport-height', 'def')
+      el.setAttribute('viewport-height', 'abc')
+      const warns = warnSpy.mock.calls.filter((args) => String(args[0]).includes('"abc"')).length
+      expect(warns).toBe(1)
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 
   it('虚拟态行操作：删除可视行 → oas-remove、剩余行重编号、值随行保留', () => {
@@ -593,19 +637,60 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     expect(values.users[39]!.nick).toBe('last')
   })
 
-  it('关闭虚拟零漂移：移除 virtual 属性恢复全量帧并拆掉 spacer', () => {
+  it('关闭虚拟零漂移：移除 virtual 属性恢复全量帧并拆掉 spacer、清内联视口高', () => {
     const el = makeBig(30, { virtual: '', 'viewport-height': '320' })
     expect(el.shadowRoot!.querySelectorAll('[data-vspacer]').length).toBe(2)
+    expect(scroller(el).style.maxHeight).toBe('320px')
     el.removeAttribute('virtual')
     expect(el.shadowRoot!.querySelectorAll('[data-vspacer]').length).toBe(0)
     expect(mountFrames(el).length).toBe(30)
     expect(scroller(el).classList.contains('vscroll')).toBe(false)
+    expect(scroller(el).style.maxHeight, '内联视口高随虚拟关闭清除（不残留）').toBe('')
   })
 
-  it('虚拟态 focusAction 窗口外行为安全：删除窗口外行（程序化）不抛错', () => {
-    const el = makeBig(30, { virtual: '', 'viewport-height': '120' })
-    expect(() => el.setRowCount(29)).not.toThrow()
-    expect(el.rowCount).toBe(29)
+  it('虚拟态 focusAction 窗口外静默跳过：复制窗口末行（新行在窗口外）不抛错、焦点不动', () => {
+    const el = makeBig(30, { virtual: '', 'viewport-height': '120', 'estimated-row-height': '50', overscan: '0' })
+    stubViewport(el, 120)
+    // viewport 120 / est 50 → 首个行顶 ≥ 120 = 行 3（150）→ 窗口 = 行 0..2（overscan 0）
+    const windowIndexes = mountFrames(el).map((f) => Number(f.dataset.rowIndex))
+    const tail = windowIndexes[windowIndexes.length - 1]!
+    expect(tail).toBe(2)
+    rows(el)[tail]!.querySelector('input')!.setAttribute('value', 'copy-me')
+    let detail: unknown
+    el.addEventListener('oas-duplicate', (e) => (detail = (e as CustomEvent).detail))
+    const focusBefore = document.activeElement
+    mountFrames(el)
+      .find((f) => f.dataset.rowIndex === String(tail))!
+      .querySelector<HTMLButtonElement>('[data-action="duplicate"]')!
+      .click()
+    // 新行插到窗口末行的下一位置（窗口外）：oas-duplicate 照常派发、值照常复制
+    expect(detail).toEqual({ from: tail, to: tail + 1 })
+    expect(el.rowCount).toBe(31)
+    expect(rows(el)[tail + 1]!.querySelector('input')!.getAttribute('value')).toBe('copy-me')
+    // 窗口未随插入平移（scrollTop 未变）：新行帧未挂载，focusAction 静默跳过、焦点不动、不抛错
+    const newFrame = mountFrames(el).some((f) => Number(f.dataset.rowIndex) === tail + 1)
+    expect(newFrame, '滚动位置未变时新行仍在窗口外（帧不挂载）').toBe(false)
+    expect(document.activeElement).toBe(focusBefore)
+  })
+
+  it('虚拟态添加行：新行滚入视口、窗口重算挂载新帧、焦点落新行首字段（用户可见反馈）', () => {
+    const el = makeBig(30, { virtual: '', 'estimated-row-height': '50', overscan: '0' })
+    stubViewport(el, 150)
+    let added: unknown
+    el.addEventListener('oas-add', (e) => (added = (e as CustomEvent).detail))
+    const addBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="add"]')!
+    expect(addBtn.tagName).toBe('BUTTON')
+    addBtn.click()
+    expect(added).toEqual({ index: 30 })
+    expect(el.rowCount).toBe(31)
+    // 新行 30 顶 1500、高 50 > 视口底 150 → scrollTop 收到行底贴视口底：1500+50-150 = 1400
+    expect(scroller(el).scrollTop).toBe(1400)
+    // 窗口随 scrollTop 平移：新行帧已挂载（28..30）
+    const indexes = mountFrames(el).map((f) => Number(f.dataset.rowIndex))
+    expect(indexes).toContain(30)
+    // 焦点落在新行首字段（原生 input 模板）
+    const newRowInput = rows(el)[30]!.querySelector('input')!
+    expect(document.activeElement).toBe(newRowInput)
   })
 
   it('行操作（复制/移动）在虚拟态可用且高度模型同步', () => {
@@ -636,6 +721,8 @@ describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     el.appendChild(tpl)
     el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-form-list" data-oas-ssr-v="1">${snapshot}`
     document.body.appendChild(el)
+    stubViewport(el, 120)
+    scrollTo(el, 0)
     expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     expect(el.rowCount).toBe(10)
     // viewport 120 / 预估 56 = 3 行可见（行 3 顶 168 ≥ 120）→ 基窗 3 + overscan 5×2 = 8 帧（全量 10 行不挂载）

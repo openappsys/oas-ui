@@ -178,11 +178,15 @@ row-action column — it is the same value semantics as `oas-form-list` in a dif
   native `<table>` (slots cannot produce `td`, and row content must stay in light DOM for the form kernel).
 - **Virtual scrolling (`virtual`)**: windowed rendering for thousand-row arrays — only the visible window plus
   overscan is mounted (`overscan` adjustable, 5 rows per side by default), row heights are measured and
-  calibrated (`estimated-row-height` seeds the initial estimate), and spacers keep the total height stable.
+  calibrated (`estimated-row-height` seeds the initial estimate; the default estimate is overwritten by measured
+  self-calibration), and spacers keep the total height stable.
   Row wrappers all stay in the light DOM: `aria-rowcount` always reports the total, and controlled writes /
-  validation / name renumbering / row operations / paste semantics are unchanged. Viewport height comes from
-  the `viewport-height` attribute (or CSS `--oas-array-table-viewport-height`); the header stays outside the
-  scroll area (naturally sticky).
+  validation / name renumbering / row operations / paste semantics are unchanged. When present, the
+  `viewport-height` attribute is synced into the container's inline `max-height` (box height and window
+  calculation share one source, so tail rows stay reachable when scrolled to the bottom; removing the attribute
+  falls back to the CSS default of 320px, with the CSS `--oas-array-table-viewport-height` override); the header
+  stays outside the scroll area (naturally sticky), and in virtual mode "add row" scrolls the new row into view
+  and focuses its first field.
 - Division of labour with the full-featured `oas-table`: this widget targets lightweight forms and does not do
   paging / server-side window fetching / bulk operations / cell merging (large local arrays use `virtual`
   windowed rendering).

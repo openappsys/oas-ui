@@ -152,9 +152,10 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
 - 表格语义用 ARIA（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 承载几何，不使用原生
   `<table>`（slot 产不出 `td`，行内容必须留在 light DOM 才能被主表收集）。
 - **虚拟滚动（`virtual`）**：千行级数组窗口化——只渲染可视窗口 + overscan（上下各 5 行，`overscan` 可调），
-  行高实测校准（`estimated-row-height` 给初始估高），滚动用 spacer 占位（总高不变）；行 wrapper 全量留在
-  light DOM，`aria-rowcount` 始终报总量、受控 / 校验 / name 重编号 / 行操作 / 粘贴语义不变。视口高度用
-  `viewport-height` 属性（或 CSS `--oas-array-table-viewport-height`），表头留在滚动区外（天然粘头）。
+  行高实测校准（`estimated-row-height` 给初始估高，缺省估高会被实测自校准覆盖），滚动用 spacer 占位（总高不变）；行 wrapper 全量留在
+  light DOM，`aria-rowcount` 始终报总量、受控 / 校验 / name 重编号 / 行操作 / 粘贴语义不变。视口高度
+  `viewport-height` 属性在场时同步写进容器内联 `max-height`（盒高与窗口计算同源，滚动到底尾部行可达；移除属性即回落 CSS 缺省 320px，
+  CSS `--oas-array-table-viewport-height` 可覆盖），表头留在滚动区外（天然粘头）；虚拟态「添加行」自动把新行滚入视口并聚焦首字段。
 - 与全功能 `oas-table` 的分工：本 widget 面向轻量表单场景，不做分页 / 服务端分片取数 / 批量操作 / 单元格合并
   （本地大数据集用 `virtual` 窗口化渲染）。
 
