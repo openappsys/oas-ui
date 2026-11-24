@@ -11,7 +11,7 @@ import { stableHash36 } from '../../shared/stable-id.js'
  * 属性（kebab-case）：
  * - `boundary`：拖拽边界——缺省 `viewport`（视口）或 CSS 选择器（该元素的矩形；非法选择器告警一次并回落视口）
  * - `axis`：`both`（缺省）/ `x` / `y`，限制拖拽方向
- * - `inertia`：松手滑行衰减（`prefers-reduced-motion: reduce` 时降级为瞬停）
+ * - `inertia`：松手滑行衰减（摩擦 0.95/帧，最多 60 帧，触边即停；`prefers-reduced-motion: reduce` 时降级为瞬停）
  * - `remember`：把位置写入 `localStorage`（SSR / 隐私模式不可用时静默降级，不记不读）
  * - `storage-key`：位置记忆的键（缺省 `oas-drag`）
  * - `keyboard`：键盘微调（缺省开启，写 `keyboard="false"` 关闭）；宿主可聚焦，方向键 1px、Shift+方向键 10px
@@ -63,9 +63,11 @@ const DRAG_THRESHOLD = 4
 /** 键盘单步位移（px）与 Shift 加速倍数 */
 const KEY_STEP = 1
 const KEY_STEP_FAST = 10
-/** 惯性衰减：每毫秒保留的速度比例，低于 MIN_VELOCITY 停止 */
-const INERTIA_DECAY = 0.94
+/** 惯性衰减：每帧（16ms）保留的速度比例，低于 MIN_VELOCITY 停止 */
+const INERTIA_DECAY = 0.95
 const MIN_VELOCITY = 0.02
+/** 惯性滑行帧数上限（约 1 秒）：长距离甩动不无限滑行，超出即收尾 */
+const MAX_COAST_FRAMES = 60
 const VALID_AXES: readonly string[] = ['both', 'x', 'y']
 
 const warned = new Set<string>()
@@ -591,6 +593,10 @@ export class OASDrag extends OASElement {
 
   // ---------- 惯性 ----------
 
+  /**
+   * 惯性滑行：按最后采样速度逐帧衰减（摩擦 0.95/帧，最多 60 帧），边界钳制照常——
+   * 触边即截停。`prefers-reduced-motion: reduce` 下整段降级为瞬停（不请求动画帧）。
+   */
   private startCoast(velocityX: number, velocityY: number): void {
     if (!this.hasAttr('inertia') || this.reducedMotion) return
     const axis = this.resolveAxis()
@@ -599,7 +605,14 @@ export class OASDrag extends OASElement {
     if (Math.hypot(vx, vy) < MIN_VELOCITY) return
     if (typeof requestAnimationFrame !== 'function') return
     let last = 0
+    let frames = 0
     this.setAttribute('data-coasting', '')
+    const stop = (): void => {
+      this.stopCoast()
+      this.announcePosition()
+      this.savePosition()
+      this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
+    }
     const step = (now: number): void => {
       const dt = last === 0 ? 16 : Math.min(64, now - last)
       last = now
@@ -613,11 +626,9 @@ export class OASDrag extends OASElement {
       this.offsetY = clamped.y
       this.applyTransform()
       this.emit('drag', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
-      if (hitEdge || Math.hypot(vx, vy) < MIN_VELOCITY) {
-        this.stopCoast()
-        this.announcePosition()
-        this.savePosition()
-        this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
+      frames += 1
+      if (hitEdge || Math.hypot(vx, vy) < MIN_VELOCITY || frames >= MAX_COAST_FRAMES) {
+        stop()
         return
       }
       this.coastFrame = requestAnimationFrame(step)

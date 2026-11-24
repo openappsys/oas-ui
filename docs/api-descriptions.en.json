@@ -5956,7 +5956,7 @@
     "attrs": {
       "boundary": "Drag boundary: `viewport` (default) or a CSS selector whose element rect is the boundary (a miss warns once and falls back to the viewport)",
       "axis": "Drag axis: `both` (default) / `x` horizontal only / `y` vertical only; invalid values fall back to `both` with a warning",
-      "inertia": "Decaying glide after release; instant stop under `prefers-reduced-motion: reduce`",
+      "inertia": "Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary); instant stop under `prefers-reduced-motion: reduce`",
       "remember": "Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota)",
       "storage-key": "Storage key for position memory (default `oas-drag`)",
       "keyboard": "Keyboard nudging: on by default (`tabindex=\"0\"`, 1px with arrow keys, 10px with Shift); write `false` to disable",

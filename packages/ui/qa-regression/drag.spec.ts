@@ -225,3 +225,113 @@ test('drag：真实鼠标拖拽后的 click 抑制不泄漏到下一次真实点
   const clicks = await page.evaluate(() => (window as unknown as { __clicks: number }).__clicks)
   expect(clicks, '拖拽后的正常点击不得被吞掉').toBe(1)
 })
+
+// ---------------------------------------------------------------------------
+// 惯性（inertia）：真实浏览器里松手续行 / axis 约束 / 边界钳停 / reduced-motion 瞬停
+// ---------------------------------------------------------------------------
+
+/** 真实鼠标快速甩动：先滚进视口，再中速跟手、少步数快速位移后松手（最后一步的采样速度决定惯性初速） */
+async function flickBy(page: import('@playwright/test').Page, host: string, dx: number): Promise<void> {
+  // chip 在页面下方第三个 demo 块：必须先滚进视口，否则鼠标坐标落在元素之外、拖拽静默丢失
+  await page.evaluate((sel) => {
+    ;(document.querySelector(sel) as HTMLElement).scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, host)
+  const box = await page.locator(host).boundingBox()
+  if (!box) throw new Error(`${host} 无可见矩形`)
+  const startX = box.x + box.width / 2
+  const startY = box.y + box.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX + dx / 2, startY, { steps: 4 })
+  await page.mouse.move(startX + dx, startY, { steps: 2 })
+  await page.mouse.up()
+}
+
+/** 部署 data-coasting 生命周期观察：宿主该属性的出现/移除各记一条（ MutationObserver 异步记录不丢帧） */
+async function watchCoasting(page: import('@playwright/test').Page, host: string): Promise<void> {
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel)
+    if (!el) return
+    const w = window as unknown as { __coastEvents: string[] }
+    w.__coastEvents = []
+    new MutationObserver((records) => {
+      for (const r of records) w.__coastEvents.push(r.attributeName ?? '')
+    }).observe(el, { attributes: true, attributeFilter: ['data-coasting'] })
+  }, host)
+}
+
+test('drag：inertia 松手后惯性续行，axis="x" 全程 y=0，滑行撞右缘钳停并收尾', async ({ page }) => {
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-chip')
+  // 舞台缩到 300px：无论甩动速度高低，滑行都在短距离内撞到右缘 → 几何终值确定（贴缘）
+  await page.evaluate(() => {
+    ;(document.querySelector('#dg-stage-axis') as HTMLElement).style.width = '300px'
+  })
+  await watchCoasting(page, '#dg-chip')
+  await flickBy(page, '#dg-chip', 120)
+
+  // 等滑行收尾：data-coasting 移除且位置连续两轮轮询一致（不再有任何位移驱动）
+  await page.waitForFunction(
+    () => {
+      const w = window as unknown as { __coastX?: number }
+      const el = document.querySelector('#dg-chip') as (HTMLElement & { position: { x: number; y: number } }) | null
+      if (!el || el.hasAttribute('data-coasting')) return false
+      if (w.__coastX !== el.position.x) {
+        w.__coastX = el.position.x
+        return false
+      }
+      return true
+    },
+    undefined,
+    { timeout: 5000, polling: 100 },
+  )
+  const settled = await page.evaluate(
+    () => (document.querySelector('#dg-chip') as HTMLElement & { position: { x: number; y: number } }).position,
+  )
+  const final = await page.evaluate(() => {
+    const el = document.querySelector('#dg-chip') as HTMLElement & { position: { x: number; y: number } }
+    const chip = el.getBoundingClientRect()
+    const stage = document.querySelector('#dg-stage-axis')!.getBoundingClientRect()
+    return {
+      position: { ...el.position },
+      chipRight: chip.right,
+      stageRight: stage.right,
+      coastEvents: (window as unknown as { __coastEvents: string[] }).__coastEvents,
+      feedback: document.querySelector('#dg-chip-out')!.textContent ?? '',
+    }
+  })
+  expect(final.position, '收尾后位置稳定：不再有任何滑行').toEqual(settled)
+  expect(final.position.y, 'axis="x" 惯性只沿横向，y 全程 0').toBe(0)
+  expect(final.position.x, '惯性应松手续行（终值明显超过 120px 的跟手位移）').toBeGreaterThan(140)
+  expect(final.chipRight, '滑行撞右缘钳停：宿主右缘贴合边界右缘（几何终值）').toBeCloseTo(final.stageRight, 1)
+  expect(final.coastEvents, '滑行期间挂 data-coasting（样式据此禁用过渡）且收尾后恰好移除一次').toEqual([
+    'data-coasting',
+    'data-coasting',
+  ])
+  expect(final.feedback, '滑行收尾的 oas-drag-end 需要可见的 demo 反馈').toContain('结束')
+})
+
+test('drag：prefers-reduced-motion 下 inertia 瞬停（松手跟手位置即终值，不滑行）', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/components/drag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dg-chip')
+  await watchCoasting(page, '#dg-chip')
+  await flickBy(page, '#dg-chip', 80)
+  // 瞬停同步收尾：直接等 demo 反馈出现（不固定等待）
+  await page.waitForFunction(
+    () => (document.querySelector('#dg-chip-out')?.textContent ?? '').includes('结束'),
+    undefined,
+    { timeout: 5000 },
+  )
+  const final = await page.evaluate(() => {
+    const el = document.querySelector('#dg-chip') as HTMLElement & { position: { x: number; y: number } }
+    return {
+      position: { ...el.position },
+      coastEvents: (window as unknown as { __coastEvents: string[] }).__coastEvents,
+      feedback: document.querySelector('#dg-chip-out')!.textContent ?? '',
+    }
+  })
+  expect(final.position, '瞬停：松手跟手位置即终值，不得续行').toEqual({ x: 80, y: 0 })
+  expect(final.coastEvents, '瞬停不出现滑行标记').toEqual([])
+  expect(final.feedback, '结束事件仍要派发（demo 反馈可见）').toContain('结束')
+})

@@ -5700,7 +5700,7 @@
     "attrs": {
       "boundary": "拖拽边界：`viewport`（缺省，视口）或 CSS 选择器（该元素的矩形；未命中告警一次并回落视口）",
       "axis": "拖拽方向轴：`both`（缺省）/ `x` 仅横向 / `y` 仅纵向；非法值回落 `both` 并告警",
-      "inertia": "松手后惯性滑行（速度衰减至停止）；`prefers-reduced-motion: reduce` 下瞬停",
+      "inertia": "松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停）；`prefers-reduced-motion: reduce` 下瞬停",
       "remember": "把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级",
       "storage-key": "位置记忆的存储键（缺省 `oas-drag`）",
       "keyboard": "键盘微调：缺省开启（`tabindex=\"0\"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭",

@@ -54,7 +54,7 @@ With a `handle` slot only the handle starts a drag; the rest of the block keeps 
 
 ## Axis, inertia and announcements
 
-`axis="x"` restricts dragging to the horizontal axis; `inertia` adds a decaying glide after release (instant stop under `prefers-reduced-motion: reduce`); `announce` reports position changes through `aria-live`.
+`axis="x"` restricts dragging to the horizontal axis; `inertia` glides after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary; instant stop under `prefers-reduced-motion: reduce`); `announce` reports position changes through `aria-live`.
 
 <DemoBlock title="axis=&quot;x&quot; + inertia + announce">
   <div
@@ -124,7 +124,7 @@ onMounted(() => {
 | `axis` | Drag axis: `both` (default) / `x` horizontal only / `y` vertical only; invalid values fall back to `both` with a warning | `string` | `both` |
 | `boundary` | Drag boundary: `viewport` (default) or a CSS selector whose element rect is the boundary (a miss warns once and falls back to the viewport) | `string` | `viewport` |
 | `disabled` | Turn dragging off: pointer and keyboard are ignored and the focus stop is removed | `boolean` | — |
-| `inertia` | Decaying glide after release; instant stop under `prefers-reduced-motion: reduce` | `boolean` | — |
+| `inertia` | Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary); instant stop under `prefers-reduced-motion: reduce` | `boolean` | — |
 | `keyboard` | Keyboard nudging: on by default (`tabindex="0"`, 1px with arrow keys, 10px with Shift); write `false` to disable | `string` | — |
 | `remember` | Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota) | `boolean` | — |
 | `storage-key` | Storage key for position memory (default `oas-drag`) | `string` | `oas-drag` |
