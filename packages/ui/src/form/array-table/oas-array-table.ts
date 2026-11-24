@@ -686,9 +686,12 @@ export class OASArrayTable extends OASElement {
     const column = this.columns.find((entry) => entry.key === key)
     if (!column) return
     this.resizeSession = { key, startX: pointer.clientX, startWidth: this.columnWidth(column) }
-    this.addEventListener('pointermove', this.handleResizeMove)
-    this.addEventListener('pointerup', this.handleResizeEnd)
-    this.addEventListener('pointercancel', this.handleResizeEnd)
+    // 监听挂 document：拖拽中指针离开列头/表格也要继续跟手；pointerup 落在任何位置都能收尾
+    // （只挂宿主会在指针移出后失去事件、session 悬挂，下一次在表头移动时误调宽）
+    const doc = this.ownerDocument
+    doc.addEventListener('pointermove', this.handleResizeMove)
+    doc.addEventListener('pointerup', this.handleResizeEnd)
+    doc.addEventListener('pointercancel', this.handleResizeEnd)
   }
 
   private readonly handleResizeMove = (event: Event): void => {
@@ -703,9 +706,10 @@ export class OASArrayTable extends OASElement {
 
   private readonly handleResizeEnd = (): void => {
     this.resizeSession = null
-    this.removeEventListener('pointermove', this.handleResizeMove)
-    this.removeEventListener('pointerup', this.handleResizeEnd)
-    this.removeEventListener('pointercancel', this.handleResizeEnd)
+    const doc = this.ownerDocument
+    doc.removeEventListener('pointermove', this.handleResizeMove)
+    doc.removeEventListener('pointerup', this.handleResizeEnd)
+    doc.removeEventListener('pointercancel', this.handleResizeEnd)
   }
 
   /** 键盘调宽：左右键 ±8px（step），到下限即停；Home 回落到 uiSchema 初始宽 */

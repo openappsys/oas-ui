@@ -296,6 +296,20 @@ describe('oas-array-table 列宽拖拽与列顺序重排（展示态，不序列
     expect(table.shadowRoot!.querySelector<HTMLElement>('[part="head"]')!.style.gridTemplateColumns).toBe(after)
   })
 
+  it('拖拽中指针离开列头仍跟手；离开后无按键移动不再调宽（document 级会话收尾）', () => {
+    const { table } = makeTable({ name: 'users', rows: '1' })
+    const handle = splitter(table, 0)
+    pointer('pointerdown', handle, 100)
+    // 指针移出宿主（事件在 document.body 上冒泡）：仍应继续调宽
+    document.body.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 140, clientY: 0 }))
+    expect(splitter(table, 0).getAttribute('aria-valuenow')).toBe('160')
+    // pointerup 落在宿主外：会话收尾
+    document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 140, clientY: 0 }))
+    // 之后的悬停移动不得继续改宽（会话已结束）
+    document.body.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 300, clientY: 0 }))
+    expect(splitter(table, 0).getAttribute('aria-valuenow')).toBe('160')
+  })
+
   it('键盘左右键调宽（±8px，下限截断）', () => {
     const { table } = makeTable({ name: 'users', rows: '1' })
     const handle = splitter(table, 0)
