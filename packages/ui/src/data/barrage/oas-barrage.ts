@@ -17,6 +17,12 @@ import { isRtl } from '../../shared/direction.js'
  * - `height`：舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px）
  * - `accessible`：布尔，存在时弹幕进入读屏（`role="log"` + `aria-live="polite"`）；
  *   缺省 `aria-hidden`，避免装饰性弹幕持续打扰读屏
+ * - `items`：声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐
+ *   `addBatch`：属性变化时把数组条目批量入队（追加，不清空在场）；另有同名 get/set
+ *   访问器（赋数组自动 JSON 序列化反射 attribute），框架双向绑定不用手写 stringify
+ * - `auto-play`：布尔，循环播放——声明条目队列耗尽后自动重新入队（只循环 `items`
+ *   声明的数据；`add()` 手动加的条目不参与循环；`clear()` 只清在场与排队，声明数据
+ *   仍在，想要永久停止请移除 `items` 或 `auto-play`）
  *
  * 方法：
  * - `add(text, options?)`：追加一条（options: `{ color?, key? }`）
@@ -240,7 +246,7 @@ const LENGTH_RE = /^(?:\d*\.?\d+(?:px|rem|em|vh|vw|vmin|vmax|%)?|(?:calc|min|max
 
 export class OASBarrage extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['tracks', 'speed', 'gap', 'max-active', 'paused', 'height', 'accessible']
+    return ['tracks', 'speed', 'gap', 'max-active', 'paused', 'height', 'accessible', 'items', 'auto-play']
   }
 
   private stageEl: HTMLElement | null = null
@@ -255,6 +261,22 @@ export class OASBarrage extends OASElement {
   private pausedInternal = false
   private pausedAt = 0
   private lastPausedAttr = false
+  /** items 上次应用的属性原文（变化才重新入队，避免重复 update 重复添加） */
+  private lastItemsRaw = ''
+  /** 声明式条目（auto-play 循环的数据源） */
+  private declaredItems: BarrageItemInput[] = []
+
+  // -------------------------------------------------------------------------
+  // property 通道（items：框架把静态属性写成 property 时的数据入口）
+  // -------------------------------------------------------------------------
+
+  /** 声明式弹幕数据（读=解析结果；写=接受（字符串 | 条目）数组或 JSON 字符串，反射 `items` attribute） */
+  get items(): Array<string | BarrageItemInput> {
+    return this.declaredItems
+  }
+  set items(value: Array<string | BarrageItemInput> | string) {
+    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   private template(): string {
     return `
@@ -416,6 +438,7 @@ export class OASBarrage extends OASElement {
       this.pumpTimer = null
     }
     const max = this.resolveMaxActive()
+    const loop = this.hasAttribute('auto-play')
     while (this.queue.length > 0) {
       if (max > 0 && this.active.length >= max) return
       const now = Date.now()
@@ -440,6 +463,12 @@ export class OASBarrage extends OASElement {
       const item = this.queue.shift()
       if (!item) return
       this.mount(item, index, now)
+      // auto-play：队列耗尽时重播声明条目（只循环 items 声明的数据）
+      if (loop && this.queue.length === 0 && this.declaredItems.length > 0) {
+        for (const declared of this.declaredItems) {
+          this.queue.push({ text: declared.text, key: declared.key ?? '', color: declared.color ?? '' })
+        }
+      }
     }
   }
 
@@ -664,6 +693,46 @@ export class OASBarrage extends OASElement {
     }
 
     // 新排队项可能因上限/参数变化获得放行机会
-    if (!this.pausedInternal && this.queue.length > 0) this.pump()
+    this.syncDeclaredItems()
+    if (
+      !this.pausedInternal &&
+      (this.queue.length > 0 || (this.hasAttribute('auto-play') && this.declaredItems.length > 0))
+    ) {
+      this.pump()
+    }
+  }
+
+  /** items 属性解析 + 增量入队（对齐 addBatch：只追加新条目，不清空在场、不重复入队旧条目） */
+  private syncDeclaredItems(): void {
+    const raw = this.getAttr('items', '')
+    if (raw === this.lastItemsRaw) return
+    this.lastItemsRaw = raw
+    if (raw.trim() === '') {
+      this.declaredItems = []
+      return
+    }
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      devWarn(
+        '[oas-barrage] items 不是合法 JSON 数组，已忽略；示例：["弹幕文本"] 或 [{"text":"弹幕","color":"blue","key":"k1"}]',
+      )
+      this.declaredItems = []
+      return
+    }
+    if (!Array.isArray(parsed)) {
+      devWarn('[oas-barrage] items 必须是数组，已忽略')
+      this.declaredItems = []
+      return
+    }
+    const normalized = parsed
+      .map((item) => (typeof item === 'string' ? { text: item } : item))
+      .filter((item): item is BarrageItemInput => !!item && typeof (item as BarrageItemInput).text === 'string')
+    const identity = (item: BarrageItemInput): string => JSON.stringify([item.text, item.color ?? '', item.key ?? ''])
+    const previous = new Set(this.declaredItems.map(identity))
+    const fresh = normalized.filter((item) => !previous.has(identity(item)))
+    this.declaredItems = normalized
+    this.addBatch(fresh)
   }
 }

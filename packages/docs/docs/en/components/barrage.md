@@ -48,6 +48,23 @@ With `tracks="1"` all items share one track and scheduling guarantees no overlap
   <oas-button id="bg-single-add" size="small">Add another</oas-button>
 </DemoBlock>
 
+## Declarative items and auto-play
+
+`items` declares the bullets as a JSON array (strings or `{ text, color?, key? }`), aligned with `addBatch`: when the attribute changes, new entries are batch-enqueued (append semantics; on-screen items are kept). A same-name property channel exists as well (assigning an array serializes and reflects the attribute automatically), so framework bindings need no manual `JSON.stringify`. `auto-play` loops the stream: once the declared items finish playing they re-enqueue automatically (only `items`-declared data loops — bullets added via `add()` are not part of the loop; `clear()` only clears on-screen and queued items, so to stop for good remove `items` or `auto-play`):
+
+<DemoBlock title="items + auto-play loop">
+  <oas-barrage
+    id="bg-items-en"
+    items='["Native Web Components","Dark theme ready","Declarative bullets","auto-play loops the stream","OAS-UI barrage"]'
+    auto-play
+    tracks="2"
+    speed="110"
+    height="96"
+    accessible
+    style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
+  ></oas-barrage>
+</DemoBlock>
+
 ## Writing Direction (RTL)
 
 On RTL pages (ancestor `dir="rtl"`, `oas-config-provider direction="rtl"`, or an RTL locale such as Arabic) items enter from the **left** and fly out to the right — the mirrored keyframes switch automatically via `data-rtl`, matching the reading direction:
@@ -127,8 +144,10 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accessible` | Boolean; when present the barrage is exposed to screen readers (`role="log"` + `aria-live="polite"`); `aria-hidden` by default | — | — |
+| `auto-play` | Loop playback: once the declared queue drains the items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good) | — | — |
 | `gap` | Minimum horizontal gap between items on the same track (px, default 48) | `string` | — |
 | `height` | Stage height (plain numbers are px, CSS lengths accepted; default 200px) | `string` | — |
+| `items` | Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute | `BarrageItemInput[] \| string` | `[]` |
 | `max-active` | Maximum on-screen items (0 = unlimited, default 0) | `string` | — |
 | `paused` | Controlled pause (present = paused; CSS animations and scheduling timers freeze together) | — | — |
 | `speed` | Drift speed in pixels per second (default 120) | `string` | — |

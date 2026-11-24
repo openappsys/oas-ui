@@ -39,9 +39,24 @@
     {
       "name": "accessible",
       "observed": true
+    },
+    {
+      "name": "items",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "auto-play",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "items",
+      "type": "BarrageItemInput[] | string",
+      "default": "[]"
+    }
+  ],
   "methods": [
     {
       "name": "add",

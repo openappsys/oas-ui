@@ -48,6 +48,23 @@ description: 弹幕组件，多条弹幕在轨道上按速度漂过，同轨道�
   <oas-button id="bg-single-add" size="small">再发一条</oas-button>
 </DemoBlock>
 
+## 声明式数据 items 与循环 auto-play
+
+`items` 用 JSON 数组声明弹幕（字符串或 `{ text, color?, key? }`），语义对齐 `addBatch`：属性变化时把新条目批量入队（追加，不清空在场）。另有同名 property 通道（赋数组自动序列化反射），框架双向绑定不用手写 `JSON.stringify`。`auto-play` 开启循环：声明条目播完后自动重播（只循环 `items` 声明的数据，`add()` 手动加的不参与；`clear()` 只清在场与排队，想永久停止请移除 `items` 或 `auto-play`）：
+
+<DemoBlock title="items 声明 + auto-play 循环">
+  <oas-barrage
+    id="bg-items"
+    items='["前端组件库","Web Components 原生","暗色主题适配","弹幕也可以声明式","auto-play 循环播放"]'
+    auto-play
+    tracks="2"
+    speed="110"
+    height="96"
+    accessible
+    style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
+  ></oas-barrage>
+</DemoBlock>
+
 ## 书写方向（RTL）
 
 RTL 页面（祖先 `dir="rtl"`、`oas-config-provider direction="rtl"` 或阿拉伯语等 RTL 语言包）下弹幕自**左**进场、向右飞出——镜像关键帧由 `data-rtl` 自动切换，与阅读方向一致：
@@ -127,8 +144,10 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `accessible` | 布尔，存在时弹幕进入读屏（`role="log"` + `aria-live="polite"`）；缺省 `aria-hidden` | — | — |
+| `auto-play` | 循环播放：声明条目队列耗尽后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play） | — | — |
 | `gap` | 同轨道相邻弹幕的最小水平间距（px，默认 48） | `string` | — |
 | `height` | 舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px） | `string` | — |
+| `items` | 声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute） | `BarrageItemInput[] \| string` | `[]` |
 | `max-active` | 同屏最大条数（0 = 不限，默认 0） | `string` | — |
 | `paused` | 受控暂停（在场=暂停；CSS 动画与排期计时同时冻结） | — | — |
 | `speed` | 漂移速度（像素/秒，默认 120） | `string` | — |
