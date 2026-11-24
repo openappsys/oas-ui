@@ -1,5 +1,4 @@
 import { OASElement } from '@oas-ui/core/oas-element'
-import { heartPath } from '@oas-ui/icons/icons/heart'
 import { devWarn } from '../../shared/dev-warn.js'
 import { isRtl } from '../../shared/direction.js'
 
@@ -103,7 +102,7 @@ const STYLE = `
 .text {
   display: inline;
 }
-/* 点赞控件：与文本同基线的小按钮，未点赞描边、点赞后主色实心 */
+/* 点赞控件：与文本同基线的小按钮；未赞描边心形，点赞后实心主色（形状差异即状态差异） */
 .like {
   display: inline-flex;
   align-items: center;
@@ -111,8 +110,8 @@ const STYLE = `
   box-sizing: border-box;
   margin-inline-start: var(--oas-space-1);
   padding: 0;
-  width: 1.25em;
-  height: 1.25em;
+  width: 1.35em;
+  height: 1.35em;
   border: 0;
   border-radius: 50%;
   background: none;
@@ -124,7 +123,16 @@ const STYLE = `
   width: 100%;
   height: 100%;
   display: block;
+}
+.like svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.like[data-liked='true'] svg path {
   fill: currentColor;
+  stroke: currentColor;
 }
 .like:hover {
   color: var(--oas-color-primary);
@@ -618,12 +626,16 @@ export class OASBarrage extends OASElement {
     return item.key !== '' ? item.key : item.text
   }
 
-  /** 点赞控件：语义与可聚焦性按 accessible 切换；装饰态鼠标可点但读屏不可达 */
+  /** 点赞控件：语义与可聚焦性按 accessible 切换；装饰态鼠标可点但读屏不可达。
+   * 心形路径为本库自绘（16 视口），未赞描边 / 已赞实心由 CSS 按 `data-liked` 切换 */
   private renderLike(item: QueuedItem): HTMLElement {
     const like = document.createElement('span')
     like.className = 'like'
     like.setAttribute('part', 'like')
-    like.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${heartPath}</svg>`
+    like.innerHTML =
+      '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' +
+      '<path d="M8 13.4 C6.1 11.8 2.9 9.3 2.9 6.6 C2.9 4.9 4.2 3.7 5.8 3.7 C6.7 3.7 7.5 4.1 8 4.8 C8.5 4.1 9.3 3.7 10.2 3.7 C11.8 3.7 13.1 4.9 13.1 6.6 C13.1 9.3 9.9 11.8 8 13.4 Z" />' +
+      '</svg>'
     this.syncLikeA11y(like, item)
     return like
   }
