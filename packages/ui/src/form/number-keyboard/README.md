@@ -8,3 +8,9 @@
 4. **破坏性选项**：无破坏性默认项；`readonly` 只读、`disabled` 禁用，均不产生数据变更。
 5. **键盘可达 / ARIA**：按键为原生 `<button>`（Tab + Enter/Space）；容器 `role="group"` 带可读名称，删除/完成键有 `aria-label`；组件内聚焦时支持物理键盘（数字/字母/Backspace），`aria-disabled` / `aria-readonly` 同步。
 6. **受控 / 非受控与宿主桥接**：`value` 是唯一值通道，宿主可任意时刻改写（组件不缓存副本）；写回走 `setAttribute`，Vue/React 均可监听 attribute/事件桥接。
+
+## extra-key 增量（能力补强批）
+
+- xtra-key：数字区右侧附加键（身份证 X 之类），单字符或 JSON 字符串数组，最多 2 个（超出截断 + devWarn 一次，同原文去重）；0 键自动收窄让位（grid-column 收缩，0 至少保留 1 格）。
+- 附加字符并入物理键盘白名单（按声明原样追加，多字符键只能屏上点）。
+- 非法 JSON devWarn 并忽略（键盘照常工作）；缺省通道与现状逐字节等价（无附加键、0 键横跨三列）。

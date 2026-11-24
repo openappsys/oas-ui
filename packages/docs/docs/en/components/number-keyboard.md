@@ -63,6 +63,15 @@ While focus is inside the component, a physical keyboard works too: digits (plus
 | `oas-delete` | The last character is removed (not emitted when empty) | `{ value }` |
 | `oas-done` | The done key is pressed | `{ value }` |
 
+## Extra keys (`extra-key`)
+
+`extra-key` attaches extra keys to the right side of the digit area (an ID-card "X" key and the like): a single character or a JSON string array (at most 2; extras beyond that are truncated with a warning); the 0 key narrows automatically to make room. Extra characters join the physical-keyboard whitelist too (what is on screen can be typed):
+
+<DemoBlock title="ID-card X key">
+  <oas-number-keyboard id="nk-extra-en" extra-key="X" maxlength="18"></oas-number-keyboard>
+  <p id="nk-extra-out-en" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Click X or a digit key to see the value.</p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -90,6 +99,19 @@ onMounted(() => {
   plate?.addEventListener('oas-input', (e) => showPlate(e.detail))
   plate?.addEventListener('oas-delete', (e) => showPlate(e.detail))
 
+  // 附加键（身份证 X）
+  const extra = document.getElementById('nk-extra')
+  const extraOut = document.getElementById('nk-extra-out')
+  const showExtra = (detail) => log(extraOut, `value：${detail.value || '（空）'}`)
+  extra?.addEventListener('oas-input', (e) => showExtra(e.detail))
+  extra?.addEventListener('oas-delete', (e) => showExtra(e.detail))
+
+  const extraEn = document.getElementById('nk-extra-en')
+  const extraOutEn = document.getElementById('nk-extra-out-en')
+  const showExtraEn = (detail) => log(extraOutEn, `value: ${detail.value || '(empty)'}`)
+  extraEn?.addEventListener('oas-input', (e) => showExtraEn(e.detail))
+  extraEn?.addEventListener('oas-delete', (e) => showExtraEn(e.detail))
+
   const ev = document.getElementById('nk-event')
   const evOut = document.getElementById('nk-event-out')
   ev?.addEventListener('oas-input', (e) => log(evOut, `oas-input: ${e.detail.value} (key ${e.detail.key})`))
@@ -107,6 +129,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabled` | Disabled: all keys disabled and no events are dispatched | `boolean` | — |
+| `extra-key` | Extra keys attached to the right side of the digit area (an ID-card X key and the like) — a single character or a JSON string array (at most 2, extras truncated with a devWarn); the 0 key narrows automatically; extra characters join the physical-keyboard whitelist | — | — |
 | `layout` | Keyboard layout: `number` (default) / `plate` (license plate: province + letters + digits) | `string` | `number` |
 | `maxlength` | Max length in characters (province abbreviations count as one); 0 or absent = unlimited | `string` | `0` |
 | `random` | Shuffle the digit key order (secure keypad); reorders when toggled | `boolean` | — |

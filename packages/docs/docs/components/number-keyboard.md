@@ -57,6 +57,15 @@ description: 数字键盘：随机乱序安全键盘、完成/删除键、车牌
   <p id="nk-event-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">等待输入…</p>
 </DemoBlock>
 
+## 附加键 extra-key
+
+`extra-key` 在数字区右侧挂附加键（身份证 X 键之类）：单个字符或 JSON 字符串数组（最多 2 个，超出截断并告警）；0 键自动收窄让位。附加字符同样并入物理键盘白名单（屏上有键，物理键盘就能打）：
+
+<DemoBlock title="身份证 X 键">
+  <oas-number-keyboard id="nk-extra" extra-key="X" maxlength="18"></oas-number-keyboard>
+  <p id="nk-extra-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">点 X 或数字键查看 value。</p>
+</DemoBlock>
+
 | 事件 | 时机 | detail |
 | --- | --- | --- |
 | `oas-input` | 追加一个字符 | `{ value, key }` |
@@ -94,6 +103,13 @@ onMounted(() => {
   plate?.addEventListener('oas-input', (e) => showPlate(e.detail))
   plate?.addEventListener('oas-delete', (e) => showPlate(e.detail))
 
+  // 附加键（身份证 X）
+  const extra = document.getElementById('nk-extra')
+  const extraOut = document.getElementById('nk-extra-out')
+  const showExtra = (detail) => log(extraOut, `value：${detail.value || '（空）'}`)
+  extra?.addEventListener('oas-input', (e) => showExtra(e.detail))
+  extra?.addEventListener('oas-delete', (e) => showExtra(e.detail))
+
   // 事件演示
   const ev = document.getElementById('nk-event')
   const evOut = document.getElementById('nk-event-out')
@@ -112,6 +128,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `disabled` | 禁用：按键全部禁用且不派发事件 | `boolean` | — |
+| `extra-key` | 附加键（挂数字区右侧，如身份证 X 键）——单个字符或 JSON 字符串数组（最多 2 个，超出截断并 devWarn 一次）；0 键自动收窄让位；附加字符并入物理键盘白名单 | — | — |
 | `layout` | 键盘布局：`number`（默认）/ `plate`（车牌号：省份简称 + 字母 + 数字） | `string` | `number` |
 | `maxlength` | 长度上限（按字符计数，支持中文省份简称）；缺省 0 = 不限 | `string` | `0` |
 | `random` | 数字键随机乱序（安全键盘）；切换时重新排列 | `boolean` | — |

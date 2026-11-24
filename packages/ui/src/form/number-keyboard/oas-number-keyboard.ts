@@ -12,6 +12,9 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `maxlength`：长度上限（按字符计数，支持中文省份简称）；缺省/0 = 不限
  * - `random`：布尔，数字键随机乱序（安全键盘）；切换时重新排列，随机源可被 `randomize()` 刷新
  * - `layout`：`number`（默认）/ `plate`（车牌号布局：省份简称 + 字母 + 数字）；非法值回落 number
+ * - `extra-key`：附加键（挂数字区右侧，如身份证 X 键）——单个字符（`extra-key="X"`）或
+ *   JSON 字符串数组（`extra-key='["X","港"]'`）；最多 2 个（超出截断并 devWarn 一次），
+ *   附加字符同时并入物理键盘白名单；非法 JSON devWarn 并忽略
  * - `disabled`：禁用（按键禁用、不派发事件）
  * - `readonly`：只读（按键可聚焦但不改动 value，仍可派发 `oas-done`）
  *
@@ -203,6 +206,13 @@ const STYLE = `
   grid-column: 1 / span 3;
   grid-row: 4;
 }
+/* 附加键挂数字区右侧：0 键收窄让位（1 键 span 2 / 2 键 span 1，0 至少保留 1 格） */
+.pad[data-extra-count='1'] .key-zero {
+  grid-column: 1 / span 2;
+}
+.pad[data-extra-count='2'] .key-zero {
+  grid-column: 1 / span 1;
+}
 .plate-head {
   display: flex;
   align-items: center;
@@ -233,7 +243,7 @@ const STYLE = `
 
 export class OASNumberKeyboard extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'maxlength', 'random', 'layout', 'disabled', 'readonly']
+    return ['value', 'maxlength', 'random', 'layout', 'disabled', 'readonly', 'extra-key']
   }
 
   private kbEl: HTMLElement | null = null
@@ -247,8 +257,11 @@ export class OASNumberKeyboard extends OASElement {
   /** 已构建的布局与随机态指纹：指纹变化才重建按键 DOM（避免输入过程中丢焦点） */
   private builtLayout = ''
   private builtRandom = false
+  private builtExtraKey = ''
   /** 省份面板是否展开 */
   private provincesOpen = false
+  /** extra-key 非法/超限告警去重（同原文只 warn 一次） */
+  private warnedExtraKey = ''
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板（按键由 update 按布局生成） */
   private template(): string {
@@ -284,11 +297,13 @@ export class OASNumberKeyboard extends OASElement {
 
     const layout = this.resolveLayout()
     const random = this.hasAttr('random')
-    // 布局/随机态切换才重建按键 DOM；纯粹 value 变化不重建（不抢焦点）
-    if (layout !== this.builtLayout || random !== this.builtRandom) {
+    const extraKeyRaw = this.getAttr('extra-key')
+    // 布局/随机态/附加键切换才重建按键 DOM；纯粹 value 变化不重建（不抢焦点）
+    if (layout !== this.builtLayout || random !== this.builtRandom || extraKeyRaw !== this.builtExtraKey) {
       this.digitOrder = random ? shuffle(DIGITS) : [...DIGITS]
       this.builtLayout = layout
       this.builtRandom = random
+      this.builtExtraKey = extraKeyRaw
       this.buildKeys(layout)
     }
 
@@ -319,6 +334,48 @@ export class OASNumberKeyboard extends OASElement {
     if (VALID_LAYOUTS.includes(raw)) return raw as KeyboardLayout
     warnOnce(`[oas-number-keyboard] 非法 layout "${raw}"，已回落 number；合法值：number/plate`)
     return 'number'
+  }
+
+  /** 附加键上限：数字区右侧最多 2 键（0 键至少保留 1 格） */
+  static readonly MAX_EXTRA_KEYS = 2
+
+  /**
+   * 附加键解析：单字符（trim 后整体一个键）或 JSON 字符串数组；
+   * 非法 JSON / 非字符串项 devWarn 一次（同原文去重）并忽略；超出上限截断并告警。
+   */
+  private parseExtraKeys(): string[] {
+    const raw = this.getAttr('extra-key').trim()
+    if (raw === '') return []
+    let list: string[] = []
+    if (raw.startsWith('[')) {
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        if (!Array.isArray(parsed)) throw new Error('not-array')
+        list = parsed
+          .filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+          .map((s) => s.trim())
+      } catch {
+        if (this.warnedExtraKey !== raw) {
+          this.warnedExtraKey = raw
+          warnOnce(
+            `[oas-number-keyboard] extra-key="${raw}" 不是合法的字符串数组，已忽略；示例：extra-key="X" 或 extra-key='["X","港"]'`,
+          )
+        }
+        return []
+      }
+    } else {
+      list = [raw]
+    }
+    if (list.length > OASNumberKeyboard.MAX_EXTRA_KEYS) {
+      if (this.warnedExtraKey !== raw) {
+        this.warnedExtraKey = raw
+        warnOnce(
+          `[oas-number-keyboard] extra-key 最多 ${OASNumberKeyboard.MAX_EXTRA_KEYS} 个，已截断（数字区右侧空间有限，0 键至少保留 1 格）`,
+        )
+      }
+      list = list.slice(0, OASNumberKeyboard.MAX_EXTRA_KEYS)
+    }
+    return list
   }
 
   /** 构建按键 DOM（布局切换时整体重建；按键顺序取当前 digitOrder） */
@@ -370,14 +427,22 @@ export class OASNumberKeyboard extends OASElement {
     body.appendChild(this.createPad())
   }
 
-  /** 数字键区：3 列数字 + 右列功能键（删除 / 完成），0 键横跨三列 */
+  /** 数字键区：3 列数字 + 右列功能键（删除 / 完成），0 键横跨三列（有附加键时收窄让位） */
   private createPad(): HTMLElement {
     const pad = document.createElement('div')
     pad.className = 'pad'
     pad.setAttribute('part', 'pad')
+    const extras = this.parseExtraKeys()
+    if (extras.length > 0) pad.setAttribute('data-extra-count', String(extras.length))
     for (const key of this.digitOrder) {
       const btn = this.createKey(key, key)
       if (key === '0') btn.classList.add('key-zero')
+      pad.appendChild(btn)
+    }
+    // 附加键挂数字区右侧（0 键收窄让位；如身份证 X 键）
+    for (const extra of extras) {
+      const btn = this.createKey(extra, extra)
+      btn.dataset.extra = extra
       pad.appendChild(btn)
     }
     const del = this.createKey('', this.t('numberKeyboard.delete'))
@@ -454,13 +519,16 @@ export class OASNumberKeyboard extends OASElement {
     const isSingle = [...e.key].length === 1
     if (!isSingle) return
     // 物理键盘输入按当前布局的按键字符集过滤（与屏上键严格一致）：
-    // 车牌布局不含 I / O、数字布局只吃数字——屏上打不出的字符不许从物理键盘混进来
+    // 车牌布局不含 I / O、数字布局只吃数字——屏上打不出的字符不许从物理键盘混进来；
+    // extra-key 声明的附加字符同样并入白名单（屏上有键，物理键盘就能打，按声明的原样追加）
     const upper = e.key.toUpperCase()
     const plate = this.resolveLayout() === 'plate'
-    const allowed = plate ? PLATE_CHARS.has(upper) : /^[0-9]$/.test(e.key)
-    if (!allowed) return
+    const extras = this.parseExtraKeys()
+    const matchedExtra = extras.find((k) => k === e.key || k.toUpperCase() === upper)
+    const baseAllowed = plate ? PLATE_CHARS.has(upper) : /^[0-9]$/.test(e.key)
+    if (!baseAllowed && !matchedExtra) return
     e.preventDefault()
-    this.appendKey(upper)
+    this.appendKey(matchedExtra ?? upper)
   }
 
   /** 展开/收起省份面板（同一时刻只显示一种按键区） */
