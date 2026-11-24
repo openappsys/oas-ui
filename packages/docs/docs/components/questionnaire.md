@@ -112,7 +112,7 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
 `steps` 条目可直接写条件表达式，求值复用 `oas-schema-form` 的受限表达式引擎（同一套冻结语法：`{字段路径}` 取值、`== != > >= < <=`、`&& || !`、`in` / `contains()` 与文本 / 数学函数库；不引第三方依赖）：
 
 - `when`：条件不成立 → 该步自动隐藏（头部项、进度总数、导航、取值与校验一律按隐藏口径，`next()` 自动跳过）。表达式读取**跨步汇总答案**（含隐藏步——面板常驻、值保留）；作答变化时按依赖路径定向重算，未命中依赖的字段变化不触发整树重算。
-- `goto`：前进时按条件跳转——`{ when, target }`（`target` 为 0 起索引或步骤 `key`），或直接写 `target` 简写（条件恒成立）。命中时派发 `oas-goto`（`detail: { index, key?, from, target }`）后再切步；跳转仍走单步校验与 `oas-before-change`（可 veto）。目标步被条件隐藏时落到其后最近的可见步。
+- `goto`：前进时按条件跳转——`{ when, target }`（`target` 为 0 起索引或步骤 `key`），或直接写 `target` 简写（条件恒成立）。命中且切步成功（未被 `oas-before-change` 否决）后派发 `oas-goto`（`detail: { index, key?, from, target }`）；跳转仍走单步校验与 `oas-before-change`（可 veto）。目标步被条件隐藏时落到其后最近的可见步。
 - `conditions="false"`：关闭引擎，`when` / `goto` 全部失效，仅认宿主 `hidden`（完全由宿主控制分支时用）。
 - 与宿主 `hidden` **正交**：`hidden: true` 恒隐藏（宿主优先），`hidden: false` / 缺省才由 `when` 决定。
 - 容错：表达式语法错 / 未知函数一次性 `devWarn`，该条降级（`when` 不生效 = 步骤可见、`goto` 不跳转），不连坐其它步骤；宿主在 `oas-change` 里回写 `current` / 答案形成同步回环时，级联 8 轮截断并告警（不死循环）。
@@ -393,20 +393,14 @@ onMounted(() => {
       : '「发票信息」步已恢复显示'
   })
 
-  // 声明式条件与跳转：when 切步反馈 + goto 命中反馈
+  // 声明式条件与跳转：when 切步反馈 + goto 命中反馈（goto 在切步成功后派发，覆盖前一条 change 文案）
   const whenOut = document.getElementById('q-when-output')
-  let gotoJustNow = false
   document.getElementById('q-when')?.addEventListener('oas-goto', (e) => {
-    gotoJustNow = true
     whenOut.textContent = `goto 命中：第 ${e.detail.from + 1} 步 → 第 ${e.detail.index + 1} 步（中间可见步被跳过）`
   })
   document.getElementById('q-when')?.addEventListener('oas-change', (e) => {
     // 内层字段 oas-change 同名冒泡：只处理带 index 的切步事件
     if (typeof e.detail?.index !== 'number') return
-    if (gotoJustNow) {
-      gotoJustNow = false
-      return
-    }
     whenOut.textContent = `已到第 ${e.detail.index + 1} 步（条件步骤按答案自动显隐）`
   })
 
@@ -543,7 +537,7 @@ onMounted(() => {
 | --- | --- |
 | `oas-before-change` | 跳步前（按钮 / 头部点击 / next / prev / goto / 跳过）可取消；`detail: { index, key?, from }`，`preventDefault()` 否决本次跳转 |
 | `oas-change` | 切步成功后；`detail: { index, key? }` |
-| `oas-goto` | `steps[].goto` 条件成立、前进时直达目标步（先于 `oas-change` 派发）；`detail: { index, key?, from, target }`（`target` 为步骤条目里声明的原始引用） |
+| `oas-goto` | `steps[].goto` 条件命中且切步成功（未被 `oas-before-change` 否决）后派发；`detail: { index, key?, from, target }`（`target` 为步骤条目里声明的原始引用） |
 | `oas-score` | 评分重算后派发（作答变化 80ms 防抖，分数未变不派发）；`detail: { score }`。规则变更静默，宿主改规则后自行读只读 property `score` |
 | `oas-skip` | 跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复） |
 | `oas-step-validate` | 单步校验结束时；`detail: { index, key?, valid, errors }` |

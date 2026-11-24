@@ -3649,7 +3649,7 @@
       "oas-skip": "跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复）",
       "oas-submit": "末步完成（全部参与步校验通过）；`detail: { values }`（跨步汇总值，仅参与步——hidden / 已跳过步不计入）",
       "oas-values-change": "内层 oas-form 值变化事件自然冒泡转发（`detail: { name, value, values }`，values 为该步快照）；跨步汇总视图用 getValues()",
-      "oas-goto": "`steps[].goto` 条件成立、前进时直达目标步（先于 `oas-change` 派发）；`detail: { index, key?, from, target }`（`target` 为步骤条目里声明的原始引用）",
+      "oas-goto": "`steps[].goto` 条件命中且切步成功（未被 `oas-before-change` 否决）后派发；`detail: { index, key?, from, target }`（`target` 为步骤条目里声明的原始引用）",
       "oas-score": "评分重算后派发（作答变化 80ms 防抖，分数未变不派发）；`detail: { score }`。规则变更静默，宿主改规则后自行读只读 property `score`"
     },
     "slots": {

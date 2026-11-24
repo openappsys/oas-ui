@@ -3813,7 +3813,7 @@
       "oas-skip": "When an optional step is skipped; `detail: { index, key? }` (skipping never validates; the skipped step leaves the values/validation scope until revisited)",
       "oas-submit": "Finished on the last step (all participating steps validated); `detail: { values }` (merged across participating steps only — hidden / skipped steps excluded)",
       "oas-values-change": "Natural bubble-through of the inner oas-form value changes (`detail: { name, value, values }`, values is that step's snapshot); use getValues() for the merged view",
-      "oas-goto": "Fired when a `steps[].goto` condition holds and the advance jumps straight to the target step (before `oas-change`); `detail: { index, key?, from, target }` (`target` is the raw reference declared on the step)",
+      "oas-goto": "Fired after a `steps[].goto` condition hits and the move actually happens (not vetoed by `oas-before-change`); `detail: { index, key?, from, target }` (`target` is the raw reference declared on the step)",
       "oas-score": "Fired after the score is recomputed (debounced 80ms after answer changes; no event when the total is unchanged); `detail: { score }`. Rule changes stay silent — read the read-only `score` property afterwards"
     },
     "slots": {

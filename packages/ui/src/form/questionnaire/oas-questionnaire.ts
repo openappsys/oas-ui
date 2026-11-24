@@ -37,7 +37,7 @@ export interface QuestionnaireStep {
    * 依赖路径作答变化时重算。`conditions="false"` 关闭引擎后本字段失效 */
   when?: string
   /** 前进时的跳转目标：`{ when, target }`，或 `target` 简写（索引 / 步骤 key，条件恒成立）。
-   * 条件成立时 next()/主按钮直接跳到目标步（仍走单步校验与 oas-before-change） */
+   * 条件成立时 next()/主按钮直接跳到目标步（仍走单步校验与 oas-before-change；切步成功后派发 `oas-goto`） */
   goto?: StepGoto | number | string
 }
 
@@ -687,8 +687,9 @@ export class OASQuestionnaire extends OASElement {
    *   回环时不会死循环，代价是回环最后一轮的重算被丢弃）。
    */
   private scheduleReconcile(changedPath?: string): void {
-    const enabled = this.conditionsEnabled() && this.logic.when.length > 0
-    if (enabled && changedPath !== undefined && changedPath !== '') {
+    // 无 when 条件（或引擎关闭）：作答变化不影响可见性，零额外同步（与未启用引擎的路径等价）
+    if (!this.conditionsEnabled() || this.logic.when.length === 0) return
+    if (changedPath !== undefined && changedPath !== '') {
       const hit = affectedSteps(this.logic.when, changedPath)
       if (hit.length === 0) return
     }
@@ -1186,11 +1187,15 @@ export class OASQuestionnaire extends OASElement {
         this.busy = false
       }
     }
-    // 跳转规则（goto）：条件成立则直达目标步，否则按步骤顺序前进
+    // 跳转规则（goto）：条件成立则直达目标步，否则按步骤顺序前进。
+    // 事件在切步成功后派发——被 oas-before-change 否决的跳转不产生 oas-goto（避免误报）
     const jump = this.gotoTargetFrom(from)
     if (jump) {
-      this.emit('goto', { index: jump.target, ...this.keyOf(jump.target), from, target: jump.rule.target })
-      return this.moveTo(jump.target)
+      const moved = this.moveTo(jump.target)
+      if (moved) {
+        this.emit('goto', { index: jump.target, ...this.keyOf(jump.target), from, target: jump.rule.target })
+      }
+      return moved
     }
     return this.moveTo(target)
   }

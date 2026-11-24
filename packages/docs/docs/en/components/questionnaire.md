@@ -112,7 +112,7 @@ The two channels are **orthogonal**: `hidden: true` always hides (host wins), an
 A `steps` entry can carry a condition expression, evaluated by the restricted expression engine shared with `oas-schema-form` (same frozen grammar: `{field.path}` values, `== != > >= < <=`, `&& || !`, `in` / `contains()` plus the text and math function set; zero third-party dependencies):
 
 - `when`: a failing condition hides the step (header item, progress total, navigation, values and validation all follow the hidden scope, and `next()` skips it). Expressions read the **cross-step merged answers** (including hidden steps — panels stay mounted and keep their values); answer changes recompute only the conditions whose dependency paths are hit, so unrelated fields do not trigger a full re-render.
-- `goto`: jump on advance — `{ when, target }` where `target` is a 0-based index or a step `key`, or the bare `target` shorthand (condition always true). A hit emits `oas-goto` (`detail: { index, key?, from, target }`) and then moves; the jump still runs per-step validation and `oas-before-change` (vetoable). If the target is hidden by its own condition, the jump lands on the nearest visible step after it.
+- `goto`: jump on advance — `{ when, target }` where `target` is a 0-based index or a step `key`, or the bare `target` shorthand (condition always true). When a hit actually moves the flow (not vetoed by `oas-before-change`), `oas-goto` is emitted (`detail: { index, key?, from, target }`); the jump still runs per-step validation and `oas-before-change` (vetoable). If the target is hidden by its own condition, the jump lands on the nearest visible step after it.
 - `conditions="false"`: disables the engine — `when` / `goto` stop working and only the host `hidden` bit counts.
 - Orthogonality: `hidden: true` always hides (host wins); `hidden: false` / omitted lets `when` decide.
 - Fault tolerance: syntax errors / unknown functions produce one `devWarn` and downgrade that single clause (`when` no longer applies = step stays visible, `goto` does not jump); other steps are unaffected. If the host rewrites `current` / answers inside `oas-change` and forms a synchronous loop, the cascade is cut off after 8 rounds with a warning (no infinite loop).
@@ -393,20 +393,14 @@ onMounted(() => {
       : 'The "Invoice details" step is visible again'
   })
 
-  // Declarative conditions & jumps: step feedback + goto hit feedback
+  // Declarative conditions & jumps: step feedback + goto hit feedback (goto fires after a successful move, overwriting the change text)
   const whenOut = document.getElementById('q-when-output')
-  let gotoJustNow = false
   document.getElementById('q-when')?.addEventListener('oas-goto', (e) => {
-    gotoJustNow = true
     whenOut.textContent = `goto hit: step ${e.detail.from + 1} → step ${e.detail.index + 1} (skipped the visible steps in between)`
   })
   document.getElementById('q-when')?.addEventListener('oas-change', (e) => {
     // Inner fields emit oas-change too: only handle step changes (they carry index)
     if (typeof e.detail?.index !== 'number') return
-    if (gotoJustNow) {
-      gotoJustNow = false
-      return
-    }
     whenOut.textContent = `Now at step ${e.detail.index + 1} (conditional steps show/hide by answer)`
   })
 
@@ -543,7 +537,7 @@ onMounted(() => {
 | --- | --- |
 | `oas-before-change` | Fires before any jump (buttons / header clicks / next / prev / goto / skip), cancelable; `detail: { index, key?, from }` — `preventDefault()` vetoes the jump |
 | `oas-change` | After a successful step switch; `detail: { index, key? }` |
-| `oas-goto` | Fired when a `steps[].goto` condition holds and the advance jumps straight to the target step (before `oas-change`); `detail: { index, key?, from, target }` (`target` is the raw reference declared on the step) |
+| `oas-goto` | Fired after a `steps[].goto` condition hits and the move actually happens (not vetoed by `oas-before-change`); `detail: { index, key?, from, target }` (`target` is the raw reference declared on the step) |
 | `oas-score` | Fired after the score is recomputed (debounced 80ms after answer changes; no event when the total is unchanged); `detail: { score }`. Rule changes stay silent — read the read-only `score` property afterwards |
 | `oas-skip` | When an optional step is skipped; `detail: { index, key? }` (skipping never validates; the skipped step leaves the values/validation scope until revisited) |
 | `oas-step-validate` | After a per-step validation; `detail: { index, key?, valid, errors }` |

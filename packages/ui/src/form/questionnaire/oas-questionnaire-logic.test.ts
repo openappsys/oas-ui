@@ -209,6 +209,24 @@ describe('OASQuestionnaire 条件引擎（when / goto）', () => {
     expect(warn.mock.calls.map((call) => String(call[0])).join('\n')).toContain('未命中任何步骤 key')
   })
 
+  it('goto 被 oas-before-change 否决：不切步、不派发 oas-goto（事件只反映实际发生的跳转）', async () => {
+    const steps: QuestionnaireStep[] = [
+      { key: 'a', title: '甲', goto: 2 },
+      { key: 'b', title: '乙' },
+      { key: 'c', title: '丙' },
+    ]
+    const el = mount(steps, [panel('step-a', 'aa'), panel('step-b', 'bb'), panel('step-c', 'cc')])
+    const gotos = track(el, 'oas-goto')
+    const changes = track(el, 'oas-change')
+    el.addEventListener('oas-before-change', (e) => {
+      if ((e as CustomEvent<{ index: number }>).detail.index === 2) e.preventDefault()
+    })
+    await expect(el.next()).resolves.toBe(false)
+    expect(el.getAttribute('current') ?? '0').toBe('0')
+    expect(gotos).toEqual([])
+    expect(changes).toEqual([])
+  })
+
   // ---------- 守卫与降级 ----------
 
   it('循环守卫：宿主在 oas-change 里回写 current 形成回环时，级联 8 轮后停止并一次性告警', () => {
