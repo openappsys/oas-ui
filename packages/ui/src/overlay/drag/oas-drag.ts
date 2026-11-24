@@ -72,6 +72,11 @@ const KEY_STEP_FAST = 10
 /** 惯性衰减：每帧（16ms）保留的速度比例，低于 MIN_VELOCITY 停止 */
 const INERTIA_DECAY = 0.95
 const MIN_VELOCITY = 0.02
+/**
+ * 松手速度的「有效期」（ms）：最后一次 pointermove 采样距今超过它即视为已经停住，
+ * 速度按 0 处理——否则「快速拖一下 → 按住不动 → 松手」会带着停顿前的速度滑出去。
+ */
+const STALE_VELOCITY_MS = 100
 /** 惯性滑行帧数上限（约 1 秒）：长距离甩动不无限滑行，超出即收尾 */
 const MAX_COAST_FRAMES = 60
 const VALID_AXES: readonly string[] = ['both', 'x', 'y']
@@ -682,14 +687,30 @@ export class OASDrag extends OASElement {
     const drag = this.endPointerDrag(event)
     if (!drag) return
     this.hideSnapHint()
-    const willCoast = this.willCoast(drag.velocityX, drag.velocityY)
+    const { velocityX, velocityY } = this.releaseVelocity(drag, event)
+    const willCoast = this.willCoast(velocityX, velocityY)
     // 无惯性：松手即吸附落点（补一次 oas-drag，让宿主拿到吸附后的终值）
     if (!willCoast && this.applySnap()) {
       this.emit('drag', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
     }
     this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
     this.savePosition()
-    if (willCoast) this.startCoast(drag.velocityX, drag.velocityY)
+    if (willCoast) this.startCoast(velocityX, velocityY)
+  }
+
+  /**
+   * 松手时的起始速度：最后一次 pointermove 采样距今超过 `STALE_VELOCITY_MS` 视为「已经停住」，
+   * 速度归零（`willCoast` 自然为 false，吸附照做）。
+   *
+   * 浏览器在指针静止时不再派发 pointermove，所以「先甩一下再按住不动」的最后一次采样会停在
+   * 甩动那一刻；不判时效就会拿陈旧速度滑出去。`timeStamp` 缺失/非法时保持原速度（向后兼容）。
+   */
+  private releaseVelocity(drag: PointerDragState, event: Event): { velocityX: number; velocityY: number } {
+    const stamp = (event as PointerEvent).timeStamp
+    if (Number.isFinite(stamp) && stamp - drag.lastT > STALE_VELOCITY_MS) {
+      return { velocityX: 0, velocityY: 0 }
+    }
+    return { velocityX: drag.velocityX, velocityY: drag.velocityY }
   }
 
   /**

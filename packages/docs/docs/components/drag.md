@@ -54,7 +54,7 @@ description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针�
 
 ## 方向轴、惯性与位置播报
 
-`axis="x"` 限制为横向拖拽；`inertia` 松手滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停；`prefers-reduced-motion: reduce` 下瞬停）；`announce` 让位置变化经 `aria-live` 播报。
+`axis="x"` 限制为横向拖拽；`inertia` 松手滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停；最后一次速度采样距今超过 100ms 视为已停住、不滑行；`prefers-reduced-motion: reduce` 下瞬停）；`announce` 让位置变化经 `aria-live` 播报。
 
 <DemoBlock title="axis=&quot;x&quot; + inertia + announce">
   <div
@@ -172,7 +172,7 @@ onMounted(() => {
 | `axis` | 拖拽方向轴：`both`（缺省）/ `x` 仅横向 / `y` 仅纵向；非法值回落 `both` 并告警 | `string` | `both` |
 | `boundary` | 拖拽边界：`viewport`（缺省，视口）或 CSS 选择器（该元素的矩形；未命中告警一次并回落视口） | `string` | `viewport` |
 | `disabled` | 关闭拖拽：指针与键盘都不生效，并移除焦点停靠点 | `boolean` | — |
-| `inertia` | 松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停）；`prefers-reduced-motion: reduce` 下瞬停 | `boolean` | — |
+| `inertia` | 松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停；最后一次速度采样距今超过 100ms 视为已停住、不滑行）；`prefers-reduced-motion: reduce` 下瞬停 | `boolean` | — |
 | `keyboard` | 键盘微调：缺省开启（`tabindex="0"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭 | `string` | — |
 | `remember` | 把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级 | `boolean` | — |
 | `snap` | 吸附网格尺寸：正整数值为网格 px，字面量 `grid` = 8px；松手（含惯性收尾）时位移对齐到最近网格点，键盘微调不受影响 | `string` | — |

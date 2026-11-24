@@ -211,3 +211,90 @@ test('image-cropper：Alt+方向键平移图片，普通方向键仍移动裁剪
   expect(Number.parseFloat(afterPlain.frameStyle.left)).toBeLessThan(Number.parseFloat(afterAlt.frameStyle.left))
   expect(afterPlain.offset, '普通方向键不得平移图片').toEqual(afterAlt.offset)
 })
+
+// 修复批回归：抓取光标（grab）必须在图片加载完成后出现。
+// 真机 load 是异步事件、不经过 update()；只靠 update() 写入时该提示永远缺席。
+test('image-cropper：图片加载完成后舞台给出 grab 光标（异步 load 也要有提示）', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-square')
+  await page.waitForFunction(
+    () => {
+      const img = document.querySelector('#ic-square')!.shadowRoot!.querySelector<HTMLImageElement>('[part="image"]')!
+      return img.complete && img.naturalWidth > 0
+    },
+    { timeout: 15000 },
+  )
+  const state = await page.evaluate(() => {
+    const host = document.querySelector('#ic-square') as HTMLElement
+    const stage = host.shadowRoot!.querySelector<HTMLElement>('[part="stage"]')!
+    return {
+      pannable: stage.hasAttribute('data-pannable'),
+      cursor: getComputedStyle(stage).cursor,
+      // 加载完成后继续拖动仍要生效（提示不是纯装饰：拖一下必须真的动）
+      offsetBefore: { ...(host as HTMLElement & { offset: { x: number; y: number } }).offset },
+    }
+  })
+  expect(state.pannable, '加载完成后舞台必须标记可抓取').toBe(true)
+  expect(state.cursor, '可抓取提示必须是 grab 光标').toBe('grab')
+})
+
+// 修复批回归：舞台尺寸变化（ResizeObserver 路径）后位移必须按覆盖约束重新钳回，
+// 否则裁剪框内会露出舞台底色（尺寸变小后旧位移超出新可行区间）。
+test('image-cropper：舞台尺寸变小后位移钳回，裁剪框内不露舞台底色', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-pan')
+  await page.waitForFunction(
+    () => {
+      const img = document.querySelector('#ic-pan')!.shadowRoot!.querySelector<HTMLImageElement>('[part="image"]')!
+      return img.complete && img.naturalWidth > 0
+    },
+    { timeout: 15000 },
+  )
+  // 先把舞台撑高（可行区间随之变大），在「高阶状态」下把图片拖到纵向边界，
+  // 再把舞台压回原高度——此时旧位移超出新区间，必须被钳回。
+  const tallStyle = await page.addStyleTag({ content: '#ic-pan::part(stage) { height: 520px }' })
+  await page.waitForFunction(
+    () => {
+      const stage = document.querySelector('#ic-pan')!.shadowRoot!.querySelector<HTMLElement>('[part="stage"]')!
+      return stage.getBoundingClientRect().height > 500
+    },
+    { timeout: 5000 },
+  )
+  await page.evaluate(() => {
+    const host = document.querySelector('#ic-pan') as HTMLElement & { zoom: number }
+    host.zoom = 2
+  })
+  const start = await readCropper(page, '#ic-pan')
+  // 高位舞台下裁剪框左右各留 ~49px、上下仅 ~13px——从左侧空白带起拖才是平移（顶部会落进框内）
+  const sx = start.stage.left + 12
+  const sy = start.stage.top + start.stage.height / 2
+  await page.mouse.move(sx, sy)
+  await page.mouse.down()
+  await page.mouse.move(sx, sy + 600, { steps: 8 })
+  await page.mouse.up()
+  const dragged = await readCropper(page, '#ic-pan')
+  expect(dragged.offset.y, '前置：向下拖动确实平移了图片（位移增大）').toBeGreaterThan(start.offset.y)
+
+  // 压回原高度 → ResizeObserver 回调：帧变矮、可行区间收窄
+  await tallStyle.evaluate((el) => (el as Element).remove())
+  await page.waitForFunction(
+    () => {
+      const stage = document.querySelector('#ic-pan')!.shadowRoot!.querySelector<HTMLElement>('[part="stage"]')!
+      return stage.getBoundingClientRect().height < 400
+    },
+    { timeout: 5000 },
+  )
+  // RO 回调在布局之后异步到达：用 poll 等位移落定（回归时这里会超时并报同一句话）
+  await expect
+    .poll(async () => (await readCropper(page, '#ic-pan')).offset.y, {
+      message: '尺寸变小后位移必须被钳回（不得沿用旧区间）',
+      timeout: 5000,
+    })
+    .toBeLessThan(dragged.offset.y)
+  const resized = await readCropper(page, '#ic-pan')
+  // 用户可见口径：图片矩形仍完整包住裁剪框（框内不露舞台底色）
+  expect(resized.img.top, '裁剪框顶部不得露出舞台底色').toBeLessThanOrEqual(resized.frame.top + 0.5)
+  expect(resized.img.bottom).toBeGreaterThanOrEqual(resized.frame.bottom - 0.5)
+  expect(resized.img.left).toBeLessThanOrEqual(resized.frame.left + 0.5)
+  expect(resized.img.right).toBeGreaterThanOrEqual(resized.frame.right - 0.5)
+})

@@ -81,6 +81,18 @@ function stubStageRect(el: OASImageCropper): void {
   })) as Element['getBoundingClientRect']
 }
 
+/**
+ * 改舞台测量尺寸并走 ResizeObserver 的共同入口。
+ * happy-dom 的 ResizeObserver 不会因尺寸变化回调，因此直接调用组件抽出的 `handleStageResize()`
+ * （RO 回调与测试同一入口），保证测的是生产路径本身而不是替身。
+ */
+function resizeStage(el: OASImageCropper, width: number, height: number): void {
+  const s = stage(el)
+  Object.defineProperty(s, 'clientWidth', { value: width, configurable: true })
+  Object.defineProperty(s, 'clientHeight', { value: height, configurable: true })
+  ;(el as unknown as { handleStageResize(): void }).handleStageResize()
+}
+
 /** 滚轮事件：happy-dom 的 WheelEvent 不接收 clientX/clientY 初始值，显式补上（真实浏览器自带） */
 function wheelEvent(x: number, y: number, deltaY: number): WheelEvent {
   const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY })
@@ -422,10 +434,15 @@ describe('OASImageCropper', () => {
     expect(el.offset.y).toBeCloseTo(208, 5)
     el.setZoom(1)
     expect(el.offset.y, '缩小后可行区间收窄，位移必须钳回').toBeCloseTo(28, 5)
-    // 旋转 90°：图片占位尺寸交换，可行区间随之重算（不得抛错且仍在覆盖范围内）
+    // 旋转 90°：占位宽高互换 → 绘制 640×480，可行区间随之变成「纵向 ±168 / 横向 ±8」
+    // （旋转前纵向只有 ±28；拿旋转前的界当上界等于恒真，必须按新朝向重算）
     el.rotate()
-    expect(Number.isFinite(el.offset.y)).toBe(true)
-    expect(Math.abs(el.offset.y)).toBeLessThanOrEqual(28 + 1e-6)
+    expect(el.rotation).toBe(90)
+    dragOn(el, stage(el), 200, 100, 0, 5000)
+    expect(el.offset.y, '90° 纵向可行区间 (640-304)/2 = 168').toBeCloseTo(168, 5)
+    dragOn(el, stage(el), 200, 100, 5000, 0)
+    expect(el.offset.x, '90° 横向可行区间 (480-464)/2 = 8').toBeCloseTo(8, 5)
+    expect(el.offset.y, '横向拖动不得改动纵向位移').toBeCloseTo(168, 5)
   })
 
   it('Alt+方向键平移图片（1px / Shift 10px），裁剪框不动；reset() 归位 offset', () => {
@@ -459,5 +476,79 @@ describe('OASImageCropper', () => {
     const wheel = wheelEvent(240, 300, -100)
     expect(stage(disabled).dispatchEvent(wheel), '禁用态不接管滚轮').toBe(true)
     expect(disabled.zoom).toBe(1)
+  })
+
+  // ---------------------------------------------------------------------------
+  // 修复批回归（R1 补审）：舞台尺寸变化钳回 / 加载后光标提示 / 单击噪声 / 非主键 / 多指针
+  // ---------------------------------------------------------------------------
+
+  it('舞台尺寸变化（ResizeObserver 路径）后位移按新区间钳回，图片仍覆盖裁剪框', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    el.setZoom(2)
+    // 480×320 舞台 + 2× → 绘制 800×600×(0.6×2)=960×720；帧 464×304 → 纵向可行 (720-304)/2 = 208
+    dragOn(el, stage(el), 200, 100, 0, 5000)
+    expect(el.offset.y, '前置：已拖到旧区间的纵向边界').toBeCloseTo(208, 5)
+    // 舞台变窄（容器 / 视口变化）：fit 由「按宽」变成「按高」，绘制高 720 → 640，可行区间收窄
+    resizeStage(el, 400, 320)
+    expect(el.offset.y, '尺寸变化后必须钳回新区间 (640-304)/2 = 168').toBeCloseTo(168, 5)
+    // 覆盖约束：|offset| + 帧高/2 ≤ 绘制高/2
+    expect(Math.abs(el.offset.y) + 304 / 2).toBeLessThanOrEqual(640 / 2 + 1e-6)
+    // 钳回后的位移必须落到图片 transform 上（用户可见，不是内部数值自嗨）
+    expect(image(el).style.transform).toContain('translate(0px, 168px)')
+  })
+
+  it('图片异步加载完成后补上平移光标提示（happy-dom 对 data: URL 同步派发 load，真机是异步的）', () => {
+    // 相对路径在 happy-dom 里不会同步取到图 —— 等价真机「update() 已跑完、load 尚未到达」的时刻
+    const el = mount({ src: '/not-loaded-yet.png' })
+    expect(stage(el).hasAttribute('data-pannable'), '加载完成前舞台不得可抓取').toBe(false)
+    // 真机时序：update() 时 loaded=false，随后异步 load 到达；提示必须不依赖 update() 再次执行
+    loadImage(el)
+    expect(stage(el).hasAttribute('data-pannable'), '加载完成后舞台必须给出 grab 光标提示').toBe(true)
+    // 破图回退：错误态不得残留可抓取提示
+    image(el).dispatchEvent(new Event('error'))
+    expect(stage(el).hasAttribute('data-pannable'), '错误态不得残留 grab 光标').toBe(false)
+  })
+
+  it('框外单击（无位移）不派发 oas-change；真拖动仍派发一次', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    const events: Array<{ zoom: number; rotation: number; offset: { x: number; y: number } }> = []
+    el.addEventListener('oas-change', (e) =>
+      events.push((e as CustomEvent<{ zoom: number; rotation: number; offset: { x: number; y: number } }>).detail),
+    )
+    stage(el).dispatchEvent(pointerEvent('pointerdown', 200, 100))
+    stage(el).dispatchEvent(pointerEvent('pointerup', 200, 100))
+    expect(events, '单击不是一次位移变化').toHaveLength(0)
+    dragOn(el, stage(el), 200, 100, 0, 10)
+    expect(events, '真拖动仍派发一次').toHaveLength(1)
+    // 事件携带的终值与属性一致（不是空壳事件）
+    expect(events[0]).toMatchObject({ zoom: 1, rotation: 0, offset: { x: 0, y: 10 } })
+  })
+
+  it('非主键（右键 / 中键）按下不平移图片', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stage(el).dispatchEvent(pointerEvent('pointerdown', 200, 100, { button: 2 }))
+    stage(el).dispatchEvent(pointerEvent('pointermove', 200, 140))
+    expect(el.offset, '右键按下不得进入平移').toEqual({ x: 0, y: 0 })
+    stage(el).dispatchEvent(pointerEvent('pointerup', 200, 140))
+    // 裁剪框拖拽同样只认主键
+    const before = frameBox(el)
+    frame(el).dispatchEvent(pointerEvent('pointerdown', 200, 100, { button: 2 }))
+    frame(el).dispatchEvent(pointerEvent('pointermove', 180, 100))
+    expect(frameBox(el), '右键不得拖动裁剪框').toEqual(before)
+  })
+
+  it('第二根指针按下不覆盖进行中的平移会话', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stage(el).dispatchEvent(pointerEvent('pointerdown', 200, 100))
+    stage(el).dispatchEvent(pointerEvent('pointermove', 200, 110))
+    expect(el.offset.y).toBeCloseTo(10, 5)
+    // 另一根手指（不同 pointerId）落下：不得重置进行中的起点
+    stage(el).dispatchEvent(pointerEvent('pointerdown', 200, 50, { pointerId: 2 }))
+    stage(el).dispatchEvent(pointerEvent('pointermove', 200, 115, { pointerId: 2 }))
+    expect(el.offset.y, '会话起点仍以第一指针为准（100 → 115 = 15）').toBeCloseTo(15, 5)
   })
 })

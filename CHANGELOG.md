@@ -131,6 +131,18 @@
 
 ### 修复
 
+**组件完善批 3 修复批（review 补审收口：平移覆盖约束 / 光标提示 / 惯性陈旧速度）**
+
+- **oas-image-cropper 舞台尺寸变化后位移未按覆盖约束重钳**：`ResizeObserver` 回调此前只重测尺寸并同步样式，位移可行区间随舞台变化后不重新钳制——舞台变矮时裁剪框内露出舞台底色。现抽出 `handleStageResize()`（RO 回调与单测共同入口）：重测 → 重排裁剪框 → `applyOffset` 重钳。单测 +1（舞台 480×320 → 400×320，位移 208 → 168）。
+- **oas-image-cropper 加载完成缺平移光标提示**：`data-pannable`（`cursor: grab`）此前只在 `update()` 里写，而 `load` 是异步事件、不会触发 `update()`——真机上图片加载完成后舞台始终没有抓取光标（happy-dom 对 `data:` URL 同步派发 load，掩盖了该时序）。现抽出 `syncPannable()`，`onImageLoad` / `onImageError` 一并调用（错误态不残留提示）。单测 +1。
+- **oas-image-cropper 框外单击派噪声事件**：平移会话记录 `moved`，按下即抬起（位移未变）不再派 `oas-change`；`pointercancel` 同口径（没动过就没有「回退」）。单测 +1。
+- **oas-image-cropper 非主键与多指针**：右键 / 中键按下不再平移图片或移动裁剪框（对齐 oas-drag 的主键口径）；已有会话在跑时新指针落下不抢占（第二根手指不再改写起点造成坐标跳变）。单测 +2。
+- **oas-image-cropper 旋转回归断言改按新朝向**：原用例拿旋转前的可行上界（±28）当旋转后的断言上界，恒真无判别力；改为按 90° 绘制 640×480 推导的精确界（纵向 ±168 / 横向 ±8）。
+- **oas-image-cropper README**：取消路径与尺寸变化口径同步（`pointercancel` 只有真动过才补一次同值 `oas-change`）。
+- **oas-drag 停顿后松手仍滑行**：惯性起始速度此前无条件复用最后一次 pointermove 采样——「快速拖一下 → 按住不动 → 松手」会带着停顿前的速度滑出去。现该采样距今超过 100ms 视为已停住、速度归零（`willCoast` 自然为 false，落点吸附照做）。单测 +3（停顿不滑行 / 停顿仍吸附 / 快速松手仍滑行）；zh/en 文档与 API 语料同步。
+- **oas-sku 反复开合累积断开清理**：`scheduleSheetHide` 每次关闭都追加一条 `onCleanup` 注册——`cleanupFns` 随开合次数单调增长。现改为成员句柄，断连清理在 `bind()` 里一次性注册（待生效的隐藏收尾仍随断连取消）。单测 +1。
+- **oas-sku `oas-close` 文档口径**：明确它是承载件**透传**事件（组件收到后已自行收起，宿主无需处理，仅用于观测 / 埋点）；zh/en 文档与 api 语料同步。
+
 **交易链路批 review 收口（滑动删除 / 失败图片 / 金额区 / 测试口径）**
 
 - **oas-cart 滑动指针捕获**：横向意图确立后捕获指针（`setPointerCapture`）——鼠标拖出列表范围松手也能收到 `pointerup` 正常结算，不再卡在半途（`data-dragging` 残留 + 位移停在最后一步）；纯点击不捕获，click 目标不受影响。`qa-regression/cart.spec.ts` +1（真实鼠标拖出列表松手，断言结算干净）。
