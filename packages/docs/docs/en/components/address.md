@@ -174,6 +174,7 @@ The component **does not bundle** region data; `regions` is the only contract (J
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../../.vitepress/theme/when-defined'
 onMounted(() => {
   const list = document.getElementById('address-list-demo')
   const listInfo = document.getElementById('address-list-info')
@@ -197,21 +198,23 @@ onMounted(() => {
   ed?.addEventListener('oas-delete', (e) => {
     edInfo.textContent = `oas-delete: ${e.detail.id} — confirm via host popconfirm, then mutate items`
   })
-  // Custom validation hook (function property)
+  // Custom validation hook (function property; write after upgrade so the setter is not shadowed)
   const validatorDemo = document.getElementById('address-validator-demo')
   const validatorInfo = document.getElementById('address-validator-info')
-  if (validatorDemo) {
-    validatorDemo.validator = (key, value) => {
-      if (key === 'phone' && value.endsWith('00000000')) return 'This phone number is blocked'
-      return null
+  whenTagDefined('oas-address', () => {
+    if (validatorDemo) {
+      validatorDemo.validator = (key, value) => {
+        if (key === 'phone' && value.endsWith('00000000')) return 'This phone number is blocked'
+        return null
+      }
+      validatorDemo.addEventListener('oas-invalid', (e) => {
+        validatorInfo.textContent = `Custom validation failed: ${e.detail.fields.join(' / ')}`
+      })
+      validatorDemo.addEventListener('oas-submit', () => {
+        validatorInfo.textContent = 'Custom validation passed'
+      })
     }
-    validatorDemo.addEventListener('oas-invalid', (e) => {
-      validatorInfo.textContent = `Custom validation failed: ${e.detail.fields.join(' / ')}`
-    })
-    validatorDemo.addEventListener('oas-submit', () => {
-      validatorInfo.textContent = 'Custom validation passed'
-    })
-  }
+  })
 })
 </script>
 

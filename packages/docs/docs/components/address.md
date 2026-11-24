@@ -174,6 +174,7 @@ description: "地址簿：地址编辑表单（联系人 / 省市区三级联动
 
 <script setup>
 import { onMounted } from 'vue'
+import { whenTagDefined } from '../.vitepress/theme/when-defined'
 onMounted(() => {
   const list = document.getElementById('address-list-demo')
   const listInfo = document.getElementById('address-list-info')
@@ -197,21 +198,23 @@ onMounted(() => {
   ed?.addEventListener('oas-delete', (e) => {
     edInfo.textContent = `oas-delete：${e.detail.id}——确认归宿主（popconfirm），确认后改 items`
   })
-  // 自定义校验钩子（function property）
+  // 自定义校验钩子（function property；等升级完成再写 property，避免遮蔽 setter 丢数据）
   const validatorDemo = document.getElementById('address-validator-demo')
   const validatorInfo = document.getElementById('address-validator-info')
-  if (validatorDemo) {
-    validatorDemo.validator = (key, value) => {
-      if (key === 'phone' && value.endsWith('00000000')) return '该手机号已拉黑'
-      return null
+  whenTagDefined('oas-address', () => {
+    if (validatorDemo) {
+      validatorDemo.validator = (key, value) => {
+        if (key === 'phone' && value.endsWith('00000000')) return '该手机号已拉黑'
+        return null
+      }
+      validatorDemo.addEventListener('oas-invalid', (e) => {
+        validatorInfo.textContent = `含自定义校验失败：${e.detail.fields.join(' / ')}`
+      })
+      validatorDemo.addEventListener('oas-submit', () => {
+        validatorInfo.textContent = '自定义校验通过'
+      })
     }
-    validatorDemo.addEventListener('oas-invalid', (e) => {
-      validatorInfo.textContent = `含自定义校验失败：${e.detail.fields.join(' / ')}`
-    })
-    validatorDemo.addEventListener('oas-submit', () => {
-      validatorInfo.textContent = '自定义校验通过'
-    })
-  }
+  })
 })
 </script>
 
