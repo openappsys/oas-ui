@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "totals": {
-    "components": 244,
+    "components": 247,
     "whitelist": 177,
-    "noSsr": 67
+    "noSsr": 70
   },
   "components": [
     {
@@ -4095,6 +4095,57 @@
       "reason": "pending",
       "parent": null,
       "note": "SSR 白名单化未立项（电商可捞件批新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-cart",
+      "family": "commerce",
+      "dir": "commerce/cart",
+      "className": "OASCart",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（交易链路批新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-order-card",
+      "family": "commerce",
+      "dir": "commerce/order-card",
+      "className": "OASOrderCard",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（交易链路批新组件，先登记 pending）",
+      "entry": null,
+      "hasTemplate": true,
+      "hasHydrate": false,
+      "unitTest": true,
+      "dsdFixture": false,
+      "docsZh": true,
+      "docsEn": true
+    },
+    {
+      "tag": "oas-product-card",
+      "family": "commerce",
+      "dir": "commerce/product-card",
+      "className": "OASProductCard",
+      "ssr": "no-ssr",
+      "reason": "pending",
+      "parent": null,
+      "note": "SSR 白名单化未立项（交易链路批新组件，先登记 pending）",
       "entry": null,
       "hasTemplate": true,
       "hasHydrate": false,

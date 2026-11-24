@@ -1,0 +1,60 @@
+{
+  "className": "OASProductCard",
+  "sourceFile": "packages/ui/src/commerce/product-card/oas-product-card.ts",
+  "attrs": [
+    {
+      "name": "image",
+      "observed": true
+    },
+    {
+      "name": "image-ratio",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "observed": true
+    },
+    {
+      "name": "price",
+      "observed": true
+    },
+    {
+      "name": "original-price",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "CNY",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "observed": true
+    },
+    {
+      "name": "layout",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [],
+  "slots": [
+    {
+      "name": "actions"
+    },
+    {
+      "name": "promo"
+    },
+    {
+      "name": "tags"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

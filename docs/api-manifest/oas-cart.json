@@ -1,0 +1,64 @@
+{
+  "className": "OASCart",
+  "sourceFile": "packages/ui/src/commerce/cart/oas-cart.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "CNY",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "delete-mode",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "CartItem[] | string",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-item-click",
+      "detail": "{ id, item: { ...row.item, quantity: row.quantity, selected: row.selected }, } satisfies CartItemClickDetail"
+    },
+    {
+      "name": "oas-remove"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ items: this.snapshot(rows), total: this.totalOf(rows), selectedCount, allSelected, indeterminate, } satisfies CartChangeDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions"
+    },
+    {
+      "name": "empty"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

@@ -4,6 +4,13 @@
 
 ### 新增
 
+**交易链路批：commerce 族新组件 ×3（购物车 / 订单卡片 / 商品卡片）**
+
+- **oas-cart（购物车列表）**：`items` JSON 数组驱动（attribute / property 双通道），条目 = 勾选（行选择）+ 内建数量步进（低于 1 钳到 1、超过 `maxQuantity` 钳到上限，到顶加号自动禁用）+ 删除（`delete-mode="button|swipe|none"`，滑动档向行首拖出删除钮且钮始终在 Tab 序、聚焦自动露出）。全选联动（全选框 `indeterminate` 半选态）+ 选中合计（`disabled` 条目恒不选中、不计合计、不参与全选判定）+ 选中计数。`oas-change`（detail `items/total/selectedCount/allSelected/indeterminate`）在勾选 / 全选 / 改数量 / 删除后派发；`oas-remove` **cancelable**（删除前拦下接确认框）；`oas-item-click` 进详情。用户交互后组件回写 `items`（非受控开箱即用，受控宿主忽略回写即可）；空态走 `empty` 插槽（缺省 i18n 文案）；图片缺失 / 加载失败回落虚线占位；`currency` / `locale` / `precision` 透传内嵌 `oas-price`，合计按 `precision` 收敛。条目增删 / 删除形态切换才重建列表，勾选 / 数量走增量同步（保焦点与滚动）。
+- **oas-order-card（订单卡片）**：`status-map` 声明式状态语义映射——`{ 键: { label, tone } }` 或字符串简写，`tone` 五档 default / primary / success / warning / danger（淡底 `color-mix` + `-text` 深档，双主题达 AA），未声明 `status` 原样显示、非法 `tone` 回落并告警一次。条目摘要（图 + 名 + 规格 ×数量，图片失败回落占位）+ 金额区（`payable` 实付 / `original` 划线原价 / `discount` 已优惠，三项全缺省则整体隐藏）+ `expandable` 折叠明细（`details` 插槽无内容不渲染按钮，`aria-expanded` + `aria-controls` 同步）+ `actions` 插槽按钮区；`oas-toggle` 在用户展开 / 收起后派发（宿主写 `expanded` 不派发）。
+- **oas-product-card（商品卡片）**：图片（`image-ratio` 支持 `16:9` / `4/3` / 数字，缺省 1:1，非法回落 + 告警一次；加载失败回落虚线占位）+ 标题两行截断（完整文本保留在 DOM 与悬浮提示，兼作图片 alt）+ 价格（`price` 现价 / `original-price` 划线价，透传 `currency` / `locale` / `precision`）+ `tags` / `promo` / `actions` 三插槽（空插槽自动收起）+ `layout="vertical|horizontal"`（横向图固定 104px 宽在行首）。
+- 三件统一复用 `<oas-price>` 做金额格式化；i18n 新增 `cart.*` / `orderCard.*` / `productCard.noImage` 共 16 键（16 语言全量同步，commerce 切片重新生成）；单测新增 46（cart 22 / order-card 14 / product-card 10）；zh/en 双语文档页 + 可交互 demo（含与 `oas-submit-bar` 的联动配方）+ 族注册（`families/commerce.ts` / 全量入口 / `ssr.ts` 类导出 / `NOT_SSR` 台账）。
+
 **新组件能力补强批（15 条既有组件小增量，全部向后兼容：缺省/未启用路径与现状逐字节等价）**
 
 - **oas-submit-bar**：底部安全区（栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`，刘海屏/手势条自动避让）+ fixed 场景占位文档配方（宿主自加 `padding-bottom`，高度用 `--oas-submit-bar-height` token 对齐；sticky 布局本就占流无需占位）+ `tip` / `tip-icon` 提示行（运费/发票高频位；图标走注册表查表，未注册告警一次并跳过图标、文案照常可读）。单测 +5；zh/en 文档补「提示行」「安全区与占位」段与 demo。

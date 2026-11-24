@@ -5796,5 +5796,73 @@
     "slots": {
       "": "行模板（首个无 slot 属性的 template 元素；单元格即模板直接子元素）"
     }
+  },
+  "oas-cart": {
+    "attrs": {
+      "items": "条目 JSON 数组 `[{ id, image?, title, spec?, price, quantity?, selected?, maxQuantity?, disabled? }]`；缺 `id` 的条目被忽略，`price` 非法按 0 计并告警一次，`quantity` 缺省 1 并钳到 `[1, maxQuantity]`，`selected` 缺省 false，`disabled` 条目不计合计",
+      "currency": "ISO 4217 币种，默认 `CNY`（透传内嵌 `oas-price`）",
+      "locale": "金额格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
+      "precision": "金额小数位，默认 2（合计按此精度收敛后回传 detail）",
+      "disabled": "整体禁用（兼容 config-provider 注入禁用）：勾选 / 步进 / 删除 / 全选全部不可操作",
+      "delete-mode": "删除交互形态：`button`（缺省，行尾删除钮）/ `swipe`（向行首拖出删除钮，按钮始终在 Tab 序）/ `none`（不可删除）；非法值回落 `button` 并告警一次"
+    },
+    "events": {
+      "oas-change": "勾选 / 全选 / 改数量 / 删除后派发，`detail: { items, total, selectedCount, allSelected, indeterminate }`（`items` 为归一后条目，`total` 为选中合计）",
+      "oas-remove": "删除前派发（cancelable）：`detail: { item, items, total, selectedCount }`（`items` 为删除后列表）；`preventDefault()` 即取消本次删除，宿主可据此接确认框",
+      "oas-item-click": "点击条目主体（标题 / 规格 / 价格区）派发，`detail: { id, item }`，宿主据此进商品详情"
+    },
+    "slots": {
+      "empty": "空态内容（缺省渲染 i18n `cart.empty` 文案）",
+      "actions": "合计行右侧扩展位（结算按钮、优惠入口等）；空购物车时整行不渲染"
+    },
+    "props": {
+      "items": "条目数组：get+set 双通道（接受数组或 JSON 字符串，写即反射 `items` attribute）；用户交互后组件回写该属性并派发 `oas-change`，受控宿主忽略回写、按自己状态重新赋值即可"
+    }
+  },
+  "oas-order-card": {
+    "attrs": {
+      "order-id": "订单号（头部展示，缺省不渲染该位置）",
+      "status": "状态键（查 `status-map`）；未声明的键原样显示",
+      "status-map": "状态语义映射 JSON 对象 `{ 键: { label, tone } }`，也接受字符串简写 `{ 键: \"文案\" }`（等价 `tone: default`）；`tone` 五档 default / primary / success / warning / danger，非法值回落 default 并告警一次",
+      "items": "条目摘要 JSON 数组 `[{ image?, title, spec?, quantity? }]`；缺 `title` 的条目被忽略，`quantity` 缺省 1",
+      "payable": "实付金额（非负数值）；与 `original` / `discount` 全缺省时金额区整体隐藏",
+      "original": "优惠前金额（划线展示，交给内嵌 `oas-price` 的 `original` 通道）",
+      "discount": "已优惠金额（非负数值，连同 i18n `orderCard.discount` 文案展示）",
+      "currency": "ISO 4217 币种，默认 `CNY`",
+      "locale": "金额格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
+      "precision": "金额小数位，默认 2",
+      "expandable": "启用「展开明细」开关（`details` 插槽无内容时按钮不渲染）",
+      "expanded": "明细展开态：用户点击后组件回写该属性；宿主可直接写以预置展开（受控，不派发 oas-toggle）"
+    },
+    "events": {
+      "oas-toggle": "用户点击展开 / 收起后派发，`detail: { expanded, orderId }`；宿主改写 `expanded` 属性不派发"
+    },
+    "slots": {
+      "actions": "操作按钮区（付款 / 查看物流 / 再次购买等）",
+      "details": "展开明细内容（订单号、下单时间、收货信息等；无内容时展开按钮不渲染）"
+    },
+    "props": {
+      "items": "条目摘要：get+set 双通道（数组或 JSON 字符串），写即反射 `items` attribute",
+      "statusMap": "状态语义映射：get+set 双通道（对象或 JSON 字符串），写即反射 `status-map` attribute"
+    }
+  },
+  "oas-product-card": {
+    "attrs": {
+      "image": "图片地址（加载失败回落虚线占位框，换 `image` 值即重新尝试）",
+      "image-ratio": "图片宽高比：`16:9` / `4:3` / 单数字（`1.5`）；缺省 `1:1`，非法值回落 `1:1` 并告警一次",
+      "title": "商品标题（两行截断，完整文案保留在 DOM 与悬浮提示里；同时作为图片 alt）",
+      "price": "现价（非负数值）；与 `original-price` 都缺省时价格区隐藏",
+      "original-price": "划线原价（交给内嵌 `oas-price` 的 `original` 通道）",
+      "currency": "ISO 4217 币种，默认 `CNY`",
+      "locale": "金额格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
+      "precision": "金额小数位，默认 2",
+      "layout": "卡片形态：`vertical`（缺省，图在上）/ `horizontal`（图在行首，固定 104px 宽）；非法值回落 `vertical` 并告警一次"
+    },
+    "events": {},
+    "slots": {
+      "tags": "标签位（折扣 / 自营 / 包邮等，放 `oas-tag`）；空插槽自动收起",
+      "promo": "促销文案位（满减 / 秒杀倒计时等）；空插槽自动收起",
+      "actions": "按钮区（加入购物车 / 立即购买等）；空插槽自动收起"
+    }
   }
 }

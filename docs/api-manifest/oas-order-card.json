@@ -1,0 +1,87 @@
+{
+  "className": "OASOrderCard",
+  "sourceFile": "packages/ui/src/commerce/order-card/oas-order-card.ts",
+  "attrs": [
+    {
+      "name": "order-id",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "observed": true
+    },
+    {
+      "name": "status-map",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "observed": true
+    },
+    {
+      "name": "payable",
+      "observed": true
+    },
+    {
+      "name": "original",
+      "observed": true
+    },
+    {
+      "name": "discount",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "default": "CNY",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "observed": true
+    },
+    {
+      "name": "expandable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "OrderCardItem[] | string",
+      "api": true
+    },
+    {
+      "name": "statusMap",
+      "type": "OrderStatusMap | string",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-toggle",
+      "detail": "{ expanded, orderId: this.getAttr('order-id') } satisfies OrderToggleDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions"
+    },
+    {
+      "name": "details"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

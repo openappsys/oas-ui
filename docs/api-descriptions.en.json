@@ -6052,5 +6052,73 @@
     "slots": {
       "": "Row template (the first template element without a slot attribute; its direct children are the cells)"
     }
+  },
+  "oas-cart": {
+    "attrs": {
+      "items": "Item JSON array `[{ id, image?, title, spec?, price, quantity?, selected?, maxQuantity?, disabled? }]`; entries without `id` are ignored, an invalid `price` counts as 0 (warns once), `quantity` defaults to 1 and is clamped to `[1, maxQuantity]`, `selected` defaults to false, and `disabled` items never count towards the total",
+      "currency": "ISO 4217 currency, default `CNY` (forwarded to the nested `oas-price`)",
+      "locale": "Amount formatting locale; defaults to the document `<html lang>`, then `en`",
+      "precision": "Amount decimal places, default 2 (the total in `detail` is rounded with it)",
+      "disabled": "Disables the whole cart (honours config-provider injected disabled): selection, stepper, delete and select-all are all inert",
+      "delete-mode": "Delete affordance: `button` (default, trailing delete button) / `swipe` (drag towards the inline start to reveal the delete button, which stays in the tab order) / `none` (not deletable); invalid values fall back to `button` and warn once"
+    },
+    "events": {
+      "oas-change": "Fired after selecting, select-all, a quantity change or a deletion with `detail: { items, total, selectedCount, allSelected, indeterminate }`",
+      "oas-remove": "Fired before removal (cancelable) with `detail: { item, items, total, selectedCount }` (`items` is the list after removal); calling `preventDefault()` vetoes the removal so hosts can confirm first",
+      "oas-item-click": "Fired when an item body (title / spec / price) is clicked, `detail: { id, item }` — use it to open the product page"
+    },
+    "slots": {
+      "empty": "Empty-state content (defaults to the i18n `cart.empty` copy)",
+      "actions": "Extra area at the end of the summary row (checkout button, discounts, …); the whole row is hidden for an empty cart"
+    },
+    "props": {
+      "items": "Items: get+set accessor (accepts an array or a JSON string and reflects the `items` attribute). After a user interaction the component writes the result back and dispatches `oas-change`; controlled hosts ignore the write-back and re-assign their own state"
+    }
+  },
+  "oas-order-card": {
+    "attrs": {
+      "order-id": "Order number shown in the header (omitted leaves the slot empty)",
+      "status": "Status key looked up in `status-map`; unmapped keys are shown as-is",
+      "status-map": "Status semantics JSON object `{ key: { label, tone } }`, or the shorthand `{ key: \"copy\" }` (same as `tone: default`). Five tones: default / primary / success / warning / danger; invalid tones fall back to default and warn once",
+      "items": "Item summary JSON array `[{ image?, title, spec?, quantity? }]`; entries without `title` are ignored and `quantity` defaults to 1",
+      "payable": "Amount paid (non-negative number); when `original` and `discount` are absent too the whole amount area hides",
+      "original": "Pre-discount amount rendered struck through (uses the nested `oas-price` original channel)",
+      "discount": "Saved amount (non-negative number) shown with the i18n `orderCard.discount` copy",
+      "currency": "ISO 4217 currency, default `CNY`",
+      "locale": "Amount formatting locale; defaults to the document `<html lang>`, then `en`",
+      "precision": "Amount decimal places, default 2",
+      "expandable": "Turns on the details toggle (the toggle is not rendered when the `details` slot is empty)",
+      "expanded": "Expanded state: written back by the component after a user click; hosts may set it to preset the state (controlled, no `oas-toggle`)"
+    },
+    "events": {
+      "oas-toggle": "Fired after a user toggles the details, `detail: { expanded, orderId }`; host-side `expanded` writes do not fire it"
+    },
+    "slots": {
+      "actions": "Action buttons (pay, track shipment, buy again, …)",
+      "details": "Collapsible details content (order number, placed time, shipping info, …); no content means no toggle"
+    },
+    "props": {
+      "items": "Item summary: get+set accessor (array or JSON string) reflecting the `items` attribute",
+      "statusMap": "Status semantics: get+set accessor (object or JSON string) reflecting the `status-map` attribute"
+    }
+  },
+  "oas-product-card": {
+    "attrs": {
+      "image": "Image URL (a failed load falls back to the dashed placeholder; changing `image` retries)",
+      "image-ratio": "Media aspect ratio: `16:9` / `4:3` / a plain number (`1.5`); defaults to `1:1`, invalid values fall back to `1:1` and warn once",
+      "title": "Product title (clamped to two lines; the full text stays in the DOM and tooltip, and doubles as the image alt)",
+      "price": "Current price (non-negative number); when both this and `original-price` are absent the price area hides",
+      "original-price": "Struck-through original price (uses the nested `oas-price` original channel)",
+      "currency": "ISO 4217 currency, default `CNY`",
+      "locale": "Amount formatting locale; defaults to the document `<html lang>`, then `en`",
+      "precision": "Amount decimal places, default 2",
+      "layout": "Card form: `vertical` (default, image on top) / `horizontal` (image at the inline start, fixed 104px wide); invalid values fall back to `vertical` and warn once"
+    },
+    "events": {},
+    "slots": {
+      "tags": "Tag chips (discount, sold-by-us, free shipping, …) — collapses when empty",
+      "promo": "Promotional copy (discounts, flash-sale countdowns) — collapses when empty",
+      "actions": "Action buttons (add to cart, buy now, …) — collapses when empty"
+    }
   }
 }
