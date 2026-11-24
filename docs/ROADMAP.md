@@ -26,6 +26,15 @@
 | **P1 7 条** | submit-bar tip / coupon 分组与「不用券」出口 / coupon 多选 / number-keyboard 附加键 / barrage items+auto-play / share-sheet 描述 / address 自定义校验 | 📋 待开发 |
 | **P2 4 条** | rolling-text 方向与手动控制 / pin-input 说明栏 / goods-action 类型与自定义色 / address 区划编码档 | 📋 待开发 |
 
+## 未发布（v2.6.9 追加批：虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **批 A：大数组虚拟化 + 上传体验** | form-list/array-table 虚拟滚动 / image-picker 压缩+EXIF / cropper 触控板缩放 / number-keyboard 长按连删 | 📋 待开发 |
+| **批 B：交易链路闭环** | oas-cart 购物车 / oas-order-card 订单卡片 / oas-product-card 商品卡片（commerce 新组件 ×3） | 📋 待开发 |
+| **批 C：问卷引擎** | questionnaire 逻辑跳转谓词（复用 expr 引擎）/ 评分汇总（score-rules + oas-score） | 📋 待开发 |
+| **批 D：交互长尾** | coupon 多券叠加 / barrage 点赞·屏蔽 / drag 吸附点 / Z1·Z2 测试长尾 | 📋 待开发 |
+
 ## v2.6.9（文档站 SEO：语言机制去跳转化）
 
 | 范围 | 内容 | 状态 |

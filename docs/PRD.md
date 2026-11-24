@@ -123,6 +123,36 @@
 
 ---
 
+## 未发布：v2.6.9 追加批（虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾，用户批 2026-11-24）
+
+### 批 A：大数组虚拟化 + 上传体验（form 族增强）
+
+- **form-list / array-table 虚拟滚动** 📋：大数据集窗口化渲染（千行级数组表单），只渲染可视窗口 + overscan；行高动态测量；受控/校验/快照/name 重编号语义不变；与既有 `rows`/`min`/行操作共存。
+- **image-picker 自动压缩 + EXIF 方向** 📋：`compress`（quality / max-dimension）与 EXIF Orientation 修正（canvas 重绘），输出 File 通道不变；压缩元信息进 detail。
+- **image-cropper 触控板细粒度缩放** 📋：deltaMode 像素级缩放 + Ctrl/Cmd+滚轮步进保留（修复触控板跳变）。
+- **number-keyboard 长按连删** 📋：删除键长按 400ms 起连删（间隔递减），pointerup 释放停止。
+
+### 批 B：交易链路闭环（commerce 族新组件 ×3）
+
+- **oas-cart（购物车列表）** 📋：条目勾选 / 数量步进（步进器内建）/ 删除（滑动或按钮）/ 小计与全选联动 / 结算栏组合配方（与 goods-action / submit-bar）；`items` JSON 双通道 + `oas-change`（detail 含合计）。
+- **oas-order-card（订单卡片）** 📋：状态徽标（待付款/待发货/已完成…可配置语义映射）/ 条目摘要（图+名+规格×数量）/ 金额区 / 操作按钮区（插槽化）/ 展开明细。
+- **oas-product-card（商品卡片）** 📋：图（比例可选）/ 标题（两行截断）/ 价格（划线价+现价）/ 标签与促销位插槽 / 按钮区（插槽化）；横向/纵向两形态。
+
+### 批 C：问卷引擎（questionnaire 增强）
+
+- **逻辑跳转谓词引擎** 📋：steps 增加 `when` 表达式（复用 schema-form expr 引擎与依赖图），驱动步骤显隐 / 跳转目标 / 自动跳过；与宿主手动控制正交（可关闭）。
+- **评分汇总** 📋：`score-rules`（表达式 + 分值映射）+ 只读 `score` property + `oas-score` 事件（作答变化时重算）；评分题型由宿主组合（rate/scale 等既有件），引擎只做汇总。
+
+### 批 D：交互长尾与测试补齐
+
+- **coupon 多券叠加规则** 📋：`max-select` / 互斥组标记（`exclusive-group`）+ 组合校验事件。
+- **barrage 弹幕交互** 📋：per-item 点赞（`oas-like`）/ 屏蔽（关键字过滤 `banned-words`）。
+- **oas-drag 吸附点/网格** 📋：`snap`（targets 数组或 grid 尺寸）+ 吸附阈值与视觉提示。
+- **Z1 测试长尾** 📋：drag-start 真实拖拽 e2e / 模式组 RTL 键盘 e2e（随批 D time-select/drag 触达后自然覆盖，不足则补）。
+- **Z2 a11y 生成器断言结构化** 📋：页数硬编码改结构断言（随 V2 批已完成项核对，未完成则本批补）。
+
+---
+
 ## v2.6.9：文档站语言机制 SEO 改造
 
 **语言切换机制去跳转化，SEO 最优化**：任何 URL 对爬虫与用户呈现一致语言（URL 即真源），不再按浏览器语言自动改写。细分需求：
