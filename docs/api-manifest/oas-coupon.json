@@ -66,6 +66,16 @@
     {
       "name": "z-index",
       "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-count",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -102,7 +112,10 @@
     },
     {
       "name": "oas-select",
-      "detail": "{ code: coupon.code, coupon } satisfies CouponSelectDetail"
+      "detail": "{ codes: [...this.selectedCodes], coupons: this.parseList().filter((item) => this.selectedCodes.has(item.code)), } satisfies CouponMultiSelectDetail | { code: coupon.code, coupon } satisfies CouponSelectDetail | multiple ? { codes: [], coupons: [] } satisfies CouponMultiSelectDetail : { code: '', coupon: null } satisfies CouponSelectDetail"
+    },
+    {
+      "name": "oas-clear"
     }
   ],
   "slots": [],

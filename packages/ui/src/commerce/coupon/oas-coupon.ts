@@ -29,6 +29,13 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `trigger-text`：触发按钮文案（缺省 i18n `coupon.select`；已选券时显示所选面额）
  * - `open`：弹层开合（受控：宿主写 attribute / property 即生效且静默；用户交互与命令式
  *   `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）
+ * - `z-index`：弹层层级（数值叠加 `--oas-z-index-base`，缺省沿用层叠阶梯）
+ * - `multiple`：多选模式——选项变 checkbox，勾选即派发 `oas-select`（detail 为数组）且弹层
+ *   不自动关闭（由宿主决定何时收起）；触发按钮显示已选张数；缺省单选（行为不变）
+ * - `show-count`：可用 / 不可用分组标题带计数胶囊
+ *
+ * 列表弹层结构：「不使用优惠券」出口（`part="clear-entry"`）+ 可用 / 不可用两个分组
+ * （`part="group-head"` / `part="group-body"`，标题走 i18n，空组不渲染）。
  *
  * 方法：
  * - `openOverlay()` / `closeOverlay()`：命令式开合（幂等；派发 `oas-open-change`）
@@ -38,7 +45,10 @@ import { devWarn } from '../../shared/dev-warn.js'
  * 并反射 attribute），供框架把模板静态属性直接写成 property 时走同一份数据入口。
  *
  * 事件（bubbles + composed）：
- * - `oas-select`：选中可用券，detail `{ code, coupon }`，随后关闭弹层
+ * - `oas-select`：选中可用券派发。单选（默认）detail `{ code, coupon }` 并随后关闭弹层；
+ *   `multiple` 模式 detail `{ codes, coupons }`（数组，弹层不关）；「不使用优惠券」出口
+ *   派发空选——单选 `{ code: '', coupon: null }` / 多选 `{ codes: [], coupons: [] }`
+ * - `oas-clear`：点击「不使用优惠券」出口派发（紧随其后是空选 `oas-select`，两个事件成对）
  * - `oas-open-change`：交互/命令式开合，detail `{ open }`（受控属性写入不派发）
  *
  * a11y：触发按钮 `aria-haspopup="dialog"` + `aria-expanded`；弹层 `role="dialog"` +
@@ -65,7 +75,13 @@ export interface CouponData {
 
 export interface CouponSelectDetail {
   code: string
-  coupon: CouponData
+  coupon: CouponData | null
+}
+
+/** multiple 模式的 oas-select detail（数组契约；空选 = 两个空数组） */
+export interface CouponMultiSelectDetail {
+  codes: string[]
+  coupons: CouponData[]
 }
 
 export interface CouponOpenChangeDetail {
@@ -329,11 +345,65 @@ const STYLE = `
 .empty[hidden] {
   display: none;
 }
+/* ---------- 分组与出口 ---------- */
+.clear-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--oas-control-height-lg, 40px);
+  margin-block-end: var(--oas-space-1);
+  border: 1px dashed var(--oas-color-border-strong);
+  border-radius: var(--oas-radius-md);
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-md);
+  cursor: pointer;
+  transition:
+    color var(--oas-transition-fast) var(--oas-ease-out),
+    border-color var(--oas-transition-fast) var(--oas-ease-out),
+    background var(--oas-transition-fast) var(--oas-ease-out);
+}
+.clear-entry:hover {
+  color: var(--oas-color-primary-text);
+  border-color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.clear-entry:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding-block: var(--oas-space-2);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.group-count {
+  min-width: var(--oas-control-height-sm, 24px);
+  padding: 0 var(--oas-space-1);
+  border-radius: var(--oas-radius-lg);
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary-strong);
+  font-size: var(--oas-font-size-xs);
+  line-height: 1.4;
+  text-align: center;
+}
+.group-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+}
 
 @media (forced-colors: active) {
   .trigger:focus-visible,
   .close:focus-visible,
-  .option:focus-within {
+  .option:focus-within,
+  .clear-entry:focus-visible {
     outline: 1px solid CanvasText;
     outline-offset: 2px;
     box-shadow: none;
@@ -402,6 +472,8 @@ export class OASCoupon extends OASElement {
       'trigger-text',
       'open',
       'z-index',
+      'multiple',
+      'show-count',
     ]
   }
 
@@ -419,8 +491,12 @@ export class OASCoupon extends OASElement {
   private emptyEl: HTMLElement | null = null
   private closeEl: HTMLButtonElement | null = null
 
-  /** 已选券 code（列表模式）；空串 = 未选 */
+  /** 已选券 code（列表单选模式）；空串 = 未选 */
   private selectedCode = ''
+  /** 已选券 code 集（multiple 模式） */
+  private selectedCodes = new Set<string>()
+  /** 分组列表构建签名（list 原文 / 模式 / 计数 / 文案）；仅勾选变化时不重建 */
+  private renderedListSignature = ''
   /** 上一帧开合态（焦点迁移与关闭归还只在真实跳变时执行） */
   private lastOpen = false
   /** 打开前的焦点元素（关闭时归还） */
@@ -474,7 +550,7 @@ export class OASCoupon extends OASElement {
               <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${closePath}</svg>
             </button>
           </header>
-          <div class="list" part="list" role="radiogroup" aria-labelledby="${DIALOG_TITLE_ID}"></div>
+          <div class="list" part="list" aria-labelledby="${DIALOG_TITLE_ID}"></div>
           <div class="empty" part="empty" hidden></div>
         </section>
       </div>
@@ -501,6 +577,11 @@ export class OASCoupon extends OASElement {
     this.closeEl?.addEventListener('click', this.onCloseClick)
     this.panelEl?.addEventListener('keydown', this.onPanelKeydown)
     this.listEl?.addEventListener('change', this.onListChange)
+    // 「不使用优惠券」出口走容器事件委托：分组列表按签名重建后按钮是全新节点，
+    // 直连监听会随 replaceChildren 丢失；容器本身在静态模板里，委托监听永远有效
+    this.listEl?.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement | null)?.closest?.('[part="clear-entry"]')) this.onClearEntryClick()
+    })
     // 断开连接必须退栈并解锁（否则残留幽灵 Esc 层 + body 永久锁死）；
     // 重连走 bind() 重新注册，打开态由 syncOpenState 重新持锁
     this.onCleanup(() => this.releaseOverlay())
@@ -537,8 +618,8 @@ export class OASCoupon extends OASElement {
 
   /** 清空已选券（静默：不派发事件；供宿主重置选择状态） */
   clearSelection(): void {
-    if (this.selectedCode === '') return
     this.selectedCode = ''
+    this.selectedCodes.clear()
     this.update()
   }
 
@@ -573,14 +654,40 @@ export class OASCoupon extends OASElement {
     }
   }
 
-  /** 列表选择：仅可用券可选中，选中即派发并关闭 */
+  /** 列表选择：单选 radio（选中即派发并关闭）；multiple checkbox（切换派发数组、弹层不关） */
   private onListChange = (event: Event): void => {
     const input = event.target as HTMLInputElement | null
-    if (!input || input.type !== 'radio' || !input.value) return
+    if (!input || !input.value) return
     const coupon = this.parseList().find((item) => item.code === input.value)
     if (!coupon || coupon.status !== 'available') return
+    if (input.type === 'checkbox') {
+      if (input.checked) this.selectedCodes.add(coupon.code)
+      else this.selectedCodes.delete(coupon.code)
+      this.emit('select', {
+        codes: [...this.selectedCodes],
+        coupons: this.parseList().filter((item) => this.selectedCodes.has(item.code)),
+      } satisfies CouponMultiSelectDetail)
+      this.update()
+      return
+    }
     this.selectedCode = coupon.code
     this.emit('select', { code: coupon.code, coupon } satisfies CouponSelectDetail)
+    this.closeOverlay()
+    this.update()
+  }
+
+  /** 「不使用优惠券」出口：派发 oas-clear + 空选 oas-select（成对），随后关闭弹层 */
+  private onClearEntryClick = (): void => {
+    const multiple = this.hasAttr('multiple')
+    this.selectedCode = ''
+    this.selectedCodes.clear()
+    this.emit('clear')
+    this.emit(
+      'select',
+      multiple
+        ? ({ codes: [], coupons: [] } satisfies CouponMultiSelectDetail)
+        : ({ code: '', coupon: null } satisfies CouponSelectDetail),
+    )
     this.closeOverlay()
     this.update()
   }
@@ -689,23 +796,37 @@ export class OASCoupon extends OASElement {
     return ''
   }
 
-  /** 列表选项：原生 radio 承载键盘/方向键语义，卡面作为可点击标签内容 */
-  private renderOption(data: CouponData, currency: string, locale: string, index: number): HTMLElement {
+  /** 列表选项：原生 radio（单选）/ checkbox（multiple）承载键盘语义，卡面作为可点击标签内容 */
+  private renderOption(
+    data: CouponData,
+    currency: string,
+    locale: string,
+    index: number,
+    multiple: boolean,
+  ): HTMLElement {
     const label = document.createElement('label')
     label.className = 'option'
     label.setAttribute('part', 'option')
     label.setAttribute('data-status', data.status)
     label.setAttribute('data-code', data.code)
     const input = document.createElement('input')
-    input.type = 'radio'
+    input.type = multiple ? 'checkbox' : 'radio'
     input.className = 'option-input'
-    input.name = 'oas-coupon-choice'
+    input.setAttribute('part', 'option-input')
+    if (!multiple) input.name = 'oas-coupon-choice'
     input.value = data.code
     input.id = `oas-coupon-option-${index}`
     input.disabled = data.status !== 'available'
-    input.checked = data.code === this.selectedCode
+    input.checked = multiple ? this.selectedCodes.has(data.code) : data.code === this.selectedCode
     label.appendChild(input)
-    label.appendChild(this.renderCard(data, currency, locale, data.code === this.selectedCode))
+    label.appendChild(
+      this.renderCard(
+        data,
+        currency,
+        locale,
+        multiple ? this.selectedCodes.has(data.code) : data.code === this.selectedCode,
+      ),
+    )
     return label
   }
 
@@ -722,7 +843,8 @@ export class OASCoupon extends OASElement {
 
     if (listMode) {
       const selected = this.selectedCode ? list.find((item) => item.code === this.selectedCode) : undefined
-      this.triggerTextEl!.textContent = this.triggerLabel(list, locale, currency)
+      const multiple = this.hasAttr('multiple')
+      this.triggerTextEl!.textContent = this.triggerLabel(list, locale, currency, multiple)
       this.triggerEl.setAttribute(
         'aria-label',
         selected
@@ -733,7 +855,7 @@ export class OASCoupon extends OASElement {
       this.closeEl!.setAttribute('aria-label', this.t('coupon.close'))
       this.emptyEl!.textContent = this.t('coupon.empty')
       this.emptyEl!.hidden = list.length > 0
-      this.listEl!.replaceChildren(...list.map((item, i) => this.renderOption(item, currency, locale, i)))
+      this.renderListGroups(list, currency, locale, multiple)
     } else {
       this.cardHostEl.replaceChildren()
       const own = this.ownCoupon()
@@ -748,8 +870,81 @@ export class OASCoupon extends OASElement {
     this.syncOpenState()
   }
 
-  /** 触发按钮文案：已选券显示面额，否则 trigger-text / i18n */
-  private triggerLabel(list: CouponData[], locale: string, currency: string): string {
+  /**
+   * 列表弹层分组渲染：「不使用优惠券」出口 + 可用 / 不可用两组（空组不渲染标题）。
+   * `.list` 容器降级为 role="group"，radio 语义收进每个分组的 role="radiogroup"。
+   * 按「list 原文 / 模式 / 计数开关 / 组标题」签名重建——仅勾选态变化时跳过重建、
+   * 原位同步 checked（重建会打断多选的连续勾选）。
+   */
+  private renderListGroups(list: CouponData[], currency: string, locale: string, multiple: boolean): void {
+    const container = this.listEl
+    if (!container) return
+    container.setAttribute('role', 'group')
+    const signature = [
+      this.getAttr('list'),
+      multiple ? 'm' : 's',
+      this.hasAttr('show-count') ? 'c' : '',
+      this.t('coupon.groupAvailable'),
+      this.t('coupon.groupUnavailable'),
+      this.t('coupon.notUse'),
+    ].join('|')
+    if (signature !== this.renderedListSignature) {
+      this.renderedListSignature = signature
+      const available = list.filter((item) => item.status === 'available')
+      const unavailable = list.filter((item) => item.status !== 'available')
+      const fragments: HTMLElement[] = []
+
+      const clearEntry = document.createElement('button')
+      clearEntry.type = 'button'
+      clearEntry.className = 'clear-entry'
+      clearEntry.setAttribute('part', 'clear-entry')
+      clearEntry.textContent = this.t('coupon.notUse')
+      fragments.push(clearEntry)
+
+      let optionIndex = 0
+      for (const [title, items] of [
+        [this.t('coupon.groupAvailable'), available],
+        [this.t('coupon.groupUnavailable'), unavailable],
+      ] as const) {
+        if (items.length === 0) continue
+        const head = document.createElement('div')
+        head.className = 'group-head'
+        head.setAttribute('part', 'group-head')
+        const titleEl = document.createElement('span')
+        titleEl.className = 'group-title'
+        titleEl.textContent = title
+        head.appendChild(titleEl)
+        if (this.hasAttr('show-count')) {
+          const count = document.createElement('span')
+          count.className = 'group-count'
+          count.textContent = String(items.length)
+          head.appendChild(count)
+        }
+        const body = document.createElement('div')
+        body.className = 'group-body'
+        body.setAttribute('part', 'group-body')
+        body.setAttribute('role', multiple ? 'group' : 'radiogroup')
+        body.setAttribute('aria-label', title)
+        for (const item of items) body.appendChild(this.renderOption(item, currency, locale, optionIndex++, multiple))
+        fragments.push(head, body)
+      }
+      container.replaceChildren(...fragments)
+    }
+    // 勾选态原位同步（选中变化不重建 DOM，多选连续点击不丢节点）
+    for (const input of container.querySelectorAll<HTMLInputElement>('[part="option-input"]')) {
+      input.checked = multiple ? this.selectedCodes.has(input.value) : input.value === this.selectedCode
+      for (const card of [input.parentElement?.querySelector('[part="coupon"]')]) {
+        card?.toggleAttribute('data-selected', input.checked)
+      }
+    }
+  }
+
+  /** 触发按钮文案：单选已选显示面额；multiple 显示已选张数；否则 trigger-text / i18n */
+  private triggerLabel(list: CouponData[], locale: string, currency: string, multiple: boolean): string {
+    if (multiple) {
+      if (this.selectedCodes.size > 0) return this.t('coupon.selectedCount', { count: String(this.selectedCodes.size) })
+      return this.getAttr('trigger-text') || this.t('coupon.select')
+    }
     const selected = this.selectedCode ? list.find((item) => item.code === this.selectedCode) : undefined
     if (selected) return formatMoney(selected.amount, locale, currency)
     return this.getAttr('trigger-text') || this.t('coupon.select')

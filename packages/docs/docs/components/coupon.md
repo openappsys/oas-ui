@@ -65,6 +65,36 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
   </p>
 </DemoBlock>
 
+## 分组、计数与「不使用优惠券」出口
+
+列表弹层按可用 / 不可用分组渲染（标题走 i18n，空组不渲染）；`show-count` 让分组标题带计数胶囊。列表顶部固定「不使用优惠券」出口：点击派发 `oas-clear`，随后派发**空选** `oas-select`（单选 detail `{ code: '', coupon: null }`），并关闭弹层——宿主两个事件都能收到，按需取用：
+
+<DemoBlock title="分组 + 计数 + 出口">
+  <oas-coupon
+    id="cp-group"
+    show-count
+    list='[{"code":"g1","amount":30,"threshold":199},{"code":"g2","amount":10},{"code":"g3","amount":50,"status":"unavailable","reason":"未满 299 元可用"},{"code":"g4","amount":20,"status":"expired"}]'
+  ></oas-coupon>
+  <p id="cp-group-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    打开弹层查看分组；点「不使用优惠券」查看 oas-clear 反馈。
+  </p>
+</DemoBlock>
+
+## 多选 multiple
+
+`multiple` 让选项变成 checkbox：每次勾选 / 取消都派发 `oas-select`（detail 为数组 `{ codes, coupons }`），弹层**不自动关闭**（由宿主决定何时收起）；触发按钮显示已选张数。缺省单选不变（radio + 选中即关）：
+
+<DemoBlock title="多选券叠加">
+  <oas-coupon
+    id="cp-multi"
+    multiple
+    list='[{"code":"m1","amount":10},{"code":"m2","amount":20,"threshold":99},{"code":"m3","amount":5,"status":"expired"}]'
+  ></oas-coupon>
+  <p id="cp-multi-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    打开弹层勾选多张，每次勾选查看数组 detail。
+  </p>
+</DemoBlock>
+
 ## 命令式开合与清空选择
 
 `open` 是受控属性（宿主写 attribute / property 静默生效），`openOverlay()` / `closeOverlay()` 是命令式开合（派发 `oas-open-change`）；`clearSelection()` 清空已选券（静默，供宿主重置选择状态）。`z-index` 数值叠加在 `--oas-z-index-base` 之上（缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态），下方 demo 给 1300。
@@ -95,9 +125,11 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 | `end` | 有效期结束（`YYYY-MM-DD`） | — | — |
 | `list` | 选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态 | `CouponData[] \| string` | — |
 | `locale` | 金额与日期格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN` | — | — |
+| `multiple` | 多选模式：选项变 checkbox，每次勾选/取消派发数组 detail `{ codes, coupons }` 且弹层不自动关闭；缺省单选不变 | `boolean` | — |
 | `open` | 弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`） | `boolean \| string` | — |
 | `reason` | 不可用原因文案（`status="unavailable"` 时展示） | — | — |
 | `selected` | 选中态标记（供外层组合排版） | `boolean` | — |
+| `show-count` | 可用 / 不可用分组标题带计数胶囊 | `boolean` | — |
 | `start` | 有效期开始（`YYYY-MM-DD`） | — | — |
 | `status` | 状态：`available`（默认）/ `expired` / `used` / `unavailable`（未达门槛等） | `string` | `available` |
 | `threshold` | 使用门槛（数字，0 或缺省 = 无门槛） | — | — |
@@ -117,8 +149,9 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-clear` | 点击「不使用优惠券」出口派发（紧随其后是空选 oas-select，两个事件成对） |
 | `oas-open-change` | 交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发） |
-| `oas-select` | 选中可用券时派发，detail `{ code, coupon }`，随后关闭弹层 |
+| `oas-select` | 选中可用券时派发。单选（默认）detail `{ code, coupon }` 并随后关闭弹层；multiple 模式 detail `{ codes, coupons }`（数组，弹层不关）；「不使用优惠券」出口派发空选——单选 `{ code: 空串, coupon: null }` / 多选 `{ codes: [], coupons: [] }` |
 
 <script setup>
 import { onMounted } from 'vue'
@@ -127,6 +160,19 @@ onMounted(() => {
     const out = document.getElementById('cp-select-out')
     document.getElementById('cp-select')?.addEventListener('oas-select', (e) => {
       out.textContent = 'oas-select：券 ' + e.detail.code + '，面额 ' + e.detail.coupon.amount
+    })
+    const group = document.getElementById('cp-group')
+    const groupOut = document.getElementById('cp-group-out')
+    group?.addEventListener('oas-clear', () => {
+      groupOut.textContent = 'oas-clear：不使用优惠券（随后收到空选 oas-select）'
+    })
+    group?.addEventListener('oas-select', (e) => {
+      if (!e.detail.code) groupOut.textContent = 'oas-select 空选：{ code: \'\', coupon: null }'
+    })
+    const multi = document.getElementById('cp-multi')
+    const multiOut = document.getElementById('cp-multi-out')
+    multi?.addEventListener('oas-select', (e) => {
+      multiOut.textContent = 'oas-select 数组：[' + e.detail.codes.join(', ') + ']'
     })
     const api = document.getElementById('cp-api')
     document.getElementById('cp-open')?.addEventListener('click', () => {

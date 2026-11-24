@@ -65,6 +65,36 @@ Both forms share the same card rendering:
   </p>
 </DemoBlock>
 
+## Groups, counts and the "No coupon" exit
+
+The sheet list renders two groups — available / unavailable (titles via i18n; empty groups are skipped); `show-count` adds a count pill to each group title. A fixed "No coupon" exit sits at the top of the list: clicking it dispatches `oas-clear`, then an **empty-selection** `oas-select` (single-mode detail `{ code: '', coupon: null }`), and closes the sheet — the host receives both events and can use either:
+
+<DemoBlock title="Groups + counts + exit">
+  <oas-coupon
+    id="cp-group-en"
+    show-count
+    list='[{"code":"g1","amount":30,"threshold":199},{"code":"g2","amount":10},{"code":"g3","amount":50,"status":"unavailable","reason":"Requires a 299 order"},{"code":"g4","amount":20,"status":"expired"}]'
+  ></oas-coupon>
+  <p id="cp-group-out-en" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    Open the sheet to see the groups; click "No coupon" to see oas-clear feedback.
+  </p>
+</DemoBlock>
+
+## Multiple selection
+
+`multiple` turns the options into checkboxes: every toggle dispatches `oas-select` with an array detail (`{ codes, coupons }`), and the sheet **stays open** (the host decides when to close it); the trigger shows how many coupons are picked. The default single-select behavior is unchanged (radio + close on pick):
+
+<DemoBlock title="Stacking multiple coupons">
+  <oas-coupon
+    id="cp-multi-en"
+    multiple
+    list='[{"code":"m1","amount":10},{"code":"m2","amount":20,"threshold":99},{"code":"m3","amount":5,"status":"expired"}]'
+  ></oas-coupon>
+  <p id="cp-multi-out-en" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    Open the sheet and pick several coupons; each toggle shows the array detail.
+  </p>
+</DemoBlock>
+
 ## Imperative open/close and selection reset
 
 `open` is a controlled attribute (host attribute / property writes are silent); `openOverlay()` / `closeOverlay()` are the imperative calls (they dispatch `oas-open-change`), and `clearSelection()` clears the picked coupon silently for hosts that need to reset the selection. `z-index` adds a numeric level on top of `--oas-z-index-base` (the default keeps the `--oas-z-modal` step, same shape as modal / drawer); the demo below uses 1300.
@@ -91,9 +121,11 @@ Both forms share the same card rendering:
 | `end` | Validity end (`YYYY-MM-DD`) | — | — |
 | `list` | Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form | `CouponData[] \| string` | — |
 | `locale` | Amount and date formatting locale; defaults to the document `<html lang>`, then `en` | — | — |
+| `multiple` | Multiple mode: options become checkboxes; every toggle dispatches an array detail `{ codes, coupons }` and the sheet stays open; default single-select unchanged | `boolean` | — |
 | `open` | Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change) | `boolean \| string` | — |
 | `reason` | Reason text shown when `status="unavailable"` | — | — |
 | `selected` | Selected marker for outer layout composition | `boolean` | — |
+| `show-count` | Adds a count pill to the available / unavailable group titles | `boolean` | — |
 | `start` | Validity start (`YYYY-MM-DD`) | — | — |
 | `status` | Status: `available` (default) / `expired` / `used` / `unavailable` (minimum spend unmet, etc.) | `string` | `available` |
 | `threshold` | Minimum spend (number, 0 or absent = no minimum) | — | — |
@@ -113,8 +145,9 @@ Both forms share the same card rendering:
 
 | Event | Description |
 | --- | --- |
+| `oas-clear` | Dispatched when the No-coupon exit is clicked (immediately followed by an empty-selection oas-select; the two events come as a pair) |
 | `oas-open-change` | Dispatched on interaction or imperative open/close with `{ open }` (attribute writes are silent), `detail: { open: true } satisfies CouponOpenChangeDetail \| { open: false } satisfies CouponOpenChangeDetail` |
-| `oas-select` | Dispatched when an available coupon is selected with `{ code, coupon }`, then the sheet closes, `detail: { code: coupon.code, coupon } satisfies CouponSelectDetail` |
+| `oas-select` | Dispatched when an available coupon is picked. Single mode (default) detail `{ code, coupon }` and the sheet closes; multiple mode detail `{ codes, coupons }` (arrays, sheet stays open); the No-coupon exit dispatches an empty selection — single `{ code: empty string, coupon: null }` / multiple `{ codes: [], coupons: [] }` |
 
 <script setup>
 import { onMounted } from 'vue'
@@ -123,6 +156,19 @@ onMounted(() => {
     const out = document.getElementById('cp-select-out-en')
     document.getElementById('cp-select-en')?.addEventListener('oas-select', (e) => {
       out.textContent = 'oas-select: coupon ' + e.detail.code + ', amount ' + e.detail.coupon.amount
+    })
+    const group = document.getElementById('cp-group-en')
+    const groupOut = document.getElementById('cp-group-out-en')
+    group?.addEventListener('oas-clear', () => {
+      groupOut.textContent = 'oas-clear: no coupon (an empty-selection oas-select follows)'
+    })
+    group?.addEventListener('oas-select', (e) => {
+      if (!e.detail.code) groupOut.textContent = 'oas-select empty: { code: \'\', coupon: null }'
+    })
+    const multi = document.getElementById('cp-multi-en')
+    const multiOut = document.getElementById('cp-multi-out-en')
+    multi?.addEventListener('oas-select', (e) => {
+      multiOut.textContent = 'oas-select array: [' + e.detail.codes.join(', ') + ']'
     })
     const api = document.getElementById('cp-api-en')
     document.getElementById('cp-open-en')?.addEventListener('click', () => {
