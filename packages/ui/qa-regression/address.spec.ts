@@ -124,13 +124,22 @@ test('address 只读态：字段禁编辑但仍可聚焦复制，提交按钮禁
 })
 
 // C2 回归：`.button` 无 flex 布局时保存钮 spinner（inline span）1em 尺寸失效 → 4px 竖线
+// 几何用 offsetWidth/offsetHeight（layout 盒）：boundingBox() 是 rotate 动画的 AABB，
+// 恒方形膨胀，坏态竖线在特定相位也能伪装通过
 test('address：saving 态保存钮 spinner 是 1em 圆环（真实几何）', async ({ page }) => {
   await page.goto('/components/address.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-address')
 
-  const box = await page.locator('oas-address [part="save-spinner"]:not([hidden])').first().boundingBox()
-  expect(box?.width, 'spinner 存在且宽应 ≈1em 而非 4px').toBeGreaterThan(8)
-  expect(box?.height, 'spinner 高应 ≈1em 而非拉伸').toBeLessThan(30)
+  const geo = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-address')]
+      .map((n) => n.shadowRoot!.querySelector<HTMLElement>('[part="save-spinner"]:not([hidden])'))
+      .find(Boolean)!
+    return { w: el.offsetWidth, h: el.offsetHeight, radius: getComputedStyle(el).borderRadius }
+  })
+  expect(geo.w, 'spinner offsetWidth 应 ≈1em 而非 4px').toBeGreaterThan(8)
+  expect(geo.h, 'spinner offsetHeight 应 ≈1em 而非拉伸').toBeGreaterThan(8)
+  expect(geo.w, 'spinner layout 盒应为正方形（宽=高）').toBe(geo.h)
+  expect(geo.radius, 'border-radius 50% 出圆环').toBe('50%')
 })
 
 // I2 回归：deleting 曾挂重建签名——运行时切档整列表重建（丢焦点/滚动），且重建出的
@@ -166,13 +175,20 @@ test('address：运行时切 deleting 不重建列表，删除钮忙态（spinne
   expect(result.ariaBusy, 'aria-busy 应被写上').toBe('true')
   expect(result.spinnerVisible, '运行时切 deleting 删除钮应转圈').toBe(true)
 
-  // 真实几何：删除钮 spinner 非 4px 竖线
+  // 真实几何：删除钮 spinner 非 4px 竖线——同样用 offsetWidth/offsetHeight
+  //（boundingBox() 的 AABB 会被 rotate 动画膨胀，坏态可伪装）
   const box = await page
     .locator('#address-deleting-probe [part="card-delete-spinner"]:not([hidden])')
     .first()
-    .boundingBox()
-  expect(box?.width, '删除钮 spinner 存在且宽应 ≈1em').toBeGreaterThan(8)
-  expect(box?.height, '删除钮 spinner 高应 ≈1em').toBeLessThan(30)
+    .evaluate((el) => ({
+      w: (el as HTMLElement).offsetWidth,
+      h: (el as HTMLElement).offsetHeight,
+      radius: getComputedStyle(el).borderRadius,
+    }))
+  expect(box.w, '删除钮 spinner offsetWidth 应 ≈1em').toBeGreaterThan(8)
+  expect(box.h, '删除钮 spinner offsetHeight 应 ≈1em').toBeGreaterThan(8)
+  expect(box.w, 'spinner layout 盒应为正方形（宽=高）').toBe(box.h)
+  expect(box.radius, 'border-radius 50% 出圆环').toBe('50%')
 
   await page.evaluate(() => document.getElementById('address-deleting-probe')?.remove())
 })

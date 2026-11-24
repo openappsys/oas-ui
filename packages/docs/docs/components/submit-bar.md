@@ -76,7 +76,7 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
 
 ## 底部安全区与占位
 
-栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`（刘海屏 / 手势条自动避让）。栏体缺省 `position: sticky`（文档流内自带占位，无需额外占位）。宿主用 CSS 覆写为 `fixed` 时，**占位由宿主自行承担**——给页尾容器加 `padding-bottom` 留白，高度用 `--oas-submit-bar-height` 对齐（栏体最小高度 token，缺省 `--oas-control-height-xl`；有 `tip` 提示行时按实际渲染高度另加）：
+栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`（刘海屏 / 手势条自动避让）。栏体缺省 `position: sticky`（文档流内自带占位，无需额外占位）。宿主用 CSS 覆写为 `fixed` 时，**占位由宿主自行承担**——给页尾容器加 `padding-bottom` 留白，高度用 `--oas-submit-bar-height` 对齐（栏体最小高度 token，缺省 `--oas-control-height-xl`）。注意 token 是**最小**高度：缺省主题下无 `tip` 栏体实际渲染 ≈57px（上下内边距 16 + 主行 40 + 上边框 1），配方 fallback 按 57px 起更贴近实际；有 `tip` 提示行时按实际行高叠加（单行 tip 实测 ≈27.5px，文案换行会更高，以实际渲染为准）：
 
 <DemoBlock title="fixed 布局占位配方（宿主 padding-bottom）">
   <oas-submit-bar total="66" action-text="结算"></oas-submit-bar>
@@ -87,8 +87,10 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
   bottom: 0;
 }
 .checkout-page {
-  /* 页尾留白对齐栏体高度，防遮挡 */
-  padding-bottom: var(--oas-submit-bar-height, 48px);
+  /* 页尾留白对齐栏体实际渲染高度：min-height token 缺省 48px 只是下限，
+     实际渲染 ≈57px（上下内边距 16 + 主行 40 + 上边框 1）；
+     有 tip 提示行时再叠加实际行高（单行 tip ≈27.5px，文案换行更高） */
+  padding-bottom: var(--oas-submit-bar-height, 57px);
 }</code></pre>
 </DemoBlock>
 

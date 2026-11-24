@@ -15,7 +15,7 @@
 - **oas-share-sheet**：`description` 标题描述 + `channels[].description` 渠道描述（均缺省不渲染；detail.channel 完整回传）。单测新增 3；zh/en 文档补「标题描述」「渠道描述」段与 demo。
 - **oas-rolling-text**：`direction`（up/down 恒向翻滚，缺省最短路径不变）+ `stop-order` 逐位停（列间 stagger = 时长 × 12%）+ `start()` / `reset()` 手动控制（重播完整翻滚 / 无过渡静态呈现）。单测新增 8；zh/en 文档补「方向与逐位停」「手动控制」段与 demo。
 - **oas-pin-input**：`info` / `error-info` 语义说明栏（统一 message 槽，错误优先；`aria-describedby` 关联各格 + `aria-live="polite"` 活区；message 锚点 id 带实例 uid 前缀，同页多实例不串）。单测新增 5；zh/en 文档补「语义说明栏」段与 demo。
-- i18n 合计 +6 键（16 语言全量同步）；全批单测新增 53；zh/en 文档全部新属性带 demo 块；api 语料与 demo-coverage 探针同步。
+- i18n 合计 +6 键（16 语言全量同步）；全批单测新增 55（增量批 53 + review 修复批 2）；zh/en 文档全部新属性带 demo 块；api 语料与 demo-coverage 探针同步。
 
 **review 修复批（本批实现内缺陷修正，随批收口）**
 
@@ -31,6 +31,13 @@
 - **number-keyboard 附加键措辞对齐实际栅格**（底行 0 键右侧、第 3 列，非功能键列）。
 - **弱断言收敛 6 处**：取 part 断 part / classList 自证 / start() 无区分度 → 值与结构真断言。
 - **qa-regression 新增**：coupon 选中态属性值与边框色、goods-action/address spinner 真实几何与 success/warning 对比度、submit-bar 栏体高度与占位撤除、address 运行时切 deleting 几何与身份不变。
+
+**review 修复批二轮（复审批实测收尾）**
+
+- **goods-action warning 实底与 hover 对比度复校**：warning 基线压深档 80% → 78%（light 白字对比 4.44 → 4.60）；hover 混色原 85% 朝提亮方向误走（对比跌回 ≈4.1）——success/warning hover 统一改压深档 76% / 74%（4.90 / 4.93），base 与 hover 双达 WCAG AA。
+- **goods-action 极窄宿主按钮内容兜底**：`.button` 恢复 `overflow: hidden`——≤90px 宿主双 loading 按钮下不可收缩的 spinner 会画出按钮边框；长文本省略仍由 `.button-text` 承担不回退。
+- **submit-bar fixed 占位配方定数校准**：fallback 48px 为 min-height token 下限，实测渲染 ≈57px（上下内边距 16 + 主行 40 + 上边框 1）——zh/en 配方与注释按实测改写，并注单行 tip ≈27.5px（换行更高）。
+- **复核断言口径修正**：spinner 几何改 `offsetWidth/offsetHeight`（`boundingBox()` 是 rotate 动画的 AABB，恒方形膨胀，坏态竖线在特定相位可伪装通过）；对比度解析补 `color(srgb …)` 分量分支（0–1 浮点 ×255——此前被当 0–255 算出 20.9 恒真）并逐通道锚定压深档理论值，hover 态纳入断言。
 
 **schema-form V2 批 1：数组体系**
 

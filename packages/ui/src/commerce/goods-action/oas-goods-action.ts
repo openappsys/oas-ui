@@ -230,6 +230,10 @@ const STYLE = `
   min-width: 0;
   min-height: var(--oas-control-height-lg, 40px);
   padding: 0 var(--oas-space-2);
+  /* 极窄宿主（如 ≤90px 双 loading 按钮）下 spinner flex:none 不可收缩，
+     内容会画出边框——盒内裁剪兜底（长文本省略由 .button-text 自身的
+     overflow + ellipsis 承担，不回退） */
+  overflow: hidden;
   border: 1px solid var(--oas-color-primary);
   border-radius: var(--oas-radius-md);
   background: var(--oas-color-bg);
@@ -262,24 +266,28 @@ const STYLE = `
 .button[data-type='primary']:active:not(:disabled) {
   background: var(--oas-color-primary-active);
 }
-/* 语义档位（success / warning / danger）：实底 + 同族 hover 加深（对齐 danger 混色做法）。
-   success / warning 底色压深到 80%（对齐 oas-button 语义档：原色底对白字对比度仅
-   3.30 / 3.19，压深后文字走专用 on-<tone> token 达 AA） */
+/* 语义档位（success / warning / danger）：实底 + hover 沿「增大文字对比」方向走。
+   color-mix 百分比 = 主色占比：占比越低掺 text-primary 越多——light（text-primary 近黑）
+   即压深，dark（text-primary 近白）即提亮，两档主题都朝对比增大方向收敛。
+   light 白字基线：success 80% → 4.58 / warning 78% → 4.60（原色底仅 3.30 / 3.19，
+   hover 曾误写 85% 朝提亮方向走、对比跌回 ≈4.1，已改回压深档 success 76% → 4.90 /
+   warning 74% → 4.93）；文字走专用 on-<tone> token 达 WCAG AA。
+   danger 原色即达标（4.83），hover 85% 掺深续增（light 6.0） */
 .button[data-type='success'] {
   border-color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
   background: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-success);
 }
 .button[data-type='success']:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--oas-color-success) 85%, var(--oas-color-text-primary));
+  background: color-mix(in srgb, var(--oas-color-success) 76%, var(--oas-color-text-primary));
 }
 .button[data-type='warning'] {
-  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
-  background: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
+  border-color: color-mix(in srgb, var(--oas-color-warning) 78%, var(--oas-color-text-primary));
+  background: color-mix(in srgb, var(--oas-color-warning) 78%, var(--oas-color-text-primary));
   color: var(--oas-color-text-on-warning);
 }
 .button[data-type='warning']:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--oas-color-warning) 85%, var(--oas-color-text-primary));
+  background: color-mix(in srgb, var(--oas-color-warning) 74%, var(--oas-color-text-primary));
 }
 .button[data-type='danger'] {
   border-color: var(--oas-color-danger);

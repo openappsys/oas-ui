@@ -61,7 +61,7 @@ The default slot renders before the total — useful for agreement checkboxes or
 
 ## Safe area and placeholder
 
-The bar's block-end padding uses `max(spacing, env(safe-area-inset-bottom))` (notches and gesture bars are avoided automatically). The bar is `position: sticky` by default (it already occupies the flow, so no spacer is needed). When the host overrides it to `fixed` with CSS, **the spacer is the host's responsibility** — add `padding-bottom` to the page tail and align it with `--oas-submit-bar-height` (the bar's min-height token, default `--oas-control-height-xl`; add the rendered tip height when a `tip` line is present):
+The bar's block-end padding uses `max(spacing, env(safe-area-inset-bottom))` (notches and gesture bars are avoided automatically). The bar is `position: sticky` by default (it already occupies the flow, so no spacer is needed). When the host overrides it to `fixed` with CSS, **the spacer is the host's responsibility** — add `padding-bottom` to the page tail and align it with `--oas-submit-bar-height` (the bar's min-height token, default `--oas-control-height-xl`). Note the token is a **minimum**: in the default theme the bar without a `tip` renders at ≈57px (vertical padding 16 + main row 40 + top border 1), so a 57px fallback in the recipe is closer to reality; with a `tip` line, stack its rendered height on top (a single-line tip measures ≈27.5px; wrapped copy is taller — go by the actual render):
 
 <DemoBlock title="Fixed-layout spacer recipe (host padding-bottom)">
   <oas-submit-bar total="66" action-text="Checkout"></oas-submit-bar>
@@ -72,8 +72,11 @@ The bar's block-end padding uses `max(spacing, env(safe-area-inset-bottom))` (no
   bottom: 0;
 }
 .checkout-page {
-  /* Tail spacer aligned with the bar height to avoid overlap */
-  padding-bottom: var(--oas-submit-bar-height, 48px);
+  /* Tail spacer aligned with the bar's rendered height: the min-height token
+     (default 48px) is only the floor — the bar actually renders ≈57px
+     (vertical padding 16 + main row 40 + top border 1);
+     with a tip line, stack its rendered height (single line ≈27.5px) */
+  padding-bottom: var(--oas-submit-bar-height, 57px);
 }</code></pre>
 </DemoBlock>
 

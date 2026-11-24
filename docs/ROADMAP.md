@@ -22,7 +22,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **P0 4 条** | submit-bar 安全区+占位 / goods-action loading / address 编辑入口 / address 删除+saving 态 | 📋 待开发 |
+| **P0 4 条** | submit-bar 安全区+占位配方 / goods-action loading / address 编辑入口 / address 删除+saving 态 | 📋 待开发 |
 | **P1 7 条** | submit-bar tip / coupon 分组与「不用券」出口 / coupon 多选 / number-keyboard 附加键 / barrage items+auto-play / share-sheet 描述 / address 自定义校验 | 📋 待开发 |
 | **P2 4 条** | rolling-text 方向与手动控制 / pin-input 说明栏 / goods-action 类型与自定义色 / address 区划编码档 | 📋 待开发 |
 
