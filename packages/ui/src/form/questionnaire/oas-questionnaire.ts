@@ -9,6 +9,7 @@ import {
   type CompiledStepLogic,
   type StepGoto,
 } from './when-engine.js'
+import { compileScoreRules, computeScore, type CompiledScoreRule } from './score-engine.js'
 
 export type { StepGoto } from './when-engine.js'
 
@@ -52,6 +53,9 @@ const VALID_PROGRESS_VARIANTS = new Set(['text', 'bar', 'both'])
 
 /** 值变化级联的定点迭代上限（与 schema-form 联动同一档位） */
 const MAX_CASCADE_ROUNDS = 8
+
+/** 评分事件防抖窗口（ms）：连续作答合并为一次 oas-score */
+const SCORE_DEBOUNCE_MS = 80
 
 /** 条件引擎告警去重（编译 / 求值同一份文案只报一次） */
 const warnedLogic = new Set<string>()
@@ -394,6 +398,8 @@ export class OASQuestionnaire extends OASElement {
       'size',
       // 步骤条件引擎开关（when / goto；conditions="false" 关闭，只认宿主 hidden）
       'conditions',
+      // 评分规则（表达式 + 分值列表；只算不渲染）
+      'score-rules',
     ]
   }
 
@@ -410,6 +416,18 @@ export class OASQuestionnaire extends OASElement {
 
   /** 值变化 → 重算 → 对齐 → 派发 change 的同步级联轮次（8 轮守卫，防宿主回环死循环） */
   private cascadePasses = 0
+
+  /** 已编译的评分规则（score-rules） */
+  private scoreRules: CompiledScoreRule[] = []
+
+  /** 评分规则编译签名（属性原文） */
+  private scoreSignature = ''
+
+  /** 上一次派发过的总分（相同则不再派发 oas-score） */
+  private lastScore = 0
+
+  /** 评分派发的防抖计时器（作答连续变化合并为一次） */
+  private scoreTimer: ReturnType<typeof setTimeout> | null = null
 
   /** 门控在途标志：next/submit 重入保护（异步 validator 未落地时不重复推进） */
   private busy = false
@@ -494,6 +512,8 @@ export class OASQuestionnaire extends OASElement {
     }
     // 断开时摘除内层 form 上的值跟踪监听（重连后由 update 重挂，同引用去重）
     this.onCleanup(() => {
+      if (this.scoreTimer !== null) clearTimeout(this.scoreTimer)
+      this.scoreTimer = null
       for (const { form } of this.stepForms()) {
         form.removeEventListener('oas-values-change', this.onInnerValues as EventListener)
       }
@@ -611,6 +631,7 @@ export class OASQuestionnaire extends OASElement {
     // steps 配置变更后清理越界的跳过记录（索引不跨配置复用，防误标新步骤）
     for (const i of this.skipped) if (i >= this._steps.length) this.skipped.delete(i)
     this.compileLogic()
+    this.compileScore()
   }
 
   // ---------- 条件引擎（when / goto） ----------
@@ -736,6 +757,55 @@ export class OASQuestionnaire extends OASElement {
     const forward = this.nextVisibleIndex(index)
     if (forward !== -1) return forward
     return this.prevVisibleIndex(index)
+  }
+
+  // ---------- 评分汇总（score-rules） ----------
+
+  /**
+   * 当前总分（只读 property）：按 `score-rules` 与当前跨步答案（含隐藏步）即时求和。
+   * 引擎只算不渲染——分数展示与题型组合由宿主决定；作答变化后另派发防抖的 `oas-score`。
+   */
+  get score(): number {
+    return this.computeScoreNow()
+  }
+
+  /** 评分规则编译（签名不变跳过）；编译告警一次性 devWarn，坏规则单独跳过 */
+  private compileScore(): void {
+    const raw = this.getAttr('score-rules', '')
+    if (raw === this.scoreSignature) return
+    this.scoreSignature = raw
+    let parsed: unknown
+    try {
+      parsed = raw.trim() === '' ? null : JSON.parse(raw)
+    } catch {
+      warnLogic('score-rules 不是合法 JSON，已忽略')
+      parsed = null
+    }
+    const compiled = compileScoreRules(parsed)
+    for (const message of compiled.warnings) warnLogic(message)
+    this.scoreRules = compiled.rules
+    // 基线快照：规则变更静默（不派发 oas-score），后续仅真实变化才派发
+    this.lastScore = this.computeScoreNow()
+  }
+
+  private computeScoreNow(): number {
+    if (this.scoreRules.length === 0) return 0
+    const { score, failed } = computeScore(this.scoreRules, this.conditionValues())
+    for (const message of failed) warnLogic(message)
+    return score
+  }
+
+  /** 作答变化 → 防抖派发（同一任务内连续作答合并为一次；值未变不派发） */
+  private scheduleScore(): void {
+    if (this.scoreRules.length === 0) return
+    if (this.scoreTimer !== null) clearTimeout(this.scoreTimer)
+    this.scoreTimer = setTimeout(() => {
+      this.scoreTimer = null
+      const next = this.computeScoreNow()
+      if (next === this.lastScore) return
+      this.lastScore = next
+      this.emit('score', { score: next })
+    }, SCORE_DEBOUNCE_MS)
   }
 
   // ---------- 索引解析（hidden 步不进流程） ----------
@@ -1037,6 +1107,7 @@ export class OASQuestionnaire extends OASElement {
     const detail = (e as CustomEvent<{ values?: unknown; name?: unknown }>).detail
     if (detail && isPlainObject(detail.values)) this.tracked.set(idx, detail.values)
     this.scheduleReconcile(typeof detail?.name === 'string' ? detail.name : undefined)
+    this.scheduleScore()
   }
 
   // ---------- 导航与门控 ----------
@@ -1270,5 +1341,7 @@ export class OASQuestionnaire extends OASElement {
     if (this.getAttr('current', '0') !== '0') this.setAttribute('current', '0')
     // 条件引擎：作答回初始值后重算可见性（current 未变时属性写入不触发 update，这里显式重算）
     else this.scheduleReconcile()
+    // 评分：reset 后分数回初始值（防抖派发，避免与 form 自身 reset 的多次值事件叠发）
+    this.scheduleScore()
   }
 }

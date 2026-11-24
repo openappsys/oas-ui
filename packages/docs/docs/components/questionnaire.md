@@ -148,6 +148,45 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
   <span id="q-when-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## 评分汇总（score-rules）
+
+`score-rules` 传**规则列表** `[{ when, score }]`：条件成立即把分值累加进总分。规则只有这一种形态——「字段 → 每选项分值」的映射等价于若干条 `{ when: "{字段} == \"选项\"", score: n }`，因此不另设一套语法。
+
+- **只读 property `score`**：读即按当前跨步答案（含隐藏步答案——面板常驻、值保留）求和，永远是最新值；
+- **事件 `oas-score`**：作答变化后派发（`detail: { score }`），80 ms 防抖合并连续作答；分数未变化不派发；`score-rules` 变更静默（改规则后宿主自行读取 property）；
+- **引擎只算不渲染**：分数展示、题型组合（`oas-rate` / `oas-slider` / 选项组等既有件）全由宿主决定，本组件不内置题型；
+- 非法规则（非对象 / `when` 非字符串 / `score` 非数值 / 表达式语法错）逐条跳过并一次性 `devWarn`，不连坐其它规则；表达式求值抛错（宿主函数）按条件不成立处理。
+
+<DemoBlock title="评分汇总（作答后看总分与 oas-score 事件）">
+  <oas-questionnaire
+    id="q-score"
+    style="width: 100%; max-width: 560px"
+    score-rules='[{"when":"{satisfaction} == \"5\"","score":5},{"when":"{satisfaction} == \"4\"","score":3},{"when":"{recommend} == \"yes\"","score":2}]'
+    steps='[{"key":"s","title":"满意度"},{"key":"r","title":"是否推荐"},{"key":"done","title":"完成"}]'
+  >
+    <oas-form slot="step-s">
+      <oas-radio-group name="satisfaction">
+        <oas-radio value="5">非常满意</oas-radio>
+        <oas-radio value="4">满意</oas-radio>
+        <oas-radio value="1">不满意</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-r">
+      <oas-radio-group name="recommend">
+        <oas-radio value="yes">愿意推荐</oas-radio>
+        <oas-radio value="no">暂不推荐</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">点击「完成」查看汇总分数。</p>
+    </oas-form>
+  </oas-questionnaire>
+  <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px">
+    <oas-button id="q-score-read">读取 score</oas-button>
+    <span id="q-score-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
 ## 切换动画（animated）
 
 `animated` 开启题目切换过渡：新面板按导航方向滑入 + 淡入（前进自行尾侧、后退自行首侧；只动 transform/opacity，合成器友好）；`prefers-reduced-motion: reduce` 用户自动降级为无动画。时长经 CSS 变量 `--oas-questionnaire-anim-duration` 覆盖（缺省 `--oas-transition-base`）；RTL 布局下滑入方向自动镜像。
@@ -369,6 +408,16 @@ onMounted(() => {
       return
     }
     whenOut.textContent = `已到第 ${e.detail.index + 1} 步（条件步骤按答案自动显隐）`
+  })
+
+  // 评分汇总：oas-score 事件与只读 property 读取
+  const scoreOut = document.getElementById('q-score-output')
+  const scoreEl = document.getElementById('q-score')
+  scoreEl?.addEventListener('oas-score', (e) => {
+    scoreOut.textContent = `oas-score：${e.detail.score} 分（作答变化后 80ms 内派发）`
+  })
+  document.getElementById('q-score-read')?.addEventListener('click', () => {
+    scoreOut.textContent = `score property：${scoreEl.score} 分`
   })
 
   // 键盘快捷导航：切步反馈

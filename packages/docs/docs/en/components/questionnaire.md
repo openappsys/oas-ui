@@ -148,6 +148,45 @@ A `steps` entry can carry a condition expression, evaluated by the restricted ex
   <span id="q-when-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## Score aggregation (score-rules)
+
+`score-rules` takes a **rule list** `[{ when, score }]`: whenever a condition holds, its score is added to the total. This is the only shape — a "field → per-option score" map is equivalent to several `{ when: "{field} == \"option\"", score: n }` rules, so no second syntax exists.
+
+- **Read-only property `score`**: reading it sums the current cross-step answers (hidden steps included — panels stay mounted and keep their values); it is always up to date.
+- **Event `oas-score`**: emitted after answers change (`detail: { score }`), debounced by 80 ms so a burst of answers coalesces into one event; no event when the total did not change; changing `score-rules` stays silent (read the property yourself after rewriting rules).
+- **The engine only computes, never renders**: score display and question composition (`oas-rate` / `oas-slider` / option groups, etc.) stay in the host; no question type is built in.
+- Invalid rules (non-object / non-string `when` / non-numeric `score` / syntax errors) are skipped one by one with one `devWarn` each and never invalidate the other rules; an expression that throws (host function) counts as a non-matching rule.
+
+<DemoBlock title="Score aggregation (answer, then read the total and oas-score)">
+  <oas-questionnaire
+    id="q-score"
+    style="width: 100%; max-width: 560px"
+    score-rules='[{"when":"{satisfaction} == \"5\"","score":5},{"when":"{satisfaction} == \"4\"","score":3},{"when":"{recommend} == \"yes\"","score":2}]'
+    steps='[{"key":"s","title":"Satisfaction"},{"key":"r","title":"Recommend"},{"key":"done","title":"Done"}]'
+  >
+    <oas-form slot="step-s">
+      <oas-radio-group name="satisfaction">
+        <oas-radio value="5">Very satisfied</oas-radio>
+        <oas-radio value="4">Satisfied</oas-radio>
+        <oas-radio value="1">Not satisfied</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-r">
+      <oas-radio-group name="recommend">
+        <oas-radio value="yes">Would recommend</oas-radio>
+        <oas-radio value="no">Not now</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">Click "Done" to see the aggregated score.</p>
+    </oas-form>
+  </oas-questionnaire>
+  <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px">
+    <oas-button id="q-score-read">Read score</oas-button>
+    <span id="q-score-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+</DemoBlock>
+
 ## Step transition (animated)
 
 `animated` enables the step transition: the incoming panel slides in along the navigation direction (forward from the inline-end side, backward from the inline-start side) while fading in — transform/opacity only, compositor-friendly; users with `prefers-reduced-motion: reduce` automatically get no animation. Override the duration via the CSS variable `--oas-questionnaire-anim-duration` (defaults to `--oas-transition-base`); the slide direction mirrors automatically in RTL layouts.
@@ -369,6 +408,16 @@ onMounted(() => {
       return
     }
     whenOut.textContent = `Now at step ${e.detail.index + 1} (conditional steps show/hide by answer)`
+  })
+
+  // Score aggregation: oas-score event + read-only property
+  const scoreOut = document.getElementById('q-score-output')
+  const scoreEl = document.getElementById('q-score')
+  scoreEl?.addEventListener('oas-score', (e) => {
+    scoreOut.textContent = `oas-score: ${e.detail.score} points (debounced 80ms after answers change)`
+  })
+  document.getElementById('q-score-read')?.addEventListener('click', () => {
+    scoreOut.textContent = `score property: ${scoreEl.score} points`
   })
 
   // Keyboard shortcuts: step feedback
