@@ -271,8 +271,30 @@ export class OASBottomSheet extends OASElement {
 
   // ---- 打开态聚焦（首帧同步尝试 + rAF 兜底重试，WebKit 焦点时序修复） ----
 
+  /**
+   * 同组件兄弟控件持有焦点：让位，不抢焦点。
+   * 场景：本组件嵌在宿主组件 shadow 内（如 combobox 移动形态——输入框与底部抽屉是同辈）。
+   * 宿主组件的输入框持焦时打开抽屉，抢焦点会触发输入框 blur → 宿主收起面板（T12 回归实证）。
+   * 抽屉自身成为最外层（root = document）时不触发让位，聚焦行为照旧。
+   */
+  private focusOwnedBySibling(): boolean {
+    const root = this.getRootNode()
+    if (!(root instanceof ShadowRoot)) return false
+    const active = root.activeElement
+    if (!active || active === this) return false
+    // 焦点在本面板自身内容里 → 不算兄弟（由 isFocusInPanel 管）
+    if (this.contains(active) || (this.sheet?.contains(active) ?? false)) return false
+    // 焦点在同 shadow root 的其它控件上（Element.contains 不穿透 shadow，
+    // 不能用 root.host.contains——宿主组件的输入框在宿主 shadow 内会恒判 false）
+    return active.getRootNode() === root
+  }
+
   /** 打开态聚焦：先试首个可聚焦控件；焦点未落面板则 rAF 兜底重试一次，仍失败聚焦面板容器（tabindex=-1） */
   private focusInitial(): void {
+    if (this.focusOwnedBySibling()) {
+      this.cancelFocusRetry()
+      return
+    }
     const first = this.getFocusables()[0]
     if (first instanceof HTMLElement) first.focus()
     if (this.isFocusInPanel()) {
@@ -297,6 +319,8 @@ export class OASBottomSheet extends OASElement {
       this.focusRetryFrame = null
       // 排程期间已关闭/断开/passive：直接弃单，不得在关闭后还抢焦点
       if (!this.isConnected || !this.hasAttr('open') || this.hasAttr('passive')) return
+      // 排程期间焦点已被宿主组件兄弟控件持有（如 combobox 输入框）：让位，不抢
+      if (this.focusOwnedBySibling()) return
       if (this.isFocusInPanel()) return
       const first = this.getFocusables()[0]
       if (first instanceof HTMLElement) first.focus()

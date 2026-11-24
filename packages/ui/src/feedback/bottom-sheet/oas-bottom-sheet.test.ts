@@ -218,4 +218,24 @@ describe('OASBottomSheet', () => {
     await new Promise((r) => setTimeout(r, 80))
     expect(document.activeElement === el, '关闭后不得聚焦面板容器').toBe(false)
   })
+
+  it('同 shadow root 兄弟控件持有焦点：打开时让位不抢（combobox 移动形态回归）', async () => {
+    // 构造宿主组件：shadow 内 input（兄弟控件）+ bottom-sheet（打开态）
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const shadow = host.attachShadow({ mode: 'open' })
+    const input = document.createElement('input')
+    shadow.appendChild(input)
+    const el = new OASBottomSheet()
+    el.innerHTML = '<button>option</button>'
+    shadow.appendChild(el)
+    input.focus()
+    expect(shadow.activeElement).toBe(input)
+    // 打开：兄弟 input 持焦 → 不得抢走焦点（否则宿主 blur 收起面板）
+    el.setAttribute('open', '')
+    expect(shadow.activeElement, '兄弟控件持焦时打开不得抢焦点').toBe(input)
+    // rAF 兜底同样让位
+    await new Promise((r) => setTimeout(r, 80))
+    expect(shadow.activeElement, 'rAF 兜底不得抢兄弟控件焦点').toBe(input)
+  })
 })
