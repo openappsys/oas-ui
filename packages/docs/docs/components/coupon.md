@@ -159,7 +159,11 @@ onMounted(() => {
   customElements.whenDefined('oas-coupon').then(() => {
     const out = document.getElementById('cp-select-out')
     document.getElementById('cp-select')?.addEventListener('oas-select', (e) => {
-      out.textContent = 'oas-select：券 ' + e.detail.code + '，面额 ' + e.detail.coupon.amount
+      // 「不使用优惠券」出口派发空选：coupon 为 null，须守卫（类型已拓宽为 CouponSelectDetail.coupon: CouponData | null）
+      const coupon = e.detail.coupon
+      out.textContent = coupon
+        ? 'oas-select：券 ' + e.detail.code + '，面额 ' + coupon.amount
+        : 'oas-select 空选：{ code: \'\', coupon: null }'
     })
     const group = document.getElementById('cp-group')
     const groupOut = document.getElementById('cp-group-out')

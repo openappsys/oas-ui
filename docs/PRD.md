@@ -101,7 +101,7 @@
 对既有组件的小增量（无新组件/无架构改动），逐条验收 = 单测 + 文档 + CHANGELOG，全部增量向后兼容。
 
 **P0（4 条）**
-- **submit-bar 底部安全区 + 占位** 📋：`padding-block-end: max(…, env(safe-area-inset-bottom))` + `placeholder` 占位属性（对齐 goods-action / share-sheet 既有做法）。
+- **submit-bar 底部安全区 + 占位配方** 📋：`padding-block-end: max(…, env(safe-area-inset-bottom))`；占位走文档配方——宿主 fixed 时自加 `padding-bottom` + `--oas-submit-bar-height` token 对齐（修复批撤销组件内 `placeholder` 属性：占位块与栏体同属 host，fixed 下不占文档流反而撑高栏体）。
 - **goods-action 主按钮 loading** 📋：`actions[].loading`——禁用点击 + `aria-busy` + spinner，与 `disabled` 正交。
 - **address 列表编辑入口** 📋：列表行编辑钮 + `oas-edit({id, item})` 事件，宿主据此进 edit 模式。
 - **address 删除 + 保存/删除 loading** 📋：`show-delete` + `oas-delete` 事件（确认弹层由宿主用 `oas-popconfirm` 组合）+ `saving` / `deleting` 态。
@@ -110,7 +110,7 @@
 - **submit-bar tip 提示行** 📋：`tip` + `tip-icon`（运费/发票提示高频位）。
 - **coupon 分组与出口** 📋：可用/不可用分组标题 + 计数（`show-count`）+ 「不使用优惠券」出口（`oas-clear` 事件，`oas-select` detail 支持空选）。
 - **coupon 多选** 📋：`multiple` + 多选 UI + `oas-select` detail 数组（默认单选不变）。
-- **number-keyboard 附加键** 📋：`extra-key`（字符串或数组，附加键挂右侧）+ 侧栏型扩展（如身份证 X 键）。
+- **number-keyboard 附加键** 📋：`extra-key`（字符串或数组，附加键挂数字区底行 0 键右侧、栅格第 3 列）+ 侧栏型扩展（如身份证 X 键）。
 - **barrage items 声明式数据 + auto-play** 📋：`items` JSON 双通道 + `auto-play`（对齐 addBatch 语义，Vue 双向绑定顺手）。
 - **share-sheet 描述文案** 📋：标题描述 + `channels[].description`。
 - **address 自定义校验钩子** 📋：`validator(key, value)` function property（返回错误串；失败并入 `oas-invalid`）。

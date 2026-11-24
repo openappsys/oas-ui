@@ -155,7 +155,11 @@ onMounted(() => {
   customElements.whenDefined('oas-coupon').then(() => {
     const out = document.getElementById('cp-select-out-en')
     document.getElementById('cp-select-en')?.addEventListener('oas-select', (e) => {
-      out.textContent = 'oas-select: coupon ' + e.detail.code + ', amount ' + e.detail.coupon.amount
+      // The no-coupon exit dispatches an empty selection: coupon is null, guard required
+      const coupon = e.detail.coupon
+      out.textContent = coupon
+        ? 'oas-select: coupon ' + e.detail.code + ', amount ' + coupon.amount
+        : "oas-select empty: { code: '', coupon: null }"
     })
     const group = document.getElementById('cp-group-en')
     const groupOut = document.getElementById('cp-group-out-en')

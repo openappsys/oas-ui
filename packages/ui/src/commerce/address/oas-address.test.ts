@@ -413,7 +413,8 @@ describe('OASAddress', () => {
     const del = list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')[0]!
     expect(del.disabled).toBe(true)
     expect(del.getAttribute('aria-busy')).toBe('true')
-    expect(del.querySelector('[part="card-delete-spinner"]')?.getAttribute('part')).toBe('card-delete-spinner')
+    // deleting 态删除钮的 spinner 真实可见（hidden=false）
+    expect(del.querySelector<HTMLElement>('[part="card-delete-spinner"]')?.hidden).toBe(false)
     const edit = list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-edit"]')[0]!
     expect(edit.disabled).toBe(false)
     list.removeAttribute('deleting')
@@ -423,9 +424,31 @@ describe('OASAddress', () => {
     const submitBtn = q<HTMLButtonElement>(form, 'button[type="submit"]')
     expect(submitBtn.disabled).toBe(true)
     expect(submitBtn.getAttribute('aria-busy')).toBe('true')
-    expect(submitBtn.querySelector('[part="save-spinner"]')?.getAttribute('part')).toBe('save-spinner')
+    // saving 态保存钮的 spinner 真实可见（hidden=false）
+    expect(submitBtn.querySelector<HTMLElement>('[part="save-spinner"]')?.hidden).toBe(false)
     form.removeAttribute('saving')
     expect(q<HTMLButtonElement>(form, 'button[type="submit"]').disabled).toBe(false)
+  })
+
+  it('运行时切 deleting：列表不重建（DOM 引用不变，保焦点/滚动），忙态增量同步上/下', () => {
+    const list = mount({ mode: 'list', items: ITEMS_JSON, 'show-delete': '' })
+    const before = [...list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')]
+    expect(before[0]!.querySelector<HTMLElement>('[part="card-delete-spinner"]')?.hidden).toBe(true)
+    // 开：卡片节点身份不变（重建签名不含 busy），spinner 转可见 + aria-busy + 禁用
+    list.setAttribute('deleting', '')
+    const after = [...list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')]
+    expect(after[0]).toBe(before[0])
+    expect(after[1]).toBe(before[1])
+    expect(after[0]!.disabled).toBe(true)
+    expect(after[0]!.getAttribute('aria-busy')).toBe('true')
+    expect(after[0]!.querySelector<HTMLElement>('[part="card-delete-spinner"]')?.hidden).toBe(false)
+    // 关：忙态撤下，节点身份依旧不变
+    list.removeAttribute('deleting')
+    const final = [...list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')]
+    expect(final[0]).toBe(before[0])
+    expect(final[0]!.disabled).toBe(false)
+    expect(final[0]!.hasAttribute('aria-busy')).toBe(false)
+    expect(final[0]!.querySelector<HTMLElement>('[part="card-delete-spinner"]')?.hidden).toBe(true)
   })
 
   it('validator property：返回错误串并入 oas-invalid（字段标记 + fields 数组含自定义键）', () => {

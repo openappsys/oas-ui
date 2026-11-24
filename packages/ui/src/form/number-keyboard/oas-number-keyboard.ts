@@ -12,7 +12,8 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `maxlength`：长度上限（按字符计数，支持中文省份简称）；缺省/0 = 不限
  * - `random`：布尔，数字键随机乱序（安全键盘）；切换时重新排列，随机源可被 `randomize()` 刷新
  * - `layout`：`number`（默认）/ `plate`（车牌号布局：省份简称 + 字母 + 数字）；非法值回落 number
- * - `extra-key`：附加键（挂数字区右侧，如身份证 X 键）——单个字符（`extra-key="X"`）或
+ * - `extra-key`：附加键（数字区底行 0 键右侧、第 3 列——紧邻删除/完成功能键列，如身份证 X 键）——
+ *   单个字符（`extra-key="X"`）或
  *   JSON 字符串数组（`extra-key='["X","港"]'`）；最多 2 个（超出截断并 devWarn 一次），
  *   附加字符同时并入物理键盘白名单；非法 JSON devWarn 并忽略
  * - `disabled`：禁用（按键禁用、不派发事件）
@@ -439,7 +440,7 @@ export class OASNumberKeyboard extends OASElement {
       if (key === '0') btn.classList.add('key-zero')
       pad.appendChild(btn)
     }
-    // 附加键挂数字区右侧（0 键收窄让位；如身份证 X 键）
+    // 附加键挂数字区底行末列（0 键收窄让位后自动落位第 3 列；如身份证 X 键）
     for (const extra of extras) {
       const btn = this.createKey(extra, extra)
       btn.dataset.extra = extra

@@ -59,7 +59,7 @@ description: 数字键盘：随机乱序安全键盘、完成/删除键、车牌
 
 ## 附加键 extra-key
 
-`extra-key` 在数字区右侧挂附加键（身份证 X 键之类）：单个字符或 JSON 字符串数组（最多 2 个，超出截断并告警）；0 键自动收窄让位。附加字符同样并入物理键盘白名单（屏上有键，物理键盘就能打）：
+`extra-key` 在数字区底行 0 键右侧挂附加键（栅格第 3 列，紧邻第 4 列的删除/完成功能键；身份证 X 键之类）：单个字符或 JSON 字符串数组（最多 2 个，超出截断并告警）；0 键自动收窄让位。附加字符同样并入物理键盘白名单（屏上有键，物理键盘就能打）：
 
 <DemoBlock title="身份证 X 键">
   <oas-number-keyboard id="nk-extra" extra-key="X" maxlength="18"></oas-number-keyboard>

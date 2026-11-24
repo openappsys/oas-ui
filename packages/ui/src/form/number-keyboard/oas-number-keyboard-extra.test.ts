@@ -31,9 +31,12 @@ describe('oas-number-keyboard extra-key 附加键', () => {
     expect(extra).toHaveLength(1)
     expect(extra[0]!.textContent).toBe('X')
     expect(extra[0]!.dataset.key).toBe('X')
-    // 0 键收窄（span 2 列），附加键占第 3 列
+    // 0 键收窄（span 2 列），附加键占第 3 列：断言 .key-zero 就是 0 键，且附加键 DOM 排在 0 键之后
     expect(pad(el).getAttribute('data-extra-count')).toBe('1')
-    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.key-zero')!.classList.contains('key-zero')).toBe(true)
+    const zero = el.shadowRoot!.querySelector<HTMLButtonElement>('.key-zero')
+    expect(zero?.dataset.key).toBe('0')
+    const order = [...pad(el).children]
+    expect(order.indexOf(extra[0]!)).toBeGreaterThan(order.indexOf(zero!))
     let detail: { value?: string; key?: string } | null = null
     el.addEventListener('oas-input', (e) => (detail = (e as CustomEvent).detail))
     extra[0]!.click()

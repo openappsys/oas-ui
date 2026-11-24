@@ -188,6 +188,20 @@ describe('oas-coupon 选择弹层（list 模式）', () => {
     expect(part(el, 'trigger')!.textContent).toContain('¥30')
   })
 
+  it('选中态原位同步：点选后卡片 data-selected="true"（值非空串），重开弹层仍在（C1 回归）', () => {
+    const el = mount({ list: LIST, open: '' })
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="radio"]')!
+    input.checked = true
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+    // 同步路径必须写值 'true'（回归：toggleAttribute 写空串，CSS [data-selected='true'] 不命中——
+    // 单选重开丢选中态、多选勾选零反馈）
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="coupon"]')!.getAttribute('data-selected')).toBe('true')
+    // 关闭再重开：选中态保持
+    el.removeAttribute('open')
+    el.setAttribute('open', '')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="coupon"]')!.getAttribute('data-selected')).toBe('true')
+  })
+
   it('空列表：渲染 i18n 空态文案', () => {
     const el = mount({ list: '[]', open: '' })
     expect(part(el, 'empty')!.hidden).toBe(false)

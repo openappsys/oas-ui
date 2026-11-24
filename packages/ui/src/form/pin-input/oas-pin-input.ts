@@ -229,6 +229,8 @@ input:read-only {
 }
 `
 
+let pinInputUid = 0
+
 export class OASPinInput extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -275,6 +277,8 @@ export class OASPinInput extends OASElement {
   private spinner: HTMLElement | null = null
   private messageEl: HTMLElement | null = null
   private cells: HTMLInputElement[] = []
+  /** 实例唯一 id 前缀：message 锚点 id 同页多实例不串（aria-describedby 指对目标） */
+  private readonly uid = `oas-pin-input-${++pinInputUid}`
   private currentLength = 0
   /** 焦点当前是否在组件内部（格间移动不算进出，兼防 relatedTarget 缺失的环境差异） */
   private focusInside = false
@@ -391,7 +395,7 @@ export class OASPinInput extends OASElement {
       this.messageEl.hidden = text === ''
       if (errorInfo !== '') this.messageEl.setAttribute('data-error', 'true')
       else this.messageEl.removeAttribute('data-error')
-      if (text !== '' && !this.messageEl.id) this.messageEl.id = 'oas-pin-input-message'
+      if (text !== '' && !this.messageEl.id) this.messageEl.id = `${this.uid}-message`
     }
     const messageId = errorInfo !== '' || info !== '' ? (this.messageEl?.id ?? '') : ''
     for (const cell of this.cells) {

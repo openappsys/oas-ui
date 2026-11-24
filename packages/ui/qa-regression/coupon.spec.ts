@@ -23,6 +23,41 @@ test('coupon：选择弹层可用券可选、不可用券禁用、选中后派�
   await expect(host.locator('[part="trigger"]')).toContainText('30')
 })
 
+test('coupon：选中态原位同步——重开弹层选中卡片 data-selected="true" 且边框色可区分（C1 回归）', async ({ page }) => {
+  await page.goto('/components/coupon.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-select')
+
+  const host = page.locator('#cp-select')
+  const overlay = host.locator('[part="overlay"]')
+  await host.locator('[part="trigger"]').click()
+  await expect(overlay).toBeVisible()
+  await host.locator('[part="option"]').first().click()
+  await expect(overlay).toBeHidden()
+
+  // 重开：选中卡片必须带 data-selected="true"（回归：同步路径曾写空串，CSS [data-selected='true'] 不命中）
+  await host.locator('[part="trigger"]').click()
+  await expect(overlay).toBeVisible()
+  const states = await page.evaluate(() => {
+    const el = document.getElementById('cp-select')!
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="coupon"]')].map((c) =>
+      c.getAttribute('data-selected'),
+    )
+  })
+  expect(states[0], '已选卡片 data-selected 应为 "true"（非空串；undefined 同样红）').toBe('true')
+  expect(
+    states.slice(1).some((v) => v === 'true'),
+    '其余卡片不应带选中标记',
+  ).toBe(false)
+
+  // 选中卡片与未选中卡片边框色可区分（主色描边 vs 中性边框）
+  const borders = await page.evaluate(() => {
+    const el = document.getElementById('cp-select')!
+    const cards = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="coupon"]')]
+    return cards.slice(0, 2).map((c) => getComputedStyle(c).borderTopColor)
+  })
+  expect(borders[0], '选中卡片边框色应区别于未选中').not.toBe(borders[1])
+})
+
 // 层叠协议回归：弹层接入共享 overlay-stack（body 滚动锁 + Esc 层栈），不再自建 Esc 处理。
 test('coupon 与 oas-modal 同开：一次 Esc 只关最上层（modal 先关、coupon 保持），body 锁按引用计数释放', async ({
   page,

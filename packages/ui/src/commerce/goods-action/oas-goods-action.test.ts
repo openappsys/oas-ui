@@ -265,6 +265,12 @@ describe('oas-goods-action', () => {
     expect(p[0]!.getAttribute('data-type')).toBe('default')
     expect(p[1]!.getAttribute('data-type')).toBe('primary')
     expect(p[1]!.getAttribute('data-primary')).toBe('true')
+    // M1：显式 type:'default' 时 primary 标志不得再生效（type 优先）——
+    // data-primary 必须落 'false'，否则 CSS [data-primary='true'] 会把 default 档翻成主色实底
+    const mixed = mount({ actions: JSON.stringify([{ key: 'both', text: '默认', type: 'default', primary: true }]) })
+    const m = actionButtons(mixed)
+    expect(m[0]!.getAttribute('data-type')).toBe('default')
+    expect(m[0]!.getAttribute('data-primary'), '显式 type 时 primary 标志让位').toBe('false')
   })
 
   it('items[].color：预设名走 preset token，任意色值按宿主声明透传', () => {

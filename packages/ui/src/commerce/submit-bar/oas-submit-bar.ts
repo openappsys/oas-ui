@@ -22,9 +22,10 @@ import '../price/index.js'
  * - `danger`：主按钮危险色（删除/取消类主操作）
  * - `tip`：提示行文案（运费 / 发票等高频提示，渲染在主行上方）
  * - `tip-icon`：提示行图标名（lookupIcon 查表，自定义注册优先）；未注册告警一次且不渲染图标
- * - `placeholder`：占位开关——渲染与栏体等高的占位块。栏体缺省 `sticky`（本就占据文档流，
- *   无需占位）；宿主用 CSS 覆写为 `fixed` 时开启，防止固定栏遮挡页尾内容。
- *   占位块 `aria-hidden`，高度在可测量环境下同步栏体实际高度（含提示行）
+ *
+ * fixed 场景占位配方：栏体缺省 `sticky`（本就占据文档流，无需占位）。宿主用 CSS 覆写为
+ * `fixed` 时自行给页尾留白（如 `padding-bottom`），高度对齐用 `--oas-submit-bar-height`
+ * （栏体最小高度 token，缺省 `--oas-control-height-xl`；含 tip 行时按实际渲染高度另加）
  *
  * 插槽：
  * - 默认：合计左侧扩展区（勾选协议、备注入口等）
@@ -60,6 +61,7 @@ const STYLE = `
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  min-height: var(--oas-submit-bar-height, var(--oas-control-height-xl, 48px));
   padding: var(--oas-space-2) var(--oas-space-4);
   padding-block-end: max(var(--oas-space-2), env(safe-area-inset-bottom, 0px));
   background: var(--oas-color-bg);
@@ -101,7 +103,6 @@ const STYLE = `
   display: flex;
   align-items: center;
   gap: var(--oas-space-3);
-  min-height: var(--oas-submit-bar-height, var(--oas-control-height-xl, 48px));
 }
 .extra {
   flex: 1 1 auto;
@@ -181,14 +182,6 @@ const STYLE = `
     transform: rotate(1turn);
   }
 }
-.placeholder {
-  box-sizing: border-box;
-  background: transparent;
-}
-.placeholder[hidden] {
-  display: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation-duration: 2.4s;
@@ -218,15 +211,12 @@ export class OASSubmitBar extends OASElement {
       'danger',
       'tip',
       'tip-icon',
-      'placeholder',
     ]
   }
 
-  private barEl: HTMLElement | null = null
   private tipEl: HTMLElement | null = null
   private tipIconEl: HTMLElement | null = null
   private tipTextEl: HTMLElement | null = null
-  private placeholderEl: HTMLElement | null = null
   private extraEl: HTMLElement | null = null
   private labelEl: HTMLElement | null = null
   private priceEl: HTMLElement | null = null
@@ -256,16 +246,13 @@ export class OASSubmitBar extends OASElement {
           </button>
         </div>
       </div>
-      <div class="placeholder" part="placeholder" aria-hidden="true" hidden></div>
     `
   }
 
   private bind(): void {
-    this.barEl = this.shadow.querySelector<HTMLElement>('[part="bar"]')
     this.tipEl = this.shadow.querySelector<HTMLElement>('[part="tip"]')
     this.tipIconEl = this.shadow.querySelector<HTMLElement>('[part="tip-icon"]')
     this.tipTextEl = this.shadow.querySelector<HTMLElement>('[part="tip-text"]')
-    this.placeholderEl = this.shadow.querySelector<HTMLElement>('[part="placeholder"]')
     this.extraEl = this.shadow.querySelector<HTMLElement>('[part="extra"]')
     this.labelEl = this.shadow.querySelector<HTMLElement>('[part="label"]')
     this.priceEl = this.shadow.querySelector<HTMLElement>('oas-price')
@@ -332,7 +319,6 @@ export class OASSubmitBar extends OASElement {
     if (this.spinnerEl) this.spinnerEl.hidden = !loading
 
     this.syncTip()
-    this.syncPlaceholder()
 
     // 扩展区：有默认插槽内容才占位（无内容不挤压合计右对齐）
     const slot = this.shadow.querySelector<HTMLSlotElement>('slot:not([name])')
@@ -369,21 +355,5 @@ export class OASSubmitBar extends OASElement {
     }
     this.tipIconEl.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${path}</svg>`
     this.tipIconEl.hidden = false
-  }
-
-  /**
-   * 占位块：`placeholder` 在场时渲染；高度同步栏体实际高度（含提示行，真实浏览器逐帧精确）。
-   * 测量不可用（SSR / 无头环境 offsetHeight 为 0）时不写死像素，元素仅占位存在。
-   */
-  private syncPlaceholder(): void {
-    if (!this.placeholderEl) return
-    this.placeholderEl.hidden = !this.hasAttr('placeholder')
-    if (this.placeholderEl.hidden) {
-      this.placeholderEl.style.removeProperty('height')
-      return
-    }
-    const height = this.barEl?.offsetHeight ?? 0
-    if (height > 0) this.placeholderEl.style.height = `${height}px`
-    else this.placeholderEl.style.removeProperty('height')
   }
 }

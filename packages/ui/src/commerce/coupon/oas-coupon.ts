@@ -933,8 +933,11 @@ export class OASCoupon extends OASElement {
     // 勾选态原位同步（选中变化不重建 DOM，多选连续点击不丢节点）
     for (const input of container.querySelectorAll<HTMLInputElement>('[part="option-input"]')) {
       input.checked = multiple ? this.selectedCodes.has(input.value) : input.value === this.selectedCode
+      // 选中态按值写 'true' / 移除（与初始渲染一致）：toggleAttribute 会写成空串，
+      // CSS `[data-selected='true']` 不命中——单选重开丢选中态、多选勾选零反馈
       for (const card of [input.parentElement?.querySelector('[part="coupon"]')]) {
-        card?.toggleAttribute('data-selected', input.checked)
+        if (input.checked) card?.setAttribute('data-selected', 'true')
+        else card?.removeAttribute('data-selected')
       }
     }
   }

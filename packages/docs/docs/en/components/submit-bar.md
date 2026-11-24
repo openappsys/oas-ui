@@ -61,13 +61,20 @@ The default slot renders before the total — useful for agreement checkboxes or
 
 ## Safe area and placeholder
 
-The bar's block-end padding uses `max(spacing, env(safe-area-inset-bottom))` (notches and gesture bars are avoided automatically). The bar is `position: sticky` by default (it already occupies the flow); when the host overrides it to `fixed` with CSS, enable `placeholder` and the component renders a spacer as tall as the bar so the page tail is not covered:
+The bar's block-end padding uses `max(spacing, env(safe-area-inset-bottom))` (notches and gesture bars are avoided automatically). The bar is `position: sticky` by default (it already occupies the flow, so no spacer is needed). When the host overrides it to `fixed` with CSS, **the spacer is the host's responsibility** — add `padding-bottom` to the page tail and align it with `--oas-submit-bar-height` (the bar's min-height token, default `--oas-control-height-xl`; add the rendered tip height when a `tip` line is present):
 
-<DemoBlock title="Placeholder spacer (fixed layouts)">
-  <oas-submit-bar placeholder total="66" action-text="Checkout"></oas-submit-bar>
-  <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    With placeholder present the component appends an equal-height spacer (demo-only toggle under the default sticky layout).
-  </p>
+<DemoBlock title="Fixed-layout spacer recipe (host padding-bottom)">
+  <oas-submit-bar total="66" action-text="Checkout"></oas-submit-bar>
+  <pre style="margin: var(--oas-space-2) 0 0; padding: var(--oas-space-3); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover); font-size: var(--oas-font-size-sm); overflow: auto"><code>/* Host-side style example */
+.checkout-page oas-submit-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+}
+.checkout-page {
+  /* Tail spacer aligned with the bar height to avoid overlap */
+  padding-bottom: var(--oas-submit-bar-height, 48px);
+}</code></pre>
 </DemoBlock>
 
 ## Currency and precision
@@ -94,6 +101,10 @@ Hosts can toggle loading by writing the attribute; no `oas-submit` fires while l
   <oas-button id="sb-toggle-btn-en" size="small" style="margin-top: var(--oas-space-2)">Toggle loading</oas-button>
 </DemoBlock>
 
+## Styling notes
+
+`::part(bar)` is a **two-layer column flex** — the `::part(tip)` line stacks above the `::part(row)` main row. Overriding `flex-direction` on `::part(bar)` squeezes the tip and the main row onto one line; if you need a different layout, take `::part(tip)` / `::part(row)` into account together. For fixed-layout spacing see the "Safe area and placeholder" recipe above (align with `--oas-submit-bar-height`).
+
 ## API
 
 ### oas-submit-bar
@@ -109,7 +120,6 @@ Hosts can toggle loading by writing the attribute; no `oas-submit` fires while l
 | `label` | Total label, defaults to the i18n `submitBar.total` | — | — |
 | `loading` | Loading: button disabled + spinner + `aria-busy`, no events dispatched | `boolean` | — |
 | `locale` | Amount formatting locale; defaults to the document `<html lang>`, then `en` | — | — |
-| `placeholder` | Placeholder switch: renders a spacer as tall as the bar (use it when the host overrides the bar to fixed positioning so page tail content is not covered; not needed for sticky layout) | `boolean` | — |
 | `precision` | Amount decimal places, default 2 | `string` | `2` |
 | `tip` | Tip line text (shipping fee / invoice notices shown above the main row) | — | — |
 | `tip-icon` | Tip icon name (resolved through the icon registry, custom registration wins); unregistered names warn once in dev and skip the icon, the text stays readable | — | — |

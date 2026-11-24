@@ -156,6 +156,12 @@ const STYLE = `
   justify-content: flex-end;
 }
 .button {
+  /* inline-flex：spinner（inline span）的 1em 尺寸只在 flex 布局下生效——
+     否则 loading 态渲染成 4px 竖线 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--oas-space-1);
   box-sizing: border-box;
   min-height: var(--oas-control-height-md);
   padding-inline: var(--oas-space-5);
@@ -371,6 +377,7 @@ const STYLE = `
 .button .spinner {
   width: 1em;
   height: 1em;
+  flex: none;
   border: 2px solid currentColor;
   border-inline-start-color: transparent;
   border-radius: 50%;
@@ -601,11 +608,13 @@ export class OASAddress extends OASElement {
     if (this.actions) this.setSectionHidden(this.actions, !showDetail)
 
     this.applyDisabled()
-    this.applyBusyStates()
     this.parseRegions()
     this.syncRegions()
     this.applyValue()
     if (mode === 'list') this.renderList()
+    // 忙态在列表（可能重建）之后应用：重建签名不含 busy，deleting 切换不重建卡片
+    // （保焦点 / 滚动），由这里对既有按钮增量同步；重建出的新卡片也在此被补上忙态
+    this.applyBusyStates()
   }
 
   /** saving / deleting 忙态：保存钮与删除钮禁用 + aria-busy + spinner（正交于 disabled，可叠加） */
@@ -952,7 +961,6 @@ export class OASAddress extends OASElement {
       this.t('address.delete'),
       this.hasAttr('disabled') || this.hasAttr('readonly') ? 'd' : '',
       this.hasAttr('show-delete') ? 'del' : '',
-      this.hasAttr('deleting') ? 'busy' : '',
     ].join('|')
     if (signature !== this.renderedListSignature) {
       this.renderedListSignature = signature
@@ -1039,7 +1047,7 @@ export class OASAddress extends OASElement {
     return card
   }
 
-  /** 行内操作钮：编辑（恒有）/ 删除（show-delete 在场）；deleting 态删除钮转忙 */
+  /** 行内操作钮：编辑（恒有）/ 删除（show-delete 在场）；deleting 态删除钮转忙（按属性直接生成，重建路径同样正确） */
   private buildCardAction(id: string, item: AddressEntry, kind: 'edit' | 'delete'): HTMLButtonElement {
     const btn = document.createElement('button')
     btn.type = 'button'
@@ -1050,15 +1058,17 @@ export class OASAddress extends OASElement {
     if (kind === 'delete') btn.setAttribute('data-danger', 'true')
     const label = kind === 'edit' ? this.t('address.edit') : this.t('address.delete')
     btn.setAttribute('aria-label', `${label} ${item.name}`)
+    const busy = kind === 'delete' && this.hasAttr('deleting')
     const spinner = document.createElement('span')
     spinner.className = 'spinner'
     spinner.setAttribute('part', 'card-delete-spinner')
     spinner.setAttribute('aria-hidden', 'true')
-    spinner.hidden = true
+    spinner.hidden = !busy
+    if (busy) btn.setAttribute('aria-busy', 'true')
     const text = document.createElement('span')
     text.textContent = label
     btn.append(spinner, text)
-    btn.disabled = this.isLocked() || (kind === 'delete' && this.hasAttr('deleting'))
+    btn.disabled = this.isLocked() || busy
     btn.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()

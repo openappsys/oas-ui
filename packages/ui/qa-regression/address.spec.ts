@@ -122,3 +122,57 @@ test('address 只读态：字段禁编辑但仍可聚焦复制，提交按钮禁
   expect(state.submitDisabled).toBe(true)
   expect(state.value, '只读态应按 value 预填').toBe(true)
 })
+
+// C2 回归：`.button` 无 flex 布局时保存钮 spinner（inline span）1em 尺寸失效 → 4px 竖线
+test('address：saving 态保存钮 spinner 是 1em 圆环（真实几何）', async ({ page }) => {
+  await page.goto('/components/address.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-address')
+
+  const box = await page.locator('oas-address [part="save-spinner"]:not([hidden])').first().boundingBox()
+  expect(box?.width, 'spinner 存在且宽应 ≈1em 而非 4px').toBeGreaterThan(8)
+  expect(box?.height, 'spinner 高应 ≈1em 而非拉伸').toBeLessThan(30)
+})
+
+// I2 回归：deleting 曾挂重建签名——运行时切档整列表重建（丢焦点/滚动），且重建出的
+// 卡片 spinner 硬编码 hidden、不写 aria-busy → 动态加 deleting 时删除钮无转圈
+test('address：运行时切 deleting 不重建列表，删除钮忙态（spinner + aria-busy）真实可见', async ({ page }) => {
+  await page.goto('/components/address.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-address')
+
+  // 动态建一个 list 卡（无 deleting）→ 运行时加 deleting
+  const result = await page.evaluate(() => {
+    const el = document.createElement('oas-address')
+    el.id = 'address-deleting-probe'
+    el.setAttribute('mode', 'list')
+    el.setAttribute('show-delete', '')
+    el.setAttribute(
+      'items',
+      '[{"id":"a1","name":"张三","phone":"13800000000","detail":"文三路 100 号","isDefault":true},{"id":"a2","name":"李四","phone":"13900000000","detail":"文二路 200 号"}]',
+    )
+    document.getElementById('address-list-demo')!.parentElement!.appendChild(el)
+    const before = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')]
+    el.setAttribute('deleting', '')
+    const after = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')]
+    const firstSpinner = after[0]!.querySelector<HTMLElement>('[part="card-delete-spinner"]')!
+    return {
+      identityKept: after[0] === before[0] && after[1] === before[1],
+      disabled: after[0]!.disabled,
+      ariaBusy: after[0]!.getAttribute('aria-busy'),
+      spinnerVisible: !firstSpinner.hidden,
+    }
+  })
+  expect(result.identityKept, '切 deleting 不应重建卡片（DOM 引用不变，保焦点/滚动）').toBe(true)
+  expect(result.disabled).toBe(true)
+  expect(result.ariaBusy, 'aria-busy 应被写上').toBe('true')
+  expect(result.spinnerVisible, '运行时切 deleting 删除钮应转圈').toBe(true)
+
+  // 真实几何：删除钮 spinner 非 4px 竖线
+  const box = await page
+    .locator('#address-deleting-probe [part="card-delete-spinner"]:not([hidden])')
+    .first()
+    .boundingBox()
+  expect(box?.width, '删除钮 spinner 存在且宽应 ≈1em').toBeGreaterThan(8)
+  expect(box?.height, '删除钮 spinner 高应 ≈1em').toBeLessThan(30)
+
+  await page.evaluate(() => document.getElementById('address-deleting-probe')?.remove())
+})

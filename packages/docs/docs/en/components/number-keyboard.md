@@ -65,7 +65,7 @@ While focus is inside the component, a physical keyboard works too: digits (plus
 
 ## Extra keys (`extra-key`)
 
-`extra-key` attaches extra keys to the right side of the digit area (an ID-card "X" key and the like): a single character or a JSON string array (at most 2; extras beyond that are truncated with a warning); the 0 key narrows automatically to make room. Extra characters join the physical-keyboard whitelist too (what is on screen can be typed):
+`extra-key` attaches extra keys to the right of the 0 key on the bottom row of the digit area (grid column 3, next to the delete/done keys in column 4; an ID-card "X" key and the like): a single character or a JSON string array (at most 2; extras beyond that are truncated with a warning); the 0 key narrows automatically to make room. Extra characters join the physical-keyboard whitelist too (what is on screen can be typed):
 
 <DemoBlock title="ID-card X key">
   <oas-number-keyboard id="nk-extra-en" extra-key="X" maxlength="18"></oas-number-keyboard>

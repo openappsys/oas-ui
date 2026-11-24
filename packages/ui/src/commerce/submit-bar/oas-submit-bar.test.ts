@@ -120,18 +120,21 @@ describe('oas-submit-bar', () => {
     expect(barRule).toContain('env(safe-area-inset-bottom')
   })
 
-  it('placeholder：缺省不渲染占位块；属性在场时渲染并随栏体高度同步', () => {
+  it('占位配方：placeholder 属性已撤——占位由宿主 padding 承担，min-height token 落在 .bar 上', () => {
     const el = mount({ total: '10', 'action-text': '结算' })
-    const ph = part(el, 'placeholder')!
-    expect(ph.hidden).toBe(true)
+    // 占位块不再存在于 shadow 结构中（fixed 场景占位 = 宿主自加 padding-bottom）
+    expect(part(el, 'placeholder')).toBe(null)
+    // placeholder 不再是合法属性（observedAttributes 不含，写入无响应）
     el.setAttribute('placeholder', '')
-    expect(ph.hidden).toBe(false)
-    // 可测量环境（真实浏览器）下高度同步栏体；happy-dom 测量为 0 时不写死像素
-    const barHeight = part(el, 'bar')!.offsetHeight
-    if (barHeight > 0) expect(ph.style.height).toBe(`${barHeight}px`)
-    else expect(ph.style.height).toBe('')
-    el.removeAttribute('placeholder')
-    expect(ph.hidden).toBe(true)
+    expect(el.shadowRoot!.querySelector('.placeholder')).toBe(null)
+    // min-height 通道：.bar 规则携带 --oas-submit-bar-height token（宿主可覆写对齐占位高度）
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const barRule = css.match(/\.bar\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(barRule).toContain('min-height: var(--oas-submit-bar-height')
+    expect(barRule).toContain('box-sizing: border-box')
+    // .row 不再携带 min-height（高度回归修复：整栏最小高度只在 .bar 上生效一次）
+    const rowRule = css.match(/\.row\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(rowRule).not.toContain('min-height')
   })
 
   it('tip：提示行渲染在主行上方，属性移除即隐藏', () => {
@@ -165,9 +168,15 @@ describe('oas-submit-bar', () => {
 
   it('tip 与 action 行共存：主行结构完整（extra/total/action 仍在 bar 内）', () => {
     const el = mount({ total: '86', 'action-text': '结算', tip: '提示' })
-    expect(part(el, 'extra')?.getAttribute('part')).toBe('extra')
-    expect(part(el, 'total')?.getAttribute('part')).toBe('total')
-    expect(part(el, 'action')?.getAttribute('part')).toBe('action')
+    const bar = part(el, 'bar')!
+    // 结构断言：tip / extra / total / action 都是 bar 容器的后代（结构破坏时 contains=false → 红）
+    expect(bar.contains(part(el, 'tip')), 'tip 应在 bar 内').toBe(true)
+    expect(bar.contains(part(el, 'extra')), 'extra 应在 bar 内').toBe(true)
+    expect(bar.contains(part(el, 'total')), 'total 应在 bar 内').toBe(true)
+    expect(bar.contains(part(el, 'action')), 'action 应在 bar 内').toBe(true)
     expect(part(el, 'tip')!.hidden).toBe(false)
+    // 值断言：提示行文案与按钮文本都按属性渲染
+    expect(part(el, 'tip-text')!.textContent).toBe('提示')
+    expect(part(el, 'action-text')!.textContent).toBe('结算')
   })
 })

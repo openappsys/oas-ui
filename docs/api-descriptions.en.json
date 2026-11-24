@@ -4712,8 +4712,7 @@
       "disabled": "Disables the button (honours config-provider injected disabled)",
       "danger": "Primary button uses the danger color (destructive main actions)",
       "tip": "Tip line text (shipping fee / invoice notices shown above the main row)",
-      "tip-icon": "Tip icon name (resolved through the icon registry, custom registration wins); unregistered names warn once in dev and skip the icon, the text stays readable",
-      "placeholder": "Placeholder switch: renders a spacer as tall as the bar (use it when the host overrides the bar to fixed positioning so page tail content is not covered; not needed for sticky layout)"
+      "tip-icon": "Tip icon name (resolved through the icon registry, custom registration wins); unregistered names warn once in dev and skip the icon, the text stays readable"
     },
     "events": {
       "oas-submit": "Dispatched on primary button click (not loading / disabled) with `{ total, currency }`"

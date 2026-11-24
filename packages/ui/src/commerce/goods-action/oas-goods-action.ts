@@ -220,6 +220,12 @@ const STYLE = `
   display: none;
 }
 .button {
+  /* inline-flex：spinner（inline span）的 1em 尺寸只在 flex 布局下生效——
+     否则 loading 态渲染成 4px 竖线 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--oas-space-1);
   flex: 1 1 auto;
   min-width: 0;
   min-height: var(--oas-control-height-lg, 40px);
@@ -233,8 +239,6 @@ const STYLE = `
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   transition: background var(--oas-transition-fast) var(--oas-ease-out);
 }
 .button:hover:not(:disabled) {
@@ -258,19 +262,21 @@ const STYLE = `
 .button[data-type='primary']:active:not(:disabled) {
   background: var(--oas-color-primary-active);
 }
-/* 语义档位（success / warning / danger）：实底 + 同族 hover 加深（对齐 danger 混色做法） */
+/* 语义档位（success / warning / danger）：实底 + 同族 hover 加深（对齐 danger 混色做法）。
+   success / warning 底色压深到 80%（对齐 oas-button 语义档：原色底对白字对比度仅
+   3.30 / 3.19，压深后文字走专用 on-<tone> token 达 AA） */
 .button[data-type='success'] {
-  border-color: var(--oas-color-success);
-  background: var(--oas-color-success);
-  color: var(--oas-color-text-on-primary);
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
+  background: color-mix(in srgb, var(--oas-color-success) 80%, var(--oas-color-text-primary));
+  color: var(--oas-color-text-on-success);
 }
 .button[data-type='success']:hover:not(:disabled) {
   background: color-mix(in srgb, var(--oas-color-success) 85%, var(--oas-color-text-primary));
 }
 .button[data-type='warning'] {
-  border-color: var(--oas-color-warning);
-  background: var(--oas-color-warning);
-  color: var(--oas-color-text-on-primary);
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
+  background: color-mix(in srgb, var(--oas-color-warning) 80%, var(--oas-color-text-primary));
+  color: var(--oas-color-text-on-warning);
 }
 .button[data-type='warning']:hover:not(:disabled) {
   background: color-mix(in srgb, var(--oas-color-warning) 85%, var(--oas-color-text-primary));
@@ -309,6 +315,7 @@ const STYLE = `
   }
 }
 .button-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -493,8 +500,10 @@ export class OASGoodsAction extends OASElement {
     btn.setAttribute('part', 'button')
     btn.setAttribute('data-key', action.key)
     btn.setAttribute('data-source', 'button')
-    const primary = action.primary === true
-    btn.setAttribute('data-primary', String(primary))
+    // data-primary 是旧 primary 标志的反映通道：仅当未显式写 type 时生效——
+    // 显式 type:'default' 时 primary 标志不得再翻转视觉（type 优先），CSS 由 data-type 接管
+    const explicitType = typeof action.type === 'string' && BUTTON_TYPES.includes(action.type)
+    btn.setAttribute('data-primary', String(!explicitType && action.primary === true))
     btn.setAttribute('data-type', resolveButtonType(action))
     const loading = action.loading === true
     btn.disabled = hostDisabled || action.disabled === true || loading

@@ -76,13 +76,20 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
 
 ## 底部安全区与占位
 
-栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`（刘海屏 / 手势条自动避让）。栏体缺省 `position: sticky`（文档流内自带占位）；宿主用 CSS 覆写为 `fixed` 时开启 `placeholder`，组件会渲染一块与栏体等高的占位块防止页尾内容被遮挡：
+栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`（刘海屏 / 手势条自动避让）。栏体缺省 `position: sticky`（文档流内自带占位，无需额外占位）。宿主用 CSS 覆写为 `fixed` 时，**占位由宿主自行承担**——给页尾容器加 `padding-bottom` 留白，高度用 `--oas-submit-bar-height` 对齐（栏体最小高度 token，缺省 `--oas-control-height-xl`；有 `tip` 提示行时按实际渲染高度另加）：
 
-<DemoBlock title="占位块（fixed 布局防遮挡）">
-  <oas-submit-bar placeholder total="66" action-text="结算"></oas-submit-bar>
-  <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    placeholder 在场时组件尾部渲染等高占位块（demo 中 sticky 布局下仅为演示开关）。
-  </p>
+<DemoBlock title="fixed 布局占位配方（宿主 padding-bottom）">
+  <oas-submit-bar total="66" action-text="结算"></oas-submit-bar>
+  <pre style="margin: var(--oas-space-2) 0 0; padding: var(--oas-space-3); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover); font-size: var(--oas-font-size-sm); overflow: auto"><code>/* 宿主样式示例 */
+.checkout-page oas-submit-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+}
+.checkout-page {
+  /* 页尾留白对齐栏体高度，防遮挡 */
+  padding-bottom: var(--oas-submit-bar-height, 48px);
+}</code></pre>
 </DemoBlock>
 
 ## 状态切换
@@ -93,6 +100,10 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
   <oas-submit-bar id="sb-toggle" total="399" action-text="立即支付"></oas-submit-bar>
   <oas-button id="sb-toggle-btn" size="small" style="margin-top: var(--oas-space-2)">切换 loading</oas-button>
 </DemoBlock>
+
+## 自定义样式须知
+
+`::part(bar)` 内部是 **column flex 两层结构**——`::part(tip)` 提示行叠在 `::part(row)` 主行上方。宿主覆写 `::part(bar)` 的 `flex-direction` 会把提示行与主行挤到同一行；需要改布局时请连同 `::part(tip)` / `::part(row)` 一起考虑。fixed 场景的占位见上方「安全区与占位」配方（`--oas-submit-bar-height` 对齐栏体最小高度）。
 
 ## API
 
@@ -109,7 +120,6 @@ description: "结算栏组件：底部吸底栏，左侧扩展区 + 合计金额
 | `label` | 合计标签，缺省走 i18n `submitBar.total` | — | — |
 | `loading` | 加载中：按钮禁用 + spinner + `aria-busy`，不派发事件 | `boolean` | — |
 | `locale` | 金额格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN` | — | — |
-| `placeholder` | 占位开关：渲染与栏体等高的占位块（宿主把栏体覆写为 fixed 定位时防止页尾内容被遮挡；sticky 布局无需开启） | `boolean` | — |
 | `precision` | 金额小数位，默认 2 | `string` | `2` |
 | `tip` | 提示行文案（运费 / 发票等高频提示，显示在主行上方） | — | — |
 | `tip-icon` | 提示行图标名（图标注册表查表，自定义注册优先）；未注册时开发态告警一次且不渲染图标，文案照常可读 | — | — |

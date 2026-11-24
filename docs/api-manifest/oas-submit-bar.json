@@ -52,11 +52,6 @@
     {
       "name": "tip-icon",
       "observed": true
-    },
-    {
-      "name": "placeholder",
-      "type": "boolean",
-      "observed": true
     }
   ],
   "props": [],

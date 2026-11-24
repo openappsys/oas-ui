@@ -99,9 +99,15 @@ describe('oas-rolling-text direction / stop-order / start / reset', () => {
     // 先落定
     el.reset()
     expect(digitCols(el).map(nOf)).toEqual(['4', '2'])
+    // start() 触发列整体重建：列节点被替换（不重建 = 复用旧节点 → 此断言红）
+    const before = digitCols(el)
     el.start()
+    const after = digitCols(el)
+    expect(after).toHaveLength(before.length)
+    expect(after[0]).not.toBe(before[0])
+    expect(after[1]).not.toBe(before[1])
     // 目标档位已同步写入（浏览器里 CSS transition 从零档起翻；happy-dom 无动画仅同步属性）
-    expect(digitCols(el).map(nOf)).toEqual(['4', '2'])
+    expect(after.map(nOf)).toEqual(['4', '2'])
     // 含越界瞬态的归位计时结束后仍在目标（start 触发的翻滚链完整走完）
     vi.advanceTimersByTime(1200)
     expect(digitCols(el).map(nOf)).toEqual(['4', '2'])
