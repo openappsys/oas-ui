@@ -5973,7 +5973,7 @@
     "events": {
       "oas-drag-start": "Dispatched once when a pointer drag passes the 4px threshold and captures the pointer, `detail: { x, y, source }`",
       "oas-drag": "Dispatched on every position change (pointer drag / keyboard nudge / inertia), `detail: { x, y, source }`",
-      "oas-drag-end": "Dispatched when a pointer drag ends (including the inertia tail), `detail: { x, y, source }`"
+      "oas-drag-end": "Dispatched when a pointer drag ends, `detail: { x, y, source }`; with inertia a single flick emits twice — once at pointerup and once when the glide settles (same source), and no glide-tail emission if the coast is preempted by a new pointerdown"
     },
     "slots": {
       "": "Default slot: the wrapped floating content (also the drag surface when the whole host drags)",

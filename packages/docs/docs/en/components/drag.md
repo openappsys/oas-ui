@@ -81,6 +81,7 @@ With a `handle` slot only the handle starts a drag; the rest of the block keeps 
 - With `announce` on, position changes are announced through `aria-live="polite"`; `disabled` turns dragging off and removes the focus stop
 - Pointer moves under 4px are treated as clicks (no pointer capture, no default prevention), so buttons and inputs inside the content keep working
 - When a drag passes the threshold, the `click` the browser fires afterwards is swallowed (releasing over a child button does not trigger it); the next normal click works as usual. `pointercancel` (scroll / gesture takeover) only ends the drag — no position is saved and no inertia starts
+- With `inertia` on, a single flick emits **two** `oas-drag-end` events: one at pointerup, one when the glide settles (`source` is `pointer` for both); a glide preempted by a new pointerdown has no glide-tail emission. Scenarios that need a single "ended" signal should act on the second arrival, or deduplicate within a short time window
 - In handle mode only the handle starts a drag; inputs inside the content keep their own arrow-key semantics
 
 <script setup>
@@ -146,7 +147,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-drag` | Dispatched on every position change (pointer drag / keyboard nudge / inertia), `detail: { x, y, source }` |
-| `oas-drag-end` | Dispatched when a pointer drag ends (including the inertia tail), `detail: { x, y, source }` |
+| `oas-drag-end` | Dispatched when a pointer drag ends, `detail: { x, y, source }`; with inertia a single flick emits twice — once at pointerup and once when the glide settles (same source), and no glide-tail emission if the coast is preempted by a new pointerdown |
 | `oas-drag-start` | Dispatched once when a pointer drag passes the 4px threshold and captures the pointer, `detail: { x, y, source }` |
 
 #### Slots

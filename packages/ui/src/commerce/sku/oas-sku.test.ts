@@ -416,6 +416,90 @@ describe('oas-sku', () => {
     expect(part(el, 'panel')).toBe(panel)
     expect(optionInput(el, 1, 'M').checked).toBe(true)
   })
+
+  // -------------------------------------------------------------------------
+  // 回归：popup 关闭态可聚焦性 / 读屏树（bottom-sheet 关闭态只有 translateY(100%)
+  // 移屏外，自身不带 hidden——承载件 hidden 必须由宿主在关闭收尾补上）
+  // -------------------------------------------------------------------------
+
+  /** 模拟真实浏览器滑出过渡收尾：TransitionEvent 形态（composed 冒泡 + propertyName） */
+  function dispatchSlideEnd(sheet: Element): void {
+    const inner = (sheet as HTMLElement).shadowRoot!.querySelector('.sheet')!
+    const ev = new Event('transitionend', { bubbles: true, composed: true })
+    Object.defineProperty(ev, 'propertyName', { value: 'transform' })
+    inner.dispatchEvent(ev)
+  }
+
+  it('popup 关闭态：承载件 hidden（radio/数量/按钮退出 Tab 序与读屏树），打开恢复可见', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    // 初始关闭：同帧 hidden（不进读屏树，Tab 不可达——display:none 语义）
+    expect(sheet.hasAttribute('hidden'), '初始关闭态承载件必须隐藏').toBe(true)
+    // 打开：hidden 移除（面板可见可交互）
+    el.openOverlay()
+    expect(sheet.hasAttribute('hidden'), '打开后承载件可见').toBe(false)
+    expect(sheet.hasAttribute('open')).toBe(true)
+    // 关闭：滑出过渡播放中不立即隐藏（保留滑出动画），收尾后 hidden
+    el.closeOverlay()
+    expect(sheet.hasAttribute('open')).toBe(false)
+    expect(sheet.hasAttribute('hidden'), '滑出过渡播放期间不提前隐藏').toBe(false)
+    dispatchSlideEnd(sheet)
+    expect(sheet.hasAttribute('hidden'), '过渡收尾后承载件隐藏（Tab 序/读屏树移除）').toBe(true)
+  })
+
+  it('popup 关闭收尾兜底：transitionend 不触发（reduced-motion/环境无过渡）时兜底计时隐藏', async () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    el.openOverlay()
+    el.closeOverlay()
+    expect(sheet.hasAttribute('hidden')).toBe(false)
+    // 不派发 transitionend：兜底计时（180ms 过渡 + 余量）到点收尾
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    expect(sheet.hasAttribute('hidden'), '兜底计时到点必须隐藏').toBe(true)
+  })
+
+  it('popup 关闭后焦点回带触发器（不滞留屏外抽屉），焦点已离开时不抢焦点', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    expect(document.activeElement).toBe(trigger)
+    el.openOverlay()
+    const panel = part(el, 'panel')!
+    const inPanel = el.shadowRoot!.activeElement ?? document.activeElement
+    expect(panel.contains(inPanel), '前置：打开后焦点移入面板').toBe(true)
+    // 关闭：焦点回带打开前的触发器（display:none 前移回，不滞留屏外抽屉）
+    el.closeOverlay()
+    expect(document.activeElement, '焦点必须回带触发器').toBe(trigger)
+    trigger.remove()
+
+    // 焦点已被宿主移到别处：关闭不得抢焦点
+    const el2 = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const trigger2 = document.createElement('button')
+    document.body.appendChild(trigger2)
+    trigger2.focus()
+    el2.openOverlay()
+    const elsewhere = document.createElement('button')
+    document.body.appendChild(elsewhere)
+    elsewhere.focus()
+    el2.closeOverlay()
+    expect(document.activeElement, '焦点已在弹层外时关闭不得回带').toBe(elsewhere)
+    elsewhere.remove()
+    trigger2.remove()
+  })
+
+  it('快速关→开：取消待生效的隐藏收尾，弹层保持可见（不闪断）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    el.openOverlay()
+    el.closeOverlay()
+    // 滑出未收尾就重开：pending 隐藏必须作废
+    el.openOverlay()
+    expect(sheet.hasAttribute('hidden'), '重开后不得被待收尾隐藏').toBe(false)
+    // 待收尾的兜底计时到点也不得隐藏（已取消）
+    dispatchSlideEnd(sheet)
+    expect(sheet.hasAttribute('hidden')).toBe(false)
+  })
 })
 
 /** 视口桩：窄屏判定走 matchMedia('(max-width: 480px)')，可即时切换并触发 change */

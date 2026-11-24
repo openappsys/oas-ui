@@ -14,7 +14,8 @@ import '../../feedback/bottom-sheet/index.js'
  * - `layout="popup"`：面板挂进 `oas-bottom-sheet`，由底部抽屉承载（Esc / 遮罩 / 下滑关闭
  *   走 bottom-sheet 协议：容器只派发 `oas-close`，宿主（本组件）据此收起）。
  * 缺省 `layout` 按视口自动：宽度 ≤480px 用 popup，否则 embedded；显式写死的值不被视口覆盖，
- * 视口越界变化即时重判（无需刷新）。
+ * 视口越界变化即时重判（无需刷新）。内嵌形态下预置的 `open` 在切到 popup 形态时自动弹开
+ * （`open` 只在 popup 形态被承载，形态切换时即生效）。
  *
  * 数据契约：
  * - `specs`：JSON 数组 `[{ key, label?, values: (string | { value, label? })[] }]`
@@ -50,7 +51,8 @@ import '../../feedback/bottom-sheet/index.js'
  * a11y：每组 `fieldset` + `legend` 组织，选项为原生 radio（方向键/空格原生可用）；
  * 缺货选项 `disabled` 且文本含「缺货」；数量按 spinbutton 语义（number input + 加减按钮，
  * 均带 i18n 名称），价格变化区 `aria-live="polite"`。弹层形态下焦点移入与 Tab 循环由
- * `oas-bottom-sheet` 统一承载（打开即聚焦面板首个可聚焦控件）。
+ * `oas-bottom-sheet` 统一承载（打开即聚焦面板首个可聚焦控件）；关闭时焦点回带打开前
+ * 触发器，滑出动画结束后承载件补 `hidden`（抽屉内控件退出 Tab 序与读屏树，不滞留屏外）。
  */
 
 export type SkuLayout = 'embedded' | 'popup'
@@ -334,6 +336,8 @@ const DEFAULTS = { quantity: 1, precision: 2 }
 
 /** 窄视口断点：缺省 layout 在 ≤480px 时自动切换底部弹层形态 */
 const NARROW_QUERY = '(max-width: 480px)'
+/** 弹层关闭收尾兜底计时：滑出过渡（--oas-transition-base 180ms）+ 余量；transitionend 缺席时兜住 */
+const SHEET_HIDE_FALLBACK_MS = 300
 const LAYOUT_ONLY_WARN = '[oas-sku] openOverlay() / closeOverlay() 仅在 layout="popup"（或窄屏自动弹层）形态生效'
 
 const warned = new Set<string>()
@@ -594,6 +598,15 @@ export class OASSku extends OASElement {
   /**
    * 形态同步：同一份面板节点在「内嵌容器」与「bottom-sheet 默认 slot」之间搬移
    * （内容复用不复制——选中态 / 焦点 / 已输入数量都跟着走）。
+   *
+   * 弹层关闭收尾（a11y）：bottom-sheet 关闭态只有 translateY(100%) 移屏外，自身不带
+   * hidden/inert——抽屉里的 radio / 数量 / 按钮仍在 Tab 序与读屏树（Tab 会落进屏外面板）。
+   * 因此关闭走两段式：先移除 `open` 让滑出动画照播，过渡收尾（transitionend，只认承载件
+   * shadow 内的 transform/opacity）或兜底计时到点后补 `hidden`（display:none → 退出 Tab 序
+   * 与读屏树）；从未开过（初始 / 形态切回）直接同帧 hidden，不留可达窗口。打开时先移除
+   * hidden 并强制一次样式计算（display:none 元素缺 before-change style，同帧直接挂 `open`
+   * 会吞滑入过渡——实测 Chromium 复现），再挂 `open`。快速关→开会取消待生效的隐藏
+   * （`sheetHideSeq` 失效旧收尾），滑出中重开从当前位置自然回弹。
    */
   private syncLayout(): void {
     const layout = this.resolveLayout()
@@ -607,14 +620,108 @@ export class OASSku extends OASElement {
     if (!panel || !sheet || !host) return
     if (popup) {
       if (panel.parentElement !== sheet) sheet.appendChild(panel)
-      sheet.removeAttribute('hidden')
-      sheet.toggleAttribute('open', this.hasAttribute('open'))
+      if (this.hasAttribute('open')) {
+        // 打开：取消待生效的隐藏收尾（快速关→开不闪断）。触发器在 sheet 挂 open
+        // （内部随即聚焦面板首控件）之前记录。
+        this.cancelSheetHide()
+        sheet.removeAttribute('hidden')
+        if (!sheet.hasAttribute('open')) {
+          this.openTriggerEl = this.deepActiveElement()
+          // hidden 与 open 同帧切换会吞滑入过渡：display:none 元素缺 before-change
+          // style（CSS Transitions 对「此前无样式计算」的元素不建过渡）。先强制一次
+          // 样式/布局计算让「收起」态（translateY(100%)）成为过渡起点，再挂 open——
+          // 同步完成无竞态；滑出中重开则从当前位置自然回弹。
+          sheet.getBoundingClientRect()
+          sheet.setAttribute('open', '')
+        }
+      } else if (sheet.hasAttribute('open')) {
+        // 开→关：焦点回带触发器（此刻面板仍可见可聚焦），滑出动画照播，收尾后隐藏
+        sheet.removeAttribute('open')
+        this.restoreFocusToTrigger()
+        this.scheduleSheetHide(sheet)
+      } else {
+        // 从未开过（初始 / 形态切回）：直接隐藏，不留可达窗口
+        sheet.setAttribute('hidden', '')
+      }
     } else {
+      this.cancelSheetHide()
       if (panel.parentElement !== host) host.appendChild(panel)
       // 内嵌形态不留幽灵弹层：收起并隐藏承载件（空 dialog 不进读屏树）
       sheet.removeAttribute('open')
       sheet.setAttribute('hidden', '')
     }
+  }
+
+  /** 打开弹层前的触发焦点（关闭时回带，避免焦点滞留屏外抽屉） */
+  private openTriggerEl: HTMLElement | null = null
+  /** 待生效的隐藏收尾（取消句柄；快速关→开 / 切形态 / 断连时作废） */
+  private sheetHideCleanup: (() => void) | null = null
+  /** 隐藏收尾代次：重排 / 取消使旧收尾失效（防串扰） */
+  private sheetHideSeq = 0
+
+  /**
+   * 深层 activeElement（穿透 shadow root）。
+   * happy-dom 无焦点节点时读取 shadow.activeElement 可能抛错，防护回落。
+   */
+  private deepActiveElement(): HTMLElement | null {
+    let active: Element | null = typeof document !== 'undefined' ? document.activeElement : null
+    try {
+      while (active instanceof Element && active.shadowRoot?.activeElement) {
+        active = active.shadowRoot.activeElement
+      }
+    } catch {
+      // 环境差异兜底：拿不到深层焦点时以 document.activeElement 为准
+    }
+    return active instanceof HTMLElement ? active : null
+  }
+
+  /** 焦点仍在承载件内时回带打开前触发器（触发器已移出文档则不回带） */
+  private restoreFocusToTrigger(): void {
+    const trigger = this.openTriggerEl
+    this.openTriggerEl = null
+    if (!trigger || !trigger.isConnected) return
+    const sheet = this.sheetEl
+    const active = this.deepActiveElement()
+    if (!sheet || !active) return
+    const inside = sheet.contains(active) || (sheet.shadowRoot != null && sheet.shadowRoot.contains(active))
+    if (inside) trigger.focus({ preventScroll: true })
+  }
+
+  /**
+   * 弹层隐藏收尾：滑出过渡结束（transitionend，只认承载件 shadow 内的 transform/opacity，
+   * 面板内选项 border-color/background 等过渡不误触）或兜底计时二选一；
+   * 环境无过渡（transitionend 永不来）时兜底兜住。代次校验使快速关→开时旧收尾失效。
+   */
+  private scheduleSheetHide(sheet: HTMLElement): void {
+    this.cancelSheetHide()
+    const seq = ++this.sheetHideSeq
+    const finish = (): void => {
+      if (seq !== this.sheetHideSeq) return
+      this.cancelSheetHide()
+      if (!this.hasAttribute('open')) sheet.setAttribute('hidden', '')
+    }
+    const onEnd = (e: Event): void => {
+      if (!(e.target instanceof Element) || sheet.shadowRoot?.contains(e.target) !== true) return
+      const prop = (e as TransitionEvent).propertyName
+      if (prop !== 'transform' && prop !== 'opacity') return
+      finish()
+    }
+    const timer = setTimeout(finish, SHEET_HIDE_FALLBACK_MS)
+    // transition 事件 composed: false（Chromium 实测不冒出 shadow root）——
+    // 监听必须挂在承载件自己的 shadowRoot 上才能收到内部 .sheet / .backdrop 的过渡收尾
+    const listenTarget: EventTarget = sheet.shadowRoot ?? sheet
+    listenTarget.addEventListener('transitionend', onEnd)
+    this.sheetHideCleanup = () => {
+      clearTimeout(timer)
+      listenTarget.removeEventListener('transitionend', onEnd)
+      this.sheetHideCleanup = null
+      this.sheetHideSeq++ // 使排队中的旧收尾失效
+    }
+    this.onCleanup(() => this.cancelSheetHide())
+  }
+
+  private cancelSheetHide(): void {
+    this.sheetHideCleanup?.()
   }
 
   /** bottom-sheet 关闭请求（下滑 / 遮罩 / Esc）：按协议由宿主收起并回派 open 变化 */

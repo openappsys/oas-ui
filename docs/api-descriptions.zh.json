@@ -5717,7 +5717,7 @@
     "events": {
       "oas-drag-start": "指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }`",
       "oas-drag": "位置变化（指针拖拽 / 键盘微调 / 惯性滑行）时派发，`detail: { x, y, source }`",
-      "oas-drag-end": "指针拖拽结束（含惯性滑行收尾）时派发，`detail: { x, y, source }`"
+      "oas-drag-end": "指针拖拽结束时派发，`detail: { x, y, source }`；开惯性时一次甩动共派发两次——松手（pointerup）一次、惯性滑行收尾一次（source 同为 pointer），滑行被再次按下抢占时不派滑行收尾"
     },
     "slots": {
       "": "默认插槽：被包装的浮块内容（整宿主可拖时的拖拽面）",

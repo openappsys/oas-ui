@@ -53,7 +53,7 @@ description: "商品规格选择：specs + skus 数据契约、选中组合精�
   </div>
 </DemoBlock>
 
-> 内嵌形态下 `openOverlay()` / `closeOverlay()` 只告警一次（不产生幽灵 open 态）；`open` 属性仅 popup 形态生效。
+> 内嵌形态下 `openOverlay()` / `closeOverlay()` 只告警一次（不产生幽灵 open 态）；`open` 属性仅 popup 形态生效——内嵌形态下预置的 `open` 在切到 popup 形态（显式或窄屏自动）时会自动弹开。
 
 ## 数量步进与库存上限
 
