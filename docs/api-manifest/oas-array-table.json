@@ -63,6 +63,29 @@
     {
       "name": "move-down-text",
       "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "overscan",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "viewport-height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "estimated-row-height",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -110,6 +133,10 @@
     }
   ],
   "cssVars": [
+    {
+      "name": "--oas-array-table-viewport-height",
+      "default": "320px"
+    },
     {
       "name": "--oas-array-table-actions-width",
       "default": "148px"

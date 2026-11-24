@@ -1868,7 +1868,11 @@
       "rows": "初始渲染行数（只决定初始行数；未提供时 `min` 兼作初始行数）",
       "duplicate-text": "复制按钮可访问名（缺省走 i18n `schemaForm.rowDuplicate`）",
       "move-up-text": "上移按钮可访问名（缺省走 i18n `schemaForm.rowUp`）",
-      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）"
+      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）",
+      "virtual": "虚拟滚动开关（缺省关 = 现状逐字节等价）：只渲染可视窗口 + overscan，字段留 light DOM 语义不变",
+      "overscan": "可视窗口上下各额外渲染的行数（缺省 5）；非法值回落缺省并告警",
+      "viewport-height": "虚拟视口高度 px（缺省量测容器实际高度；CSS --oas-form-list-viewport-height 亦可覆盖）",
+      "estimated-row-height": "行高初始估高 px（缺省 56；窗口内实测后自动校准预估）"
     },
     "events": {
       "oas-add": "添加行时派发，`detail: { index }`",
@@ -5777,7 +5781,11 @@
       "remove-text": "删除按钮可访问名（缺省走 i18n `schemaForm.rowRemove`）",
       "duplicate-text": "复制按钮可访问名（缺省走 i18n `schemaForm.rowDuplicate`）",
       "move-up-text": "上移按钮可访问名（缺省走 i18n `schemaForm.rowUp`）",
-      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）"
+      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）",
+      "virtual": "虚拟滚动开关（缺省关 = 现状逐字节等价）：行帧窗口化，aria-rowcount 始终报总量",
+      "overscan": "可视窗口上下各额外渲染的行数（缺省 5）；非法值回落缺省并告警",
+      "viewport-height": "虚拟视口高度 px（缺省量测 .rows 实际高度；CSS --oas-array-table-viewport-height 亦可覆盖）",
+      "estimated-row-height": "行高初始估高 px（缺省 64；窗口内实测后自动校准预估）"
     },
     "events": {
       "oas-add": "末尾追加行时派发，`detail: { index }`",

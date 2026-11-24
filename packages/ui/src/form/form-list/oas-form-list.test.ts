@@ -439,3 +439,207 @@ describe('OASFormList rows / min 拆分与行操作（V2 批 1）', () => {
     expect(rows(el).length).toBe(2)
   })
 })
+
+describe('OASFormList 虚拟滚动（virtual，v2.6.9 批 A）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 大列表挂载：原生 input 模板（轻量），行数 / 属性可调 */
+  function makeBig(count: number, attrs: Record<string, string> = {}): OASFormList {
+    return makeList({ name: 'users', rows: String(count), ...attrs }, '<input name="nick">')
+  }
+
+  function scroller(el: OASFormList): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.items')!
+  }
+
+  function mountFrames(el: OASFormList): HTMLElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.item')]
+  }
+
+  function spacerHeight(el: OASFormList, which: 'top' | 'bottom'): number {
+    const node = el.shadowRoot!.querySelector<HTMLElement>(`[data-vspacer="${which}"]`)
+    return node ? Number(parseFloat(node.style.height)) : Number.NaN
+  }
+
+  /** 设置滚动位置并派发 scroll（模拟用户滚动） */
+  function scrollTo(el: OASFormList, top: number): void {
+    const sc = scroller(el)
+    sc.scrollTop = top
+    sc.dispatchEvent(new Event('scroll'))
+  }
+
+  it('缺省关（零漂移）：无 spacer 节点、无滚动容器类、帧数=行数（全量帧）', () => {
+    const el = makeBig(5)
+    expect(el.shadowRoot!.querySelectorAll('[data-vspacer]').length).toBe(0)
+    expect(mountFrames(el).length).toBe(5)
+    expect(scroller(el).classList.contains('vscroll')).toBe(false)
+    expect(rows(el).length).toBe(5)
+  })
+
+  it('virtual 开启：1000 行 light DOM 齐全（rowCount=1000）但挂载帧有界', () => {
+    const el = makeBig(1000, { virtual: '', 'viewport-height': '320' })
+    expect(el.rowCount).toBe(1000)
+    expect(rows(el).length).toBe(1000)
+    // viewport 320 / 预估 56 → 行 5 顶 280 < 320（部分可见）→ 基窗 6 行 + overscan 5×2 = 11 帧
+    expect(mountFrames(el).length).toBe(11)
+  })
+
+  it('1000 行性能冒烟：shadow 内渲染节点数有界（窗口化生效）', () => {
+    const el = makeBig(1000, { virtual: '', 'viewport-height': '320' })
+    // shadow 内 input 节点数（帧只挂窗口行）远小于 light DOM 的 1000
+    const shadowInputs = el.shadowRoot!.querySelectorAll('input').length
+    expect(shadowInputs).toBeLessThan(50)
+    // 帧内 slot 分配的 light DOM 行 = 1000（值语义不丢）
+    const lightInputs = el.querySelectorAll('input').length
+    expect(lightInputs).toBe(1000)
+  })
+
+  it('窗口外字段仍索引化：name 重编号覆盖全量行（users.999.nick 在场）', () => {
+    const el = makeBig(1000, { virtual: '', 'viewport-height': '320' })
+    const last = rows(el)[999]!.querySelector('input')!
+    expect(last.getAttribute('name')).toBe('users.999.nick')
+  })
+
+  it('滚动重算：scrollTop 变化 → 窗口平移、spacer 高度更新、首帧 spacer 反映偏移', () => {
+    const el = makeBig(200, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50' })
+    // 顶部：top spacer = 0
+    expect(spacerHeight(el, 'top')).toBe(0)
+    scrollTo(el, 2000)
+    // 2000/50 = 40 → 首可见行 40，start = 35（overscan 5）→ top spacer = 35×50
+    expect(spacerHeight(el, 'top')).toBe(1750)
+    const first = mountFrames(el)[0]!
+    expect(Number(first.dataset.rowIndex)).toBe(35)
+    scrollTo(el, 0)
+    expect(spacerHeight(el, 'top')).toBe(0)
+  })
+
+  it('总高稳定：bottom spacer + 窗口 + top spacer 对齐全量高度（滚动条真实）', () => {
+    const el = makeBig(100, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50' })
+    scrollTo(el, 1000)
+    const top = spacerHeight(el, 'top')
+    const bottom = spacerHeight(el, 'bottom')
+    // scrollTop=1000/50 → 首可见行 20，start = 20-5 = 15 → top = 750；
+    // limit=1320 → 末可见行 26，end = 27+5 = 32 → bottom = 5000 - 1600 = 3400
+    expect(top).toBe(750)
+    expect(bottom).toBe(3400)
+  })
+
+  it('overscan 属性可调：overscan=0 帧数收敛到可视行', () => {
+    const wide = makeBig(200, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50', overscan: '0' })
+    const narrow = makeBig(200, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50', overscan: '20' })
+    expect(mountFrames(wide).length).toBeLessThan(mountFrames(narrow).length)
+  })
+
+  it('viewport-height 属性控制窗口大小：更高视口挂更多帧', () => {
+    const small = makeBig(200, { virtual: '', 'viewport-height': '100', 'estimated-row-height': '50' })
+    const large = makeBig(200, { virtual: '', 'viewport-height': '900', 'estimated-row-height': '50' })
+    expect(mountFrames(small).length).toBeLessThan(mountFrames(large).length)
+  })
+
+  it('虚拟态行操作：删除可视行 → oas-remove、剩余行重编号、值随行保留', () => {
+    const el = makeBig(60, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50' })
+    rows(el)[0]!.querySelector('input')!.setAttribute('value', 'doomed')
+    rows(el)[5]!.querySelector('input')!.setAttribute('value', 'keepme')
+    let detail: unknown
+    el.addEventListener('oas-remove', (e) => (detail = (e as CustomEvent).detail))
+    mountFrames(el)
+      .find((f) => f.dataset.rowIndex === '0')!
+      .querySelector<HTMLButtonElement>('[data-action="remove"]')!
+      .click()
+    expect(el.rowCount).toBe(59)
+    expect(detail).toEqual({ index: 0 })
+    // 原第 5 行（keepme）前移到第 4 行：值随行保留、name 重编号
+    expect(rows(el)[4]!.querySelector('input')!.getAttribute('value')).toBe('keepme')
+    expect(rows(el)[4]!.querySelector('input')!.getAttribute('name')).toBe('users.4.nick')
+    expect(rows(el)[0]!.querySelector('input')!.getAttribute('value')).not.toBe('doomed')
+  })
+
+  it('虚拟态程序化通道：setRowCount / insertRowAt（越窗行）正常且不派发事件', () => {
+    const el = makeBig(50, { virtual: '', 'viewport-height': '320' })
+    const events: string[] = []
+    el.addEventListener('oas-add', () => events.push('add'))
+    el.addEventListener('oas-remove', () => events.push('remove'))
+    el.setRowCount(80)
+    expect(el.rowCount).toBe(80)
+    expect(rows(el)[79]!.querySelector('input')!.getAttribute('name')).toBe('users.79.nick')
+    el.setRowCount(10)
+    expect(el.rowCount).toBe(10)
+    expect(el.insertRowAt(3)).toBe(true)
+    expect(rows(el)[3]!.querySelector('input')!.getAttribute('name')).toBe('users.3.nick')
+    expect(events).toEqual([])
+  })
+
+  it('虚拟态主表收集：窗口外字段值进提交 values（受控/校验语义不变）', () => {
+    const form = new OASForm()
+    form.innerHTML =
+      '<oas-form-list name="users" rows="40" virtual viewport-height="200" estimated-row-height="50"><template><oas-input name="nick"></oas-input></template></oas-form-list>'
+    document.body.appendChild(form)
+    const list = form.querySelector('oas-form-list')!
+    const inputs = [...list.querySelectorAll('oas-input')]
+    expect(inputs.length).toBe(40)
+    inputs[0]!.setAttribute('value', 'first')
+    inputs[39]!.setAttribute('value', 'last')
+    let detail: unknown
+    form.addEventListener('oas-submit', (e) => (detail = (e as CustomEvent).detail))
+    form.submit()
+    const values = (detail as { values: { users: Array<{ nick: string }> } }).values
+    expect(values.users.length).toBe(40)
+    expect(values.users[0]!.nick).toBe('first')
+    expect(values.users[39]!.nick).toBe('last')
+  })
+
+  it('关闭虚拟零漂移：移除 virtual 属性恢复全量帧并拆掉 spacer', () => {
+    const el = makeBig(30, { virtual: '', 'viewport-height': '320' })
+    expect(el.shadowRoot!.querySelectorAll('[data-vspacer]').length).toBe(2)
+    el.removeAttribute('virtual')
+    expect(el.shadowRoot!.querySelectorAll('[data-vspacer]').length).toBe(0)
+    expect(mountFrames(el).length).toBe(30)
+    expect(scroller(el).classList.contains('vscroll')).toBe(false)
+  })
+
+  it('虚拟态 focusAction 窗口外行为安全：删除窗口外行（程序化）不抛错', () => {
+    const el = makeBig(30, { virtual: '', 'viewport-height': '120' })
+    expect(() => el.setRowCount(29)).not.toThrow()
+    expect(el.rowCount).toBe(29)
+  })
+
+  it('行操作（复制/移动）在虚拟态可用且高度模型同步', () => {
+    const el = makeBig(60, { virtual: '', 'viewport-height': '320', 'estimated-row-height': '50' })
+    rows(el)[4]!.querySelector('input')!.setAttribute('value', 'A')
+    let moved: unknown
+    el.addEventListener('oas-duplicate', (e) => (moved = (e as CustomEvent).detail))
+    mountFrames(el)
+      .find((f) => f.dataset.rowIndex === '4')!
+      .querySelector<HTMLButtonElement>('[data-action="duplicate"]')!
+      .click()
+    expect(moved).toEqual({ from: 4, to: 5 })
+    expect(el.rowCount).toBe(61)
+    expect(rows(el)[5]!.querySelector('input')!.getAttribute('value')).toBe('A')
+    expect(rows(el)[5]!.querySelector('input')!.getAttribute('name')).toBe('users.5.nick')
+  })
+
+  it('DSD 水合：virtual 开启的快照命中后接管，窗口重建正常', () => {
+    const ref = makeBig(10, { virtual: '', 'viewport-height': '120' })
+    const snapshot = ref.shadowRoot!.innerHTML
+    const el = new OASFormList()
+    el.setAttribute('name', 'users')
+    el.setAttribute('rows', '10')
+    el.setAttribute('virtual', '')
+    el.setAttribute('viewport-height', '120')
+    const tpl = document.createElement('template')
+    tpl.innerHTML = '<input name="nick">'
+    el.appendChild(tpl)
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-form-list" data-oas-ssr-v="1">${snapshot}`
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    expect(el.rowCount).toBe(10)
+    // viewport 120 / 预估 56 = 3 行可见（行 3 顶 168 ≥ 120）→ 基窗 3 + overscan 5×2 = 8 帧（全量 10 行不挂载）
+    expect(mountFrames(el).length).toBe(8)
+    expect(mountFrames(el).length).toBeLessThan(10)
+  })
+})

@@ -4,6 +4,12 @@
 
 ### 新增
 
+**v2.6.9 追加批 A（大数组虚拟化 + 上传体验，全部向后兼容：缺省/未启用路径与现状逐字节等价）**
+
+- **oas-form-list**：虚拟滚动 `virtual`（缺省关 = 现状逐字节等价）——千行级数组窗口化渲染：只挂载可视窗口 + `overscan`（上下各 5 行，可调）的阴影帧，滚动用上下 spacer 占位（总高不变、滚动条真实）；行高首渲染估高（`estimated-row-height`，缺省 56px）→ 窗口内实测校准（实测同步校准预估，均匀模板一次测量即整表对齐）。**字段全部留在 light DOM 不窗口化**：主表收集/校验/提交、name 重编号、行操作（增删复制排序）、受控 `setRowCount` / `insertRowAt`、DSD 水合语义完全不变，未 slot 的行 wrapper 不渲染、零布局成本。视口高度 `viewport-height` 属性优先（CSS `--oas-form-list-viewport-height` 覆盖）。高度模型无条件随行操作同步（插入/删除按下标平移实测高、移动交换实测高），`virtual` 运行时开关不错位。单测 +13（窗口裁剪/滚动校准/行操作虚拟态可用/关闭零漂移/1000 行渲染节点数冒烟）+ 纯逻辑内核 `form/shared/virtual-rows` 独立单测 19；zh/en 文档补「虚拟滚动」段与 300 行填充 demo。
+- **oas-array-table**：虚拟滚动 `virtual`（缺省关 = 现状逐字节等价）——行操作按钮在 light DOM 行上，因此只窗口化 `.rows` 内的 slot 帧；`.rows` 变滚动视口、表头留在滚动区外（天然粘头）；`aria-rowcount` 始终报总量（行数快照不窗口化）；受控/校验/name 重编号/行操作/跨行粘贴语义不变。`overscan` / `viewport-height` / `estimated-row-height`（缺省 64px）与 form-list 同一套语义（视口 CSS `--oas-array-table-viewport-height`）。单测 +12（含 1000 行渲染节点数冒烟、aria-rowcount 总量、虚拟态行操作/粘贴路径）；zh/en 文档补「虚拟滚动」要点与独立用法 300 行填充 demo。
+- （占位：批 A 后续提交——image-picker 压缩 + EXIF / image-cropper 触控板缩放 / number-keyboard 长按连删）
+
 **新组件能力补强批（15 条既有组件小增量，全部向后兼容：缺省/未启用路径与现状逐字节等价）**
 
 - **oas-submit-bar**：底部安全区（栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`，刘海屏/手势条自动避让）+ fixed 场景占位文档配方（宿主自加 `padding-bottom`，高度用 `--oas-submit-bar-height` token 对齐；sticky 布局本就占流无需占位）+ `tip` / `tip-icon` 提示行（运费/发票高频位；图标走注册表查表，未注册告警一次并跳过图标、文案照常可读）。单测 +5；zh/en 文档补「提示行」「安全区与占位」段与 demo。

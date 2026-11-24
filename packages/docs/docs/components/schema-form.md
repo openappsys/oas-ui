@@ -151,7 +151,12 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
   则回到初始行数。两个 widget 互相切换不丢数据（行数 + 值快照组合保障）。
 - 表格语义用 ARIA（`role="table"` / `columnheader` / `row` / `cell`）+ CSS grid 承载几何，不使用原生
   `<table>`（slot 产不出 `td`，行内容必须留在 light DOM 才能被主表收集）。
-- 与全功能 `oas-table` 的分工：本 widget 面向轻量表单场景，不做分页 / 虚拟滚动 / 批量操作 / 单元格合并。
+- **虚拟滚动（`virtual`）**：千行级数组窗口化——只渲染可视窗口 + overscan（上下各 5 行，`overscan` 可调），
+  行高实测校准（`estimated-row-height` 给初始估高），滚动用 spacer 占位（总高不变）；行 wrapper 全量留在
+  light DOM，`aria-rowcount` 始终报总量、受控 / 校验 / name 重编号 / 行操作 / 粘贴语义不变。视口高度用
+  `viewport-height` 属性（或 CSS `--oas-array-table-viewport-height`），表头留在滚动区外（天然粘头）。
+- 与全功能 `oas-table` 的分工：本 widget 面向轻量表单场景，不做分页 / 服务端分片取数 / 批量操作 / 单元格合并
+  （本地大数据集用 `virtual` 窗口化渲染）。
 
 <DemoBlock title="行内编辑表格：列级注解 + 行操作（复制 / 上移 / 下移 / 删除）">
   <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
@@ -168,6 +173,14 @@ round / abs / floor / ceil / formatDate / dateAdd`（共 20 个；`iif` 惰性�
     <oas-button id="sf-table-enhance-values">getValues()</oas-button>
   </oas-space>
   <span id="sf-table-enhance-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="虚拟滚动（独立用法：点按钮填充 300 行，滚动观察窗口化）">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button id="sf-array-table-virtual-fill" type="button">填充 300 行</oas-button>
+    <oas-array-table id="sf-array-table-virtual" name="users" virtual viewport-height="240" overscan="4" style="width: 100%; max-width: 560px"></oas-array-table>
+    <span id="sf-array-table-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </oas-space>
 </DemoBlock>
 
 ## 布局：栅格 / 分组 / 标签页
@@ -622,6 +635,29 @@ onMounted(() => {
       )
     })
     document.getElementById('sf-table-enhance-values')?.addEventListener('click', () => report('getValues()'))
+  })
+
+  // ---- array-table 虚拟滚动（独立用法）：列定义 + 行模板 JS 注入 + 300 行窗口化 ----
+  const virtualTable = document.getElementById('sf-array-table-virtual')
+  onUpgraded(virtualTable, () => {
+    if (!virtualTable) return
+    virtualTable.columns = [
+      { key: 'nick', label: '昵称', width: 200 },
+      { key: 'age', label: '年龄', width: 96, align: 'right' },
+    ]
+    const tpl = document.createElement('template')
+    tpl.innerHTML =
+      '<oas-form-item data-schema-key="field:users.[].nick"><oas-input name="nick"></oas-input></oas-form-item>' +
+      '<oas-form-item data-schema-key="field:users.[].age"><oas-input-number name="age"></oas-input-number></oas-form-item>'
+    virtualTable.appendChild(tpl)
+  })
+  document.getElementById('sf-array-table-virtual-fill')?.addEventListener('click', () => {
+    if (!virtualTable) return
+    virtualTable.setRowCount(300)
+    const mounted = virtualTable.shadowRoot?.querySelectorAll('.row-frame').length ?? 0
+    const ariaRows = virtualTable.shadowRoot?.querySelector('[role="table"]')?.getAttribute('aria-rowcount') ?? '-'
+    const out = document.getElementById('sf-array-table-virtual-output')
+    if (out) out.textContent = `已填充：共 ${virtualTable.rowCount} 行 · 视口挂载 ${mounted} 帧 · aria-rowcount=${ariaRows}（总量不窗口化）`
   })
 
   // ---- 布局 ----

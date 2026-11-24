@@ -1927,7 +1927,11 @@
       "rows": "Initial row count (only the initial count; when omitted, `min` doubles as the initial row count)",
       "duplicate-text": "Accessible name of the duplicate button (defaults to i18n `schemaForm.rowDuplicate`)",
       "move-up-text": "Accessible name of the move-up button (defaults to i18n `schemaForm.rowUp`)",
-      "move-down-text": "Accessible name of the move-down button (defaults to i18n `schemaForm.rowDown`)"
+      "move-down-text": "Accessible name of the move-down button (defaults to i18n `schemaForm.rowDown`)",
+      "virtual": "Virtual scrolling switch (default off = byte-identical to current behavior): only the visible window plus overscan renders; fields stay in the light DOM with unchanged semantics",
+      "overscan": "Extra rows rendered above/below the visible window (default 5); invalid values fall back with a warning",
+      "viewport-height": "Virtual viewport height in px (default: measured container height; CSS --oas-form-list-viewport-height also overrides)",
+      "estimated-row-height": "Initial row-height estimate in px (default 56; auto-calibrated from measured rows)"
     },
     "events": {
       "oas-add": "Dispatched when a row is added, `detail: { index }`",
@@ -6033,7 +6037,11 @@
       "remove-text": "Accessible name of the remove button (defaults to i18n `schemaForm.rowRemove`)",
       "duplicate-text": "Accessible name of the duplicate button (defaults to i18n `schemaForm.rowDuplicate`)",
       "move-up-text": "Accessible name of the move-up button (defaults to i18n `schemaForm.rowUp`)",
-      "move-down-text": "Accessible name of the move-down button (defaults to i18n `schemaForm.rowDown`)"
+      "move-down-text": "Accessible name of the move-down button (defaults to i18n `schemaForm.rowDown`)",
+      "virtual": "Virtual scrolling switch (default off = byte-identical to current behavior): row frames are windowed while aria-rowcount always reports the total",
+      "overscan": "Extra rows rendered above/below the visible window (default 5); invalid values fall back with a warning",
+      "viewport-height": "Virtual viewport height in px (default: measured .rows height; CSS --oas-array-table-viewport-height also overrides)",
+      "estimated-row-height": "Initial row-height estimate in px (default 64; auto-calibrated from measured rows)"
     },
     "events": {
       "oas-add": "Dispatched when a row is appended, `detail: { index }`",

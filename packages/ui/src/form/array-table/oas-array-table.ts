@@ -11,6 +11,7 @@ import {
   type NamedRowField,
 } from '../shared/list-row-ops.js'
 import { writeFormControlValue } from '../form/index.js'
+import { RowHeightModel, windowFor, type VirtualWindow } from '../shared/virtual-rows.js'
 
 /**
  * oas-array-table —— 对象数组的行内编辑表格（schema-form 的 `uiSchema.widget: 'array-table'` 承载件）。
@@ -30,6 +31,14 @@ import { writeFormControlValue } from '../form/index.js'
  *
  * 行操作契约与 oas-form-list 完全同源：值读写走内核通道（upload 跳过）、操作后按索引重聚焦、
  * aria-live 播报；事件 `oas-add` / `oas-remove` `{ index }` + `oas-duplicate` / `oas-move` `{ from, to }`。
+ *
+ * 虚拟滚动（`virtual` 属性，缺省关 = 现状逐字节等价）：千行级窗口化——行操作按钮在 light DOM
+ * 行上（不进 shadow），因此只窗口化 `.rows` 内的 slot 帧：可视窗口 + overscan（上下各 5 行，
+ * `overscan` 可调）挂载、上下 spacer 占位（总高不变）、行高实测校准（`estimated-row-height`
+ * 给初始估高）；`.rows` 变滚动视口，表头留在滚动区外（天然粘头）。语义铁律不变：aria-rowcount
+ * 始终报总量（行数快照）、受控/校验/name 重编号/行操作全部照旧（行 wrapper 全量在 light DOM）。
+ * 视口高度 `viewport-height` 属性优先，缺省量测 `.rows` 实际高度（CSS
+ * `--oas-array-table-viewport-height` 可覆盖）。
  */
 const STYLE = `
 :host {
@@ -121,6 +130,17 @@ const STYLE = `
 .rows {
   display: block;
 }
+/* 虚拟滚动（virtual 属性）：rows 变滚动视口（表头留在滚动区外=天然粘头），窗口帧 + spacer 占位 */
+.rows.vscroll {
+  overflow-y: auto;
+  max-height: var(--oas-array-table-viewport-height, 320px);
+}
+.v-spacer {
+  width: 100%;
+}
+.v-window {
+  display: block;
+}
 .empty {
   display: grid;
   padding: var(--oas-space-3);
@@ -186,6 +206,19 @@ const DOWN_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="
 const ROW_ACTIONS = ['duplicate', 'move-up', 'move-down', 'remove'] as const
 type RowAction = (typeof ROW_ACTIONS)[number]
 
+/** 虚拟滚动 overscan 缺省（上下各 5 行）与初始估高缺省（px） */
+const DEFAULT_OVERSCAN = 5
+const DEFAULT_ESTIMATED_ROW_HEIGHT = 64
+
+/** 属性非法值告警去重（同原文只 warn 一次） */
+const warned = new Set<string>()
+function warnOnce(msg: string): void {
+  if (!warned.has(msg)) {
+    warned.add(msg)
+    devWarn(msg)
+  }
+}
+
 /** 列定义（顺序 = 单元格顺序；hidden 列保留单元格与值，只隐藏视觉） */
 export interface ArrayTableColumn {
   key: string
@@ -229,6 +262,10 @@ export class OASArrayTable extends OASElement {
       'duplicate-text',
       'move-up-text',
       'move-down-text',
+      'virtual',
+      'overscan',
+      'viewport-height',
+      'estimated-row-height',
     ]
   }
 
@@ -244,6 +281,10 @@ export class OASArrayTable extends OASElement {
   private pendingInitialReplay = true
   private childObserver: MutationObserver | null = null
   private frameKey = ''
+  /** 虚拟滚动高度模型（无条件随行操作同步，保证 virtual 运行时开关不错位） */
+  private vmodel = new RowHeightModel(DEFAULT_ESTIMATED_ROW_HEIGHT)
+  /** 虚拟窗口容器（虚拟态创建；关闭时拆除） */
+  private vWindowEl: HTMLElement | null = null
   /** 列定义原文缓存（变更才重排表头/单元格几何） */
   private columnsRaw: string | null = null
   /** 列宽内存态（key → px；**不序列化**，uiSchema `width` 只作初始值） */
@@ -281,6 +322,8 @@ export class OASArrayTable extends OASElement {
     this.addBtn = this.shadow.querySelector('.add')
     this.liveEl = this.shadow.querySelector('.live')
     this.addBtn?.addEventListener('click', this.handleAddClick)
+    // 虚拟滚动：滚动 → 窗口重算（非虚拟态 .rows 不滚动，监听空转无害）
+    this.rowsEl?.addEventListener('scroll', this.handleVirtualScroll, { passive: true })
     // 跨行粘贴：事件从单元格控件（light DOM）冒泡到宿主；处理器幂等绑定（重连会再次 bind）
     this.removeEventListener('paste', this.handlePasteEvent)
     this.addEventListener('paste', this.handlePasteEvent)
@@ -390,6 +433,8 @@ export class OASArrayTable extends OASElement {
     for (const item of this.items) item.wrapper.remove()
     this.items = []
     this.frameKey = ''
+    // 新模板行高分布可能不同：高度模型按当前估高重建（窗口实测会重新校准）
+    this.vmodel = new RowHeightModel(this.resolveEstimatedRowHeight())
     this.pendingInitialReplay = true
   }
 
@@ -500,6 +545,8 @@ export class OASArrayTable extends OASElement {
     if (anchor) this.insertBefore(wrapper, anchor)
     else this.appendChild(wrapper)
     this.items.splice(at, 0, item)
+    // 高度模型无条件随行操作同步（virtual 运行时开关不错位）
+    this.vmodel.insertAt(at)
     return item
   }
 
@@ -808,18 +855,23 @@ export class OASArrayTable extends OASElement {
     table.setAttribute('aria-label', this.getAttr('label', '') || this.t('schemaForm.tableLabel'))
     table.setAttribute('aria-rowcount', String(this.items.length + 1))
 
-    const frames = [...(this.rowsEl?.querySelectorAll<HTMLElement>(':scope > .row-frame') ?? [])]
-    const key = this.items.map((item) => item.uid).join(',')
-    if (key !== this.frameKey) {
-      this.frameKey = key
-      for (const frame of frames) frame.remove()
-      for (const item of this.items) {
-        const frame = document.createElement('div')
-        frame.className = 'row-frame'
-        const slot = document.createElement('slot')
-        slot.setAttribute('name', `oas-array-table-row-${item.uid}`)
-        frame.appendChild(slot)
-        this.rowsEl?.appendChild(frame)
+    if (this.virtualOn) {
+      this.syncVirtual()
+    } else {
+      this.teardownVirtual()
+      const frames = [...(this.rowsEl?.querySelectorAll<HTMLElement>(':scope > .row-frame') ?? [])]
+      const key = this.items.map((item) => item.uid).join(',')
+      if (key !== this.frameKey) {
+        this.frameKey = key
+        for (const frame of frames) frame.remove()
+        for (const item of this.items) {
+          const frame = document.createElement('div')
+          frame.className = 'row-frame'
+          const slot = document.createElement('slot')
+          slot.setAttribute('name', `oas-array-table-row-${item.uid}`)
+          frame.appendChild(slot)
+          this.rowsEl?.appendChild(frame)
+        }
       }
     }
 
@@ -881,6 +933,166 @@ export class OASArrayTable extends OASElement {
     return this.t('schemaForm.rowRemove')
   }
 
+  // ---------- 虚拟滚动（virtual） ----------
+
+  /** 虚拟态开关（成员名避开 attribute camelCase `virtual`） */
+  private get virtualOn(): boolean {
+    return this.hasAttr('virtual')
+  }
+
+  /** 虚拟滚动：窗口计算 → 挂载 → 实测校准 → 重算收敛 → spacer 占位 */
+  private syncVirtual(): void {
+    const rowsEl = this.rowsEl
+    if (!rowsEl) return
+    this.ensureVirtualSkeleton(rowsEl)
+    this.applyEstimatedAttr()
+    this.vmodel.setCount(this.items.length)
+    const viewport = this.resolveViewportHeight(rowsEl)
+    const overscan = this.resolveOverscan()
+    let win = windowFor(this.vmodel, rowsEl.scrollTop, viewport, overscan)
+    this.mountWindow(win)
+    this.measureMounted()
+    // 实测校准可能挪动窗口边界：重算一次收敛（高度只细化，窗口单调收敛，不循环）
+    const recalculated = windowFor(this.vmodel, rowsEl.scrollTop, viewport, overscan)
+    if (recalculated.start !== win.start || recalculated.end !== win.end) {
+      win = recalculated
+      this.mountWindow(win)
+    }
+    this.updateSpacers(rowsEl, win)
+  }
+
+  /** 虚拟骨架：rows 变滚动视口 + 上下 spacer + 窗口容器（只建一次） */
+  private ensureVirtualSkeleton(rowsEl: HTMLElement): void {
+    if (this.vWindowEl && rowsEl.contains(this.vWindowEl)) return
+    rowsEl.classList.add('vscroll')
+    rowsEl.textContent = ''
+    const top = document.createElement('div')
+    top.className = 'v-spacer'
+    top.setAttribute('data-vspacer', 'top')
+    top.setAttribute('aria-hidden', 'true')
+    const windowEl = document.createElement('div')
+    windowEl.className = 'v-window'
+    const bottom = document.createElement('div')
+    bottom.className = 'v-spacer'
+    bottom.setAttribute('data-vspacer', 'bottom')
+    bottom.setAttribute('aria-hidden', 'true')
+    rowsEl.append(top, windowEl, bottom)
+    this.vWindowEl = windowEl
+    this.frameKey = ''
+  }
+
+  /** 关闭虚拟：拆骨架，帧重建交回非虚拟路径（frameKey 清空强制全量重建） */
+  private teardownVirtual(): void {
+    const rowsEl = this.rowsEl
+    if (!this.vWindowEl || !rowsEl) return
+    this.vWindowEl = null
+    rowsEl.classList.remove('vscroll')
+    rowsEl.textContent = ''
+    this.frameKey = ''
+  }
+
+  /** 窗口帧挂载（uid 序列键：窗口内容不变不重建） */
+  private mountWindow(win: VirtualWindow): void {
+    const windowEl = this.vWindowEl
+    if (!windowEl) return
+    const key = this.items
+      .slice(win.start, win.end)
+      .map((item) => item.uid)
+      .join(',')
+    if (key === this.frameKey) return
+    this.frameKey = key
+    windowEl.textContent = ''
+    for (let i = win.start; i < win.end; i++) {
+      const item = this.items[i]!
+      const frame = document.createElement('div')
+      frame.className = 'row-frame'
+      frame.dataset.rowIndex = String(i)
+      const slot = document.createElement('slot')
+      slot.setAttribute('name', `oas-array-table-row-${item.uid}`)
+      frame.appendChild(slot)
+      windowEl.appendChild(frame)
+    }
+  }
+
+  /** 窗口内实测行高（slotted wrapper 才有布局；量不到保持估高）+ 预估自校准 */
+  private measureMounted(): void {
+    const itemsEl = this.rowsEl
+    if (!itemsEl) return
+    const explicit = this.hasAttr('estimated-row-height')
+    for (const frame of itemsEl.querySelectorAll<HTMLElement>('.row-frame')) {
+      const index = Number(frame.dataset.rowIndex ?? -1)
+      if (!Number.isInteger(index) || index < 0 || index >= this.items.length) continue
+      const wrapper = this.items[index]?.wrapper
+      if (!wrapper) continue
+      const height = wrapper.offsetHeight
+      if (height > 0) {
+        this.vmodel.measure(index, height)
+        // 未显式给估高时：用实测行高校准预估（均匀行一次测量即整表校准）
+        if (!explicit) this.vmodel.setEstimated(height)
+      }
+    }
+  }
+
+  /** spacer 占位：上 = 窗口首行偏移，下 = 总高 − 窗口末行偏移（总高不变、滚动条真实） */
+  private updateSpacers(rowsEl: HTMLElement, win: VirtualWindow): void {
+    const top = rowsEl.querySelector<HTMLElement>('[data-vspacer="top"]')
+    const bottom = rowsEl.querySelector<HTMLElement>('[data-vspacer="bottom"]')
+    if (top) top.style.height = `${Math.round(this.vmodel.offsetOf(win.start))}px`
+    if (bottom)
+      bottom.style.height = `${Math.max(0, Math.round(this.vmodel.total() - this.vmodel.offsetOf(win.end)))}px`
+  }
+
+  /** overscan：上下各额外渲染行数（缺省 5；非法回落缺省并单次告警） */
+  private resolveOverscan(): number {
+    const raw = this.getAttr('overscan', '')
+    if (raw === '') return DEFAULT_OVERSCAN
+    const n = Number(raw)
+    if (!Number.isInteger(n) || n < 0) {
+      warnOnce(`[oas-array-table] 非法 overscan "${raw}"，已回落 ${DEFAULT_OVERSCAN}；应为非负整数`)
+      return DEFAULT_OVERSCAN
+    }
+    return n
+  }
+
+  /**
+   * 视口高度：`viewport-height` 属性优先（确定性，测试/SSR 可控）；缺省量测滚动容器实际高度
+   * （CSS `--oas-array-table-viewport-height` 覆盖生效）；量不到（首帧/测试环境）按 0 处理——
+   * 窗口计算有兜底（从顶部起渲染固定行数）。
+   */
+  private resolveViewportHeight(rowsEl: HTMLElement): number {
+    const raw = this.getAttr('viewport-height', '')
+    if (raw !== '') {
+      const n = Number(raw)
+      if (Number.isFinite(n) && n >= 0) return n
+      warnOnce(`[oas-array-table] 非法 viewport-height "${raw}"，已按容器实测高度处理；应为非负数`)
+    }
+    const measured = rowsEl.clientHeight
+    return measured > 0 ? measured : 0
+  }
+
+  /** 初始估高（`estimated-row-height`；非法回落缺省并单次告警；缺省 → 实测自校准） */
+  private resolveEstimatedRowHeight(): number {
+    const raw = this.getAttr('estimated-row-height', '')
+    if (raw === '') return DEFAULT_ESTIMATED_ROW_HEIGHT
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n <= 0) {
+      warnOnce(`[oas-array-table] 非法 estimated-row-height "${raw}"，已回落 ${DEFAULT_ESTIMATED_ROW_HEIGHT}；应为正数`)
+      return DEFAULT_ESTIMATED_ROW_HEIGHT
+    }
+    return n
+  }
+
+  /** 预估高属性权威（显式给定时压过自校准） */
+  private applyEstimatedAttr(): void {
+    this.vmodel.setEstimated(this.resolveEstimatedRowHeight())
+  }
+
+  /** 虚拟滚动：用户滚动 → 窗口重算（被动监听） */
+  private readonly handleVirtualScroll = (): void => {
+    if (!this.virtualOn) return
+    this.syncShadow()
+  }
+
   private resolveAddText(): string {
     const raw = this.getAttr('add-text', '')
     return raw !== '' ? raw : this.t('schemaForm.rowAdd')
@@ -924,6 +1136,7 @@ export class OASArrayTable extends OASElement {
       const [removed] = this.items.splice(this.items.length - 1, 1)
       removed?.wrapper.remove()
     }
+    this.vmodel.setCount(target)
     if (grew) this.pendingInitialReplay = true
     this.applyNaming()
     this.syncLayout()
@@ -1079,6 +1292,7 @@ export class OASArrayTable extends OASElement {
     if (this.items.length <= this.minValue()) return
     const [item] = this.items.splice(index, 1)
     item!.wrapper.remove()
+    this.vmodel.removeAt(index)
     this.applyNaming()
     this.syncLayout()
     this.syncShadow()
@@ -1103,6 +1317,7 @@ export class OASArrayTable extends OASElement {
     if (this.hasAttr('disabled')) return
     if (to < 0 || to >= this.items.length) return
     swapRowValues(this, this.getAttr('name', ''), from, to)
+    this.vmodel.swapAt(from, to)
     this.emit('move', { from, to })
     this.announce(this.t('schemaForm.rowMoved', { from: from + 1, to: to + 1 }))
     this.focusAction(to, to < from ? 'move-up' : 'move-down')

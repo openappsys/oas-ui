@@ -19,6 +19,14 @@
 - **事件**：`oas-add` / `oas-remove` `{ index }`，`oas-duplicate` / `oas-move` `{ from, to }`。
 - **程序化接口**：`rowCount` 只读、`setRowCount(n)` 收敛行数（增补 / 缩减，不派发事件，
   受控数组缩容与行值内层数组对齐用）、`insertRowAt(index)` 插行。
+- **虚拟滚动（v2.6.9）**：`virtual` 开启窗口化渲染（缺省关 = 现状逐字节等价）——只挂载可视窗口
+  + `overscan`（上下各 5 行起）的阴影帧，上下 spacer 占位（总高不变、滚动条真实），行高首渲染
+  估高（`estimated-row-height`，缺省 56px）→ 窗口内实测校准（实测值同步校准预估，均匀模板一次
+  测量即整表对齐）。**字段全部留在 light DOM 不窗口化**：主表收集 / 校验 / 提交 / name 重编号 /
+  行操作 / 受控通道语义完全不变，虚拟化只发生在阴影帧层（未 slot 的行 wrapper 不渲染、零布局
+  成本）。视口高度 `viewport-height` 属性优先，缺省量测 `.items` 实际高度（CSS
+  `--oas-form-list-viewport-height` 覆盖）。高度模型无条件随行操作同步（插入 / 删除按下标平移
+  实测高、移动交换实测高），`virtual` 运行时开关不错位。
 - **断开重连**：行记录不随断开清理（行 wrapper 留在 light DOM），重连只重挂观察器——否则会按
   初始行数再建一遍（行数翻倍）。
 

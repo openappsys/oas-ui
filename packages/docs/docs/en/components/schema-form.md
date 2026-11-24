@@ -176,8 +176,16 @@ row-action column — it is the same value semantics as `oas-form-list` in a dif
   value snapshots combined).
 - Table semantics use ARIA (`role="table"` / `columnheader` / `row` / `cell`) plus CSS grid for geometry; no
   native `<table>` (slots cannot produce `td`, and row content must stay in light DOM for the form kernel).
+- **Virtual scrolling (`virtual`)**: windowed rendering for thousand-row arrays — only the visible window plus
+  overscan is mounted (`overscan` adjustable, 5 rows per side by default), row heights are measured and
+  calibrated (`estimated-row-height` seeds the initial estimate), and spacers keep the total height stable.
+  Row wrappers all stay in the light DOM: `aria-rowcount` always reports the total, and controlled writes /
+  validation / name renumbering / row operations / paste semantics are unchanged. Viewport height comes from
+  the `viewport-height` attribute (or CSS `--oas-array-table-viewport-height`); the header stays outside the
+  scroll area (naturally sticky).
 - Division of labour with the full-featured `oas-table`: this widget targets lightweight forms and does not do
-  paging / virtual scrolling / bulk operations / cell merging.
+  paging / server-side window fetching / bulk operations / cell merging (large local arrays use `virtual`
+  windowed rendering).
 
 <DemoBlock title="Inline-edit table: column annotations + row actions (duplicate / move / remove)">
   <oas-schema-form id="sf-table" style="width: 100%; max-width: 760px"></oas-schema-form>
@@ -194,6 +202,14 @@ row-action column — it is the same value semantics as `oas-form-list` in a dif
     <oas-button id="sf-table-enhance-values">getValues()</oas-button>
   </oas-space>
   <span id="sf-table-enhance-output" style="display: block; margin-top: 8px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+<DemoBlock title="Virtual scrolling (standalone usage: click to fill 300 rows, scroll to watch windowing)">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button id="sf-array-table-virtual-fill" type="button">Fill 300 rows</oas-button>
+    <oas-array-table id="sf-array-table-virtual" name="users" virtual viewport-height="240" overscan="4" style="width: 100%; max-width: 560px"></oas-array-table>
+    <span id="sf-array-table-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </oas-space>
 </DemoBlock>
 
 ## Layout: grid / group / tabs
@@ -660,6 +676,29 @@ onMounted(() => {
       )
     })
     document.getElementById('sf-table-enhance-values')?.addEventListener('click', () => report('getValues()'))
+  })
+
+  // ---- array-table virtual scrolling (standalone usage): columns + row template via JS + 300-row windowing ----
+  const virtualTable = document.getElementById('sf-array-table-virtual')
+  onUpgraded(virtualTable, () => {
+    if (!virtualTable) return
+    virtualTable.columns = [
+      { key: 'nick', label: 'Nickname', width: 200 },
+      { key: 'age', label: 'Age', width: 96, align: 'right' },
+    ]
+    const tpl = document.createElement('template')
+    tpl.innerHTML =
+      '<oas-form-item data-schema-key="field:users.[].nick"><oas-input name="nick"></oas-input></oas-form-item>' +
+      '<oas-form-item data-schema-key="field:users.[].age"><oas-input-number name="age"></oas-input-number></oas-form-item>'
+    virtualTable.appendChild(tpl)
+  })
+  document.getElementById('sf-array-table-virtual-fill')?.addEventListener('click', () => {
+    if (!virtualTable) return
+    virtualTable.setRowCount(300)
+    const mounted = virtualTable.shadowRoot?.querySelectorAll('.row-frame').length ?? 0
+    const ariaRows = virtualTable.shadowRoot?.querySelector('[role="table"]')?.getAttribute('aria-rowcount') ?? '-'
+    const out = document.getElementById('sf-array-table-virtual-output')
+    if (out) out.textContent = `Filled: ${virtualTable.rowCount} rows total · ${mounted} frames mounted in the viewport · aria-rowcount=${ariaRows} (total never windowed)`
   })
 
   onUpgraded(document.getElementById('sf-layout'), () => {
