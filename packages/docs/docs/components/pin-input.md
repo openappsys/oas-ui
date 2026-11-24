@@ -162,6 +162,16 @@ description: 分格验证码输入：字符约束过滤（type / pattern）、�
 - `success`：成功态——格子描 `--oas-color-success` 绿边（聚焦环同步变色）
 - `aria-invalid`：校验失败态——格子与容器同步该状态并标 danger 边框（已列入 observedAttributes，动态 `setAttribute` 即时生效）；**error 优先于 success**（两者同设时按错误呈现）
 
+## 语义说明栏（info / error-info）
+
+`info` 在格子下方渲染中性提示（次级色），`error-info` 渲染错误说明（danger 色通道）；两者同时在场时**错误优先**。说明文案经 `aria-describedby` 关联到各格（读屏可感知），message 槽是 `aria-live="polite"` 活区（动态替换文案会被播报）：
+
+<DemoBlock title="info 与 error-info">
+  <oas-pin-input length="4" info="请输入短信验证码"></oas-pin-input>
+  <oas-pin-input length="4" value="25" info="请输入短信验证码" error-info="验证码错误，请重试" aria-invalid="true" style="margin-top: var(--oas-space-2)"></oas-pin-input>
+  <oas-pin-input length="4" error-info="验证码已过期" style="margin-top: var(--oas-space-2)"></oas-pin-input>
+</DemoBlock>
+
 ## 受控初值（value）
 
 <DemoBlock title="value 预填">
@@ -305,6 +315,8 @@ onMounted(() => {
 | `auto-submit` | 填满自动提交（找最近 form 调 requestSubmit；无 form 时 no-op） | `boolean` | — |
 | `autofocus` | 首次连接聚焦首个空格 | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `error-info` | 格子下方错误说明（danger 色通道）；优先于 info；message 槽为 aria-live=polite 活区 | `string` | — |
+| `info` | 格子下方中性提示（次级色通道）；与 error-info 同时在场时错误优先；文案经 aria-describedby 关联到各格 | `string` | — |
 | `length` | 验证码位数 | `string` | `6` |
 | `loading` | 提交中：格禁用 + aria-busy + spinner 遮罩，键盘输入全锁 | `boolean` | — |
 | `mask` | 星号遮罩 | `boolean` | — |

@@ -43,6 +43,11 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+.root {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
 .wrap {
   position: relative;
   display: inline-flex;
@@ -200,6 +205,19 @@ input:read-only {
   }
 }
 
+/* ===== 语义说明栏（info / error-info 统一 message 槽） ===== */
+.message {
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.4;
+}
+.message[data-error='true'] {
+  color: var(--oas-color-danger-text);
+}
+.message[hidden] {
+  display: none;
+}
+
 @media (forced-colors: active) {
   /* 强制色下 box-shadow 被 UA 弃用：焦点环回退系统色实线 outline（WCAG 2.4.7） */
   input:focus,
@@ -231,6 +249,8 @@ export class OASPinInput extends OASElement {
       'attached',
       'loading',
       'pattern',
+      'info',
+      'error-info',
     ]
   }
 
@@ -253,6 +273,7 @@ export class OASPinInput extends OASElement {
 
   private container: HTMLElement | null = null
   private spinner: HTMLElement | null = null
+  private messageEl: HTMLElement | null = null
   private cells: HTMLInputElement[] = []
   private currentLength = 0
   /** 焦点当前是否在组件内部（格间移动不算进出，兼防 relatedTarget 缺失的环境差异） */
@@ -264,9 +285,12 @@ export class OASPinInput extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="wrap">
-        <div class="container" part="container" role="group"></div>
-        <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
+      <div class="root">
+        <div class="wrap">
+          <div class="container" part="container" role="group"></div>
+          <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
+        </div>
+        <span class="message" part="message" aria-live="polite" hidden></span>
       </div>
     `
   }
@@ -275,6 +299,7 @@ export class OASPinInput extends OASElement {
   private bind(): void {
     this.container = this.shadow.querySelector('.container')
     this.spinner = this.shadow.querySelector('.spinner')
+    this.messageEl = this.shadow.querySelector('.message')
     this.container?.addEventListener('keydown', (e: KeyboardEvent) => this.onKeydown(e))
     this.container?.addEventListener('paste', (e: ClipboardEvent) => this.onPaste(e))
     this.container?.addEventListener('input', (e: Event) => this.onInput(e))
@@ -356,6 +381,23 @@ export class OASPinInput extends OASElement {
     if (loading) container.setAttribute('aria-busy', 'true')
     else container.removeAttribute('aria-busy')
     if (this.spinner) this.spinner.hidden = !loading
+
+    // 语义说明栏：error-info 优先（错误通道），其次 info；都缺省隐藏
+    const errorInfo = this.getAttr('error-info', '').trim()
+    const info = this.getAttr('info', '').trim()
+    if (this.messageEl) {
+      const text = errorInfo !== '' ? errorInfo : info
+      this.messageEl.textContent = text
+      this.messageEl.hidden = text === ''
+      if (errorInfo !== '') this.messageEl.setAttribute('data-error', 'true')
+      else this.messageEl.removeAttribute('data-error')
+      if (text !== '' && !this.messageEl.id) this.messageEl.id = 'oas-pin-input-message'
+    }
+    const messageId = errorInfo !== '' || info !== '' ? (this.messageEl?.id ?? '') : ''
+    for (const cell of this.cells) {
+      if (messageId !== '') cell.setAttribute('aria-describedby', messageId)
+      else cell.removeAttribute('aria-describedby')
+    }
 
     this.syncSeparators()
   }

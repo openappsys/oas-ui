@@ -162,6 +162,16 @@ Type the correct code `1234` for the full flow: complete → loading (cells lock
 - `success`: success state — cells get the `--oas-color-success` green border (focus ring follows)
 - `aria-invalid`: error state — synced to the container and all cells with a danger border (in observedAttributes; dynamic `setAttribute` applies immediately); **error takes precedence over success** when both are set
 
+## Semantic Message (info / error-info)
+
+`info` renders a neutral hint under the cells (secondary color) and `error-info` renders an error message (danger channel); when both are present **the error wins**. The message is linked to every cell via `aria-describedby` (screen-reader reachable), and the message slot is an `aria-live="polite"` region (replacement copy is announced):
+
+<DemoBlock title="info and error-info">
+  <oas-pin-input length="4" info="Enter the SMS code"></oas-pin-input>
+  <oas-pin-input length="4" value="25" info="Enter the SMS code" error-info="Wrong code, try again" aria-invalid="true" style="margin-top: var(--oas-space-2)"></oas-pin-input>
+  <oas-pin-input length="4" error-info="Code expired" style="margin-top: var(--oas-space-2)"></oas-pin-input>
+</DemoBlock>
+
 ## Controlled Initial Value
 
 <DemoBlock title="value prefill">
@@ -305,6 +315,8 @@ onMounted(() => {
 | `auto-submit` | Auto-submit when full (calls requestSubmit on the closest form; no-op without one) | `boolean` | — |
 | `autofocus` | Focus the first empty cell on first connection | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `error-info` | Error message under the cells (danger channel); takes precedence over info; the message slot is an aria-live=polite region | `string` | — |
+| `info` | Neutral hint under the cells (secondary channel); the error message wins when error-info is also set; linked to cells via aria-describedby | `string` | — |
 | `length` | Number of code digits | `string` | `6` |
 | `loading` | Submitting: cells disabled + aria-busy + spinner overlay, keyboard input fully locked | `boolean` | — |
 | `mask` | Asterisk masking | `boolean` | — |

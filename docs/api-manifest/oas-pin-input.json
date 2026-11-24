@@ -92,6 +92,18 @@
       "observed": true
     },
     {
+      "name": "info",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "error-info",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "autofocus",
       "type": "boolean",
       "observed": false
