@@ -1,18 +1,29 @@
 ---
-description: Image cropping with fixed/free-ratio crop frame, zoom, 90° rotation and arrow-key nudging, exporting a Blob / dataURL for the upload chain (crop → File → upload).
+description: Image cropping with fixed/free-ratio crop frame, drag-to-pan framing, cursor-anchored wheel zoom, 90° rotation and arrow-key nudging, exporting a Blob / dataURL for the upload chain (crop → File → upload).
 ---
 
 # ImageCropper
 
-Move / resize the crop frame and zoom or rotate the image inside the stage (the image is cover-fitted to the stage; no image panning), then confirm to get the result. Use it standalone (avatar / cover cropping) or as an upload pre-step: pick → crop → upload.
+Move / resize the crop frame, drag the image to reframe it, and zoom or rotate inside the stage, then confirm to get the result. Use it standalone (avatar / cover cropping) or as an upload pre-step: pick → crop → upload.
 
 ## Basic usage (free ratio)
 
-Drag the crop frame to move it and its corners to resize; the toolbar zooms, rotates and resets. Confirming dispatches `oas-crop`.
+Drag the crop frame to move it and its corners to resize; drag anywhere outside the frame to pan the image; the toolbar zooms, rotates and resets. Confirming dispatches `oas-crop`.
 
 <DemoBlock title="Free ratio (drag + zoom + rotate)">
   <oas-image-cropper id="ic-free" src="/assets/demo-wide-1.svg"></oas-image-cropper>
   <p id="ic-free-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Adjust, then click “Crop”</p>
+</DemoBlock>
+
+## Panning and framing
+
+The image can be panned: press and drag on the stage **outside the crop frame** (dragging inside the frame still moves the frame), or use `Alt` + arrow keys (`Shift` steps 10px). Panning always honours **the image covers the crop frame** — going past the allowed range is clamped back, so the stage never shows its background.
+
+Scrolling the wheel over the stage zooms in 10% steps **anchored at the cursor** (the content under the cursor stays put); `Ctrl` / `⌘` + wheel is the browser page-zoom gesture and is left alone. The zoom slider and `+` / `−` buttons zoom around the stage centre.
+
+<DemoBlock title="Drag to pan + wheel zoom (16:9)">
+  <oas-image-cropper id="ic-pan" src="/assets/demo-wide-2.svg" aspect-ratio="16/9"></oas-image-cropper>
+  <p id="ic-pan-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">Drag outside the frame to pan, wheel to zoom</p>
 </DemoBlock>
 
 ## Fixed ratio
@@ -64,7 +75,7 @@ Or call the methods directly: `await cropper.toBlob('image/jpeg', 0.9)` / `cropp
 
 ## Events and keyboard
 
-The crop frame is focusable: arrow keys move it by 1px, `Shift` + arrow keys by 10px. The zoom slider and toolbar buttons are native controls.
+The crop frame is focusable: arrow keys move it by 1px, `Shift` + arrow keys by 10px; `Alt` + arrow keys pan the image (`Shift` steps 10px). The zoom slider and toolbar buttons are native controls.
 
 <DemoBlock title="oas-change / oas-crop">
   <oas-image-cropper id="ic-event" src="/assets/demo-wide-2.svg" aspect-ratio="4/3"></oas-image-cropper>
@@ -73,8 +84,8 @@ The crop frame is focusable: arrow keys move it by 1px, `Shift` + arrow keys by 
 
 | Event | When | detail |
 | --- | --- | --- |
-| `oas-change` | After zoom / rotate / crop-frame adjustment | `{ zoom, rotation, frame }` |
-| `oas-crop` | “Crop” is clicked | `{ blob, zoom, rotation, frame }` (`blob` is null when canvas is unavailable) |
+| `oas-change` | After zoom / rotate / crop-frame adjustment / image pan | `{ zoom, rotation, frame, offset }` |
+| `oas-crop` | “Crop” is clicked | `{ blob, zoom, rotation, frame, offset }` (`blob` is null when canvas is unavailable) |
 | `oas-load` | Image loaded | `{ width, height }` |
 | `oas-error` | Image failed to load | `{ src }` |
 
@@ -128,6 +139,17 @@ onMounted(() => {
   const errOut = document.getElementById('ic-error-out')
   err?.addEventListener('oas-error', (e) => log(errOut, `oas-error: failed to load ${e.detail.src}`))
   err?.addEventListener('oas-load', (e) => log(errOut, `oas-load: ${e.detail.width}×${e.detail.height}`))
+
+  // Panning: drag outside the frame to pan, wheel zooms anchored at the cursor
+  const pan = document.getElementById('ic-pan')
+  const panOut = document.getElementById('ic-pan-out')
+  pan?.addEventListener('oas-change', (e) => {
+    const { zoom, offset } = e.detail
+    log(
+      panOut,
+      `Image offset x ${Math.round(offset.x)}px / y ${Math.round(offset.y)}px, zoom ${Math.round(zoom * 100)}% (clamped at the edges)`,
+    )
+  })
 })
 </script>
 
@@ -150,6 +172,7 @@ onMounted(() => {
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
+| `offset` | Current image offset `{ x, y }` (pixels from the stage centre, read-only; already clamped by the “image covers the crop frame” constraint) | `CropOffset` | — |
 | `rotation` | Current rotation in degrees (0 / 90 / 180 / 270, read-only) | `number` | `0` |
 | `zoom` | Current zoom (starts at 1). Writes apply immediately but dispatch **no event** — `oas-change` only reports user interaction, so echoing `el.zoom` back from the handler cannot recurse | `number` | `1` |
 
@@ -159,7 +182,7 @@ onMounted(() => {
 | --- | --- | --- |
 | `setZoom` | `setZoom(value: number): void` | Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change` only when the value actually changes) |
 | `rotate` | `rotate(delta: number): void` | Rotate by a delta (default +90°, dispatches `oas-change`) |
-| `reset` | `reset(): void` | Restore initial zoom / rotation / crop frame (dispatches `oas-change`) |
+| `reset` | `reset(): void` | Restore initial zoom / rotation / image offset / crop frame (dispatches `oas-change`) |
 | `toBlob` | `toBlob(type?: string, quality?: number): Promise<Blob \| null>` | Export the crop as a Blob (null when canvas is unavailable) |
 | `toDataURL` | `toDataURL(type?: string, quality?: number): string` | Export the crop as a dataURL (empty string when canvas is unavailable) |
 
@@ -167,7 +190,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | After zoom / rotate / crop-frame adjustment, `detail: { zoom, rotation, frame }` |
-| `oas-crop` | Crop confirmed, `detail: { blob, zoom, rotation, frame }`; `blob` is null when canvas is unavailable |
+| `oas-change` | After zoom / rotate / crop-frame adjustment / image pan, `detail: { zoom, rotation, frame, offset }` |
+| `oas-crop` | Crop confirmed, `detail: { blob, zoom, rotation, frame, offset }`; `blob` is null when canvas is unavailable |
 | `oas-error` | Image failed to load, `detail: { src }` |
 | `oas-load` | Image loaded, `detail: { width, height }` |

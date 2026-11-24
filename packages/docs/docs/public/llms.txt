@@ -76,7 +76,7 @@
 - [DynamicTags 动态标签](https://oas-ui.dev/components/dynamic-tags): 常驻输入框 + 标签流形态：输入回车/分隔符提交生成标签，支持去重、校验、上限、失焦保存、排序、超量折叠与原位编辑。
 - [Editable 就地编辑](https://oas-ui.dev/components/editable): 点击/回车/空格进入编辑态，Enter 提交、Esc 取消，空值提交默认非破坏；支持多行、图标触发、受控编辑态与提交方式四态组合。
 - [Form 表单](https://oas-ui.dev/components/form): 原生 <form> 增强，支持按 rules 规则对内部字段做校验与提交。
-- [ImageCropper 图片裁剪](https://oas-ui.dev/components/image-cropper): 在舞台内移动 / 缩放裁剪框、缩放与旋转图片（图片由组件 cover 适配舞台，不提供图片平移），确认后拿到裁剪结果。
+- [ImageCropper 图片裁剪](https://oas-ui.dev/components/image-cropper): 在舞台内移动 / 缩放裁剪框、拖拽平移图片取景、缩放与旋转图片，确认后拿到裁剪结果。
 - [ImagePicker 图片选择](https://oas-ui.dev/components/image-picker): 多图选择器：点击或拖拽选图 → 缩略图网格 → 排序 / 删除，带数量上限。
 - [Input 输入框](https://oas-ui.dev/components/input): 原生 <input> 增强的基础输入组件。
 - [InputNumber 数字输入框](https://oas-ui.dev/components/input-number): 数字输入组件：内层为文本输入 + 数字键盘（inputmode="decimal"），带步进按钮、范围约束与格式化显示，role="spinbutton" 提供完整的数值 aria 状态。
@@ -219,7 +219,7 @@
 - [GoodsAction 商品导航](https://oas-ui.dev/components/goods-action): 商品详情页底部的操作栏：左侧 icon 按钮组（收藏 / 店铺 / 购物车，可带角标、收藏可呈按下态），右侧主按钮组（加入购物车 / 立即购买等）。
 - [Invoice 发票](https://oas-ui.dev/components/invoice): 发票信息填写组件：抬头类型切换、抬头与税号校验、发票内容选择、已保存抬头弹层回填。
 - [Price 价格](https://oas-ui.dev/components/price): 价格展示组件：币种符号 + 千分位 + 指定小数位，支持划线价（original）、区间价（min + max）与涨跌趋势箭头（trend + trend-value）。
-- [SKU 商品规格](https://oas-ui.dev/components/sku): 商品规格选择面板（桌面内嵌形态）：specs 描述规格组与选项，skus 描述组合对应的价格 / 库存 / 图片。
+- [SKU 商品规格](https://oas-ui.dev/components/sku): 商品规格选择：specs 描述规格组与选项，skus 描述组合对应的价格 / 库存 / 图片。
 - [SubmitBar 结算栏](https://oas-ui.dev/components/submit-bar): 页面或区块底部的结算栏：左侧扩展区（默认插槽，可放协议勾选、备注入口等）+ 合计金额 + 主操作按钮。
 - [TimeSelect 配送时段选择](https://oas-ui.dev/components/time-select): 下单链路的时间选择件：左侧日期列（今日起 days 天），右侧时段网格；mode="express" 尽快送达（自动取首个可用时段），mode="schedule" 预约配送（手动选日期与时段）。
 

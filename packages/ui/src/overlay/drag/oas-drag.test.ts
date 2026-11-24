@@ -429,4 +429,141 @@ describe('OAS drag 自由拖拽浮块', () => {
     expect(el.hasAttribute('data-restoring')).toBe(false)
     rafSpy.mockRestore()
   })
+
+  // ---------------------------------------------------------------------------
+  // 惯性滑行（inertia）：摩擦 0.95/帧、最多 60 帧、边界截停、reduced-motion 瞬停
+  // ---------------------------------------------------------------------------
+
+  it('惯性滑行按摩擦系数 0.95/帧衰减，逐帧位移递减', () => {
+    const raf = installFakeRaf()
+    const el = mount({ inertia: '' })
+    stubRect(el)
+    // 16px / 16ms → 1 px/ms；松手后每帧位移 = v × 16ms × 0.95^n
+    flick(el, 16, 16)
+    const positions: number[] = [el.position.x]
+    for (let i = 0; i < 5; i++) {
+      raf.flush(1)
+      positions.push(el.position.x)
+    }
+    const deltas = positions.slice(1).map((x, i) => x - positions[i]!)
+    expect(deltas[0], '首帧位移 ≈ v × 16ms × 0.95').toBeCloseTo(16 * 0.95, 1)
+    for (let i = 1; i < deltas.length; i++) {
+      expect(deltas[i]!, `第 ${i + 1} 帧位移应小于前一帧`).toBeLessThan(deltas[i - 1]!)
+      expect(deltas[i]! / deltas[i - 1]!).toBeCloseTo(0.95, 3)
+    }
+    expect(el.hasAttribute('data-coasting'), '滑行中标记可见（样式据此禁用过渡）').toBe(true)
+  })
+
+  it('惯性滑行到边界立即截停（钳制值落定，收尾事件只发一次）', () => {
+    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 1)
+    const raf = installFakeRaf()
+    const el = mount({ inertia: '' })
+    stubRect(el)
+    const ends: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-drag-end', (e) => ends.push((e as CustomEvent).detail))
+    // 视口 400×300、宿主基准 (100,100) 80×40 → x 上限 220；从 100 起高速向右甩
+    el.dispatchEvent(pointerAt('pointerdown', 100, 100, 0))
+    el.dispatchEvent(pointerAt('pointermove', 200, 100, 16))
+    el.dispatchEvent(pointerAt('pointerup', 200, 100, 16))
+    expect(el.position.x, '松手时先跟手到 200').toBe(100)
+    raf.flush(60)
+    expect(el.position.x, '钳制在边界').toBe(220)
+    expect(el.hasAttribute('data-coasting')).toBe(false)
+    expect(ends.at(-1)).toMatchObject({ x: 220, y: 0, source: 'pointer' })
+    expect(ends, '松手一次 + 滑行收尾一次').toHaveLength(2)
+    const requests = raf.requests()
+    raf.flush(10)
+    expect(raf.requests(), '截停后不再请求动画帧').toBe(requests)
+  })
+
+  it('惯性滑行最多 60 帧（超长滑行被上限截断）', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 100000, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 100000, configurable: true })
+    const raf = installFakeRaf()
+    const el = mount({ inertia: '' })
+    stubRect(el, 0, 0, 10, 10)
+    // 极快甩动（16px / 1ms）：衰减到阈值需要 200+ 帧，必须被 60 帧上限截断
+    el.dispatchEvent(pointerAt('pointerdown', 0, 0, 0))
+    el.dispatchEvent(pointerAt('pointermove', 16, 0, 1))
+    el.dispatchEvent(pointerAt('pointerup', 16, 0, 1))
+    raf.flush(200)
+    expect(raf.executed(), '滑行帧数不超过 60').toBe(60)
+    expect(el.hasAttribute('data-coasting')).toBe(false)
+  })
+
+  it('reduced-motion：松手瞬停（不滑行、不请求动画帧）', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce'), media: query }))
+    const raf = installFakeRaf()
+    try {
+      const el = mount({ inertia: '' })
+      stubRect(el)
+      flick(el, 16, 16)
+      expect(el.hasAttribute('data-reduced-motion')).toBe(true)
+      expect(el.position.x, '松手位置即最终位置').toBe(16)
+      expect(raf.requests(), '降级为瞬停：不请求动画帧').toBe(0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('未开 inertia：松手不滑行（零副作用）', () => {
+    const raf = installFakeRaf()
+    const el = mount()
+    stubRect(el)
+    flick(el, 16, 16)
+    expect(el.position.x).toBe(16)
+    expect(raf.requests()).toBe(0)
+    expect(el.hasAttribute('data-coasting')).toBe(false)
+  })
 })
+
+// ---------------------------------------------------------------------------
+// 惯性测试工具：可控 rAF（帧回调手动驱动，时间步进 16ms）
+// ---------------------------------------------------------------------------
+
+function installFakeRaf(): {
+  flush: (frames: number, stepMs?: number) => void
+  requests: () => number
+  executed: () => number
+} {
+  let queue: FrameRequestCallback[] = []
+  let now = 0
+  let requested = 0
+  let executed = 0
+  vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+    requested += 1
+    queue.push(cb)
+    return requested
+  })
+  vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {})
+  return {
+    flush(frames: number, stepMs = 16): void {
+      for (let i = 0; i < frames; i++) {
+        const batch = queue
+        queue = []
+        if (batch.length === 0) return
+        now += stepMs
+        for (const cb of batch) {
+          executed += 1
+          cb(now)
+        }
+      }
+    },
+    requests: () => requested,
+    executed: () => executed,
+  }
+}
+
+/** 带显式时间戳的指针事件（happy-dom 不为 events 保存 init.timeStamp，速度采样需可控） */
+function pointerAt(type: string, x: number, y: number, timeStamp: number): PointerEvent {
+  const ev = pointer(type, x, y)
+  Object.defineProperty(ev, 'timeStamp', { value: timeStamp, configurable: true })
+  return ev
+}
+
+/** 以给定速度（位移 / 时长 ms）甩一下并松手 */
+function flick(el: OASDrag, distance: number, ms: number): void {
+  el.dispatchEvent(pointerAt('pointerdown', 100, 100, 0))
+  el.dispatchEvent(pointerAt('pointermove', 100 + distance, 100, ms))
+  el.dispatchEvent(pointerAt('pointerup', 100 + distance, 100, ms))
+}

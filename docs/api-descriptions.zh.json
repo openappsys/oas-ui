@@ -2148,20 +2148,21 @@
       "disabled": "禁用全部交互（工具栏禁用、裁剪框不可聚焦）"
     },
     "events": {
-      "oas-change": "缩放 / 旋转 / 裁剪框调整后派发，`detail: { zoom, rotation, frame }`",
-      "oas-crop": "确认裁剪，`detail: { blob, zoom, rotation, frame }`；canvas 不可用时 `blob` 为 null",
+      "oas-change": "缩放 / 旋转 / 裁剪框调整 / 图片平移后派发，`detail: { zoom, rotation, frame, offset }`",
+      "oas-crop": "确认裁剪，`detail: { blob, zoom, rotation, frame, offset }`；canvas 不可用时 `blob` 为 null",
       "oas-load": "图片加载成功，`detail: { width, height }`",
       "oas-error": "图片加载失败，`detail: { src }`"
     },
     "slots": {},
     "props": {
       "zoom": "当前缩放（1 起）。写入即生效但**不派发事件**——`oas-change` 只表达用户交互，宿主在事件里回写 `el.zoom` 不会递归",
-      "rotation": "当前旋转角度（0 / 90 / 180 / 270，只读）"
+      "rotation": "当前旋转角度（0 / 90 / 180 / 270，只读）",
+      "offset": "当前图片位移 `{ x, y }`（相对舞台居中的像素偏移，只读；已按「图片覆盖裁剪框」约束钳制）"
     },
     "methods": {
       "setZoom": "设置缩放（夹到 `[1, max-zoom]`；值有变化才派发 `oas-change`）",
       "rotate": "旋转指定角度（默认 +90° 并派发 `oas-change`）",
-      "reset": "恢复初始缩放 / 旋转 / 裁剪框（派发 `oas-change`）",
+      "reset": "恢复初始缩放 / 旋转 / 图片位移 / 裁剪框（派发 `oas-change`）",
       "toBlob": "导出裁剪结果 Blob（canvas 不可用时返回 null）",
       "toDataURL": "导出裁剪结果 dataURL（canvas 不可用时返回空串）"
     }
@@ -4157,12 +4158,23 @@
       "currency": "ISO 4217 币种，默认 `CNY`",
       "locale": "价格格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN`",
       "precision": "价格小数位，默认 2",
-      "disabled": "全禁用（兼容 config-provider 注入禁用）"
+      "disabled": "全禁用（兼容 config-provider 注入禁用）",
+      "layout": "承载形态：`embedded`（内嵌面板）/ `popup`（底部弹层，走 bottom-sheet 协议）；缺省按视口自动（≤480px 弹层）；非法值告警回落 embedded",
+      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；仅 popup 形态生效）。交互与 `openOverlay()` / `closeOverlay()` 改变时派发 `oas-open-change`"
     },
     "events": {
-      "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）"
+      "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）",
+      "oas-open-change": "弹层开合变化（交互 / 命令式），`detail: { open }`；受控属性写入不派发",
+      "oas-close": "由承载件 `oas-bottom-sheet` 冒泡出的关闭请求（下滑 / 遮罩 / Esc），`detail: { reason }`；组件收到后自动收起"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "open": "弹层开合（受控：读写即反射 `open` attribute，静默不派发事件；仅 popup 形态生效）"
+    },
+    "methods": {
+      "openOverlay": "命令式打开弹层（幂等；派发 `oas-open-change`；非 popup 形态只告警一次）",
+      "closeOverlay": "命令式关闭弹层（幂等；派发 `oas-open-change`；非 popup 形态只告警一次）"
+    }
   },
   "oas-slider": {
     "attrs": {
@@ -5705,7 +5717,7 @@
     "attrs": {
       "boundary": "拖拽边界：`viewport`（缺省，视口）或 CSS 选择器（该元素的矩形；未命中告警一次并回落视口）",
       "axis": "拖拽方向轴：`both`（缺省）/ `x` 仅横向 / `y` 仅纵向；非法值回落 `both` 并告警",
-      "inertia": "松手后惯性滑行（速度衰减至停止）；`prefers-reduced-motion: reduce` 下瞬停",
+      "inertia": "松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停）；`prefers-reduced-motion: reduce` 下瞬停",
       "remember": "把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级",
       "storage-key": "位置记忆的存储键（缺省 `oas-drag`）",
       "keyboard": "键盘微调：缺省开启（`tabindex=\"0\"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭",
@@ -5722,7 +5734,7 @@
     "events": {
       "oas-drag-start": "指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }`",
       "oas-drag": "位置变化（指针拖拽 / 键盘微调 / 惯性滑行）时派发，`detail: { x, y, source }`",
-      "oas-drag-end": "指针拖拽结束（含惯性滑行收尾）时派发，`detail: { x, y, source }`"
+      "oas-drag-end": "指针拖拽结束时派发，`detail: { x, y, source }`；开惯性时一次甩动共派发两次——松手（pointerup）一次、惯性滑行收尾一次（source 同为 pointer），滑行被再次按下抢占时不派滑行收尾"
     },
     "slots": {
       "": "默认插槽：被包装的浮块内容（整宿主可拖时的拖拽面）",

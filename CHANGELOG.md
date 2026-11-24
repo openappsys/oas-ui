@@ -57,6 +57,11 @@
 - **barrage reduced-motion 重连 e2e**：`prefers-reduced-motion: reduce` 下重连保留在场弹幕，动画时长恒为 20ms（不按舞台宽度重算）、负延迟落在 20ms 窗口内、暂停态保持，恢复后按剩余时间快速离场。
 - **drag 惯性 e2e**：真实鼠标拖拽松手后继续前进（几何终值 > 松手位置）、`axis="x"` 下纵向零漂移、终值不越过舞台边界、衰减停稳后位置不再漂移且不回弹。
 
+**组件完善批 3（5 件交互增强）**
+
+- **oas-image-cropper 图片平移**：激活此前未生效的 `offset`——在裁剪框外的舞台区域按住拖动可平移图片取景（框内拖动仍是移动裁剪框，按目标区分），舞台内滚轮按 10% 步进缩放且**以光标为锚点**（`Ctrl`/`⌘`+滚轮为浏览器页面缩放，不接管），`Alt`+方向键平移图片（`Shift` 加速 10px）；平移恒受「**图片覆盖裁剪框**」约束——覆盖区间在图片局部坐标推导（裁剪框四角反旋取交集），拖动 / 缩放 / 旋转出界自动钳回，`pointercancel` 回退到本次平移起点；`offset` 只读 property + `oas-change` / `oas-crop` 的 detail 携带 `offset`（导出 canvas 反算同一份位移，所见即所得）；`reset()` 归位位移。单测 +7（拖拽平移 / 裁剪框互斥 / 越界钳回与取消回退 / 光标锚点缩放 / 缩小与旋转后重钳 / Alt+方向键与 reset / 无图与禁用不接管）+ qa-regression 真实拖拽（裁剪框不动 + 图片矩形包住裁剪框）+ zh/en 文档与 demo。
+
+- **oas-sku 弹层形态**：`layout="embedded|popup"`——同一份面板两种承载（面板节点在「内嵌容器」与 `oas-bottom-sheet` 默认 slot 之间搬移，选中态 / 焦点 / 数量输入随节点走，不重建不复制）；`layout` 缺省按视口自动（`matchMedia('(max-width: 480px)')` 越界即时重判，显式值不被视口覆盖，非法值告警回落 embedded）；开合走 bottom-sheet 协议——`open` 受控属性（宿主写入静默）、下滑 / 遮罩 / Esc 由承载件派发 `oas-close` 后组件自动收起、交互与命令式 `openOverlay()` / `closeOverlay()` 派发 `oas-open-change`（内嵌形态调用只告警一次，不产生幽灵 open 态）；打开即聚焦面板首个可聚焦控件、Tab 循环由 bottom-sheet 承载；内嵌形态承载件 `hidden`（空 dialog 不进读屏树）。单测 +7（缺省内嵌 / 面板搬移复用 / 开合协议 / 焦点 / 窄屏自动 + 显式优先 + 回宽屏 / 非法值 / 内嵌命令式告警 / 切换不丢选中）+ qa-regression 真实弹层（面板贴底可见、面板内选择联动、Esc 关闭回写）+ zh/en 文档与 demo。
 
 ## [2.6.9] - 2026-11-23
 

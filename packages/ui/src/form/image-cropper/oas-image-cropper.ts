@@ -5,12 +5,13 @@ import { devWarn } from '../../shared/dev-warn.js'
 /**
  * oas-image-cropper —— 图片裁剪（form 族）。
  *
- * 舞台内显示待裁剪图片；用户拖动裁剪框移动位置、拖四角改大小，工具栏缩放 / 旋转图片，
- * 通过 `toBlob()` / `toDataURL()` 或确认按钮拿到结果。可独立使用，也可作为上传链路的前处理
- * （选图 → 裁剪 → 上传）。
+ * 舞台内显示待裁剪图片；用户拖动裁剪框移动位置、拖四角改大小，拖图片平移取景，
+ * 工具栏缩放 / 旋转图片，通过 `toBlob()` / `toDataURL()` 或确认按钮拿到结果。可独立使用，
+ * 也可作为上传链路的前处理（选图 → 裁剪 → 上传）。
  *
- * 交互边界：裁剪框可在舞台内移动 / 缩放；图片可缩放（1 ~ max-zoom）与 90° 旋转；**不提供图片平移**
- * （图片始终 cover 舞台居中，平移会暴露舞台底色）。
+ * 交互边界：裁剪框可在舞台内移动 / 缩放；图片可缩放（1 ~ max-zoom）、90° 旋转与平移
+ * （拖舞台空白区 / 图面拖动、舞台内滚轮以光标为锚点缩放、Alt+方向键微调）。平移恒受
+ * 「图片覆盖裁剪框」约束——拖出 / 缩出可达范围时自动钳回，舞台不会露出底色。
  *
  * 属性（kebab-case）：
  * - `src`：图片地址（`http(s)` / `blob:` / 相对路径；`javascript:` 等可执行协议回落空）
@@ -24,18 +25,20 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `zoom`：当前缩放（1 起；写入即生效、**不派发事件**——程序化写入与用户交互事件分离，
  *   宿主在 `oas-change` 里回写 `el.zoom` 不会递归；越界夹到 `[1, max-zoom]`）
  * - `rotation`：当前旋转角度（只读，0/90/180/270）
+ * - `offset`：当前图片位移（只读 `{ x, y }`，相对舞台居中的像素偏移；受覆盖约束钳制）
  *
  * 事件（bubbles + composed）：
- * - `oas-change`：缩放 / 旋转 / 裁剪框调整后派发，`detail: { zoom, rotation, frame }`
- * - `oas-crop`：确认裁剪，`detail: { blob, zoom, rotation, frame }`（canvas 不可用时 `blob` 为 null）
+ * - `oas-change`：缩放 / 旋转 / 裁剪框调整 / 图片平移后派发，`detail: { zoom, rotation, frame, offset }`
+ * - `oas-crop`：确认裁剪，`detail: { blob, zoom, rotation, frame, offset }`（canvas 不可用时 `blob` 为 null）
  * - `oas-load`：图片加载成功，`detail: { width, height }`
  * - `oas-error`：图片加载失败，`detail: { src }`
  *
  * 方法：`toBlob(type?, quality?)` / `toDataURL(type?, quality?)` / `rotate(delta?)` /
  * `setZoom(zoom)` / `reset()`
  *
- * a11y：裁剪框 `tabindex="0"`，方向键移动（Shift 加速 10px），工具栏为原生按钮并带可读名称；
- * 缩放滑块为原生 `input[type=range]`（方向键可操作）；禁用态全部同步 `disabled`。
+ * a11y：裁剪框 `tabindex="0"`，方向键移动（Shift 加速 10px），Alt+方向键平移图片
+ * （Shift 加速 10px）；工具栏为原生按钮并带可读名称；缩放滑块为原生 `input[type=range]`
+ * （方向键可操作）；禁用态全部同步 `disabled`。
  *
  * 尺寸与测量：舞台高度默认 320px（`::part(stage)` 可覆盖），渲染测量宽度；无法测量
  * （SSR / 测试环境）时按 480×320 的基准布局驱动裁剪框，真实浏览器首帧测量后按比例重映射。
@@ -54,6 +57,26 @@ interface DragState {
   startX: number
   startY: number
   base: CropRect
+}
+
+/** 图片平移状态（pointerdown 落点 + 起始位移） */
+interface PanState {
+  startX: number
+  startY: number
+  baseX: number
+  baseY: number
+}
+
+/** 舞台内坐标点（缩放锚点） */
+interface StagePoint {
+  x: number
+  y: number
+}
+
+/** 图片位移（相对舞台居中的像素偏移） */
+export interface CropOffset {
+  x: number
+  y: number
 }
 
 const PAD = 8
@@ -102,6 +125,13 @@ const STYLE = `
   background: var(--oas-color-bg-hover);
   touch-action: none;
   user-select: none;
+}
+/* 图片可平移时舞台给抓取光标（裁剪框自身 cursor: move 优先） */
+.stage[data-pannable] {
+  cursor: grab;
+}
+.stage[data-panning] {
+  cursor: grabbing;
 }
 .stage[data-empty] .frame,
 .stage[data-error] .frame {
@@ -276,13 +306,16 @@ export class OASImageCropper extends OASElement {
   private frameRect: CropRect = { x: 0, y: 0, width: 0, height: 0 }
   private zoomValue = 1
   private rotationValue = 0
-  private offset = { x: 0, y: 0 }
+  /** 图片位移（相对舞台居中；恒受「覆盖裁剪框」约束，写入必须走 applyOffset） */
+  private offsetValue: CropOffset = { x: 0, y: 0 }
   private lastAspectKey: string | null = null
   private lastSrc = ''
   private loaded = false
   /** 当前 src 加载失败（破图）——舞台显示错误文案而不是残留空图 */
   private failed = false
   private drag: DragState | null = null
+  /** 图片平移会话（null = 未平移） */
+  private pan: PanState | null = null
 
   /** @apiProperty 当前缩放（写入即静默生效，越界夹到 [1, max-zoom]；不派发事件） */
   get zoom(): number {
@@ -300,6 +333,11 @@ export class OASImageCropper extends OASElement {
   /** @apiProperty 当前旋转角度（0 / 90 / 180 / 270） */
   get rotation(): number {
     return this.rotationValue
+  }
+
+  /** @apiProperty 当前图片位移（只读 `{ x, y }`，相对舞台居中的像素偏移，已按覆盖约束钳制） */
+  get offset(): CropOffset {
+    return { x: this.offsetValue.x, y: this.offsetValue.y }
   }
 
   private template(): string {
@@ -343,7 +381,9 @@ export class OASImageCropper extends OASElement {
     this.stageEl?.addEventListener('pointerdown', this.onPointerDown)
     this.stageEl?.addEventListener('pointermove', this.onPointerMove)
     this.stageEl?.addEventListener('pointerup', this.onPointerUp)
-    this.stageEl?.addEventListener('pointercancel', this.onPointerUp)
+    this.stageEl?.addEventListener('pointercancel', this.onPointerCancel)
+    // 滚轮缩放以光标为锚点：必须非 passive 才能阻止页面滚动
+    this.stageEl?.addEventListener('wheel', this.onWheel, { passive: false })
     this.frameEl?.addEventListener('keydown', this.onFrameKeydown)
     this.toolbarEl?.addEventListener('click', this.onToolbarClick)
     this.zoomRangeEl?.addEventListener('input', this.onZoomInput)
@@ -370,6 +410,7 @@ export class OASImageCropper extends OASElement {
       this.resizeObserver?.disconnect()
       this.resizeObserver = null
       this.drag = null
+      this.pan = null
     })
   }
 
@@ -396,7 +437,7 @@ export class OASImageCropper extends OASElement {
       this.failed = false
       this.zoomValue = 1
       this.rotationValue = 0
-      this.offset = { x: 0, y: 0 }
+      this.offsetValue = { x: 0, y: 0 }
       if (this.imgEl) {
         if (hasImage) this.imgEl.setAttribute('src', src)
         else this.imgEl.removeAttribute('src')
@@ -422,6 +463,12 @@ export class OASImageCropper extends OASElement {
     this.toolbarEl?.setAttribute('aria-label', this.t('imageCropper.label'))
     this.frameEl?.setAttribute('aria-label', this.t('imageCropper.label'))
     if (this.frameEl) this.frameEl.tabIndex = disabled ? -1 : 0
+    // 可平移光标提示：只有「有图 + 未禁用」时舞台才可抓取
+    if (this.loaded && !disabled) stage.setAttribute('data-pannable', '')
+    else {
+      stage.removeAttribute('data-pannable')
+      stage.removeAttribute('data-panning')
+    }
 
     const maxZoom = this.resolveMaxZoom()
     if (this.zoomRangeEl) {
@@ -508,6 +555,7 @@ export class OASImageCropper extends OASElement {
       height,
     }
     this.syncFrame()
+    this.applyOffset(this.offsetValue.x, this.offsetValue.y)
   }
 
   /** 裁剪框限制在舞台内 */
@@ -521,6 +569,8 @@ export class OASImageCropper extends OASElement {
       x: clamp(f.x, 0, this.stageW - width),
       y: clamp(f.y, 0, this.stageH - height),
     }
+    // 裁剪框挪动后允许的图片位移区间随之变化：超出者钳回，保证图片恒覆盖裁剪框
+    this.applyOffset(this.offsetValue.x, this.offsetValue.y)
   }
 
   private syncFrame(): void {
@@ -542,8 +592,79 @@ export class OASImageCropper extends OASElement {
       img.style.width = `${img.naturalWidth * scale}px`
       img.style.height = `${img.naturalHeight * scale}px`
     }
-    img.style.transform = `translate(${this.offset.x}px, ${this.offset.y}px) rotate(${this.rotationValue}deg)`
+    img.style.transform = `translate(${this.offsetValue.x}px, ${this.offsetValue.y}px) rotate(${this.rotationValue}deg)`
     if (this.zoomValueEl) this.zoomValueEl.textContent = `${Math.round(this.zoomValue * 100)}%`
+  }
+
+  /**
+   * 图片覆盖裁剪框的可行位移区间（图片局部坐标）。
+   *
+   * 推导：图片中心 `C + offset` 旋转 θ 后覆盖的点集，等价于「把裁剪框四角反旋到图片局部坐标
+   * 后落在 ±(绘制宽高)/2 内」。位移在局部坐标为 `u = R(-θ)·offset`，故每个角给出一个
+   * 关于 u 的区间，取交集即得可行上下界。
+   */
+  private offsetBounds(): { ux: [number, number]; uy: [number, number] } | null {
+    const img = this.imgEl
+    if (!img || !this.loaded || img.naturalWidth === 0 || img.naturalHeight === 0) return null
+    const scale = this.fitScale() * this.zoomValue
+    const drawW = img.naturalWidth * scale
+    const drawH = img.naturalHeight * scale
+    const rad = (this.rotationValue * Math.PI) / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+    const cx = this.stageW / 2
+    const cy = this.stageH / 2
+    const f = this.frameRect
+    const corners: Array<[number, number]> = [
+      [f.x, f.y],
+      [f.x + f.width, f.y],
+      [f.x, f.y + f.height],
+      [f.x + f.width, f.y + f.height],
+    ]
+    let maxU = -Infinity
+    let minU = Infinity
+    let maxV = -Infinity
+    let minV = Infinity
+    for (const [px, py] of corners) {
+      const dx = px - cx
+      const dy = py - cy
+      // R(-θ) 把舞台坐标转到图片局部坐标
+      const u = dx * cos + dy * sin
+      const v = -dx * sin + dy * cos
+      if (u > maxU) maxU = u
+      if (u < minU) minU = u
+      if (v > maxV) maxV = v
+      if (v < minV) minV = v
+    }
+    return {
+      ux: [maxU - drawW / 2, minU + drawW / 2],
+      uy: [maxV - drawH / 2, minV + drawH / 2],
+    }
+  }
+
+  /** 区间夹取：区间退化（图片小于所需覆盖范围）时取中位，避免抖动 */
+  private fitInRange(value: number, range: [number, number]): number {
+    const [lo, hi] = range
+    if (hi < lo) return (lo + hi) / 2
+    return clamp(value, lo, hi)
+  }
+
+  /** 写入位移：按覆盖约束钳制 → 同步图片（不派发事件） */
+  private applyOffset(x: number, y: number): void {
+    const bounds = this.offsetBounds()
+    if (!bounds) {
+      this.offsetValue = { x: 0, y: 0 }
+      this.syncImage()
+      return
+    }
+    const rad = (this.rotationValue * Math.PI) / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+    // 舞台坐标 → 图片局部坐标夹取 → 回转到舞台坐标
+    const ux = this.fitInRange(x * cos + y * sin, bounds.ux)
+    const uy = this.fitInRange(-x * sin + y * cos, bounds.uy)
+    this.offsetValue = { x: ux * cos - uy * sin, y: ux * sin + uy * cos }
+    this.syncImage()
   }
 
   /** 图片「cover」适配比（按旋转后的占位尺寸计算，保证舞台无留白） */
@@ -597,30 +718,56 @@ export class OASImageCropper extends OASElement {
   }
 
   private onPointerDown = (e: Event): void => {
-    if (this.injectDisabled() || !this.lastSrc) return
+    if (this.injectDisabled() || !this.lastSrc || this.failed) return
     const target = e.target as HTMLElement | null
-    if (!target || !this.frameEl?.contains(target)) return
+    if (!target) return
     const pe = e as PointerEvent
-    const handle = target.dataset?.handle ?? ''
-    this.drag = {
-      mode: handle === '' ? 'move' : 'resize',
-      handle,
+    const inFrame = this.frameEl?.contains(target) === true
+    if (inFrame) {
+      const handle = target.dataset?.handle ?? ''
+      this.drag = {
+        mode: handle === '' ? 'move' : 'resize',
+        handle,
+        startX: pe.clientX ?? 0,
+        startY: pe.clientY ?? 0,
+        base: { ...this.frameRect },
+      }
+      try {
+        this.frameEl?.setPointerCapture(pe.pointerId)
+      } catch {
+        // 不支持指针捕获的环境降级为舞台内跟踪
+      }
+      e.preventDefault()
+      return
+    }
+    // 舞台空白区 / 图面：平移图片（与裁剪框拖拽按目标区分，互不串扰）
+    if (!this.loaded) return
+    this.pan = {
       startX: pe.clientX ?? 0,
       startY: pe.clientY ?? 0,
-      base: { ...this.frameRect },
+      baseX: this.offsetValue.x,
+      baseY: this.offsetValue.y,
     }
     try {
-      this.frameEl.setPointerCapture(pe.pointerId)
+      this.stageEl?.setPointerCapture(pe.pointerId)
     } catch {
-      // 不支持指针捕获的环境降级为舞台内跟踪
+      // 同上：不支持指针捕获时依赖舞台内 pointermove
     }
+    this.stageEl?.setAttribute('data-panning', '')
     e.preventDefault()
   }
 
   private onPointerMove = (e: Event): void => {
+    const pe = e as PointerEvent
+    const pan = this.pan
+    if (pan) {
+      const dx = (pe.clientX ?? 0) - pan.startX
+      const dy = (pe.clientY ?? 0) - pan.startY
+      this.applyOffset(pan.baseX + dx, pan.baseY + dy)
+      return
+    }
     const drag = this.drag
     if (!drag) return
-    const pe = e as PointerEvent
     const dx = (pe.clientX ?? 0) - drag.startX
     const dy = (pe.clientY ?? 0) - drag.startY
     if (drag.mode === 'move') {
@@ -637,11 +784,59 @@ export class OASImageCropper extends OASElement {
   }
 
   private onPointerUp = (): void => {
+    if (this.pan) {
+      this.pan = null
+      this.stageEl?.removeAttribute('data-panning')
+      this.syncImage()
+      this.emitChange()
+      return
+    }
     if (!this.drag) return
     this.drag = null
     this.clampFrame()
     this.syncFrame()
     this.emitChange()
+  }
+
+  /**
+   * 手势被浏览器接管（滚动 / 触屏系统手势）：本次平移回退到起点，不留下半程位移
+   * （取消路径必须无副作用）；裁剪框拖拽同样只收尾。
+   */
+  private onPointerCancel = (): void => {
+    const pan = this.pan
+    if (pan) {
+      this.pan = null
+      this.stageEl?.removeAttribute('data-panning')
+      this.applyOffset(pan.baseX, pan.baseY)
+      this.emitChange()
+      return
+    }
+    if (!this.drag) return
+    this.drag = null
+    this.clampFrame()
+    this.syncFrame()
+    this.emitChange()
+  }
+
+  /**
+   * 舞台内滚轮缩放：以光标为锚点（光标下的图片点缩放前后落在同一舞台位置）。
+   * 禁用 / 无图时不接管，页面滚动照常。
+   */
+  private onWheel = (e: Event): void => {
+    const we = e as WheelEvent
+    if (this.injectDisabled() || !this.loaded) return
+    // Ctrl/⌘ + 滚轮是浏览器页面缩放手势，组件不得接管
+    if (we.ctrlKey) return
+    const delta = we.deltaY ?? 0
+    if (delta === 0) return
+    we.preventDefault()
+    const rect = this.stageEl?.getBoundingClientRect?.()
+    const anchor: StagePoint = {
+      x: (we.clientX ?? 0) - (rect?.left ?? 0),
+      y: (we.clientY ?? 0) - (rect?.top ?? 0),
+    }
+    const next = this.zoomValue + (delta < 0 ? ZOOM_STEP : -ZOOM_STEP)
+    if (this.applyZoom(next, anchor)) this.emitChange()
   }
 
   /** 角点拖拽调整裁剪框：固定比例按宽联动高度并以对角为锚点，自由比例四边独立 */
@@ -695,12 +890,21 @@ export class OASImageCropper extends OASElement {
     else if (e.key === 'ArrowDown') dy = step
     else return
     e.preventDefault()
+    // Alt+方向键平移图片（裁剪框不动）；无 Alt 时移动裁剪框
+    if (e.altKey) {
+      if (!this.loaded) return
+      this.applyOffset(this.offsetValue.x + dx, this.offsetValue.y + dy)
+      this.emitChange()
+      return
+    }
     const f = this.frameRect
     this.frameRect = {
       ...f,
       x: clamp(f.x + dx, 0, this.stageW - f.width),
       y: clamp(f.y + dy, 0, this.stageH - f.height),
     }
+    // 裁剪框位置变化会改变图片的可行位移区间：先钳框与位移，再落样式
+    this.clampFrame()
     this.syncFrame()
     this.emitChange()
   }
@@ -735,29 +939,47 @@ export class OASImageCropper extends OASElement {
    * 写入缩放（夹值 + 同步滑块与图片），返回是否真的发生变化。
    * 本方法**不派发事件**：`oas-change` 只表达用户交互，property 通道（`el.zoom = n`）静默生效——
    * 否则宿主「监听 oas-change → 回写 el.zoom」是同帧同步递归，直接爆栈。
+   *
+   * `anchor` 为舞台内坐标：给定时以该点为缩放锚点（光标下的图片点保持不动），
+   * 缺省按舞台中心缩放（滑块 / 按钮的平移不跟手，避免光标在工具栏上仍按舞台锚点偏移）。
    */
-  private applyZoom(value: number): boolean {
+  private applyZoom(value: number, anchor?: StagePoint): boolean {
     const next = clamp(Number(value), 1, this.resolveMaxZoom())
     const changed = next !== this.zoomValue
+    if (!changed) {
+      if (this.zoomRangeEl) this.zoomRangeEl.value = String(next)
+      return false
+    }
+    const prev = this.zoomValue
     this.zoomValue = next
+    if (anchor && this.loaded) {
+      const k = next / prev
+      const ax = anchor.x - this.stageW / 2
+      const ay = anchor.y - this.stageH / 2
+      // 锚点对应的图片局部点在新缩放下落到同一舞台坐标：offset' = a - (a - offset)·k
+      this.applyOffset(ax - (ax - this.offsetValue.x) * k, ay - (ay - this.offsetValue.y) * k)
+    } else {
+      // 无锚点：原地缩放后重新按覆盖约束钳制（缩小到 1 时位移会被收回）
+      this.applyOffset(this.offsetValue.x, this.offsetValue.y)
+    }
     if (this.zoomRangeEl) this.zoomRangeEl.value = String(next)
-    this.syncImage()
-    return changed
+    return true
   }
 
   /** 旋转（默认 +90°；派发 oas-change） */
   rotate(delta: number = 90): void {
     const step = Number.isFinite(delta) ? delta : 90
     this.rotationValue = (((this.rotationValue + step) % 360) + 360) % 360
-    this.syncImage()
+    // 旋转改变图片占位朝向：按覆盖约束重新钳制位移（否则旋转后可能露出舞台底色）
+    this.applyOffset(this.offsetValue.x, this.offsetValue.y)
     this.emitChange()
   }
 
-  /** 恢复初始态（缩放 1 / 不旋转 / 裁剪框重置 / 图片居中；派发 oas-change） */
+  /** 恢复初始态（缩放 1 / 不旋转 / 位移归零 / 裁剪框重置；派发 oas-change） */
   reset(): void {
     this.zoomValue = 1
     this.rotationValue = 0
-    this.offset = { x: 0, y: 0 }
+    this.offsetValue = { x: 0, y: 0 }
     this.resetFrame()
     this.syncImage()
     this.emitChange()
@@ -768,6 +990,7 @@ export class OASImageCropper extends OASElement {
       zoom: this.zoomValue,
       rotation: this.rotationValue,
       frame: { ...this.frameRect },
+      offset: { ...this.offsetValue },
     })
   }
 
@@ -779,6 +1002,7 @@ export class OASImageCropper extends OASElement {
       zoom: this.zoomValue,
       rotation: this.rotationValue,
       frame: { ...this.frameRect },
+      offset: { ...this.offsetValue },
     })
   }
 
@@ -798,7 +1022,7 @@ export class OASImageCropper extends OASElement {
     const drawH = img.naturalHeight * scale
     ctx.scale(ratio, ratio)
     ctx.translate(-this.frameRect.x, -this.frameRect.y)
-    ctx.translate(this.stageW / 2 + this.offset.x, this.stageH / 2 + this.offset.y)
+    ctx.translate(this.stageW / 2 + this.offsetValue.x, this.stageH / 2 + this.offsetValue.y)
     ctx.rotate((this.rotationValue * Math.PI) / 180)
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH)
     return canvas

@@ -32,12 +32,6 @@
       "reason": "请求计数由客户端协议/交互驱动（requestId 序列与重试次数），与 OS 字体度量/滚动条/布局无关。"
     },
     {
-      "file": "packages/ui/a11y.spec.ts",
-      "rule": "count-literal",
-      "snippet": "toBe(221)",
-      "reason": "a11y 对比度基线的逐页登记条数 = 基线 JSON 登记驱动（每新文档页登记 light/dark 两条），纯数据计数，与 OS 分辨率/字体排版无关；条数漂移由 totals 求和不变量与生成器断言双守卫。"
-    },
-    {
       "file": "packages/ui/qa-regression/questionnaire.spec.ts",
       "rule": "count-literal",
       "snippet": "children.length",

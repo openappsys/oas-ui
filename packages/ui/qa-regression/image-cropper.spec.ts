@@ -121,3 +121,93 @@ test('image-cropper：加载失败显示错误文案且不残留破图', async (
   expect(state.frameVisible, '错误态不显示裁剪框').toBe(false)
   expect(state.stageError).toBe(true)
 })
+
+/** 读裁剪器的舞台 / 裁剪框 / 图片几何（真实浏览器像素）。
+ * 读前先把宿主滚进视口中央：page.mouse 用视口坐标，元素在首屏外时事件会派发到
+ * 视口外的空处（不命中任何元素），拖拽链路整体失效——文档页在目标 demo 上方
+ * 内容变多时（新增 demo 段）必然触发，滚动后坐标才与真实命中一致。 */
+async function readCropper(page: import('@playwright/test').Page, host: string) {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel) as HTMLElement & { offset: { x: number; y: number } }
+    el.scrollIntoView({ block: 'center', behavior: 'instant' })
+    const root = el.shadowRoot!
+    const stage = root.querySelector<HTMLElement>('[part="stage"]')!
+    const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+    const img = root.querySelector<HTMLImageElement>('[part="image"]')!
+    const toRect = (node: HTMLElement) => {
+      const r = node.getBoundingClientRect()
+      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }
+    }
+    return {
+      offset: { ...el.offset },
+      transform: img.style.transform,
+      stage: toRect(stage),
+      frame: toRect(frame),
+      img: toRect(img),
+      frameStyle: { left: frame.style.left, top: frame.style.top },
+    }
+  }, host)
+}
+
+// 回归（本轮新增能力）：激活 offset——拖舞台空白区平移图片，裁剪框不动，
+// 且图片恒覆盖裁剪框（拖出可达范围时钳回，舞台不露底色）。
+test('image-cropper：拖拽舞台平移图片，裁剪框不动且图片仍覆盖裁剪框', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-square')
+  await page.waitForFunction(
+    () => {
+      const img = document.querySelector('#ic-square')!.shadowRoot!.querySelector<HTMLImageElement>('[part="image"]')!
+      return img.complete && img.naturalWidth > 0
+    },
+    { timeout: 15000 },
+  )
+  const before = await readCropper(page, '#ic-square')
+  // 1:1 裁剪框居中（左右各留 ~88px），从舞台左侧空白处向下拖 → 只能平移图片
+  const startX = before.stage.left + 24
+  const startY = before.stage.top + before.stage.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX, startY + 20, { steps: 4 })
+  await page.mouse.move(startX, startY + 60, { steps: 4 })
+  await page.mouse.up()
+
+  const after = await readCropper(page, '#ic-square')
+  expect(after.offset.y, '向下拖舞台应让图片下移（越界钳回后仍为正）').toBeGreaterThan(before.offset.y)
+  expect(after.transform, '位移必须体现在图片 transform 上（用户可见）').toContain('translate(')
+  expect(after.frameStyle.left, '裁剪框不得被拖动').toBe(before.frameStyle.left)
+  expect(after.frameStyle.top, '裁剪框不得被拖动').toBe(before.frameStyle.top)
+  // 覆盖约束：图片矩形必须完整包住裁剪框矩形（平移后舞台不露底色）
+  expect(after.img.left).toBeLessThanOrEqual(after.frame.left + 0.5)
+  expect(after.img.top).toBeLessThanOrEqual(after.frame.top + 0.5)
+  expect(after.img.right).toBeGreaterThanOrEqual(after.frame.right - 0.5)
+  expect(after.img.bottom).toBeGreaterThanOrEqual(after.frame.bottom - 0.5)
+})
+
+// 键盘平移：Alt+方向键移动图片（裁剪框不动），普通方向键仍移动裁剪框。
+test('image-cropper：Alt+方向键平移图片，普通方向键仍移动裁剪框', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-square')
+  await page.waitForFunction(
+    () => {
+      const img = document.querySelector('#ic-square')!.shadowRoot!.querySelector<HTMLImageElement>('[part="image"]')!
+      return img.complete && img.naturalWidth > 0
+    },
+    { timeout: 15000 },
+  )
+  await page.evaluate(() => {
+    const frame = document.querySelector('#ic-square')!.shadowRoot!.querySelector<HTMLElement>('[part="frame"]')!
+    frame.focus()
+  })
+  const before = await readCropper(page, '#ic-square')
+  await page.keyboard.down('Alt')
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.up('Alt')
+  const afterAlt = await readCropper(page, '#ic-square')
+  expect(afterAlt.offset.y, 'Alt+方向键应平移图片').toBeGreaterThan(before.offset.y)
+  expect(afterAlt.frameStyle.top, 'Alt+方向键不得移动裁剪框').toBe(before.frameStyle.top)
+
+  await page.keyboard.press('ArrowLeft')
+  const afterPlain = await readCropper(page, '#ic-square')
+  expect(Number.parseFloat(afterPlain.frameStyle.left)).toBeLessThan(Number.parseFloat(afterAlt.frameStyle.left))
+  expect(afterPlain.offset, '普通方向键不得平移图片').toEqual(afterAlt.offset)
+})

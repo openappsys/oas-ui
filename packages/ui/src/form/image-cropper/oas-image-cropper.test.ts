@@ -38,6 +38,57 @@ function frameBox(el: OASImageCropper): { x: number; y: number; w: number; h: nu
   }
 }
 
+/** 让图片进入「已加载」态（happy-dom 不解码图片，naturals 需显式给出） */
+function loadImage(el: OASImageCropper, width = 800, height = 600): void {
+  const img = image(el)
+  Object.defineProperty(img, 'naturalWidth', { value: width, configurable: true })
+  Object.defineProperty(img, 'naturalHeight', { value: height, configurable: true })
+  img.dispatchEvent(new Event('load'))
+}
+
+function pointerEvent(type: string, x: number, y: number, extra: PointerEventInit = {}): PointerEvent {
+  return new PointerEvent(type, {
+    bubbles: true,
+    composed: true,
+    cancelable: true,
+    pointerId: 1,
+    button: 0,
+    clientX: x,
+    clientY: y,
+    ...extra,
+  })
+}
+
+/** 在舞台上拖拽一段位移（target 为舞台本身 = 图片平移；frame 传入则拖裁剪框） */
+function dragOn(el: OASImageCropper, target: HTMLElement, fromX: number, fromY: number, dx: number, dy: number): void {
+  target.dispatchEvent(pointerEvent('pointerdown', fromX, fromY))
+  target.dispatchEvent(pointerEvent('pointermove', fromX + dx, fromY + dy))
+  target.dispatchEvent(pointerEvent('pointerup', fromX + dx, fromY + dy))
+}
+
+/** 舞台基准矩形（480×320 + 无偏移），滚轮锚点换算依赖它 */
+function stubStageRect(el: OASImageCropper): void {
+  stage(el).getBoundingClientRect = (() => ({
+    left: 0,
+    top: 0,
+    right: 480,
+    bottom: 320,
+    width: 480,
+    height: 320,
+    x: 0,
+    y: 0,
+    toJSON: () => undefined,
+  })) as Element['getBoundingClientRect']
+}
+
+/** 滚轮事件：happy-dom 的 WheelEvent 不接收 clientX/clientY 初始值，显式补上（真实浏览器自带） */
+function wheelEvent(x: number, y: number, deltaY: number): WheelEvent {
+  const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY })
+  Object.defineProperty(ev, 'clientX', { value: x, configurable: true })
+  Object.defineProperty(ev, 'clientY', { value: y, configurable: true })
+  return ev
+}
+
 describe('OASImageCropper', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -289,5 +340,124 @@ describe('OASImageCropper', () => {
         `${name} 不得作为实例成员存在（撞 max-zoom / max-output-size / output-type 的 camelCase）`,
       ).toBeUndefined()
     }
+  })
+
+  // ---------------------------------------------------------------------------
+  // 图片平移（offset 激活）：pointer 拖拽 / 光标锚点缩放 / 覆盖约束 / Alt+方向键
+  // ---------------------------------------------------------------------------
+
+  it('拖拽舞台（非裁剪框目标）平移图片，裁剪框保持不动', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    const before = frameBox(el)
+    dragOn(el, stage(el), 200, 100, 0, 20)
+    // 图片向下 20px（图 800×600 覆盖 480×320 舞台：纵向可行区间 ±28，20 未触界）
+    expect(el.offset.y).toBeCloseTo(20, 5)
+    expect(image(el).style.transform).toContain('translate(0px, 20px)')
+    expect(frameBox(el), '平移图片不得移动裁剪框').toEqual(before)
+  })
+
+  it('拖拽裁剪框只移动裁剪框，图片位移不变', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA', 'aspect-ratio': '1' })
+    loadImage(el)
+    const before = frameBox(el)
+    dragOn(el, frame(el), 200, 100, -20, 0)
+    expect(frameBox(el).x).toBeCloseTo(before.x - 20, 5)
+    expect(el.offset, '裁剪框拖拽不得带动图片').toEqual({ x: 0, y: 0 })
+  })
+
+  it('平移越界自动钳回：图片恒覆盖裁剪框（上下边界对称）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    // 舞台 480×320，图 800×600 → 绘制 480×360；自由比例裁剪框 464×304 → 纵向可行 ±28
+    dragOn(el, stage(el), 200, 100, 0, 5000)
+    expect(el.offset.y).toBeCloseTo(28, 5)
+    dragOn(el, stage(el), 200, 100, 0, -5000)
+    expect(el.offset.y).toBeCloseTo(-28, 5)
+    // 手势被浏览器接管（pointercancel）：回到本次平移起点，不留半程位移
+    stage(el).dispatchEvent(pointerEvent('pointerdown', 200, 100))
+    stage(el).dispatchEvent(pointerEvent('pointermove', 200, 150))
+    expect(el.offset.y).toBeCloseTo(22, 5)
+    stage(el).dispatchEvent(pointerEvent('pointercancel', 200, 150))
+    expect(el.offset.y, 'pointercancel 回退到本次平移起点').toBeCloseTo(-28, 5)
+    // 之后仍可正常平移（状态已收尾，不会卡在 cancel 上）
+    dragOn(el, stage(el), 200, 100, 0, 10)
+    expect(el.offset.y).toBeCloseTo(-18, 5)
+  })
+
+  it('滚轮缩放以光标位置为中心：锚点下的图片点保持不动', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    const details: Array<{ zoom: number; offset: { x: number; y: number } }> = []
+    el.addEventListener('oas-change', (e) =>
+      details.push((e as CustomEvent<{ zoom: number; offset: { x: number; y: number } }>).detail),
+    )
+    const wheel = wheelEvent(240, 300, -100)
+    const notPrevented = stage(el).dispatchEvent(wheel)
+    expect(notPrevented, '舞台内滚轮缩放必须阻止页面滚动').toBe(false)
+    expect(el.zoom).toBe(1.25)
+    // 锚点相对舞台中心 (0, 140)，k = 1.25 → offsetY = 140 - 140×1.25 = -35
+    expect(el.offset.x).toBeCloseTo(0, 5)
+    expect(el.offset.y).toBeCloseTo(-35, 5)
+    // 锚点处的图片局部坐标不变：p - center - offset 随缩放等比例放大
+    expect((300 - 160 - el.offset.y) / (300 - 160)).toBeCloseTo(1.25, 5)
+    expect(details).toHaveLength(1)
+    expect(details[0]!.zoom).toBe(1.25)
+    expect(details[0]!.offset.y).toBeCloseTo(-35, 5)
+    // Ctrl+滚轮是浏览器页面缩放手势：组件不得接管（否则用户改不了页面缩放）
+    const zoomBefore = el.zoom
+    const ctrlWheel = wheelEvent(240, 300, -100)
+    Object.defineProperty(ctrlWheel, 'ctrlKey', { value: true, configurable: true })
+    expect(stage(el).dispatchEvent(ctrlWheel)).toBe(true)
+    expect(el.zoom).toBe(zoomBefore)
+  })
+
+  it('缩放变小时按覆盖约束重新钳回；旋转后同样重新钳制', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    el.setZoom(2)
+    // 缩放 2 倍：绘制 480×720 → 纵向可行 ±208
+    dragOn(el, stage(el), 200, 100, 0, 5000)
+    expect(el.offset.y).toBeCloseTo(208, 5)
+    el.setZoom(1)
+    expect(el.offset.y, '缩小后可行区间收窄，位移必须钳回').toBeCloseTo(28, 5)
+    // 旋转 90°：图片占位尺寸交换，可行区间随之重算（不得抛错且仍在覆盖范围内）
+    el.rotate()
+    expect(Number.isFinite(el.offset.y)).toBe(true)
+    expect(Math.abs(el.offset.y)).toBeLessThanOrEqual(28 + 1e-6)
+  })
+
+  it('Alt+方向键平移图片（1px / Shift 10px），裁剪框不动；reset() 归位 offset', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    const before = frameBox(el)
+    frame(el).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true, cancelable: true }),
+    )
+    expect(el.offset).toEqual({ x: 0, y: 1 })
+    frame(el).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, shiftKey: true, bubbles: true, cancelable: true }),
+    )
+    expect(el.offset).toEqual({ x: 0, y: 11 })
+    expect(frameBox(el), 'Alt+方向键不得移动裁剪框').toEqual(before)
+    el.reset()
+    expect(el.offset).toEqual({ x: 0, y: 0 })
+    expect(image(el).style.transform).toContain('translate(0px, 0px)')
+  })
+
+  it('未加载图片 / 禁用态下不响应平移，滚轮也不缩放', () => {
+    const empty = mount()
+    dragOn(empty, stage(empty), 200, 100, 0, 40)
+    expect(empty.offset).toEqual({ x: 0, y: 0 })
+
+    const disabled = mount({ src: 'data:image/png;base64,AAAA', disabled: '' })
+    loadImage(disabled)
+    stubStageRect(disabled)
+    dragOn(disabled, stage(disabled), 200, 100, 0, 40)
+    expect(disabled.offset).toEqual({ x: 0, y: 0 })
+    const wheel = wheelEvent(240, 300, -100)
+    expect(stage(disabled).dispatchEvent(wheel), '禁用态不接管滚轮').toBe(true)
+    expect(disabled.zoom).toBe(1)
   })
 })

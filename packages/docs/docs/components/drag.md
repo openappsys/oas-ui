@@ -54,7 +54,7 @@ description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针�
 
 ## 方向轴、惯性与位置播报
 
-`axis="x"` 限制为横向拖拽；`inertia` 松手滑行（`prefers-reduced-motion: reduce` 下瞬停）；`announce` 让位置变化经 `aria-live` 播报。
+`axis="x"` 限制为横向拖拽；`inertia` 松手滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停；`prefers-reduced-motion: reduce` 下瞬停）；`announce` 让位置变化经 `aria-live` 播报。
 
 <DemoBlock title="axis=&quot;x&quot; + inertia + announce">
   <div
@@ -81,6 +81,7 @@ description: 自由拖拽浮块：任意子元素包装成可拖拽块，指针�
 - `announce` 开启时位置变化经 `aria-live="polite"` 播报；`disabled` 关闭拖拽并移除焦点停靠点
 - 指针位移 4px 以内视为点击（不捕获指针、不阻止默认行为），因此子元素内的按钮、输入框照常工作
 - 越过阈值的拖拽结束后，浏览器补发的那一次 `click` 会被吞掉（松手恰好落在子按钮上不误触），之后的正常点击不受影响；`pointercancel`（滚动 / 手势中断）只收尾拖拽，不写位置记忆、不起惯性
+- 开 `inertia` 时一次甩动共派发**两次** `oas-drag-end`：松手（pointerup）一次、惯性滑行收尾一次（`source` 同为 `pointer`）；滑行被再次按下抢占时无滑行收尾。只需一次「结束」信号的场景按第二次到达处理，或以时间窗去重
 - 手柄形态下只有手柄区起拖；子元素内的输入框保留自己的方向键语义
 
 <script setup>
@@ -124,7 +125,7 @@ onMounted(() => {
 | `axis` | 拖拽方向轴：`both`（缺省）/ `x` 仅横向 / `y` 仅纵向；非法值回落 `both` 并告警 | `string` | `both` |
 | `boundary` | 拖拽边界：`viewport`（缺省，视口）或 CSS 选择器（该元素的矩形；未命中告警一次并回落视口） | `string` | `viewport` |
 | `disabled` | 关闭拖拽：指针与键盘都不生效，并移除焦点停靠点 | `boolean` | — |
-| `inertia` | 松手后惯性滑行（速度衰减至停止）；`prefers-reduced-motion: reduce` 下瞬停 | `boolean` | — |
+| `inertia` | 松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停）；`prefers-reduced-motion: reduce` 下瞬停 | `boolean` | — |
 | `keyboard` | 键盘微调：缺省开启（`tabindex="0"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭 | `string` | — |
 | `remember` | 把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级 | `boolean` | — |
 | `storage-key` | 位置记忆的存储键（缺省 `oas-drag`） | `string` | `oas-drag` |
@@ -146,7 +147,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-drag` | 位置变化（指针拖拽 / 键盘微调 / 惯性滑行）时派发，`detail: { x, y, source }` |
-| `oas-drag-end` | 指针拖拽结束（含惯性滑行收尾）时派发，`detail: { x, y, source }` |
+| `oas-drag-end` | 指针拖拽结束时派发，`detail: { x, y, source }`；开惯性时一次甩动共派发两次——松手（pointerup）一次、惯性滑行收尾一次（source 同为 pointer），滑行被再次按下抢占时不派滑行收尾 |
 | `oas-drag-start` | 指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }` |
 
 #### 插槽
