@@ -53,7 +53,7 @@
   "props": [
     {
       "name": "items",
-      "type": "BarrageItemInput[] | string",
+      "type": "Array<string | BarrageItemInput> | string",
       "default": "[]"
     }
   ],

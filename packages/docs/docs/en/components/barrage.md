@@ -147,7 +147,7 @@ onMounted(() => {
 | `auto-play` | Loop playback: once the declared queue drains the items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good) | — | — |
 | `gap` | Minimum horizontal gap between items on the same track (px, default 48) | `string` | — |
 | `height` | Stage height (plain numbers are px, CSS lengths accepted; default 200px) | `string` | — |
-| `items` | Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute | `BarrageItemInput[] \| string` | `[]` |
+| `items` | Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute | `Array<string \| BarrageItemInput> \| string` | `[]` |
 | `max-active` | Maximum on-screen items (0 = unlimited, default 0) | `string` | — |
 | `paused` | Controlled pause (present = paused; CSS animations and scheduling timers freeze together) | — | — |
 | `speed` | Drift speed in pixels per second (default 120) | `string` | — |

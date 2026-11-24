@@ -147,7 +147,7 @@ onMounted(() => {
 | `auto-play` | 循环播放：声明条目队列耗尽后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play） | — | — |
 | `gap` | 同轨道相邻弹幕的最小水平间距（px，默认 48） | `string` | — |
 | `height` | 舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px） | `string` | — |
-| `items` | 声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute） | `BarrageItemInput[] \| string` | `[]` |
+| `items` | 声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute） | `Array<string \| BarrageItemInput> \| string` | `[]` |
 | `max-active` | 同屏最大条数（0 = 不限，默认 0） | `string` | — |
 | `paused` | 受控暂停（在场=暂停；CSS 动画与排期计时同时冻结） | — | — |
 | `speed` | 漂移速度（像素/秒，默认 120） | `string` | — |
