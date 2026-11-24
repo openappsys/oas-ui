@@ -50,6 +50,27 @@ description: 数字与字符逐位翻滚的文本组件，值变化时按列滚�
   <oas-rolling-text value="99" prefix-text="库存 " suffix-text=" 件" live></oas-rolling-text>
 </DemoBlock>
 
+## 方向与逐位停
+
+`direction="up"` / `direction="down"` 让数字列恒向上 / 向下翻（缺省最短路径，现状不变）；`stop-order` 让各列按位次递增延迟（列间 stagger = 时长 × 12%），从左到右依次停稳：
+
+<DemoBlock title="direction=up + stop-order">
+  <oas-rolling-text id="rt-dir" value="90" direction="up" stop-order duration="800"></oas-rolling-text>
+  <oas-button id="rt-dir-roll" size="small" style="margin-inline-start: var(--oas-space-3)">随机换数</oas-button>
+</DemoBlock>
+
+## 手动控制 start() / reset()
+
+`reset()` 清掉进行中的翻滚，无过渡直接呈现当前 `value`；`start()` 按当前 `value` 重新播放一次完整翻滚（各列先落零档再翻到目标）：
+
+<DemoBlock title="start() / reset() 重播">
+  <oas-rolling-text id="rt-ctrl" value="618" duration="700"></oas-rolling-text>
+  <div style="display: inline-flex; gap: var(--oas-space-2); margin-inline-start: var(--oas-space-3)">
+    <oas-button id="rt-start" size="small">start()</oas-button>
+    <oas-button id="rt-ctrl-reset" size="small">reset()</oas-button>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 
@@ -67,6 +88,15 @@ onMounted(() => {
       const el = document.querySelector('#rt-slow')
       el?.setAttribute('value', String(Math.round(Math.random() * 9000) + 1000))
     })
+    document.querySelector('#rt-dir-roll')?.addEventListener('click', () => {
+      document.querySelector('#rt-dir')?.setAttribute('value', String(Math.round(Math.random() * 99)))
+    })
+    document.querySelector('#rt-start')?.addEventListener('click', () => {
+      document.querySelector('#rt-ctrl')?.start()
+    })
+    document.querySelector('#rt-ctrl-reset')?.addEventListener('click', () => {
+      document.querySelector('#rt-ctrl')?.reset()
+    })
   })
 })
 </script>
@@ -79,12 +109,21 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `direction` | 翻滚方向：up（恒向上）/ down（恒向下）；缺省最短路径（现状不变），非法值回落最短路径并 devWarn 一次 | `string` | — |
 | `duration` | 单列翻滚时长（ms，默认 600）；非法或非正回落默认 | `string` | — |
 | `live` | 布尔，存在时读屏活区为 `polite`（默认 off，避免频繁播报） | — | — |
 | `precision` | 小数位数（0–10）：补零 / 四舍五入；缺省或非法时保留原文本 | `string` | — |
 | `prefix-text` | 前缀文本（如货币符号） | `string` | — |
+| `stop-order` | 逐位停：各列按位次递增延迟（列间 stagger = 时长 × 12%），从左到右依次停稳 | — | — |
 | `suffix-text` | 后缀文本（如单位） | `string` | — |
 | `value` | 显示值（字符串；numeric property 赋值会反射到属性） | `string \| number` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `reset` | `reset(): void` | 清掉进行中的翻滚与延迟，无过渡直接呈现当前 value |
+| `start` | `start(): void` | 按当前 value 重新播放一次完整翻滚（各列先落零档 / 字符列置空，再翻到目标） |
 
 #### CSS 变量
 

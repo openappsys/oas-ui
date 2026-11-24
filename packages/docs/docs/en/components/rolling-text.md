@@ -50,6 +50,27 @@ Silent by default (`aria-live="off"`) to avoid interrupting screen readers with 
   <oas-rolling-text value="99" prefix-text="Stock " suffix-text=" pcs" live></oas-rolling-text>
 </DemoBlock>
 
+## Direction and per-digit stopping
+
+`direction="up"` / `direction="down"` makes digit columns always roll upward / downward (default keeps the shortest-path behavior, unchanged); `stop-order` gives each column an increasing delay (per-column stagger = duration × 12%) so they settle left to right:
+
+<DemoBlock title="direction=up + stop-order">
+  <oas-rolling-text id="rt-dir-en" value="90" direction="up" stop-order duration="800"></oas-rolling-text>
+  <oas-button id="rt-dir-roll-en" size="small" style="margin-inline-start: var(--oas-space-3)">Random value</oas-button>
+</DemoBlock>
+
+## Manual control start() / reset()
+
+`reset()` stops any roll in progress and renders the current `value` instantly without transitions; `start()` replays a full roll for the current `value` (columns first drop to zero, then roll to the target):
+
+<DemoBlock title="start() / reset()">
+  <oas-rolling-text id="rt-ctrl-en" value="618" duration="700"></oas-rolling-text>
+  <div style="display: inline-flex; gap: var(--oas-space-2); margin-inline-start: var(--oas-space-3)">
+    <oas-button id="rt-start-en" size="small">start()</oas-button>
+    <oas-button id="rt-ctrl-reset-en" size="small">reset()</oas-button>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 
@@ -67,6 +88,15 @@ onMounted(() => {
       const el = document.querySelector('#rt-slow')
       el?.setAttribute('value', String(Math.round(Math.random() * 9000) + 1000))
     })
+    document.querySelector('#rt-dir-roll-en')?.addEventListener('click', () => {
+      document.querySelector('#rt-dir-en')?.setAttribute('value', String(Math.round(Math.random() * 99)))
+    })
+    document.querySelector('#rt-start-en')?.addEventListener('click', () => {
+      document.querySelector('#rt-ctrl-en')?.start()
+    })
+    document.querySelector('#rt-ctrl-reset-en')?.addEventListener('click', () => {
+      document.querySelector('#rt-ctrl-en')?.reset()
+    })
   })
 })
 </script>
@@ -79,12 +109,21 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `direction` | Roll direction: up (always upward) / down (always downward); default keeps the shortest path (unchanged), invalid values fall back with a devWarn | `string` | — |
 | `duration` | Per-column roll duration (ms, default 600); invalid or non-positive falls back to the default | `string` | — |
 | `live` | Boolean; when present the screen-reader live region is `polite` (off by default to avoid frequent announcements) | — | — |
 | `precision` | Decimal places (0–10): pad / round; missing or invalid keeps the original text | `string` | — |
 | `prefix-text` | Prefix text (e.g. a currency symbol) | `string` | — |
+| `stop-order` | Per-digit stopping: each column gets an increasing delay (stagger = duration × 12%), settling left to right | — | — |
 | `suffix-text` | Suffix text (e.g. a unit) | `string` | — |
 | `value` | Display value (string; numeric property assignments reflect to the attribute) | `string \| number` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `reset` | `reset(): void` | Stops any roll in progress and renders the current value instantly without transitions |
+| `start` | `start(): void` | Replays a full roll for the current value (columns first drop to zero / char columns empty, then roll to the target) |
 
 #### CSS Variables
 

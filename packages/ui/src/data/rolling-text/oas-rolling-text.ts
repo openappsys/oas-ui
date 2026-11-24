@@ -14,6 +14,14 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `prefix-text` / `suffix-text`：前缀 / 后缀文本
  * - `duration`：单列翻滚时长（ms，默认 600；非法/非正回落默认）
  * - `live`：布尔，存在时读屏活区为 `polite`（默认 off，避免频繁播报）
+ * - `direction`：翻滚方向——`up`（恒向上）/ `down`（恒向下）；缺省最短路径（现状不变），
+ *   非法值回落最短路径并 devWarn 一次
+ * - `stop-order`：布尔，逐位停——各列按位次递增延迟（列间 stagger = 时长 × 12%），
+ *   从左到右依次停稳
+ *
+ * 方法：
+ * - `start()`：按当前 `value` 重新播放一次完整翻滚（各列先落零档 / 字符列置空，再翻到目标）
+ * - `reset()`：清掉进行中的翻滚与延迟，无过渡直接呈现当前 `value`
  *
  * CSS 变量：
  * - `--oas-rolling-text-duration`：翻滚时长
@@ -155,6 +163,13 @@ export function formatRollingValue(value: string, precision: string): string {
 }
 
 const warnedPrecision = new Set<string>()
+const warnedDirection = new Set<string>()
+
+/** 翻滚方向：up / down；缺省（含非法值）最短路径 */
+type RollDirection = '' | 'up' | 'down'
+
+/** 逐位停 stagger 占时长的比例 */
+const STOP_ORDER_RATIO = 0.12
 
 function isDigit(ch: string): boolean {
   return ch >= '0' && ch <= '9'
@@ -162,7 +177,7 @@ function isDigit(ch: string): boolean {
 
 export class OASRollingText extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'precision', 'prefix-text', 'suffix-text', 'duration', 'live']
+    return ['value', 'precision', 'prefix-text', 'suffix-text', 'duration', 'live', 'direction', 'stop-order']
   }
 
   private columnsEl: HTMLElement | null = null
@@ -214,6 +229,18 @@ export class OASRollingText extends OASElement {
     const n = Number(raw)
     if (raw === '' || !Number.isFinite(n) || n <= 0) return ''
     return `${n}ms`
+  }
+
+  /** 翻滚方向解析：up / down；缺省或非法回落最短路径（非法值 devWarn 一次） */
+  private resolveDirection(): RollDirection {
+    const raw = this.getAttr('direction', '').trim()
+    if (raw === '') return ''
+    if (raw === 'up' || raw === 'down') return raw
+    if (!warnedDirection.has(raw)) {
+      warnedDirection.add(raw)
+      devWarn(`[oas-rolling-text] direction="${raw}" 非法，已回落最短路径；合法值：up/down`)
+    }
+    return ''
   }
 
   private syncAffixes(): void {
@@ -268,6 +295,11 @@ export class OASRollingText extends OASElement {
     }
     for (const col of this.columns) col.el.classList.remove('flipping')
 
+    const direction = this.resolveDirection()
+    const stopOrder = this.hasAttribute('stop-order')
+    const durationMs = Number(this.resolveDuration().replace('ms', '')) || 600
+    const staggerMs = stopOrder ? Math.round(durationMs * STOP_ORDER_RATIO) : 0
+
     const chars = [...text]
     const flipping: HTMLElement[] = []
     /** 动画结束后需归位到常规档位的数字列（最短路径产生的越界瞬态） */
@@ -292,13 +324,19 @@ export class OASRollingText extends OASElement {
       }
 
       if (col.kind === 'digit') {
+        // 逐位停：列间延迟按位次递增（方向键关闭时清空，保持现状）
+        col.strip?.style.setProperty('transition-delay', staggerMs > 0 ? `${i * staggerMs}ms` : '')
         if (col.value === ch) continue
         const from = Number(col.value)
         const to = Number(ch)
-        // 最短路径：正向步数 vs 反向步数取小（9→0 走正向 1 格，0→9 走反向 1 格）
+        // 最短路径：正向步数 vs 反向步数取小（9→0 走正向 1 格，0→9 走反向 1 格）；
+        // direction=up/down 时固定走正向 / 反向（不复算最短）
         const forward = (to - from + 10) % 10
         const backward = forward === 0 ? 0 : 10 - forward
-        const target = forward <= backward ? from + forward : from - backward
+        let target: number
+        if (direction === 'up') target = from + forward
+        else if (direction === 'down') target = from - backward
+        else target = forward <= backward ? from + forward : from - backward
         col.strip?.style.setProperty('--n', String(target))
         col.value = ch
         if (target !== to) normalizing.push(col)
@@ -306,9 +344,12 @@ export class OASRollingText extends OASElement {
         if (col.char) col.char.textContent = ch
         col.value = ch
         col.el.classList.remove('flipping')
+        col.el.style.setProperty('animation-delay', staggerMs > 0 ? `${i * staggerMs}ms` : '')
         void col.el.offsetWidth
         col.el.classList.add('flipping')
         flipping.push(col.el)
+      } else if (staggerMs === 0) {
+        col.el.style.removeProperty('animation-delay')
       }
     }
 
@@ -320,13 +361,53 @@ export class OASRollingText extends OASElement {
     }
 
     if (flipping.length > 0 || normalizing.length > 0) {
-      const ms = Number(this.resolveDuration().replace('ms', '')) || 600
+      // 逐位停时归位/清理计时需覆盖最末列的延迟
+      const totalMs = durationMs + staggerMs * Math.max(0, chars.length - 1)
       this.flipTimer = setTimeout(() => {
         for (const el of flipping) el.classList.remove('flipping')
         for (const col of normalizing) this.normalizeDigit(col)
         this.flipTimer = null
-      }, ms)
+      }, totalMs)
     }
+  }
+
+  /**
+   * reset()：清掉进行中的翻滚（计时 / flipping / 延迟），无过渡直接呈现当前 value。
+   * 列整体按目标值静态重建（数字列 strip 直接落目标档位，无 transition）。
+   */
+  reset(): void {
+    if (!this.hasRendered) return
+    if (this.flipTimer) {
+      clearTimeout(this.flipTimer)
+      this.flipTimer = null
+    }
+    const text = formatRollingValue(this.getAttr('value', ''), this.getAttr('precision', ''))
+    const container = this.columnsEl
+    if (!container) return
+    container.replaceChildren()
+    this.columns = [...text].map((ch) => (isDigit(ch) ? this.createDigitColumn(ch) : this.createCharColumn(ch)))
+    for (const col of this.columns) container.appendChild(col.el)
+  }
+
+  /**
+   * start()：按当前 value 重新播放一次完整翻滚——各列先落零档（数字列 0 档 / 字符列置空），
+   * 强制重排后走正常 syncColumns 翻到目标（CSS transition 从零档起翻）。
+   */
+  start(): void {
+    if (!this.hasRendered) return
+    const container = this.columnsEl
+    if (!container) return
+    if (this.flipTimer) {
+      clearTimeout(this.flipTimer)
+      this.flipTimer = null
+    }
+    const text = formatRollingValue(this.getAttr('value', ''), this.getAttr('precision', ''))
+    container.replaceChildren()
+    this.columns = [...text].map((ch) => (isDigit(ch) ? this.createDigitColumn('0') : this.createCharColumn('')))
+    for (const col of this.columns) container.appendChild(col.el)
+    // 强制重排提交零档起始帧，再翻到目标（否则同帧两次写 --n 不产生过渡）
+    void container.offsetWidth
+    this.syncColumns(text)
   }
 
   /**

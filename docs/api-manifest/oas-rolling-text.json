@@ -34,6 +34,16 @@
     {
       "name": "live",
       "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "stop-order",
+      "observed": true
     }
   ],
   "props": [
@@ -42,7 +52,18 @@
       "type": "string | number"
     }
   ],
-  "methods": [],
+  "methods": [
+    {
+      "name": "reset",
+      "signature": "reset(): void",
+      "description": "reset()：清掉进行中的翻滚（计时 / flipping / 延迟），无过渡直接呈现当前 value。"
+    },
+    {
+      "name": "start",
+      "signature": "start(): void",
+      "description": "start()：按当前 value 重新播放一次完整翻滚——各列先落零档（数字列 0 档 / 字符列置空），"
+    }
+  ],
   "events": [],
   "slots": [],
   "cssVars": [
