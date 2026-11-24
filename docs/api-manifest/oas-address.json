@@ -38,9 +38,34 @@
       "name": "readonly",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "show-delete",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "saving",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "deleting",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "value-format",
+      "type": "string",
+      "default": "name",
+      "observed": true
     }
   ],
   "props": [
+    {
+      "name": "validator",
+      "type": "AddressValidator | null"
+    },
     {
       "name": "value",
       "type": "AddressEntry | string"
@@ -61,7 +86,7 @@
     },
     {
       "name": "oas-change",
-      "detail": "{ field, value: { ...this.draft } }"
+      "detail": "{ field, value: this.outputValue({ ...this.draft }) }"
     },
     {
       "name": "oas-invalid",
@@ -69,11 +94,19 @@
     },
     {
       "name": "oas-submit",
-      "detail": "{ value: { ...this.draft } }"
+      "detail": "{ value: this.outputValue({ ...this.draft }) }"
     },
     {
       "name": "oas-select",
       "detail": "{ id: fallback, item } | { id, item }"
+    },
+    {
+      "name": "oas-edit",
+      "detail": "{ id, item }"
+    },
+    {
+      "name": "oas-delete",
+      "detail": "{ id, item }"
     }
   ],
   "slots": [],

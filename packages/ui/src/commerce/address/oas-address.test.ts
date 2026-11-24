@@ -32,6 +32,28 @@ const VALUE = JSON.stringify({
   detail: '文三路 100 号',
 })
 
+const ITEMS_JSON = JSON.stringify([
+  {
+    id: 'a1',
+    name: '张三',
+    phone: '13800000000',
+    province: '浙江省',
+    city: '杭州市',
+    district: '西湖区',
+    detail: '文三路 100 号',
+    isDefault: true,
+  },
+  {
+    id: 'a2',
+    name: '李四',
+    phone: '13900000000',
+    province: '江苏省',
+    city: '南京市',
+    district: '玄武区',
+    detail: '中山路 8 号',
+  },
+])
+
 describe('OASAddress', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -49,7 +71,7 @@ describe('OASAddress', () => {
     expect([...q<HTMLSelectElement>(el, '.city').options].map((o) => o.value)).toEqual([''])
     expect([...q<HTMLSelectElement>(el, '.district').options].map((o) => o.value)).toEqual([''])
     expect(q<HTMLTextAreaElement>(el, 'textarea[name="detail"]').tagName).toBe('TEXTAREA')
-    expect(q<HTMLButtonElement>(el, 'button[type="submit"]').textContent).toBe('保存地址')
+    expect(q<HTMLElement>(el, '[part="submit-text"]').textContent).toBe('保存地址')
     expect(q<HTMLElement>(el, '.list').hidden).toBe(true)
   })
 
@@ -350,5 +372,184 @@ describe('OASAddress', () => {
     el.setAttribute('mode', 'contact')
     expect(q<HTMLElement>(el, '.region-group').hasAttribute('inert')).toBe(true)
     expect(q<HTMLElement>(el, '.contact-group').hasAttribute('inert')).toBe(false)
+  })
+
+  it('列表行编辑钮：每张卡一个，点击派发 oas-edit({ id, item }) 且不改变选中', () => {
+    const el = mount({ mode: 'list', items: ITEMS_JSON })
+    const details: Array<{ id?: string; item?: { id?: string } }> = []
+    let selects = 0
+    el.addEventListener('oas-edit', (e) => details.push((e as CustomEvent).detail))
+    el.addEventListener('oas-select', () => selects++)
+    const editBtns = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-edit"]')]
+    expect(editBtns).toHaveLength(2)
+    editBtns[1]!.click()
+    expect(details).toHaveLength(1)
+    expect(details[0]!.id).toBe('a2')
+    expect(details[0]!.item?.id).toBe('a2')
+    expect(selects).toBe(0)
+    // 禁用态拦截
+    el.setAttribute('disabled', '')
+    expect(el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-edit"]')[0]!.disabled).toBe(true)
+  })
+
+  it('show-delete：删除钮只在属性在场时渲染，点击派发 oas-delete({ id, item })', () => {
+    expect(mount({ mode: 'list', items: ITEMS_JSON }).shadowRoot!.querySelectorAll('[part="card-delete"]').length).toBe(
+      0,
+    )
+    const el = mount({ mode: 'list', items: ITEMS_JSON, 'show-delete': '' })
+    const delBtns = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')]
+    expect(delBtns).toHaveLength(2)
+    const details: Array<{ id?: string; item?: { id?: string } }> = []
+    el.addEventListener('oas-delete', (e) => details.push((e as CustomEvent).detail))
+    delBtns[0]!.click()
+    expect(details).toHaveLength(1)
+    expect(details[0]!.id).toBe('a1')
+    el.setAttribute('disabled', '')
+    expect(el.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')[0]!.disabled).toBe(true)
+  })
+
+  it('deleting 态：删除钮禁用 + aria-busy + spinner；saving 态：保存钮禁用 + aria-busy + spinner', () => {
+    const list = mount({ mode: 'list', items: ITEMS_JSON, 'show-delete': '', deleting: '' })
+    const del = list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')[0]!
+    expect(del.disabled).toBe(true)
+    expect(del.getAttribute('aria-busy')).toBe('true')
+    expect(del.querySelector('[part="card-delete-spinner"]')).not.toBeNull()
+    const edit = list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-edit"]')[0]!
+    expect(edit.disabled).toBe(false)
+    list.removeAttribute('deleting')
+    expect(list.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')[0]!.disabled).toBe(false)
+
+    const form = mount({ regions: REGIONS, saving: '' })
+    const submitBtn = q<HTMLButtonElement>(form, 'button[type="submit"]')
+    expect(submitBtn.disabled).toBe(true)
+    expect(submitBtn.getAttribute('aria-busy')).toBe('true')
+    expect(submitBtn.querySelector('[part="save-spinner"]')).not.toBeNull()
+    form.removeAttribute('saving')
+    expect(q<HTMLButtonElement>(form, 'button[type="submit"]').disabled).toBe(false)
+  })
+
+  it('validator property：返回错误串并入 oas-invalid（字段标记 + fields 数组含自定义键）', () => {
+    const el = mount({ regions: REGIONS })
+    el.validator = (key, value) => {
+      if (key === 'phone' && value.endsWith('00000000')) return '该手机号已拉黑'
+      if (key === 'detail' && value.includes('文三路')) return '详细地址含敏感词'
+      return null
+    }
+    el.setAttribute(
+      'value',
+      JSON.stringify({
+        name: '张三',
+        phone: '13800000000',
+        province: '浙江省',
+        city: '杭州市',
+        district: '西湖区',
+        detail: '文三路 100 号',
+      }),
+    )
+    const invalids: Array<{ fields?: string[] }> = []
+    el.addEventListener('oas-invalid', (e) => invalids.push((e as CustomEvent).detail))
+    q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+    expect(invalids).toHaveLength(1)
+    expect(invalids[0]!.fields).toEqual(['phone', 'detail'])
+    // 自定义错误串渲染在对应字段下方
+    expect(q<HTMLElement>(el, 'input[name="phone"]').closest('.field')!.querySelector('.error')!.textContent).toBe(
+      '该手机号已拉黑',
+    )
+    // 合法值重新提交通过（换一个不含敏感词的详细地址 + 未拉黑手机号）
+    el.setAttribute(
+      'value',
+      JSON.stringify({
+        name: '张三',
+        phone: '13911112222',
+        province: '浙江省',
+        city: '杭州市',
+        district: '西湖区',
+        detail: '中山路 2 号',
+      }),
+    )
+    let submitted = 0
+    el.addEventListener('oas-submit', () => submitted++)
+    q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+    expect(submitted).toBe(1)
+  })
+
+  it('validator 抛错：devWarn 一次并按无错误处理（不阻断提交）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ regions: REGIONS })
+      el.validator = () => {
+        throw new Error('boom')
+      }
+      el.setAttribute(
+        'value',
+        JSON.stringify({
+          name: '张三',
+          phone: '13800000000',
+          province: '浙江省',
+          city: '杭州市',
+          district: '西湖区',
+          detail: '文三路 1 号',
+        }),
+      )
+      let invalids = 0
+      let submitted = 0
+      el.addEventListener('oas-invalid', () => invalids++)
+      el.addEventListener('oas-submit', () => submitted++)
+      q<HTMLFormElement>(el, 'form').dispatchEvent(new Event('submit'))
+      expect(invalids).toBe(0)
+      expect(submitted).toBe(1)
+      expect(warn.mock.calls.some((c) => String(c[0]).includes('boom'))).toBe(true)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('value-format="code"：oas-submit / oas-change 输出区划编码；缺省 name 通道不变', () => {
+    const REGIONS_WITH_CODE = JSON.stringify([
+      {
+        name: '浙江省',
+        code: '330000',
+        children: [{ name: '杭州市', code: '330100', children: [{ name: '西湖区', code: '330106' }] }],
+      },
+    ])
+    // 缺省：输出名称（现状不变）
+    const byName = mount({ regions: REGIONS_WITH_CODE })
+    byName.setAttribute(
+      'value',
+      JSON.stringify({
+        name: '张三',
+        phone: '13800000000',
+        province: '浙江省',
+        city: '杭州市',
+        district: '西湖区',
+        detail: '文三路 1 号',
+      }),
+    )
+    let nameDetail: { value?: { province?: string } } | null = null
+    byName.addEventListener('oas-submit', (e) => (nameDetail = (e as CustomEvent).detail))
+    q<HTMLFormElement>(byName, 'form').dispatchEvent(new Event('submit'))
+    expect(nameDetail!.value!.province).toBe('浙江省')
+
+    // code 档：输出编码；回填按编码匹配到下拉（下拉显示名称）
+    const byCode = mount({ regions: REGIONS_WITH_CODE, 'value-format': 'code' })
+    byCode.setAttribute(
+      'value',
+      JSON.stringify({
+        name: '张三',
+        phone: '13800000000',
+        province: '330000',
+        city: '330100',
+        district: '330106',
+        detail: '文三路 1 号',
+      }),
+    )
+    expect(q<HTMLSelectElement>(byCode, '.province').value).toBe('浙江省')
+    expect(q<HTMLSelectElement>(byCode, '.district').value).toBe('西湖区')
+    let codeDetail: { value?: { province?: string; city?: string; district?: string } } | null = null
+    byCode.addEventListener('oas-submit', (e) => (codeDetail = (e as CustomEvent).detail))
+    q<HTMLFormElement>(byCode, 'form').dispatchEvent(new Event('submit'))
+    expect(codeDetail!.value!.province).toBe('330000')
+    expect(codeDetail!.value!.city).toBe('330100')
+    expect(codeDetail!.value!.district).toBe('330106')
   })
 })

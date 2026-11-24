@@ -19,7 +19,7 @@ description: "地址簿：地址编辑表单（联系人 / 省市区三级联动
 
 ## 地址列表
 
-`mode="list"` 渲染地址卡列表：原生单选（键盘可达）、默认地址徽标、选中高亮。`selected-id` 未指定时优先选 `isDefault` 项，否则选第一项。
+`mode="list"` 渲染地址卡列表：原生单选（键盘可达）、默认地址徽标、选中高亮、行内编辑钮。`selected-id` 未指定时优先选 `isDefault` 项，否则选第一项。
 
 <DemoBlock title="选择收货地址">
   <oas-space direction="vertical" size="small" style="width: 100%">
@@ -30,6 +30,74 @@ description: "地址簿：地址编辑表单（联系人 / 省市区三级联动
     ></oas-address>
     <oas-tag type="primary" id="address-list-info">当前选中：a1</oas-tag>
   </oas-space>
+</DemoBlock>
+
+## 列表行编辑与删除
+
+每张地址卡自带「编辑」钮，点击派发 `oas-edit`（detail `{ id, item }`），宿主据此切进编辑模式回填表单；`show-delete` 在场时追加「删除」钮，点击派发 `oas-delete`（detail `{ id, item }`）。**删除确认由宿主组合**：把 `oas-popconfirm` 包住删除入口、确认后再改 `items`（组件不内置二次确认弹层——地址删除是宿主业务流程的一部分，确认文案与撤销策略各家不同）：
+
+<DemoBlock title="行内编辑 + 删除（popconfirm 确认配方）">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-address
+      id="address-edit-delete-demo"
+      mode="list"
+      show-delete
+      items='[{"id":"a1","name":"张三","phone":"13800000000","province":"浙江省","city":"杭州市","district":"西湖区","detail":"文三路 100 号","isDefault":true},{"id":"a2","name":"李四","phone":"13900000000","province":"江苏省","city":"南京市","district":"玄武区","detail":"中山路 8 号"}]'
+    ></oas-address>
+    <oas-tag type="primary" id="address-edit-delete-info">点击行内「编辑」/「删除」查看事件</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+宿主侧的确认弹层配方（伪代码）：
+
+```html
+<!-- oas-delete 只报告意图，确认交互由宿主用 oas-popconfirm 组合 -->
+<oas-popconfirm content="确定删除该地址？">
+  <oas-button slot="reference" danger>删除</oas-button>
+</oas-popconfirm>
+```
+
+> 组件内删除钮点击即派发 `oas-delete`；要不要弹确认、确认后是否真的删，都由宿主在事件回调里决定（弹层归宿主，`items` 也归宿主改）。
+
+## 保存 / 删除忙态
+
+`saving` / `deleting` 表达宿主正在提交 / 删除：保存按钮或删除钮禁用 + `aria-busy` + spinner，输入通道照常（宿主自己决定是否锁表单）。两个属性与 `disabled` 正交——忙态结束移除属性即恢复：
+
+<DemoBlock title="saving / deleting 忙态">
+  <oas-address
+    saving
+    regions='[{"name":"浙江省","children":[{"name":"杭州市","children":[{"name":"西湖区"}]}]}]'
+  ></oas-address>
+  <oas-address
+    mode="list"
+    deleting
+    show-delete
+    items='[{"id":"a1","name":"张三","phone":"13800000000","detail":"文三路 100 号","isDefault":true}]'
+    style="margin-top: var(--oas-space-2)"
+  ></oas-address>
+</DemoBlock>
+
+## 自定义校验 validator
+
+`validator` 是 function property（attribute 装不下函数，宿主用 `el.validator = fn` 赋值）：签名 `(key, value) => string | null`，返回错误串表示不通过——错误并入 `oas-invalid` 的 `fields` 数组并渲染到对应字段下方；返回空串 / `null` / `undefined` 视为通过。`key` 为字段名（`name` / `phone` / `detail` / `province` / `city` / `district`）；内建校验（必填 / 电话格式 / 地区完整）先行，自定义钩子在后。钩子抛错不阻断提交（开发态告警一次，按无错误处理）：
+
+<DemoBlock title="validator 拉黑手机号">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-address id="address-validator-demo" regions='[{"name":"浙江省","children":[{"name":"杭州市","children":[{"name":"西湖区"}]}]}]' value='{"name":"张三","phone":"13800000000","province":"浙江省","city":"杭州市","district":"西湖区","detail":"文三路 100 号"}'></oas-address>
+    <oas-tag type="primary" id="address-validator-info">点击保存触发自定义校验</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 区划编码值 value-format
+
+`value-format="name"`（默认）输出省 / 市 / 区名称；`value-format="code"` 输出区划编码——提交（`oas-submit`）与变更（`oas-change`）的地址对象里 `province` / `city` / `district` 换成 `regions` 数据里的 `code` 字段（节点缺 `code` 时回退名称）；反向回填同样按 `code` 匹配到下拉。数据契约沿用宿主注入的 `regions`（`name` 必填、`code` 可选），组件不内置行政区划：
+
+<DemoBlock title="code 档输出区划编码">
+  <oas-address
+    value-format="code"
+    regions='[{"name":"浙江省","code":"330000","children":[{"name":"杭州市","code":"330100","children":[{"name":"西湖区","code":"330106"}]}]}]'
+    value='{"name":"张三","phone":"13800000000","province":"330000","city":"330100","district":"330106","detail":"文三路 100 号"}'
+  ></oas-address>
 </DemoBlock>
 
 ## 联系人轻模式
@@ -120,6 +188,30 @@ onMounted(() => {
   form?.addEventListener('oas-submit', () => {
     info.textContent = '校验通过，已提交'
   })
+  // 行内编辑 / 删除（确认弹层归宿主组合）
+  const ed = document.getElementById('address-edit-delete-demo')
+  const edInfo = document.getElementById('address-edit-delete-info')
+  ed?.addEventListener('oas-edit', (e) => {
+    edInfo.textContent = `oas-edit：${e.detail.id}（${e.detail.item.name}）——宿主据此进编辑模式`
+  })
+  ed?.addEventListener('oas-delete', (e) => {
+    edInfo.textContent = `oas-delete：${e.detail.id}——确认归宿主（popconfirm），确认后改 items`
+  })
+  // 自定义校验钩子（function property）
+  const validatorDemo = document.getElementById('address-validator-demo')
+  const validatorInfo = document.getElementById('address-validator-info')
+  if (validatorDemo) {
+    validatorDemo.validator = (key, value) => {
+      if (key === 'phone' && value.endsWith('00000000')) return '该手机号已拉黑'
+      return null
+    }
+    validatorDemo.addEventListener('oas-invalid', (e) => {
+      validatorInfo.textContent = `含自定义校验失败：${e.detail.fields.join(' / ')}`
+    })
+    validatorDemo.addEventListener('oas-submit', () => {
+      validatorInfo.textContent = '自定义校验通过'
+    })
+  }
 })
 </script>
 
@@ -131,13 +223,17 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `deleting` | 删除忙态：删除钮禁用 + aria-busy + spinner（与 disabled 正交，宿主删除期间置位） | `boolean` | — |
 | `disabled` | 禁用全部输入与操作（含列表单选与新增） | `boolean` | — |
 | `items` | 地址列表数据（mode=list）：JSON 数组 [{ id?, name, phone, province?, city?, district?, detail?, isDefault? }]；isDefault 项优先预选 | `AddressEntry[] \| string` | `[]` |
 | `mode` | 形态：edit（默认，地址编辑）/ list（地址列表，单选 + 默认标记）/ contact（联系人轻模式，仅姓名与电话） | `string` | `edit` |
 | `readonly` | 只读：可聚焦与复制，不可编辑 / 提交 / 选择 | `boolean` | — |
 | `regions` | 省市区数据（宿主注入契约）：JSON 数组 [{ name, code?, children? }]，最多三级；组件不内置行政区划数据 | `AddressRegion[] \| string` | — |
+| `saving` | 保存忙态：保存按钮禁用 + aria-busy + spinner（与 disabled 正交，宿主提交期间置位） | `boolean` | — |
 | `selected-id` | 列表选中项 id（受控）；缺省选 isDefault 项，否则选第一项 | `string` | — |
+| `show-delete` | 列表卡显示「删除」钮；点击派发 oas-delete（确认弹层归宿主用 oas-popconfirm 组合） | `boolean` | — |
 | `value` | 受控地址值（JSON 对象）：{ id?, name, phone, province?, city?, district?, detail?, isDefault? }；编辑模式用于预填，联系人模式只用 name / phone | `AddressEntry \| string` | — |
+| `value-format` | 地区值输出档位：name（默认，输出名称）/ code（输出区划编码，缺 code 的节点回退名称；回填按 code 匹配） | `string` | `name` |
 
 #### 事件
 
@@ -145,6 +241,8 @@ onMounted(() => {
 | --- | --- |
 | `oas-add` | 列表模式点击「新增地址」时派发，无 detail |
 | `oas-change` | 字段输入或地区选择变化时派发，detail { field, value }（value 为当前地址草稿） |
+| `oas-delete` | 列表行「删除」钮点击派发（需 show-delete 在场），detail { id, item }——确认弹层归宿主组合 |
+| `oas-edit` | 列表行「编辑」钮点击派发，detail { id, item }——宿主据此进编辑模式 |
 | `oas-invalid` | 提交校验失败时派发，detail { fields }（字段名数组），同时标记错误并聚焦首个错误字段 |
 | `oas-select` | 列表模式选中地址项时派发，detail { id, item } |
 | `oas-submit` | 编辑模式校验通过时派发，detail { value }（完整地址对象） |

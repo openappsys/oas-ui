@@ -23,9 +23,16 @@ export interface AddressEntry {
   isDefault?: boolean
 }
 
+/** 自定义校验钩子：返回错误串表示不通过（空串 / null / undefined 视为通过） */
+export type AddressValidator = (key: string, value: string) => string | null | undefined
+
 export type AddressMode = 'edit' | 'list' | 'contact'
 
+/** 地区值输出档位：name（默认，输出名称）/ code（输出区划编码，缺失 code 的节点回退名称） */
+export type AddressValueFormat = 'name' | 'code'
+
 const VALID_MODES: readonly string[] = ['edit', 'list', 'contact']
+const VALID_VALUE_FORMATS: readonly string[] = ['name', 'code']
 /**
  * 常规电话格式门（移动端场景不锁国家码）：`+` 仅可在首位，允许数字 / 空格 / 连字符，
  * 总字符长 6–21（`+` 占 1 位时上限 21）；数字位数另由 isValidPhone 要求 ≥6（纯符号串如 `------` 不得通过）。
@@ -192,7 +199,6 @@ const STYLE = `
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   background: var(--oas-color-bg);
-  cursor: pointer;
   transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
     background var(--oas-transition-fast) var(--oas-ease-out);
 }
@@ -278,14 +284,128 @@ const STYLE = `
 .empty[hidden] {
   display: none;
 }
+/* 列表卡结构：.card 只负责卡面，radio + 内容收进 .card-main（label，点选区域），
+   行内操作钮（编辑 / 删除）独立成组放卡尾——交互控件不嵌进 label（避免点击钮误触选中） */
+.card-main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--oas-space-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  flex: none;
+}
+.card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--oas-space-1);
+  box-sizing: border-box;
+  min-height: var(--oas-control-height-sm, 24px);
+  padding: 0 var(--oas-space-2);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-xs);
+  cursor: pointer;
+  transition:
+    color var(--oas-transition-fast) var(--oas-ease-out),
+    border-color var(--oas-transition-fast) var(--oas-ease-out),
+    background var(--oas-transition-fast) var(--oas-ease-out);
+}
+.card-action:hover:not(:disabled) {
+  color: var(--oas-color-primary-text);
+  border-color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.card-action:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.card-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.card-action[data-danger='true']:hover:not(:disabled) {
+  color: var(--oas-color-danger-text);
+  border-color: var(--oas-color-danger);
+}
+.card-action svg {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+.card-action .spinner {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  border: 2px solid currentColor;
+  border-inline-start-color: transparent;
+  border-radius: 50%;
+  animation: oas-address-spin 0.8s linear infinite;
+}
+.card-action .spinner[hidden] {
+  display: none;
+}
+@keyframes oas-address-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-action .spinner {
+    animation-duration: 2.4s;
+  }
+}
+/* 保存按钮 loading 态：spinner 与文案并存 */
+.button {
+  position: relative;
+}
+.button .spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-inline-start-color: transparent;
+  border-radius: 50%;
+  animation: oas-address-spin 0.8s linear infinite;
+}
+.button .spinner[hidden] {
+  display: none;
+}
 `
 
 let addressUid = 0
 
 export class OASAddress extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['mode', 'value', 'items', 'selected-id', 'regions', 'disabled', 'readonly']
+    return [
+      'mode',
+      'value',
+      'items',
+      'selected-id',
+      'regions',
+      'disabled',
+      'readonly',
+      'show-delete',
+      'saving',
+      'deleting',
+      'value-format',
+    ]
   }
+
+  /**
+   * 自定义校验钩子（property 通道，attribute 装不下函数）：`validator(key, value)` 返回
+   * 错误串表示不通过（并入 `oas-invalid` 与字段错误标记），空串 / null / undefined 视为通过。
+   * key 为字段名：`name` / `phone` / `detail` / `province` / `city` / `district`。
+   */
+  validator: AddressValidator | null = null
 
   private form: HTMLFormElement | null = null
   private list: HTMLElement | null = null
@@ -378,7 +498,10 @@ export class OASAddress extends OASElement {
           <span class="default-text"></span>
         </label>
         <div class="actions" part="actions">
-          <button type="submit" class="button" part="submit"></button>
+          <button type="submit" class="button" part="submit">
+            <span class="spinner" part="save-spinner" aria-hidden="true" hidden></span>
+            <span class="submit-text" part="submit-text"></span>
+          </button>
         </div>
       </form>
       <div class="list" part="list" role="radiogroup"></div>
@@ -455,7 +578,9 @@ export class OASAddress extends OASElement {
     const defaultText = this.shadow.querySelector<HTMLElement>('.default-text')
     if (defaultText) defaultText.textContent = this.t('address.default')
     const submitBtn = this.shadow.querySelector<HTMLButtonElement>('button[type="submit"]')
-    if (submitBtn) submitBtn.textContent = this.t('address.save')
+    const submitText = this.shadow.querySelector<HTMLElement>('[part="submit-text"]')
+    if (submitText) submitText.textContent = this.t('address.save')
+    if (submitBtn) submitBtn.setAttribute('aria-label', this.t('address.save'))
     if (this.addBtn) this.addBtn.textContent = this.t('address.add')
     if (this.provinceSelect)
       this.provinceSelect.setAttribute('aria-label', `${this.t('address.region')} ${this.t('address.select')}`)
@@ -476,10 +601,30 @@ export class OASAddress extends OASElement {
     if (this.actions) this.setSectionHidden(this.actions, !showDetail)
 
     this.applyDisabled()
+    this.applyBusyStates()
     this.parseRegions()
     this.syncRegions()
     this.applyValue()
     if (mode === 'list') this.renderList()
+  }
+
+  /** saving / deleting 忙态：保存钮与删除钮禁用 + aria-busy + spinner（正交于 disabled，可叠加） */
+  private applyBusyStates(): void {
+    const saving = this.hasAttr('saving')
+    const deleting = this.hasAttr('deleting')
+    const submitBtn = this.shadow.querySelector<HTMLButtonElement>('button[type="submit"]')
+    const saveSpinner = this.shadow.querySelector<HTMLElement>('[part="save-spinner"]')
+    if (submitBtn) {
+      if (saving) submitBtn.setAttribute('aria-busy', 'true')
+      else submitBtn.removeAttribute('aria-busy')
+    }
+    if (saveSpinner) saveSpinner.hidden = !saving
+    for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="card-delete"]')) {
+      if (deleting) btn.setAttribute('aria-busy', 'true')
+      else btn.removeAttribute('aria-busy')
+      const spinner = btn.querySelector<HTMLElement>('[part="card-delete-spinner"]')
+      if (spinner) spinner.hidden = !deleting
+    }
   }
 
   /**
@@ -529,12 +674,14 @@ export class OASAddress extends OASElement {
   }
 
   private emitChange(field: string): void {
-    this.emit('change', { field, value: { ...this.draft } })
+    this.emit('change', { field, value: this.outputValue({ ...this.draft }) })
   }
 
   /** 表单提交：校验通过派发 oas-submit，否则标记字段并派发 oas-invalid */
   private submit(): void {
     if (this.isLocked()) return
+    // saving 忙态拦截（原生 disabled 之外的程序化 submit 兜底）
+    if (this.hasAttr('saving')) return
     // contact 轻模式没有提交按钮（契约只有姓名 + 电话 + 输入即 change），
     // 输入框里按 Enter 触发的隐式提交必须拦住，否则会冒出一条无按钮可触发的 oas-invalid
     if (this.currentMode() === 'contact') return
@@ -574,29 +721,129 @@ export class OASAddress extends OASElement {
       district: this.districtSelect?.value ?? '',
     }
 
+    // 自定义校验钩子：内建校验之后逐字段调用，返回错误串则标记并并入 oas-invalid
+    const customErrors = this.runValidator()
+    for (const [key, message] of customErrors) {
+      if (!errors.includes(key)) errors.push(key)
+      this.setFieldError(key, message)
+    }
+
     if (errors.length > 0) {
       this.emit('invalid', { fields: errors })
-      const first = errors[0]!
-      const target =
-        first === 'name'
-          ? this.nameInput
-          : first === 'phone'
-            ? this.phoneInput
-            : first === 'region'
-              ? this.provinceSelect
-              : this.detailInput
-      target?.focus()
+      this.focusField(errors[0]!)
       return
     }
-    this.emit('submit', { value: { ...this.draft } })
+    this.emit('submit', { value: this.outputValue({ ...this.draft }) })
   }
 
-  /** 受控 value 应用：仅当 value 原文变化时覆盖草稿（避免用户输入被无关 update 覆盖） */
+  /**
+   * 自定义校验（validator property）：逐字段调用并收集错误。
+   * 抛错不中断提交（devWarn 后按无错误处理——宿主钩子 bug 不该把表单锁死）。
+   */
+  private runValidator(): Array<[string, string]> {
+    const validate = this.validator
+    if (typeof validate !== 'function') return []
+    const entries: Array<[string, string]> = [
+      ['name', this.draft.name ?? ''],
+      ['phone', this.draft.phone ?? ''],
+      ['province', this.draft.province ?? ''],
+      ['city', this.draft.city ?? ''],
+      ['district', this.draft.district ?? ''],
+      ['detail', this.draft.detail ?? ''],
+    ]
+    const out: Array<[string, string]> = []
+    for (const [key, value] of entries) {
+      let message: string | null | undefined
+      try {
+        message = validate(key, value)
+      } catch (error) {
+        devWarn(`[oas-address] validator 抛错（key="${key}"），已按无错误处理：${String(error)}`)
+        continue
+      }
+      if (typeof message === 'string' && message !== '') out.push([key, message])
+    }
+    return out
+  }
+
+  /** 首个错误字段聚焦（region 组共用省下拉；未知键回落姓名输入框） */
+  private focusField(key: string): void {
+    const target =
+      key === 'name'
+        ? this.nameInput
+        : key === 'phone'
+          ? this.phoneInput
+          : key === 'detail'
+            ? this.detailInput
+            : key === 'region' || key === 'province' || key === 'city' || key === 'district'
+              ? this.provinceSelect
+              : this.nameInput
+    target?.focus()
+  }
+
+  /**
+   * 输出值按 value-format 归档：`name`（默认）原样输出名称；`code` 把省/市/区名称换成
+   * 区划编码（regions 数据缺 code 的节点回退名称——数据契约以宿主注入为准）。
+   */
+  private outputValue(draft: AddressEntry): AddressEntry {
+    if (this.resolveValueFormat() !== 'code') return draft
+    return {
+      ...draft,
+      province: this.regionCodeOf(draft.province ?? ''),
+      city: this.regionCodeOf(draft.city ?? ''),
+      district: this.regionCodeOf(draft.district ?? ''),
+    }
+  }
+
+  private resolveValueFormat(): AddressValueFormat {
+    const raw = this.getAttr('value-format', 'name')
+    return VALID_VALUE_FORMATS.includes(raw) ? (raw as AddressValueFormat) : 'name'
+  }
+
+  /** 名称 → 编码（找不到节点或缺 code 回退原名称） */
+  private regionCodeOf(name: string): string {
+    if (name === '') return ''
+    const find = (nodes: AddressRegion[]): string | null => {
+      for (const node of nodes) {
+        if (node.name === name) return typeof node.code === 'string' && node.code !== '' ? node.code : name
+        const hit = node.children ? find(node.children) : null
+        if (hit !== null) return hit
+      }
+      return null
+    }
+    return find(this.regionsCache) ?? name
+  }
+
+  /** 编码 → 名称（value 回填用；找不到节点回退原值） */
+  private regionNameOf(code: string): string {
+    if (code === '') return ''
+    const find = (nodes: AddressRegion[]): string | null => {
+      for (const node of nodes) {
+        if (node.code === code) return node.name
+        const hit = node.children ? find(node.children) : null
+        if (hit !== null) return hit
+      }
+      return null
+    }
+    return find(this.regionsCache) ?? code
+  }
+
+  /** 受控 value 应用：仅当 value 原文（或 value-format）变化时覆盖草稿（避免用户输入被无关 update 覆盖） */
   private applyValue(): void {
     const raw = this.getAttr('value', '')
-    if (raw === this.appliedValueSignature) return
-    this.appliedValueSignature = raw
-    this.draft = this.parseValue(raw)
+    const format = this.resolveValueFormat()
+    const signature = `${format}|${raw}`
+    if (signature === this.appliedValueSignature) return
+    this.appliedValueSignature = signature
+    const parsed = this.parseValue(raw)
+    this.draft =
+      format === 'code'
+        ? {
+            ...parsed,
+            province: this.regionNameOf(parsed.province ?? ''),
+            city: this.regionNameOf(parsed.city ?? ''),
+            district: this.regionNameOf(parsed.district ?? ''),
+          }
+        : parsed
     if (this.nameInput) this.nameInput.value = this.draft.name
     if (this.phoneInput) this.phoneInput.value = this.draft.phone
     if (this.detailInput) this.detailInput.value = this.draft.detail ?? ''
@@ -694,11 +941,19 @@ export class OASAddress extends OASElement {
     return this.itemsCache
   }
 
-  /** 列表模式：items / 文案签名变化才重建；选中态增量同步（选中变化不重建，避免抢焦点） */
+  /** 列表模式：items / 文案 / 行内钮配置签名变化才重建；选中态增量同步（选中变化不重建，避免抢焦点） */
   private renderList(): void {
     if (!this.list) return
     const items = this.parseItems()
-    const signature = `${this.itemsSignature}|${this.t('address.defaultBadge')}|${this.hasAttr('disabled') || this.hasAttr('readonly') ? 'd' : ''}`
+    const signature = [
+      this.itemsSignature,
+      this.t('address.defaultBadge'),
+      this.t('address.edit'),
+      this.t('address.delete'),
+      this.hasAttr('disabled') || this.hasAttr('readonly') ? 'd' : '',
+      this.hasAttr('show-delete') ? 'del' : '',
+      this.hasAttr('deleting') ? 'busy' : '',
+    ].join('|')
     if (signature !== this.renderedListSignature) {
       this.renderedListSignature = signature
       this.list.replaceChildren()
@@ -728,14 +983,18 @@ export class OASAddress extends OASElement {
     this.emit('select', { id: fallback, item })
   }
 
-  private buildCard(item: AddressEntry): HTMLLabelElement {
+  private buildCard(item: AddressEntry): HTMLDivElement {
     const id = this.idOf(item)
     const selected = id === this.currentSelectedId()
-    const card = document.createElement('label')
+    const card = document.createElement('div')
     card.className = 'card'
     card.setAttribute('part', 'card')
     card.dataset.id = id
     if (selected) card.setAttribute('data-selected', '')
+
+    // radio + 内容收进 label（点选区域）；操作钮独立在卡尾，不嵌进 label
+    const main = document.createElement('label')
+    main.className = 'card-main'
 
     const input = document.createElement('input')
     input.type = 'radio'
@@ -744,7 +1003,7 @@ export class OASAddress extends OASElement {
     input.checked = selected
     input.disabled = this.isLocked()
     input.addEventListener('change', () => this.selectItem(id, item))
-    card.appendChild(input)
+    main.appendChild(input)
 
     const body = document.createElement('span')
     body.className = 'card-body'
@@ -769,8 +1028,45 @@ export class OASAddress extends OASElement {
     line.className = 'card-line'
     line.textContent = [item.province, item.city, item.district, item.detail].filter(Boolean).join(' ')
     body.appendChild(line)
-    card.appendChild(body)
+    main.appendChild(body)
+    card.appendChild(main)
+
+    const actions = document.createElement('span')
+    actions.className = 'card-actions'
+    actions.appendChild(this.buildCardAction(id, item, 'edit'))
+    if (this.hasAttr('show-delete')) actions.appendChild(this.buildCardAction(id, item, 'delete'))
+    card.appendChild(actions)
     return card
+  }
+
+  /** 行内操作钮：编辑（恒有）/ 删除（show-delete 在场）；deleting 态删除钮转忙 */
+  private buildCardAction(id: string, item: AddressEntry, kind: 'edit' | 'delete'): HTMLButtonElement {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'card-action'
+    btn.setAttribute('part', kind === 'edit' ? 'card-edit' : 'card-delete')
+    btn.dataset.id = id
+    btn.dataset.action = kind
+    if (kind === 'delete') btn.setAttribute('data-danger', 'true')
+    const label = kind === 'edit' ? this.t('address.edit') : this.t('address.delete')
+    btn.setAttribute('aria-label', `${label} ${item.name}`)
+    const spinner = document.createElement('span')
+    spinner.className = 'spinner'
+    spinner.setAttribute('part', 'card-delete-spinner')
+    spinner.setAttribute('aria-hidden', 'true')
+    spinner.hidden = true
+    const text = document.createElement('span')
+    text.textContent = label
+    btn.append(spinner, text)
+    btn.disabled = this.isLocked() || (kind === 'delete' && this.hasAttr('deleting'))
+    btn.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (this.isLocked()) return
+      if (kind === 'edit') this.emit('edit', { id, item })
+      else if (!this.hasAttr('deleting')) this.emit('delete', { id, item })
+    })
+    return btn
   }
 
   private selectItem(id: string, item: AddressEntry): void {
@@ -842,6 +1138,13 @@ export class OASAddress extends OASElement {
     if (this.addBtn) this.addBtn.disabled = locked
     const submitBtn = this.shadow.querySelector<HTMLButtonElement>('button[type="submit"]')
     if (submitBtn) submitBtn.disabled = locked
+    // 行内操作钮：锁定态禁用；deleting 态删除钮禁用（保存钮 saving 态同理）
+    const deleting = this.hasAttr('deleting')
+    const saving = this.hasAttr('saving')
+    for (const btn of this.shadow.querySelectorAll<HTMLButtonElement>('[part="card-edit"], [part="card-delete"]')) {
+      btn.disabled = locked || (btn.dataset.action === 'delete' && deleting)
+    }
+    if (submitBtn) submitBtn.disabled = locked || saving
     if (this.form) {
       this.form.querySelectorAll('input, textarea, select, button').forEach((el) => {
         const keepsFocusable = readonlyOnly && textControls.includes(el as HTMLInputElement)

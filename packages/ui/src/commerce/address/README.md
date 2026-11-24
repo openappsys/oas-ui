@@ -26,11 +26,33 @@
 
 | 事件 | detail |
 | --- | --- |
-| `oas-change` | `{ field, value }` — 字段输入 / 地区变化 |
-| `oas-submit` | `{ value }` — 编辑模式校验通过 |
-| `oas-invalid` | `{ fields }` — 校验失败 |
+| `oas-change` | `{ field, value }` — 字段输入 / 地区变化（value 按 value-format 归档） |
+| `oas-submit` | `{ value }` — 编辑模式校验通过（value 按 value-format 归档） |
+| `oas-invalid` | `{ fields }` — 校验失败（含 validator 自定义错误键） |
 | `oas-select` | `{ id, item }` — 列表选中 |
 | `oas-add` | 无 — 列表新增入口 |
+| `oas-edit` | `{ id, item }` — 列表行「编辑」钮，宿主据此进编辑模式 |
+| `oas-delete` | `{ id, item }` — 列表行「删除」钮（`show-delete` 在场）；确认弹层归宿主 |
+
+## 删除确认配方（popconfirm 组合）
+
+组件的删除钮只报告意图（`oas-delete`），**不内置确认弹层**——确认文案与撤销策略是宿主业务的一部分。宿主配方：
+
+```html
+<oas-popconfirm content="确定删除该地址？">
+  <oas-button slot="reference" danger>删除</oas-button>
+</oas-popconfirm>
+```
+
+组件内流程：用户点卡片上的「删除」→ `oas-delete` 冒出 → 宿主弹 `oas-popconfirm`（或自己的确认 UI）→ 确认后宿主改 `items`（组件自愈：选中项被删时 `selected-id` 回落并派发 `oas-select`）。请求删除期间的忙态用 `deleting`（删除钮禁用 + spinner）。
+
+## 设计前必答（新增增量）
+
+- **行内编辑钮**：每张卡恒有（list 模式），点击派发 `oas-edit`；卡片结构是 `div.card > label.card-main(radio + 内容) + .card-actions`——操作钮不嵌进 label（点击钮不会误触选中，也无嵌套交互语义问题）。
+- **show-delete**：缺省不渲染删除钮（与现状等价）；在场时每卡一个删除钮。
+- **saving / deleting**：忙态与 `disabled` 正交——`saving` 锁保存钮（+ `aria-busy` + spinner），`deleting` 锁删除钮；`submit()` 入口对 saving 再判一次（防程序化 submit）。
+- **validator**：function property（`el.validator = (key, value) => 错误串 | null`），内建校验之后逐字段调用；抛错 devWarn 一次并按无错误处理（宿主钩子 bug 不把表单锁死）；错误键并入 `oas-invalid.fields` 且渲染到对应字段下方（province/city/district 归到地区组）。
+- **value-format**：`name`（默认，输出与现状等价）/ `code`（提交与 change 的省/市/区输出 `regions` 的 `code`，缺 code 回退名称；回填按 code 匹配下拉）。format 变更会强制重放 value（签名含 format）。
 
 ## property 通道
 
