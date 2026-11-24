@@ -4,6 +4,14 @@
 
 ### 新增
 
+**oas-questionnaire 逻辑跳转谓词引擎（批 C，向后兼容：未写 `when` / `goto` 的问卷行为不变）**
+
+- **步骤条件 `when`**：`steps` 条目可写表达式（复用 `oas-schema-form` 的受限表达式轨——同一 parser / 求值器，直接 import 不复制实现），条件不成立即自动隐藏该步：头部项、进度总数、导航、取值与校验统一按隐藏口径，`next()` 自动跳过。表达式读取跨步汇总答案（含隐藏步——面板常驻、值保留）；作答变化按依赖路径（`pathDependencyMatches` 同判据，含通配与数组重编号）定向重算，未命中依赖不触发整树同步。
+- **跳转目标 `goto`**：前进时按条件跳转——`{ when, target }`（索引或步骤 key）或 `target` 简写（条件恒成立）；命中派发新增事件 `oas-goto`（`{ index, key?, from, target }`）后再切步，仍走单步校验与可取消的 `oas-before-change`。目标步被条件隐藏时落到其后最近可见步。
+- **正交与开关**：`hidden: true` 恒隐藏（宿主优先），`hidden: false` / 缺省才由 `when` 决定；`conditions="false"` 关闭引擎（只认宿主 `hidden`）。
+- **容错与守卫**：表达式语法错 / 未知函数一次性 devWarn 并降级单条（`when` 不生效、`goto` 不跳转），不连坐其它步骤；值变化 → 条件 → 对齐 → `oas-change` 的同步级联 8 轮截断并告警（宿主在 `oas-change` 里回写 `current` / 答案形成回环时不死循环）。
+- 单测新增 25（条件引擎纯函数 10 + 组件行为 15：显隐 / 自动跳过 / goto 三种书写面 / 依赖重算 / 与手动 `hidden` 正交 / 关闭引擎 / current 对齐 / 循环守卫 / 语法错降级 / schema-form 契约元素驱动 / reset 重算）；zh/en 文档补「声明式条件与跳转」段与 demo。
+
 **新组件能力补强批（15 条既有组件小增量，全部向后兼容：缺省/未启用路径与现状逐字节等价）**
 
 - **oas-submit-bar**：底部安全区（栏体底部内边距走 `max(间距, env(safe-area-inset-bottom))`，刘海屏/手势条自动避让）+ fixed 场景占位文档配方（宿主自加 `padding-bottom`，高度用 `--oas-submit-bar-height` token 对齐；sticky 布局本就占流无需占位）+ `tip` / `tip-icon` 提示行（运费/发票高频位；图标走注册表查表，未注册告警一次并跳过图标、文案照常可读）。单测 +5；zh/en 文档补「提示行」「安全区与占位」段与 demo。

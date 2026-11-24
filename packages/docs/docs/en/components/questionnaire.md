@@ -6,7 +6,7 @@ description: "A step-driven form flow orchestrator: step header + progress (\"St
 
 A step-driven form flow orchestrator: step header + progress ("Step {current} of {total}") + per-step content panels + per-step validation gating. Ideal for wizards, surveys, and multi-step checkout. Validation reuses the `oas-form` kernel — **place one `<oas-form>` inside each step panel**; moving forward validates the current step and blocks on failure, while going back never validates and panels stay mounted (filled values are preserved).
 
-> Scope: linear gating + optional-step skip + host-defined jumps via `oas-before-change` + **conditional branching via the host composition channel** (`hidden` data bit + `oas-before-change` + `oas-values-change`, see below). No predicate / expression engine is built in — the host owns the full answer data, keeping branch logic testable and vetoable at the application layer. Start/complete pages are not built in; implement draft persistence yourself via `current` + `getValues()`.
+> Scope: linear gating + optional-step skip + host-defined jumps via `oas-before-change` + two conditional-branching channels (**declarative** `steps[].when` / `goto`, evaluated by the same restricted expression engine as `oas-schema-form`; **host composition** `hidden` bit + `oas-values-change`). The channels are orthogonal — an explicit host `hidden` always wins. Start/complete pages are not built in; implement draft persistence yourself via `current` + `getValues()`.
 
 ## Basic usage
 
@@ -82,9 +82,14 @@ Before any jump (buttons / header clicks / `next()` / `prev()` / `goto()` / skip
 
 ## Conditional branching (skip by answer)
 
-Conditional branching uses the **host composition channel** — no built-in predicate engine: listen for `oas-values-change` to read the answer, then rewrite `steps` to flip the `hidden` bit. Hidden steps leave the header and progress, `next()` skips them automatically, and their values drop out of the values/validation scope. If the flipped step is the one the user is on, the component aligns `current` to the nearest visible step and emits `oas-change` (no manual jump needed). Keeping branch logic in the host means: testable rules, an extra veto point in `oas-before-change`, and no expression language re-invented inside the component.
+Conditional branching has two orthogonal channels:
 
-<DemoBlock title="Hide/restore steps by answer">
+1. **Declarative** (recommended): put a `when` expression on a `steps` entry — a failing condition hides the step automatically (see "Declarative conditions & jumps" below).
+2. **Host composition**: listen for `oas-values-change` to read the answer, then rewrite `steps` to flip the `hidden` bit. Hidden steps leave the header and progress, `next()` skips them automatically, and their values drop out of the values/validation scope. If the flipped step is the one the user is on, the component aligns `current` to the nearest visible step and emits `oas-change` (no manual jump needed). Use this channel when branch rules are very complex or decided by another system: rules stay testable and can be vetoed in `oas-before-change`.
+
+The two channels are **orthogonal**: `hidden: true` always hides (host wins), and conditions only decide steps the host has not explicitly hidden.
+
+<DemoBlock title="Hide/restore steps by answer (host composition)">
   <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"Invoicing"},{"key":"invoice","title":"Invoice details"},{"key":"done","title":"Confirm"}]'>
     <oas-form slot="step-need" initial-values='{"need":"yes"}'>
       <oas-radio-group name="need">
@@ -100,6 +105,47 @@ Conditional branching uses the **host composition channel** — no built-in pred
     </oas-form>
   </oas-questionnaire>
   <span id="q-cond-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+</DemoBlock>
+
+## Declarative conditions & jumps (when / goto)
+
+A `steps` entry can carry a condition expression, evaluated by the restricted expression engine shared with `oas-schema-form` (same frozen grammar: `{field.path}` values, `== != > >= < <=`, `&& || !`, `in` / `contains()` plus the text and math function set; zero third-party dependencies):
+
+- `when`: a failing condition hides the step (header item, progress total, navigation, values and validation all follow the hidden scope, and `next()` skips it). Expressions read the **cross-step merged answers** (including hidden steps — panels stay mounted and keep their values); answer changes recompute only the conditions whose dependency paths are hit, so unrelated fields do not trigger a full re-render.
+- `goto`: jump on advance — `{ when, target }` where `target` is a 0-based index or a step `key`, or the bare `target` shorthand (condition always true). A hit emits `oas-goto` (`detail: { index, key?, from, target }`) and then moves; the jump still runs per-step validation and `oas-before-change` (vetoable). If the target is hidden by its own condition, the jump lands on the nearest visible step after it.
+- `conditions="false"`: disables the engine — `when` / `goto` stop working and only the host `hidden` bit counts.
+- Orthogonality: `hidden: true` always hides (host wins); `hidden: false` / omitted lets `when` decide.
+- Fault tolerance: syntax errors / unknown functions produce one `devWarn` and downgrade that single clause (`when` no longer applies = step stays visible, `goto` does not jump); other steps are unaffected. If the host rewrites `current` / answers inside `oas-change` and forms a synchronous loop, the cascade is cut off after 8 rounds with a warning (no infinite loop).
+
+> Values coming from an embedded `oas-schema-form` drive `when` too — step content only needs the duck-typed contract (`getValues()` / `validate()` + `oas-values-change`).
+
+<DemoBlock title="when + goto (switch the answer and watch step count and jump)">
+  <oas-questionnaire
+    id="q-when"
+    style="width: 100%; max-width: 560px"
+    steps='[{"key":"extend","title":"Warranty","goto":{"when":"{extend} == \"no\"","target":"done"}},{"key":"warranty","title":"Warranty plan","when":"{extend} == \"yes\""},{"key":"invoice","title":"Invoice"},{"key":"done","title":"Done"}]'
+  >
+    <oas-form slot="step-extend" initial-values='{"extend":"yes"}'>
+      <oas-radio-group name="extend">
+        <oas-radio value="yes">Add warranty</oas-radio>
+        <oas-radio value="no">No warranty (Next jumps to Done)</oas-radio>
+      </oas-radio-group>
+    </oas-form>
+    <oas-form slot="step-warranty" rules='{"years":[{"required":true,"message":"Pick a warranty term"}]}'>
+      <oas-select name="years" placeholder="Term" style="width: 200px">
+        <oas-option value="1">1 year</oas-option>
+        <oas-option value="2">2 years</oas-option>
+        <oas-option value="3">3 years</oas-option>
+      </oas-select>
+    </oas-form>
+    <oas-form slot="step-invoice">
+      <oas-input name="title" placeholder="Invoice title (optional)" style="width: 240px"></oas-input>
+    </oas-form>
+    <oas-form slot="step-done">
+      <p style="color: var(--oas-color-text-secondary); margin: 0">Done.</p>
+    </oas-form>
+  </oas-questionnaire>
+  <span id="q-when-output" style="display: block; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
 ## Step transition (animated)
@@ -306,6 +352,23 @@ onMounted(() => {
     condOut.textContent = hide
       ? 'The "Invoice details" step is hidden: "Next" will skip it; switch back to "Invoice needed" to restore'
       : 'The "Invoice details" step is visible again'
+  })
+
+  // Declarative conditions & jumps: step feedback + goto hit feedback
+  const whenOut = document.getElementById('q-when-output')
+  let gotoJustNow = false
+  document.getElementById('q-when')?.addEventListener('oas-goto', (e) => {
+    gotoJustNow = true
+    whenOut.textContent = `goto hit: step ${e.detail.from + 1} → step ${e.detail.index + 1} (skipped the visible steps in between)`
+  })
+  document.getElementById('q-when')?.addEventListener('oas-change', (e) => {
+    // Inner fields emit oas-change too: only handle step changes (they carry index)
+    if (typeof e.detail?.index !== 'number') return
+    if (gotoJustNow) {
+      gotoJustNow = false
+      return
+    }
+    whenOut.textContent = `Now at step ${e.detail.index + 1} (conditional steps show/hide by answer)`
   })
 
   // Keyboard shortcuts: step feedback
