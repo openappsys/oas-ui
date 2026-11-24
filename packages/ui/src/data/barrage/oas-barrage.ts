@@ -20,11 +20,11 @@ import { isRtl } from '../../shared/direction.js'
  * - `items`：声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐
  *   `addBatch`：属性变化时把数组条目批量入队（追加，不清空在场）；另有同名 get/set
  *   访问器（赋数组自动 JSON 序列化反射 attribute），框架双向绑定不用手写 stringify
- * - `auto-play`：布尔，循环播放——声明条目队列耗尽后自动重新入队（只循环 `items`
- *   声明的数据；`add()` 手动加的条目不参与循环；`clear()` 只清在场与排队，声明数据
- *   仍在，想要永久停止请移除 `items` 或 `auto-play`）
+ * - `auto-play`：布尔，循环播放——**本轮声明条目全部播完**（队列空且无在场循环条目）后把
+ *   `items` 重新入队（只循环声明的数据；`add()` 手动加的条目不参与循环也不阻塞轮次；
+ *   `clear()` 只清在场与排队，声明数据仍在，想要永久停止请移除 `items` 或 `auto-play`）
  * - `banned-words`：屏蔽词（逗号分隔，或 JSON 数组字符串；大小写不敏感）。命中的条目
- *   **不入队不渲染**（`add` / `addBatch` / `items` 三条入队通道同一判据）；已在场的条目不回溯移除
+ *   **不入队不渲染**（`add` / `addBatch` / `items` / auto-play 重灌同一入队判据）；已在场的条目不回溯移除
  * - `likeable`：每条弹幕带点赞控件（心形按钮，点按切换点赞态）——点赞状态按 `key`（缺省按文本）
  *   记忆，消失后重新出现仍保留；派发 `oas-like`。未开该属性时渲染与现状一致（零视觉漂移）
  *
@@ -198,6 +198,8 @@ interface QueuedItem {
   text: string
   key: string
   color: string
+  /** 来自 `items` 声明数据（auto-play 的循环轮次归属；`add()` 手动条目不带） */
+  loop?: boolean
 }
 
 interface ActiveItem extends QueuedItem {
@@ -396,14 +398,19 @@ export class OASBarrage extends OASElement {
 
   /** 追加一条弹幕；空文本与被屏蔽词命中的文本忽略 */
   add(text: string, options: BarrageItemOptions = {}): void {
-    if (typeof text !== 'string' || text.trim() === '') return
-    if (this.isBanned(text)) return
-    this.queue.push({
-      text,
-      key: options.key ?? '',
-      color: options.color ?? '',
-    })
+    if (!this.enqueue({ text, key: options.key ?? '', color: options.color ?? '' })) return
     this.pump()
+  }
+
+  /**
+   * 入队唯一收口：空文本与屏蔽词判据（`add` / `addBatch` / `items` / auto-play 重灌共用）。
+   * 返回是否真的入队。
+   */
+  private enqueue(item: QueuedItem): boolean {
+    if (typeof item.text !== 'string' || item.text.trim() === '') return false
+    if (this.isBanned(item.text)) return false
+    this.queue.push(item)
+    return true
   }
 
   /** 查询点赞态（键 = key，缺省按文本；与 oas-like 的 detail 口径一致） */
@@ -516,7 +523,6 @@ export class OASBarrage extends OASElement {
       this.pumpTimer = null
     }
     const max = this.resolveMaxActive()
-    const loop = this.hasAttribute('auto-play')
     while (this.queue.length > 0) {
       if (max > 0 && this.active.length >= max) return
       const now = Date.now()
@@ -541,13 +547,25 @@ export class OASBarrage extends OASElement {
       const item = this.queue.shift()
       if (!item) return
       this.mount(item, index, now)
-      // auto-play：队列耗尽时重播声明条目（只循环 items 声明的数据）
-      if (loop && this.queue.length === 0 && this.declaredItems.length > 0) {
-        for (const declared of this.declaredItems) {
-          this.queue.push({ text: declared.text, key: declared.key ?? '', color: declared.color ?? '' })
-        }
-      }
     }
+    this.refillDeclared()
+  }
+
+  /**
+   * auto-play 重灌。两个守卫都是必须的：
+   * - **屏蔽词**：重灌与 `add` / `addBatch` / `items` 走同一 `enqueue` 判据，否则循环会把已过滤掉的内容重新灌回来；
+   * - **时机**：只在本轮声明条目**全部播完**（队列空 + 无在场循环条目）时重灌。首轮排空的瞬间就补，
+   *   会让同一条弹幕双份在场、独占双倍轨道。
+   */
+  private refillDeclared(): void {
+    if (this.pausedInternal) return
+    if (!this.hasAttribute('auto-play') || this.declaredItems.length === 0) return
+    if (this.queue.length > 0) return
+    if (this.active.some((item) => item.loop)) return
+    for (const declared of this.declaredItems) {
+      this.enqueue({ text: declared.text, key: declared.key ?? '', color: declared.color ?? '', loop: true })
+    }
+    if (this.queue.length > 0) this.pump()
   }
 
   private mount(item: QueuedItem, track: number, now: number): void {
@@ -931,6 +949,10 @@ export class OASBarrage extends OASElement {
     const previous = new Set(this.declaredItems.map(identity))
     const fresh = normalized.filter((item) => !previous.has(identity(item)))
     this.declaredItems = normalized
-    this.addBatch(fresh)
+    // 声明条目带 loop 标记：auto-play 的重灌时机按「本轮声明条目是否全部离场」判定，
+    // 手动 add() 的条目不计入轮次（不阻塞循环）。
+    for (const item of fresh) {
+      this.enqueue({ text: item.text, key: item.key ?? '', color: item.color ?? '', loop: true })
+    }
   }
 }

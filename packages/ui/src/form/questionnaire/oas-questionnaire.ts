@@ -538,8 +538,11 @@ export class OASQuestionnaire extends OASElement {
     this.addEventListener('keydown', this.onKeydown)
     this.onCleanup(() => this.removeEventListener('keydown', this.onKeydown))
     this.bindValueListeners()
-    // 值与 bind() 对称：断开时摘除内层 form 值跟踪监听（否则第 2 次断开不再清理）
+    // 与 bind() 的清理对称：断开时摘除内层 form 值跟踪监听、并清掉待派的评分防抖定时器
+    //（否则断开后 80ms 内那次 emit 仍会在已脱离文档的宿主上派发，第 2 次断开也不会清）
     this.onCleanup(() => {
+      if (this.scoreTimer !== null) clearTimeout(this.scoreTimer)
+      this.scoreTimer = null
       for (const { form } of this.stepForms()) {
         form.removeEventListener('oas-values-change', this.onInnerValues as EventListener)
       }

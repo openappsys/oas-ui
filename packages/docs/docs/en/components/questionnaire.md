@@ -89,8 +89,10 @@ Conditional branching has two orthogonal channels:
 
 The two channels are **orthogonal**: `hidden: true` always hides (host wins), and conditions only decide steps the host has not explicitly hidden.
 
-<DemoBlock title="Hide/restore steps by answer (host composition)">
-  <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"Invoicing"},{"key":"invoice","title":"Invoice details"},{"key":"done","title":"Confirm"}]'>
+> The demo below deliberately turns the engine off with `conditions="false"` while the "Invoice details" step still carries a `when`: since the engine is off, that condition **does nothing** (the step always shows) and branching is driven purely by the host's `hidden` bit — the "host controls all branching" recipe. Remove the `conditions` attribute and answer again to compare both channels.
+
+<DemoBlock title="Hide/restore steps by answer (host composition, engine off)">
+  <oas-questionnaire id="q-cond" conditions="false" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"Invoicing"},{"key":"invoice","title":"Invoice details","when":"{need} == \"no\""},{"key":"done","title":"Confirm"}]'>
     <oas-form slot="step-need" initial-values='{"need":"yes"}'>
       <oas-radio-group name="need">
         <oas-radio value="yes">Invoice needed</oas-radio>
@@ -132,14 +134,14 @@ A `steps` entry can carry a condition expression, evaluated by the restricted ex
       </oas-radio-group>
     </oas-form>
     <oas-form slot="step-warranty" rules='{"years":[{"required":true,"message":"Pick a warranty term"}]}'>
-      <oas-select name="years" placeholder="Term" style="width: 200px">
-        <oas-option value="1">1 year</oas-option>
-        <oas-option value="2">2 years</oas-option>
-        <oas-option value="3">3 years</oas-option>
-      </oas-select>
+      <oas-radio-group name="years">
+        <oas-radio value="1">1 year</oas-radio>
+        <oas-radio value="2">2 years</oas-radio>
+        <oas-radio value="3">3 years</oas-radio>
+      </oas-radio-group>
     </oas-form>
     <oas-form slot="step-invoice">
-      <oas-input name="title" placeholder="Invoice title (optional)" style="width: 240px"></oas-input>
+      <p style="color: var(--oas-color-text-secondary); margin: 0">Invoice details (optional — Next jumps to Done).</p>
     </oas-form>
     <oas-form slot="step-done">
       <p style="color: var(--oas-color-text-secondary); margin: 0">Done.</p>
@@ -181,10 +183,10 @@ A `steps` entry can carry a condition expression, evaluated by the restricted ex
       <p style="color: var(--oas-color-text-secondary); margin: 0">Click "Done" to see the aggregated score.</p>
     </oas-form>
   </oas-questionnaire>
-  <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px">
+  <oas-space align="center" style="margin-top: var(--oas-space-3)">
     <oas-button id="q-score-read">Read score</oas-button>
     <span id="q-score-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
-  </div>
+  </oas-space>
 </DemoBlock>
 
 ## Step transition (animated)
@@ -380,7 +382,8 @@ onMounted(() => {
   const condSteps = (invoiceHidden) =>
     JSON.stringify([
       { key: 'need', title: 'Invoicing' },
-      { key: 'invoice', title: 'Invoice details', hidden: invoiceHidden },
+      // Engine disabled (conditions="false"): this when is inert — visibility only follows the host hidden bit
+      { key: 'invoice', title: 'Invoice details', when: '{need} == "no"', hidden: invoiceHidden },
       { key: 'done', title: 'Confirm' },
     ])
   cond?.addEventListener('oas-values-change', (e) => {

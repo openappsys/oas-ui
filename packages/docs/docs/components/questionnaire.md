@@ -89,8 +89,10 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
 
 两条通道**正交**：`hidden: true` 恒隐藏（宿主优先），条件只决定「未被宿主显式隐藏」的步。
 
-<DemoBlock title="按答案隐藏/恢复步骤（宿主组合通道）">
-  <oas-questionnaire id="q-cond" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"是否开票"},{"key":"invoice","title":"发票信息"},{"key":"done","title":"确认提交"}]'>
+> 下方 demo 故意用 `conditions="false"` 关掉引擎，同时给「发票信息」步写了一条 `when`：因为引擎关闭，这条条件**不生效**（该步恒显示），分支完全由宿主的 `hidden` 位决定——这就是「完全由宿主控制分支」的写法。去掉 `conditions` 属性再作答一次，即可对比两种通道的差别。
+
+<DemoBlock title="按答案隐藏/恢复步骤（宿主组合通道 · 条件引擎关闭）">
+  <oas-questionnaire id="q-cond" conditions="false" style="width: 100%; max-width: 520px" steps='[{"key":"need","title":"是否开票"},{"key":"invoice","title":"发票信息","when":"{need} == \"no\""},{"key":"done","title":"确认提交"}]'>
     <oas-form slot="step-need" initial-values='{"need":"yes"}'>
       <oas-radio-group name="need">
         <oas-radio value="yes">需要开票</oas-radio>
@@ -132,14 +134,14 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
       </oas-radio-group>
     </oas-form>
     <oas-form slot="step-warranty" rules='{"years":[{"required":true,"message":"请选择延保年限"}]}'>
-      <oas-select name="years" placeholder="延保年限" style="width: 200px">
-        <oas-option value="1">1 年</oas-option>
-        <oas-option value="2">2 年</oas-option>
-        <oas-option value="3">3 年</oas-option>
-      </oas-select>
+      <oas-radio-group name="years">
+        <oas-radio value="1">1 年</oas-radio>
+        <oas-radio value="2">2 年</oas-radio>
+        <oas-radio value="3">3 年</oas-radio>
+      </oas-radio-group>
     </oas-form>
     <oas-form slot="step-invoice">
-      <oas-input name="title" placeholder="发票抬头（选填）" style="width: 240px"></oas-input>
+      <p style="color: var(--oas-color-text-secondary); margin: 0">发票信息（选填，点「下一步」直达完成）。</p>
     </oas-form>
     <oas-form slot="step-done">
       <p style="color: var(--oas-color-text-secondary); margin: 0">完成。</p>
@@ -181,10 +183,10 @@ description: 步骤驱动的表单流程编排组件：步骤头 + 进度（「�
       <p style="color: var(--oas-color-text-secondary); margin: 0">点击「完成」查看汇总分数。</p>
     </oas-form>
   </oas-questionnaire>
-  <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px">
+  <oas-space align="center" style="margin-top: var(--oas-space-3)">
     <oas-button id="q-score-read">读取 score</oas-button>
     <span id="q-score-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
-  </div>
+  </oas-space>
 </DemoBlock>
 
 ## 切换动画（animated）
@@ -380,7 +382,8 @@ onMounted(() => {
   const condSteps = (invoiceHidden) =>
     JSON.stringify([
       { key: 'need', title: '是否开票' },
-      { key: 'invoice', title: '发票信息', hidden: invoiceHidden },
+      // 引擎已关闭（conditions="false"）：这条 when 不生效，可见性只认宿主写的 hidden
+      { key: 'invoice', title: '发票信息', when: '{need} == "no"', hidden: invoiceHidden },
       { key: 'done', title: '确认提交' },
     ])
   cond?.addEventListener('oas-values-change', (e) => {

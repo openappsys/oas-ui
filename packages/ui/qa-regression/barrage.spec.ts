@@ -318,6 +318,42 @@ test('barrage RTL：镜像关键帧生效，弹幕自舞台左侧进场', async 
   expect(geom.itemRight - geom.stageLeft).toBeLessThan(geom.stageWidth / 2)
 })
 
+test('barrage auto-play × banned-words：循环重灌不绕过屏蔽词、首轮不重复 mount（回归）', async ({ page }) => {
+  await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#bg-demo')
+  // 自建实例（演示页不承载「循环 + 屏蔽词」组合）：speed 拉高让多轮循环在 ~1s 内跑完
+  await page.evaluate(() => {
+    const el = document.createElement('oas-barrage')
+    el.id = 'bg-loop-banned'
+    el.setAttribute('items', JSON.stringify(['好弹幕', '广告弹幕']))
+    el.setAttribute('banned-words', '广告')
+    el.setAttribute('auto-play', '')
+    el.setAttribute('tracks', '2')
+    el.setAttribute('speed', '6000')
+    el.setAttribute('height', '80')
+    document.querySelector('.demo-block')!.appendChild(el)
+  })
+  const host = page.locator('#bg-loop-banned')
+
+  // 采样多轮循环：累计出现过的文本里不得有被屏蔽词命中的条目
+  const seen = new Set<string>()
+  for (let i = 0; i < 25; i++) {
+    const texts = await host.evaluate((el) =>
+      [...(el as HTMLElement).shadowRoot!.querySelectorAll('.item')].map((n) => n.textContent ?? ''),
+    )
+    for (const t of texts) seen.add(t)
+    await page.waitForTimeout(100)
+  }
+  expect([...seen], 'auto-play 重灌必须走同一屏蔽词判据').toEqual(['好弹幕'])
+
+  // 首轮不重复 mount：同一时刻同一文本最多一条（排空瞬间重灌会双份在场、占双倍轨道）
+  const duplicates = await host.evaluate((el) => {
+    const texts = [...(el as HTMLElement).shadowRoot!.querySelectorAll('.item')].map((n) => n.textContent ?? '')
+    return texts.length - new Set(texts).size
+  })
+  expect(duplicates).toBe(0)
+})
+
 test('barrage：likeable 点赞真实可点（oas-like liked 翻转）+ banned-words 命中不渲染', async ({ page }) => {
   await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#bg-like')

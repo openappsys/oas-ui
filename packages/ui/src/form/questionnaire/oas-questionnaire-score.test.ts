@@ -183,6 +183,25 @@ describe('OASQuestionnaire 评分汇总（score-rules）', () => {
     expect(scores).toEqual([{ score: 10 }, { score: 0 }])
   })
 
+  it('断开连接清掉待派的评分防抖（重连后的清理与 bind 对称，不在已脱离文档的宿主上派发）', async () => {
+    const el = mountFlow([{ when: '{need} == "yes"', score: 10 }])
+    const scores: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-score', (e) => scores.push((e as CustomEvent).detail as Record<string, unknown>))
+    // 走一次「断开重连」：此后成立的清理契约只有 onReconnect 注册的那一组
+    el.remove()
+    document.body.appendChild(el)
+    // 作答变化后立刻摘挂：80ms 防抖还没到点
+    fill(field(el, 'need'), 'yes')
+    el.remove()
+    await settle()
+    expect(scores).toEqual([])
+    // 重挂后重新作答照常派发（清理没有把链路弄坏）
+    document.body.appendChild(el)
+    fill(field(el, 'need'), 'yes')
+    await settle()
+    expect(scores).toEqual([{ score: 10 }])
+  })
+
   it('规则变更静默：改 score-rules 不派发事件，property 即时反映新规则', () => {
     const el = mountFlow([{ when: '{need} == "yes"', score: 10 }])
     const scores: unknown[] = []

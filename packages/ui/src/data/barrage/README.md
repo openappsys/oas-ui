@@ -11,5 +11,6 @@
 ## items / auto-play 增量（能力补强批）
 
 - items：声明式数据（JSON 数组，字符串或 { text, color?, key? }），语义对齐 addBatch：属性变化时**只追加新条目**（按 text+color+key 身份去重，不清空在场、不重复入队）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute）。
-- uto-play：循环只喂 items 声明的数据——队列耗尽时重新入队；add() 手动加的不参与循环；clear() 只清在场与排队，声明数据仍在（想永久停止移除 items 或 auto-play）。与 max-active 组合可做「恒定 N 条在场」的循环流。
-- 取消路径：auto-play 的重入队发生在 pump 循环内，断开连接 / 暂停时 pump 直接返回，不会空转。
+- auto-play：循环只喂 items 声明的数据——**本轮声明条目全部播完**（队列空且无在场循环条目）后重新入队；add() 手动加的不参与循环、也不阻塞轮次判定；clear() 只清在场与排队，声明数据仍在（想永久停止移除 items 或 auto-play）。与 max-active 组合可做「恒定 N 条在场」的循环流。
+- 屏蔽词与循环：重灌与 `add` / `addBatch` / `items` 共用同一入队判据（空文本 + `banned-words` 命中即不入队），循环不会把已过滤的内容灌回来。
+- 取消路径：auto-play 的重入队发生在 pump 尾部，断开连接 / 暂停时 pump 直接返回，不会空转。

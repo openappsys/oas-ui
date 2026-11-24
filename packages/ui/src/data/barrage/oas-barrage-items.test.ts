@@ -69,6 +69,37 @@ describe('barrage items 声明式数据 + auto-play', () => {
     expect(items(el)).toHaveLength(0)
   })
 
+  it('auto-play × banned-words：循环重灌同样过滤屏蔽词（不被循环绕过）', () => {
+    const el = mount({
+      'banned-words': '广告',
+      items: '["好弹幕","广告弹幕"]',
+      'auto-play': '',
+      speed: '100000',
+      'max-active': '1',
+    })
+    const seen = new Set<string>()
+    const record = () => {
+      for (const node of items(el)) seen.add(node.textContent ?? '')
+    }
+    record()
+    // 多轮循环：每轮重灌都走同一屏蔽词判据，被过滤的条目不因循环回流
+    for (let round = 0; round < 8; round++) {
+      vi.advanceTimersByTime(200)
+      record()
+    }
+    expect([...seen]).toEqual(['好弹幕'])
+    expect(items(el).map((node) => node.textContent)).toEqual(['好弹幕'])
+  })
+
+  it('auto-play 首轮：声明条目全部播完才重灌，首轮不重复 mount', () => {
+    // speed=1 → 条目长时间在场；轨道充足，首轮两条都会立即入场
+    const el = mount({ items: '["甲","乙"]', 'auto-play': '', tracks: '3' })
+    expect(items(el).map((node) => node.textContent)).toEqual(['甲', '乙'])
+    // 队列排空的瞬间不得重灌：同一条弹幕会双份在场、独占双倍轨道
+    vi.advanceTimersByTime(1000)
+    expect(items(el).map((node) => node.textContent)).toEqual(['甲', '乙'])
+  })
+
   it('非法 items JSON：devWarn 一次并按空数据处理', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {

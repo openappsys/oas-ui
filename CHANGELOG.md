@@ -122,6 +122,17 @@
 
 - **oas-sku 弹层形态**：`layout="embedded|popup"`——同一份面板两种承载（面板节点在「内嵌容器」与 `oas-bottom-sheet` 默认 slot 之间搬移，选中态 / 焦点 / 数量输入随节点走，不重建不复制）；`layout` 缺省按视口自动（`matchMedia('(max-width: 480px)')` 越界即时重判，显式值不被视口覆盖，非法值告警回落 embedded）；开合走 bottom-sheet 协议——`open` 受控属性（宿主写入静默）、下滑 / 遮罩 / Esc 由承载件派发 `oas-close` 后组件自动收起、交互与命令式 `openOverlay()` / `closeOverlay()` 派发 `oas-open-change`（内嵌形态调用只告警一次，不产生幽灵 open 态）；打开即聚焦面板首个可聚焦控件、Tab 循环由 bottom-sheet 承载；内嵌形态承载件 `hidden`（空 dialog 不进读屏树）。单测 +7（缺省内嵌 / 面板搬移复用 / 开合协议 / 焦点 / 窄屏自动 + 显式优先 + 回宽屏 / 非法值 / 内嵌命令式告警 / 切换不丢选中）+ qa-regression 真实弹层（面板贴底可见、面板内选择联动、Esc 关闭回写）+ zh/en 文档与 demo。
 
+### 修复
+
+**批 C / D 修复批（review 收口）**
+
+- **oas-barrage auto-play × 屏蔽词**：循环重灌此前直接写入队列，绕过 `banned-words` 判据——开启 `auto-play` 后命中屏蔽词的声明条目会随循环重新进场。现重灌与 `add` / `addBatch` / `items` 共用同一入队判据（空文本 + 屏蔽词命中即不入队）。
+- **oas-barrage auto-play 首轮重复 mount**：重灌时机由「队列排空瞬间」收紧为「本轮声明条目全部播完」（队列空且无在场循环条目；`add()` 手动条目不计入轮次）——修复前首轮排空即重灌，同一条弹幕双份在场、独占双倍轨道。单测 +2，`qa-regression/barrage.spec.ts` +1（真实浏览器多轮循环采样）。
+- **oas-questionnaire 断开重连清理对称**：`onReconnect` 注册的清理补上评分防抖定时器（与 `bind()` 对齐）——修复前重连后再断开，待派的 `oas-score` 仍会在已脱离文档的宿主上派发。单测 +1。
+- **问卷 demo 补 `conditions="false"` 实演示**：宿主组合通道 demo 改为关闭条件引擎（该实例给「发票信息」步写了 `when`，引擎关闭后条件不生效、分支只认宿主 `hidden`），并把 when/goto demo 的下拉换成选项组、去掉隐藏面板里的多余输入——axe「无法评分节点」回落，感知对比度 ratchet 只许降。
+- **demo-coverage 探针补齐登记配套**：questionnaire `oas-goto` / `oas-score`、barrage `oas-like`、coupon `oas-select-invalid` 与 questionnaire `conditions` 属性演示全部补上。
+- **PRD 措辞对齐实现**：coupon 互斥组落点写 `exclusiveGroup`（列表条目字段，非 `exclusive-group` 属性）。
+
 ### 文档站（语言机制后续增强）
 
 - **移动端导航栏常驻分段语言切换**：中/EN 切换器此前在移动断点隐藏（横幅关闭后的移动端二访客没有任何语言入口），现移动端同样常驻显示（紧凑 22px 高，位于汉堡按钮前）；汉堡菜单内默认语言入口保留为补充路径。
