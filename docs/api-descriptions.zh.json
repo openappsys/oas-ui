@@ -1875,7 +1875,11 @@
       "rows": "初始渲染行数（只决定初始行数；未提供时 `min` 兼作初始行数）",
       "duplicate-text": "复制按钮可访问名（缺省走 i18n `schemaForm.rowDuplicate`）",
       "move-up-text": "上移按钮可访问名（缺省走 i18n `schemaForm.rowUp`）",
-      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）"
+      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）",
+      "virtual": "虚拟滚动开关（缺省关 = 现状逐字节等价）：只渲染可视窗口 + overscan，字段留 light DOM 语义不变",
+      "overscan": "可视窗口上下各额外渲染的行数（缺省 5）；非法值回落缺省并告警",
+      "viewport-height": "虚拟视口高度 px（缺省量测容器实际高度；CSS --oas-form-list-viewport-height 亦可覆盖）",
+      "estimated-row-height": "行高初始估高 px（缺省 56；窗口内实测后自动校准预估）"
     },
     "events": {
       "oas-add": "添加行时派发，`detail: { index }`",
@@ -2205,7 +2209,8 @@
       "accept": "文件类型过滤（原生 `accept` 语法，默认 `image/*`）",
       "capture": "透传原生 `capture`：移动端直接拉起相机",
       "disabled": "禁用：添加、排序、删除全部不可用",
-      "readonly": "只读预览：隐藏添加入口，操作按钮禁用"
+      "readonly": "只读预览：隐藏添加入口，操作按钮禁用",
+      "compress": "选图自动压缩（缺省关 = 现状逐字节等价）：空串 = 缺省档（quality 0.8 / max-dimension 4096）；JSON `{\"quality\":0.8,\"max-dimension\":1920}` 覆盖档位；非法 devWarn 一次按关闭处理。仅作用于用户新选入文件（受控 files 写入不压缩）；EXIF 方向由浏览器解码正立渲染，压缩输出恒正立并以 orientation 元信息报告源方向标记；开启时 oas-change detail 附 compressed 元信息数组"
     },
     "events": {
       "oas-change": "用户新增 / 删除 / 排序后派发，`detail: { files, count }`",
@@ -3180,7 +3185,8 @@
       "layout": "键盘布局：`number`（默认）/ `plate`（车牌号：省份简称 + 字母 + 数字）",
       "disabled": "禁用：按键全部禁用且不派发事件",
       "readonly": "只读：按键可聚焦但不改动值，`oas-done` 仍可派发",
-      "extra-key": "附加键（挂数字区右侧，如身份证 X 键）——单个字符或 JSON 字符串数组（最多 2 个，超出截断并 devWarn 一次）；0 键自动收窄让位；附加字符并入物理键盘白名单"
+      "extra-key": "附加键（挂数字区右侧，如身份证 X 键）——单个字符或 JSON 字符串数组（最多 2 个，超出截断并 devWarn 一次）；0 键自动收窄让位；附加字符并入物理键盘白名单",
+      "no-repeat-delete": "关闭删除键长按连删（缺省开：按住 400ms 起连删，间隔 300ms 递减至 150ms；pointerup/移出/取消停止）——严格单发场景（逐格验证的验证码框）关闭；物理键盘 Backspace 不受影响"
     },
     "events": {
       "oas-input": "追加一个字符，`detail: { value, key }`",
@@ -5794,7 +5800,11 @@
       "remove-text": "删除按钮可访问名（缺省走 i18n `schemaForm.rowRemove`）",
       "duplicate-text": "复制按钮可访问名（缺省走 i18n `schemaForm.rowDuplicate`）",
       "move-up-text": "上移按钮可访问名（缺省走 i18n `schemaForm.rowUp`）",
-      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）"
+      "move-down-text": "下移按钮可访问名（缺省走 i18n `schemaForm.rowDown`）",
+      "virtual": "虚拟滚动开关（缺省关 = 现状逐字节等价）：行帧窗口化，aria-rowcount 始终报总量",
+      "overscan": "可视窗口上下各额外渲染的行数（缺省 5）；非法值回落缺省并告警",
+      "viewport-height": "虚拟视口高度 px（缺省量测 .rows 实际高度；CSS --oas-array-table-viewport-height 亦可覆盖）",
+      "estimated-row-height": "行高初始估高 px（缺省 64；窗口内实测后自动校准预估）"
     },
     "events": {
       "oas-add": "末尾追加行时派发，`detail: { index }`",

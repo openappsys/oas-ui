@@ -18,6 +18,11 @@ import { devWarn } from '../../shared/dev-warn.js'
  *   附加字符同时并入物理键盘白名单；非法 JSON devWarn 并忽略
  * - `disabled`：禁用（按键禁用、不派发事件）
  * - `readonly`：只读（按键可聚焦但不改动 value，仍可派发 `oas-done`）
+ * - `no-repeat-delete`：关闭删除键长按连删（v2.6.9，缺省开）——长按是触屏删除的通用增强
+ *   （键盘 App / 密码盘的既成惯例），默认开启；宿主如需「严格单发」（如逐格验证的验证码框）
+ *   可用本属性关闭。行为：按住 400ms 起连删，间隔 300ms 起每次递减 50ms、150ms 触底；
+ *   pointerup / pointerleave / pointercancel 停止；连删期间抑制随后的 click（不多删一次）；
+ *   删除键的 contextmenu 被阻止（长按弹菜单会打断连删），其余按键不受影响。
  *
  * 事件（bubbles + composed）：
  * - `oas-input`：追加一个字符，`detail: { value, key }`
@@ -244,7 +249,7 @@ const STYLE = `
 
 export class OASNumberKeyboard extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'maxlength', 'random', 'layout', 'disabled', 'readonly', 'extra-key']
+    return ['value', 'maxlength', 'random', 'layout', 'disabled', 'readonly', 'extra-key', 'no-repeat-delete']
   }
 
   private kbEl: HTMLElement | null = null
@@ -263,6 +268,18 @@ export class OASNumberKeyboard extends OASElement {
   private provincesOpen = false
   /** extra-key 非法/超限告警去重（同原文只 warn 一次） */
   private warnedExtraKey = ''
+  /** 长按连删计时器（null = 未在长按） */
+  private repeatTimer: ReturnType<typeof setTimeout> | null = null
+  /** 当前连删间隔（300 起步递减，150 触底） */
+  private repeatDelay = 300
+  /** 长按会话活跃：长按已删过且手势未以 leave/cancel 结束——随后的收尾 click 不再多删一次 */
+  private longPressActive = false
+
+  /** 长按连删参数（常量集中，README 论证口径） */
+  static readonly REPEAT_DELAY_START = 300
+  static readonly REPEAT_DELAY_MIN = 150
+  static readonly REPEAT_DELAY_STEP = 50
+  static readonly REPEAT_HOLD_MS = 400
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板（按键由 update 按布局生成） */
   private template(): string {
@@ -286,9 +303,20 @@ export class OASNumberKeyboard extends OASElement {
     this.kbEl?.addEventListener('keydown', this.onKeydown)
   }
 
+  /** 断开清理：长按计时必须随断开摘除（悬挂的 setTimeout 会在重连后的新值上连删） */
+  private ensureRepeatCleanup(): void {
+    this.onCleanup(() => this.stopRepeat())
+  }
+
+  /** 断开重连：cleanup 注册表随上次断开清空 → 重新注册连删清理（否则再断开时悬挂计时不停） */
+  protected override onReconnect(): void {
+    this.ensureRepeatCleanup()
+  }
+
   protected override render(): void {
     this.shadow.innerHTML = this.template()
     this.bind()
+    this.ensureRepeatCleanup()
     this.update()
   }
 
@@ -383,6 +411,8 @@ export class OASNumberKeyboard extends OASElement {
   private buildKeys(layout: KeyboardLayout): void {
     const body = this.bodyEl
     if (!body) return
+    // 旧按键销毁：长按计时一并停掉（悬挂计时会在新布局上误删）
+    this.stopRepeat()
     body.innerHTML = ''
     const plate = layout === 'plate'
 
@@ -449,6 +479,13 @@ export class OASNumberKeyboard extends OASElement {
     const del = this.createKey('', this.t('numberKeyboard.delete'))
     del.dataset.action = 'delete'
     del.setAttribute('aria-label', this.t('numberKeyboard.delete'))
+    // 长按连删：按住 400ms 起、间隔 300→150 递减；释放/移出/取消停止（触屏删除的通用增强）
+    del.addEventListener('pointerdown', this.onPointerDownOnDelete)
+    del.addEventListener('pointerup', this.onDeleteStop)
+    del.addEventListener('pointerleave', this.onDeleteStop)
+    del.addEventListener('pointercancel', this.onDeleteStop)
+    // 长按期间系统弹出上下文菜单会打断连删：删除键阻止 contextmenu（其余按键不受影响）
+    del.addEventListener('contextmenu', (e) => e.preventDefault())
     pad.appendChild(del)
     const done = this.createKey('', this.t('numberKeyboard.done'))
     done.dataset.action = 'done'
@@ -492,6 +529,12 @@ export class OASNumberKeyboard extends OASElement {
       return
     }
     if (action === 'delete') {
+      // 长按会话的收尾 click 不再删一次（pointerup 释放时浏览器补发 click）；
+      // pointerleave / pointercancel 结束的会话已失效，click 正常删除
+      if (this.longPressActive) {
+        this.longPressActive = false
+        return
+      }
       this.deleteLast()
       return
     }
@@ -507,6 +550,50 @@ export class OASNumberKeyboard extends OASElement {
     }
     const key = target.dataset.key
     if (key !== undefined) this.appendKey(key)
+  }
+
+  // ---------- 长按连删（缺省开，no-repeat-delete 关闭） ----------
+
+  private onPointerDownOnDelete = (e: Event): void => {
+    // 非主键（右键 / 中键）不启动长按会话（右键弹菜单与连删互不相干）
+    const pointer = e as PointerEvent
+    if (pointer.button !== undefined && pointer.button !== 0) return
+    this.stopRepeat()
+    this.longPressActive = false
+    if (this.injectDisabled() || this.hasAttr('readonly') || this.hasAttr('no-repeat-delete')) return
+    this.repeatDelay = OASNumberKeyboard.REPEAT_DELAY_START
+    this.repeatTimer = setTimeout(() => {
+      this.deleteLast()
+      this.longPressActive = true
+      this.scheduleRepeat()
+    }, OASNumberKeyboard.REPEAT_HOLD_MS)
+    void e
+  }
+
+  private scheduleRepeat(): void {
+    this.repeatTimer = setTimeout(() => {
+      this.deleteLast()
+      this.longPressActive = true
+      this.repeatDelay = Math.max(
+        OASNumberKeyboard.REPEAT_DELAY_MIN,
+        this.repeatDelay - OASNumberKeyboard.REPEAT_DELAY_STEP,
+      )
+      this.scheduleRepeat()
+    }, this.repeatDelay)
+  }
+
+  /** 手势结束分叉：pointerup 保留会话（随后补发的 click 要被消费）；leave / cancel 立即失效 */
+  private onDeleteStop = (e: Event): void => {
+    this.stopRepeat()
+    if (e.type !== 'pointerup') this.longPressActive = false
+  }
+
+  /** 停止长按计时（幂等） */
+  private stopRepeat(): void {
+    if (this.repeatTimer !== null) {
+      clearTimeout(this.repeatTimer)
+      this.repeatTimer = null
+    }
   }
 
   private onKeydown = (e: KeyboardEvent): void => {

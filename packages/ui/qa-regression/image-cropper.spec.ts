@@ -211,3 +211,59 @@ test('image-cropper：Alt+方向键平移图片，普通方向键仍移动裁剪
   expect(Number.parseFloat(afterPlain.frameStyle.left)).toBeLessThan(Number.parseFloat(afterAlt.frameStyle.left))
   expect(afterPlain.offset, '普通方向键不得平移图片').toEqual(afterAlt.offset)
 })
+
+// 触控板像素级缩放（v2.6.9 批 A）：page.mouse.wheel 派发像素增量（deltaMode=0），
+// 真实浏览器断言小位移细粒度（±40px → ±0.1，不再整档 0.25 跳变）、锚点缩放照常派发 oas-change。
+test('image-cropper：触控板像素级滚轮细粒度缩放（40px → 0.1），oas-change 跟随', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-square')
+  await page.waitForFunction(
+    () => {
+      const img = document.querySelector('#ic-square')!.shadowRoot!.querySelector<HTMLImageElement>('[part="image"]')!
+      return img.complete && img.naturalWidth > 0
+    },
+    { timeout: 15000 },
+  )
+  const center = await page.evaluate(() => {
+    const el = document.querySelector('#ic-square')!
+    el.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior })
+    const stage = el.shadowRoot!.querySelector<HTMLElement>('[part="stage"]')!
+    const r = stage.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  const zoomBefore = await page.evaluate(
+    () => (document.querySelector('#ic-square') as HTMLElement & { zoom: number }).zoom,
+  )
+
+  // 触控板小位移：40px → 0.1（细粒度；旧实现一步 0.25）
+  await page.mouse.move(center.x, center.y)
+  await page.mouse.wheel(0, -40)
+  await page.waitForFunction(
+    (z) => (document.querySelector('#ic-square') as HTMLElement & { zoom: number }).zoom > z,
+    zoomBefore,
+    { timeout: 5000 },
+  )
+  const zoomFine = await page.evaluate(
+    () => (document.querySelector('#ic-square') as HTMLElement & { zoom: number }).zoom,
+  )
+  expect(zoomFine - zoomBefore, '40px 位移 → 0.1 细粒度（非整档 0.25）').toBeCloseTo(0.1, 5)
+
+  // 经典滚轮一格（100px）恰为一个整档 0.25（旧行为逐值保留）
+  await page.mouse.wheel(0, -100)
+  await page.waitForFunction(
+    (z) => (document.querySelector('#ic-square') as HTMLElement & { zoom: number }).zoom > z + 0.2,
+    zoomFine,
+    { timeout: 5000 },
+  )
+  const zoomStep = await page.evaluate(
+    () => (document.querySelector('#ic-square') as HTMLElement & { zoom: number }).zoom,
+  )
+  expect(zoomStep - zoomFine, '100px → 一个 0.25 整档').toBeCloseTo(0.25, 5)
+
+  // 工具栏缩放读数跟随（用户可见：1 + 0.1 + 0.25 = 135%）
+  const zoomLabel = await page.evaluate(
+    () =>
+      document.querySelector('#ic-square')!.shadowRoot!.querySelector<HTMLElement>('.zoom-value')!.textContent ?? '',
+  )
+  expect(zoomLabel, '工具栏缩放读数跟随细粒度缩放').toBe('135%')
+})

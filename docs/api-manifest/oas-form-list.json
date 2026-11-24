@@ -52,6 +52,29 @@
     {
       "name": "move-down-text",
       "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "overscan",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "viewport-height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "estimated-row-height",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -95,6 +118,11 @@
       "name": ""
     }
   ],
-  "cssVars": [],
+  "cssVars": [
+    {
+      "name": "--oas-form-list-viewport-height",
+      "default": "320px"
+    }
+  ],
   "unresolved": []
 }

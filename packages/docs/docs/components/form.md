@@ -78,6 +78,18 @@ description: 原生 <form> 增强，支持按 rules 规则对内部字段做校�
 
 提交后 `values` 形如 `{"members":[{"name":"张三","role":"本人"},{"name":"李四","role":"家属"}]}`；行模板在原生 HTML 里直接写 `<template>` 即可，md/Vue 编译场景建议用 JS 构造 `HTMLTemplateElement` 注入（模板内容传透在模板编译下不稳）。
 
+### form-list 虚拟滚动（大数据集）
+
+千行级数组开 `virtual`：只渲染可视窗口 + overscan（上下各 5 行，`overscan` 可调），滚动用上下 spacer 占位（总高不变、滚动条真实），行高首渲染估高、窗口内实测校准（`estimated-row-height` 给初始估高，缺省估高会被实测自校准覆盖）。**字段全部留在 light DOM**——校验 / 提交 / name 重编号 / 行操作 / 受控 `setRowCount` 语义不变，虚拟化只发生在阴影帧层：未窗口化的行不渲染、零布局成本，值照常被主表收集。视口高度 `viewport-height` 属性在场时同步写进容器内联 `max-height`（盒高与窗口计算同源，滚动到底尾部行可达；移除属性即回落 CSS 缺省 320px，CSS `--oas-form-list-viewport-height` 可覆盖）。行间距（缺省主题 8px）计入高度节距，虚拟内容总高与全量渲染一致；虚拟态「添加行」自动把新行滚入视口并聚焦首字段。读屏的逐行遍历只覆盖当前窗口行（虚拟化的通用取舍；行总量由 `rowCount` property 与行操作 `aria-live` 播报承担）。
+
+<DemoBlock title="form-list 虚拟滚动（点按钮填充 300 行，滚动观察窗口化）">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button id="form-list-virtual-fill" type="button">填充 300 行</oas-button>
+    <oas-form-list id="form-list-virtual" name="members" virtual viewport-height="240" overscan="4" style="width: 420px"></oas-form-list>
+    <span id="form-list-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </oas-space>
+</DemoBlock>
+
 ## 原生表单集成（form-associated）
 
 常用的 15 个表单类组件为 **form-associated** 自定义元素（`formAssociated: true`）：可直接放进原生 `<form>`——`<label for>` 关联生效（点击 label 聚焦/激活控件、读屏朗读 label 文本），值经标准 `FormData` 收集（有 `name` 才提交），`form.reset()` 回初始值，`fieldset[disabled]` 联动禁用，`required` 接入原生校验链（`checkValidity()` / `:invalid` 伪类）。
@@ -457,6 +469,27 @@ onMounted(() => {
   })
   formListForm?.addEventListener('oas-move', (e) => {
     listOut.textContent = `oas-move：第 ${e.detail.from + 1} 行移动到第 ${e.detail.to + 1} 行`
+  })
+
+  // form-list 虚拟滚动：300 行窗口化 + 滚动窗口实时回显（open shadow root 直读内部计数）
+  const virtualList = document.getElementById('form-list-virtual')
+  if (virtualList) {
+    const tpl = document.createElement('template')
+    tpl.innerHTML = '<oas-input name="nick" placeholder="成员" style="width: 200px"></oas-input>'
+    virtualList.appendChild(tpl)
+  }
+  const virtualOut = document.getElementById('form-list-virtual-output')
+  const reportVirtual = (label) => {
+    if (!virtualList || !virtualOut) return
+    const mounted = virtualList.shadowRoot?.querySelectorAll('.item').length ?? 0
+    virtualOut.textContent = `${label}：共 ${virtualList.rowCount} 行 · 视口挂载 ${mounted} 帧（其余行留 light DOM 不渲染）`
+  }
+  document.getElementById('form-list-virtual-fill')?.addEventListener('click', () => {
+    virtualList?.setRowCount(300)
+    reportVirtual('已填充')
+  })
+  virtualList?.shadowRoot?.querySelector('.items')?.addEventListener('scroll', () => reportVirtual('滚动中'), {
+    passive: true,
   })
 
   // 原生表单集成：FormData 读取 + reset

@@ -461,3 +461,77 @@ describe('OASImageCropper', () => {
     expect(disabled.zoom).toBe(1)
   })
 })
+
+describe('OASImageCropper 触控板像素级缩放（deltaMode，v2.6.9 批 A）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 带显式 deltaMode 的滚轮事件（真实浏览器：deltaMode 0=像素 / 1=行） */
+  function wheelWithMode(x: number, y: number, deltaY: number, deltaMode: number): WheelEvent {
+    const ev = wheelEvent(x, y, deltaY)
+    Object.defineProperty(ev, 'deltaMode', { value: deltaMode, configurable: true })
+    return ev
+  }
+
+  it('像素模式小增量细粒度缩放：deltaY ±40 → ±0.1（不再整步跳变）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    stage(el).dispatchEvent(wheelWithMode(240, 300, -40, 0))
+    expect(el.zoom).toBeCloseTo(1.1, 5)
+    stage(el).dispatchEvent(wheelWithMode(240, 300, 20, 0))
+    expect(el.zoom).toBeCloseTo(1.05, 5)
+  })
+
+  it('像素模式经典鼠标滚轮（deltaY=100/notch）与旧行为逐值一致：一步 0.25', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    stage(el).dispatchEvent(wheelWithMode(240, 300, -100, 0))
+    expect(el.zoom).toBe(1.25)
+  })
+
+  it('像素模式动量大批量被钳制：单事件最多 ±0.5（2 步进），不瞬跳', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    stage(el).dispatchEvent(wheelWithMode(240, 300, -1000, 0))
+    expect(el.zoom).toBe(1.5)
+  })
+
+  it('deltaMode=1（行，Firefox 经典滚轮）保留整步进', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    stage(el).dispatchEvent(wheelWithMode(240, 300, -1, 1))
+    expect(el.zoom).toBe(1.25)
+    stage(el).dispatchEvent(wheelWithMode(240, 300, 1, 1))
+    expect(el.zoom).toBe(1)
+  })
+
+  it('细粒度缩放照常派发 oas-change 并阻止页面滚动', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    const details: number[] = []
+    el.addEventListener('oas-change', (e) => details.push((e as CustomEvent<{ zoom: number }>).detail.zoom))
+    const notPrevented = stage(el).dispatchEvent(wheelWithMode(240, 300, -40, 0))
+    expect(notPrevented, '像素模式滚轮同样阻止页面滚动').toBe(false)
+    expect(details).toEqual([1.1])
+  })
+
+  it('像素模式下 Ctrl/⌘+滚轮依旧不接管（浏览器页面缩放优先）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    const ctrlWheel = wheelWithMode(240, 300, -40, 0)
+    Object.defineProperty(ctrlWheel, 'ctrlKey', { value: true, configurable: true })
+    expect(stage(el).dispatchEvent(ctrlWheel)).toBe(true)
+    expect(el.zoom).toBe(1)
+  })
+})

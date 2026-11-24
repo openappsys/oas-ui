@@ -48,6 +48,10 @@ With `random` the digit order is shuffled (secure keypad scenarios); `randomize(
 - `disabled`: every key is disabled and no events are dispatched
 - `readonly`: keys stay focusable (screen-reader friendly) but the value cannot change; `oas-done` still fires (readonly is not “cannot submit”)
 
+## Long-press repeat delete (on by default)
+
+Hold the delete key for 400ms and repeat-deleting starts: the interval begins at 300ms, decreases by 50ms each fire and bottoms out at 150ms — fixing several wrong digits no longer means tap-tap-tap (an established convention of keyboard apps, hence on by default). `pointerup`, moving off the key or gesture cancellation stops it; **long-press only reacts to the primary button** (right / middle button presses never start it); the delete key suppresses its context menu while held (a popping menu would interrupt the repeat), other keys are unaffected. Long-press and single taps do not interfere: the trailing click after a long-press release never deletes twice. Hosts needing strictly single-shot deletes (per-cell verified OTP inputs and the like) add `no-repeat-delete`. The physical `Backspace` key is untouched (its repeat comes from the OS key-repeat naturally).
+
 ## Events and physical keyboard
 
 While focus is inside the component, a physical keyboard works too: digits (plus letters in plate layout) and `Backspace`. Keys are native `<button>` elements, so Tab / Enter / Space work.
@@ -132,6 +136,7 @@ onMounted(() => {
 | `extra-key` | Extra keys attached to the right side of the digit area (an ID-card X key and the like) — a single character or a JSON string array (at most 2, extras truncated with a devWarn); the 0 key narrows automatically; extra characters join the physical-keyboard whitelist | — | — |
 | `layout` | Keyboard layout: `number` (default) / `plate` (license plate: province + letters + digits) | `string` | `number` |
 | `maxlength` | Max length in characters (province abbreviations count as one); 0 or absent = unlimited | `string` | `0` |
+| `no-repeat-delete` | Disables long-press repeat delete on the delete key (on by default: hold 400ms to start repeating, interval 300ms decreasing to 150ms; pointerup / leaving / cancelling stops it) — turn off for strictly single-shot deletes (per-cell verified OTP inputs); physical Backspace is unaffected | `boolean` | — |
 | `random` | Shuffle the digit key order (secure keypad); reorders when toggled | `boolean` | — |
 | `readonly` | Readonly: keys stay focusable but the value is locked; `oas-done` still fires | `boolean` | — |
 | `value` | Current value (controlled): keys write back to this attribute and host writes apply immediately | — | — |

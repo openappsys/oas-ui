@@ -78,6 +78,18 @@ After submitting, `values` looks like `{"name":"Alex","profile":{"city":"Hangzho
 
 After submitting, `values` looks like `{"members":[{"name":"Alex","role":"self"},{"name":"Sam","role":"relative"}]}`; in plain HTML write the row template as a literal `<template>`, while in md/Vue compiled contexts prefer injecting an `HTMLTemplateElement` built in JS (template content pass-through is unreliable under template compilation).
 
+### form-list virtual scrolling (large datasets)
+
+For thousand-row arrays add `virtual`: only the visible window plus overscan renders (5 rows per side by default, adjustable via `overscan`), spacers keep the total height stable (real scrollbar), and row heights are estimated on first render then calibrated from measurements (`estimated-row-height` seeds the initial estimate; the default estimate is overwritten by measured self-calibration). **Fields all stay in the light DOM** — validation / submit / name renumbering / row operations / controlled `setRowCount` semantics are unchanged; virtualization happens only at the shadow-frame layer: non-windowed rows render nothing and cost no layout, while their values are still collected by the host form. When present, the `viewport-height` attribute is synced into the container's inline `max-height` (box height and window calculation share one source, so tail rows stay reachable when scrolled to the bottom; removing the attribute falls back to the CSS default of 320px, with the CSS `--oas-form-list-viewport-height` override). Row gaps (8px in the default theme) count into the height pitch, so the virtual content height matches full rendering; in virtual mode "add row" scrolls the new row into view and focuses its first field. Screen-reader line-by-line traversal only covers the current window rows (an inherent virtualization trade-off; the row total is carried by the `rowCount` property and row-operation `aria-live` announcements).
+
+<DemoBlock title="form-list virtual scrolling (click to fill 300 rows, scroll to watch windowing)">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button id="form-list-virtual-fill" type="button">Fill 300 rows</oas-button>
+    <oas-form-list id="form-list-virtual" name="members" virtual viewport-height="240" overscan="4" style="width: 420px"></oas-form-list>
+    <span id="form-list-virtual-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </oas-space>
+</DemoBlock>
+
 ## Native Form Integration (form-associated)
 
 Fifteen common form components are **form-associated** custom elements (`formAssociated: true`): they work directly inside a native `<form>` — `<label for>` association works (clicking the label focuses/activates the control, screen readers announce the label text), values are collected via standard `FormData` (submitted only when `name` is set), `form.reset()` restores initial values, `fieldset[disabled]` disables them, and `required` joins the native validation chain (`checkValidity()` / `:invalid` pseudo-class).
@@ -459,6 +471,27 @@ onMounted(() => {
   })
   formListForm?.addEventListener('oas-move', (e) => {
     listOut.textContent = `oas-move: row ${e.detail.from + 1} moved to row ${e.detail.to + 1}`
+  })
+
+  // form-list virtual scrolling: 300-row windowing + live window report (open shadow root read-through)
+  const virtualList = document.getElementById('form-list-virtual')
+  if (virtualList) {
+    const tpl = document.createElement('template')
+    tpl.innerHTML = '<oas-input name="nick" placeholder="Member" style="width: 200px"></oas-input>'
+    virtualList.appendChild(tpl)
+  }
+  const virtualOut = document.getElementById('form-list-virtual-output')
+  const reportVirtual = (label) => {
+    if (!virtualList || !virtualOut) return
+    const mounted = virtualList.shadowRoot?.querySelectorAll('.item').length ?? 0
+    virtualOut.textContent = `${label}: ${virtualList.rowCount} rows total · ${mounted} frames mounted in the viewport (other rows stay in the light DOM, unrendered)`
+  }
+  document.getElementById('form-list-virtual-fill')?.addEventListener('click', () => {
+    virtualList?.setRowCount(300)
+    reportVirtual('Filled')
+  })
+  virtualList?.shadowRoot?.querySelector('.items')?.addEventListener('scroll', () => reportVirtual('Scrolling'), {
+    passive: true,
   })
 
   // Native form integration: FormData read + reset

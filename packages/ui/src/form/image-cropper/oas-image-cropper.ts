@@ -10,7 +10,8 @@ import { devWarn } from '../../shared/dev-warn.js'
  * 也可作为上传链路的前处理（选图 → 裁剪 → 上传）。
  *
  * 交互边界：裁剪框可在舞台内移动 / 缩放；图片可缩放（1 ~ max-zoom）、90° 旋转与平移
- * （拖舞台空白区 / 图面拖动、舞台内滚轮以光标为锚点缩放、Alt+方向键微调）。平移恒受
+ * （拖舞台空白区 / 图面拖动、舞台内滚轮以光标为锚点缩放——触控板像素级细粒度、经典滚轮整步进、
+ * Alt+方向键微调）。平移恒受
  * 「图片覆盖裁剪框」约束——拖出 / 缩出可达范围时自动钳回，舞台不会露出底色。
  *
  * 属性（kebab-case）：
@@ -86,6 +87,10 @@ const FALLBACK_STAGE_H = 320
 const DEFAULT_MAX_ZOOM = 3
 const DEFAULT_MAX_OUTPUT = 1024
 const ZOOM_STEP = 0.25
+/** 像素模式滚轮：每 100px 一个 ZOOM_STEP（deltaY=100/notch 的经典鼠标滚轮恰为一整步） */
+const PIXELS_PER_ZOOM_STEP = 100
+/** 像素模式单事件缩放钳制（±0.5 = 2 步进）：触控板动量大批量不瞬跳 */
+const MAX_PIXEL_ZOOM_DELTA = 0.5
 const VALID_OUTPUT_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
 
 const warned = new Set<string>()
@@ -821,6 +826,12 @@ export class OASImageCropper extends OASElement {
   /**
    * 舞台内滚轮缩放：以光标为锚点（光标下的图片点缩放前后落在同一舞台位置）。
    * 禁用 / 无图时不接管，页面滚动照常。
+   *
+   * deltaMode 分档（v2.6.9 触控板细粒度）：
+   * - `0`（像素，触控板 / Chrome 鼠标滚轮）：`deltaY / 100 × ZOOM_STEP` 连续缩放——
+   *   经典鼠标滚轮一格（deltaY=100）恰为一个 ZOOM_STEP，与旧行为逐值一致；触控板小位移细粒度、
+   *   单事件钳制 ±0.5（动量大批量不瞬跳）；
+   * - `1` / `2`（行 / 页，Firefox 经典滚轮）：保留整步进。
    */
   private onWheel = (e: Event): void => {
     const we = e as WheelEvent
@@ -835,7 +846,14 @@ export class OASImageCropper extends OASElement {
       x: (we.clientX ?? 0) - (rect?.left ?? 0),
       y: (we.clientY ?? 0) - (rect?.top ?? 0),
     }
-    const next = this.zoomValue + (delta < 0 ? ZOOM_STEP : -ZOOM_STEP)
+    let step: number
+    if ((we.deltaMode ?? 0) === 0) {
+      const fine = (-delta / PIXELS_PER_ZOOM_STEP) * ZOOM_STEP
+      step = Math.sign(fine) * Math.min(Math.abs(fine), MAX_PIXEL_ZOOM_DELTA)
+    } else {
+      step = delta < 0 ? ZOOM_STEP : -ZOOM_STEP
+    }
+    const next = this.zoomValue + step
     if (this.applyZoom(next, anchor)) this.emitChange()
   }
 
