@@ -162,17 +162,17 @@ const STYLE = `
   white-space: nowrap;
   border: 0;
 }
-/* 吸附提示：拖拽中接近吸附点时的视觉落点标记（不参与命中，纯提示） */
+/* 吸附提示：拖拽中接近吸附点时的视觉落点标记（不参与命中，纯提示；自中心对齐用 transform） */
 .snap-hint {
   position: absolute;
   width: 16px;
   height: 16px;
-  margin: -8px 0 0 -8px;
   box-sizing: border-box;
   border: 2px dashed var(--oas-color-primary);
   border-radius: 50%;
   pointer-events: none;
   opacity: 0.85;
+  transform: translate(-50%, -50%);
 }
 .snap-hint[hidden] {
   display: none;

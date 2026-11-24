@@ -45,7 +45,6 @@ describe('OASBarrage 屏蔽词（banned-words）', () => {
   })
 
   it('JSON 数组形态等价；非法 JSON 一次性告警且不过滤', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ 'banned-words': JSON.stringify(['广告']) })
     el.add('广告内容')
     el.add('正常')
@@ -58,7 +57,6 @@ describe('OASBarrage 屏蔽词（banned-words）', () => {
     expect(items(el2)).toHaveLength(1)
     const messages = warn2.mock.calls.map((call) => String(call[0])).join('\n')
     expect(messages).toContain('banned-words')
-    expect(warn).toBeTruthy()
   })
 
   it('items 声明式通道同样过滤（属性变化只入队未命中的条目）', () => {
@@ -147,7 +145,7 @@ describe('OASBarrage 点赞（likeable / oas-like）', () => {
     el.add('运行时切换', { key: 'k3' })
     expect(likeOf(items(el)[0]!)).toBeNull()
     el.setAttribute('likeable', '')
-    expect(likeOf(items(el)[0]!)).not.toBeNull()
+    expect(likeOf(items(el)[0]!)?.tagName).toBe('SPAN')
     el.removeAttribute('likeable')
     expect(likeOf(items(el)[0]!)).toBeNull()
   })

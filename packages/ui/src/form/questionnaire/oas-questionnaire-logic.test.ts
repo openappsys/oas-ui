@@ -227,7 +227,7 @@ describe('OASQuestionnaire 条件引擎（when / goto）', () => {
       el.setAttribute('current', '0')
     })
     el.setAttribute('current', '0')
-    expect(flips).toBeGreaterThan(0)
+    expect(flips).toBeGreaterThanOrEqual(2)
     expect(flips).toBeLessThanOrEqual(8)
     expect(warn.mock.calls.map((call) => String(call[0])).join('\n')).toContain('轮内未稳定')
   })
