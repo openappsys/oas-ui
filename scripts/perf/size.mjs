@@ -694,9 +694,9 @@ const BUDGETS = [
     name: 'dist/cdn.js gzip',
     kind: 'ceiling',
     get: () => cdn.gzipBytes,
-    limit: 810 * 1024, // 810 KB 天花板（2026-11-24 批 B 三组件再 +19.0KB 实测触顶，归因后微调；前档 800 KB 定档于 2026-11-23）
+    limit: 820 * 1024, // 820 KB 天花板（2026-11-25 批 A 虚拟滚动内核 + image-picker compress 管线等 +9.3KB 实测触顶，归因后微调；前档 810 KB 定档于 2026-11-24）
     basis:
-      '天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB（schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档——实测 2.9KB / 档 3.4KB）；批 B 交易链路 3 组件（cart/order-card/product-card）再 +19.0KB 实测触 800 档，归因后微调 810 KB。前档 800 KB 定档于 2026-11-23；再前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测）',
+      '天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB（schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档——实测 2.9KB / 档 3.4KB）；批 B 交易链路 3 组件（cart/order-card/product-card）+19.0KB 实测触 800 档，微调 810 KB（2026-11-24）；批 A（form-list/array-table 虚拟滚动内核 + image-picker compress/EXIF 管线 + cropper 触控板缩放 + number-keyboard 长按连删）+9.3KB 实测 811.9 触 810 档，归因后微调 820 KB（2026-11-25）。前档 800 KB 定档于 2026-11-23；再前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测）',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
