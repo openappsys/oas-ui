@@ -501,6 +501,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `animated` | 题目切换过渡（opt-in，存在且非 `"false"` 时开启）：新面板按导航方向滑入 + 淡入（只动 transform/opacity）；`prefers-reduced-motion: reduce` 自动降级为无动画；RTL 滑入方向自动镜像 | `boolean` | — |
+| `conditions` | 步骤条件引擎开关（默认开，`conditions="false"` 关闭）：关闭后 `steps[].when` / `steps[].goto` 全部失效，只认宿主 `hidden` | `string` | `true` |
 | `current` | 当前步索引（0 起，受控双向：内部跳步写回、外部设置即时同步）；非法值回落 0，越界夹取 | `string` | `0` |
 | `finish-text` | 末步主按钮文案（覆盖 locale 缺省「完成」） | — | — |
 | `hide-header` | 隐藏内置步骤头（宿主自组合） | `boolean` | — |
@@ -510,11 +511,18 @@ onMounted(() => {
 | `prev-text` | 「上一步」按钮文案（覆盖 locale 缺省） | — | — |
 | `progress` | 进度区显隐（`progress="false"` 隐藏） | `string` | `true` |
 | `progress-variant` | 进度形态：`both`（默认，文本+进度条）/ `text` / `bar`；非法值回落 `both` | `string` | `both` |
+| `score-rules` | 评分规则 JSON 数组 `[{ when, score }]`：条件成立即把 `score` 累加进总分（表达式读取跨步全量答案，含隐藏步）；非法规则逐条跳过并告警。只算不渲染，题型由宿主组合 | `string` | — |
 | `shortcuts` | 键盘快捷导航（opt-in，存在且非 `"false"` 时开启）：`Alt+←/→` 在组件内任何位置切上/下一步（吞掉默认行为防浏览器历史导航）；裸 `←/→` 仅在焦点不在输入/可编辑控件时生效（不劫持光标） | `boolean` | — |
 | `size` | 尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + 告警一次（同值去重）） | `string` | `medium` |
 | `skip-text` | 「跳过本步」按钮文案（覆盖 locale 缺省） | — | — |
 | `steps` | 步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]` | `QuestionnaireStep[] \| string` | `[]` |
 | `validation` | 单步校验门控（默认开，`validation="false"` 纯导航；`submit()` 不受此开关影响、始终重校） | `string` | `true` |
+
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `score` | 当前总分（只读）：读即按 `score-rules` 与当前跨步答案（含隐藏步——面板常驻、值保留）求和，永远最新；引擎只算不渲染 | `number` | — |
 
 #### 方法
 
@@ -535,6 +543,8 @@ onMounted(() => {
 | --- | --- |
 | `oas-before-change` | 跳步前（按钮 / 头部点击 / next / prev / goto / 跳过）可取消；`detail: { index, key?, from }`，`preventDefault()` 否决本次跳转 |
 | `oas-change` | 切步成功后；`detail: { index, key? }` |
+| `oas-goto` | `steps[].goto` 条件成立、前进时直达目标步（先于 `oas-change` 派发）；`detail: { index, key?, from, target }`（`target` 为步骤条目里声明的原始引用） |
+| `oas-score` | 评分重算后派发（作答变化 80ms 防抖，分数未变不派发）；`detail: { score }`。规则变更静默，宿主改规则后自行读只读 property `score` |
 | `oas-skip` | 跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复） |
 | `oas-step-validate` | 单步校验结束时；`detail: { index, key?, valid, errors }` |
 | `oas-submit` | 末步完成（全部参与步校验通过）；`detail: { values }`（跨步汇总值，仅参与步——hidden / 已跳过步不计入） |

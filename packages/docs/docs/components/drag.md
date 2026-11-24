@@ -175,6 +175,9 @@ onMounted(() => {
 | `inertia` | 松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停）；`prefers-reduced-motion: reduce` 下瞬停 | `boolean` | — |
 | `keyboard` | 键盘微调：缺省开启（`tabindex="0"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭 | `string` | — |
 | `remember` | 把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级 | `boolean` | — |
+| `snap` | 吸附网格尺寸：正整数值为网格 px，字面量 `grid` = 8px；松手（含惯性收尾）时位移对齐到最近网格点，键盘微调不受影响 | `string` | — |
+| `snap-targets` | 吸附点 JSON 数组 `[{ x, y }]`（相对初始布局位置的位移坐标）：松手时距最近吸附点 ≤ `snap-threshold` 即精确吸附；拖拽中接近吸附点显示提示环（`part="snap-hint"`） | `string` | — |
+| `snap-threshold` | 吸附点距离阈值（px，默认 12）；非法值告警一次并回落默认 | `string` | — |
 | `storage-key` | 位置记忆的存储键（缺省 `oas-drag`） | `string` | `oas-drag` |
 
 #### Property（JS property；是否写回 attribute 见各行说明）

@@ -420,10 +420,13 @@
       "height": "舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px）",
       "accessible": "布尔，存在时弹幕进入读屏（`role=\"log\"` + `aria-live=\"polite\"`）；缺省 `aria-hidden`",
       "items": "声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute）",
-      "auto-play": "循环播放：声明条目队列耗尽后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play）"
+      "auto-play": "循环播放：声明条目队列耗尽后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play）",
+      "banned-words": "屏蔽词（逗号分隔或 JSON 数组字符串；大小写不敏感）：命中的条目不入队不渲染（`add` / `addBatch` / `items` 同一判据）；已在场条目不回溯移除",
+      "likeable": "每条弹幕带心形点赞控件（点按切换点赞态并派发 `oas-like`；点赞態按 `key` / 文本跨条目生命周期记忆）"
     },
     "events": {
-      "oas-item-click": "点击弹幕时派发"
+      "oas-item-click": "点击弹幕时派发",
+      "oas-like": "点按点赞控件派发；`detail: { text, key, color, liked, count }`（`liked` 为切换后的状态）"
     },
     "slots": {},
     "methods": {
@@ -431,7 +434,9 @@
       "addBatch": "批量追加（字符串或 `{ text, color?, key? }`）",
       "pause": "暂停（写入 `paused` 属性）",
       "resume": "继续（移除 `paused` 属性）",
-      "clear": "清空在场与排队弹幕"
+      "clear": "清空在场与排队弹幕",
+      "isLiked": "查询点赞态（键 = `key`，缺省按文本；与 `oas-like` 的 `key` 口径一致）",
+      "likeCount": "查询点赞数"
     },
     "cssVars": {
       "--oas-barrage-height": "舞台高度（`height` 属性写入同一变量）",
@@ -1270,12 +1275,14 @@
       "open": "弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`）",
       "z-index": "浮层层级（数值叠加在 `--oas-z-index-base` 之上；缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态）",
       "multiple": "多选模式：选项变 checkbox，每次勾选/取消派发数组 detail `{ codes, coupons }` 且弹层不自动关闭；缺省单选不变",
-      "show-count": "可用 / 不可用分组标题带计数胶囊"
+      "show-count": "可用 / 不可用分组标题带计数胶囊",
+      "max-select": "多选已选张数上限（正整数；0 / 非法 = 不限并告警一次）：到达上限后再勾选不生效（勾选态回滚、已选集合不变、派发 `oas-select-invalid`）；触发按钮显示 `已选 n/m 张`。单选模式忽略"
     },
     "events": {
       "oas-select": "选中可用券时派发。单选（默认）detail `{ code, coupon }` 并随后关闭弹层；multiple 模式 detail `{ codes, coupons }`（数组，弹层不关）；「不使用优惠券」出口派发空选——单选 `{ code: 空串, coupon: null }` / 多选 `{ codes: [], coupons: [] }`",
       "oas-open-change": "交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发）",
-      "oas-clear": "点击「不使用优惠券」出口派发（紧随其后是空选 oas-select，两个事件成对）"
+      "oas-clear": "点击「不使用优惠券」出口派发（紧随其后是空选 oas-select，两个事件成对）",
+      "oas-select-invalid": "多选组合校验拒绝（超过 `max-select`）派发，本次选择未生效、已选集合不变；`detail: { reason: \"max-select\", limit, code, codes, coupons }`"
     },
     "slots": {},
     "methods": {
@@ -3631,7 +3638,9 @@
       "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + 告警一次（同值去重））",
       "skip-text": "「跳过本步」按钮文案（覆盖 locale 缺省）",
       "steps": "步骤数据 JSON `[{ key?, title, description?, optional?, hidden? }]`；非法/空回落 `[]`",
-      "validation": "单步校验门控（默认开，`validation=\"false\"` 纯导航；`submit()` 不受此开关影响、始终重校）"
+      "validation": "单步校验门控（默认开，`validation=\"false\"` 纯导航；`submit()` 不受此开关影响、始终重校）",
+      "conditions": "步骤条件引擎开关（默认开，`conditions=\"false\"` 关闭）：关闭后 `steps[].when` / `steps[].goto` 全部失效，只认宿主 `hidden`",
+      "score-rules": "评分规则 JSON 数组 `[{ when, score }]`：条件成立即把 `score` 累加进总分（表达式读取跨步全量答案，含隐藏步）；非法规则逐条跳过并告警。只算不渲染，题型由宿主组合"
     },
     "events": {
       "oas-before-change": "跳步前（按钮 / 头部点击 / next / prev / goto / 跳过）可取消；`detail: { index, key?, from }`，`preventDefault()` 否决本次跳转",
@@ -3639,7 +3648,9 @@
       "oas-step-validate": "单步校验结束时；`detail: { index, key?, valid, errors }`",
       "oas-skip": "跳过可选步时；`detail: { index, key? }`（跳过不触发校验；被跳过的步退出取值/校验口径，重新进入恢复）",
       "oas-submit": "末步完成（全部参与步校验通过）；`detail: { values }`（跨步汇总值，仅参与步——hidden / 已跳过步不计入）",
-      "oas-values-change": "内层 oas-form 值变化事件自然冒泡转发（`detail: { name, value, values }`，values 为该步快照）；跨步汇总视图用 getValues()"
+      "oas-values-change": "内层 oas-form 值变化事件自然冒泡转发（`detail: { name, value, values }`，values 为该步快照）；跨步汇总视图用 getValues()",
+      "oas-goto": "`steps[].goto` 条件成立、前进时直达目标步（先于 `oas-change` 派发）；`detail: { index, key?, from, target }`（`target` 为步骤条目里声明的原始引用）",
+      "oas-score": "评分重算后派发（作答变化 80ms 防抖，分数未变不派发）；`detail: { score }`。规则变更静默，宿主改规则后自行读只读 property `score`"
     },
     "slots": {
       "step-<key>": "步骤内容面板（有 key 的步骤）；面板内建议放一个 `<oas-form>` 承载该步字段与校验规则",
@@ -3650,6 +3661,9 @@
       "--oas-questionnaire-nav-gap": "导航区按钮间距",
       "--oas-questionnaire-progress-bg": "进度条轨道底色",
       "--oas-questionnaire-progress-bar-bg": "进度条填充色"
+    },
+    "props": {
+      "score": "当前总分（只读）：读即按 `score-rules` 与当前跨步答案（含隐藏步——面板常驻、值保留）求和，永远最新；引擎只算不渲染"
     }
   },
   "oas-radio": {
@@ -5746,7 +5760,10 @@
       "keyboard": "键盘微调：缺省开启（`tabindex=\"0\"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭",
       "announce": "位置变化经 `aria-live=\"polite\"` 播报（缺省关闭）",
       "disabled": "关闭拖拽：指针与键盘都不生效，并移除焦点停靠点",
-      "aria-label": "可访问名称（缺省 i18n drag.label）"
+      "aria-label": "可访问名称（缺省 i18n drag.label）",
+      "snap": "吸附网格尺寸：正整数值为网格 px，字面量 `grid` = 8px；松手（含惯性收尾）时位移对齐到最近网格点，键盘微调不受影响",
+      "snap-targets": "吸附点 JSON 数组 `[{ x, y }]`（相对初始布局位置的位移坐标）：松手时距最近吸附点 ≤ `snap-threshold` 即精确吸附；拖拽中接近吸附点显示提示环（`part=\"snap-hint\"`）",
+      "snap-threshold": "吸附点距离阈值（px，默认 12）；非法值告警一次并回落默认"
     },
     "props": {
       "position": "当前位移 `{ x, y }`（相对初始布局位置）：get+set 双通道；赋值立即钳制生效，不派发事件"

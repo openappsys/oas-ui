@@ -10,6 +10,7 @@
 - **oas-barrage 弹幕交互**：`likeable` per-item 点赞（心形控件、切换点赞态、派发 `oas-like` `{ text, key, color, liked, count }`；点赞态按 `key`/文本跨条目生命周期记忆，`isLiked()` / `likeCount()` 供宿主回显；运行时开关对在场条目增量补/撤控件）+ `banned-words` 屏蔽词（逗号分隔或 JSON 数组、大小写不敏感，命中条目不入队不渲染，`add`/`addBatch`/`items` 三通道同一判据）。无障碍：装饰态点赞控件 `aria-hidden` 且不可聚焦（鼠标可点、读屏不可达）；`accessible` 下升级为键盘可达的 `role="button"`（`aria-pressed` + i18n 可访问名），且条目本身不再叠 button 语义（避免嵌套交互控件）。barrage 首次接入 data 族 i18n 切片。单测 +10；zh/en 文档补「点赞与屏蔽词」段与 demo。
 - **oas-drag 吸附**：`snap` 网格吸附（正整数网格尺寸，字面量 `grid` = 8px）、`snap-targets` 吸附点 JSON（`[{ x, y }]`，`snap-threshold` 默认 12px 阈值内精确吸附）、拖拽中接近吸附点显示提示环（`part="snap-hint"`，纯视觉不参与命中）。吸附只作用于指针落点（含惯性滑行收尾），键盘微调与 `position` 写入保持精确；`axis` 约束仍然生效；非法值一次性 devWarn 并关闭吸附。单测 +7；zh/en 文档补「吸附」段与 demo。
 - **Z1 测试长尾核对**：`qa-regression/drag.spec.ts` 真实鼠标拖拽 `oas-drag-start` 断言（阈值内不派发 / 越阈值恰好一次）与 `time-select.spec.ts` RTL 模式组方向键镜像 e2e 均已在既有用例存在，本批核对通过（无需新增）。
+- **登记**：i18n 新增 3 键（`coupon.selectedCountLimit` / `barrage.like` / `barrage.unlike`）× 16 语言 + 切片重生成；api 语料补齐 12 条（新属性 / 事件 / property）；`api:scan` + `api:gen`、`stats:gen`、`llms:gen` 产物同步。
 
 **oas-questionnaire 评分汇总（批 C，向后兼容：未写 `score-rules` 时无事件、`score` 恒 0）**
 
@@ -17,7 +18,7 @@
 - **只读 property `score`**：读即按当前答案求和（永远最新），引擎只算不渲染——分数展示与题型组合由宿主决定（`oas-rate` / `oas-slider` / 选项组等既有件）。
 - **事件 `oas-score`**：作答变化后派发，80 ms 防抖合并连续作答；分数未变不派发；规则变更静默（不派发，宿主改规则后自行读 property）。
 - **容错**：非法规则（非对象 / `when` 非字符串 / `score` 非有限数值 / 表达式语法错）逐条跳过 + 一次性 devWarn，不连坐；求值抛错按条件不成立；浮点累加按 1e-6 归一（`0.1 + 0.2` 不出展示噪声）。
-- 单测新增 11（引擎编译/求和 3 + 组件行为 8：只读即时求和 / 防抖派发 / 未变不派发 / 无规则零事件 / 非法规则 / reset 重算 / 规则变更静默 / 编译失败降级）；zh/en 文档补「评分汇总」段与 demo。
+- 单测新增 11（引擎编译/求和 3 + 组件行为 8：只读即时求和 / 防抖派发 / 未变不派发 / 无规则零事件 / 非法规则 / reset 重算 / 规则变更静默 / 编译失败降级）；zh/en 文档补「评分汇总」段与 demo；`score-rules` attr、只读 property `score` 与 `oas-score` 事件进 API 表，无新增 i18n 键。
 
 **oas-questionnaire 逻辑跳转谓词引擎（批 C，向后兼容：未写 `when` / `goto` 的问卷行为不变）**
 
@@ -25,7 +26,7 @@
 - **跳转目标 `goto`**：前进时按条件跳转——`{ when, target }`（索引或步骤 key）或 `target` 简写（条件恒成立）；命中派发新增事件 `oas-goto`（`{ index, key?, from, target }`）后再切步，仍走单步校验与可取消的 `oas-before-change`。目标步被条件隐藏时落到其后最近可见步。
 - **正交与开关**：`hidden: true` 恒隐藏（宿主优先），`hidden: false` / 缺省才由 `when` 决定；`conditions="false"` 关闭引擎（只认宿主 `hidden`）。
 - **容错与守卫**：表达式语法错 / 未知函数一次性 devWarn 并降级单条（`when` 不生效、`goto` 不跳转），不连坐其它步骤；值变化 → 条件 → 对齐 → `oas-change` 的同步级联 8 轮截断并告警（宿主在 `oas-change` 里回写 `current` / 答案形成回环时不死循环）。
-- 单测新增 25（条件引擎纯函数 10 + 组件行为 15：显隐 / 自动跳过 / goto 三种书写面 / 依赖重算 / 与手动 `hidden` 正交 / 关闭引擎 / current 对齐 / 循环守卫 / 语法错降级 / schema-form 契约元素驱动 / reset 重算）；zh/en 文档补「声明式条件与跳转」段与 demo。
+- 单测新增 25（条件引擎纯函数 10 + 组件行为 15：显隐 / 自动跳过 / goto 三种书写面 / 依赖重算 / 与手动 `hidden` 正交 / 关闭引擎 / current 对齐 / 循环守卫 / 语法错降级 / schema-form 契约元素驱动 / reset 重算）；zh/en 文档补「声明式条件与跳转」段与 demo；无新增 i18n 键，`conditions` attr 与 `oas-goto` 事件进 API 表。
 
 **新组件能力补强批（15 条既有组件小增量，全部向后兼容：缺省/未启用路径与现状逐字节等价）**
 

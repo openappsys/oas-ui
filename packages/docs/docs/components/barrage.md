@@ -186,9 +186,11 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accessible` | 布尔，存在时弹幕进入读屏（`role="log"` + `aria-live="polite"`）；缺省 `aria-hidden` | — | — |
 | `auto-play` | 循环播放：声明条目队列耗尽后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play） | — | — |
+| `banned-words` | 屏蔽词（逗号分隔或 JSON 数组字符串；大小写不敏感）：命中的条目不入队不渲染（`add` / `addBatch` / `items` 同一判据）；已在场条目不回溯移除 | `string` | — |
 | `gap` | 同轨道相邻弹幕的最小水平间距（px，默认 48） | `string` | — |
 | `height` | 舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px） | `string` | — |
 | `items` | 声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute） | `Array<string \| BarrageItemInput> \| string` | `[]` |
+| `likeable` | 每条弹幕带心形点赞控件（点按切换点赞态并派发 `oas-like`；点赞態按 `key` / 文本跨条目生命周期记忆） | — | — |
 | `max-active` | 同屏最大条数（0 = 不限，默认 0） | `string` | — |
 | `paused` | 受控暂停（在场=暂停；CSS 动画与排期计时同时冻结） | — | — |
 | `speed` | 漂移速度（像素/秒，默认 120） | `string` | — |
@@ -199,6 +201,8 @@ onMounted(() => {
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
 | `add` | `add(text: string, options: BarrageItemOptions): void` | 追加一条弹幕（options: `{ color?, key? }`） |
+| `isLiked` | `isLiked(key: string): boolean` | 查询点赞态（键 = `key`，缺省按文本；与 `oas-like` 的 `key` 口径一致） |
+| `likeCount` | `likeCount(key: string): number` | 查询点赞数 |
 | `addBatch` | `addBatch(items: Array<string \| BarrageItemInput>): void` | 批量追加（字符串或 `{ text, color?, key? }`） |
 | `pause` | `pause(): void` | 暂停（写入 `paused` 属性） |
 | `resume` | `resume(): void` | 继续（移除 `paused` 属性） |
@@ -209,6 +213,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-item-click` | 点击弹幕时派发，`detail: { text: item.text, key: item.key, color: item.color }` |
+| `oas-like` | 点按点赞控件派发；`detail: { text, key, color, liked, count }`（`liked` 为切换后的状态） |
 
 #### CSS 变量
 

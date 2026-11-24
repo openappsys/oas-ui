@@ -433,10 +433,13 @@
       "height": "Stage height (plain numbers are px, CSS lengths accepted; default 200px)",
       "accessible": "Boolean; when present the barrage is exposed to screen readers (`role=\"log\"` + `aria-live=\"polite\"`); `aria-hidden` by default",
       "items": "Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute",
-      "auto-play": "Loop playback: once the declared queue drains the items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good)"
+      "auto-play": "Loop playback: once the declared queue drains the items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good)",
+      "banned-words": "Banned words (comma-separated or a JSON array string; case-insensitive): matching bullets are never queued or rendered (same rule for `add` / `addBatch` / `items`); on-screen items are not retroactively removed",
+      "likeable": "Each bullet carries a heart like control (tapping toggles the like state and dispatches `oas-like`; state is remembered by `key` / text across the item lifecycle)"
     },
     "events": {
-      "oas-item-click": "Dispatched when an item is clicked"
+      "oas-item-click": "Dispatched when an item is clicked",
+      "oas-like": "Fired when the like control is tapped; `detail: { text, key, color, liked, count }` (`liked` is the state after the toggle)"
     },
     "slots": {},
     "methods": {
@@ -444,7 +447,9 @@
       "addBatch": "Append many (strings or `{ text, color?, key? }`)",
       "pause": "Pause (writes the `paused` attribute)",
       "resume": "Resume (removes the `paused` attribute)",
-      "clear": "Clear on-screen and queued items"
+      "clear": "Clear on-screen and queued items",
+      "isLiked": "Reads the like state (key = `key`, or the text when no key; same identity as `oas-like`)",
+      "likeCount": "Reads the like count"
     },
     "cssVars": {
       "--oas-barrage-height": "Stage height (the `height` attribute writes the same variable)",
@@ -1316,12 +1321,14 @@
       "open": "Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change)",
       "z-index": "Overlay stacking level (numeric value added on top of `--oas-z-index-base`; default keeps the `--oas-z-modal` step, same shape as modal / drawer)",
       "multiple": "Multiple mode: options become checkboxes; every toggle dispatches an array detail `{ codes, coupons }` and the sheet stays open; default single-select unchanged",
-      "show-count": "Adds a count pill to the available / unavailable group titles"
+      "show-count": "Adds a count pill to the available / unavailable group titles",
+      "max-select": "Upper bound on selected coupons in multiple mode (positive integer; 0 / invalid = unlimited with one warning): further picks do not take effect (checkbox reverts, selection unchanged, `oas-select-invalid` fires); the trigger shows `n of m selected`. Ignored in single-select mode"
     },
     "events": {
       "oas-select": "Dispatched when an available coupon is picked. Single mode (default) detail `{ code, coupon }` and the sheet closes; multiple mode detail `{ codes, coupons }` (arrays, sheet stays open); the No-coupon exit dispatches an empty selection — single `{ code: empty string, coupon: null }` / multiple `{ codes: [], coupons: [] }`",
       "oas-open-change": "Dispatched on interaction or imperative open/close with `{ open }` (attribute writes are silent)",
-      "oas-clear": "Dispatched when the No-coupon exit is clicked (immediately followed by an empty-selection oas-select; the two events come as a pair)"
+      "oas-clear": "Dispatched when the No-coupon exit is clicked (immediately followed by an empty-selection oas-select; the two events come as a pair)",
+      "oas-select-invalid": "Fired when a multiple-mode combination check rejects a pick (over `max-select`); the pick does not take effect and the selection is unchanged; `detail: { reason: \"max-select\", limit, code, codes, coupons }`"
     },
     "slots": {},
     "methods": {
@@ -3795,7 +3802,9 @@
       "size": "Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium with a one-time warning (deduped by identical value))",
       "skip-text": "\"Skip this step\" button label (overrides the locale default)",
       "steps": "Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]`",
-      "validation": "Per-step validation gating (on by default, `validation=\"false\"` for pure navigation; `submit()` always re-validates regardless)"
+      "validation": "Per-step validation gating (on by default, `validation=\"false\"` for pure navigation; `submit()` always re-validates regardless)",
+      "conditions": "Step condition engine switch (on by default; `conditions=\"false\"` disables it): turning it off makes `steps[].when` / `steps[].goto` inert, leaving only the host `hidden` bit",
+      "score-rules": "Scoring rules JSON array `[{ when, score }]`: each matching condition adds its `score` to the total (expressions read the cross-step merged answers, hidden steps included); invalid rules are skipped one by one with a warning. Computes only — the host composes the question types"
     },
     "events": {
       "oas-before-change": "Fires before any jump (buttons / header clicks / next / prev / goto / skip), cancelable; `detail: { index, key?, from }` — `preventDefault()` vetoes the jump",
@@ -3803,7 +3812,9 @@
       "oas-step-validate": "After a per-step validation; `detail: { index, key?, valid, errors }`",
       "oas-skip": "When an optional step is skipped; `detail: { index, key? }` (skipping never validates; the skipped step leaves the values/validation scope until revisited)",
       "oas-submit": "Finished on the last step (all participating steps validated); `detail: { values }` (merged across participating steps only — hidden / skipped steps excluded)",
-      "oas-values-change": "Natural bubble-through of the inner oas-form value changes (`detail: { name, value, values }`, values is that step's snapshot); use getValues() for the merged view"
+      "oas-values-change": "Natural bubble-through of the inner oas-form value changes (`detail: { name, value, values }`, values is that step's snapshot); use getValues() for the merged view",
+      "oas-goto": "Fired when a `steps[].goto` condition holds and the advance jumps straight to the target step (before `oas-change`); `detail: { index, key?, from, target }` (`target` is the raw reference declared on the step)",
+      "oas-score": "Fired after the score is recomputed (debounced 80ms after answer changes; no event when the total is unchanged); `detail: { score }`. Rule changes stay silent — read the read-only `score` property afterwards"
     },
     "slots": {
       "step-<key>": "Step content panel (keyed steps); place one `<oas-form>` inside to carry the step's fields and rules",
@@ -3824,6 +3835,9 @@
       "submit": "Submit: re-validates all participating steps (including earlier ones) and dispatches oas-submit{values} only when everything passes (cross-step aggregation, participating steps only)",
       "getValues": "Cross-step value aggregation (participating steps only, same criteria as validateAll): the values of each participating step (not hidden and not skipped)",
       "reset": "Reset: every step's form resets to its initial values (clearing error state), value tracking and skip records are cleared, and current returns to 0"
+    },
+    "props": {
+      "score": "Current total (read-only): reading it sums `score-rules` against the current cross-step answers (hidden steps included — panels stay mounted and keep their values), always up to date; the engine computes only"
     }
   },
   "oas-radio": {
@@ -6002,7 +6016,10 @@
       "keyboard": "Keyboard nudging: on by default (`tabindex=\"0\"`, 1px with arrow keys, 10px with Shift); write `false` to disable",
       "announce": "Announce position changes through `aria-live=\"polite\"` (off by default)",
       "disabled": "Turn dragging off: pointer and keyboard are ignored and the focus stop is removed",
-      "aria-label": "Accessible name (defaults to the i18n drag.label)"
+      "aria-label": "Accessible name (defaults to the i18n drag.label)",
+      "snap": "Snap grid size: a positive integer is the grid in px, the literal `grid` means 8px; on release (including the inertia tail) the offset aligns to the nearest grid point; keyboard nudges are unaffected",
+      "snap-targets": "Snap points JSON array `[{ x, y }]` (offsets relative to the initial layout position): releasing within `snap-threshold` of the nearest point snaps exactly to it; a hint ring (`part=\"snap-hint\"`) appears while dragging near one",
+      "snap-threshold": "Snap point distance threshold (px, default 12); invalid values warn once and fall back to the default"
     },
     "props": {
       "position": "Current offset `{ x, y }` relative to the initial layout position: get+set channel; assignment is clamped immediately and emits no events"

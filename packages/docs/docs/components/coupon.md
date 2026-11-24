@@ -152,6 +152,7 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 | `end` | 有效期结束（`YYYY-MM-DD`） | — | — |
 | `list` | 选择列表 JSON 数组 `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`；在场时切换为弹层形态 | `CouponData[] \| string` | — |
 | `locale` | 金额与日期格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN` | — | — |
+| `max-select` | 多选已选张数上限（正整数；0 / 非法 = 不限并告警一次）：到达上限后再勾选不生效（勾选态回滚、已选集合不变、派发 `oas-select-invalid`）；触发按钮显示 `已选 n/m 张`。单选模式忽略 | `string` | — |
 | `multiple` | 多选模式：选项变 checkbox，每次勾选/取消派发数组 detail `{ codes, coupons }` 且弹层不自动关闭；缺省单选不变 | `boolean` | — |
 | `open` | 弹层开合（受控：宿主写 attribute / property 静默生效；用户交互与 `openOverlay()` / `closeOverlay()` 改变开合时派发 `oas-open-change`） | `boolean \| string` | — |
 | `reason` | 不可用原因文案（`status="unavailable"` 时展示） | — | — |
@@ -179,6 +180,7 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
 | `oas-clear` | 点击「不使用优惠券」出口派发（紧随其后是空选 oas-select，两个事件成对） |
 | `oas-open-change` | 交互或命令式开合时派发，detail `{ open }`（受控属性写入不派发） |
 | `oas-select` | 选中可用券时派发。单选（默认）detail `{ code, coupon }` 并随后关闭弹层；multiple 模式 detail `{ codes, coupons }`（数组，弹层不关）；「不使用优惠券」出口派发空选——单选 `{ code: 空串, coupon: null }` / 多选 `{ codes: [], coupons: [] }` |
+| `oas-select-invalid` | 多选组合校验拒绝（超过 `max-select`）派发，本次选择未生效、已选集合不变；`detail: { reason: "max-select", limit, code, codes, coupons }` |
 
 <script setup>
 import { onMounted } from 'vue'

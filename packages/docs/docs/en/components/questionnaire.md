@@ -501,6 +501,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `animated` | Step transition (opt-in, on when present and not `"false"`): the incoming panel slides in along the navigation direction while fading in (transform/opacity only); automatically disabled for `prefers-reduced-motion: reduce`; slide direction mirrors in RTL | `boolean` | — |
+| `conditions` | Step condition engine switch (on by default; `conditions="false"` disables it): turning it off makes `steps[].when` / `steps[].goto` inert, leaving only the host `hidden` bit | `string` | `true` |
 | `current` | Current step index (0-based, two-way: internal jumps write back, external updates sync instantly); invalid values fall back to 0, out-of-range clamped | `string` | `0` |
 | `finish-text` | Last-step primary button label (overrides the locale default "Submit") | — | — |
 | `hide-header` | Hide the built-in step header (host composition) | `boolean` | — |
@@ -510,11 +511,18 @@ onMounted(() => {
 | `prev-text` | "Previous" button label (overrides the locale default) | — | — |
 | `progress` | Progress region visibility (`progress="false"` hides it) | `string` | `true` |
 | `progress-variant` | Progress variant: `both` (default, text + bar) / `text` / `bar`; invalid values fall back to `both` | `string` | `both` |
+| `score-rules` | Scoring rules JSON array `[{ when, score }]`: each matching condition adds its `score` to the total (expressions read the cross-step merged answers, hidden steps included); invalid rules are skipped one by one with a warning. Computes only — the host composes the question types | `string` | — |
 | `shortcuts` | Keyboard step navigation (opt-in, on when present and not `"false"`): `Alt+←/→` switches steps anywhere inside the component (swallows the default to prevent browser history navigation); bare `←/→` only when focus is outside inputs/editable controls (never hijacks the caret) | `boolean` | — |
 | `size` | Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium with a one-time warning (deduped by identical value)) | `string` | `medium` |
 | `skip-text` | "Skip this step" button label (overrides the locale default) | — | — |
 | `steps` | Step data JSON `[{ key?, title, description?, optional?, hidden? }]`; invalid/empty falls back to `[]` | `QuestionnaireStep[] \| string` | `[]` |
 | `validation` | Per-step validation gating (on by default, `validation="false"` for pure navigation; `submit()` always re-validates regardless) | `string` | `true` |
+
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `score` | Current total (read-only): reading it sums `score-rules` against the current cross-step answers (hidden steps included — panels stay mounted and keep their values), always up to date; the engine computes only | `number` | — |
 
 #### Methods
 
@@ -535,6 +543,8 @@ onMounted(() => {
 | --- | --- |
 | `oas-before-change` | Fires before any jump (buttons / header clicks / next / prev / goto / skip), cancelable; `detail: { index, key?, from }` — `preventDefault()` vetoes the jump |
 | `oas-change` | After a successful step switch; `detail: { index, key? }` |
+| `oas-goto` | Fired when a `steps[].goto` condition holds and the advance jumps straight to the target step (before `oas-change`); `detail: { index, key?, from, target }` (`target` is the raw reference declared on the step) |
+| `oas-score` | Fired after the score is recomputed (debounced 80ms after answer changes; no event when the total is unchanged); `detail: { score }`. Rule changes stay silent — read the read-only `score` property afterwards |
 | `oas-skip` | When an optional step is skipped; `detail: { index, key? }` (skipping never validates; the skipped step leaves the values/validation scope until revisited) |
 | `oas-step-validate` | After a per-step validation; `detail: { index, key?, valid, errors }` |
 | `oas-submit` | Finished on the last step (all participating steps validated); `detail: { values }` (merged across participating steps only — hidden / skipped steps excluded) |

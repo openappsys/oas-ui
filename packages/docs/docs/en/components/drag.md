@@ -175,6 +175,9 @@ onMounted(() => {
 | `inertia` | Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary); instant stop under `prefers-reduced-motion: reduce` | `boolean` | — |
 | `keyboard` | Keyboard nudging: on by default (`tabindex="0"`, 1px with arrow keys, 10px with Shift); write `false` to disable | `string` | — |
 | `remember` | Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota) | `boolean` | — |
+| `snap` | Snap grid size: a positive integer is the grid in px, the literal `grid` means 8px; on release (including the inertia tail) the offset aligns to the nearest grid point; keyboard nudges are unaffected | `string` | — |
+| `snap-targets` | Snap points JSON array `[{ x, y }]` (offsets relative to the initial layout position): releasing within `snap-threshold` of the nearest point snaps exactly to it; a hint ring (`part="snap-hint"`) appears while dragging near one | `string` | — |
+| `snap-threshold` | Snap point distance threshold (px, default 12); invalid values warn once and fall back to the default | `string` | — |
 | `storage-key` | Storage key for position memory (default `oas-drag`) | `string` | `oas-drag` |
 
 #### Property (JS property; see each row for attribute reflection)

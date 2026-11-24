@@ -762,7 +762,7 @@ export class OASQuestionnaire extends OASElement {
   // ---------- 评分汇总（score-rules） ----------
 
   /**
-   * 当前总分（只读 property）：按 `score-rules` 与当前跨步答案（含隐藏步）即时求和。
+   * @apiProperty 当前总分（只读 property）：按 `score-rules` 与当前跨步答案（含隐藏步）即时求和。
    * 引擎只算不渲染——分数展示与题型组合由宿主决定；作答变化后另派发防抖的 `oas-score`。
    */
   get score(): number {

@@ -48,6 +48,16 @@
     {
       "name": "auto-play",
       "observed": true
+    },
+    {
+      "name": "likeable",
+      "observed": true
+    },
+    {
+      "name": "banned-words",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -61,7 +71,17 @@
     {
       "name": "add",
       "signature": "add(text: string, options: BarrageItemOptions): void",
-      "description": "追加一条弹幕；空文本忽略"
+      "description": "追加一条弹幕；空文本与被屏蔽词命中的文本忽略"
+    },
+    {
+      "name": "isLiked",
+      "signature": "isLiked(key: string): boolean",
+      "description": "查询点赞态（键 = key，缺省按文本；与 oas-like 的 detail 口径一致）"
+    },
+    {
+      "name": "likeCount",
+      "signature": "likeCount(key: string): number",
+      "description": "查询点赞数"
     },
     {
       "name": "addBatch",
@@ -85,6 +105,10 @@
     }
   ],
   "events": [
+    {
+      "name": "oas-like",
+      "detail": "{ text: active.text, key: active.key, color: active.color, liked: next.liked, count: next.count }"
+    },
     {
       "name": "oas-item-click",
       "detail": "{ text: item.text, key: item.key, color: item.color }"

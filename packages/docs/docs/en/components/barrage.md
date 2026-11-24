@@ -186,9 +186,11 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accessible` | Boolean; when present the barrage is exposed to screen readers (`role="log"` + `aria-live="polite"`); `aria-hidden` by default | — | — |
 | `auto-play` | Loop playback: once the declared queue drains the items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good) | — | — |
+| `banned-words` | Banned words (comma-separated or a JSON array string; case-insensitive): matching bullets are never queued or rendered (same rule for `add` / `addBatch` / `items`); on-screen items are not retroactively removed | `string` | — |
 | `gap` | Minimum horizontal gap between items on the same track (px, default 48) | `string` | — |
 | `height` | Stage height (plain numbers are px, CSS lengths accepted; default 200px) | `string` | — |
 | `items` | Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute | `Array<string \| BarrageItemInput> \| string` | `[]` |
+| `likeable` | Each bullet carries a heart like control (tapping toggles the like state and dispatches `oas-like`; state is remembered by `key` / text across the item lifecycle) | — | — |
 | `max-active` | Maximum on-screen items (0 = unlimited, default 0) | `string` | — |
 | `paused` | Controlled pause (present = paused; CSS animations and scheduling timers freeze together) | — | — |
 | `speed` | Drift speed in pixels per second (default 120) | `string` | — |
@@ -199,6 +201,8 @@ onMounted(() => {
 | Method | Signature | Description |
 | --- | --- | --- |
 | `add` | `add(text: string, options: BarrageItemOptions): void` | Append one item (options: `{ color?, key? }`) |
+| `isLiked` | `isLiked(key: string): boolean` | Reads the like state (key = `key`, or the text when no key; same identity as `oas-like`) |
+| `likeCount` | `likeCount(key: string): number` | Reads the like count |
 | `addBatch` | `addBatch(items: Array<string \| BarrageItemInput>): void` | Append many (strings or `{ text, color?, key? }`) |
 | `pause` | `pause(): void` | Pause (writes the `paused` attribute) |
 | `resume` | `resume(): void` | Resume (removes the `paused` attribute) |
@@ -209,6 +213,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-item-click` | Dispatched when an item is clicked, `detail: { text: item.text, key: item.key, color: item.color }` |
+| `oas-like` | Fired when the like control is tapped; `detail: { text, key, color, liked, count }` (`liked` is the state after the toggle) |
 
 #### CSS Variables
 

@@ -148,6 +148,7 @@ Multiple selection can layer two combination rules, both with explicit feedback 
 | `end` | Validity end (`YYYY-MM-DD`) | — | — |
 | `list` | Selection list JSON array `[{ code, amount, threshold?, start?, end?, validity?, status?, reason? }]`; switches to the sheet form | `CouponData[] \| string` | — |
 | `locale` | Amount and date formatting locale; defaults to the document `<html lang>`, then `en` | — | — |
+| `max-select` | Upper bound on selected coupons in multiple mode (positive integer; 0 / invalid = unlimited with one warning): further picks do not take effect (checkbox reverts, selection unchanged, `oas-select-invalid` fires); the trigger shows `n of m selected`. Ignored in single-select mode | `string` | — |
 | `multiple` | Multiple mode: options become checkboxes; every toggle dispatches an array detail `{ codes, coupons }` and the sheet stays open; default single-select unchanged | `boolean` | — |
 | `open` | Sheet open state (controlled: host attribute / property writes are silent; user interaction and openOverlay() / closeOverlay() dispatch oas-open-change) | `boolean \| string` | — |
 | `reason` | Reason text shown when `status="unavailable"` | — | — |
@@ -175,6 +176,7 @@ Multiple selection can layer two combination rules, both with explicit feedback 
 | `oas-clear` | Dispatched when the No-coupon exit is clicked (immediately followed by an empty-selection oas-select; the two events come as a pair) |
 | `oas-open-change` | Dispatched on interaction or imperative open/close with `{ open }` (attribute writes are silent), `detail: { open: true } satisfies CouponOpenChangeDetail \| { open: false } satisfies CouponOpenChangeDetail` |
 | `oas-select` | Dispatched when an available coupon is picked. Single mode (default) detail `{ code, coupon }` and the sheet closes; multiple mode detail `{ codes, coupons }` (arrays, sheet stays open); the No-coupon exit dispatches an empty selection — single `{ code: empty string, coupon: null }` / multiple `{ codes: [], coupons: [] }` |
+| `oas-select-invalid` | Fired when a multiple-mode combination check rejects a pick (over `max-select`); the pick does not take effect and the selection is unchanged; `detail: { reason: "max-select", limit, code, codes, coupons }` |
 
 <script setup>
 import { onMounted } from 'vue'

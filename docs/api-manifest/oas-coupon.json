@@ -76,6 +76,12 @@
       "name": "show-count",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "max-select",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -111,8 +117,12 @@
       "detail": "{ open: true } satisfies CouponOpenChangeDetail | { open: false } satisfies CouponOpenChangeDetail"
     },
     {
+      "name": "oas-select-invalid",
+      "detail": "{ reason: 'max-select', limit, code: coupon.code, codes: [...this.selectedCodes], coupons: list.filter((item) => this.selectedCodes.has(item.code)), } satisfies CouponSelectInvalidDetail"
+    },
+    {
       "name": "oas-select",
-      "detail": "{ codes: [...this.selectedCodes], coupons: this.parseList().filter((item) => this.selectedCodes.has(item.code)), } satisfies CouponMultiSelectDetail | { code: coupon.code, coupon } satisfies CouponSelectDetail | multiple ? ({ codes: [], coupons: [] } satisfies CouponMultiSelectDetail) : ({ code: '', coupon: null } satisfies CouponSelectDetail)"
+      "detail": "{ code: coupon.code, coupon } satisfies CouponSelectDetail | multiple ? ({ codes: [], coupons: [] } satisfies CouponMultiSelectDetail) : ({ code: '', coupon: null } satisfies CouponSelectDetail)"
     },
     {
       "name": "oas-clear"
