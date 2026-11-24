@@ -77,7 +77,7 @@ A high-frequency card for order lists and order detail pages: the header pairs t
 
 ## Amount area
 
-`payable` is the amount paid, `original` the pre-discount amount (rendered struck through) and `discount` the saved amount; when all three are absent the whole amount area hides. `currency` / `locale` / `precision` are forwarded to the nested price component.
+`payable` is the amount paid, `original` the pre-discount amount (rendered struck through, only alongside `payable`) and `discount` the saved amount; the whole amount area hides when both `payable` and `discount` are absent (setting only `original` renders no empty bar). `currency` / `locale` / `precision` are forwarded to the nested price component.
 
 <DemoBlock title="Paid + struck-through original + saved (USD / one decimal)">
   <oas-order-card

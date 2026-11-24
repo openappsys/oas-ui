@@ -122,6 +122,8 @@ test('cart：滑动拖拽移出列表后松手仍正确结算（pointer capture�
   await page.mouse.down()
   await page.mouse.move(box.x + 30, box.y + box.height / 2, { steps: 6 })
   await page.mouse.move(box.x + 100, box.y + box.height + 120, { steps: 6 })
+  // 松手前先锚定拖拽态确实激活（与几何无关）：保证后面的结算断言有对比意义
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).getAttribute('data-dragging') ?? '')).toBe('true')
   await page.mouse.up()
 
   // 捕获生效：结算照常发生——最终 dx = -20 未过吸附阈值 → 回弹关闭（无位移），
@@ -138,6 +140,30 @@ test('cart：滑动拖拽移出列表后松手仍正确结算（pointer capture�
 
   // 结算后条目仍可正常交互（点击不误触删除）
   await expect(host.locator('[part="item"]')).toHaveCount(2)
+})
+
+test('cart：滑动过半松手吸附到完全露出；已展开拖回过半回弹关闭（落定不取跟手值）', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cart')
+
+  const host = page.locator('#cart-delete-swipe')
+  const inner = host.locator('[part="item-inner"]').first()
+  await inner.scrollIntoViewIfNeeded()
+  const box = (await inner.boundingBox())!
+  // 向左拖 50px（过半 36、未满 72）松手：落定必须吸附到完全露出 -72px，
+  // 而非跟手 clamp 值 -50px（修复前删除钮半露）
+  await page.mouse.move(box.x + 120, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 70, box.y + box.height / 2, { steps: 6 })
+  await page.mouse.up()
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('translateX(-72px)')
+
+  // 已展开后向右拖回过半（dx=+50）松手：回弹关闭（修复前停半路 -12px）
+  await page.mouse.move(box.x + 120, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 170, box.y + box.height / 2, { steps: 6 })
+  await page.mouse.up()
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('')
 })
 
 test('cart：禁用条目不计合计且不可勾选；空态渲染文案与插槽', async ({ page }) => {

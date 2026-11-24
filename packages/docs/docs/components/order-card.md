@@ -77,7 +77,7 @@ description: "订单卡片：订单号 + 可配置状态徽标（语义色映射
 
 ## 金额区
 
-`payable` 是实付金额，`original` 是优惠前金额（划线展示），`discount` 是已优惠金额；三项都缺省时金额区整体隐藏。`currency` / `locale` / `precision` 透传给内嵌价格件。
+`payable` 是实付金额，`original` 是优惠前金额（划线展示，只随 `payable` 一同渲染），`discount` 是已优惠金额；`payable` 与 `discount` 都缺省时金额区整体隐藏（只设 `original` 不渲染空壳条）。`currency` / `locale` / `precision` 透传给内嵌价格件。
 
 <DemoBlock title="实付 + 划线原价 + 已优惠（美元 / 一位小数）">
   <oas-order-card
