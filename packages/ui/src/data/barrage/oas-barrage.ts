@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { heartPath } from '@oas-ui/icons/icons/heart'
 import { devWarn } from '../../shared/dev-warn.js'
 import { isRtl } from '../../shared/direction.js'
 
@@ -23,15 +24,21 @@ import { isRtl } from '../../shared/direction.js'
  * - `auto-play`：布尔，循环播放——声明条目队列耗尽后自动重新入队（只循环 `items`
  *   声明的数据；`add()` 手动加的条目不参与循环；`clear()` 只清在场与排队，声明数据
  *   仍在，想要永久停止请移除 `items` 或 `auto-play`）
+ * - `banned-words`：屏蔽词（逗号分隔，或 JSON 数组字符串；大小写不敏感）。命中的条目
+ *   **不入队不渲染**（`add` / `addBatch` / `items` 三条入队通道同一判据）；已在场的条目不回溯移除
+ * - `likeable`：每条弹幕带点赞控件（心形按钮，点按切换点赞态）——点赞状态按 `key`（缺省按文本）
+ *   记忆，消失后重新出现仍保留；派发 `oas-like`。未开该属性时渲染与现状一致（零视觉漂移）
  *
  * 方法：
  * - `add(text, options?)`：追加一条（options: `{ color?, key? }`）
  * - `addBatch(items)`：批量追加（字符串或 `{ text, color?, key? }`）
  * - `pause()` / `resume()`：暂停 / 继续（写入/移除 paused 属性）
  * - `clear()`：清空在场与排队弹幕
+ * - `isLiked(key)` / `likeCount(key)`：查询点赞态与点赞数（`likeable` 场景宿主回显）
  *
  * 事件（bubbles + composed）：
  * - `oas-item-click`：点击弹幕，detail `{ text, key, color }`
+ * - `oas-like`：点按点赞控件，detail `{ text, key, color, liked, count }`（liked = 切换后的状态）
  *
  * 无障碍：默认舞台 `aria-hidden="true"`（装饰性弹幕，弹幕项不可聚焦）；`accessible` 开启后为
  * `role="log"` 活区，每条弹幕为 `role="button"` + `tabindex="0"`，Enter / Space 等价点击派发
@@ -92,6 +99,42 @@ const STYLE = `
 }
 .item:hover {
   background: var(--oas-barrage-item-hover-bg, color-mix(in srgb, var(--oas-color-overlay) 36%, transparent));
+}
+.text {
+  display: inline;
+}
+/* 点赞控件：与文本同基线的小按钮，未点赞描边、点赞后主色实心 */
+.like {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-inline-start: var(--oas-space-1);
+  padding: 0;
+  width: 1.25em;
+  height: 1.25em;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  flex: none;
+}
+.like svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  fill: currentColor;
+}
+.like:hover {
+  color: var(--oas-color-primary);
+}
+.like[data-liked='true'] {
+  color: var(--oas-color-primary);
+}
+.like:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
 }
 @keyframes oas-barrage-move {
   from {
@@ -246,7 +289,19 @@ const LENGTH_RE = /^(?:\d*\.?\d+(?:px|rem|em|vh|vw|vmin|vmax|%)?|(?:calc|min|max
 
 export class OASBarrage extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['tracks', 'speed', 'gap', 'max-active', 'paused', 'height', 'accessible', 'items', 'auto-play']
+    return [
+      'tracks',
+      'speed',
+      'gap',
+      'max-active',
+      'paused',
+      'height',
+      'accessible',
+      'items',
+      'auto-play',
+      'likeable',
+      'banned-words',
+    ]
   }
 
   private stageEl: HTMLElement | null = null
@@ -265,6 +320,10 @@ export class OASBarrage extends OASElement {
   private lastItemsRaw = ''
   /** 声明式条目（auto-play 循环的数据源） */
   private declaredItems: BarrageItemInput[] = []
+  /** 点赞态与计数（键 = key ‖ text）；跨条目生命周期保留 */
+  private likes = new Map<string, { liked: boolean; count: number }>()
+  /** 屏蔽词解析缓存（按 banned-words 原文） */
+  private bannedCache: { raw: string; words: string[] } = { raw: '', words: [] }
 
   // -------------------------------------------------------------------------
   // property 通道（items：框架把静态属性写成 property 时的数据入口）
@@ -327,15 +386,26 @@ export class OASBarrage extends OASElement {
 
   // ---- 公开 API ----
 
-  /** 追加一条弹幕；空文本忽略 */
+  /** 追加一条弹幕；空文本与被屏蔽词命中的文本忽略 */
   add(text: string, options: BarrageItemOptions = {}): void {
     if (typeof text !== 'string' || text.trim() === '') return
+    if (this.isBanned(text)) return
     this.queue.push({
       text,
       key: options.key ?? '',
       color: options.color ?? '',
     })
     this.pump()
+  }
+
+  /** 查询点赞态（键 = key，缺省按文本；与 oas-like 的 detail 口径一致） */
+  isLiked(key: string): boolean {
+    return this.likes.get(key)?.liked === true
+  }
+
+  /** 查询点赞数 */
+  likeCount(key: string): number {
+    return this.likes.get(key)?.count ?? 0
   }
 
   /** 批量追加（字符串或 `{ text, color?, key? }`） */
@@ -479,7 +549,11 @@ export class OASBarrage extends OASElement {
     const el = document.createElement('span')
     el.className = 'item'
     el.setAttribute('part', 'item')
-    el.textContent = item.text
+    const text = document.createElement('span')
+    text.className = 'text'
+    text.textContent = item.text
+    el.appendChild(text)
+    if (this.hasAttribute('likeable')) el.appendChild(this.renderLike(item))
     if (item.key) el.dataset.key = item.key
     if (item.color) el.style.setProperty('--oas-barrage-item-color', resolveItemColor(item.color))
     this.applyItemA11y(el)
@@ -511,13 +585,15 @@ export class OASBarrage extends OASElement {
 
   /**
    * 弹幕项的可交互无障碍形态：
-   * - `accessible` 开启（舞台为 role="log" 活区）→ 项为 `role="button"` + tabindex=0，
+   * - `accessible` 开启（舞台为 role="log" 活区）且未开 `likeable` → 项为 `role="button"` + tabindex=0，
    *   Enter / Space 等价点击派发 `oas-item-click`（键盘可达）；
+   * - `accessible` + `likeable` → 项本身不再承载 button 语义（避免嵌套交互控件触发 axe
+   *   nested-interactive），改由点赞控件承担键盘交互；
    * - 缺省（装饰性弹幕，舞台 aria-hidden）→ 不加 tabindex：aria-hidden 容器内不得含
    *   可聚焦元素（axe `aria-hidden-focus`），装饰态不提供键盘焦点。
    */
   private applyItemA11y(el: HTMLElement): void {
-    if (this.isAccessible()) {
+    if (this.isAccessible() && !this.hasAttribute('likeable')) {
       el.setAttribute('role', 'button')
       el.tabIndex = 0
     } else {
@@ -528,7 +604,103 @@ export class OASBarrage extends OASElement {
 
   /** accessible 切换后同步既有在场项的可聚焦形态 */
   private syncItemsA11y(): void {
-    for (const item of this.active) this.applyItemA11y(item.el)
+    for (const item of this.active) {
+      this.applyItemA11y(item.el)
+      const like = item.el.querySelector<HTMLElement>('[part="like"]')
+      if (like) this.syncLikeA11y(like, item)
+    }
+  }
+
+  // ---------- 点赞 / 屏蔽词 ----------
+
+  /** 点赞身份：显式 key 优先，缺省按文本（与 oas-like detail 的 key 口径一致） */
+  private likeIdentity(item: { text: string; key: string }): string {
+    return item.key !== '' ? item.key : item.text
+  }
+
+  /** 点赞控件：语义与可聚焦性按 accessible 切换；装饰态鼠标可点但读屏不可达 */
+  private renderLike(item: QueuedItem): HTMLElement {
+    const like = document.createElement('span')
+    like.className = 'like'
+    like.setAttribute('part', 'like')
+    like.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${heartPath}</svg>`
+    this.syncLikeA11y(like, item)
+    return like
+  }
+
+  /** 同步点赞控件的状态与语义（accessible 下为键盘可达的 button 角色） */
+  private syncLikeA11y(like: HTMLElement, item: { text: string; key: string }): void {
+    const state = this.likes.get(this.likeIdentity(item)) ?? { liked: false, count: 0 }
+    if (state.liked) like.setAttribute('data-liked', 'true')
+    else like.removeAttribute('data-liked')
+    if (this.isAccessible()) {
+      like.removeAttribute('aria-hidden')
+      like.setAttribute('role', 'button')
+      like.setAttribute('tabindex', '0')
+      like.setAttribute('aria-pressed', String(state.liked))
+      like.setAttribute('aria-label', this.t(state.liked ? 'barrage.unlike' : 'barrage.like'))
+    } else {
+      like.setAttribute('aria-hidden', 'true')
+      like.removeAttribute('role')
+      like.removeAttribute('tabindex')
+      like.removeAttribute('aria-pressed')
+      like.removeAttribute('aria-label')
+    }
+  }
+
+  /** 运行时切换 likeable：既有在场条目补 / 撤点赞控件，状态按记忆回填 */
+  private syncLikeControls(): void {
+    const likeable = this.hasAttribute('likeable')
+    for (const item of this.active) {
+      const existing = item.el.querySelector<HTMLElement>('[part="like"]')
+      if (likeable && !existing) item.el.appendChild(this.renderLike(item))
+      else if (!likeable && existing) existing.remove()
+      else if (existing) this.syncLikeA11y(existing, item)
+    }
+  }
+
+  /** 切换点赞态并派发 oas-like（detail: { text, key, color, liked, count }） */
+  private toggleLike(active: ActiveItem): void {
+    const id = this.likeIdentity(active)
+    const prev = this.likes.get(id) ?? { liked: false, count: 0 }
+    const next = { liked: !prev.liked, count: Math.max(0, prev.count + (prev.liked ? -1 : 1)) }
+    this.likes.set(id, next)
+    const like = active.el.querySelector<HTMLElement>('[part="like"]')
+    if (like) this.syncLikeA11y(like, active)
+    this.emit('like', { text: active.text, key: active.key, color: active.color, liked: next.liked, count: next.count })
+  }
+
+  /** 屏蔽词解析（逗号分隔或 JSON 数组；按属性原文缓存） */
+  private bannedWords(): string[] {
+    const raw = this.getAttr('banned-words', '')
+    if (raw === this.bannedCache.raw) return this.bannedCache.words
+    let words: string[] = []
+    const trimmed = raw.trim()
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed: unknown = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) {
+          words = parsed.filter((entry): entry is string => typeof entry === 'string').map((entry) => entry.trim())
+        } else {
+          warnNumeric('banned-words', raw, '逗号分隔字符串或 JSON 数组')
+        }
+      } catch {
+        warnNumeric('banned-words', raw, '逗号分隔字符串或 JSON 数组')
+      }
+    } else if (trimmed !== '') {
+      words = trimmed.split(/[,，]/).map((entry) => entry.trim())
+    }
+    words = words.filter((entry) => entry !== '')
+    this.bannedCache = { raw, words }
+    return words
+  }
+
+  /** 文本是否命中屏蔽词（大小写不敏感；命中即不入队不渲染） */
+  private isBanned(text: string): boolean {
+    const words = this.bannedWords()
+    if (words.length === 0) return false
+    const lowered = text.toLowerCase()
+    return words.some((word) => lowered.includes(word.toLowerCase()))
   }
 
   private armTimer(item: ActiveItem, ms: number): void {
@@ -630,14 +802,27 @@ export class OASBarrage extends OASElement {
   }
 
   private onStageClick = (e: Event): void => {
+    const like = (e.target as HTMLElement | null)?.closest?.('[part="like"]') as HTMLElement | null
+    if (like) {
+      const item = this.itemByEl.get(like.closest('.item') as HTMLElement)
+      if (item) this.toggleLike(item)
+      return
+    }
     const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
     if (!target) return
     this.emitItemClick(target)
   }
 
-  /** Enter / Space 等价点击（accessible 下弹幕项可聚焦，键盘必须能触发同一条事件） */
+  /** Enter / Space 等价点击（accessible 下弹幕项 / 点赞控件可聚焦，键盘必须能触发同一条事件） */
   private onStageKeydown = (e: KeyboardEvent): void => {
     if (e.key !== 'Enter' && e.key !== ' ') return
+    const like = (e.target as HTMLElement | null)?.closest?.('[part="like"]') as HTMLElement | null
+    if (like) {
+      e.preventDefault()
+      const item = this.itemByEl.get(like.closest('.item') as HTMLElement)
+      if (item) this.toggleLike(item)
+      return
+    }
     const target = (e.target as HTMLElement | null)?.closest?.('.item') as HTMLElement | null
     if (!target) return
     e.preventDefault()
@@ -679,6 +864,7 @@ export class OASBarrage extends OASElement {
         stage.removeAttribute('aria-live')
       }
       this.syncItemsA11y()
+      this.syncLikeControls()
     }
 
     // RTL 镜像钩子：仅 toggle 属性，:host([data-rtl]) 就地切换镜像关键帧

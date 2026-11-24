@@ -65,6 +65,33 @@ With `tracks="1"` all items share one track and scheduling guarantees no overlap
   ></oas-barrage>
 </DemoBlock>
 
+## Likes and banned words
+
+- `likeable`: every bullet carries a heart control; tapping it toggles the like state and dispatches `oas-like` (`detail: { text, key, color, liked, count }`). Like state is remembered **by `key`** (text when no key) across the item lifecycle — when the same key re-enters, it is still liked and the count is kept; `isLiked(key)` / `likeCount(key)` let the host mirror it. Without this attribute the rendering is byte-identical to before (zero visual drift).
+- Accessibility: by default bullets are decorative (stage `aria-hidden`), so the like control is `aria-hidden` and not focusable (mouse-only, invisible to screen readers). With `accessible` the stage joins the accessibility tree and the like control becomes a keyboard-reachable `role="button"` (`aria-pressed` + i18n accessible name); the item itself no longer carries button semantics, avoiding nested interactive controls.
+- `banned-words`: comma-separated words (full-width commas work too) or a JSON array string, **case-insensitive**. Matching bullets are **never queued or rendered** (the same rule for `add` / `addBatch` / `items`); items already on stage are not retroactively removed, and words added later apply to subsequent bullets.
+
+<DemoBlock title="likeable + banned-words (bullets with 'ad' are filtered)">
+  <oas-barrage
+    id="bg-like-en"
+    items='["This one can be liked","The component library works","ad bullets never render","One more to check the like state"]'
+    likeable
+    accessible
+    banned-words="ad,spam"
+    tracks="2"
+    speed="100"
+    height="120"
+    style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
+  ></oas-barrage>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="bg-like-send-en" size="small">Send a normal bullet</oas-button>
+    <oas-button id="bg-like-banned-en" size="small">Send an ad bullet</oas-button>
+  </div>
+  <span id="bg-like-out-en" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    Tap the heart on a bullet; the ad bullet never shows up.
+  </span>
+</DemoBlock>
+
 ## Writing Direction (RTL)
 
 On RTL pages (ancestor `dir="rtl"`, `oas-config-provider direction="rtl"`, or an RTL locale such as Arabic) items enter from the **left** and fly out to the right — the mirrored keyframes switch automatically via `data-rtl`, matching the reading direction:
@@ -117,6 +144,20 @@ onMounted(() => {
       add(rtl, texts[i % texts.length])
     })
     document.querySelector('#bg-clear')?.addEventListener('click', () => demo?.clear())
+    // Likes and banned words: oas-like feedback + two send entries (the banned one never renders)
+    const likeEl = document.querySelector('#bg-like-en')
+    const likeOut = document.querySelector('#bg-like-out-en')
+    likeEl?.addEventListener('oas-like', (event) => {
+      const { liked, count, text } = event.detail
+      likeOut.textContent = `${liked ? 'Liked' : 'Unliked'} "${text}" (${count} likes)`
+    })
+    document.querySelector('#bg-like-send-en')?.addEventListener('click', () => {
+      likeEl?.add('A perfectly normal bullet', { key: 'normal-' + Date.now() })
+    })
+    document.querySelector('#bg-like-banned-en')?.addEventListener('click', () => {
+      likeEl?.add('this is an ad bullet')
+      likeOut.textContent = 'Tried to send a banned bullet (it will not render)'
+    })
     document.querySelector('#bg-pause')?.addEventListener('click', (event) => {
       if (!demo) return
       const button = event.currentTarget

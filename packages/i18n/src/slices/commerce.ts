@@ -24,6 +24,7 @@ export const commerceMessages: Partial<LocaleMessages> = {
   'coupon.groupUnavailable': '不可用优惠券',
   'coupon.notUse': '不使用优惠券',
   'coupon.selectedCount': '已选 {count} 张',
+  'coupon.selectedCountLimit': '已选 {count}/{limit} 张',
   'goodsAction.label': '商品操作',
   'goodsAction.favorite': '收藏',
   'goodsAction.shop': '店铺',

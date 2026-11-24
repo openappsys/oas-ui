@@ -317,3 +317,38 @@ test('barrage RTL：镜像关键帧生效，弹幕自舞台左侧进场', async 
   expect(geom.stageWidth).toBeGreaterThan(100)
   expect(geom.itemRight - geom.stageLeft).toBeLessThan(geom.stageWidth / 2)
 })
+
+test('barrage：likeable 点赞真实可点（oas-like liked 翻转）+ banned-words 命中不渲染', async ({ page }) => {
+  await page.goto('/components/barrage.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#bg-like')
+
+  const host = page.locator('#bg-like')
+  const items = host.locator('.item')
+  // items 声明四条，其中「广告弹幕会被过滤」命中屏蔽词 → 只入场三条
+  await expect(items).toHaveCount(3)
+  await expect(host.locator('.item', { hasText: '广告' })).toHaveCount(0)
+
+  // 再发一条命中屏蔽词的：仍不渲染
+  await page.click('#bg-like-banned')
+  await expect(items).toHaveCount(3)
+
+  // 点赞：心形控件可见、点击后进入已赞态并派发 oas-like（detail 回显到 demo）
+  // 弹幕在漂移 → 先暂停（元素静止后 Playwright 的稳定性判定才成立），与既有 item-click 用例同口径
+  await host.evaluate((el) => (el as HTMLElement & { pause: () => void }).pause())
+  const like = items.first().locator('[part="like"]')
+  await expect(like).toBeVisible()
+  await like.click()
+  await expect(like).toHaveAttribute('data-liked', 'true')
+  await expect(page.locator('#bg-like-out')).toContainText('已点赞')
+  await expect(like).toHaveAttribute('aria-pressed', 'true')
+
+  // 再点取消
+  await like.click()
+  await expect(like).not.toHaveAttribute('data-liked', 'true')
+  await expect(page.locator('#bg-like-out')).toContainText('已取消点赞')
+
+  // 正常弹幕照常入场（解除暂停后新增条目照常派发）
+  await host.evaluate((el) => (el as HTMLElement & { resume: () => void }).resume())
+  await page.click('#bg-like-send')
+  await expect(items).toHaveCount(4)
+})

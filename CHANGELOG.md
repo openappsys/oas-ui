@@ -4,6 +4,13 @@
 
 ### 新增
 
+**批 D 交互长尾（coupon 叠加规则 / barrage 点赞与屏蔽词 / drag 吸附，全部向后兼容：未启用新属性时渲染与行为不变）**
+
+- **oas-coupon 多选叠加规则**：`max-select`（已选张数上限，到达上限后勾选不生效——勾选态回滚 + 已选集合不变 + 派发新增事件 `oas-select-invalid`（`{ reason: 'max-select', limit, code, codes, coupons }`）；触发按钮显示 `已选 n/m 张`）+ **互斥组**（列表条目 `exclusiveGroup` 标记：选中同组另一张自动取消前一张，被取消的 code 随 `oas-select` 的 `removed` 字段回传）+ 两条规则叠加按**换选后净张数**判定（同组换选不额外占名额）。单选模式忽略两者（天然互斥）。单测 +7；zh/en 文档补「多选叠加规则」段与 demo。
+- **oas-barrage 弹幕交互**：`likeable` per-item 点赞（心形控件、切换点赞态、派发 `oas-like` `{ text, key, color, liked, count }`；点赞态按 `key`/文本跨条目生命周期记忆，`isLiked()` / `likeCount()` 供宿主回显；运行时开关对在场条目增量补/撤控件）+ `banned-words` 屏蔽词（逗号分隔或 JSON 数组、大小写不敏感，命中条目不入队不渲染，`add`/`addBatch`/`items` 三通道同一判据）。无障碍：装饰态点赞控件 `aria-hidden` 且不可聚焦（鼠标可点、读屏不可达）；`accessible` 下升级为键盘可达的 `role="button"`（`aria-pressed` + i18n 可访问名），且条目本身不再叠 button 语义（避免嵌套交互控件）。barrage 首次接入 data 族 i18n 切片。单测 +10；zh/en 文档补「点赞与屏蔽词」段与 demo。
+- **oas-drag 吸附**：`snap` 网格吸附（正整数网格尺寸，字面量 `grid` = 8px）、`snap-targets` 吸附点 JSON（`[{ x, y }]`，`snap-threshold` 默认 12px 阈值内精确吸附）、拖拽中接近吸附点显示提示环（`part="snap-hint"`，纯视觉不参与命中）。吸附只作用于指针落点（含惯性滑行收尾），键盘微调与 `position` 写入保持精确；`axis` 约束仍然生效；非法值一次性 devWarn 并关闭吸附。单测 +7；zh/en 文档补「吸附」段与 demo。
+- **Z1 测试长尾核对**：`qa-regression/drag.spec.ts` 真实鼠标拖拽 `oas-drag-start` 断言（阈值内不派发 / 越阈值恰好一次）与 `time-select.spec.ts` RTL 模式组方向键镜像 e2e 均已在既有用例存在，本批核对通过（无需新增）。
+
 **oas-questionnaire 评分汇总（批 C，向后兼容：未写 `score-rules` 时无事件、`score` 恒 0）**
 
 - **`score-rules` 规则列表**：`[{ when, score }]`，条件成立即累加分值。**只提供这一种形态**——「字段 → 每选项分值」映射等价于若干条 `{ when: "{字段} == \"选项\"", score: n }`，不另设语法（两种形态择一后冻结并写入文档）。表达式复用受限表达式轨，读取跨步全量答案（含隐藏步）。

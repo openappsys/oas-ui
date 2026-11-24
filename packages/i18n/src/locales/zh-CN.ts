@@ -614,6 +614,7 @@ export const zhCN = {
   'coupon.groupUnavailable': '不可用优惠券',
   'coupon.notUse': '不使用优惠券',
   'coupon.selectedCount': '已选 {count} 张',
+  'coupon.selectedCountLimit': '已选 {count}/{limit} 张',
   'goodsAction.label': '商品操作',
   'goodsAction.favorite': '收藏',
   'goodsAction.shop': '店铺',
@@ -773,4 +774,7 @@ export const zhCN = {
   'drag.label': '可拖动浮块',
   'drag.hint': '方向键微调位置，按住 Shift 加速',
   'drag.position': '位置 {x}, {y}',
+  // barrage（弹幕）
+  'barrage.like': '点赞',
+  'barrage.unlike': '取消点赞',
 } as const

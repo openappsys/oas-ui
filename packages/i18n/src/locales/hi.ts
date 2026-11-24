@@ -612,6 +612,7 @@ export const hi: LocaleMessages = {
   'coupon.groupUnavailable': 'अनुपलब्ध कूपन',
   'coupon.notUse': 'कूपन न इस्तेमाल करें',
   'coupon.selectedCount': '{count} चयनित',
+  'coupon.selectedCountLimit': '{limit} में से {count} चयनित',
   'goodsAction.label': 'उत्पाद क्रियाएँ',
   'goodsAction.favorite': 'पसंदीदा',
   'goodsAction.shop': 'स्टोर',
@@ -771,4 +772,7 @@ export const hi: LocaleMessages = {
   'drag.label': 'खींचने योग्य ओवरले',
   'drag.hint': 'तीर कुंजियाँ स्थिति सँभालती हैं, Shift दबाकर तेज़ चलें',
   'drag.position': 'स्थिति {x}, {y}',
+  // barrage（弹幕）
+  'barrage.like': 'पसंद करें',
+  'barrage.unlike': 'पसंद हटाएँ',
 }

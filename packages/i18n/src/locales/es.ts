@@ -609,6 +609,7 @@ export const es: LocaleMessages = {
   'coupon.groupUnavailable': 'Cupones no disponibles',
   'coupon.notUse': 'No usar cupón',
   'coupon.selectedCount': '{count} seleccionados',
+  'coupon.selectedCountLimit': '{count} de {limit} seleccionados',
   'goodsAction.label': 'Acciones del producto',
   'goodsAction.favorite': 'Favoritos',
   'goodsAction.shop': 'Tienda',
@@ -768,4 +769,7 @@ export const es: LocaleMessages = {
   'drag.label': 'Superposición arrastrable',
   'drag.hint': 'Las flechas ajustan la posición, mantén Shift para ir más rápido',
   'drag.position': 'Posición {x}, {y}',
+  // barrage（弹幕）
+  'barrage.like': 'Me gusta',
+  'barrage.unlike': 'Ya no me gusta',
 }

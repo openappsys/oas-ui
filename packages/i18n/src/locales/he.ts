@@ -612,6 +612,7 @@ export const he: LocaleMessages = {
   'coupon.groupUnavailable': 'קופונים לא זמינים',
   'coupon.notUse': 'ללא קופון',
   'coupon.selectedCount': 'נבחרו {count}',
+  'coupon.selectedCountLimit': 'נבחרו {count} מתוך {limit}',
   'goodsAction.label': 'פעולות מוצר',
   'goodsAction.favorite': 'מועדפים',
   'goodsAction.shop': 'חנות',
@@ -771,4 +772,7 @@ export const he: LocaleMessages = {
   'drag.label': 'שכבה הניתנת לגרירה',
   'drag.hint': 'מקשי החצים מזיזים את המיקום, Shift מזרז את התנועה',
   'drag.position': 'מיקום {x}, {y}',
+  // barrage（弹幕）
+  'barrage.like': 'לייק',
+  'barrage.unlike': 'ביטול לייק',
 }

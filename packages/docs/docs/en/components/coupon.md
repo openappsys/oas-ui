@@ -95,6 +95,33 @@ The sheet list renders two groups — available / unavailable (titles via i18n; 
   </p>
 </DemoBlock>
 
+## Stacking rules (max-select / exclusive groups)
+
+Multiple selection can layer two combination rules, both with explicit feedback beyond `oas-select`:
+
+- `max-select`: upper bound on selected coupons (positive integer; `0` / invalid = unlimited with one warning). Once the limit is reached, further picks **do not take effect** — the checkbox reverts, the selection stays unchanged, and `oas-select-invalid` fires (`detail: { reason: 'max-select', limit, code, codes, coupons }`). The trigger shows `n of m selected`.
+- **Exclusive groups**: list entries may declare `exclusiveGroup`; coupons in the same group are mutually exclusive — picking one automatically deselects the other selected coupons of that group (auto-resolved combinations are not blocked; the dropped codes come back in `oas-select`'s `removed` field). Different groups and group-less coupons coexist.
+- When both rules apply, the limit is judged on the **net count after the swap**: a same-group swap drops the peer first, so it never needs an extra slot (picking a peer while already at 2 of 2 is not rejected).
+- Single-select mode is inherently exclusive and ignores `max-select` / `exclusiveGroup`.
+
+<DemoBlock title="max-select=2 + exclusive group (store keeps only one)">
+  <oas-coupon
+    id="cp-combo-en"
+    multiple
+    max-select="2"
+    list='[{"code":"s1","amount":30,"exclusiveGroup":"store"},{"code":"s2","amount":20,"exclusiveGroup":"store"},{"code":"p1","amount":10,"exclusiveGroup":"platform"},{"code":"f1","amount":5}]'
+  ></oas-coupon>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="cp-combo-open-en" size="small">Open sheet</oas-button>
+  </div>
+  <p
+    id="cp-combo-out-en"
+    style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"
+  >
+    Try picking three coupons: the limit dispatches oas-select-invalid, and same-group swaps report removed codes.
+  </p>
+</DemoBlock>
+
 ## Imperative open/close and selection reset
 
 `open` is a controlled attribute (host attribute / property writes are silent); `openOverlay()` / `closeOverlay()` are the imperative calls (they dispatch `oas-open-change`), and `clearSelection()` clears the picked coupon silently for hosts that need to reset the selection. `z-index` adds a numeric level on top of `--oas-z-index-base` (the default keeps the `--oas-z-modal` step, same shape as modal / drawer); the demo below uses 1300.
@@ -173,6 +200,20 @@ onMounted(() => {
     const multiOut = document.getElementById('cp-multi-out-en')
     multi?.addEventListener('oas-select', (e) => {
       multiOut.textContent = 'oas-select array: [' + e.detail.codes.join(', ') + ']'
+    })
+    // Stacking rules: visible feedback for limit rejections and exclusive swaps
+    const combo = document.getElementById('cp-combo-en')
+    const comboOut = document.getElementById('cp-combo-out-en')
+    document.getElementById('cp-combo-open-en')?.addEventListener('click', () => {
+      combo?.openOverlay()
+    })
+    combo?.addEventListener('oas-select', (e) => {
+      const removed = e.detail.removed ?? []
+      comboOut.textContent =
+        'oas-select: [' + e.detail.codes.join(', ') + ']' + (removed.length ? '; deselected ' + removed.join(', ') : '')
+    })
+    combo?.addEventListener('oas-select-invalid', (e) => {
+      comboOut.textContent = 'oas-select-invalid: over max-select=' + e.detail.limit + ', coupon ' + e.detail.code + ' rejected'
     })
     const api = document.getElementById('cp-api-en')
     document.getElementById('cp-open-en')?.addEventListener('click', () => {

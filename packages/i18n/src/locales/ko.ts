@@ -609,6 +609,7 @@ export const ko: LocaleMessages = {
   'coupon.groupUnavailable': '사용 불가 쿠폰',
   'coupon.notUse': '쿠폰 사용 안 함',
   'coupon.selectedCount': '{count}개 선택됨',
+  'coupon.selectedCountLimit': '{count}/{limit}장 선택됨',
   'goodsAction.label': '상품 작업',
   'goodsAction.favorite': '찜',
   'goodsAction.shop': '스토어',
@@ -768,4 +769,7 @@ export const ko: LocaleMessages = {
   'drag.label': '드래그 가능한 오버레이',
   'drag.hint': '방향키로 위치를 미세 조정하고 Shift로 빠르게 이동',
   'drag.position': '위치 {x}, {y}',
+  // barrage（弹幕）
+  'barrage.like': '좋아요',
+  'barrage.unlike': '좋아요 취소',
 }

@@ -517,6 +517,7 @@ export const th: LocaleMessages = {
   'coupon.groupUnavailable': 'คูปองที่ใช้ไม่ได้',
   'coupon.notUse': 'ไม่ใช้คูปอง',
   'coupon.selectedCount': 'เลือกแล้ว {count} ใบ',
+  'coupon.selectedCountLimit': 'เลือกแล้ว {count}/{limit}',
   'goodsAction.label': 'การดำเนินการสินค้า',
   'goodsAction.favorite': 'รายการโปรด',
   'goodsAction.shop': 'ร้านค้า',
@@ -676,4 +677,7 @@ export const th: LocaleMessages = {
   'drag.label': 'เลเยอร์ที่ลากได้',
   'drag.hint': 'ใช้ปุ่มลูกศรปรับตำแหน่ง กด Shift เพื่อเลื่อนเร็วขึ้น',
   'drag.position': 'ตำแหน่ง {x}, {y}',
+  // barrage（弹幕）
+  'barrage.like': 'ถูกใจ',
+  'barrage.unlike': 'เลิกถูกใจ',
 }

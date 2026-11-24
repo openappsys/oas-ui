@@ -613,6 +613,7 @@ export const fa: LocaleMessages = {
   'coupon.groupUnavailable': 'کوپن‌های ناموجود',
   'coupon.notUse': 'بدون کوپن',
   'coupon.selectedCount': '{count} انتخاب شد',
+  'coupon.selectedCountLimit': '{count} از {limit} انتخاب شد',
   'goodsAction.label': 'اقدامات محصول',
   'goodsAction.favorite': 'علاقه‌مندی‌ها',
   'goodsAction.shop': 'فروشگاه',
@@ -772,4 +773,7 @@ export const fa: LocaleMessages = {
   'drag.label': 'لایه قابل کشیدن',
   'drag.hint': 'کلیدهای جهت موقعیت را جابه‌جا می‌کنند، Shift سرعت را بیشتر می‌کند',
   'drag.position': 'موقعیت {x}, {y}',
+  // barrage（弹幕）
+  'barrage.like': 'پسندیدن',
+  'barrage.unlike': 'برداشتن پسند',
 }

@@ -65,6 +65,33 @@ description: 弹幕组件，多条弹幕在轨道上按速度漂过，同轨道�
   ></oas-barrage>
 </DemoBlock>
 
+## 点赞与屏蔽词
+
+- `likeable`：每条弹幕带心形点赞控件，点按切换点赞态并派发 `oas-like`（`detail: { text, key, color, liked, count }`）。点赞状态按 `key`（缺省按文本）**跨条目生命周期记忆**：弹幕离场后同 key 再入场仍是已赞，计数保留；`isLiked(key)` / `likeCount(key)` 供宿主回显。未开该属性时渲染与现状一致（零视觉漂移）。
+- 无障碍：缺省弹幕是装饰性内容（舞台 `aria-hidden`），点赞控件同样 `aria-hidden` 且不可聚焦（鼠标可点、读屏不可达）；开 `accessible` 后舞台进读屏，点赞控件变成键盘可达的 `role="button"`（`aria-pressed` + i18n 可访问名），且条目本身不再叠 button 语义（避免嵌套交互控件）。
+- `banned-words`：屏蔽词，逗号分隔（全角逗号亦可）或 JSON 数组字符串，**大小写不敏感**。命中的条目**不入队不渲染**（`add` / `addBatch` / `items` 三条入队通道同一判据）；已在场的条目不会回溯移除，入场后插入的屏蔽词对之后的条目生效。
+
+<DemoBlock title="likeable + banned-words（「广告」类弹幕被过滤）">
+  <oas-barrage
+    id="bg-like"
+    items='["这条可以点赞","组件库真好用","广告弹幕会被过滤","再来一条看看点赞保持"]'
+    likeable
+    accessible
+    banned-words="广告,刷屏"
+    tracks="2"
+    speed="100"
+    height="120"
+    style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"
+  ></oas-barrage>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="bg-like-send" size="small">发一条正常弹幕</oas-button>
+    <oas-button id="bg-like-banned" size="small">发一条广告弹幕</oas-button>
+  </div>
+  <span id="bg-like-out" style="display: block; margin-top: var(--oas-space-2); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    点弹幕里的心形点赞；「广告」弹幕不会出现。
+  </span>
+</DemoBlock>
+
 ## 书写方向（RTL）
 
 RTL 页面（祖先 `dir="rtl"`、`oas-config-provider direction="rtl"` 或阿拉伯语等 RTL 语言包）下弹幕自**左**进场、向右飞出——镜像关键帧由 `data-rtl` 自动切换，与阅读方向一致：
@@ -117,6 +144,20 @@ onMounted(() => {
       add(rtl, texts[i % texts.length])
     })
     document.querySelector('#bg-clear')?.addEventListener('click', () => demo?.clear())
+    // 点赞与屏蔽词：oas-like 反馈 + 两条发送入口（命中屏蔽词的那条不会出现）
+    const likeEl = document.querySelector('#bg-like')
+    const likeOut = document.querySelector('#bg-like-out')
+    likeEl?.addEventListener('oas-like', (event) => {
+      const { liked, count, text } = event.detail
+      likeOut.textContent = `${liked ? '已点赞' : '已取消点赞'}「${text}」，当前 ${count} 个赞`
+    })
+    document.querySelector('#bg-like-send')?.addEventListener('click', () => {
+      likeEl?.add('这条是正常弹幕', { key: 'normal-' + Date.now() })
+    })
+    document.querySelector('#bg-like-banned')?.addEventListener('click', () => {
+      likeEl?.add('这是一条广告弹幕')
+      likeOut.textContent = '已尝试发送含屏蔽词的弹幕（不会渲染）'
+    })
     document.querySelector('#bg-pause')?.addEventListener('click', (event) => {
       if (!demo) return
       const button = event.currentTarget

@@ -95,6 +95,33 @@ description: "优惠券组件：券面卡片（面额 / 使用门槛 / 有效期
   </p>
 </DemoBlock>
 
+## 多选叠加规则（max-select / 互斥组）
+
+多选模式下可叠加两条组合规则（都会在 `oas-select` 之外给出明确反馈）：
+
+- `max-select`：已选张数上限（正整数；`0` / 非法 = 不限并告警一次）。到达上限后再勾选**不生效**——勾选态回滚、已选集合不变，派发 `oas-select-invalid`（`detail: { reason: 'max-select', limit, code, codes, coupons }`）。触发按钮显示 `已选 n/m 张`。
+- **互斥组**：列表条目写 `exclusiveGroup`，同组券互斥——选中一张会自动取消同组其他已选券（自动解决的组合不阻塞，被取消的 code 随 `oas-select` 的 `removed` 字段回传）。不同组与无组券可并存。
+- 两条规则叠加时按**换选后的净张数**判定：同组换选先淘汰同组其他券，不额外占名额（已满 2 张时换选同组另一张不会触发拒绝）。
+- 单选模式天然互斥，忽略 `max-select` 与 `exclusiveGroup`。
+
+<DemoBlock title="max-select=2 + 互斥组（store 组只能留一张）">
+  <oas-coupon
+    id="cp-combo"
+    multiple
+    max-select="2"
+    list='[{"code":"s1","amount":30,"exclusiveGroup":"store"},{"code":"s2","amount":20,"exclusiveGroup":"store"},{"code":"p1","amount":10,"exclusiveGroup":"platform"},{"code":"f1","amount":5}]'
+  ></oas-coupon>
+  <div style="margin-top: var(--oas-space-2); display: flex; gap: var(--oas-space-2)">
+    <oas-button id="cp-combo-open" size="small">打开弹层</oas-button>
+  </div>
+  <p
+    id="cp-combo-out"
+    style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"
+  >
+    勾选观察：上限拒绝派发 oas-select-invalid，换选同组券时 removed 回传被取消的券。
+  </p>
+</DemoBlock>
+
 ## 命令式开合与清空选择
 
 `open` 是受控属性（宿主写 attribute / property 静默生效），`openOverlay()` / `closeOverlay()` 是命令式开合（派发 `oas-open-change`）；`clearSelection()` 清空已选券（静默，供宿主重置选择状态）。`z-index` 数值叠加在 `--oas-z-index-base` 之上（缺省沿用 `--oas-z-modal` 层叠阶梯，与 modal / drawer 同形态），下方 demo 给 1300。
@@ -188,6 +215,20 @@ onMounted(() => {
     })
     api?.addEventListener('oas-open-change', (e) => {
       out.textContent = 'oas-open-change：open=' + e.detail.open
+    })
+    // 多选叠加规则：上限拒绝 / 互斥替换的可见反馈
+    const combo = document.getElementById('cp-combo')
+    const comboOut = document.getElementById('cp-combo-out')
+    document.getElementById('cp-combo-open')?.addEventListener('click', () => {
+      combo?.openOverlay()
+    })
+    combo?.addEventListener('oas-select', (e) => {
+      const removed = e.detail.removed ?? []
+      comboOut.textContent =
+        'oas-select：已选 [' + e.detail.codes.join(', ') + ']' + (removed.length ? '；互斥取消 ' + removed.join(', ') : '')
+    })
+    combo?.addEventListener('oas-select-invalid', (e) => {
+      comboOut.textContent = 'oas-select-invalid：超过 max-select=' + e.detail.limit + '，券 ' + e.detail.code + ' 未被选中'
     })
   })
 })
