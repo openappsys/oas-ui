@@ -28,6 +28,12 @@
       "name": "readonly",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "compress",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -71,7 +77,7 @@
     },
     {
       "name": "oas-change",
-      "detail": "{ files: this.files, count: this.items.length }"
+      "detail": "{ files: this.files, count: this.items.length, compressed } | { files: this.files, count: this.items.length }"
     }
   ],
   "slots": [],

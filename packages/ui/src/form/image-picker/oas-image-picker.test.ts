@@ -226,3 +226,133 @@ describe('OASImagePicker', () => {
     }
   })
 })
+
+describe('OASImagePicker compress 自动压缩（v2.6.9 批 A）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  /** 等待异步压缩路径完成（microtask + 定时器排空） */
+  async function flush(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  }
+
+  function pngFile(name: string): File {
+    // 1×1 PNG 头（happy-dom 无真实解码器：走优雅降级路径）
+    return new File(
+      [
+        new Uint8Array([
+          0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00,
+          0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89,
+        ]),
+      ],
+      name,
+      { type: 'image/png' },
+    )
+  }
+
+  it('compress 缺省关：oas-change detail 无 compressed 键（现状逐字节等价）', async () => {
+    const el = mount()
+    const details: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-change', (e) => details.push({ ...(e as CustomEvent).detail }))
+    const file = pngFile('a.png')
+    choose(el, [file])
+    await flush()
+    expect(details.length).toBe(1)
+    expect(details[0]).toEqual({ files: [file], count: 1 })
+    expect(Object.keys(details[0]!).sort()).toEqual(['count', 'files'])
+  })
+
+  it('compress 开启 + canvas 不可用：优雅降级（原文件保留、meta null、compressed 对齐）', async () => {
+    const el = mount({ compress: '' })
+    const details: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-change', (e) => details.push({ ...(e as CustomEvent).detail }))
+    const file = pngFile('a.png')
+    choose(el, [file])
+    await flush()
+    expect(details.length).toBe(1)
+    expect((details[0]!.files as File[])[0]).toBe(file)
+    expect(details[0]!.compressed).toEqual([null])
+    expect(el.files.map((f) => f.name)).toEqual(['a.png'])
+  })
+
+  it('compress 开启：不可压缩类型（gif/txt）直接通过且 meta null，事件照常', async () => {
+    const el = mount({ compress: '' })
+    const gif = new File([new Uint8Array([0x47, 0x49, 0x46, 0x38])], 'a.gif', { type: 'image/gif' })
+    const txt = new File(['x'], 'b.txt', { type: 'text/plain' })
+    const details: Array<Record<string, unknown>> = []
+    el.addEventListener('oas-reject', () => {})
+    el.addEventListener('oas-change', (e) => details.push({ ...(e as CustomEvent).detail }))
+    choose(el, [gif])
+    choose(el, [txt])
+    await flush()
+    // txt 被 accept 过滤（reject），gif 通过且原样保留
+    expect(el.files.map((f) => f.name)).toEqual(['a.gif'])
+    expect(details[0]!.compressed).toEqual([null])
+    expect((details[0]!.files as File[])[0]).toBe(gif)
+  })
+
+  it('compress 非法 JSON：devWarn 一次且行为等同关闭（同步路径、detail 无 compressed）', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ compress: 'not-json' })
+      const details: Array<Record<string, unknown>> = []
+      el.addEventListener('oas-change', (e) => details.push({ ...(e as CustomEvent).detail }))
+      const file = pngFile('a.png')
+      choose(el, [file])
+      await flush()
+      expect(details.length).toBe(1)
+      expect(details[0]).toEqual({ files: [file], count: 1 })
+      expect(Object.keys(details[0]!).sort()).toEqual(['count', 'files'])
+      expect(warnSpy.mock.calls.some((args) => String(args[0]).includes('compress'))).toBe(true)
+      // 同原文只告警一次
+      choose(el, [pngFile('b.png')])
+      await flush()
+      const warnCount = warnSpy.mock.calls.filter((args) => String(args[0]).includes('compress')).length
+      expect(warnCount).toBe(1)
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  it('compress 合法 JSON 字段越界同样告警关闭（quality=1.5）', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ compress: '{"quality":1.5}' })
+      const details: Array<Record<string, unknown>> = []
+      el.addEventListener('oas-change', (e) => details.push({ ...(e as CustomEvent).detail }))
+      const file = pngFile('a.png')
+      choose(el, [file])
+      await flush()
+      expect(details[0]).toEqual({ files: [file], count: 1 })
+      expect(warnSpy.mock.calls.some((args) => String(args[0]).includes('compress'))).toBe(true)
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  it('compress 开启后删除/移动事件的 detail.compressed 与当前列表对齐', async () => {
+    const el = mount({ compress: '' })
+    const fileA = pngFile('a.png')
+    const fileB = pngFile('b.png')
+    choose(el, [fileA, fileB])
+    await flush()
+    let detail: Record<string, unknown> | null = null
+    el.addEventListener('oas-change', (e) => (detail = { ...(e as CustomEvent).detail }))
+    op(el, 0, 'remove').click()
+    expect(detail!.compressed).toEqual([null])
+    expect((detail!.files as File[])[0]).toBe(fileB)
+    expect(detail!.count).toBe(1)
+  })
+
+  it('collision-guard：原型不得有 compress 成员（撞 compress 属性的 property 写入）', () => {
+    const proto = OASImagePicker.prototype as unknown as Record<string, unknown>
+    expect(proto['compress']).toBeUndefined()
+  })
+})

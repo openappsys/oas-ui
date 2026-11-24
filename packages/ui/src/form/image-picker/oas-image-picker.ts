@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { devWarn } from '../../shared/dev-warn.js'
+import { compressImageFile, parseCompressAttr, type CompressMeta, type CompressOptions } from './image-process.js'
 
 /**
  * oas-image-picker —— 多图选择（form 族）。
@@ -13,6 +14,14 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `capture`：在场时透传原生 `capture`（移动端直接拉起相机）
  * - `disabled`：禁用（不可选、不可排序/删除）
  * - `readonly`：只读预览（隐藏添加入口，操作按钮禁用但可见）
+ * - `compress`：选图自动压缩 + EXIF 方向修正（v2.6.9，缺省关 = 现状逐字节等价）——
+ *   空串 = 开启缺省档（quality 0.8 / max-dimension 4096）；JSON `{"quality":0.8,"max-dimension":1920}`
+ *   覆盖档位；非法 JSON / 字段越界 devWarn 一次并按关闭处理。开启后用户选入的 JPEG/PNG/WebP
+ *   会被 canvas 重绘（EXIF Orientation 1-8 修正方向、超 `max-dimension` 等比缩）并重编码为
+ *   **同类型 File**（PNG 保留透明；GIF/SVG 等不动）；解码失败 / canvas 不可用优雅降级保留原文件。
+ *   压缩只作用于**用户新选入**的文件（受控 `files` property 写入不压缩——宿主给的即最终值）。
+ *   开启期间 `oas-change` detail 增加 `compressed` 数组（与 `files` 对齐：每项为压缩元信息
+ *   `{ originalWidth, originalHeight, width, height, orientation, quality }` 或 null=未处理）。
  *
  * Property（仅 JS，不反射 attribute）：
  * - `files`：当前图片列表（`File[]`，受控；赋值即刷新且**不派发**事件）
@@ -20,7 +29,7 @@ import { devWarn } from '../../shared/dev-warn.js'
  * 插槽：无（缩略图由文件生成，不接受 light DOM 内容）
  *
  * 事件（bubbles + composed）：
- * - `oas-change`：用户新增 / 删除 / 排序后派发，`detail: { files, count }`
+ * - `oas-change`：用户新增 / 删除 / 排序后派发，`detail: { files, count }`（compress 开启时附 `compressed`）
  * - `oas-exceed-limit`：选择总数超过上限，`detail: { count, max }`（超出部分被丢弃；
  *   在 `oas-change` 之后派发——宿主先拿到新列表，再收到丢弃提示）
  * - `oas-reject`：被 `accept` 过滤掉的文件，`detail: { files }`
@@ -208,7 +217,7 @@ const STYLE = `
 
 export class OASImagePicker extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['max', 'accept', 'capture', 'disabled', 'readonly']
+    return ['max', 'accept', 'capture', 'disabled', 'readonly', 'compress']
   }
 
   private pickerEl: HTMLElement | null = null
@@ -222,6 +231,8 @@ export class OASImagePicker extends OASElement {
   private items: File[] = []
   /** 文件 → 缩略图 objectURL（文件移出列表时回收） */
   private urls = new Map<File, string>()
+  /** 文件 → 压缩元信息（compress 开启时随 oas-change 对齐输出；WeakMap 随文件回收） */
+  private compressMeta = new WeakMap<File, CompressMeta>()
   /** 上次渲染指纹：文件列表 / 上限 / 禁用态不变则不重建缩略图（避免闪烁与焦点丢失） */
   private lastSig = ''
 
@@ -504,8 +515,8 @@ export class OASImagePicker extends OASElement {
     this.addFiles(incoming)
   }
 
-  /** 追加文件：accept 过滤 → 上限截断 → 派发事件 */
-  private addFiles(incoming: File[]): void {
+  /** 追加文件：accept 过滤 → 压缩（compress 开启时）→ 上限截断 → 派发事件 */
+  private async addFiles(incoming: File[]): Promise<void> {
     if (incoming.length === 0) return
     const accepted = incoming.filter((file) => this.matchesAccept(file))
     const rejected = incoming.filter((file) => !accepted.includes(file))
@@ -517,7 +528,17 @@ export class OASImagePicker extends OASElement {
     const taken = accepted.slice(0, room)
     const totalRequested = this.items.length + accepted.length
     if (taken.length > 0) {
-      this.replaceItems([...this.items, ...taken])
+      // compress 开启：压缩 + EXIF 修正（异步；失败/不支持类型保留原文件——元信息位记 null）
+      const options = this.compressOptions()
+      let added = taken
+      if (options) {
+        const results = await Promise.all(taken.map((file) => compressImageFile(file, options)))
+        added = results.map((result, index) => result?.file ?? taken[index]!)
+        results.forEach((result, index) => {
+          if (result) this.compressMeta.set(result.file, result.meta)
+        })
+      }
+      this.replaceItems([...this.items, ...added])
       this.update()
       this.emitChange()
     }
@@ -525,6 +546,28 @@ export class OASImagePicker extends OASElement {
     if (accepted.length > room) {
       this.emit('exceed-limit', { count: totalRequested, max })
     }
+  }
+
+  /**
+   * compress 档位：属性缺省 = null（关闭，现状等价）；空串 = 缺省档；
+   * JSON = 覆盖档位；非法 = null + 单次告警（成员名带 resolve 前缀，避开 compress 撞名）。
+   */
+  private compressOptions(): CompressOptions | null {
+    if (!this.hasAttr('compress')) return null
+    const raw = this.getAttr('compress', '')
+    const parsed = parseCompressAttr(raw)
+    if (!parsed) {
+      warnOnce(
+        `[oas-image-picker] 非法 compress "${raw || '（空）'}"，已按关闭处理；示例：compress="" 或 compress='{"quality":0.8,"max-dimension":1920}'`,
+      )
+      return null
+    }
+    return parsed
+  }
+
+  /** compress 是否实际生效（属性在场且 JSON 合法；非法 = 关闭，detail 不带 compressed） */
+  private compressActive(): boolean {
+    return this.hasAttr('compress') && parseCompressAttr(this.getAttr('compress', '')) !== null
   }
 
   /** accept 匹配：支持 `image/*` / MIME / 扩展名列表 */
@@ -546,6 +589,13 @@ export class OASImagePicker extends OASElement {
   }
 
   private emitChange(): void {
+    // compress 实际生效时 detail 附 compressed（与 files 对齐；未处理/降级位为 null）；
+    // 关闭（含非法 JSON 按关闭处理）时 detail 与现状逐字节等价
+    if (this.compressActive()) {
+      const compressed = this.items.map((file) => this.compressMeta.get(file) ?? null)
+      this.emit('change', { files: this.files, count: this.items.length, compressed })
+      return
+    }
     this.emit('change', { files: this.files, count: this.items.length })
   }
 

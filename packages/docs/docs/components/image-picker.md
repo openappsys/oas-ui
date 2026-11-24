@@ -46,6 +46,23 @@ description: 多图选择：点击或拖拽选图、缩略图网格预览、前�
   <p id="ip-accept-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">试着选一张 PNG：会被拒绝并提示</p>
 </DemoBlock>
 
+## 自动压缩与 EXIF 方向（compress）
+
+选图自动压缩（缺省关，开启后仅作用于**用户新选入**的文件；受控 `files` 写入不压缩——宿主给的即最终值）：
+
+- `compress=""`：开启缺省档（quality 0.8 / max-dimension 4096）
+- `compress='{"quality":0.8,"max-dimension":1920}'`：JSON 覆盖档位（quality 0–1、最长边像素上限，超出等比缩）
+- JPEG / WebP 按档位重编码；PNG 保留透明走 png 重编码（无缩放且无方向修正时保留原文件不重编）；GIF / SVG 等不动
+- EXIF Orientation 1-8 全支持：canvas 重绘把带方向的照片转正（手机竖拍照片不再躺倒）
+- 解码失败 / canvas 不可用：优雅降级保留原文件（元信息位记 null）
+- 开启期间 `oas-change` detail 增加 `compressed` 数组（与 `files` 对齐）：每项为 `{ originalWidth, originalHeight, width, height, orientation, quality }`（原尺寸 → 压缩后尺寸）或 `null`（未处理）
+- 非法配置 devWarn 一次并按关闭处理（detail 恢复现状，不带 compressed）
+
+<DemoBlock title="compress 自动压缩（选图后看压缩元信息）">
+  <oas-image-picker id="ip-compress" compress='{"quality":0.8,"max-dimension":1920}' max="4"></oas-image-picker>
+  <p id="ip-compress-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0">选一张图后这里显示压缩元信息</p>
+</DemoBlock>
+
 ## 与上传链路配合
 
 `files` 是 JS property（不反射 attribute），宿主赋值静默生效、不派发事件：表单回显时直接赋值即可。
@@ -96,6 +113,20 @@ onMounted(() => {
   const acceptOut = document.getElementById('ip-accept-out')
   acceptOnly?.addEventListener('oas-change', (e) => log(acceptOut, `已选 ${e.detail.count} 张 .jpg / .jpeg`))
   acceptOnly?.addEventListener('oas-reject', (e) => log(acceptOut, `已忽略 ${e.detail.files.length} 个非 .jpg / .jpeg 文件`))
+
+  // 自动压缩：oas-change detail.compressed 与 files 对齐（原尺寸 → 压缩后尺寸 / EXIF 修正）
+  const compress = document.getElementById('ip-compress')
+  const compressOut = document.getElementById('ip-compress-out')
+  compress?.addEventListener('oas-change', (e) => {
+    const metas = e.detail.compressed ?? []
+    const parts = e.detail.files.map((f, i) => {
+      const m = metas[i]
+      if (!m) return `${f.name}（未处理）`
+      const fixed = m.orientation > 1 ? `，EXIF ${m.orientation} 转正` : ''
+      return `${f.name}（${m.originalWidth}×${m.originalHeight} → ${m.width}×${m.height}${fixed}）`
+    })
+    log(compressOut, parts.join('；') || '尚未选择图片')
+  })
 })
 </script>
 
@@ -109,6 +140,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accept` | 文件类型过滤（原生 `accept` 语法，默认 `image/*`） | `string` | `image/*` |
 | `capture` | 透传原生 `capture`：移动端直接拉起相机 | `boolean` | — |
+| `compress` | 选图自动压缩 + EXIF 方向修正（缺省关 = 现状逐字节等价）：空串 = 缺省档（quality 0.8 / max-dimension 4096）；JSON `{"quality":0.8,"max-dimension":1920}` 覆盖档位；非法 devWarn 一次按关闭处理。仅作用于用户新选入文件（受控 files 写入不压缩）；开启时 oas-change detail 附 compressed 元信息数组 | `string` | — |
 | `disabled` | 禁用：添加、排序、删除全部不可用 | `boolean` | — |
 | `max` | 数量上限（默认 9）；非法/非正数回落默认并告警 | `string` | — |
 | `readonly` | 只读预览：隐藏添加入口，操作按钮禁用 | `boolean` | — |
