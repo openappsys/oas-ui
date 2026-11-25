@@ -101,7 +101,7 @@
     {
       "name": "clear",
       "signature": "clear(): void",
-      "description": "清空在场与排队弹幕，轨道重新可用"
+      "description": "清空在场与排队弹幕，轨道重新可用。"
     }
   ],
   "events": [

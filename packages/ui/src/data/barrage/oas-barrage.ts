@@ -441,7 +441,14 @@ export class OASBarrage extends OASElement {
     this.removeAttribute('paused')
   }
 
-  /** 清空在场与排队弹幕，轨道重新可用 */
+  /**
+   * 清空在场与排队弹幕，轨道重新可用。
+   *
+   * auto-play 续播：开启 `auto-play` 且声明条目非空时，清空即从声明条目重新轮转
+   * （文档口径「`clear()` 只清在场与排队，声明数据仍在」——修复前清空后不再调度 pump，
+   * 舞台空到下一次外部触发，与该口径矛盾）。暂停中不续播（`refillDeclared` 内有
+   * `pausedInternal` 守卫，resume() 会经 `pump()` 自然恢复）。
+   */
   clear(): void {
     this.queue.length = 0
     for (const item of this.active) {
@@ -452,6 +459,7 @@ export class OASBarrage extends OASElement {
     this.trackNextAt.fill(0)
     if (this.pumpTimer) clearTimeout(this.pumpTimer)
     this.pumpTimer = null
+    if (this.hasAttribute('auto-play') && this.declaredItems.length > 0) this.refillDeclared()
   }
 
   // ---- 轨道与排期 ----

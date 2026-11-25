@@ -112,3 +112,61 @@ describe('barrage items 声明式数据 + auto-play', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+// 本批回归：clear() 后 auto-play 续播（清空即从声明条目重新轮转，与文档口径一致）
+// ---------------------------------------------------------------------------
+
+describe('barrage clear × auto-play', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it('clear() 后 auto-play 从声明条目重新轮转（修复前舞台空到下一次外部触发）', () => {
+    const el = mount({ items: '["循环甲","循环乙"]', speed: '100000', 'max-active': '1', 'auto-play': '' })
+    expect(items(el)).toHaveLength(1)
+    el.clear()
+    // 清空后不依赖任何外部触发：refill 立即接管排期（同帧回填首条 = 主动续轮语义），
+    // 此后推进时间两条声明内容交替循环出现，舞台不再空转
+    const seen = new Set<string>()
+    const record = (): void => {
+      for (const node of items(el)) seen.add(node.textContent ?? '')
+    }
+    for (let round = 0; round < 6; round++) {
+      vi.advanceTimersByTime(300)
+      record()
+    }
+    expect(seen.has('循环甲'), 'clear 后声明条目重新进场').toBe(true)
+    expect(seen.has('循环乙'), '轮转覆盖全部声明条目').toBe(true)
+  })
+
+  it('clear() 后无 auto-play 仍保持清空（不越界续播）', () => {
+    const el = mount({ items: '["一次性"]', speed: '100000' })
+    expect(items(el)).toHaveLength(1)
+    el.clear()
+    vi.advanceTimersByTime(2000)
+    expect(items(el)).toHaveLength(0)
+  })
+
+  it('clear() 后 paused 状态下不续播（暂停语义优先）', () => {
+    const el = mount({ items: '["暂停弹"]', speed: '100000', 'auto-play': '', paused: '' })
+    expect(items(el)).toHaveLength(0)
+    el.removeAttribute('paused')
+    expect(items(el)).toHaveLength(1)
+    el.pause()
+    el.clear()
+    vi.advanceTimersByTime(2000)
+    expect(items(el), '暂停中 clear 不自动续播').toHaveLength(0)
+    el.resume()
+    expect(
+      items(el).map((n) => n.textContent),
+      'resume 后恢复轮转',
+    ).toContain('暂停弹')
+  })
+})
