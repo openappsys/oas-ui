@@ -170,6 +170,14 @@
 - **oas-logistics（物流时间线）** 📋：节点时间线（`steps` JSON 双通道：状态 / 时间 / 描述）+ 折叠（展开全部 / 收起只看最新）+ 复制单号 / 复制地址动作插槽。
 - **oas-member-card（会员卡）** 📋：等级 / 权益卡（等级标识 / 权益插槽 / 有效期）+ 操作区按钮插槽；底色分实底 / 渐变两档 token 化。
 
+### commerce 增强子批（已有组件交互打磨与行为收口，2026-11-25 用户定方向）
+
+- **oas-cart** 📋：pointercancel 单独结算（中断手势回弹关闭，不读 cancel 坐标——防 Safari 类浏览器给 0 坐标误判成满展开）；多点触控守卫（起手先结束旧滑动会话）；滑动展开行「点行体收起」。
+- **oas-image-cropper** 📋：rotate 任意角度的覆盖约束（fitScale 改旋转包围盒数学，保留自由角度，消除 45° 一类中间角度的框角露底色）；缩放到达上下限后放行页面滚动（不再吞滚轮）。
+- **oas-sku** 📋：形态切换焦点保持（记录深活跃元素，面板搬移后复原）；popup→embedded 切换时 `open` 悬空真值收口（同步回写并派 `oas-open-change`）。
+- **oas-drag** 📋：`oas-drag-end` detail 增 `phase: 'release' | 'coast-end'`（双派发语义显式化，宿主可按需去重）；滑行上限改真实时长口径（60 / 120Hz 屏体感一致）；滑行被新指针抢占时最终位置落盘。
+- **oas-barrage** 📋：`clear()` 后 auto-play 续播（清空即从声明条目重新轮转，与文档口径一致）。
+
 ### 场景配方层（guide + demo，不做新组件）
 
 秒杀场景（countdown+progress+submit-bar 组合）/ 领券中心（coupon+popup 组合）/ 库存紧张提示（price+tag）/ 商品详情页骨架（sku+goods-action+submit-bar 组装指南）。
