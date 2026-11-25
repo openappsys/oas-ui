@@ -34,6 +34,7 @@ import {
   textBgs,
   type SemanticTokens,
 } from '../../theme/oklab'
+import { chevronDownPath } from '../../icons/src/icons/chevron-down'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -97,28 +98,37 @@ describe('样式约定：不得使用 :host(...) 后链 :not(...)（Chromium 下
 /** 规范 chevron V 形（与 @oas-ui/icons 的 chevron-down 一致） */
 const CANONICAL_CHEVRON = 'M4 6 L8 10 L12 6'
 
-/** 找出 class="chevron" 但 path 非规范 V 形的内联图标（返回违规的 d 值） */
+/** 找出 class="chevron" 但 path 非规范 V 形的内联图标（返回违规的 d 值）。
+ * 必须锚定 `<path` 元素再取 d——否则 svg 改为消费 icons 包 path（无内联 d=）时，
+ * 惰性匹配会跨过元素边界把后续节点的 id="…" 误抓成 d 值（select 迁移时的实测教训）。 */
 function findNonCanonicalChevrons(text: string): string[] {
   const bad: string[] = []
-  for (const m of text.matchAll(/class="chevron"[\s\S]{0,200}?d="([^"]+)"/g)) {
+  for (const m of text.matchAll(/class="chevron"[\s\S]{0,200}?<path[^>]*?d="([^"]+)"/g)) {
     if (m[1] !== CANONICAL_CHEVRON) bad.push(m[1]!)
   }
   return bad
 }
 
 describe('内联图标约定：class="chevron" 的 path 必须是规范 V 形', () => {
+  it('icons 包 chevronDownPath 几何即规范 V 形（几何唯一来源：select/invoice 消费它，漂移即红灯）', () => {
+    expect(chevronDownPath).toContain(`d="${CANONICAL_CHEVRON}"`)
+    // 渲染属性必须自带（invoice 的 select-wrap 场景依赖 stroke=currentColor 走主题色）
+    expect(chevronDownPath).toContain('stroke="currentColor"')
+  })
+
   it('全部组件源码的内联 chevron 路径一致（曾写坏为 M4 6 L8 10 L12 6 L4 12 → 图标乱纹）', () => {
     const offenders: string[] = []
     let checked = 0
     for (const file of walk(here)) {
       const raw = readFileSync(file, 'utf8')
-      checked += [...raw.matchAll(/class="chevron"[\s\S]{0,200}?d="([^"]+)"/g)].length
+      checked += [...raw.matchAll(/class="chevron"[\s\S]{0,200}?<path[^>]*?d="([^"]+)"/g)].length
       for (const d of findNonCanonicalChevrons(raw)) {
         offenders.push(`${file.slice(here.length + 1)}: d="${d}"（应为 "${CANONICAL_CHEVRON}"）`)
       }
     }
-    // 扫描到的内联 chevron 数量（新增内联 chevron 时同步更新；用于防「正则失效扫不到任何文件」）
-    expect(checked, '内联 chevron 扫描命中数').toBe(6)
+    // 扫描到的内联 chevron 数量（新增内联 chevron 时同步更新；用于防「正则失效扫不到任何文件」）。
+    // select / invoice 已改消费 icons 包 chevronDownPath（几何唯一来源，见上方断言），不在此计数。
+    expect(checked, '内联 chevron 扫描命中数').toBe(5)
     expect(offenders, '内联 chevron 路径与规范 V 形不一致，图标会画歪').toEqual([])
   })
 

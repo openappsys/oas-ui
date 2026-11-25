@@ -327,17 +327,51 @@ test('select 自定义选项渲染：demo 里图标 + 文本进入选项行与�
 test('select 触发器 chevron：路径为规范 V 形（曾写坏成乱纹，v2.5.1–v2.5.4 带病发布）', async ({ page }) => {
   // 曾现 bug：内联 chevron 的 path 被写成 `M4 6 L8 10 L12 6 L4 12`（标准 V 形后多一段回折线），
   // 触发器的下拉箭头渲染成乱纹。visual.spec 只截图不做基线比对，故此缺陷躲过全部自动门禁。
+  // 复用基建配套批（2026-11-25）起 path 与 icons 包 chevronDownPath 同源（几何唯一来源）；
+  // 本断言锁定迁移后渲染产物：路径 / viewBox / 尺寸 / 主题色接线 / 首行对齐位置不漂移。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-select')
   const chevron = await page
     .locator('oas-select')
     .first()
     .evaluate((el) => {
-      const svg = el.shadowRoot!.querySelector('.chevron')
-      return { exists: !!svg, d: svg?.querySelector('path')?.getAttribute('d') ?? null }
+      const svg = el.shadowRoot!.querySelector<SVGElement>('.chevron')
+      const path = svg?.querySelector('path')
+      const trigger = el.shadowRoot!.querySelector<HTMLElement>('.trigger')
+      const box = svg!.getBoundingClientRect()
+      const tBox = trigger!.getBoundingClientRect()
+      return {
+        exists: !!svg,
+        d: path?.getAttribute('d') ?? null,
+        stroke: path?.getAttribute('stroke') ?? null,
+        strokeWidth: path?.getAttribute('stroke-width') ?? null,
+        viewBox: svg?.getAttribute('viewBox') ?? null,
+        widthAttr: svg?.getAttribute('width') ?? null,
+        heightAttr: svg?.getAttribute('height') ?? null,
+        hidden: svg?.hasAttribute('hidden') ?? true,
+        // 位置语义不变量（相对关系，非 OS 像素常数）：箭头在触发器内、首行对齐不漂浮、
+        // -3px 留白补偿后右缘不越过触发器右缘
+        insideTrigger:
+          box.left >= tBox.left && box.right <= tBox.right && box.top >= tBox.top && box.bottom <= tBox.bottom,
+        renderedW: box.width,
+        renderedH: box.height,
+        // 主题色接线：stroke=currentColor → 计算描边色与触发器文字色同源
+        strokeColor: path ? getComputedStyle(path).stroke : null,
+        triggerColor: trigger ? getComputedStyle(trigger).color : null,
+      }
     })
   expect(chevron.exists, '触发器应含 .chevron 图标').toBe(true)
-  expect(chevron.d, 'chevron 应为规范 V 形路径').toBe('M4 6 L8 10 L12 6')
+  expect(chevron.d, 'chevron 应为规范 V 形路径（icons chevronDownPath 同源）').toBe('M4 6 L8 10 L12 6')
+  expect(chevron.viewBox, 'viewBox 16 网格不变').toBe('0 0 16 16')
+  expect(chevron.widthAttr, '渲染尺寸属性 12px 不变').toBe('12')
+  expect(chevron.heightAttr, '渲染尺寸属性 12px 不变').toBe('12')
+  expect(chevron.stroke, '主题色接线：stroke=currentColor（跟随触发器文字色，暗色自动适配）').toBe('currentColor')
+  expect(chevron.strokeWidth, '笔画 1.5 不变').toBe('1.5')
+  expect(chevron.hidden, '默认箭头可见').toBe(false)
+  expect(chevron.insideTrigger, '箭头渲染在触发器内且不越界').toBe(true)
+  expect(chevron.renderedW, '渲染宽 12px').toBeCloseTo(12, 1)
+  expect(chevron.renderedH, '渲染高 12px').toBeCloseTo(12, 1)
+  expect(chevron.strokeColor, '计算描边色与触发器文字色同源（currentColor 生效）').toBe(chevron.triggerColor)
 })
 
 // 移动端专项：bottom-sheet 底部抽屉承载（data-mobile-sheet 标记 + sheet open + dropdown 静态化 + oas-close 同步收起）

@@ -1,6 +1,9 @@
 import { OASElement } from '@oas-ui/core/oas-element'
 import { parseJsonArray } from '../../shared/json-array.js'
 import { devWarn } from '../../shared/dev-warn.js'
+// 下拉箭头 path 与 icons 包同源（几何唯一来源：消除与 chevron-down 的漂移失同步——
+// 复用基建配套批 2026-11-25；chevronDownPath 自带 stroke=currentColor 渲染属性）
+import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
 
 export type InvoiceType = 'personal' | 'company'
 
@@ -375,9 +378,7 @@ export class OASInvoice extends OASElement {
           <label class="label" for="${this.uid}-content"></label>
           <span class="select-wrap">
             <select class="select" id="${this.uid}-content" name="content" part="content"></select>
-            <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-              <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+            <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">${chevronDownPath}</svg>
           </span>
         </div>
         <div class="saved" part="saved">

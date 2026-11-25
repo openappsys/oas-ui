@@ -12,6 +12,9 @@ import { measureMaxTextWidth } from '../../shared/measure-text.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 import { lookupIcon } from '@oas-ui/icons/runtime'
+// 下拉箭头 path 与 icons 包同源（几何唯一来源：消除与 chevron-down 的漂移失同步——
+// 复用基建配套批 2026-11-25；.chevron 的 -3px 留白补偿按该几何推导，两侧同步才成立）
+import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
 import { hintUnresolvedIcon } from '../../shared/icon-hint.js'
 import { cloneSlotContent } from '../../shared/slot-template.js'
 import { OASFormElement } from '@oas-ui/core/form-element'
@@ -857,9 +860,7 @@ export class OASSelect extends OASFormElement {
           </span>
           <span class="suffix" part="suffix" hidden></span>
           <span class="suffix-icon" part="suffix-icon" hidden></span>
-          <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">${chevronDownPath}</svg>
         </button>
         <div class="hint" part="hint" id="oas-select-hint" hidden></div>
         <oas-bottom-sheet part="sheet" passive>
