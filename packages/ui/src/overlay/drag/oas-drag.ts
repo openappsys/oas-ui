@@ -11,7 +11,8 @@ import { stableHash36 } from '../../shared/stable-id.js'
  * 属性（kebab-case）：
  * - `boundary`：拖拽边界——缺省 `viewport`（视口）或 CSS 选择器（该元素的矩形；非法选择器告警一次并回落视口）
  * - `axis`：`both`（缺省）/ `x` / `y`，限制拖拽方向
- * - `inertia`：松手滑行衰减（摩擦 0.95/帧，最多 60 帧，触边即停；`prefers-reduced-motion: reduce` 时降级为瞬停）
+ * - `inertia`：松手滑行衰减（摩擦 0.95/16ms，真实时长上限 800ms——60 / 120Hz 屏体感一致，
+ *   速度衰减到阈值同样截停，触边即停；`prefers-reduced-motion: reduce` 时降级为瞬停）
  * - `remember`：把位置写入 `localStorage`（SSR / 隐私模式不可用时静默降级，不记不读）
  * - `storage-key`：位置记忆的键（缺省 `oas-drag`）
  * - `keyboard`：键盘微调（缺省开启，写 `keyboard="false"` 关闭）；宿主可聚焦，方向键 1px、Shift+方向键 10px
@@ -26,7 +27,9 @@ import { stableHash36 } from '../../shared/stable-id.js'
  * 事件（bubbles + composed）：
  * - `oas-drag-start`：指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }`
  * - `oas-drag`：位置变化（指针拖拽 / 键盘微调 / 惯性滑行），`detail: { x, y, source }`
- * - `oas-drag-end`：指针拖拽结束（含惯性滑行收尾），`detail: { x, y, source }`
+ * - `oas-drag-end`：拖拽收尾，`detail: { x, y, source, phase }`。**双派发语义**：指针松手
+ *   （含 pointercancel）派发 `phase: 'release'`；开启 `inertia` 时滑行收尾再派发一次
+ *   `phase: 'coast-end'`（终值）。宿主按 `phase` 区分两次派发，不必按时间窗去重
  *
  * 方法：
  * - `reset()`：回到初始位置并清除记忆
@@ -64,6 +67,16 @@ interface PointerDragState {
 
 type DragSource = 'pointer' | 'keyboard'
 
+/** oas-drag-end 的派发阶段：release = 指针释放（含取消），coast-end = 惯性滑行收尾 */
+export type DragEndPhase = 'release' | 'coast-end'
+
+export interface DragEndDetail {
+  x: number
+  y: number
+  source: DragSource
+  phase: DragEndPhase
+}
+
 /** 拖拽判定阈值（px）：小于此位移视为点击，避免吞掉子元素点击 */
 const DRAG_THRESHOLD = 4
 /** 键盘单步位移（px）与 Shift 加速倍数 */
@@ -77,8 +90,13 @@ const MIN_VELOCITY = 0.02
  * 速度按 0 处理——否则「快速拖一下 → 按住不动 → 松手」会带着停顿前的速度滑出去。
  */
 const STALE_VELOCITY_MS = 100
-/** 惯性滑行帧数上限（约 1 秒）：长距离甩动不无限滑行，超出即收尾 */
-const MAX_COAST_FRAMES = 60
+/**
+ * 惯性滑行的真实时长上限（ms）：60 / 120Hz 屏体感一致——帧数口径在高刷屏只有一半时长
+ * 且末段急刹。速度衰减到 MIN_VELOCITY 同样截停；帧数上限只作时间戳异常的兜底。
+ */
+const MAX_COAST_MS = 800
+/** 滑行帧数兜底上限（仅防 rAF 时间戳不推进导致死循环；正常由时长 / 速度条件截停） */
+const MAX_COAST_FRAMES = 1000
 const VALID_AXES: readonly string[] = ['both', 'x', 'y']
 /** `snap="grid"` 字面量的默认网格尺寸（px） */
 const DEFAULT_SNAP_GRID = 8
@@ -695,7 +713,12 @@ export class OASDrag extends OASElement {
     if (!willCoast && this.applySnap()) {
       this.emit('drag', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
     }
-    this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
+    this.emit('drag-end', {
+      x: this.offsetX,
+      y: this.offsetY,
+      source: 'pointer',
+      phase: 'release',
+    } satisfies DragEndDetail)
     this.savePosition()
     if (willCoast) this.startCoast(velocityX, velocityY)
   }
@@ -723,7 +746,12 @@ export class OASDrag extends OASElement {
     const drag = this.endPointerDrag(event)
     if (!drag) return
     this.hideSnapHint()
-    this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
+    this.emit('drag-end', {
+      x: this.offsetX,
+      y: this.offsetY,
+      source: 'pointer',
+      phase: 'release',
+    } satisfies DragEndDetail)
   }
 
   /** 收尾一次指针拖拽（up / cancel 共用）：释放捕获、撤拖拽标记，返回本次会话（未越过阈值返回 null） */
@@ -787,8 +815,9 @@ export class OASDrag extends OASElement {
   // ---------- 惯性 ----------
 
   /**
-   * 惯性滑行：按最后采样速度逐帧衰减（摩擦 0.95/帧，最多 60 帧），边界钳制照常——
-   * 触边即截停。`prefers-reduced-motion: reduce` 下整段降级为瞬停（不请求动画帧）；
+   * 惯性滑行：按最后采样速度逐帧衰减（摩擦 0.95/16ms，速度低于阈值即停），边界钳制照常——
+   * 触边即截停；真实时长上限 `MAX_COAST_MS` 保证 60 / 120Hz 屏体感一致（帧数只作兜底）。
+   * `prefers-reduced-motion: reduce` 下整段降级为瞬停（不请求动画帧）；
    * 收尾时补一次吸附（网格 / 吸附点），让滑行终值同样落在吸附位上。
    */
   private willCoast(velocityX: number, velocityY: number): boolean {
@@ -807,6 +836,7 @@ export class OASDrag extends OASElement {
     if (Math.hypot(vx, vy) < MIN_VELOCITY) return
     if (typeof requestAnimationFrame !== 'function') return
     let last = 0
+    let startAt = 0
     let frames = 0
     this.setAttribute('data-coasting', '')
     const stop = (): void => {
@@ -815,9 +845,15 @@ export class OASDrag extends OASElement {
       if (this.applySnap()) this.emit('drag', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
       this.announcePosition()
       this.savePosition()
-      this.emit('drag-end', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
+      this.emit('drag-end', {
+        x: this.offsetX,
+        y: this.offsetY,
+        source: 'pointer',
+        phase: 'coast-end',
+      } satisfies DragEndDetail)
     }
     const step = (now: number): void => {
+      if (startAt === 0) startAt = now
       const dt = last === 0 ? 16 : Math.min(64, now - last)
       last = now
       vx *= INERTIA_DECAY ** (dt / 16)
@@ -831,7 +867,8 @@ export class OASDrag extends OASElement {
       this.applyTransform()
       this.emit('drag', { x: this.offsetX, y: this.offsetY, source: 'pointer' })
       frames += 1
-      if (hitEdge || Math.hypot(vx, vy) < MIN_VELOCITY || frames >= MAX_COAST_FRAMES) {
+      const elapsed = now - startAt
+      if (hitEdge || Math.hypot(vx, vy) < MIN_VELOCITY || elapsed >= MAX_COAST_MS || frames >= MAX_COAST_FRAMES) {
         stop()
         return
       }
@@ -841,9 +878,14 @@ export class OASDrag extends OASElement {
   }
 
   private stopCoast(): void {
-    if (this.coastFrame !== 0 && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this.coastFrame)
+    const active = this.coastFrame !== 0
+    if (active && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this.coastFrame)
     this.coastFrame = 0
+    if (!active) return
     this.removeAttribute('data-coasting')
+    // 滑行被新指针 / reset / 断连冻结时补落盘：当前位置是真实发生过的位移，
+    // 只记松手时刻的旧值会丢掉滑行已经走过的路程（remember 语义）
+    this.savePosition()
   }
 
   // ---------- 键盘 ----------
@@ -889,6 +931,6 @@ export class OASDrag extends OASElement {
       }
     }
     this.announcePosition()
-    this.emit('drag-end', { x: 0, y: 0, source: 'keyboard' })
+    this.emit('drag-end', { x: 0, y: 0, source: 'keyboard', phase: 'release' } satisfies DragEndDetail)
   }
 }

@@ -172,7 +172,7 @@ onMounted(() => {
 | `axis` | Drag axis: `both` (default) / `x` horizontal only / `y` vertical only; invalid values fall back to `both` with a warning | `string` | `both` |
 | `boundary` | Drag boundary: `viewport` (default) or a CSS selector whose element rect is the boundary (a miss warns once and falls back to the viewport) | `string` | `viewport` |
 | `disabled` | Turn dragging off: pointer and keyboard are ignored and the focus stop is removed | `boolean` | — |
-| `inertia` | Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary; a last velocity sample older than 100ms counts as stopped, so no glide); instant stop under `prefers-reduced-motion: reduce` | `boolean` | — |
+| `inertia` | Decaying glide after release (velocity decays 0.95 per frame for up to 800ms of real time — consistent feel on 60/120Hz screens, stopping at the boundary or when speed falls below the threshold; a last velocity sample older than 100ms counts as stopped, so no glide); instant stop under `prefers-reduced-motion: reduce` | `boolean` | — |
 | `keyboard` | Keyboard nudging: on by default (`tabindex="0"`, 1px with arrow keys, 10px with Shift); write `false` to disable | `string` | — |
 | `remember` | Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota) | `boolean` | — |
 | `snap` | Snap grid size: a positive integer is the grid in px, the literal `grid` means 8px; on release (including the inertia tail) the offset aligns to the nearest grid point; keyboard nudges are unaffected | `string` | — |
@@ -197,7 +197,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-drag` | Dispatched on every position change (pointer drag / keyboard nudge / inertia), `detail: { x, y, source }` |
-| `oas-drag-end` | Dispatched when a pointer drag ends, `detail: { x, y, source }`; with inertia a single flick emits twice — once at pointerup and once when the glide settles (same source), and no glide-tail emission if the coast is preempted by a new pointerdown |
+| `oas-drag-end` | Dispatched when a pointer drag ends, `detail: { x, y, source, phase }`; with inertia a single flick emits twice — `phase: 'release'` at pointerup and `phase: 'coast-end'` when the glide settles; a coast preempted by a new pointerdown saves the current position without a glide-tail emission |
 | `oas-drag-start` | Dispatched once when a pointer drag passes the 4px threshold and captures the pointer, `detail: { x, y, source }` |
 
 #### Slots

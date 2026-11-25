@@ -476,18 +476,18 @@ describe('OAS drag 自由拖拽浮块', () => {
     expect(raf.requests(), '截停后不再请求动画帧').toBe(requests)
   })
 
-  it('惯性滑行最多 60 帧（超长滑行被上限截断）', () => {
+  it('惯性滑行最长 800ms（真实时长口径，超长滑行被上限截断）', () => {
     Object.defineProperty(window, 'innerWidth', { value: 100000, configurable: true })
     Object.defineProperty(window, 'innerHeight', { value: 100000, configurable: true })
     const raf = installFakeRaf()
     const el = mount({ inertia: '' })
     stubRect(el, 0, 0, 10, 10)
-    // 极快甩动（16px / 1ms）：衰减到阈值需要 200+ 帧，必须被 60 帧上限截断
+    // 极快甩动（16px / 1ms）：衰减到阈值需要 200+ 帧（>3s），必须被 800ms 时长上限截断
     el.dispatchEvent(pointerAt('pointerdown', 0, 0, 0))
     el.dispatchEvent(pointerAt('pointermove', 16, 0, 1))
     el.dispatchEvent(pointerAt('pointerup', 16, 0, 1))
     raf.flush(200)
-    expect(raf.executed(), '滑行帧数不超过 60').toBe(60)
+    expect(raf.executed() * 16, '滑行时长不超过 800ms（16ms 步进）').toBeLessThanOrEqual(816)
     expect(el.hasAttribute('data-coasting')).toBe(false)
   })
 
@@ -607,3 +607,101 @@ function flick(el: OASDrag, distance: number, ms: number): void {
   el.dispatchEvent(pointerAt('pointermove', 100 + distance, 100, ms))
   el.dispatchEvent(pointerAt('pointerup', 100 + distance, 100, ms))
 }
+
+// ---------------------------------------------------------------------------
+// 本批回归：oas-drag-end phase / 滑行时长口径 / 滑行被抢占落盘
+// ---------------------------------------------------------------------------
+
+describe('OAS drag 本批收口', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    window.localStorage.clear()
+    Object.defineProperty(window, 'innerWidth', { value: VIEWPORT.width, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: VIEWPORT.height, configurable: true })
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    window.localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  it('oas-drag-end detail 增 phase：松手 release，滑行收尾 coast-end', () => {
+    const raf = installFakeRaf()
+    const el = mount({ inertia: '' })
+    stubRect(el)
+    const ends: Array<{ phase?: string }> = []
+    el.addEventListener('oas-drag-end', (event) => ends.push((event as CustomEvent<{ phase?: string }>).detail))
+    flick(el, 100, 200) // vx = 0.5 px/ms，进入滑行
+    expect(
+      ends.map((e) => e.phase),
+      '松手即派第一次（release）',
+    ).toEqual(['release'])
+    raf.flush(200)
+    expect(
+      ends.map((e) => e.phase),
+      '滑行收尾再派第二次，phase 区分两次派发',
+    ).toEqual(['release', 'coast-end'])
+    // x/y/source 等既有字段不受 phase 新增影响（向后兼容）
+    expect(ends[0]).toMatchObject({ x: expect.any(Number), y: expect.any(Number), source: 'pointer' })
+  })
+
+  it('无惯性 / pointercancel 的 drag-end 也带 phase=release', () => {
+    const raf = installFakeRaf()
+    const el = mount()
+    stubRect(el)
+    const ends: Array<{ phase?: string }> = []
+    el.addEventListener('oas-drag-end', (event) => ends.push((event as CustomEvent<{ phase?: string }>).detail))
+    drag(el, 100, 100, 160, 120)
+    expect(ends.map((e) => e.phase)).toEqual(['release'])
+
+    const el2 = mount({ inertia: '' })
+    stubRect(el2)
+    const ends2: Array<{ phase?: string }> = []
+    el2.addEventListener('oas-drag-end', (event) => ends2.push((event as CustomEvent<{ phase?: string }>).detail))
+    el2.dispatchEvent(pointerAt('pointerdown', 100, 100, 0))
+    el2.dispatchEvent(pointerAt('pointermove', 160, 120, 50))
+    el2.dispatchEvent(pointerAt('pointercancel', 160, 120, 60))
+    expect(
+      ends2.map((e) => e.phase),
+      'cancel 收尾同属 release（无滑行）',
+    ).toEqual(['release'])
+    expect(raf.executed(), 'cancel 不起惯性').toBe(0)
+  })
+
+  it('滑行上限改真实时长口径：16ms 与 8ms 帧率下滑行总时长一致（±容差）', () => {
+    // 场景设计：宿主贴原点（滑行余量 260px，永不触边）、初速度 0.5 px/ms——
+    // 速度阈值衰减到 MIN_VELOCITY 需 ~1000ms（比时长上限晚触发），滑行由时长上限截停。
+    // 旧实现按帧数上限（60 帧）：16ms 屏 960ms、8ms 屏 480ms，时长差一倍（本回归锁定）。
+    const runAt = (stepMs: number): number => {
+      const raf = installFakeRaf()
+      const el = mount({ inertia: '' })
+      stubRect(el, 0, 0, 40, 20)
+      flick(el, 100, 200)
+      raf.flush(400, stepMs)
+      return raf.executed() * stepMs
+    }
+    const at60hz = runAt(16)
+    const at120hz = runAt(8)
+    expect(at60hz, '60Hz 步进下滑行时长 ≈ 800ms').toBeGreaterThan(700)
+    expect(at60hz).toBeLessThan(900)
+    expect(at120hz, '120Hz 步进下滑行时长 ≈ 800ms（旧实现只有一半）').toBeGreaterThan(700)
+    expect(at120hz).toBeLessThan(900)
+    expect(Math.abs(at60hz - at120hz), '两帧率体感时长一致').toBeLessThanOrEqual(32)
+  })
+
+  it('滑行被新指针抢占：当前位移落盘（remember）', () => {
+    const raf = installFakeRaf() // 阻断 rAF：滑行帧手动驱动
+    const el = mount({ inertia: '', remember: '' })
+    stubRect(el, 0, 0, 40, 20)
+    flick(el, 100, 200)
+    expect(el.hasAttribute('data-coasting'), '滑行已启动').toBe(true)
+    // 滑行前进数帧：位置离开松手点（松手时落盘的是 {x:100}）
+    raf.flush(10)
+    const duringCoast = el.position.x
+    expect(duringCoast, '滑行中位置已离开松手点').toBeGreaterThan(100)
+    // 滑行中被新 pointerdown 抢占 → 冻结时按滑行中的当前位置补落盘
+    el.dispatchEvent(pointer('pointerdown', 140, 110))
+    const saved = window.localStorage.getItem('oas-drag') ?? ''
+    expect(JSON.parse(saved).x, '落盘值 = 滑行中的当前位置，而非松手时旧值（修复前残留 100）').toBe(duringCoast)
+  })
+})

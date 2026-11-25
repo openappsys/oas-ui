@@ -96,7 +96,7 @@
     },
     {
       "name": "oas-drag-end",
-      "detail": "{ x: this.offsetX, y: this.offsetY, source: 'pointer' } | { x: 0, y: 0, source: 'keyboard' }"
+      "detail": "{ x: this.offsetX, y: this.offsetY, source: 'pointer', phase: 'release' } satisfies DragEndDetail | { x: this.offsetX, y: this.offsetY, source: 'pointer', phase: 'coast-end' } satisfies DragEndDetail | { x: 0, y: 0, source: 'keyboard', phase: 'release' } satisfies DragEndDetail"
     }
   ],
   "slots": [
