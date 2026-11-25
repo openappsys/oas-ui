@@ -131,11 +131,17 @@ onMounted(() => {
       basicOut.textContent = `oas-tab-change：${d.key}（${d.label}）——宿主已按 key 换卡`
     })
 
-    // —— 加载更多（宿主协议：置 loading → 追加插槽卡 → 移除 loading） ——
+    // —— 加载更多（宿主协议：置 loading → 追加插槽卡 → 移除 loading → 数据耗尽置 no-more） ——
     const more = document.getElementById('ol-more')!
     const moreOut = document.getElementById('ol-more-out')!
     let page2 = 0
+    const MAX_PAGE = 3 // 演示数据共 3 页：耗尽即置 no-more（真电商场景数据必然有限，不会无限追加）
     more.addEventListener('oas-load-more', () => {
+      // 数据耗尽即收尾（no-more 置位前的竞态窗口内不再追加新页）
+      if (page2 >= MAX_PAGE) {
+        more.setAttribute('no-more', '')
+        return
+      }
       more.setAttribute('loading', '')
       moreOut.textContent = 'oas-load-more：加载下一页…'
       setTimeout(() => {
@@ -144,11 +150,17 @@ onMounted(() => {
           const div = document.createElement('div')
           div.style.cssText =
             'padding:12px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-lg)'
-          div.textContent = `订单卡 ${1 + page2 * 2 + i}：第二页订单（追加即解除待应答）`
+          div.textContent = `订单卡 ${(page2 - 1) * 2 + i + 2}：第 ${page2 + 1} 页订单（追加即解除待应答）`
           more.appendChild(div)
         }
         more.removeAttribute('loading')
-        moreOut.textContent = 'oas-load-more：已追加 2 张卡（哨兵进入视口同样会真实触发）'
+        if (page2 >= MAX_PAGE) {
+          // 数据耗尽：置 no-more 进入到底态——不置位的宿主会随滚动无限触发，务必记得收尾
+          more.setAttribute('no-more', '')
+          moreOut.textContent = 'no-more 已置位：数据已加载完，显示到底态且不再触发'
+        } else {
+          moreOut.textContent = 'oas-load-more：已追加 2 张卡（哨兵进入视口同样会真实触发）'
+        }
       }, 400)
     })
     document.getElementById('ol-load')?.addEventListener('click', () => {

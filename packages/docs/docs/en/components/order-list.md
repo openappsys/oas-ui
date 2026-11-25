@@ -130,10 +130,17 @@ onMounted(() => {
       basicOut.textContent = `oas-tab-change: ${d.key} (${d.label}) — host swapped the cards`
     })
 
+    // —— Load more (host protocol: set loading → append slotted cards → remove loading → set no-more when data runs out) ——
     const more = document.getElementById('ol-more')!
     const moreOut = document.getElementById('ol-more-out')!
     let page2 = 0
+    const MAX_PAGE = 3 // demo data has 3 pages: set no-more when exhausted (real e-commerce data is finite — never append forever)
     more.addEventListener('oas-load-more', () => {
+      // Stop appending new pages within the race window before no-more lands
+      if (page2 >= MAX_PAGE) {
+        more.setAttribute('no-more', '')
+        return
+      }
       more.setAttribute('loading', '')
       moreOut.textContent = 'oas-load-more: loading next page…'
       setTimeout(() => {
@@ -142,11 +149,17 @@ onMounted(() => {
           const div = document.createElement('div')
           div.style.cssText =
             'padding:12px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-lg)'
-          div.textContent = `Order card ${1 + page2 * 2 + i}: page-2 order (appending releases the pending state)`
+          div.textContent = `Order card ${(page2 - 1) * 2 + i + 2}: page ${page2 + 1} order (appending releases the pending state)`
           more.appendChild(div)
         }
         more.removeAttribute('loading')
-        moreOut.textContent = 'oas-load-more: appended 2 cards (the sentinel also triggers for real on scroll)'
+        if (page2 >= MAX_PAGE) {
+          // Data exhausted: set no-more to enter the end state — a host that never sets it keeps firing on every scroll; always finish the protocol
+          more.setAttribute('no-more', '')
+          moreOut.textContent = 'no-more set: all demo pages loaded, end state shown and triggering stops'
+        } else {
+          moreOut.textContent = 'oas-load-more: appended 2 cards (the sentinel also triggers for real on scroll)'
+        }
       }, 400)
     })
     document.getElementById('ol-load')?.addEventListener('click', () => {
