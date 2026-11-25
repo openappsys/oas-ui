@@ -193,3 +193,154 @@ test('cart：禁用条目不计合计且不可勾选；空态渲染文案与插�
   await expect(emptySlotContent).toBeVisible()
   await expect(emptySlotContent).toContainText('购物车空空如也')
 })
+
+// ---------------------------------------------------------------------------
+// 本批回归（commerce 增强子批）：pointercancel 单独结算 / 多点触控守卫 / 点行体收起
+// ---------------------------------------------------------------------------
+
+test('cart：pointercancel（0 坐标）按手势前状态落定——未展开回弹 0 且后续点击不被吞', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cart')
+
+  const host = page.locator('#cart-delete-swipe')
+  const inner = host.locator('[part="item-inner"]').first()
+  await inner.scrollIntoViewIfNeeded()
+
+  // 挂 item-click 计数器（cancel 不得留下 suppressClick 残留）
+  await page.evaluate(() => {
+    const w = window as unknown as { __cartItemClicks?: string[] }
+    w.__cartItemClicks = []
+    document.getElementById('cart-delete-swipe')?.addEventListener('oas-item-click', (e) => {
+      ;(w.__cartItemClicks ??= []).push((e as CustomEvent<{ id: string }>).detail.id)
+    })
+  })
+
+  // 合成手势：按下 + 拖过半 + pointercancel（Safari 类浏览器给 0 坐标）
+  await inner.evaluate((el) => {
+    const opts = (type: string, x: number, y: number): PointerEventInit => ({
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 1,
+      button: 0,
+      pointerType: 'mouse',
+      clientX: x,
+      clientY: y,
+    })
+    el.dispatchEvent(new PointerEvent('pointerdown', opts('pointerdown', 300, 20)))
+    el.dispatchEvent(new PointerEvent('pointermove', opts('pointermove', 230, 20)))
+    el.dispatchEvent(new PointerEvent('pointercancel', opts('pointercancel', 0, 0)))
+  })
+
+  // 未展开的手势 → 回弹关闭（修复前按 cancel 坐标 (0,0) 结算误判成满展开 +72px 方向位移）
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('')
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).getAttribute('data-dragging') ?? '')).toBe('')
+
+  // cancel 后行体点击照常派发（无 suppressClick 残留）
+  await host.locator('[part="item-body"]').first().click()
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __cartItemClicks?: string[] }).__cartItemClicks))
+    .toEqual(['a'])
+})
+
+test('cart：多点触控守卫——第二指按下不改写第一行拖拽会话，抬起顺序无关', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cart')
+
+  const host = page.locator('#cart-delete-swipe')
+  const innerA = host.locator('[part="item-inner"]').first()
+  await innerA.scrollIntoViewIfNeeded()
+
+  const state = await page.evaluate(() => {
+    const root = document.getElementById('cart-delete-swipe')!.shadowRoot!
+    const inners = [...root.querySelectorAll<HTMLElement>('[part="item-inner"]')]
+    const opts = (type: string, x: number, y: number, id: number): PointerEventInit => ({
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: id,
+      button: 0,
+      pointerType: 'touch',
+      clientX: x,
+      clientY: y,
+    })
+    // 第一指拖行 A（跟手中）
+    inners[0]!.dispatchEvent(new PointerEvent('pointerdown', opts('pointerdown', 300, 20, 1)))
+    inners[0]!.dispatchEvent(new PointerEvent('pointermove', opts('pointermove', 260, 20, 1)))
+    const aDuring = inners[0]!.getAttribute('data-dragging')
+    // 第二指按行 B
+    inners[1]!.dispatchEvent(new PointerEvent('pointerdown', opts('pointerdown', 300, 90, 2)))
+    const aAfterSecond = inners[0]!.getAttribute('data-dragging')
+    const bAfterSecond = inners[1]!.getAttribute('data-dragging')
+    // 第二指的 move / up 与会话 pointerId 不匹配
+    inners[1]!.dispatchEvent(new PointerEvent('pointermove', opts('pointermove', 250, 90, 2)))
+    inners[1]!.dispatchEvent(new PointerEvent('pointerup', opts('pointerup', 250, 90, 2)))
+    const aAfterBup = inners[0]!.getAttribute('data-dragging')
+    // 第一指抬起（dx=-40 未过半 36 → 回弹 0）
+    inners[0]!.dispatchEvent(new PointerEvent('pointerup', opts('pointerup', 265, 20, 1)))
+    return {
+      aDuring,
+      aAfterSecond,
+      bAfterSecond,
+      aAfterBup,
+      aTransform: inners[0]!.style.transform,
+      aDragging: inners[0]!.getAttribute('data-dragging'),
+      bDragging: inners[1]!.getAttribute('data-dragging'),
+    }
+  })
+
+  expect(state.aDuring).toBe('true')
+  expect(state.aAfterSecond, '第二指按下后行 A 拖拽态不被改写').toBe('true')
+  expect(state.bAfterSecond, '第二指不抢会话').toBeNull()
+  expect(state.aAfterBup, '第二指抬起不影响行 A').toBe('true')
+  expect(state.aDragging, '第一指抬起后正常收尾').toBeNull()
+  expect(state.aTransform, 'dx=-30 未过半回弹关闭').toBe('')
+  expect(state.bDragging, '行 B 全程无残留').toBeNull()
+})
+
+test('cart：展开态点行体收起且不派 oas-item-click；点其他行收起已展开行', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cart')
+
+  const host = page.locator('#cart-delete-swipe')
+  const inner = host.locator('[part="item-inner"]').first()
+  await inner.scrollIntoViewIfNeeded()
+
+  await page.evaluate(() => {
+    const w = window as unknown as { __cartItemClicks?: string[] }
+    w.__cartItemClicks = []
+    document.getElementById('cart-delete-swipe')?.addEventListener('oas-item-click', (e) => {
+      ;(w.__cartItemClicks ??= []).push((e as CustomEvent<{ id: string }>).detail.id)
+    })
+  })
+
+  // 真鼠标滑动展开行 A
+  const box = (await inner.boundingBox())!
+  await page.mouse.move(box.x + 120, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 50, box.y + box.height / 2, { steps: 6 })
+  await page.mouse.up()
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('translateX(-72px)')
+
+  // 点已展开行的行体 → 收起，不派 oas-item-click
+  await host.locator('[part="item-body"]').first().click()
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('')
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __cartItemClicks?: string[] }).__cartItemClicks))
+    .toEqual([])
+
+  // 再展开行 A，点行 B 的行体 → 行 A 收起 + 行 B 派发 oas-item-click
+  // （上面的 locator.click 可能自动滚动页面：重新取坐标再起手势）
+  await inner.scrollIntoViewIfNeeded()
+  const box2 = (await inner.boundingBox())!
+  await page.mouse.move(box2.x + 120, box2.y + box2.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box2.x + 50, box2.y + box2.height / 2, { steps: 6 })
+  await page.mouse.up()
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('translateX(-72px)')
+  await host.locator('[part="item-body"]').nth(1).click()
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('')
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __cartItemClicks?: string[] }).__cartItemClicks))
+    .toEqual(['b'])
+})

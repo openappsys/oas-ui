@@ -607,7 +607,7 @@ export class OASCart extends OASElement {
     this.listEl?.addEventListener('pointerdown', this.onPointerDown)
     this.listEl?.addEventListener('pointermove', this.onPointerMove)
     this.listEl?.addEventListener('pointerup', this.onPointerUp)
-    this.listEl?.addEventListener('pointercancel', this.onPointerUp)
+    this.listEl?.addEventListener('pointercancel', this.onPointerCancel)
     this.listEl?.addEventListener('focusin', this.onFocusIn)
     this.allCheckEl?.addEventListener('change', this.onAllChange)
   }
@@ -999,8 +999,23 @@ export class OASCart extends OASElement {
       return
     }
     if (target.closest('[part="item-body"]')) {
+      // 滑动删除惯例：已展开行点行体 = 收起动作（不派 oas-item-click）；
+      // 点其他行先收起已展开行（购物车单行操作），事件照常派发进详情
+      if (this.openSwipeId !== '') {
+        const wasOpenRow = id === this.openSwipeId
+        this.closeSwipe()
+        if (wasOpenRow) return
+      }
       this.emitItemClick(id)
     }
+  }
+
+  /** 收起已展开的滑动删除钮（transform 由下一次 syncRows 统一落定，这里即时清） */
+  private closeSwipe(): void {
+    if (this.openSwipeId === '') return
+    const refs = this.rows.get(this.openSwipeId)
+    this.openSwipeId = ''
+    if (refs) refs.inner.style.transform = ''
   }
 
   private emitItemClick(id: string): void {
@@ -1039,6 +1054,10 @@ export class OASCart extends OASElement {
     if (this.resolveDeleteMode() !== 'swipe') return
     if (this.isDisabled()) return
     if (event.button !== 0) return
+    // 多点触控守卫：已有会话在途时新指针直接忽略——覆盖 this.drag 会让旧会话的起点 /
+    // pointerId 被改写，旧行的 data-dragging 永久残留（抬起顺序无关：旧指针的 move/up
+    // 仍按旧 pointerId 结算，新指针的后续事件因 id 不匹配被忽略）
+    if (this.drag) return
     const target = event.target as HTMLElement | null
     if (!target) return
     if (target.closest('[part="stepper"], [part="item-check"], [part="swipe-remove"]')) return
@@ -1097,11 +1116,32 @@ export class OASCart extends OASElement {
       reveal: SWIPE_REVEAL,
       rtl: this.swipeSign() === 1,
     })
-    this.openSwipeId = open ? drag.id : ''
+    // 展开态只随本次手势的行变化：本次吸附展开 → 切到该行（单行操作惯例）；
+    // 本次收起且该行正是展开行 → 清；与已展开行无关的手势（如 tap 其他行）不得
+    // 抹掉它的展开态（否则状态与视觉脱节：transform 残留而 openSwipeId 已丢）
+    if (open) this.openSwipeId = drag.id
+    else if (this.openSwipeId === drag.id) this.openSwipeId = ''
     if (drag.moved) this.suppressClick = true
     // 先清拖拽态（恢复 transform 过渡动画），再写落定位置：
     // 过半吸附到完全露出、未过半回弹关闭。落定值不能复用跟手 clamp 值——
     // 否则拖到一半松手会停半路（过半时删除钮半露、未过半时不回弹）。
+    this.endDrag()
+    const settle = resolveSwipeSettle({ open, reveal: SWIPE_REVEAL, rtl: this.swipeSign() === 1 })
+    drag.inner.style.transform = settle === 0 ? '' : `translateX(${settle}px)`
+  }
+
+  /**
+   * 手势被浏览器接管（滚动 / 系统手势）：cancel 事件的坐标不可信——Safari 类浏览器派发
+   * clientX/Y = 0，按坐标结算会把中断手势误判成「向行首拖满」→ 意外满展开 + 抑制紧随
+   * click。因此 cancel 单独结算：不读坐标，按手势开始前的吸附态落定——未展开回弹 0，
+   * 已展开保持展开；也不设 suppressClick（cancel 不是用户意图上的滑动松手，紧随的
+   * click 应照常响应）。
+   */
+  private onPointerCancel = (event: PointerEvent): void => {
+    const drag = this.drag
+    if (!drag || event.pointerId !== drag.pointerId) return
+    const open = this.openSwipeId === drag.id
+    // openSwipeId 不改写：手势行已展开时值本就是 drag.id（保持），未展开时不动全局展开态
     this.endDrag()
     const settle = resolveSwipeSettle({ open, reveal: SWIPE_REVEAL, rtl: this.swipeSign() === 1 })
     drag.inner.style.transform = settle === 0 ? '' : `translateX(${settle}px)`

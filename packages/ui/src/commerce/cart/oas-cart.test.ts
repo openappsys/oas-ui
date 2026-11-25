@@ -407,3 +407,137 @@ describe('oas-cart', () => {
     expect(slot.assignedNodes()).toContain(btn)
   })
 })
+
+// ---------------------------------------------------------------------------
+// 滑动删除交互（本批：pointercancel 单独结算 / 多点触控守卫 / 点行体收起）
+// ---------------------------------------------------------------------------
+
+/** 指针事件辅助（happy-dom 的 PointerEvent 可直接构造；cancel 场景给 0 坐标模拟 Safari 行为） */
+function swipePointer(el: OASCart, type: string, x: number, y: number, pointerId = 1, target?: HTMLElement): boolean {
+  const ev = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    pointerId,
+    button: 0,
+    clientX: x,
+    clientY: y,
+  })
+  return (target ?? itemEl(el, 0).querySelector<HTMLElement>('[part="item-inner"]')!).dispatchEvent(ev)
+}
+
+describe('oas-cart 滑动删除交互', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('pointercancel（0 坐标，Safari 类行为）单独结算：未展开回弹 0，不误判满展开', () => {
+    const el = mount({ items: JSON_ITEMS, 'delete-mode': 'swipe' })
+    const inner = itemEl(el, 0).querySelector<HTMLElement>('[part="item-inner"]')!
+    // 按下并拖过吸附阈值（跟手中）
+    swipePointer(el, 'pointerdown', 200, 20)
+    swipePointer(el, 'pointermove', 140, 20) // dx = -60，已越过 72/2
+    expect(inner.getAttribute('data-dragging')).toBe('true')
+    // 手势被浏览器接管：cancel 给 0 坐标（Safari 类行为）
+    swipePointer(el, 'pointercancel', 0, 0)
+    // 必须按手势前状态落定：未展开 → 回弹 0（清除 transform），而不是拿 (0-200) 误判成满展开
+    expect(inner.style.transform, 'cancel 不读坐标：未展开手势回弹关闭').toBe('')
+    expect(inner.getAttribute('data-dragging'), '拖拽态已收尾').toBeNull()
+    // cancel 不是正常松手：不抑制紧随的 click（无 suppressClick 残留）
+    const clicks: Array<{ id: string }> = []
+    el.addEventListener('oas-item-click', (e) => clicks.push((e as CustomEvent<{ id: string }>).detail))
+    itemEl(el, 0).querySelector<HTMLElement>('[part="item-body"]')!.click()
+    expect(
+      clicks.map((c) => c.id),
+      'cancel 后的首次点击不得被吞',
+    ).toEqual(['a'])
+  })
+
+  it('pointercancel：手势前已展开的行保持展开（不被 cancel 收起）', () => {
+    const el = mount({ items: JSON_ITEMS, 'delete-mode': 'swipe' })
+    const inner = itemEl(el, 0).querySelector<HTMLElement>('[part="item-inner"]')!
+    // 第一次手势：拖过半松手 → 吸附展开
+    swipePointer(el, 'pointerdown', 200, 20)
+    swipePointer(el, 'pointermove', 130, 20)
+    swipePointer(el, 'pointerup', 130, 20)
+    expect(inner.style.transform).toBe('translateX(-72px)')
+    // 第二次手势（拖回中）被 cancel 打断：保持展开落定
+    swipePointer(el, 'pointerdown', 100, 20)
+    swipePointer(el, 'pointermove', 150, 20)
+    swipePointer(el, 'pointercancel', 0, 0)
+    expect(inner.style.transform, '已展开行 cancel 后保持展开').toBe('translateX(-72px)')
+    expect(inner.getAttribute('data-dragging')).toBeNull()
+  })
+
+  it('多点触控守卫：第二指按下不改写第一行的拖拽会话（起点不被覆盖）', () => {
+    const el = mount({ items: JSON_ITEMS, 'delete-mode': 'swipe' })
+    const innerA = itemEl(el, 0).querySelector<HTMLElement>('[part="item-inner"]')!
+    const innerB = itemEl(el, 1).querySelector<HTMLElement>('[part="item-inner"]')!
+    // 第一指按下行 A
+    swipePointer(el, 'pointerdown', 200, 20, 1)
+    swipePointer(el, 'pointermove', 160, 20, 1)
+    expect(innerA.getAttribute('data-dragging')).toBe('true')
+    // 第二指按下行 B：已有会话在途 → 不开新会话，行 A 的状态不被改写
+    swipePointer(el, 'pointerdown', 200, 80, 2, innerB)
+    expect(innerA.getAttribute('data-dragging'), '第一行拖拽态不被第二指清掉').toBe('true')
+    expect(innerB.getAttribute('data-dragging'), '第二指不抢会话').toBeNull()
+    // 第二指的 move/up 与会话 pointerId 不匹配：不影响任何状态
+    swipePointer(el, 'pointermove', 120, 80, 2, innerB)
+    swipePointer(el, 'pointerup', 120, 80, 2, innerB)
+    expect(innerA.getAttribute('data-dragging')).toBe('true')
+    expect(innerB.getAttribute('data-dragging')).toBeNull()
+    // 第一指抬起顺序无关：行 A 正常结算（dx=-30 未过吸附半 36 → 回弹 0）
+    swipePointer(el, 'pointerup', 170, 20, 1)
+    expect(innerA.getAttribute('data-dragging')).toBeNull()
+    expect(innerA.style.transform, '未过半回弹关闭').toBe('')
+    expect(innerB.getAttribute('data-dragging'), '行 B 全程无残留').toBeNull()
+  })
+
+  /** 模拟真实 tap 序列（pointerdown 会重置 suppressClick——幽灵 click 抑制只针对无 down 的 click） */
+  function tapOn(el: OASCart, target: HTMLElement): void {
+    swipePointer(el, 'pointerdown', 200, 20, 3, target)
+    swipePointer(el, 'pointerup', 200, 20, 3, target)
+    target.click()
+  }
+
+  it('展开态点行体收起且不派 oas-item-click；点其他行收起已展开行并正常派发', () => {
+    const el = mount({ items: JSON_ITEMS, 'delete-mode': 'swipe' })
+    const clicks: Array<{ id: string }> = []
+    el.addEventListener('oas-item-click', (e) => clicks.push((e as CustomEvent<{ id: string }>).detail))
+    const innerA = itemEl(el, 0).querySelector<HTMLElement>('[part="item-inner"]')!
+    const bodyA = itemEl(el, 0).querySelector<HTMLElement>('[part="item-body"]')!
+    const bodyB = itemEl(el, 1).querySelector<HTMLElement>('[part="item-body"]')!
+    // 展开行 A
+    swipePointer(el, 'pointerdown', 200, 20)
+    swipePointer(el, 'pointermove', 130, 20)
+    swipePointer(el, 'pointerup', 130, 20)
+    expect(innerA.style.transform).toBe('translateX(-72px)')
+    // 点已展开行的行体（真实 tap 序列）→ 只收起，不派事件
+    tapOn(el, bodyA)
+    expect(innerA.style.transform, '展开态点行体收起').toBe('')
+    expect(clicks, '收起动作不派 oas-item-click').toEqual([])
+    // 再展开行 A，然后点行 B 的行体 → 行 A 收起 + 行 B 正常派发事件
+    swipePointer(el, 'pointerdown', 200, 20)
+    swipePointer(el, 'pointermove', 130, 20)
+    swipePointer(el, 'pointerup', 130, 20)
+    expect(innerA.style.transform).toBe('translateX(-72px)')
+    tapOn(el, bodyB)
+    expect(innerA.style.transform, '点其他行收起已展开行（单行操作惯例）').toBe('')
+    expect(
+      clicks.map((c) => c.id),
+      '点其他行仍正常派发',
+    ).toEqual(['b'])
+  })
+
+  it('button 模式点行体不受滑动收起逻辑影响（正常派发 oas-item-click）', () => {
+    const el = mount({ items: JSON_ITEMS })
+    const clicks: Array<{ id: string }> = []
+    el.addEventListener('oas-item-click', (e) => clicks.push((e as CustomEvent<{ id: string }>).detail))
+    itemEl(el, 0).querySelector<HTMLElement>('[part="item-body"]')!.click()
+    expect(clicks.map((c) => c.id)).toEqual(['a'])
+  })
+})
