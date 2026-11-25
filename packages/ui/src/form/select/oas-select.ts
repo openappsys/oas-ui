@@ -489,6 +489,9 @@ const STYLE = `
   align-self: flex-start;
   margin-top: calc((var(--_ch) - 12px) / 2);
   flex-shrink: 0;
+  /* viewBox 留白补偿：笔画横跨 4→12（viewBox 16，渲染 12px），两侧各 3px 视觉留白——
+     右侧补偿后笔画到边框 ≈ 12px，与左侧文字内距对称 */
+  margin-inline-end: -3px;
 }
 .trigger[aria-expanded='true'] .chevron {
   transform: rotate(180deg);
