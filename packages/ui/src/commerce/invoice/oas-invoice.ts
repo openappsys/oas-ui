@@ -114,6 +114,27 @@ const STYLE = `
   font-size: var(--oas-font-size-md);
   line-height: 1.5;
 }
+/* 原生 select 视觉对齐层：去 UA 箭头，右留箭头位（12px 图标 + space-2 间隙 + space-3 对称内距）——
+   控件选型见 README 设计前必答 7（oas-select 替换为演进项） */
+.select {
+  appearance: none;
+  padding-inline-end: calc(var(--oas-space-3) + var(--oas-space-2) + 12px);
+  cursor: pointer;
+}
+.select-wrap {
+  position: relative;
+  display: block;
+}
+.select-wrap .chevron {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  inset-inline-end: var(--oas-space-3);
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  color: var(--oas-color-text-secondary);
+}
 .input::placeholder {
   color: var(--oas-color-text-placeholder);
 }
@@ -352,7 +373,12 @@ export class OASInvoice extends OASElement {
         </div>
         <div class="field content-field">
           <label class="label" for="${this.uid}-content"></label>
-          <select class="select" id="${this.uid}-content" name="content" part="content"></select>
+          <span class="select-wrap">
+            <select class="select" id="${this.uid}-content" name="content" part="content"></select>
+            <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
         </div>
         <div class="saved" part="saved">
           <button type="button" class="saved-trigger" part="saved-trigger" aria-haspopup="listbox" aria-expanded="false"></button>

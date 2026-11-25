@@ -10,6 +10,7 @@
 4. **破坏性选项**：无；切换抬头类型保留已输入草稿（切换前固化到属性，避免 update 回写吞输入）。
 5. **键盘 / ARIA**：类型切换为 `role="radiogroup"` + 两项 `role="radio"`（`←` / `→`）；弹层触发按钮 `aria-haspopup="listbox"` / `aria-expanded`，列表 `role="listbox"` + `role="option"`，`↑` / `↓` / `Enter` / `Esc` 全支持。
 6. **受控 / 非受控**：`type` / `title` / `tax-id` / `content` 受控；输入只派发 `oas-change` 不反写属性；外部属性变化回写输入框。
+7. **控件选型（复合组件第一决策）**：内部控件（`oas-input` / `oas-select` / `oas-button` 等）**默认优先**——视觉/键盘/a11y 细节已打磨（箭头留白补偿、键盘流、主题跟随），原生控件不会自动继承；选原生必须显式记录理由（跨族体积增量 / 表单语义 / 移动端原生选择器体验），且原生控件须做视觉对齐层（appearance 重置 + token 化箭头/边框，对齐内部组件的间距节奏）。
 
 ## 数据契约（宿主注入）
 
