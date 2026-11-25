@@ -31,6 +31,8 @@ description: "订单列表容器：状态页签（tabs JSON 双通道 + 键盘 r
   <div style="display: grid; gap: var(--oas-space-2); width: 100%">
     <oas-order-list id="ol-more" tabs='[{"key":"all","label":"全部订单"}]'>
       <div style="padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg)">订单卡 1：纯棉短袖T恤（待发货）</div>
+      <div style="padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg)">订单卡 2：轻便帆布鞋（已发货）</div>
+      <div style="padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg)">订单卡 3：通勤单肩包（已完成）</div>
     </oas-order-list>
     <div style="display: flex; gap: var(--oas-space-2); align-items: center">
       <oas-button id="ol-load" size="small" type="primary">模拟触底（追加订单卡）</oas-button>
@@ -150,7 +152,7 @@ onMounted(() => {
           const div = document.createElement('div')
           div.style.cssText =
             'padding:12px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-lg)'
-          div.textContent = `订单卡 ${(page2 - 1) * 2 + i + 2}：第 ${page2 + 1} 页订单（追加即解除待应答）`
+          div.textContent = `订单卡 ${(page2 - 1) * 2 + i + 4}：第 ${page2 + 1} 页订单（追加即解除待应答）`
           more.appendChild(div)
         }
         more.removeAttribute('loading')

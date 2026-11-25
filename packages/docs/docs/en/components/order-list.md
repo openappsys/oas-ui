@@ -31,6 +31,8 @@ Reaching the bottom fires `oas-load-more` (the sentinel triggers 240px early); t
   <div style="display: grid; gap: var(--oas-space-2); width: 100%">
     <oas-order-list id="ol-more" tabs='[{"key":"all","label":"All orders"}]'>
       <div style="padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg)">Order card 1: cotton tee (to ship)</div>
+      <div style="padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg)">Order card 2: canvas sneakers (shipped)</div>
+      <div style="padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg)">Order card 3: commuter bag (done)</div>
     </oas-order-list>
     <div style="display: flex; gap: var(--oas-space-2); align-items: center">
       <oas-button id="ol-load" size="small" type="primary">Simulate bottom (append cards)</oas-button>
@@ -149,7 +151,7 @@ onMounted(() => {
           const div = document.createElement('div')
           div.style.cssText =
             'padding:12px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-lg)'
-          div.textContent = `Order card ${(page2 - 1) * 2 + i + 2}: page ${page2 + 1} order (appending releases the pending state)`
+          div.textContent = `Order card ${(page2 - 1) * 2 + i + 4}: page ${page2 + 1} order (appending releases the pending state)`
           more.appendChild(div)
         }
         more.removeAttribute('loading')
