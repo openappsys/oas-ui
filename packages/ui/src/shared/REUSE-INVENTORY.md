@@ -149,7 +149,7 @@
 
 ### 4b. 内联 RTL 判定变体（P4，行为漂移修正）
 
-> 归因更正（2026-11-26 R1 复核）：初版写「config-provider 的 direction 注入对这四处无效」
+> 归因更正（2026-11-26 复核）：初版写「config-provider 的 direction 注入对这四处无效」
 > **不准确**——config-provider 的 direction 落在宿主 DOM（`dir` attribute），computed style
 > 可正常继承读取，该通道并不缺失。真实缺口只有一个：**locale 回退通道**——shared
 > `resolveDirection` 在无任何 DOM `dir` 声明时回退到当前 locale 的方向元数据（ar 等语言
