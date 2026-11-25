@@ -35,6 +35,14 @@
 | **批 C：问卷引擎** | questionnaire 逻辑跳转谓词（复用 expr 引擎）/ 评分汇总（score-rules + oas-score） | 📋 待开发 |
 | **批 D：交互长尾** | coupon 多券叠加 / barrage 点赞·屏蔽 / drag 吸附点 / Z1·Z2 测试长尾 | 📋 待开发 |
 
+## 未发布（电商扩容与包体分级批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **包体分级约定** | 组件本体冻结大众功能集 / 重增强走 L3 能力子路径（不内联本体、族入口不 re-export）/ commerce 逐链预算档 / L3 惯例成文 ui-spec | 📋 待开发 |
+| **新组件 ×6** | oas-filter 筛选栏 / oas-search-bar 搜索栏 / oas-goods-list 商品列表容器 / oas-order-list 订单列表容器（或降级配方）/ oas-logistics 物流时间线 / oas-member-card 会员卡 | 📋 待开发 |
+| **场景配方层** | 秒杀 / 领券中心 / 库存紧张提示 / 详情页骨架（guide + demo，不做新组件） | 📋 待开发 |
+
 ## v2.6.9（文档站 SEO：语言机制去跳转化）
 
 | 范围 | 内容 | 状态 |
