@@ -790,6 +790,18 @@ export const fa: LocaleMessages = {
   'orderCard.discount': 'صرفه‌جویی شده',
   'orderCard.payable': 'قابل پرداخت',
   'productCard.noImage': 'بدون تصویر',
+  'filter.label': 'فیلتر',
+  'filter.sortLabel': 'مرتب‌سازی',
+  'filter.sortComposite': 'پیشنهادی',
+  'filter.sortSales': 'فروش',
+  'filter.sortPrice': 'قیمت',
+  'filter.panelLabel': 'معیارهای فیلتر',
+  'filter.selectedCount': '{count} مورد انتخاب شد',
+  'filter.removeChip': 'حذف {name}',
+  'filter.reset': 'بازنشانی',
+  'filter.done': 'انجام شد',
+  'filter.asc': 'صعودی',
+  'filter.desc': 'نزولی',
 
   // barrage（弹幕）
   'barrage.like': 'پسندیدن',

@@ -791,6 +791,19 @@ export const zhCN = {
   'orderCard.discount': '已优惠',
   'orderCard.payable': '实付',
   'productCard.noImage': '暂无图片',
+  // filter（列表页筛选栏）
+  'filter.label': '筛选',
+  'filter.sortLabel': '排序',
+  'filter.sortComposite': '综合',
+  'filter.sortSales': '销量',
+  'filter.sortPrice': '价格',
+  'filter.panelLabel': '筛选条件',
+  'filter.selectedCount': '已选 {count} 项',
+  'filter.removeChip': '移除 {name}',
+  'filter.reset': '重置',
+  'filter.done': '完成',
+  'filter.asc': '升序',
+  'filter.desc': '降序',
 
   // barrage（弹幕）
   'barrage.like': '点赞',

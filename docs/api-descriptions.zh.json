@@ -5873,6 +5873,29 @@
       "statusMap": "状态语义映射：get+set 双通道（对象或 JSON 字符串），写即反射 `status-map` attribute"
     }
   },
+  "oas-filter": {
+    "attrs": {
+      "sorts": "排序项配置 JSON 数组 `[{ key, label, toggled? }]`；缺省三件套（综合 / 销量 / 价格，价格 toggled），非法 JSON 告警一次回落缺省；`toggled` 项首次点击降序、再点升序",
+      "groups": "条件组配置 JSON 数组 `[{ key, label, multiple?, options: [{ value, label, disabled? }] }]`；缺 `options` 或非法条目被忽略，非法 JSON 告警一次按空处理（无可筛组时触发器隐藏）",
+      "conditions": "当前值 JSON `{ sort?, order?, groups? }`（`order` 仅 toggled 排序项有意义：`asc` / `desc`；`groups` 为 `组key: [值…]`，单选组 ≤1 项）。用户交互后组件回写并派发 oas-change；宿主写入只同步视图不派发",
+      "panel": "面板形态：`dropdown`（缺省，贴底下拉，点面板外收起）/ `drawer`（半屏抽屉 + 遮罩，窄屏建议）；非法值回落 dropdown 并告警一次",
+      "open": "面板展开态：用户 / `setOpen()` 开合回写并派发 oas-open-change；宿主直写只同步视图不派发"
+    },
+    "events": {
+      "oas-change": "排序 / 选条件 / 撤 chip / 重置后派发，`detail: { sort, order, groups, summary }`（summary 为汇总摘要文本，供宿主 aria-live 播报）；宿主写 `conditions` attribute 不派发",
+      "oas-open-change": "用户 / `setOpen()` 开合面板后派发，`detail: { open }`；宿主写 `open` attribute 不派发"
+    },
+    "slots": {},
+    "props": {
+      "sorts": "排序项配置：get+set 双通道（数组或 JSON 字符串），写即反射 `sorts` attribute",
+      "groups": "条件组配置：get+set 双通道（数组或 JSON 字符串），写即反射 `groups` attribute",
+      "conditions": "当前值：get+set 双通道（对象或 JSON 字符串），写即反射 `conditions` attribute（受控写入不派发 oas-change）",
+      "open": "面板展开态：get+set 双通道（布尔），写即反射 `open` attribute（静默；`setOpen()` 才派发事件）"
+    },
+    "methods": {
+      "setOpen": "编程式开合（等价用户交互）：回写 `open` attribute + 派发 oas-open-change + 焦点管理（开面板聚焦首个条件、关闭回触发器）"
+    }
+  },
   "oas-product-card": {
     "attrs": {
       "image": "图片地址（加载失败回落虚线占位框，换 `image` 值即重新尝试）",

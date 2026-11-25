@@ -786,6 +786,18 @@ export const ptBR: LocaleMessages = {
   'orderCard.discount': 'Economizado',
   'orderCard.payable': 'A pagar',
   'productCard.noImage': 'Sem imagem',
+  'filter.label': 'Filtrar',
+  'filter.sortLabel': 'Ordenar',
+  'filter.sortComposite': 'Destaques',
+  'filter.sortSales': 'Vendas',
+  'filter.sortPrice': 'Preço',
+  'filter.panelLabel': 'Critérios de filtro',
+  'filter.selectedCount': '{count} selecionados',
+  'filter.removeChip': 'Remover {name}',
+  'filter.reset': 'Redefinir',
+  'filter.done': 'Concluído',
+  'filter.asc': 'crescente',
+  'filter.desc': 'decrescente',
 
   // barrage（弹幕）
   'barrage.like': 'Curtir',

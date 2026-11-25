@@ -1,0 +1,214 @@
+---
+description: "List page filter bar: sort options (featured / sales / price toggle) + a criteria panel (dropdown / half-screen drawer, single- and multi-select groups) + selected-condition chips (per-item undo / one-click reset) + the `conditions` JSON dual channel with `oas-change`."
+---
+
+# Filter
+
+Filter loop for e-commerce list pages: sort options stay on the bar (featured / sales / price, price supports ascending–descending toggle), the criteria panel holds multiple filter groups (single-select / multi-select), and selected conditions are echoed as chips under the panel — undo per chip, reset all at once. The value contract is the `conditions` JSON dual channel: uncontrolled hosts get automatic write-back on user interaction (works out of the box), controlled hosts take over by listening to `oas-change`. The panel comes in **dropdown** and **half-screen drawer** forms; the drawer is recommended on narrow screens.
+
+## Basic usage
+
+`groups` declares filter groups (`multiple: true` for multi-select); clicking a sort option, picking a condition, or removing a chip all emit `oas-change` (detail carries the current sort, selected values per group, and a composed summary text that can feed an `aria-live` region directly):
+
+<DemoBlock title="Sort + criteria groups + selected echo">
+
+<oas-filter id="filter-basic"></oas-filter>
+<p id="filter-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+  Click a sort option, open the panel to pick conditions, or remove a chip to see oas-change feedback.
+</p>
+<script setup lang="ts">
+import { onMounted } from 'vue'
+onMounted(() => {
+  customElements.whenDefined('oas-filter').then(() => {
+    const el = document.getElementById('filter-basic')!
+    el.setAttribute('groups', JSON.stringify([
+      { key: 'brand', label: 'Brand', multiple: true, options: [
+        { value: 'a', label: 'Brand A' }, { value: 'b', label: 'Brand B' }, { value: 'c', label: 'Brand C' },
+      ] }),
+      { key: 'color', label: 'Color', options: [
+        { value: 'red', label: 'Red' }, { value: 'blue', label: 'Blue' },
+      ] },
+    ]))
+    const out = document.getElementById('filter-basic-out')!
+    el.addEventListener('oas-change', (e) => {
+      const d = (e as CustomEvent).detail
+      out.textContent = `oas-change: sort=${d.sort}${d.order ? ` (${d.order})` : ''}, summary=${d.summary || '(nothing selected)'}`
+    })
+    el.addEventListener('oas-open-change', (e) => {
+      out.textContent = `oas-open-change: panel ${(e as CustomEvent).detail.open ? 'opened' : 'closed'}`
+    })
+  })
+})
+</script>
+
+</DemoBlock>
+
+## Sort options
+
+`sorts` can replace the default trio; sort items with `toggled: true` support an ascending–descending toggle — first click sorts descending, the next click ascending (the e-commerce "price ↓" convention). The direction lands in the `oas-change` `order` field and the summary:
+
+<DemoBlock title="Custom sort options + price toggle">
+  <oas-filter
+    sorts='[{"key":"new","label":"Newest"},{"key":"hot","label":"Trending","toggled":true},{"key":"price","label":"Price","toggled":true}]'
+  ></oas-filter>
+</DemoBlock>
+
+## Multiple criteria groups
+
+In single-select groups clicking the selected option cancels it (back to "any"); multi-select groups toggle freely; `disabled` options are greyed out. Selected conditions echo as chips whose `aria-label` is "Remove condition-name"; they are focusable and removable with Enter, and the trailing "Reset" clears everything (sort falls back to the default):
+
+<DemoBlock title="Single-select + multi-select groups + disabled option">
+  <oas-filter
+    groups='[{"key":"brand","label":"Brand","multiple":true,"options":[{"value":"a","label":"Brand A"},{"value":"b","label":"Brand B"},{"value":"c","label":"Brand C"},{"value":"d","label":"Brand D (sold out)","disabled":true}]},{"key":"color","label":"Color","options":[{"value":"red","label":"Red"},{"value":"blue","label":"Blue"},{"value":"black","label":"Black"}]},{"key":"size","label":"Size","options":[{"value":"s","label":"S"},{"value":"m","label":"M"},{"value":"l","label":"L"}]}]'
+  ></oas-filter>
+</DemoBlock>
+
+## Drawer form
+
+`panel="drawer"` switches to the half-screen drawer (slides in from the bottom with a mask), recommended on narrow (mobile) screens; the mask, the "Done" button, and Esc all close it, restoring focus to the trigger. The default `panel="dropdown"` is an anchored dropdown that dismisses on outside click:
+
+<DemoBlock title="Drawer form">
+  <oas-filter
+    panel="drawer"
+    groups='[{"key":"brand","label":"Brand","multiple":true,"options":[{"value":"a","label":"Brand A"},{"value":"b","label":"Brand B"}]},{"key":"color","label":"Color","options":[{"value":"red","label":"Red"},{"value":"blue","label":"Blue"}]}]'
+  ></oas-filter>
+</DemoBlock>
+
+## Controlled usage
+
+The host writes `conditions` (or the property channel `el.conditions = {...}`) to sync the view directly (chip echo, sort selection, badge count) **without** emitting `oas-change`; the component writes `conditions` back after user interactions — controlled hosts listen to `oas-change` and write it again to take over. `open` follows the same dual channel (preset expanding emits no `oas-open-change`):
+
+<DemoBlock title="Preset conditions + host-side reset">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-filter
+      id="filter-controlled"
+      conditions='{"sort":"price","order":"desc","groups":{"brand":["a","b"]}}'
+      groups='[{"key":"brand","label":"Brand","multiple":true,"options":[{"value":"a","label":"Brand A"},{"value":"b","label":"Brand B"}]}]'
+    ></oas-filter>
+    <div style="display: flex; gap: var(--oas-space-2)">
+      <oas-button id="filter-clear" size="small">Clear conditions (host side)</oas-button>
+      <span id="filter-controlled-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </div>
+  </div>
+</DemoBlock>
+
+## Preset expansion and preset conditions
+
+The `open` attribute presets the panel expanded (host write, no `oas-open-change`); combined with `conditions` this is the "remember the user's last filter" echo:
+
+<DemoBlock title="Preset expanded + preset conditions (open attribute)">
+  <div style="width: 100%">
+    <oas-filter
+      open
+      conditions='{"groups":{"brand":["a"],"color":["red"]}}'
+      groups='[{"key":"brand","label":"Brand","multiple":true,"options":[{"value":"a","label":"Brand A"},{"value":"b","label":"Brand B"}]},{"key":"color","label":"Color","options":[{"value":"red","label":"Red"},{"value":"blue","label":"Blue"}]}]'
+    ></oas-filter>
+    <div style="height: 240px" aria-hidden="true"></div>
+  </div>
+</DemoBlock>
+
+## Combined with the goods list
+
+Pair it with `oas-goods-list` for a closed list-page loop: filter changes refill the list (this demo simulates filtering over static data):
+
+<DemoBlock title="filter + goods-list recipe">
+  <div style="display: grid; gap: var(--oas-space-3); width: 100%">
+    <oas-filter
+      id="filter-combo"
+      groups='[{"key":"kind","label":"Category","multiple":true,"options":[{"value":"clothes","label":"Clothing"},{"value":"shoes","label":"Shoes"},{"value":"bag","label":"Bags"}]}]'
+    ></oas-filter>
+    <oas-goods-list id="goods-combo" columns="3"></oas-goods-list>
+  </div>
+  <script setup lang="ts">
+  import { onMounted } from 'vue'
+  onMounted(() => {
+    Promise.all([
+      customElements.whenDefined('oas-filter'),
+      customElements.whenDefined('oas-goods-list'),
+    ]).then(() => {
+      const filter = document.getElementById('filter-combo')!
+      const list = document.getElementById('goods-combo')!
+      const catalog = [
+        { title: 'Cotton T-shirt', kind: 'clothes', price: 79 },
+        { title: 'Canvas sneakers', kind: 'shoes', price: 129 },
+        { title: 'Commuter shoulder bag', kind: 'bag', price: 199 },
+        { title: 'Knit cardigan', kind: 'clothes', price: 149 },
+        { title: 'Running shoes', kind: 'shoes', price: 259 },
+        { title: 'Hiking backpack', kind: 'bag', price: 329 },
+      ]
+      const render = () => {
+        const kinds = filter.conditions.groups?.kind ?? []
+        const rows = kinds.length > 0 ? catalog.filter((it) => kinds.includes(it.kind)) : catalog
+        list.items = rows.map(({ title, price }) => ({ title, price }))
+      }
+      render()
+      filter.addEventListener('oas-change', render)
+    })
+  })
+  </script>
+</DemoBlock>
+
+## Keyboard and accessibility
+
+- The sort row and single-select groups carry `radiogroup` semantics (arrow keys move focus within a group); multi-select groups use `group` + `checkbox` semantics; every option is Tab-reachable.
+- The trigger carries `aria-haspopup` / `aria-expanded` / `aria-controls`, with the selected count in its accessible name; opening the panel focuses the first condition, Esc closes and restores focus to the trigger.
+- Chips are focusable buttons whose `aria-label` is "Remove condition-name"; the composed summary renders into an `aria-live="polite"` region.
+- The dropdown dismisses on outside click; the drawer closes via the mask / "Done" / Esc. Layout uses logical properties and mirrors automatically under RTL.
+
+## 自定义样式须知
+
+`::part(bar)` lays out both ends (sort row at the inline start, trigger at the end); `::part(panel)` is absolutely positioned under the bar in dropdown form and `position: fixed` to the bottom in drawer form (distinguished by the `data-form` attribute); `::part(chips)` is a flex wrap row. The selected option background is a 10% `color-mix` of the primary color — keep the token linkage when overriding.
+
+## API
+
+### oas-filter
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `conditions` | Current value as JSON `{ sort?, order?, groups? }` (`order` only matters for toggled sort items: `asc` / `desc`; `groups` maps group key to a value array, single-select groups keep at most 1). The component writes this back and emits oas-change on user interaction; host writes only sync the view | `FilterConditions \| string` | — |
+| `groups` | Filter groups as a JSON array `[{ key, label, multiple?, options: [{ value, label, disabled? }] }]`; entries without `options` are ignored, invalid JSON warns once and clears (the trigger hides when no groups remain) | `FilterGroup[] \| string` | — |
+| `open` | Panel expanded state: user interaction / `setOpen()` writes it back and emits oas-open-change; host writes only sync the view | `boolean` | — |
+| `panel` | Panel form: `dropdown` (default, anchored under the bar, dismisses on outside click) / `drawer` (half-screen sheet with a mask; recommended on narrow screens); invalid values fall back to `dropdown` and warn once | — | — |
+| `sorts` | Sort options as a JSON array `[{ key, label, toggled? }]`; defaults to the featured/sales/price trio (price toggled), invalid JSON warns once and falls back; `toggled` items flip descending on first click, ascending on the next | `FilterSortOption[] \| string` | — |
+
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `conditions` | Current value: get+set dual channel (object or JSON string), writes reflect the `conditions` attribute (controlled writes do not emit oas-change) | `FilterConditions \| string` | — |
+| `groups` | Filter groups: get+set dual channel (array or JSON string), writes reflect the `groups` attribute | `FilterGroup[] \| string` | — |
+| `open` | Panel expanded state: get+set dual channel (boolean), writes reflect the `open` attribute (silent; only `setOpen()` emits) | `boolean` | — |
+| `sorts` | Sort options: get+set dual channel (array or JSON string), writes reflect the `sorts` attribute | `FilterSortOption[] \| string` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `setOpen` | `setOpen(open: boolean): void` | Programmatic open/close (equivalent to user interaction): reflects the `open` attribute + emits oas-open-change + focus management (opening focuses the first condition, closing restores the trigger) |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Emitted after sorting / picking conditions / removing a chip / resetting, `detail: { sort, order, groups, summary }` (summary is a composed text for host-side aria-live); host writes to `conditions` do not emit |
+| `oas-open-change` | Emitted after the panel opens / closes via user interaction or `setOpen()`, `detail: { open }`; host writes to `open` do not emit |
+
+<script setup lang="ts">
+import { onMounted } from 'vue'
+onMounted(() => {
+  customElements.whenDefined('oas-filter').then(() => {
+    // Controlled demo: preset conditions + host-side clear
+    const ctl = document.getElementById('filter-controlled')!
+    const out = document.getElementById('filter-controlled-out')!
+    out.textContent = 'Current conditions: ' + (ctl.getAttribute('conditions') ?? '(empty)')
+    ctl.addEventListener('oas-change', () => {
+      out.textContent = 'Current conditions: ' + (ctl.getAttribute('conditions') ?? '(empty)')
+    })
+    document.getElementById('filter-clear')?.addEventListener('click', () => {
+      ctl.conditions = {}
+    })
+  })
+})
+</script>

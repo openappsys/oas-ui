@@ -218,6 +218,7 @@ export const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'Category 分类', link: '/components/category' },
       { text: 'Coupon 优惠券', link: '/components/coupon' },
       { text: 'ECard 电子卡', link: '/components/ecard' },
+      { text: 'Filter 筛选栏', link: '/components/filter' },
       { text: 'GoodsAction 商品导航', link: '/components/goods-action' },
       { text: 'Invoice 发票', link: '/components/invoice' },
       { text: 'OrderCard 订单卡片', link: '/components/order-card' },

@@ -787,6 +787,18 @@ export const ru: LocaleMessages = {
   'orderCard.discount': 'Сэкономлено',
   'orderCard.payable': 'К оплате',
   'productCard.noImage': 'Нет изображения',
+  'filter.label': 'Фильтр',
+  'filter.sortLabel': 'Сортировка',
+  'filter.sortComposite': 'Рекомендуемые',
+  'filter.sortSales': 'Продажи',
+  'filter.sortPrice': 'Цена',
+  'filter.panelLabel': 'Критерии фильтра',
+  'filter.selectedCount': 'Выбрано: {count}',
+  'filter.removeChip': 'Удалить {name}',
+  'filter.reset': 'Сбросить',
+  'filter.done': 'Готово',
+  'filter.asc': 'по возрастанию',
+  'filter.desc': 'по убыванию',
 
   // barrage（弹幕）
   'barrage.like': 'Нравится',

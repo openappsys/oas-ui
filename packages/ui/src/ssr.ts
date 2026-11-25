@@ -262,6 +262,7 @@ export { OASTimeSelect } from './commerce/time-select/oas-time-select.js'
 export { OASCart } from './commerce/cart/oas-cart.js'
 export { OASOrderCard } from './commerce/order-card/oas-order-card.js'
 export { OASProductCard } from './commerce/product-card/oas-product-card.js'
+export { OASFilter } from './commerce/filter/oas-filter.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'

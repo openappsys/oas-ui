@@ -23,6 +23,7 @@ import '../commerce/time-select/index.js'
 import '../commerce/cart/index.js'
 import '../commerce/order-card/index.js'
 import '../commerce/product-card/index.js'
+import '../commerce/filter/index.js'
 
 // 唯一透传的 registry API（与全量入口一致）：OASUI.setLocale 切语言；其余 registry API 不进导出面
 export { setLocale } from '@oas-ui/i18n/registry'

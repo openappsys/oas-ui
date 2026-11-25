@@ -786,6 +786,18 @@ export const ko: LocaleMessages = {
   'orderCard.discount': '할인됨',
   'orderCard.payable': '결제 금액',
   'productCard.noImage': '이미지 없음',
+  'filter.label': '필터',
+  'filter.sortLabel': '정렬',
+  'filter.sortComposite': '추천',
+  'filter.sortSales': '판매량',
+  'filter.sortPrice': '가격',
+  'filter.panelLabel': '필터 조건',
+  'filter.selectedCount': '{count}개 선택됨',
+  'filter.removeChip': '{name} 제거',
+  'filter.reset': '초기화',
+  'filter.done': '완료',
+  'filter.asc': '오름차순',
+  'filter.desc': '내림차순',
 
   // barrage（弹幕）
   'barrage.like': '좋아요',

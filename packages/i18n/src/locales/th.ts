@@ -694,6 +694,18 @@ export const th: LocaleMessages = {
   'orderCard.discount': 'ประหยัดแล้ว',
   'orderCard.payable': 'ยอดชำระ',
   'productCard.noImage': 'ไม่มีรูปภาพ',
+  'filter.label': 'ตัวกรอง',
+  'filter.sortLabel': 'เรียงลำดับ',
+  'filter.sortComposite': 'แนะนำ',
+  'filter.sortSales': 'ยอดขาย',
+  'filter.sortPrice': 'ราคา',
+  'filter.panelLabel': 'เงื่อนไขการกรอง',
+  'filter.selectedCount': 'เลือกแล้ว {count} รายการ',
+  'filter.removeChip': 'นำ {name} ออก',
+  'filter.reset': 'รีเซ็ต',
+  'filter.done': 'เสร็จ',
+  'filter.asc': 'น้อยไปมาก',
+  'filter.desc': 'มากไปน้อย',
 
   // barrage（弹幕）
   'barrage.like': 'ถูกใจ',

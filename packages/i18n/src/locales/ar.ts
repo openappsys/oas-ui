@@ -786,6 +786,18 @@ export const ar: LocaleMessages = {
   'orderCard.discount': 'تم التوفير',
   'orderCard.payable': 'المبلغ المدفوع',
   'productCard.noImage': 'لا توجد صورة',
+  'filter.label': 'تصفية',
+  'filter.sortLabel': 'الترتيب',
+  'filter.sortComposite': 'المُوصى بها',
+  'filter.sortSales': 'المبيعات',
+  'filter.sortPrice': 'السعر',
+  'filter.panelLabel': 'معايير التصفية',
+  'filter.selectedCount': 'تم اختيار {count}',
+  'filter.removeChip': 'إزالة {name}',
+  'filter.reset': 'إعادة تعيين',
+  'filter.done': 'تم',
+  'filter.asc': 'تصاعدي',
+  'filter.desc': 'تنازلي',
 
   // barrage（弹幕）
   'barrage.like': 'إعجاب',

@@ -750,6 +750,7 @@ import './commerce/time-select/index.js'
 import './commerce/cart/index.js'
 import './commerce/order-card/index.js'
 import './commerce/product-card/index.js'
+import './commerce/filter/index.js'
 export { OASPrice } from './commerce/price/oas-price.js'
 export { OASSubmitBar } from './commerce/submit-bar/oas-submit-bar.js'
 export type { SubmitBarDetail } from './commerce/submit-bar/oas-submit-bar.js'
@@ -807,6 +808,16 @@ export type {
 } from './commerce/order-card/oas-order-card.js'
 export { OASProductCard } from './commerce/product-card/index.js'
 export type { ProductCardLayout } from './commerce/product-card/oas-product-card.js'
+export { OASFilter } from './commerce/filter/index.js'
+export type {
+  FilterChangeDetail,
+  FilterConditions,
+  FilterGroup,
+  FilterGroupOption,
+  FilterOpenDetail,
+  FilterPanel,
+  FilterSortOption,
+} from './commerce/filter/oas-filter.js'
 
 import './framework/config-provider/index.js'
 import './framework/app/index.js'

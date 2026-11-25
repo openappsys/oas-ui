@@ -4,6 +4,11 @@
 
 ### 新增
 
+**电商扩容首波：commerce 族新组件（filter / goods-list，包体分级规矩首次实践）**
+
+- **oas-filter（列表页筛选栏）**：排序项常显（`sorts` JSON 可配，缺省三件套综合 / 销量 / 价格——价格 `toggled` 支持升降 toggle：首次点击降序、再点升序，方向进 `oas-change` detail 与汇总摘要）+ 条件面板（`groups` JSON 多组配置：单选组 `radiogroup` 语义点已选取消、多选组 `group` 语义任意勾选、`disabled` 选项置灰；`panel="dropdown|drawer"` 两形态——下拉贴底点外收起 / 半屏抽屉带遮罩，窄屏建议抽屉）+ 已选回显 chips（`aria-label` 带「移除 条件名」可聚焦撤销 + 一键重置回缺省）。值契约 = `conditions` JSON 双通道（`{ sort, order, groups }`；用户交互后组件回写 attribute 并派 `oas-change`，宿主写入静默——受控与非受控同一通道）；`oas-open-change` 开合事件 + `setOpen()` 方法（编程式开合含焦点管理）。a11y：触发器 `aria-haspopup/expanded/controls` + 已选计数进可访问名、开面板聚焦首条件、Esc 关回触发器、组内方向键移焦、汇总摘要进 `aria-live="polite"` 活区。本体冻结在大众功能集（条件持久化 / 服务端筛选协议 / 范围条件组 / 面板自适应预留 L3 能力子路径面，README 写明）。单测 +21；qa-regression +5（两形态真点击 / 键盘闭环 / 已选撤销 / 暗色 token）；zh/en 文档 + 7 demo；i18n 新增 12 键（`filter.*`）× 16 语言 + 切片重生成。
+- **登记**：族注册（`families/commerce.ts` 13→14 / 全量入口 / `ssr.ts` 类导出 / families.test 台账）；api 语料（attrs 5 / props 4 / methods 1 / events 2）+ `api:scan`/`api:gen`；侧栏 + zh/en 总览页；llms 产物同步。
+
 **批 D 交互长尾（coupon 叠加规则 / barrage 点赞与屏蔽词 / drag 吸附，全部向后兼容：未启用新属性时渲染与行为不变）**
 
 - **oas-coupon 多选叠加规则**：`max-select`（已选张数上限，到达上限后勾选不生效——勾选态回滚 + 已选集合不变 + 派发新增事件 `oas-select-invalid`（`{ reason: 'max-select', limit, code, codes, coupons }`）；触发按钮显示 `已选 n/m 张`）+ **互斥组**（列表条目 `exclusiveGroup` 标记：选中同组另一张自动取消前一张，被取消的 code 随 `oas-select` 的 `removed` 字段回传）+ 两条规则叠加按**换选后净张数**判定（同组换选不额外占名额）。单选模式忽略两者（天然互斥）。单测 +7；zh/en 文档补「多选叠加规则」段与 demo。

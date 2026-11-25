@@ -194,6 +194,7 @@ OAS-UI provides 176 framework-agnostic Web Components, organized into 10 groups 
 - [Category](/en/components/category) —— Linked two-pane category navigation: a multi-level tree on the left, the active category's child grid and product slots on the right, with keyboard tree navigation and controlled highlighting.
 - [Coupon](/en/components/coupon) —— Coupon card (amount / minimum spend / validity / status colors) plus a selection sheet covering expired, used and not-eligible states.
 - [ECard](/en/components/ecard) —— E-card / stored-value card purchase: card radio list, custom amount, terms acceptance and confirm; cards and amount bounds are host-injected.
+- [Filter](/en/components/filter) —— List page filter loop: sort options (featured / sales / price toggle) + criteria panel (dropdown / half-screen drawer, single- and multi-select groups) + selected-condition chips with per-item undo and one-click reset; conditions JSON dual channel with oas-change.
 - [GoodsAction](/en/components/goods-action) —— Product bottom bar: icon buttons with badges plus main buttons, driven by JSON data.
 - [Invoice](/en/components/invoice) —— Invoice information form: personal/company title switching, tax ID validation, invoice content selection and a saved-title picker popup.
 - [OrderCard](/en/components/order-card) —— Order card: order number plus a configurable status badge (semantic tone mapping), item summary, amount area (paid / struck-through original / saved), collapsible details and an actions slot.

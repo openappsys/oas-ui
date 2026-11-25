@@ -789,6 +789,18 @@ export const he: LocaleMessages = {
   'orderCard.discount': 'נחסך',
   'orderCard.payable': 'לתשלום',
   'productCard.noImage': 'אין תמונה',
+  'filter.label': 'סינון',
+  'filter.sortLabel': 'מיון',
+  'filter.sortComposite': 'מומלצים',
+  'filter.sortSales': 'מכירות',
+  'filter.sortPrice': 'מחיר',
+  'filter.panelLabel': 'קריטריוני סינון',
+  'filter.selectedCount': 'נבחרו {count}',
+  'filter.removeChip': 'הסרת {name}',
+  'filter.reset': 'איפוס',
+  'filter.done': 'סיום',
+  'filter.asc': 'עולה',
+  'filter.desc': 'יורד',
 
   // barrage（弹幕）
   'barrage.like': 'לייק',

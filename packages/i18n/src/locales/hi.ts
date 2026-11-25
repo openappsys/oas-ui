@@ -789,6 +789,18 @@ export const hi: LocaleMessages = {
   'orderCard.discount': 'बचत',
   'orderCard.payable': 'देय राशि',
   'productCard.noImage': 'कोई छवि नहीं',
+  'filter.label': 'फ़िल्टर',
+  'filter.sortLabel': 'क्रम',
+  'filter.sortComposite': 'सुझाव',
+  'filter.sortSales': 'बिक्री',
+  'filter.sortPrice': 'कीमत',
+  'filter.panelLabel': 'फ़िल्टर मानदंड',
+  'filter.selectedCount': '{count} चयनित',
+  'filter.removeChip': '{name} हटाएँ',
+  'filter.reset': 'रीसेट',
+  'filter.done': 'पूर्ण',
+  'filter.asc': 'आरोही',
+  'filter.desc': 'अवरोही',
 
   // barrage（弹幕）
   'barrage.like': 'पसंद करें',

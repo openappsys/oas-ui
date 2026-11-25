@@ -790,6 +790,18 @@ export const uk: LocaleMessages = {
   'orderCard.discount': 'Зекономлено',
   'orderCard.payable': 'До сплати',
   'productCard.noImage': 'Немає зображення',
+  'filter.label': 'Фільтр',
+  'filter.sortLabel': 'Сортування',
+  'filter.sortComposite': 'Рекомендовані',
+  'filter.sortSales': 'Продажі',
+  'filter.sortPrice': 'Ціна',
+  'filter.panelLabel': 'Критерії фільтра',
+  'filter.selectedCount': 'Вибрано: {count}',
+  'filter.removeChip': 'Видалити {name}',
+  'filter.reset': 'Скинути',
+  'filter.done': 'Готово',
+  'filter.asc': 'за зростанням',
+  'filter.desc': 'за спаданням',
 
   // barrage（弹幕）
   'barrage.like': 'Вподобайка',

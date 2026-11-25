@@ -786,6 +786,18 @@ export const de: LocaleMessages = {
   'orderCard.discount': 'Gespart',
   'orderCard.payable': 'Zu zahlen',
   'productCard.noImage': 'Kein Bild',
+  'filter.label': 'Filter',
+  'filter.sortLabel': 'Sortieren',
+  'filter.sortComposite': 'Beliebt',
+  'filter.sortSales': 'Verkaufszahlen',
+  'filter.sortPrice': 'Preis',
+  'filter.panelLabel': 'Filterkriterien',
+  'filter.selectedCount': '{count} ausgewählt',
+  'filter.removeChip': '{name} entfernen',
+  'filter.reset': 'Zurücksetzen',
+  'filter.done': 'Fertig',
+  'filter.asc': 'aufsteigend',
+  'filter.desc': 'absteigend',
 
   // barrage（弹幕）
   'barrage.like': 'Gefällt mir',

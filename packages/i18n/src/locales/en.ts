@@ -714,6 +714,18 @@ export const en: LocaleMessages = {
   'orderCard.discount': 'Saved',
   'orderCard.payable': 'Paid',
   'productCard.noImage': 'No image',
+  'filter.label': 'Filter',
+  'filter.sortLabel': 'Sort',
+  'filter.sortComposite': 'Featured',
+  'filter.sortSales': 'Sales',
+  'filter.sortPrice': 'Price',
+  'filter.panelLabel': 'Filter criteria',
+  'filter.selectedCount': '{count} selected',
+  'filter.removeChip': 'Remove {name}',
+  'filter.reset': 'Reset',
+  'filter.done': 'Done',
+  'filter.asc': 'ascending',
+  'filter.desc': 'descending',
 
   // barrage（弹幕）
   'barrage.like': 'Like',

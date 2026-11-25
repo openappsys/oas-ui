@@ -791,6 +791,18 @@ export const zhHant: LocaleMessages = {
   'orderCard.discount': '已優惠',
   'orderCard.payable': '實付',
   'productCard.noImage': '暫無圖片',
+  'filter.label': '篩選',
+  'filter.sortLabel': '排序',
+  'filter.sortComposite': '綜合',
+  'filter.sortSales': '銷量',
+  'filter.sortPrice': '價格',
+  'filter.panelLabel': '篩選條件',
+  'filter.selectedCount': '已選 {count} 項',
+  'filter.removeChip': '移除 {name}',
+  'filter.reset': '重設',
+  'filter.done': '完成',
+  'filter.asc': '升冪',
+  'filter.desc': '降冪',
 
   // barrage（弹幕）
   'barrage.like': '按讚',
