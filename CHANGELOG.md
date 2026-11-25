@@ -38,6 +38,12 @@
 
 - **oas-filter（列表页筛选栏）**：排序项常显（`sorts` JSON 可配，缺省三件套综合 / 销量 / 价格——价格 `toggled` 支持升降 toggle：首次点击降序、再点升序，方向进 `oas-change` detail 与汇总摘要）+ 条件面板（`groups` JSON 多组配置：单选组 `radiogroup` 语义点已选取消、多选组 `group` 语义任意勾选、`disabled` 选项置灰；`panel="dropdown|drawer"` 两形态——下拉贴底点外收起 / 半屏抽屉带遮罩，窄屏建议抽屉）+ 已选回显 chips（`aria-label` 带「移除 条件名」可聚焦撤销 + 一键重置回缺省）。值契约 = `conditions` JSON 双通道（`{ sort, order, groups }`；用户交互后组件回写 attribute 并派 `oas-change`，宿主写入静默——受控与非受控同一通道）；`oas-open-change` 开合事件 + `setOpen()` 方法（编程式开合含焦点管理）。a11y：触发器 `aria-haspopup/expanded/controls` + 已选计数进可访问名、开面板聚焦首条件、Esc 关回触发器、组内方向键移焦、汇总摘要进 `aria-live="polite"` 活区。本体冻结在大众功能集（条件持久化 / 服务端筛选协议 / 范围条件组 / 面板自适应预留 L3 能力子路径面，README 写明）。单测 +21；qa-regression +5（两形态真点击 / 键盘闭环 / 已选撤销 / 暗色 token）；zh/en 文档 + 7 demo；i18n 新增 12 键（`filter.*`）× 16 语言 + 切片重生成。
 - **登记**：族注册（`families/commerce.ts` 13→14 / 全量入口 / `ssr.ts` 类导出 / families.test 台账）；api 语料（attrs 5 / props 4 / methods 1 / events 2）+ `api:scan`/`api:gen`；侧栏 + zh/en 总览页；llms 产物同步。
+**oas-sku 多组场景补强（commerce 增强子批；向后兼容：不改属性 / 事件 / 渲染行为，纯多组验证与文档）**
+
+- **6 规格组真实服装场景验证**：单测 +6——6 组全渲染（fieldset 数 / legend 顺序 / 各组选项数逐组锁定）、全选精确定位价格 / 库存 / 图片、组合表外的宿主预置 value（深链 / 缓存旧值——交互路径点不出的组合，先选任一项另一项即 disabled）的置灰引导：其余维度全缺货、已选项自身标缺货（disabled + checked）、同组改选出路、多组联动收敛（选「米 + 圆领」后短袖 / 聚酯走不到在库组合置灰）、售罄组合部分选择置灰 + 全选缺货禁用数量、value 字典逐组回写 6 键齐全。zh/en 文档页新增「多规格组（服装类目）」demo（6 组 31 条真实热门组合，含售罄行；全笛卡尔积 288 只录子集）。
+- **embedded 多组面板窄视口验证**：375×600 真实浏览器探针（`qa-regression/sku.spec.ts` +1）——6 组全渲染、最后一组（材质）滚入视口可达可点、组合联动反馈可见。结论：面板随文档流排版、不做内部滚动裁切，内容超出视口由页面滚动承载（弹层形态由 bottom-sheet 85vh 上限 + 内部滚动承载），无需补滚动。
+- **「售卖维度 vs 描述属性」使用指引**：sku README + zh/en 文档页新增章节——specs 只收影响组合拆分与库存的售卖维度；产地 / 品牌 / 成分含量等全组合共享的描述属性放宿主商品详情区展示（塞进 specs 会按选项数倍增组合表：3 组各 3 选项 27 条起步，加一个 2 选项描述维度 = 54 条同价同库存条目）。
+- **万级 skus 匹配性能实测 + 复跑脚本入库**：`scripts/perf/sku-match.mjs`（纯 Node，行数可参数化）——10 000 条（5 组真实分布子集，1.4 MB JSON）纯匹配全选项扫描 ≈ 3.4 ms（Node）/ ≈ 3.45 ms（Chromium）、组合表解析单次 ≈ 3.9 ms；300 条真实类目量级 ≈ 0.2 ms。万级**单次点选全链路 ≈ 33 ms 主线程阻塞**（每次选择跑 3 次 update：重复 JSON.parse + `isAvailable` 每选项全表过滤 ≈ 5.7 ms）。结论：纯匹配距 5 ms 阈值约 1.5× 余量；两项低成本缓解（in-stock 预过滤提到每次 update 一次、按属性串 memo parse，约 5-15 行无行为变化，可省 ≈ 10 ms/次）暂不实施——真实类目数百条全链路 < 4 ms 无感知收益；Map 索引属结构性改动，万级高频场景再立项。口径与数据入 sku README「性能（万级组合表）」。
 
 **批 D 交互长尾（coupon 叠加规则 / barrage 点赞与屏蔽词 / drag 吸附，全部向后兼容：未启用新属性时渲染与行为不变）**
 
