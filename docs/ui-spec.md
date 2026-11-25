@@ -180,6 +180,27 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 
 **组件 API 面边界**：组件本体承载大众功能与既有 API；「重量级、可选、场景化」的增强能力不内联进本体——一律走能力子路径（L3）显式按需补引。分包机制、形态选择标准（注册型 / helper 型）、预算与门禁见 architecture §3.1「打包分层模型（L1 / L2 / L3）」。
 
+### 2.5.1 复合组件内部控件选型（复用 / 自绘权衡决策树）
+
+> 来源：2026-11-25 commerce 扩容批复盘（review 实测修正——初版「弹层复杂即复用」被 filter / invoice / time-select / address 四个已交付自绘组件反证；一次跨族增量估算曾错 3 倍）。**判据 = 被复用件的传递闭包实测体积 × 是否需要模态/多层协同**，不是「交互复杂度」。
+
+决策树（按序判定，命中即停）：
+
+1. **组合可达**（页面级组装已有组件）→ 配方层 guide，0 体积
+2. **只需纯逻辑 / 常量 / 协议**（如触底判定、状态机）→ import 已导出**纯函数**或下沉 **shared 叶子模块**（全部 <1KB gz：`overlay-stack` / `outside-dismiss` / `stable-id` / `direction` / `json-array` / `choice`——跨族复用的实际主力）
+3. **非模态轻浮层**（dropdown / listbox / 筛选面板 / inline 下拉）→ **自绘 + shared 原语**（`outside-dismiss` + `stable-id`；filter / invoice / search-bar 三例成熟，全套 a11y ≈6.7KB 含在链内）。若多组件重复实现同形浮层 → 先抽 **shared 叶子内核**（键盘/翻转/外点，预计 <1.5KB）再各组件薄壳
+4. **模态 / 多层协同**（需要滚动锁 + Esc LIFO + 焦点陷阱 + 遮罩）→ **复用承载件**（bottom-sheet / drawer / modal）——此类复用增量小（sku→bottom-sheet 实测 +3.4KB gz）且重复实现风险高（自绘 drawer 已实证缺口：无滚动锁、未接 overlay-stack）
+5. **目标组件闭包 >15KB**（form/select 46.0 / combobox 38.6 / input 31.4 / tabs 32.1 KB）→ 先找**闭包更小的等价控件**（picker +12.9 / toggle-group +11.5）或自绘；确需原组件时必须一次付**三账**：按需链档（perf 基线逐链）、CDN 族包增量估算、消费者共载概率，并**在组件 README 记录实测数字**（禁用「组件自身 gz + 基座」的粗估——曾致 3 倍误差）
+6. **语义 / API 错配**（如 inspector-section vs collapse、questionnaire 进度 vs progress）→ 自绘，不算违规
+
+**跨族复用三条准入**（替代模糊的「避免跨组件依赖」注记——同文档 sku 的跨族依赖为设计内）：
+
+1. **闭包账**：被复用件传递闭包实测进预算档；<5KB ≈ 自写代码；>15KB 必须评审替代物
+2. **双账**：按需链增量 + **CDN 族包增量**（族包当前无体积门禁，跨族边必须人工核算；应补族包预算档）
+3. **协同面**：仅模态/多层协同构成「必须复用」；非模态轻浮层一律优先自绘 + shared 原语
+
+**配套纪律**：a) 复用留下的第二套实现不得与既有实现并存于同一组件（同组件两套下拉 = 一致性倒退）；b) 跨族边必须单向（form 当前无 commerce import——保持；建议补环检测门禁）；c) 组件 chrome 图标统一从 `@oas-ui/icons` 取，不内联重复 path（防止几何漂移失同步——select/invoice 的 chevron 内联为已知偏离）。
+
 ## 3. 交互与无障碍基线
 
 - 键盘可达：Tab 进、方向键/Enter/Space 操作、Esc 关闭浮层（焦点返回触发元素）
