@@ -181,7 +181,7 @@ onMounted(() => {
 | Method | Signature | Description |
 | --- | --- | --- |
 | `setZoom` | `setZoom(value: number): void` | Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change` only when the value actually changes) |
-| `rotate` | `rotate(delta: number): void` | Rotate by a delta (default +90°, dispatches `oas-change`) |
+| `rotate` | `rotate(delta: number): void` | Rotate by a delta (default +90°; accepts any angle, dispatches `oas-change`) |
 | `reset` | `reset(): void` | Restore initial zoom / rotation / image offset / crop frame (dispatches `oas-change`) |
 | `toBlob` | `toBlob(type?: string, quality?: number): Promise<Blob \| null>` | Export the crop as a Blob (null when canvas is unavailable) |
 | `toDataURL` | `toDataURL(type?: string, quality?: number): string` | Export the crop as a dataURL (empty string when canvas is unavailable) |

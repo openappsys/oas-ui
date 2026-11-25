@@ -181,7 +181,7 @@ onMounted(() => {
 | 方法 | 签名 | 说明 |
 | --- | --- | --- |
 | `setZoom` | `setZoom(value: number): void` | 设置缩放（夹到 `[1, max-zoom]`；值有变化才派发 `oas-change`） |
-| `rotate` | `rotate(delta: number): void` | 旋转指定角度（默认 +90° 并派发 `oas-change`） |
+| `rotate` | `rotate(delta: number): void` | 旋转指定角度（默认 +90°；接受任意角度并派发 `oas-change`） |
 | `reset` | `reset(): void` | 恢复初始缩放 / 旋转 / 图片位移 / 裁剪框（派发 `oas-change`） |
 | `toBlob` | `toBlob(type?: string, quality?: number): Promise<Blob \| null>` | 导出裁剪结果 Blob（canvas 不可用时返回 null） |
 | `toDataURL` | `toDataURL(type?: string, quality?: number): string` | 导出裁剪结果 dataURL（canvas 不可用时返回空串） |

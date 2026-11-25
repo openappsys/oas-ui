@@ -123,7 +123,7 @@ The price inside the panel is rendered by an embedded `oas-price`, so `currency`
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `open` | Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only) | `boolean \| string` | — |
+| `open` | Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only). Switching popup back to embedded writes false and dispatches once — the sheet is hidden, so `open` never lingers stale | `boolean \| string` | — |
 
 #### Methods
 
@@ -138,7 +138,7 @@ The price inside the panel is rendered by an embedded `oas-price`, so `currency`
 | --- | --- |
 | `oas-change` | Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' \| 'quantity' }` (sku is the matched object or null), `detail: { value: { ...this.selected }, quantity: qty, sku, change: 'quantity', } satisfies SkuChangeDetail \| { value: { ...this.selected }, quantity, sku, change, } satisfies SkuChangeDetail` |
 | `oas-close` | Close request **passed through** from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component already collapses itself, so hosts need no handler (listen only for observation) |
-| `oas-open-change` | Sheet open state changed (interactive / imperative), `detail: { open }`; attribute writes stay silent |
+| `oas-open-change` | Sheet open state changed (interactive / imperative / layout-switch settle), `detail: { open }`; attribute writes stay silent |
 
 <script setup>
 import { onMounted } from 'vue'

@@ -112,7 +112,7 @@ description: "商品规格选择：specs + skus 数据契约、选中组合精�
 | `disabled` | 全禁用（兼容 config-provider 注入禁用） | `boolean` | — |
 | `layout` | 承载形态：`embedded`（内嵌面板）/ `popup`（底部弹层，走 bottom-sheet 协议）；缺省按视口自动（≤480px 弹层）；非法值告警回落 embedded | — | — |
 | `locale` | 价格格式化 locale；缺省取文档 `<html lang>`，再退回 `zh-CN` | — | — |
-| `open` | 弹层开合（受控：宿主写 attribute / property 静默生效；仅 popup 形态生效）。交互与 `openOverlay()` / `closeOverlay()` 改变时派发 `oas-open-change` | `boolean \| string` | — |
+| `open` | 弹层开合（受控：宿主写 attribute / property 静默生效；仅 popup 形态生效）。交互与 `openOverlay()` / `closeOverlay()` 改变时派发 `oas-open-change`；popup 切回 embedded 形态时组件同步回写 false 并派发一次（承载弹层已隐藏，open 不残留悬空真值） | `boolean \| string` | — |
 | `precision` | 价格小数位，默认 2 | — | — |
 | `quantity` | 数量（默认 1；上限 = 匹配 sku 库存） | `number \| string` | — |
 | `skus` | SKU JSON 数组 `[{ id?, specs: { [key]: value }, price?, stock?, image?, imageAlt? }]` | `SkuItem[] \| string` | — |
@@ -138,7 +138,7 @@ description: "商品规格选择：specs + skus 数据契约、选中组合精�
 | --- | --- |
 | `oas-change` | 规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' \| 'quantity' }`（sku 为完整匹配对象或 null） |
 | `oas-close` | 承载件 **透传** 的关闭请求（下滑 / 遮罩 / Esc），`detail: { reason }`；组件收到后已自行收起，宿主无需再处理（监听仅用于观测 / 联动） |
-| `oas-open-change` | 弹层开合变化（交互 / 命令式），`detail: { open }`；受控属性写入不派发 |
+| `oas-open-change` | 弹层开合变化（交互 / 命令式 / 形态切换收口），`detail: { open }`；受控属性写入不派发 |
 
 <script setup>
 import { onMounted } from 'vue'

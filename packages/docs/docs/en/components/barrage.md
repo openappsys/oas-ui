@@ -185,7 +185,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accessible` | Boolean; when present the barrage is exposed to screen readers (`role="log"` + `aria-live="polite"`); `aria-hidden` by default | — | — |
-| `auto-play` | Loop playback: once every declared item of the current round has finished playing (queue empty and no looping item on stage), items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good) | — | — |
+| `auto-play` | Loop playback: once every declared item of the current round has finished playing (queue empty and no looping item on stage), items re-enqueue automatically (only items-declared data loops); after clear() the declared items start rotating again (paused state holds), remove items or auto-play to stop for good | — | — |
 | `banned-words` | Banned words (comma-separated or a JSON array string; case-insensitive): matching bullets are never queued or rendered (same rule for `add` / `addBatch` / `items` / auto-play refill — four enqueue channels, one gate); on-screen items are not retroactively removed | `string` | — |
 | `gap` | Minimum horizontal gap between items on the same track (px, default 48) | `string` | — |
 | `height` | Stage height (plain numbers are px, CSS lengths accepted; default 200px) | `string` | — |
@@ -206,7 +206,7 @@ onMounted(() => {
 | `addBatch` | `addBatch(items: Array<string \| BarrageItemInput>): void` | Append many (strings or `{ text, color?, key? }`) |
 | `pause` | `pause(): void` | Pause (writes the `paused` attribute) |
 | `resume` | `resume(): void` | Resume (removes the `paused` attribute) |
-| `clear` | `clear(): void` | Clear on-screen and queued items |
+| `clear` | `clear(): void` | Clear on-screen and queued items; with auto-play on, declared items start rotating again (paused state holds) |
 
 #### Events
 

@@ -185,7 +185,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `accessible` | 布尔，存在时弹幕进入读屏（`role="log"` + `aria-live="polite"`）；缺省 `aria-hidden` | — | — |
-| `auto-play` | 循环播放：本轮声明条目全部播完（队列空且无在场循环条目）后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play） | — | — |
+| `auto-play` | 循环播放：本轮声明条目全部播完（队列空且无在场循环条目）后自动重新入队（只循环 items 声明的数据）；clear() 清空在场与排队后从声明条目重新轮转（暂停中不续播），永久停止请移除 items 或 auto-play | — | — |
 | `banned-words` | 屏蔽词（逗号分隔或 JSON 数组字符串；大小写不敏感）：命中的条目不入队不渲染（`add` / `addBatch` / `items` / auto-play 重灌四条入队通道同一判据）；已在场条目不回溯移除 | `string` | — |
 | `gap` | 同轨道相邻弹幕的最小水平间距（px，默认 48） | `string` | — |
 | `height` | 舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px） | `string` | — |
@@ -206,7 +206,7 @@ onMounted(() => {
 | `addBatch` | `addBatch(items: Array<string \| BarrageItemInput>): void` | 批量追加（字符串或 `{ text, color?, key? }`） |
 | `pause` | `pause(): void` | 暂停（写入 `paused` 属性） |
 | `resume` | `resume(): void` | 继续（移除 `paused` 属性） |
-| `clear` | `clear(): void` | 清空在场与排队弹幕 |
+| `clear` | `clear(): void` | 清空在场与排队弹幕；开启 auto-play 时从声明条目重新轮转（暂停中不续播） |
 
 #### 事件
 
