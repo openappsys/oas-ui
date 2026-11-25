@@ -998,6 +998,23 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ],
     ['oas-goods-list [part="card"]', 'click', '点首个内建商品卡 → oas-item-click'],
   ],
+  // —— 电商扩容二波轻量四件：交互控件全在 shadow 内，按 part 定点 ——
+  'search-bar': [
+    ['oas-search-bar [part="input"]', 'fill:x', '输入实时通道 → oas-input'],
+    ['oas-search-bar [part="go"]', 'click', '点搜索钮 → oas-search（fill 后有值；Enter 路径同效）'],
+    ['oas-search-bar [part="cancel"]', 'click', '点取消钮 → oas-cancel（detail 携带清空前值）'],
+  ],
+  logistics: [['oas-logistics [part="toggle"]', 'click', '点展开/收起切换 → oas-toggle']],
+  'order-list': [
+    // 初始 active="pending"（第二个页签）——点第一个（未激活）页签才派 oas-tab-change（已激活再点不重复派发）
+    ['oas-order-list [part="tab"]', 'click:n0', '点第一个页签（初始未激活）→ oas-tab-change'],
+    [
+      `(() => { const el = document.querySelector('#ol-more'); if (!el) return false; el.scrollIntoView({ block: 'center' }); document.dispatchEvent(new Event('scroll')); return true })()`,
+      'waitfor',
+      '滚到加载更多 demo（哨兵进入视口）→ oas-load-more（宿主协议追加订单卡）',
+    ],
+  ],
+  // member-card：零事件（纯展示卡），静态属性已由 demo 模板覆盖，无探针义务
 }
 
 /** 真实点击，失败回落 DOM click（隐藏/浮层关闭态下 handler 仍会执行） */

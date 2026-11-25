@@ -1,0 +1,59 @@
+{
+  "className": "OASSearchBar",
+  "sourceFile": "packages/ui/src/commerce/search-bar/oas-search-bar.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "hide-cancel",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "value",
+      "type": "string | number",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: raw } satisfies SearchDetail | { value: '' } satisfies SearchDetail"
+    },
+    {
+      "name": "oas-search",
+      "detail": "{ value } satisfies SearchDetail"
+    },
+    {
+      "name": "oas-cancel",
+      "detail": "{ value: before } satisfies CancelDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": "history"
+    },
+    {
+      "name": "hot"
+    },
+    {
+      "name": "suggestions"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

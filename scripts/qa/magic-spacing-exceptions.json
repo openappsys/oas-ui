@@ -582,6 +582,18 @@
       "property": "gap",
       "value": "2px",
       "reason": "标题与副标题 2px 紧排：标题栏高度固定，token 最小档会错位"
+    },
+    {
+      "file": "packages/ui/src/commerce/logistics/oas-logistics.ts",
+      "property": "margin-block-start",
+      "value": "3px",
+      "reason": ".dot 状态点与条目标题行（font-size sm × line-height 1.5 ≈ 21px 行盒）的光学居中对齐：12px 点径相对 21px 行盒的偏移为 3px（(21-12-带线 2×2px)/2 取整），非间距刻度"
+    },
+    {
+      "file": "packages/ui/src/commerce/logistics/oas-logistics.ts",
+      "property": "margin-block-start",
+      "value": "2px",
+      "reason": ".dot current 档放大到 14px 后相对 21px 行盒的光学居中偏移为 2px（与 12px 档的 3px 同一光学对齐常数），非间距刻度"
     }
   ]
 }

@@ -803,6 +803,32 @@ export const ko: LocaleMessages = {
   'filter.asc': '오름차순',
   'filter.desc': '내림차순',
 
+  // search-bar
+  'searchBar.label': '검색창',
+  'searchBar.placeholder': '상품 검색',
+  'searchBar.search': '검색',
+  'searchBar.clear': '검색 내용 지우기',
+  'searchBar.cancel': '취소',
+  // logistics
+  'logistics.label': '배송 조회',
+  'logistics.expand': '전체 {count}개 보기',
+  'logistics.collapse': '접기',
+  'logistics.stateDone': '완료',
+  'logistics.stateCurrent': '진행 중',
+  'logistics.statePending': '대기 중',
+  'logistics.empty': '배송 정보가 없습니다',
+  'logistics.actionsLabel': '관련 작업',
+  // order-list
+  'orderList.label': '주문 목록',
+  'orderList.tabsLabel': '주문 상태',
+  'orderList.loading': '불러오는 중…',
+  'orderList.noMore': '더 이상 없습니다',
+  'orderList.empty': '주문 내역이 없습니다',
+  // member-card
+  'memberCard.label': '멤버십 카드',
+  'memberCard.gradeLabel': '회원 등급',
+  'memberCard.expirePrefix': '유효 기간',
+
   // barrage（弹幕）
   'barrage.like': '좋아요',
   'barrage.unlike': '좋아요 취소',

@@ -1,0 +1,40 @@
+{
+  "className": "OASMemberCard",
+  "sourceFile": "packages/ui/src/commerce/member-card/oas-member-card.ts",
+  "attrs": [
+    {
+      "name": "grade",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "observed": true
+    },
+    {
+      "name": "expire",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "methods": [],
+  "events": [],
+  "slots": [
+    {
+      "name": "actions"
+    },
+    {
+      "name": "perks"
+    }
+  ],
+  "cssVars": [
+    {
+      "name": "--oas-member-card-bg",
+      "default": "var(--oas-color-primary)"
+    },
+    {
+      "name": "--oas-member-card-gradient",
+      "default": "linear-gradient(135deg, var(--oas-color-primary), var(--oas-color-primary-active))"
+    }
+  ],
+  "unresolved": []
+}

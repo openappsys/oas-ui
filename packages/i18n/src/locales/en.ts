@@ -731,6 +731,32 @@ export const en: LocaleMessages = {
   'filter.asc': 'ascending',
   'filter.desc': 'descending',
 
+  // search-bar
+  'searchBar.label': 'Search bar',
+  'searchBar.placeholder': 'Search products',
+  'searchBar.search': 'Search',
+  'searchBar.clear': 'Clear search input',
+  'searchBar.cancel': 'Cancel',
+  // logistics
+  'logistics.label': 'Delivery tracking',
+  'logistics.expand': 'Show all {count} updates',
+  'logistics.collapse': 'Collapse',
+  'logistics.stateDone': 'Completed',
+  'logistics.stateCurrent': 'In progress',
+  'logistics.statePending': 'Pending',
+  'logistics.empty': 'No delivery updates yet',
+  'logistics.actionsLabel': 'Related actions',
+  // order-list
+  'orderList.label': 'Order list',
+  'orderList.tabsLabel': 'Order status',
+  'orderList.loading': 'Loading…',
+  'orderList.noMore': 'No more orders',
+  'orderList.empty': 'No orders yet',
+  // member-card
+  'memberCard.label': 'Membership card',
+  'memberCard.gradeLabel': 'Membership tier',
+  'memberCard.expirePrefix': 'Valid until',
+
   // barrage（弹幕）
   'barrage.like': 'Like',
   'barrage.unlike': 'Unlike',

@@ -752,6 +752,10 @@ import './commerce/order-card/index.js'
 import './commerce/product-card/index.js'
 import './commerce/filter/index.js'
 import './commerce/goods-list/index.js'
+import './commerce/search-bar/index.js'
+import './commerce/logistics/index.js'
+import './commerce/order-list/index.js'
+import './commerce/member-card/index.js'
 export { OASPrice } from './commerce/price/oas-price.js'
 export { OASSubmitBar } from './commerce/submit-bar/oas-submit-bar.js'
 export type { SubmitBarDetail } from './commerce/submit-bar/oas-submit-bar.js'
@@ -821,6 +825,18 @@ export type {
 } from './commerce/filter/oas-filter.js'
 export { OASGoodsList } from './commerce/goods-list/index.js'
 export type { GoodsItem, GoodsItemClickDetail, GoodsListLayout } from './commerce/goods-list/oas-goods-list.js'
+export { OASSearchBar } from './commerce/search-bar/index.js'
+export type { SearchDetail, CancelDetail } from './commerce/search-bar/oas-search-bar.js'
+export { OASLogistics } from './commerce/logistics/index.js'
+export type {
+  LogisticsStep,
+  LogisticsStepState,
+  LogisticsToggleDetail,
+} from './commerce/logistics/oas-logistics.js'
+export { OASOrderList } from './commerce/order-list/index.js'
+export type { OrderTab, OrderTabChangeDetail } from './commerce/order-list/oas-order-list.js'
+export { OASMemberCard } from './commerce/member-card/index.js'
+export type { MemberCardVariant } from './commerce/member-card/oas-member-card.js'
 
 import './framework/config-provider/index.js'
 import './framework/app/index.js'

@@ -808,6 +808,32 @@ export const zhHant: LocaleMessages = {
   'filter.asc': '升冪',
   'filter.desc': '降冪',
 
+  // search-bar
+  'searchBar.label': '搜尋欄',
+  'searchBar.placeholder': '搜尋商品',
+  'searchBar.search': '搜尋',
+  'searchBar.clear': '清除搜尋內容',
+  'searchBar.cancel': '取消',
+  // logistics
+  'logistics.label': '物流追蹤',
+  'logistics.expand': '展開全部 {count} 條',
+  'logistics.collapse': '收起',
+  'logistics.stateDone': '已完成',
+  'logistics.stateCurrent': '進行中',
+  'logistics.statePending': '待完成',
+  'logistics.empty': '暫無物流資訊',
+  'logistics.actionsLabel': '相關操作',
+  // order-list
+  'orderList.label': '訂單列表',
+  'orderList.tabsLabel': '訂單狀態',
+  'orderList.loading': '載入中…',
+  'orderList.noMore': '沒有更多了',
+  'orderList.empty': '暫無訂單',
+  // member-card
+  'memberCard.label': '會員卡',
+  'memberCard.gradeLabel': '會員等級',
+  'memberCard.expirePrefix': '有效期',
+
   // barrage（弹幕）
   'barrage.like': '按讚',
   'barrage.unlike': '取消按讚',

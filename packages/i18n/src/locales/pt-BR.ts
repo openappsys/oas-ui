@@ -803,6 +803,32 @@ export const ptBR: LocaleMessages = {
   'filter.asc': 'crescente',
   'filter.desc': 'decrescente',
 
+  // search-bar
+  'searchBar.label': 'Barra de busca',
+  'searchBar.placeholder': 'Buscar produtos',
+  'searchBar.search': 'Buscar',
+  'searchBar.clear': 'Limpar a busca',
+  'searchBar.cancel': 'Cancelar',
+  // logistics
+  'logistics.label': 'Rastreamento de entrega',
+  'logistics.expand': 'Mostrar todos os {count} registros',
+  'logistics.collapse': 'Recolher',
+  'logistics.stateDone': 'Concluído',
+  'logistics.stateCurrent': 'Em andamento',
+  'logistics.statePending': 'Pendente',
+  'logistics.empty': 'Ainda sem informações de entrega',
+  'logistics.actionsLabel': 'Ações relacionadas',
+  // order-list
+  'orderList.label': 'Lista de pedidos',
+  'orderList.tabsLabel': 'Status do pedido',
+  'orderList.loading': 'Carregando…',
+  'orderList.noMore': 'Não há mais pedidos',
+  'orderList.empty': 'Ainda não há pedidos',
+  // member-card
+  'memberCard.label': 'Cartão de associação',
+  'memberCard.gradeLabel': 'Nível de associação',
+  'memberCard.expirePrefix': 'Válido até',
+
   // barrage（弹幕）
   'barrage.like': 'Curtir',
   'barrage.unlike': 'Descurtir',

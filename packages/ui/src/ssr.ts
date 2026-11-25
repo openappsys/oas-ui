@@ -264,6 +264,10 @@ export { OASOrderCard } from './commerce/order-card/oas-order-card.js'
 export { OASProductCard } from './commerce/product-card/oas-product-card.js'
 export { OASFilter } from './commerce/filter/oas-filter.js'
 export { OASGoodsList } from './commerce/goods-list/oas-goods-list.js'
+export { OASSearchBar } from './commerce/search-bar/oas-search-bar.js'
+export { OASLogistics } from './commerce/logistics/oas-logistics.js'
+export { OASOrderList } from './commerce/order-list/oas-order-list.js'
+export { OASMemberCard } from './commerce/member-card/oas-member-card.js'
 
 // ---------- workbench ----------
 export { OASTitlebar } from './workbench/titlebar/oas-titlebar.js'

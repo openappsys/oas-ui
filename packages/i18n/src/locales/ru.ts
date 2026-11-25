@@ -804,6 +804,32 @@ export const ru: LocaleMessages = {
   'filter.asc': 'по возрастанию',
   'filter.desc': 'по убыванию',
 
+  // search-bar
+  'searchBar.label': 'Панель поиска',
+  'searchBar.placeholder': 'Поиск товаров',
+  'searchBar.search': 'Найти',
+  'searchBar.clear': 'Очистить поисковый запрос',
+  'searchBar.cancel': 'Отмена',
+  // logistics
+  'logistics.label': 'Отслеживание доставки',
+  'logistics.expand': 'Показать все записи ({count})',
+  'logistics.collapse': 'Свернуть',
+  'logistics.stateDone': 'Завершено',
+  'logistics.stateCurrent': 'Выполняется',
+  'logistics.statePending': 'Ожидается',
+  'logistics.empty': 'Информации о доставке пока нет',
+  'logistics.actionsLabel': 'Связанные действия',
+  // order-list
+  'orderList.label': 'Список заказов',
+  'orderList.tabsLabel': 'Статус заказа',
+  'orderList.loading': 'Загрузка…',
+  'orderList.noMore': 'Заказов больше нет',
+  'orderList.empty': 'Заказов пока нет',
+  // member-card
+  'memberCard.label': 'Карта участника',
+  'memberCard.gradeLabel': 'Уровень участия',
+  'memberCard.expirePrefix': 'Действует до',
+
   // barrage（弹幕）
   'barrage.like': 'Нравится',
   'barrage.unlike': 'Убрать отметку',

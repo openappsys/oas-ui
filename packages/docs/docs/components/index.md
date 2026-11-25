@@ -198,9 +198,13 @@ OAS-UI 提供 176 个框架无关的 Web Components 组件，按用途划分为 
 - [GoodsAction 商品导航](/components/goods-action) —— 商品底部导航：icon 按钮组（含角标）+ 主按钮组，JSON 数据驱动。
 - [GoodsList 商品列表容器](/components/goods-list) —— 商品列表闭环：瀑布流（列数自适应 / 固定 + 按累计高度最短列均衡放置）/ 纵向列表两形态；`items` JSON 双通道渲染内建简版卡，卡片位插槽整体替换为自定义卡；触底 `oas-load-more` + loading / 到底态与空态插槽。
 - [Invoice 发票](/components/invoice) —— 发票信息表单：个人 / 企业抬头切换、税号校验、发票内容选择与已保存抬头选择弹层。
+- [Logistics 物流时间线](/components/logistics) —— 物流跟踪时间线：`steps` JSON 双通道（最新在前惯例，`reverse` 可翻转）+ 当前节点高亮（`state` 缺省按序推导）+ 折叠展开（只看最新 2 条）+ 复制单号 / 复制地址动作插槽；`ol/li` 合法时间线语义。
+- [MemberCard 会员卡](/components/member-card) —— 等级 / 权益卡：等级徽章（可见文本即等级标识，不只靠颜色）+ 权益插槽 + 有效期 + 操作区按钮插槽；底色 `solid` / `gradient` 两档 token 化，暗色自动跟随；纯展示零事件。
 - [OrderCard 订单卡片](/components/order-card) —— 订单列表 / 详情卡：订单号 + 可配置状态徽标（语义色映射）+ 条目摘要 + 金额区（实付 / 划线原价 / 已优惠）+ 可折叠明细与操作按钮插槽。
+- [OrderList 订单列表容器](/components/order-list) —— 订单列表闭环：状态页签（`tabs` JSON 双通道 + 键盘 roving tabindex）+ 订单卡列表插槽（宿主放 order-card / 自定义卡，本体不内建卡片渲染）+ 触底加载更多（哨兵协议）+ 空态；附 tabs + order-card 手工组装配方版，二选一。
 - [Price 价格](/components/price) —— 价格格式化：币种 / 千分位 / 划线价 / 区间价 + 涨跌趋势箭头。
 - [ProductCard 商品卡片](/components/product-card) —— 商品卡片：图片（比例可配）+ 标题两行截断 + 现价与划线价 + 标签 / 促销 / 按钮插槽，纵向与横向两形态。
+- [SearchBar 搜索栏](/components/search-bar) —— 移动端搜索惯例封装：胶囊输入框 + 清除 / 取消 / 搜索触发（Enter / 搜索钮，空值不派发）+ 历史词与热门词插槽（持久化归宿主）+ 联想位插槽，空值 / 有值自动分组切换。
 - [SKU 商品规格](/components/sku) —— 规格组与 SKU 组合匹配、缺货置灰、可选路径提示与数量步进。
 - [SubmitBar 结算栏](/components/submit-bar) —— 底部结算栏：扩展区 + 合计金额 + 主按钮（加载 / 禁用 / 危险态）。
 - [TimeSelect 配送时段](/components/time-select) —— 配送时段选择：日期列（今日起 N 天）+ 时段网格，尽快送达 / 预约配送两模式，休息与满约两种不可选语义，日期与时段网格各自 roving tabindex 键盘导航。

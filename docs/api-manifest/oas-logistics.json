@@ -1,0 +1,45 @@
+{
+  "className": "OASLogistics",
+  "sourceFile": "packages/ui/src/commerce/logistics/oas-logistics.ts",
+  "attrs": [
+    {
+      "name": "steps",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "collapsed",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "steps",
+      "type": "LogisticsStep[] | string",
+      "api": true
+    },
+    {
+      "name": "collapsed",
+      "type": "boolean",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-toggle",
+      "detail": "{ collapsed: next } satisfies LogisticsToggleDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": "actions"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

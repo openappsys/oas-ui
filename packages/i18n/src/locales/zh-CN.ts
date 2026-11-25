@@ -810,6 +810,32 @@ export const zhCN = {
   'filter.asc': '升序',
   'filter.desc': '降序',
 
+  // search-bar（搜索栏）
+  'searchBar.label': '搜索栏',
+  'searchBar.placeholder': '搜索商品',
+  'searchBar.search': '搜索',
+  'searchBar.clear': '清除搜索内容',
+  'searchBar.cancel': '取消',
+  // logistics（物流时间线）
+  'logistics.label': '物流跟踪',
+  'logistics.expand': '展开全部 {count} 条',
+  'logistics.collapse': '收起',
+  'logistics.stateDone': '已完成',
+  'logistics.stateCurrent': '进行中',
+  'logistics.statePending': '待完成',
+  'logistics.empty': '暂无物流信息',
+  'logistics.actionsLabel': '相关操作',
+  // order-list（订单列表容器）
+  'orderList.label': '订单列表',
+  'orderList.tabsLabel': '订单状态',
+  'orderList.loading': '加载中…',
+  'orderList.noMore': '没有更多了',
+  'orderList.empty': '暂无订单',
+  // member-card（会员卡）
+  'memberCard.label': '会员卡',
+  'memberCard.gradeLabel': '会员等级',
+  'memberCard.expirePrefix': '有效期',
+
   // barrage（弹幕）
   'barrage.like': '点赞',
   'barrage.unlike': '取消点赞',

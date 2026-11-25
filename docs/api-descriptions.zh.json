@@ -5937,5 +5937,76 @@
       "promo": "促销文案位（满减 / 秒杀倒计时等）；空插槽自动收起",
       "actions": "按钮区（加入购物车 / 立即购买等）；空插槽自动收起"
     }
+  },
+  "oas-search-bar": {
+    "attrs": {
+      "value": "当前输入值。输入过程实时回写 attribute 并派发 oas-input（宿主可做联想渲染）；空值搜索不派发 oas-search",
+      "placeholder": "占位文案，缺省 i18n「搜索商品」（宿主可覆盖）",
+      "disabled": "输入与全部按钮禁用（config-provider 注入 disabled 同样生效）",
+      "hide-cancel": "隐藏取消钮（嵌入已有退出途径的工具条场合）"
+    },
+    "props": {
+      "value": "当前输入值：get+set 双通道，写即反射 `value` attribute（赋值即生效不派发事件）"
+    },
+    "events": {
+      "oas-input": "输入实时派发（清除钮同样派发——只听 oas-input 的宿主不漏清除），`detail: { value }`",
+      "oas-search": "Enter 或搜索钮触发，`detail: { value }`；空值不派发（无意义空搜索）",
+      "oas-cancel": "取消钮触发，`detail: { value }` 携带清空前值（宿主可按需恢复）；组件随即清空并收起面板"
+    },
+    "slots": {
+      "history": "历史词（空值 + 聚焦时显示；持久化归宿主——宿主渲染 chips 并自行记录）",
+      "hot": "热门词（空值 + 聚焦时显示，与 history 同组并列）",
+      "suggestions": "联想位（有值 + 聚焦时显示；宿主监听 oas-input 动态渲染）"
+    }
+  },
+  "oas-logistics": {
+    "attrs": {
+      "steps": "物流节点 JSON 数组 `[{ state?, time?, desc?, title? }]`（最新在前惯例；缺 title 且缺 desc 的条目忽略；非法 JSON 告警一次按空处理渲染空态）",
+      "reverse": "翻转渲染序（宿主数据为时间正序时用；aria-current 跟随语义节点而非 DOM 位置）",
+      "collapsed": "折叠态：只看最新 2 条（steps ≤2 条时切换钮隐藏）；用户点击切换时组件回写 attribute 并派发 oas-toggle"
+    },
+    "props": {
+      "steps": "物流节点数据：get+set 双通道（数组或 JSON 字符串），写即反射 `steps` attribute",
+      "collapsed": "折叠态：get+set 双通道（布尔），写即反射 `collapsed` attribute（宿主直写静默，用户点击才派发）"
+    },
+    "events": {
+      "oas-toggle": "用户点展开 / 收起切换后派发，`detail: { collapsed }`（切换后的状态）；宿主写 `collapsed` attribute 不派发"
+    },
+    "slots": {
+      "actions": "动作区（复制单号 / 复制地址等——复制逻辑与按钮可访问名归宿主，组件提供槽位与布局；无内容时动作区整体隐藏）"
+    }
+  },
+  "oas-order-list": {
+    "attrs": {
+      "tabs": "页签配置 JSON 数组 `[{ key, label, count?, disabled? }]`（缺 key 或 label 的条目忽略；非法 JSON 告警一次按空处理，空 tablist 隐藏）",
+      "active": "当前页签 key：用户点击 / 键盘激活时组件回写并派发 oas-tab-change；宿主直写静默；缺省解析到第一个 tab",
+      "loading": "加载更多 loading 态：宿主收到 oas-load-more 后置位（渲染 spinner + 加载中文案，置位同时解除触底待应答）",
+      "no-more": "到底态：显示「没有更多了」文案且触底不再派发"
+    },
+    "props": {
+      "tabs": "页签配置：get+set 双通道（数组或 JSON 字符串），写即反射 `tabs` attribute",
+      "active": "当前页签 key：get+set 双通道，写即反射 `active` attribute（静默；用户交互才派发事件）"
+    },
+    "events": {
+      "oas-tab-change": "用户激活页签后派发，`detail: { key, label }`；已激活页签再点不重复派发；宿主写 `active` attribute 不派发",
+      "oas-load-more": "哨兵进入视口（240px 提前量）且非 loading / no-more 时派发；派发后进入待应答，宿主置 `loading` 或插槽内容变化（追加订单卡）解除；宿主都不做则不再触发"
+    },
+    "slots": {
+      "": "订单卡列表位：宿主放 oas-order-card / 自定义卡（卡留在 light DOM 不搬运，内容、样式与点击行为完全由宿主接管）",
+      "empty": "空态内容（插槽无卡时渲染；缺省「暂无订单」文案）"
+    }
+  },
+  "oas-member-card": {
+    "attrs": {
+      "grade": "等级名（如「黄金会员」）；缺省不渲染徽章；等级标识 = 徽章可见文本 + sr-only「会员等级」前缀（不只靠颜色）",
+      "variant": "底色档位：`solid`（缺省）/ `gradient`；非法值回落 solid 并告警一次；当前档反射 data-variant attribute",
+      "expire": "有效期文本（宿主给日期或文案，渲染 i18n 前缀行）；缺省不渲染有效期行"
+    },
+    "props": {},
+    "events": {},
+    "slots": {
+      "perks": "权益区（权益条目归宿主渲染；无内容时整体隐藏）",
+      "actions": "操作区（续费 / 升级按钮——行为与可访问名归宿主按钮自带；无内容时整体隐藏）"
+    }
   }
 }

@@ -245,6 +245,10 @@
   "oas-product-card",
   "oas-filter",
   "oas-goods-list",
+  "oas-search-bar",
+  "oas-logistics",
+  "oas-order-list",
+  "oas-member-card",
   "oas-config-provider",
   "oas-app",
   "oas-theme-editor"

@@ -807,6 +807,32 @@ export const fa: LocaleMessages = {
   'filter.asc': 'صعودی',
   'filter.desc': 'نزولی',
 
+  // search-bar
+  'searchBar.label': 'نوار جست‌وجو',
+  'searchBar.placeholder': 'جست‌وجوی محصولات',
+  'searchBar.search': 'جست‌وجو',
+  'searchBar.clear': 'پاک کردن متن جست‌وجو',
+  'searchBar.cancel': 'لغو',
+  // logistics
+  'logistics.label': 'رهگیری ارسال',
+  'logistics.expand': 'نمایش همه {count} رکورد',
+  'logistics.collapse': 'جمع‌کردن',
+  'logistics.stateDone': 'انجام شد',
+  'logistics.stateCurrent': 'در حال انجام',
+  'logistics.statePending': 'در انتظار',
+  'logistics.empty': 'هنوز اطلاعات ارسالی وجود ندارد',
+  'logistics.actionsLabel': 'اقدامات مرتبط',
+  // order-list
+  'orderList.label': 'فهرست سفارش‌ها',
+  'orderList.tabsLabel': 'وضعیت سفارش',
+  'orderList.loading': 'در حال بارگذاری…',
+  'orderList.noMore': 'سفارش بیشتری نیست',
+  'orderList.empty': 'هنوز سفارشی نیست',
+  // member-card
+  'memberCard.label': 'کارت عضویت',
+  'memberCard.gradeLabel': 'سطح عضویت',
+  'memberCard.expirePrefix': 'معتبر تا',
+
   // barrage（弹幕）
   'barrage.like': 'پسندیدن',
   'barrage.unlike': 'برداشتن پسند',

@@ -1,15 +1,15 @@
 {
   "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
-    "sampled": 61776,
+    "sampled": 63524,
     "below30": 0,
     "below45": 0,
     "below60": 0,
-    "ratio": 291,
+    "ratio": 296,
     "exempt": 700,
     "skipped": {
-      "local": 4050,
-      "ci": 4370
+      "local": 4084,
+      "ci": 4404
     }
   },
   "topPairs": [],
@@ -301,6 +301,28 @@
       }
     },
     "carousel.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
+    },
+    "cart.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
+    },
+    "cart.html::dark": {
       "below30": 0,
       "below45": 0,
       "below60": 0,
@@ -751,6 +773,28 @@
         "ci": 4
       }
     },
+    "filter.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
+    },
+    "filter.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 2,
+        "ci": 2
+      }
+    },
     "flex.html": {
       "below30": 0,
       "below45": 0,
@@ -850,6 +894,17 @@
         "ci": 19
       }
     },
+    "goods-list.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 2,
+      "exempt": 0,
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
+    },
     "gradient-text.html": {
       "below30": 0,
       "below45": 0,
@@ -890,8 +945,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 3,
-        "ci": 3
+        "local": 4,
+        "ci": 4
       }
     },
     "image-picker.html::dark": {
@@ -901,8 +956,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 3,
-        "ci": 3
+        "local": 4,
+        "ci": 4
       }
     },
     "image.html": {
@@ -1158,6 +1213,28 @@
         "ci": 12
       }
     },
+    "member-card.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 9,
+        "ci": 9
+      }
+    },
+    "member-card.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 9,
+        "ci": 9
+      }
+    },
     "menu.html": {
       "below30": 0,
       "below45": 0,
@@ -1295,6 +1372,17 @@
       "below45": 0,
       "below60": 0,
       "ratio": 2,
+      "exempt": 0,
+      "skipped": {
+        "local": 0,
+        "ci": 0
+      }
+    },
+    "order-list.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 3,
       "exempt": 0,
       "skipped": {
         "local": 0,
@@ -1440,8 +1528,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 21,
-        "ci": 21
+        "local": 23,
+        "ci": 23
       }
     },
     "questionnaire.html::dark": {
@@ -1451,8 +1539,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 21,
-        "ci": 21
+        "local": 23,
+        "ci": 23
       }
     },
     "radio.html": {
@@ -1662,6 +1750,28 @@
       "skipped": {
         "local": 8,
         "ci": 8
+      }
+    },
+    "sku.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
+    "sku.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
       }
     },
     "slider.html": {

@@ -803,6 +803,32 @@ export const ar: LocaleMessages = {
   'filter.asc': 'تصاعدي',
   'filter.desc': 'تنازلي',
 
+  // search-bar
+  'searchBar.label': 'شريط البحث',
+  'searchBar.placeholder': 'ابحث عن المنتجات',
+  'searchBar.search': 'بحث',
+  'searchBar.clear': 'مسح نص البحث',
+  'searchBar.cancel': 'إلغاء',
+  // logistics
+  'logistics.label': 'تتبع التوصيل',
+  'logistics.expand': 'عرض كل السجلات ({count})',
+  'logistics.collapse': 'طي',
+  'logistics.stateDone': 'مكتمل',
+  'logistics.stateCurrent': 'قيد التنفيذ',
+  'logistics.statePending': 'معلّق',
+  'logistics.empty': 'لا توجد معلومات تتبع بعد',
+  'logistics.actionsLabel': 'إجراءات ذات صلة',
+  // order-list
+  'orderList.label': 'قائمة الطلبات',
+  'orderList.tabsLabel': 'حالة الطلب',
+  'orderList.loading': 'جارٍ التحميل…',
+  'orderList.noMore': 'لا مزيد من الطلبات',
+  'orderList.empty': 'لا توجد طلبات بعد',
+  // member-card
+  'memberCard.label': 'بطاقة العضوية',
+  'memberCard.gradeLabel': 'مستوى العضوية',
+  'memberCard.expirePrefix': 'سارية حتى',
+
   // barrage（弹幕）
   'barrage.like': 'إعجاب',
   'barrage.unlike': 'إلغاء الإعجاب',

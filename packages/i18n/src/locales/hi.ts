@@ -806,6 +806,32 @@ export const hi: LocaleMessages = {
   'filter.asc': 'आरोही',
   'filter.desc': 'अवरोही',
 
+  // search-bar
+  'searchBar.label': 'खोज पट्टी',
+  'searchBar.placeholder': 'उत्पाद खोजें',
+  'searchBar.search': 'खोजें',
+  'searchBar.clear': 'खोज सामग्री साफ़ करें',
+  'searchBar.cancel': 'रद्द करें',
+  // logistics
+  'logistics.label': 'डिलीवरी ट्रैकिंग',
+  'logistics.expand': 'सभी {count} प्रविष्टियाँ देखें',
+  'logistics.collapse': 'संकुचित करें',
+  'logistics.stateDone': 'पूर्ण',
+  'logistics.stateCurrent': 'चल रहा है',
+  'logistics.statePending': 'लंबित',
+  'logistics.empty': 'अभी कोई डिलीवरी जानकारी नहीं है',
+  'logistics.actionsLabel': 'संबंधित क्रियाएँ',
+  // order-list
+  'orderList.label': 'ऑर्डर सूची',
+  'orderList.tabsLabel': 'ऑर्डर स्थिति',
+  'orderList.loading': 'लोड हो रहा है…',
+  'orderList.noMore': 'और कोई ऑर्डर नहीं',
+  'orderList.empty': 'अभी कोई ऑर्डर नहीं',
+  // member-card
+  'memberCard.label': 'सदस्यता कार्ड',
+  'memberCard.gradeLabel': 'सदस्यता स्तर',
+  'memberCard.expirePrefix': 'मान्यता अवधि',
+
   // barrage（弹幕）
   'barrage.like': 'पसंद करें',
   'barrage.unlike': 'पसंद हटाएँ',

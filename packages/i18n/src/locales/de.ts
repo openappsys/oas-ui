@@ -803,6 +803,32 @@ export const de: LocaleMessages = {
   'filter.asc': 'aufsteigend',
   'filter.desc': 'absteigend',
 
+  // search-bar
+  'searchBar.label': 'Suchleiste',
+  'searchBar.placeholder': 'Produkte suchen',
+  'searchBar.search': 'Suchen',
+  'searchBar.clear': 'Sucheingabe löschen',
+  'searchBar.cancel': 'Abbrechen',
+  // logistics
+  'logistics.label': 'Sendungsverfolgung',
+  'logistics.expand': 'Alle {count} Einträge anzeigen',
+  'logistics.collapse': 'Einklappen',
+  'logistics.stateDone': 'Abgeschlossen',
+  'logistics.stateCurrent': 'In Bearbeitung',
+  'logistics.statePending': 'Ausstehend',
+  'logistics.empty': 'Noch keine Sendungsdaten',
+  'logistics.actionsLabel': 'Verwandte Aktionen',
+  // order-list
+  'orderList.label': 'Bestellliste',
+  'orderList.tabsLabel': 'Bestellstatus',
+  'orderList.loading': 'Wird geladen…',
+  'orderList.noMore': 'Keine weiteren Bestellungen',
+  'orderList.empty': 'Noch keine Bestellungen',
+  // member-card
+  'memberCard.label': 'Mitgliedskarte',
+  'memberCard.gradeLabel': 'Mitgliedsstufe',
+  'memberCard.expirePrefix': 'Gültig bis',
+
   // barrage（弹幕）
   'barrage.like': 'Gefällt mir',
   'barrage.unlike': 'Gefällt mir nicht mehr',

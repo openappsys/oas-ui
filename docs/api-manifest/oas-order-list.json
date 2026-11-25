@@ -1,0 +1,57 @@
+{
+  "className": "OASOrderList",
+  "sourceFile": "packages/ui/src/commerce/order-list/oas-order-list.ts",
+  "attrs": [
+    {
+      "name": "tabs",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-more",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "tabs",
+      "type": "OrderTab[] | string",
+      "api": true
+    },
+    {
+      "name": "active",
+      "type": "string",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-load-more",
+      "detail": "{}"
+    },
+    {
+      "name": "oas-tab-change",
+      "detail": "{ key, label: tabDef.label } satisfies OrderTabChangeDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "empty"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

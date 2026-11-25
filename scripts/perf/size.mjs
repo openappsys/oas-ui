@@ -681,6 +681,11 @@ const COMPONENT_ENTRIES = [
   { id: 'commerceProductCard', entry: 'commerce/product-card', spec: '@oas-ui/ui/commerce/product-card' },
   { id: 'commerceFilter', entry: 'commerce/filter', spec: '@oas-ui/ui/commerce/filter' },
   { id: 'commerceGoodsList', entry: 'commerce/goods-list', spec: '@oas-ui/ui/commerce/goods-list' },
+  // —— 电商扩容二波轻量四件（2026-11-25 随批登记逐链预算档） ——
+  { id: 'commerceSearchBar', entry: 'commerce/search-bar', spec: '@oas-ui/ui/commerce/search-bar' },
+  { id: 'commerceLogistics', entry: 'commerce/logistics', spec: '@oas-ui/ui/commerce/logistics' },
+  { id: 'commerceOrderList', entry: 'commerce/order-list', spec: '@oas-ui/ui/commerce/order-list' },
+  { id: 'commerceMemberCard', entry: 'commerce/member-card', spec: '@oas-ui/ui/commerce/member-card' },
 ]
 const componentMeasures = {}
 for (const { id, entry } of COMPONENT_ENTRIES) {
@@ -719,9 +724,9 @@ const BUDGETS = [
     name: '@oas-ui/ui 全量入口链 gzip',
     kind: 'ceiling',
     get: () => fullEntry.gzipBytes,
-    limit: 1255 * 1024, // 1255 KB（2026-11-25 电商扩容首波重定档：filter + goods-list 落地后实测 1244.0 KB 顶穿前档 1240）
+    limit: 1270 * 1024, // 1270 KB（2026-11-25 电商扩容二波微调：search-bar/logistics/order-list/member-card 四件落地后实测 1257.4 KB 顶穿前档 1255）
     basis:
-      '天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；2026-11-25 电商扩容首波（oas-filter 筛选栏 + oas-goods-list 商品列表容器）后实测 1244.0 KB 顶穿前档 1240——边际增量 ≈ +11 KB（两组件本体与 i18n 文案，core/i18n 基座共享不重计），按实测微调 1255 KB；commerce 逐链预算已独立建立（commerce* 档位），下一批（批 2 数据流）落地前须先做包体归因',
+      '天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；2026-11-25 电商扩容首波（oas-filter 筛选栏 + oas-goods-list 商品列表容器）后实测 1244.0 KB 顶穿前档 1240——边际增量 ≈ +11 KB（两组件本体与 i18n 文案，core/i18n 基座共享不重计），按实测微调 1255 KB；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件）后实测 1257.4 KB 顶穿前档 1255——边际增量 ≈ +13.4 KB（四组件本体与 i18n 文案，基座共享不重计），按实测微调 1270 KB；commerce 逐链预算已独立建立（commerce* 档位）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
@@ -1186,6 +1191,42 @@ const BUDGETS = [
     limit: 26 * 1024,
     basis:
       '首档 2026-11-25（电商扩容首波随批定档）：实测 gzip 22.1 KB / 16 文件（瀑布流列均衡纯函数内核 + items 内建简版卡（内嵌 oas-price）+ 触底加载更多状态机；列分配与触底判定为纯函数可摇除面），上浮 ~15% 取整定档 26 KB；分页协议 / 虚拟滚动等重增强走 L3 能力子路径另立档',
+  },
+  {
+    name: '@oas-ui/ui/commerce/search-bar 链 gzip',
+    kind: 'absolute',
+    componentId: 'commerceSearchBar',
+    get: () => componentMeasures.commerceSearchBar.gzipBytes,
+    limit: 21 * 1024,
+    basis:
+      '首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 17.6 KB / 12 文件（胶囊输入行 + 聚焦惯例面板三分组（历史/热门/联想）+ 触发语义状态机；零跨组件依赖——链只含 core + i18n + icons 两枚精确 path，与 oas-input 的边界见组件 README），上浮 ~15% 取整定档 21 KB；搜索历史持久化 / 联想防抖取消器走 L3 能力子路径另立档',
+  },
+  {
+    name: '@oas-ui/ui/commerce/logistics 链 gzip',
+    kind: 'absolute',
+    componentId: 'commerceLogistics',
+    get: () => componentMeasures.commerceLogistics.gzipBytes,
+    limit: 21 * 1024,
+    basis:
+      '首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 17.7 KB / 11 文件（steps 解析 + 状态推导纯规则 + 折叠状态机 + ol/li 时间线渲染；零跨组件依赖——链只含 core + i18n），上浮 ~15% 取整定档 21 KB；地图轨迹联动 / 复制动作内建走 L3 能力子路径另立档',
+  },
+  {
+    name: '@oas-ui/ui/commerce/order-list 链 gzip',
+    kind: 'absolute',
+    componentId: 'commerceOrderList',
+    get: () => componentMeasures.commerceOrderList.gzipBytes,
+    limit: 22 * 1024,
+    basis:
+      '首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 19.1 KB / 13 文件（页签 roving tabindex 状态机 + 触底协议——shouldRequestMore 复用 goods-list 导出纯函数不增链 + 插槽化零卡片渲染；链只含 core + i18n + goods-list 的 column-assign 单文件），上浮 ~15% 取整定档 22 KB；分页协议 / 页签溢出指示走 L3 能力子路径另立档',
+  },
+  {
+    name: '@oas-ui/ui/commerce/member-card 链 gzip',
+    kind: 'absolute',
+    componentId: 'commerceMemberCard',
+    get: () => componentMeasures.commerceMemberCard.gzipBytes,
+    limit: 19 * 1024,
+    basis:
+      '首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 16.4 KB / 10 文件（纯展示卡零事件——属性反射 + 两插槽显隐 + variant token 化底色；链只含 core + i18n，为 commerce 最轻链），上浮 ~15% 取整定档 19 KB；等级进度条 / 卡面二维码走 L3 能力子路径另立档',
   },
 ]
 

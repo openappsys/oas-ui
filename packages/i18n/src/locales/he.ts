@@ -806,6 +806,32 @@ export const he: LocaleMessages = {
   'filter.asc': 'עולה',
   'filter.desc': 'יורד',
 
+  // search-bar
+  'searchBar.label': 'שורת חיפוש',
+  'searchBar.placeholder': 'חיפוש מוצרים',
+  'searchBar.search': 'חיפוש',
+  'searchBar.clear': 'ניקוי תוכן החיפוש',
+  'searchBar.cancel': 'ביטול',
+  // logistics
+  'logistics.label': 'מעקב משלוח',
+  'logistics.expand': 'הצגת כל הרשומות ({count})',
+  'logistics.collapse': 'כיווץ',
+  'logistics.stateDone': 'הושלם',
+  'logistics.stateCurrent': 'מתבצע',
+  'logistics.statePending': 'ממתין',
+  'logistics.empty': 'אין עדיין מידע משלוח',
+  'logistics.actionsLabel': 'פעולות קשורות',
+  // order-list
+  'orderList.label': 'רשימת הזמנות',
+  'orderList.tabsLabel': 'סטטוס הזמנה',
+  'orderList.loading': 'טוען…',
+  'orderList.noMore': 'אין הזמנות נוספות',
+  'orderList.empty': 'אין עדיין הזמנות',
+  // member-card
+  'memberCard.label': 'כרטיס חבר',
+  'memberCard.gradeLabel': 'דרגת חברות',
+  'memberCard.expirePrefix': 'בתוקף עד',
+
   // barrage（弹幕）
   'barrage.like': 'לייק',
   'barrage.unlike': 'ביטול לייק',

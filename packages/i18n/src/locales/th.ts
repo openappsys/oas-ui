@@ -711,6 +711,32 @@ export const th: LocaleMessages = {
   'filter.asc': 'น้อยไปมาก',
   'filter.desc': 'มากไปน้อย',
 
+  // search-bar
+  'searchBar.label': 'แถบค้นหา',
+  'searchBar.placeholder': 'ค้นหาสินค้า',
+  'searchBar.search': 'ค้นหา',
+  'searchBar.clear': 'ล้างคำค้นหา',
+  'searchBar.cancel': 'ยกเลิก',
+  // logistics
+  'logistics.label': 'ติดตามการจัดส่ง',
+  'logistics.expand': 'ดูทั้งหมด {count} รายการ',
+  'logistics.collapse': 'ย่อ',
+  'logistics.stateDone': 'เสร็จสิ้น',
+  'logistics.stateCurrent': 'กำลังดำเนินการ',
+  'logistics.statePending': 'รอดำเนินการ',
+  'logistics.empty': 'ยังไม่มีข้อมูลการจัดส่ง',
+  'logistics.actionsLabel': 'การดำเนินการที่เกี่ยวข้อง',
+  // order-list
+  'orderList.label': 'รายการคำสั่งซื้อ',
+  'orderList.tabsLabel': 'สถานะคำสั่งซื้อ',
+  'orderList.loading': 'กำลังโหลด…',
+  'orderList.noMore': 'ไม่มีคำสั่งซื้อเพิ่มเติม',
+  'orderList.empty': 'ยังไม่มีคำสั่งซื้อ',
+  // member-card
+  'memberCard.label': 'บัตรสมาชิก',
+  'memberCard.gradeLabel': 'ระดับสมาชิก',
+  'memberCard.expirePrefix': 'ใช้ได้ถึง',
+
   // barrage（弹幕）
   'barrage.like': 'ถูกใจ',
   'barrage.unlike': 'เลิกถูกใจ',

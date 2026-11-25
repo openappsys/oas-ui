@@ -807,6 +807,32 @@ export const uk: LocaleMessages = {
   'filter.asc': 'за зростанням',
   'filter.desc': 'за спаданням',
 
+  // search-bar
+  'searchBar.label': 'Панель пошуку',
+  'searchBar.placeholder': 'Пошук товарів',
+  'searchBar.search': 'Шукати',
+  'searchBar.clear': 'Очистити пошуковий запит',
+  'searchBar.cancel': 'Скасувати',
+  // logistics
+  'logistics.label': 'Відстеження доставки',
+  'logistics.expand': 'Показати всі записи ({count})',
+  'logistics.collapse': 'Згорнути',
+  'logistics.stateDone': 'Завершено',
+  'logistics.stateCurrent': 'Виконується',
+  'logistics.statePending': 'Очікується',
+  'logistics.empty': 'Інформації про доставку поки немає',
+  'logistics.actionsLabel': 'Пов’язані дії',
+  // order-list
+  'orderList.label': 'Список замовлень',
+  'orderList.tabsLabel': 'Статус замовлення',
+  'orderList.loading': 'Завантаження…',
+  'orderList.noMore': 'Замовлень більше немає',
+  'orderList.empty': 'Замовлень поки немає',
+  // member-card
+  'memberCard.label': 'Карта учасника',
+  'memberCard.gradeLabel': 'Рівень участі',
+  'memberCard.expirePrefix': 'Діє до',
+
   // barrage（弹幕）
   'barrage.like': 'Вподобайка',
   'barrage.unlike': 'Прибрати вподобайку',

@@ -6193,5 +6193,76 @@
       "promo": "Promotional copy (discounts, flash-sale countdowns) — collapses when empty",
       "actions": "Action buttons (add to cart, buy now, …) — collapses when empty"
     }
+  },
+  "oas-search-bar": {
+    "attrs": {
+      "value": "Current input value. Typing writes the attribute in real time and fires oas-input (the host can render suggestions); empty values never fire oas-search",
+      "placeholder": "Placeholder text, defaults to i18n “Search products” (host overridable)",
+      "disabled": "Disables the input and all buttons (config-provider injected disabled applies too)",
+      "hide-cancel": "Hides the cancel button (for toolbars that already have an exit)"
+    },
+    "props": {
+      "value": "Current input value: get+set dual channel, writes reflect the `value` attribute (no events on assignment)"
+    },
+    "events": {
+      "oas-input": "Fires on every input (the clear button fires it too — hosts listening only to oas-input never miss a clear), `detail: { value }`",
+      "oas-search": "Enter or the search button, `detail: { value }`; empty values do not fire",
+      "oas-cancel": "Cancel button, `detail: { value }` carries the pre-clear value (the host may restore it); the component then clears and collapses the panel"
+    },
+    "slots": {
+      "history": "History keywords (shown when empty + focused; persistence owned by the host — render chips and record them yourself)",
+      "hot": "Hot keywords (shown when empty + focused, grouped beside history)",
+      "suggestions": "Suggestions (shown when filled + focused; render dynamically from oas-input)"
+    }
+  },
+  "oas-logistics": {
+    "attrs": {
+      "steps": "Delivery nodes JSON array `[{ state?, time?, desc?, title? }]` (newest-first; entries without title and desc are ignored; invalid JSON warns once and renders the empty state)",
+      "reverse": "Flips the render order (for chronological host data; aria-current follows the semantic node, not the DOM position)",
+      "collapsed": "Collapsed: shows only the latest 2 entries (toggle hidden for ≤2 entries); user toggles write the attribute back and fire oas-toggle"
+    },
+    "props": {
+      "steps": "Delivery nodes: get+set dual channel (array or JSON string), writes reflect the `steps` attribute",
+      "collapsed": "Collapsed state: get+set dual channel (boolean), writes reflect the `collapsed` attribute (host writes are silent; only user clicks fire)"
+    },
+    "events": {
+      "oas-toggle": "Fires after the user toggles expand / collapse, `detail: { collapsed }` (the new state); host writes to `collapsed` do not fire"
+    },
+    "slots": {
+      "actions": "Action row (copy tracking / copy address — copy logic and accessible names belong to the host buttons; the component provides the slot and layout; hides when empty)"
+    }
+  },
+  "oas-order-list": {
+    "attrs": {
+      "tabs": "Tab config JSON array `[{ key, label, count?, disabled? }]` (entries missing key or label are ignored; invalid JSON warns once and hides the tablist)",
+      "active": "Current tab key: user clicks / keyboard activation write it back and fire oas-tab-change; host writes are silent; defaults to the first tab",
+      "loading": "Load-more loading state: the host sets it after receiving oas-load-more (spinner + loading text; setting it releases the pending bottom-reached state)",
+      "no-more": "End state: shows “No more orders” and stops triggering"
+    },
+    "props": {
+      "tabs": "Tab config: get+set dual channel (array or JSON string), writes reflect the `tabs` attribute",
+      "active": "Current tab key: get+set dual channel, writes reflect the `active` attribute (silent; only user interaction fires)"
+    },
+    "events": {
+      "oas-tab-change": "Fires after the user activates a tab, `detail: { key, label }`; re-clicking the active tab does not re-fire; host writes to `active` do not fire",
+      "oas-load-more": "Fires when the sentinel enters the viewport (240px early) unless loading / no-more; after firing the component waits for the host to set `loading` or change slot content (appending cards); if the host does neither it stops triggering"
+    },
+    "slots": {
+      "": "Order card list: the host places oas-order-card / custom cards (cards stay in light DOM, never moved; content, styling and clicks are fully owned by the host)",
+      "empty": "Empty state content (renders when the slot has no cards; default “No orders yet” text)"
+    }
+  },
+  "oas-member-card": {
+    "attrs": {
+      "grade": "Tier name (e.g. “Gold member”); omitted renders no badge; the identifier is the badge text + sr-only “Membership tier” prefix (not color-only)",
+      "variant": "Background variant: `solid` (default) / `gradient`; invalid values fall back to solid with a one-time warning; the current variant reflects to the data-variant attribute",
+      "expire": "Validity text (the host supplies a date or copy, rendered with the i18n prefix); omitted renders no validity row"
+    },
+    "props": {},
+    "events": {},
+    "slots": {
+      "perks": "Benefits area (entries owned by the host; hides when empty)",
+      "actions": "Action row (renew / upgrade buttons — behavior and accessible names come from the host buttons; hides when empty)"
+    }
   }
 }

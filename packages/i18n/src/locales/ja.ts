@@ -803,6 +803,32 @@ export const ja: LocaleMessages = {
   'filter.asc': '昇順',
   'filter.desc': '降順',
 
+  // search-bar
+  'searchBar.label': '検索バー',
+  'searchBar.placeholder': '商品を検索',
+  'searchBar.search': '検索',
+  'searchBar.clear': '検索内容をクリア',
+  'searchBar.cancel': 'キャンセル',
+  // logistics
+  'logistics.label': '配送追跡',
+  'logistics.expand': '全 {count} 件を表示',
+  'logistics.collapse': '折りたたむ',
+  'logistics.stateDone': '完了',
+  'logistics.stateCurrent': '進行中',
+  'logistics.statePending': '待機中',
+  'logistics.empty': '配送情報はまだありません',
+  'logistics.actionsLabel': '関連操作',
+  // order-list
+  'orderList.label': '注文リスト',
+  'orderList.tabsLabel': '注文ステータス',
+  'orderList.loading': '読み込み中…',
+  'orderList.noMore': 'これ以上ありません',
+  'orderList.empty': '注文はまだありません',
+  // member-card
+  'memberCard.label': '会員カード',
+  'memberCard.gradeLabel': '会員ランク',
+  'memberCard.expirePrefix': '有効期限',
+
   // barrage（弹幕）
   'barrage.like': 'いいね',
   'barrage.unlike': 'いいねを取り消す',
