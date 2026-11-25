@@ -32,8 +32,9 @@
  *   **覆盖面声明**：族 → shared 的叶子方向边**不参与环检测**
  *   ——shared ⇄ family 的双向 import（族消费 shared 共享件 + shared→data/form 的
  *   叶子实现反向边）是「叶子实现居 shared」的既定分层设计（lib/l3-registry.mjs 同款
- *   口径），**非依赖异味**。本门禁的环检测覆盖面 = 族间（shared 以外）依赖边；
- *   shared→族 反向边的扩张由「逐条登记 + stale 检测」看管，不与叶子方向边合成环。
+ *   口径），**非依赖异味**。精确口径：族→shared 叶子方向边**不入图**；shared→族
+ *   反向边**在图但不闭合环**（图内无任何边回到 shared），其扩张由「逐条登记 +
+ *   stale 检测」看管。
  *
  * 自证可红：判定函数为纯函数（fixtures 见 scripts/check-family-deps.test.mjs，
  * `pnpm family-deps:test`）；本脚本对 live 树断言（任何一边未登记即非零退出）。
@@ -358,9 +359,9 @@ function main() {
     )
   }
 
-  // 3. 环簇检测（登记边构成族级有向图；覆盖面 = 族间依赖边——族→shared 叶子方向
-  //    不参与环检测，shared⇄family 双向 import 为「叶子实现居 shared」既定分层设计，
-  //    非依赖异味，见脚本头注覆盖面声明）
+  // 3. 环簇检测（登记边构成族级有向图；族→shared 叶子方向边不入图，shared→族
+  //    反向边在图但不闭合环——「叶子实现居 shared」为既定分层设计非依赖异味，
+  //    见脚本头注覆盖面声明）
   {
     const edgeMap = new Map()
     for (const edge of registry.edges) {
@@ -394,7 +395,7 @@ function main() {
     console.log(
       `PASS [族间依赖] 扫描 ${graph.families.length} 族 / ${graph.fileCount} 个生产文件：` +
         `${registry.edges.length} 条登记边全部命中（叶子方向 ${graph.leafEdges.size} 族边 ${leafCount} 处放行），无未登记边、无失效条目、无未留名环；` +
-        '环检测覆盖面 = 族间（shared 以外）依赖边——族→shared 叶子方向不参与环检测（shared⇄family 双向为「叶子实现居 shared」既定分层设计，非依赖异味）',
+        '环检测覆盖面：族→shared 叶子方向边不入图；shared→族反向边在图但不闭合环（「叶子实现居 shared」既定分层设计，非依赖异味）',
     )
     process.exit(0)
   }

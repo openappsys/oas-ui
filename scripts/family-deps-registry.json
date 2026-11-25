@@ -15,7 +15,7 @@
     "写明理由，环簇扩大/新增/消失（留名失效）未对应登记即红灯。",
     "环检测覆盖面（复核裁决）：族→shared 叶子方向边不参与环检测——shared⇄family",
     "的双向 import（族消费共享件 + shared→data/form 叶子实现反向边）是「叶子实现居",
-    "shared」的既定分层设计，非依赖异味；本门禁环检测覆盖面 = 族间（shared 以外）依赖边。",
+    "shared」的既定分层设计，非依赖异味。精确口径：族→shared 叶子方向边不入图；shared→族反向边在图但不闭合环。",
     "背景（2026-11-25 复用权衡 review）：form 当前零 commerce import 是加门禁的最佳时机；",
     "共享内核（date-grid 日期数学 / virtual-list 虚拟滚动 / overlay-floating 浮层定位）",
     "下沉决策需要单向依赖面可审计，双向回环必须留名可查。"
