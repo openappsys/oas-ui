@@ -594,6 +594,12 @@
       "property": "margin-block-start",
       "value": "2px",
       "reason": ".dot current 档放大到 14px 后相对 21px 行盒的光学居中偏移为 2px（与 12px 档的 3px 同一光学对齐常数），非间距刻度"
+    },
+    {
+      "file": "packages/ui/src/form/select/oas-select.ts",
+      "property": "margin-inline-end",
+      "value": "-3px",
+      "reason": "chevron 视觉留白补偿：V 形笔画横跨 4→12（viewBox 16 渲染 12px）两侧各 3px 空白，负外边距使笔画到触发器右缘与左侧文字内距对称；几何与 icons 包 chevronDownPath 同源（复用基建配套批 2026-11-25 唯一来源化），补偿值随该几何推导"
     }
   ]
 }
