@@ -6152,6 +6152,29 @@
       "setOpen": "Programmatic open/close (equivalent to user interaction): reflects the `open` attribute + emits oas-open-change + focus management (opening focuses the first condition, closing restores the trigger)"
     }
   },
+  "oas-goods-list": {
+    "attrs": {
+      "layout": "Form: `waterfall` (default, multi-column waterfall) / `list` (single vertical column); invalid values fall back to `waterfall` and warn once",
+      "columns": "Waterfall columns: a fixed number (1–8, clamped) or `auto` (default; container-width breakpoints <640 → 2, <1024 → 3, otherwise 4; a ResizeObserver re-balances when the width crosses a breakpoint); the list form is always a single column",
+      "items": "Product data as a JSON array `[{ image?, title, price?, originalPrice?, tags?: string[] }]` (built-in simple cards; entries without `title` are ignored, invalid JSON warns once and clears); ignored when the card slot has content",
+      "loading": "Load-more loading state: the host sets it after receiving `oas-load-more` (renders the spinner + loading text; setting it also releases the bottom-reached pending state)",
+      "no-more": "End-of-list state: shows the \"no more items\" text and stops the bottom-reached emission",
+      "currency": "ISO 4217 currency (passed to the built-in `oas-price`, default `CNY`)",
+      "locale": "Amount formatting locale (passed to the built-in `oas-price`)",
+      "precision": "Amount decimal places (passed to the built-in `oas-price`, default 2)"
+    },
+    "events": {
+      "oas-load-more": "Emitted when the sentinel enters the viewport (240px early) while not loading / no-more; after emission the component waits — the host sets `loading` or changes `items` to release it; doing neither stops further emission",
+      "oas-item-click": "Emitted after a built-in card is clicked (or Enter), `detail: { index, item }`; slotted cards do not emit (content and clicks are host-owned)"
+    },
+    "slots": {
+      "empty": "Empty-state content (rendered when `items` is empty and no slotted cards exist; default \"no products yet\" text)",
+      "": "Card slot full replacement: with assigned elements the `items` rendering is ignored, and the host cards are balanced into columns in order"
+    },
+    "props": {
+      "items": "Product data: get+set dual channel (array or JSON string), writes reflect the `items` attribute"
+    }
+  },
   "oas-product-card": {
     "attrs": {
       "image": "Image URL (a failed load falls back to the dashed placeholder; changing `image` retries)",

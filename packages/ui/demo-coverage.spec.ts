@@ -988,6 +988,16 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-filter [part="chip"]', 'click', '点已选 chip 撤销 → oas-change'],
     ['oas-filter [part="reset"]', 'click', '一键重置 → oas-change'],
   ],
+  // goods-list：oas-load-more 需哨兵真实进入视口（demo 页头部较长，挂载时不触发）；
+  // oas-item-click 需真点 shadow 内建卡
+  'goods-list': [
+    [
+      `(() => { const el = document.querySelector('#gl-more'); if (!el) return false; el.scrollIntoView({ block: 'center' }); document.dispatchEvent(new Event('scroll')); return true })()`,
+      'waitfor',
+      '滚到加载更多 demo（哨兵进入视口）→ oas-load-more（宿主协议追加数据）',
+    ],
+    ['oas-goods-list [part="card"]', 'click', '点首个内建商品卡 → oas-item-click'],
+  ],
 }
 
 /** 真实点击，失败回落 DOM click（隐藏/浮层关闭态下 handler 仍会执行） */

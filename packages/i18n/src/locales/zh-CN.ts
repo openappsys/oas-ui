@@ -791,6 +791,12 @@ export const zhCN = {
   'orderCard.discount': '已优惠',
   'orderCard.payable': '实付',
   'productCard.noImage': '暂无图片',
+  // goods-list（商品列表容器）
+  'goodsList.label': '商品列表',
+  'goodsList.loading': '加载中…',
+  'goodsList.noMore': '没有更多了',
+  'goodsList.empty': '暂无商品',
+  'goodsList.noImage': '暂无图片',
   // filter（列表页筛选栏）
   'filter.label': '筛选',
   'filter.sortLabel': '排序',

@@ -5896,6 +5896,29 @@
       "setOpen": "编程式开合（等价用户交互）：回写 `open` attribute + 派发 oas-open-change + 焦点管理（开面板聚焦首个条件、关闭回触发器）"
     }
   },
+  "oas-goods-list": {
+    "attrs": {
+      "layout": "形态：`waterfall`（缺省，瀑布流多列）/ `list`（纵向单列）；非法值回落 waterfall 并告警一次",
+      "columns": "瀑布流列数：固定数值（1–8，clamp）或 `auto`（缺省，容器宽断点 <640 → 2、<1024 → 3、其余 4；ResizeObserver 跟随容器宽跨断点重排）；list 形态恒单列",
+      "items": "商品数据 JSON 数组 `[{ image?, title, price?, originalPrice?, tags?: string[] }]`（内建简版卡；缺 `title` 的条目被忽略，非法 JSON 告警一次按空处理）；卡片位插槽有内容时忽略",
+      "loading": "加载更多 loading 态：宿主收到 `oas-load-more` 后置位（渲染 spinner + 加载中文案，置位同时解除触底待应答）",
+      "no-more": "到底态：显示「没有更多了」文案且触底不再派发",
+      "currency": "ISO 4217 币种（透传内建卡 `oas-price`，默认 `CNY`）",
+      "locale": "金额格式化 locale（透传内建卡 `oas-price`）",
+      "precision": "金额小数位（透传内建卡 `oas-price`，默认 2）"
+    },
+    "events": {
+      "oas-load-more": "哨兵进入视口（240px 提前量）且非 loading / no-more 时派发；派发后进入待应答，宿主置 `loading` 或 `items` 变化解除；宿主都不做则不再触发",
+      "oas-item-click": "点击（或 Enter）内建简版卡后派发，`detail: { index, item }`；插槽卡不派发（内容与点击行为由宿主接管）"
+    },
+    "slots": {
+      "empty": "空态内容（items 空且无插槽卡时渲染；缺省「暂无商品」文案）",
+      "": "卡片位整体替换：有分配元素时忽略 `items`，宿主卡按序均衡分配进列"
+    },
+    "props": {
+      "items": "商品数据：get+set 双通道（数组或 JSON 字符串），写即反射 `items` attribute"
+    }
+  },
   "oas-product-card": {
     "attrs": {
       "image": "图片地址（加载失败回落虚线占位框，换 `image` 值即重新尝试）",

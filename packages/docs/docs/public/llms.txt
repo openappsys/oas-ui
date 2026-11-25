@@ -219,6 +219,7 @@
 - [ECard 电子卡](https://oas-ui.dev/components/ecard): 电子卡 / 储值卡购买面板：卡面单选列表、自定义面额、协议勾选与确认提交。
 - [Filter 筛选栏](https://oas-ui.dev/components/filter): 电商列表页的筛选闭环：排序项常显在栏上（综合 / 销量 / 价格，价格支持升降切换），条件面板承载多组筛选条件（单选组 / 多选组），已选条件在面板下方回显成 chips——逐项可撤销，一键可重置。
 - [GoodsAction 商品导航](https://oas-ui.dev/components/goods-action): 商品详情页底部的操作栏：左侧 icon 按钮组（收藏 / 店铺 / 购物车，可带角标、收藏可呈按下态），右侧主按钮组（加入购物车 / 立即购买等）。
+- [GoodsList 商品列表容器](https://oas-ui.dev/components/goods-list): 商品列表页的容器件：layout="waterfall"（缺省）为瀑布流——columns 固定数值或 auto 按容器宽自适应（<640 → 2 列、<1024 → 3 列、其余 4 列），卡片按累计高度最短列均衡放置；layout="list" 为纵向单列。
 - [Invoice 发票](https://oas-ui.dev/components/invoice): 发票信息填写组件：抬头类型切换、抬头与税号校验、发票内容选择、已保存抬头弹层回填。
 - [OrderCard 订单卡片](https://oas-ui.dev/components/order-card): 订单列表与订单详情页的高频卡片：头部是订单号与状态徽标，中间是条目摘要（图 + 名 + 规格 × 数量），随后是金额区（实付 / 划线原价 / 已优惠），底部是操作按钮区，需要时可展开明细。
 - [Price 价格](https://oas-ui.dev/components/price): 价格展示组件：币种符号 + 千分位 + 指定小数位，支持划线价（original）、区间价（min + max）与涨跌趋势箭头（trend + trend-value）。
