@@ -306,6 +306,18 @@ function safeFamilyGzip(familyBundles, family) {
   return familyBundles[family]?.gzipBytes ?? 0
 }
 
+/**
+ * --update-baseline 写基线守卫（纯函数）：存在结构性覆盖问题（族包缺档/残档、
+ * dist/cdn 整体不可核对）时**禁止写基线**——产物缺失时安全 getter 返回 0，
+ * 流程若继续走到 writeSection 会把 `cdnFamilies` 缺失 + `actualBytes: 0, pass: true`
+ * 的坏基线写进入库，读基线的 stats:check / perf 文档生成全部跟着错。
+ * 数值超预算**不**属结构性问题：超预算允许刷新基线（「如实记录当前实测」的
+ * 既有行为保留），由预算行自身的 FAIL 输出与 JSON 的 pass 布尔如实记录。
+ */
+function updateBaselineBlocked(coverageProblems) {
+  return coverageProblems.length > 0
+}
+
 /** 自测：`node scripts/perf/size.mjs --self-test`（不跑体积测量；`pnpm perf:size` 会先跑它，判定函数红绿两侧因此进 CI） */
 function runSelfTest() {
   const results = []
@@ -474,6 +486,11 @@ function runSelfTest() {
       // 预算 getter 安全化（接线修复的红绿两侧）：缺失族不抛错
       check('族包预算取值：缺失族安全返回 0（不抛 TypeError）', safeFamilyGzip({}, 'basic'), 0)
       check('族包预算取值：存在族取 gzipBytes', safeFamilyGzip({ basic: { gzipBytes: 5 } }, 'basic'), 5)
+      // 写基线守卫（红绿两侧）：结构性覆盖问题阻塞、空数组放行
+      check('写基线守卫：无结构性问题不阻塞', updateBaselineBlocked([]), false)
+      check('写基线守卫：覆盖违规（残档）阻塞', updateBaselineBlocked(['stale-budget:workbench']), true)
+      check('写基线守卫：覆盖违规（缺档）阻塞', updateBaselineBlocked(['no-budget:fresh']), true)
+      check('写基线守卫：dist/cdn 目录缺失阻塞', updateBaselineBlocked(['no-cdn-dir']), true)
     }
   }
 
@@ -1211,7 +1228,7 @@ const BUDGETS = [
     get: () => componentMeasures.commerceInvoice.gzipBytes,
     limit: 23 * 1024,
     basis:
-      '首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB，上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐——基线 28ee1fdf 的链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新）',
+      '首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB（55508723 实测），上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐；基线 28ee1fdf 复测 20.0 KB，链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新）',
   },
   {
     name: '@oas-ui/ui/commerce/ecard 链 gzip',
@@ -1469,10 +1486,14 @@ const BUDGETS = [
 
 // ---------- 3.0 CDN 族包预算覆盖（先于预算断言循环执行——接线修复：
 // 覆盖检查报 stale-budget / dist/cdn 缺失诊断时，预算循环里的安全 getter
-// （safeFamilyGzip）保证不抛 TypeError，诊断文案可达） ----------
+// （safeFamilyGzip）保证不抛 TypeError，诊断文案可达。
+// 覆盖违规属「结构性问题」，计入 cdnCoverageProblems：--update-baseline 时
+// 阻止写基线（见写基线守卫），防止坏基线入库） ----------
+const cdnCoverageProblems = []
 {
   if (!existsSync(CDN_DIR)) {
     fail = true
+    cdnCoverageProblems.push('no-cdn-dir')
     console.error('FAIL [CDN 族包预算覆盖] dist/cdn 目录不存在：族包体积门禁无从核对，请 pnpm build 重建 dist')
   } else {
     const measuredFamilies = Object.keys(familyBundles)
@@ -1480,10 +1501,11 @@ const BUDGETS = [
     const violations = familyBudgetCoverageViolations(measuredFamilies, budgetFamilyIds)
     for (const { family, reason } of violations) {
       fail = true
+      cdnCoverageProblems.push(`${reason}:${family}`)
       console.error(
         reason === 'no-budget'
           ? `FAIL [CDN 族包预算覆盖] 族包 ${family} 无独立预算档（BUDGETS 缺 familyId='${family}' 条目）：新族包必须有看守，禁止无门禁交付`
-          : `FAIL [CDN 族包预算覆盖] 预算档 familyId='${family}' 指向不存在的族包：族包已下线/改名，请删除或更名该预算档`,
+          : `FAIL [CDN 族包预算覆盖] 预算档 familyId='${family}' 指向不存在的族包：先确认 dist 已完整构建（pnpm build）——多数场景是产物缺失而非真下线；构建完整后仍缺失 = 族包已下线/改名，请删除或更名该预算档`,
       )
     }
     if (!violations.length) {
@@ -1498,6 +1520,23 @@ console.log('\n=== 体积预算断言（全量类=天花板制；单组件链/th
 const WARN_RATIO = 0.9
 const budgetResults = []
 for (const b of BUDGETS) {
+  // 族包产物缺失的预算档不出数值行（安全 getter 返回 0 会让「0 ≤ 预算」输出
+  // pass:true 假绿；覆盖检查已报红，这里只标记 SKIP，两者不重复报但也不假绿）
+  if (b.familyId && !(b.familyId in familyBundles)) {
+    console.log(`SKIP ${b.name.padEnd(42)} 族包产物缺失（结构性覆盖违规已单独报红，预算行不计）`)
+    budgetResults.push({
+      name: b.name,
+      kind: b.kind,
+      familyId: b.familyId,
+      actualBytes: null,
+      limitBytes: b.limit,
+      pass: false,
+      warn: false,
+      basis: b.basis,
+      skipped: true,
+    })
+    continue
+  }
   const actual = b.get()
   const ok = actual <= b.limit
   const warnAtBytes = Math.round(b.limit * WARN_RATIO)
@@ -1645,39 +1684,50 @@ for (const residue of ['data/table/core', join('types', 'data/table/core')]) {
 // ---------- 3.y CDN 族包预算覆盖（已前移至预算断言循环之前，见 3.0） ----------
 
 // ---------- 4. 写入基线（默认只测不写：基线是入库文件，见头部说明） ----------
+// 写基线守卫：结构性覆盖问题（族包缺档/残档 / dist/cdn 不可核对）时拒绝写入——
+// 产物缺失时安全 getter 返回 0，不守卫会把坏基线（cdnFamilies 缺失 + 预算 0 字节
+// pass:true）写进入库。数值超预算不阻塞（如实记录当前实测是既有行为）。
 if (process.argv.includes('--update-baseline')) {
-  writeSection('size', {
-    generatedAt: today(),
-    method:
-      'gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）',
-    packages: {
-      '@oas-ui/ui': {
-        distTotalBytes: uiDistTotal,
-        browserJs: uiJs,
-        fullEntry,
-        cdn,
-      },
-      '@oas-ui/theme': { indexCss: theme },
-      '@oas-ui/core': core,
-      '@oas-ui/i18n': i18n,
-      '@oas-ui/icons': icons,
-      '@oas-ui/ssr': ssr,
-    },
-    components: componentMeasures,
-    cdnFamilies: familyBundles,
-    budgets: budgetResults,
-  })
-
-  console.log(`\n基线已写入 docs/perf-baseline.json`)
-
-  // render.env.happyDom 独立同步：happy-dom 升版后无需为版本号跑 perf:bench 重写全部
-  // 耗时测量（避免测量噪声进基线）；scenarios/budgets/generatedAt 一律不动。
-  const baseline = loadBaseline()
-  if (patchRenderHappyDom(baseline, happyDomLabel(ROOT))) {
-    saveBaseline(baseline)
-    console.log(
-      `[perf:size] render.env.happyDom 已同步为 ${baseline.render.env.happyDom}（渲染耗时数据未动；需要刷新耗时请跑 pnpm perf:bench --update-baseline）`,
+  if (updateBaselineBlocked(cdnCoverageProblems)) {
+    fail = true
+    console.error(
+      `[perf:size] 拒绝写基线：族包覆盖存在结构性违规（${cdnCoverageProblems.join(', ')}）——` +
+        '坏基线入库会污染 stats:check 与 perf 文档，请先 pnpm build 修复产物再 --update-baseline',
     )
+  } else {
+    writeSection('size', {
+      generatedAt: today(),
+      method:
+        'gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）',
+      packages: {
+        '@oas-ui/ui': {
+          distTotalBytes: uiDistTotal,
+          browserJs: uiJs,
+          fullEntry,
+          cdn,
+        },
+        '@oas-ui/theme': { indexCss: theme },
+        '@oas-ui/core': core,
+        '@oas-ui/i18n': i18n,
+        '@oas-ui/icons': icons,
+        '@oas-ui/ssr': ssr,
+      },
+      components: componentMeasures,
+      cdnFamilies: familyBundles,
+      budgets: budgetResults,
+    })
+
+    console.log(`\n基线已写入 docs/perf-baseline.json`)
+
+    // render.env.happyDom 独立同步：happy-dom 升版后无需为版本号跑 perf:bench 重写全部
+    // 耗时测量（避免测量噪声进基线）；scenarios/budgets/generatedAt 一律不动。
+    const baseline = loadBaseline()
+    if (patchRenderHappyDom(baseline, happyDomLabel(ROOT))) {
+      saveBaseline(baseline)
+      console.log(
+        `[perf:size] render.env.happyDom 已同步为 ${baseline.render.env.happyDom}（渲染耗时数据未动；需要刷新耗时请跑 pnpm perf:bench --update-baseline）`,
+      )
+    }
   }
 } else {
   console.log(`\n[perf:size] 仅测量，未改写入库基线（确需更新请加 --update-baseline）`)

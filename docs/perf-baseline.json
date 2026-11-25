@@ -2306,7 +2306,7 @@
         "warnAtBytes": 21197,
         "pass": true,
         "warn": false,
-        "basis": "首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB，上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐——基线 28ee1fdf 的链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新）"
+        "basis": "首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB（55508723 实测），上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐；基线 28ee1fdf 复测 20.0 KB，链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新）"
       },
       {
         "name": "@oas-ui/ui/commerce/ecard 链 gzip",

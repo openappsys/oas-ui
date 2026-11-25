@@ -205,7 +205,7 @@
 | @oas-ui/ui/commerce/coupon 链 gzip | 22.4 KB | 26.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 22.1 KB / 15 文件（券面卡 + 选择弹层 + 多选叠加规则），上浮 ~15% 取整定档 26 KB |
 | @oas-ui/ui/commerce/sku 链 gzip | 27.8 KB | 32.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 27.5 KB / 20 文件（组合匹配算法 + 底部弹层承载 oas-bottom-sheet，全族最重链——跨组件依赖为设计内），上浮 ~15% 取整定档 32 KB |
 | @oas-ui/ui/commerce/address 链 gzip | 21.9 KB | 25.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 21.7 KB / 21 文件（编辑表单 + 列表 + 三级联动），上浮 ~15% 取整定档 25 KB |
-| @oas-ui/ui/commerce/invoice 链 gzip | 20.4 KB | 23.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB，上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐——基线 28ee1fdf 的链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新） |
+| @oas-ui/ui/commerce/invoice 链 gzip | 20.4 KB | 23.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB（55508723 实测），上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐；基线 28ee1fdf 复测 20.0 KB，链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新） |
 | @oas-ui/ui/commerce/ecard 链 gzip | 18.5 KB | 21.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 18.3 KB / 21 文件（卡面列表 + 自定义面额 + 协议确认），上浮 ~15% 取整定档 21 KB |
 | @oas-ui/ui/commerce/category 链 gzip | 18.8 KB | 22.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 18.6 KB / 21 文件（左类右品双栏联动），上浮 ~15% 取整定档 22 KB |
 | @oas-ui/ui/commerce/time-select 链 gzip | 21.2 KB | 25.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 21.0 KB / 22 文件（日期列 + 时段网格 + roving 键盘），上浮 ~15% 取整定档 25 KB |
