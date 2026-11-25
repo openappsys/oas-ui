@@ -713,7 +713,8 @@ type ClothingRow = {
  * 热门组合子集（31 条，含 5 条售罄 stock:0）。真实分布约束：
  * - 披肩款只有圆领长袖棉（黑/白/米）——「V领 + 有披肩」「翻领 + 有披肩」不存在任何组合；
  * - V 领只有短袖且无披肩；翻领棉只有米色长袖一条；
- * - XL 在圆领长袖棉黑/白、翻领短袖聚酯黑售罄。
+ * - 售罄 5 条：圆领长袖棉黑/白 XL、翻领短袖聚酯白 L、圆领长袖棉披肩白 L、翻领长袖聚酯黑 L
+ *   （黑 XL 翻领短袖聚酯在库 stock 2，不算售罄）。
  */
 function clothingSkus(): SkuItem[] {
   const rows: ClothingRow[] = [
@@ -938,11 +939,12 @@ describe('oas-sku 多组场景（6 规格组服装类目）', () => {
     expect(thumb.getAttribute('alt')).toBe('黑色圆领长袖棉 T恤 M 码')
   })
 
-  it('不可行组合引导：选「V领 + 有披肩」（组合表无此组合）后其余维度全置灰，同组改选圆领可走出死路', () => {
-    const el = mountClothing()
-    choose(optionInput(el, 2, 'vneck'))
-    choose(optionInput(el, 4, 'with'))
-    // 死路确认：其余组没有任何选项能走到「V领 + 有披肩」的在库组合 → 全部禁用并标缺货
+  it('组合表外的预置 value：其余维度全置灰，已选项自身标缺货（disabled + checked），同组改选圆领可原地退出', () => {
+    // 交互路径点不出「V领 + 有披肩」：先选任一项，另一项立即 disabled（算法对已选维度做全约束）。
+    // 该状态只能由宿主受控 value 预置产生（深链 / 缓存旧值）——这里按真实到达形态预置，
+    // 不用 choose() 直接改写 disabled radio 绕过语义。
+    const el = mountClothing({ value: JSON.stringify({ collar: 'vneck', shawl: 'with' }) })
+    // 其余组没有任何选项能走到「V领 + 有披肩」的在库组合 → 全部禁用并标缺货
     for (const size of ['S', 'M', 'L', 'XL']) {
       expect(optionInput(el, 1, size).disabled, `尺码 ${size}`).toBe(true)
       expect(optionLabel(el, 1, size).textContent).toContain('缺货')
@@ -951,10 +953,17 @@ describe('oas-sku 多组场景（6 规格组服装类目）', () => {
     expect(optionLabel(el, 0, 'white').getAttribute('data-available')).toBe('false')
     expect(optionLabel(el, 3, 'long').getAttribute('data-available')).toBe('false')
     expect(optionLabel(el, 5, 'cotton').getAttribute('data-available')).toBe('false')
-    // 同组内改选仍可达：圆领 + 有披肩 有在库组合（黑 M/L、米 M）
+    // 已选项自身同样走不到在库组合：标缺货 + disabled，但选中态保留（用户从这里改选退出）
+    expect(optionLabel(el, 2, 'vneck').getAttribute('data-available')).toBe('false')
+    expect(optionLabel(el, 2, 'vneck').getAttribute('data-checked')).toBe('true')
+    expect(optionInput(el, 2, 'vneck').disabled).toBe(true)
+    expect(optionLabel(el, 4, 'with').getAttribute('data-available')).toBe('false')
+    expect(optionLabel(el, 4, 'with').getAttribute('data-checked')).toBe('true')
+    // 同组退出路径：圆领 + 有披肩 有在库组合（黑 M/L、米 M）；披肩改选「无」同样可达
     expect(optionLabel(el, 2, 'crew').getAttribute('data-available')).toBe('true')
     expect(optionLabel(el, 2, 'polo').getAttribute('data-available')).toBe('false')
-    // 改选圆领后其余维度恢复可选（部分尺码仍受组合表约束：S 无披肩款 → 仍禁用）
+    expect(optionLabel(el, 4, 'none').getAttribute('data-available')).toBe('true')
+    // 改选圆领（enabled 项的真实交互）后其余维度恢复可选（部分尺码仍受组合表约束：S 无披肩款 → 仍禁用）
     choose(optionInput(el, 2, 'crew'))
     expect(optionInput(el, 1, 'M').disabled).toBe(false)
     expect(optionInput(el, 1, 'L').disabled).toBe(false)
