@@ -109,6 +109,27 @@ test('cart：滑动删除——真实拖拽露出删除钮，再点删除即移�
   await expect(page.locator('#cart-delete-out')).toContainText('删除后剩 1 件')
 })
 
+/**
+ * 就绪门：把滑动 demo 的条目滚进视口，再等缩略图解码完成。
+ *
+ * 顺序不能反。缩略图是 `loading="lazy"`（组件内建），三个引擎的懒加载触发阈值不同：
+ * Chromium 会提前预取离屏懒图（scrollY=0、缩略图位于 y≈2857 时也照拉），Firefox / WebKit
+ * 只在元素接近视口时才发起请求（实测此刻 firefox `complete` 恒 false，webkit 只完成其中一张）。
+ * 因此「先等 `complete` 再滚动」在 firefox / webkit 上永远等不到——旧写法只在 chromium 侥幸成立。
+ * 先滚动再等解码，既能保证懒图真的开始加载，也能让迟到的解码位移落在取坐标之前。
+ */
+async function settleSwipeRow(page: import('@playwright/test').Page, inner: import('@playwright/test').Locator) {
+  await inner.scrollIntoViewIfNeeded()
+  await page.waitForFunction(
+    () => {
+      const root = document.getElementById('cart-delete-swipe')?.shadowRoot
+      const imgs = root ? [...root.querySelectorAll('img')] : []
+      return imgs.length > 0 && imgs.every((img) => img.complete && img.naturalWidth > 0)
+    },
+    { timeout: 15000 },
+  )
+}
+
 // 回归（本批修复）：起手点落在**商品缩略图上**也必须能滑动删除。
 // 修复前 `<img>` 未禁原生拖拽：按住缩略图横移会走浏览器图片拖拽
 // （实测 pointerdown → pointermove → dragstart → pointercancel），滑动会话被 cancel 收掉，
@@ -116,19 +137,11 @@ test('cart：滑动删除——真实拖拽露出删除钮，再点删除即移�
 test('cart：从缩略图上起手滑动同样能露出删除钮并进入可删除态', async ({ page }) => {
   await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-cart')
-  await page.waitForFunction(
-    () => {
-      const root = document.getElementById('cart-delete-swipe')?.shadowRoot
-      const imgs = root ? [...root.querySelectorAll('img')] : []
-      return imgs.every((img) => img.complete)
-    },
-    { timeout: 15000 },
-  )
 
   const host = page.locator('#cart-delete-swipe')
   const inner = host.locator('[part="item-inner"]').first()
   const thumb = host.locator('[part="thumb"]').first()
-  await thumb.scrollIntoViewIfNeeded()
+  await settleSwipeRow(page, inner)
   await thumb.hover() // 指针落到缩略图中心（命中检查由 Playwright 保证）
   const box = (await thumb.boundingBox())!
 
@@ -379,16 +392,9 @@ test('cart：展开态点行体收起且不派 oas-item-click；点其他行收�
 
   const host = page.locator('#cart-delete-swipe')
   const inner = host.locator('[part="item-inner"]').first()
-  await inner.scrollIntoViewIfNeeded()
   // 等 demo 内缩略图解码完成：图片 late-decode 会带来布局位移，让后续绝对坐标失效
-  await page.waitForFunction(
-    () => {
-      const root = document.getElementById('cart-delete-swipe')?.shadowRoot
-      const imgs = root ? [...root.querySelectorAll('img')] : []
-      return imgs.every((img) => img.complete)
-    },
-    { timeout: 15000 },
-  )
+  // （必须先滚动、再等——懒加载缩略图离屏时永远不会开始加载，见 settleSwipeRow 注释）
+  await settleSwipeRow(page, inner)
 
   await page.evaluate(() => {
     const w = window as unknown as { __cartItemClicks?: string[] }
@@ -422,21 +428,13 @@ test('cart：展开态点行体收起且不派 oas-item-click；点其他行收�
 test('cart：滑开第二行时收起第一行（同屏至多一行露删除钮）', async ({ page }) => {
   await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-cart')
-  await page.waitForFunction(
-    () => {
-      const root = document.getElementById('cart-delete-swipe')?.shadowRoot
-      const imgs = root ? [...root.querySelectorAll('img')] : []
-      return imgs.every((img) => img.complete)
-    },
-    { timeout: 15000 },
-  )
-
   const host = page.locator('#cart-delete-swipe')
   const innerA = host.locator('[part="item-inner"]').nth(0)
   const innerB = host.locator('[part="item-inner"]').nth(1)
   const transformOf = (locator: import('@playwright/test').Locator) =>
     locator.evaluate((el) => (el as HTMLElement).style.transform)
 
+  await settleSwipeRow(page, innerA)
   await swipeOpenRow(page, innerA)
   expect(await transformOf(innerA)).toBe('translateX(-72px)')
 
