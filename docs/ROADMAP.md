@@ -39,7 +39,7 @@
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **包体分级约定** | 组件本体冻结大众功能集 / 重增强走 L3 能力子路径（不内联本体、族入口不 re-export）/ commerce 逐链预算档 / L3 惯例成文 ui-spec | 📋 待开发 |
+| **包体分级约定** | 组件本体冻结大众功能集 / 重增强走 L3 能力子路径（不内联本体、族入口不 re-export）/ commerce 逐链预算档 / 族级分级决策记入 architecture §3.1 | 📋 待开发 |
 | **新组件 ×6** | oas-filter 筛选栏 / oas-search-bar 搜索栏 / oas-goods-list 商品列表容器 / oas-order-list 订单列表容器（或降级配方）/ oas-logistics 物流时间线 / oas-member-card 会员卡 | 📋 待开发 |
 | **场景配方层** | 秒杀 / 领券中心 / 库存紧张提示 / 详情页骨架（guide + demo，不做新组件） | 📋 待开发 |
 
