@@ -1,0 +1,68 @@
+{
+  "className": "OASGoodsList",
+  "sourceFile": "packages/ui/src/commerce/goods-list/oas-goods-list.ts",
+  "attrs": [
+    {
+      "name": "layout",
+      "observed": true
+    },
+    {
+      "name": "columns",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-more",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "currency",
+      "observed": true
+    },
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "GoodsItem[] | string",
+      "api": true
+    }
+  ],
+  "methods": [],
+  "events": [
+    {
+      "name": "oas-load-more",
+      "detail": "{}"
+    },
+    {
+      "name": "oas-item-click",
+      "detail": "{ index, item: items[index]! } satisfies GoodsItemClickDetail"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "empty"
+    }
+  ],
+  "cssVars": [],
+  "unresolved": []
+}

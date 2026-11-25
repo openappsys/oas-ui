@@ -194,7 +194,9 @@ OAS-UI 提供 176 个框架无关的 Web Components 组件，按用途划分为 
 - [Category 分类](/components/category) —— 左类右品双栏联动：左侧多级类目树、右侧当前类子类宫格与商品位，支持键盘树导航与外部受控高亮。
 - [Coupon 优惠券](/components/coupon) —— 券面卡片（面额 / 门槛 / 有效期 / 状态语义色）+ 选择弹层，过期、已使用、未达门槛等不可用态完整覆盖。
 - [ECard 电子卡](/components/ecard) —— 电子卡 / 储值卡购买：卡面单选列表、自定义面额、协议勾选与确认提交，卡面与面额范围由宿主注入。
+- [Filter 筛选栏](/components/filter) —— 列表页筛选闭环：排序项（综合 / 销量 / 价格升降 toggle）+ 条件面板（下拉 / 半屏抽屉两形态，单选 / 多选组）+ 已选条件 chips 逐项撤销与一键重置；`conditions` JSON 双通道 + `oas-change`。
 - [GoodsAction 商品导航](/components/goods-action) —— 商品底部导航：icon 按钮组（含角标）+ 主按钮组，JSON 数据驱动。
+- [GoodsList 商品列表容器](/components/goods-list) —— 商品列表闭环：瀑布流（列数自适应 / 固定 + 按累计高度最短列均衡放置）/ 纵向列表两形态；`items` JSON 双通道渲染内建简版卡，卡片位插槽整体替换为自定义卡；触底 `oas-load-more` + loading / 到底态与空态插槽。
 - [Invoice 发票](/components/invoice) —— 发票信息表单：个人 / 企业抬头切换、税号校验、发票内容选择与已保存抬头选择弹层。
 - [OrderCard 订单卡片](/components/order-card) —— 订单列表 / 详情卡：订单号 + 可配置状态徽标（语义色映射）+ 条目摘要 + 金额区（实付 / 划线原价 / 已优惠）+ 可折叠明细与操作按钮插槽。
 - [Price 价格](/components/price) —— 价格格式化：币种 / 千分位 / 划线价 / 区间价 + 涨跌趋势箭头。

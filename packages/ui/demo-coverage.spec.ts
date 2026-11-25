@@ -975,6 +975,29 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#cart-delete-swipe [part="swipe-remove"]', 'click', '点滑动删除钮（滑动档常驻 Tab 序）→ oas-remove'],
   ],
   'order-card': [['#oc-expand [part="toggle"]', 'click', '点「展开明细」→ oas-toggle']],
+  // filter：交互控件全在 shadow 内（排序项 / 触发器 / 面板选项 / chips / 重置）。
+  // drawer 形态的 fixed 遮罩会拦截后续真实点击——探针只操作 dropdown 形态（qa-regression/filter.spec.ts 真点 drawer）
+  filter: [
+    ['oas-filter:not([panel="drawer"]) [part="sort-item"]', 'click:n1', '点第二个排序项 → oas-change'],
+    [
+      'oas-filter:not([panel="drawer"]):not([open]) [part="trigger"]',
+      'click',
+      '展开首个未开的下拉面板 → oas-open-change',
+    ],
+    ['oas-filter[open] [part="option"]', 'click', '面板内点首个条件 → oas-change'],
+    ['oas-filter [part="chip"]', 'click', '点已选 chip 撤销 → oas-change'],
+    ['oas-filter [part="reset"]', 'click', '一键重置 → oas-change'],
+  ],
+  // goods-list：oas-load-more 需哨兵真实进入视口（demo 页头部较长，挂载时不触发）；
+  // oas-item-click 需真点 shadow 内建卡
+  'goods-list': [
+    [
+      `(() => { const el = document.querySelector('#gl-more'); if (!el) return false; el.scrollIntoView({ block: 'center' }); document.dispatchEvent(new Event('scroll')); return true })()`,
+      'waitfor',
+      '滚到加载更多 demo（哨兵进入视口）→ oas-load-more（宿主协议追加数据）',
+    ],
+    ['oas-goods-list [part="card"]', 'click', '点首个内建商品卡 → oas-item-click'],
+  ],
 }
 
 /** 真实点击，失败回落 DOM click（隐藏/浮层关闭态下 handler 仍会执行） */

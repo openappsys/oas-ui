@@ -1,0 +1,68 @@
+{
+  "className": "OASFilter",
+  "sourceFile": "packages/ui/src/commerce/filter/oas-filter.ts",
+  "attrs": [
+    {
+      "name": "sorts",
+      "observed": true
+    },
+    {
+      "name": "groups",
+      "observed": true
+    },
+    {
+      "name": "conditions",
+      "observed": true
+    },
+    {
+      "name": "panel",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "sorts",
+      "type": "FilterSortOption[] | string",
+      "api": true
+    },
+    {
+      "name": "groups",
+      "type": "FilterGroup[] | string",
+      "api": true
+    },
+    {
+      "name": "conditions",
+      "type": "FilterConditions | string",
+      "api": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "api": true
+    }
+  ],
+  "methods": [
+    {
+      "name": "setOpen",
+      "signature": "setOpen(open: boolean): void",
+      "description": "编程式开合（等价用户交互）：回写 `open` attribute + 派发 `oas-open-change` +"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-open-change",
+      "detail": "{ open } satisfies FilterOpenDetail"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ sort: conditions.sort ?? this.parseSorts()[0]?.key ?? '', order: conditions.order ?? null, groups: conditions.groups ?? {}, summary: this.buildSummary(), } satisfies FilterChangeDetail"
+    }
+  ],
+  "slots": [],
+  "cssVars": [],
+  "unresolved": []
+}

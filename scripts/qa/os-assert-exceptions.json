@@ -48,6 +48,18 @@
       "rule": "count-literal",
       "snippet": "formItemCount).toBe(5)",
       "reason": "form-item 渲染数 = demo schema 声明的字段数（5），数据契约计数与 OS 无关。"
+    },
+    {
+      "file": "packages/ui/qa-regression/goods-list.spec.ts",
+      "rule": "count-literal",
+      "snippet": "expect(layout.colCount).toBe(3)",
+      "reason": "goods-list 固定列数属性断言：columns=\"3\" 的渲染结果 3 列，fixture 数据驱动（6 张卡 / 属性值 3），与 OS / 视口 / 接口无关；均衡性另由列高差值断言（maxHeight-minHeight）承担。"
+    },
+    {
+      "file": "packages/ui/qa-regression/goods-list.spec.ts",
+      "rule": "count-literal",
+      "snippet": "expect(slotted.colCount).toBe(3)",
+      "reason": "goods-list 插槽 demo 的 columns=\"3\" 渲染 3 列：demo fixture 数据驱动，与 OS / 视口 / 接口无关；断言重点是宿主卡进入列（hostCardsInCols）而非列数值本身。"
     }
   ]
 }

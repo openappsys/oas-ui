@@ -2,7 +2,42 @@
 
 ## [未发布]
 
+### 修复
+
+**commerce 首波（filter / goods-list）真实浏览器实测修复批**
+
+- **oas-filter**：
+  - **dropdown 面板锚定与视口翻转**：面板元素移入栏容器内（绝对定位锚定栏底，修复面板飞到页面底部的失锚问题）+ 展开时按视口空间判定翻转（下方放不下且上方更宽裕时贴顶展开，`data-flip` 属性区分）+ 面板补 `max-height: 70vh` + `overflow-y: auto`（多组条件不再溢出不可滚）。
+  - **drawer 升级模态对话框语义**：面板 `role="dialog"` + `aria-modal="true"`，Tab / Shift+Tab 焦点循环限制在面板内（游离面板外的焦点拉回首项）；dropdown 非模态不挂 dialog 语义。
+  - **触发器可访问名改为从可见内容推导**（排序标签 + 计数徽标，不再用 aria-label 包裹「筛选（已选 n 项）」——可见文本「筛选 n」与 aria-label 不连续包含违反 WCAG 2.5.3 label-in-name）。
+  - **chips / 触发器徽标对比度**：chips 文字色 `text-secondary` → `text-primary`（`bg-hover` 底上 4.39:1 不达 AA，两主题口径统一达标）。
+  - **解析健壮性**：`sorts` 缺 `label` 的条目、`groups` 缺 `label` / 选项缺 `value`/`label` 的条目解析期跳过并一次性 devWarn（不再渲染空文本按钮或写 "undefined" 值）；`conditions` 单选组多值截断时一次性 devWarn 且**清洗结果回写 attribute**（getter 与 attribute 一致，脏值规整可见）。
+  - **chips 撤销焦点迁移**：撤销一枚后焦点落到相邻 chip（无相邻回触发器），键盘连续撤销不再掉焦。
+  - **断连清理去重**：`onCleanup` 只在首次挂监听时注册，开合循环不再单调增长。
+- **oas-goods-list**：
+  - **list 语义合法化**：`role="list"` 从外层容器移到卡片网格容器（加载区 / 空态 / 哨兵 / 插槽源全部位于列表语义之外，消除 axe `aria-required-children` 严重违规）；插槽卡搬进列后组件补 `role="listitem"`（宿主自带 role 不覆盖）。
+  - **瀑布流测高修复**：测量容器 `align-items: flex-start`（修复 flex 默认 stretch 把所有卡拉成同高、列分配退化成轮转的问题）；回归改为「按真实卡高复算最短列贪婪，逐列比对成员集合」（旧「列高差 < 最小卡高」判据对 demo 数据无判别力：正确分配差 28、轮转退化差 27 都能过）。
+  - **list 形态改图文横排行**：图左固定小尺寸（104px，与 product-card 横排惯例一致）+ 右侧信息列（标题 / 标签 / 价格），纵向堆叠——修复「单列巨图卡」与文档「图文横排的列表视图」不符；内建卡 DOM 结构改 `media + info` 分区（waterfall / list 同构，方向由 CSS 控制）。
+  - **触底待应答解除补全**：`items` 签名变化（宿主只追加数据的分页场景）与置 `loading` 等价解除待应答——修复「宿主只追加数据则第二次触底永久停摆」。
+  - **插槽卡增量追加**：捕获集由「整体替换」改「合并」（保留已搬进列的旧卡 + 新分配卡入列），重排签名取**节点身份序列**（WeakMap 分配 id，非数量）——修复追加宿主卡不渲染，以及「移除一张 + 追加一张」等数量增删因计数签名早退永不入列；搬运窗口（同步 slotchange 重入的 detach 中间态）跳过剔除判定，真实浏览器与 happy-dom 行为一致。
+  - **隐藏容器守卫**：`display:none` 链路挂载不再误派 `oas-load-more`（几何值无意义不触发；真实浏览器 `getClientRects` 全链判定 + happy-dom 回退祖先链 computed display），显示后滚动才派发。
+  - **加载更多区活区**：`role="status"` + `aria-live="polite"`（加载中 / 到底文案变化自动播报）。
+- **插槽内容替换契约（行为说明）**：插槽卡被搬进 shadow 后宿主 light DOM 恒为空，`el.replaceChildren(新卡)` 与 `el.append(新卡)` 在 DOM 层是同一操作序列（无 removedNodes、无 previousSibling），组件无法识别「整替换」意图——单调用 `replaceChildren` 等价**追加**（旧卡保留）。整替换的受支持做法：宿主持有引用逐张 `remove()` 旧卡后再追加，捕获集按「节点离开组件树」即时剔除并重排。README（宿主桥接 / 数据契约）与真实浏览器回归已按此口径固化。
+- **oas-filter（复审跟修）**：遮罩点击关闭时回收焦点——面板 / 遮罩隐藏后浏览器先把焦点回收到 `body`，原守卫只认「面板内焦点」而跳过恢复，焦点于是永久停在 body（键盘用户失位）；现把「焦点无主（null / `body` / `documentElement`）」并入应恢复情形，「用户点了页面别处」仍不抢焦点。
+- **i18n（消费者可见面）**：移除 `filter.selectedCount`（触发器不再用「已选 n 项」aria-label，可访问名改从可见内容推导）。宿主自定义 locale 包里覆盖该键将不再生效，可同步删除该条目；其余 `filter.*` 键（`removeChip` / `reset` / `done` / `panelLabel` 等）不变。
+- **文档**：filter / goods-list（zh+en 共 4 页）demo 的 `<script setup>` 全部上移页面级（此前写在 `DemoBlock` 内部被 VitePress 原样输出，页面 `Cannot use import statement` 报错 + Hydration mismatch + demo 全灭——console-sweep 与 a11y 修复前红、修复后绿）；页面级脚本统一放在 `## API` 之前（该章节为 api:gen 生成区），并加位置锚点注释防回退。英文页补齐 4 处中文残留标题（卡片位插槽 / 加载更多与空态 / 自定义样式须知 ×2），「自定义样式须知」补 `::part(info)` 与新 `data-flip` 属性说明。
+- **范围条件组说明**：filter 的「范围条件组」（价格区间等自定义输入条件）属**预留 L3 能力子路径，本体未实现**（见 `packages/ui/src/commerce/filter/README.md`「预留能力面」），验收口径不包含该项。
+- 测试：单测 +17（首波 13：filter 6 / goods-list 7；复审跟修 4：filter 遮罩关闭焦点回收 1 + goods-list 等数量替换 / replaceChildren 契约 / 整替换支持做法 3）。qa-regression +5（首波 2：dropdown 锚定几何与视口翻转真点击 / drawer 真键盘焦点陷阱；复审跟修 3：瀑布流分配逐列成员核对、插槽等数量增删、replaceChildren 契约），改 4（瀑布流均衡断言换口径 + list 形态横排几何 + drawer 遮罩关闭补焦点回收断言 + 撤销 chips 前置收面板）。
+
 ### 新增
+
+**电商扩容首波：commerce 族新组件（filter / goods-list，包体分级规矩首次实践）**
+
+- **oas-goods-list（商品列表容器）**：`layout="waterfall|list"` 两形态——瀑布流 `columns` 固定数值（1–8 clamp）或 `auto` 按容器宽自适应（<640 → 2、<1024 → 3、其余 4；ResizeObserver 跨断点重排），卡片按**累计高度最短列**均衡放置（纯函数 `column-assign` 内核：真实测高分配、未布局时轮转退化保可用）；`layout="list"` 纵向单列。`items` JSON 双通道渲染内建简版卡（对齐 product-card 惯例：缺失 / 加载失败图片回落虚线占位（`role="img"` + i18n aria-label）、两行截断标题、`price` / `originalPrice` 透传内嵌 `oas-price`、tags 浅底小签；缺 `title` 条目忽略，非法 JSON 告警一次）。**卡片位插槽整体替换**（默认插槽优先于 items——宿主放自己的 product-card / 任意内容，组件按测得高度均衡分列；插槽卡内容与点击行为宿主全接管）。加载更多：底部哨兵进入视口（240px 提前量）派 `oas-load-more`（派发后待应答防重：宿主置 `loading` 解除并显示 spinner + 加载中文案、`items` 变化解除；`no-more` 置位显示「没有更多了」且不再触发——宿主二者都不做则不再派发防打爆）；`oas-item-click`（点击 / Enter，detail `{ index, item }`）。空态 `empty` 插槽（缺省「暂无商品」）。a11y：容器 `role="list"` + 卡片 `listitem`（列 `presentation` 不打断语义）、DOM 序即声明序（分列不改变读屏顺序）、组件 `aria-label` 走 i18n。本体冻结大众功能集（分页协议 / 虚拟滚动 / 懒加载策略档 / 列布局策略扩展预留 L3 能力面，README 写明）。单测 +18（纯函数内核 5 + 组件集成 13）；qa-regression +4（瀑布流真实列布局 / 触底协议 / 插槽替换 / 暗色与空态）；zh/en 文档 + 6 demo；i18n 新增 5 键（`goodsList.*`）× 16 语言 + 切片重生成。
+- **登记**：族注册（`families/commerce.ts` 14→15 / 全量入口 / `ssr.ts` 类导出 / not-ssr pending / families.test 台账 195/15）；api 语料（attrs 8 / props 1 / events 2 / slots 2）+ `api:scan`/`api:gen`；侧栏 + zh/en 总览页；llms / stats 产物同步。
+
+- **oas-filter（列表页筛选栏）**：排序项常显（`sorts` JSON 可配，缺省三件套综合 / 销量 / 价格——价格 `toggled` 支持升降 toggle：首次点击降序、再点升序，方向进 `oas-change` detail 与汇总摘要）+ 条件面板（`groups` JSON 多组配置：单选组 `radiogroup` 语义点已选取消、多选组 `group` 语义任意勾选、`disabled` 选项置灰；`panel="dropdown|drawer"` 两形态——下拉贴底点外收起 / 半屏抽屉带遮罩，窄屏建议抽屉）+ 已选回显 chips（`aria-label` 带「移除 条件名」可聚焦撤销 + 一键重置回缺省）。值契约 = `conditions` JSON 双通道（`{ sort, order, groups }`；用户交互后组件回写 attribute 并派 `oas-change`，宿主写入静默——受控与非受控同一通道）；`oas-open-change` 开合事件 + `setOpen()` 方法（编程式开合含焦点管理）。a11y：触发器 `aria-haspopup/expanded/controls` + 已选计数进可访问名、开面板聚焦首条件、Esc 关回触发器、组内方向键移焦、汇总摘要进 `aria-live="polite"` 活区。本体冻结在大众功能集（条件持久化 / 服务端筛选协议 / 范围条件组 / 面板自适应预留 L3 能力子路径面，README 写明）。单测 +21；qa-regression +5（两形态真点击 / 键盘闭环 / 已选撤销 / 暗色 token）；zh/en 文档 + 7 demo；i18n 新增 12 键（`filter.*`）× 16 语言 + 切片重生成。
+- **登记**：族注册（`families/commerce.ts` 13→14 / 全量入口 / `ssr.ts` 类导出 / families.test 台账）；api 语料（attrs 5 / props 4 / methods 1 / events 2）+ `api:scan`/`api:gen`；侧栏 + zh/en 总览页；llms 产物同步。
 
 **批 D 交互长尾（coupon 叠加规则 / barrage 点赞与屏蔽词 / drag 吸附，全部向后兼容：未启用新属性时渲染与行为不变）**
 
