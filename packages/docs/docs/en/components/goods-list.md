@@ -15,37 +15,11 @@ Built-in simple card: image (missing / failed load → dashed placeholder) + two
   <p id="gl-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Click a product card to see oas-item-click feedback.
   </p>
-  <script setup lang="ts">
-  import { onMounted } from 'vue'
-  onMounted(() => {
-    customElements.whenDefined('oas-goods-list').then(() => {
-      const el = document.getElementById('gl-basic')!
-      el.setAttribute('items', JSON.stringify([
-        { title: 'Cotton T-shirt', price: 79, originalPrice: 99, tags: ['New'], image: '/assets/demo-square-1.svg' },
-        { title: 'Canvas sneakers, breathable mesh', price: 129, tags: ['Hot'], image: '/assets/demo-square-2.svg' },
-        { title: 'Commuter shoulder bag', price: 199, originalPrice: 259, image: '/assets/demo-square-3.svg' },
-        { title: 'Knit cardigan', price: 149, tags: ['Free shipping'], image: '/assets/demo-square-4.svg' },
-        { title: 'Running shoes with cushioning', price: 259, image: '/assets/demo-square-5.svg' },
-        { title: 'Waterproof hiking backpack 40L', price: 329, originalPrice: 399, tags: ['Outdoor'], image: '/assets/demo-square-6.svg' },
-        { title: 'Linen shirt (placeholder example)', price: 99 },
-        { title: 'Quick-dry shorts', price: 59, tags: ['Clearance'], image: '/assets/demo-square-1.svg' },
-      ]))
-      el.setAttribute('currency', 'CNY')
-      el.setAttribute('locale', 'zh-CN')
-      el.setAttribute('precision', '2')
-      const out = document.getElementById('gl-basic-out')!
-      el.addEventListener('oas-item-click', (e) => {
-        const d = (e as CustomEvent).detail
-        out.textContent = `oas-item-click: #${d.index} ${d.item.title}`
-      })
-    })
-  })
-  </script>
 </DemoBlock>
 
 ## Fixed columns and vertical list
 
-Write a fixed number (1–8) into `columns`; `layout="list"` ignores it and renders a single column:
+Write a fixed number (1–8) into `columns`; `layout="list"` ignores it and renders a single vertical column of horizontal rows (image on the start side, info column beside it):
 
 <DemoBlock title="Fixed 3 columns vs vertical list">
   <div style="display: grid; gap: var(--oas-space-4); width: 100%">
@@ -102,39 +76,6 @@ Reaching the bottom emits `oas-load-more` (a sentinel enters the viewport 240px 
       <span id="gl-more-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </div>
   </div>
-  <script setup lang="ts">
-  import { onMounted } from 'vue'
-  onMounted(() => {
-    customElements.whenDefined('oas-goods-list').then(() => {
-      const el = document.getElementById('gl-more')!
-      const out = document.getElementById('gl-more-out')!
-      el.addEventListener('oas-load-more', () => {
-        // Host protocol: set loading → append items → remove loading
-        el.setAttribute('loading', '')
-        out.textContent = 'oas-load-more: loading page 2…'
-        setTimeout(() => {
-          const next = Array.from({ length: 3 }, (_, i) => ({
-            title: `Page 2 item ${String.fromCharCode(65 + i)}`,
-            price: 100 + i * 10,
-            image: i % 2 === 0 ? '/assets/demo-square-3.svg' : undefined,
-          }))
-          const current = JSON.parse(el.getAttribute('items')!) as unknown[]
-          el.setAttribute('items', JSON.stringify([...current, ...next]))
-          el.removeAttribute('loading')
-          out.textContent = 'oas-load-more: 3 more items appended (scrolling into the sentinel also triggers it for real)'
-        }, 400)
-      })
-      document.getElementById('gl-load')?.addEventListener('click', () => {
-        el.scrollIntoView({ block: 'end' })
-        window.dispatchEvent(new Event('scroll'))
-      })
-      document.getElementById('gl-done')?.addEventListener('click', () => {
-        el.setAttribute('no-more', '')
-        out.textContent = 'no-more set: end-of-list shown, no further emission'
-      })
-    })
-  })
-  </script>
 </DemoBlock>
 
 <DemoBlock title="Empty state (empty slot)">
@@ -146,16 +87,75 @@ Reaching the bottom emits `oas-load-more` (a sentinel enters the viewport 240px 
   </oas-goods-list>
 </DemoBlock>
 
-## 键盘与无障碍
+## Keyboard and accessibility
 
-- The container carries `role="list"` + built-in cards as `role="listitem"` (column divs are `presentation` so the list semantics stay unbroken), with the component `aria-label` "Product list".
-- Built-in cards are Tab-focusable and Enter emits `oas-item-click`; the image `alt` takes the title, and the missing-image placeholder text goes into `aria-label` (not rendered on screen).
-- Loading / end-of-list states are plain readable text; the load-more sentinel is `aria-hidden`. Slotted cards bring their own accessibility.
+- The card grid container carries `role="list"` + built-in cards as `role="listitem"` (column divs are `presentation` so the list semantics stay unbroken), with `aria-label` "Product list"; the load-more region is an `aria-live="polite"` `role="status"` region (loading / end-of-list changes are announced) and sits outside the list semantics, along with the empty state and the sentinel.
+- Built-in cards are Tab-focusable and Enter emits `oas-item-click`; the image `alt` takes the title, and the missing-image placeholder text goes into `aria-label` (not rendered on screen). Slotted cards get `role="listitem"` added by the component once moved into columns (a host-provided role is not overwritten).
+- `layout="list"` renders horizontal rows (fixed-size image on the start side + an info column beside it), stacked vertically.
 - The waterfall DOM order matches the declared card order (column placement does not change the screen-reader order); layout uses logical properties and mirrors automatically under RTL.
 
 ## 自定义样式须知
 
 `::part(grid)` is the multi-column flex container (columns `::part(col)` are equal-width column flex with `--oas-space-3` gaps); the built-in card `::part(card)` mirrors `oas-product-card` (media / title / tags / price). Column changes rebuild the column DOM — keep that in mind when overriding `::part(col)` layout, since cards are re-assigned.
+
+
+<script setup lang="ts">
+import { onMounted } from 'vue'
+
+// Page-level script (VitePress only extracts the page-level script setup — all demo logic lives here, never inside a DemoBlock)
+onMounted(() => {
+  customElements.whenDefined('oas-goods-list').then(() => {
+    // —— Basic usage demo ——
+    const basic = document.getElementById('gl-basic')!
+    basic.setAttribute('items', JSON.stringify([
+      { title: 'Cotton T-shirt', price: 79, originalPrice: 99, tags: ['New'], image: '/assets/demo-square-1.svg' },
+      { title: 'Canvas sneakers, breathable mesh', price: 129, tags: ['Hot'], image: '/assets/demo-square-2.svg' },
+      { title: 'Commuter shoulder bag', price: 199, originalPrice: 259, image: '/assets/demo-square-3.svg' },
+      { title: 'Knit cardigan', price: 149, tags: ['Free shipping'], image: '/assets/demo-square-4.svg' },
+      { title: 'Running shoes with cushioning', price: 259, image: '/assets/demo-square-5.svg' },
+      { title: 'Waterproof hiking backpack 40L', price: 329, originalPrice: 399, tags: ['Outdoor'], image: '/assets/demo-square-6.svg' },
+      { title: 'Linen shirt (placeholder example)', price: 99 },
+      { title: 'Quick-dry shorts', price: 59, tags: ['Clearance'], image: '/assets/demo-square-1.svg' },
+    ]))
+    basic.setAttribute('currency', 'CNY')
+    basic.setAttribute('locale', 'zh-CN')
+    basic.setAttribute('precision', '2')
+    const out = document.getElementById('gl-basic-out')!
+    basic.addEventListener('oas-item-click', (e) => {
+      const d = (e as CustomEvent).detail
+      out.textContent = `oas-item-click: #${d.index} ${d.item.title}`
+    })
+
+    // —— Load more demo ——
+    const more = document.getElementById('gl-more')!
+    const moreOut = document.getElementById('gl-more-out')!
+    more.addEventListener('oas-load-more', () => {
+      // Host protocol: set loading → append items → remove loading
+      more.setAttribute('loading', '')
+      moreOut.textContent = 'oas-load-more: loading page 2…'
+      setTimeout(() => {
+        const next = Array.from({ length: 3 }, (_, i) => ({
+          title: `Page 2 item ${String.fromCharCode(65 + i)}`,
+          price: 100 + i * 10,
+          image: i % 2 === 0 ? '/assets/demo-square-3.svg' : undefined,
+        }))
+        const current = JSON.parse(more.getAttribute('items')!) as unknown[]
+        more.setAttribute('items', JSON.stringify([...current, ...next]))
+        more.removeAttribute('loading')
+        moreOut.textContent = 'oas-load-more: 3 more items appended (scrolling into the sentinel also triggers it for real)'
+      }, 400)
+    })
+    document.getElementById('gl-load')?.addEventListener('click', () => {
+      more.scrollIntoView({ block: 'end' })
+      window.dispatchEvent(new Event('scroll'))
+    })
+    document.getElementById('gl-done')?.addEventListener('click', () => {
+      more.setAttribute('no-more', '')
+      moreOut.textContent = 'no-more set: end-of-list shown, no further emission'
+    })
+  })
+})
+</script>
 
 ## API
 

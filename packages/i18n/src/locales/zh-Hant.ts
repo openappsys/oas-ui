@@ -802,7 +802,6 @@ export const zhHant: LocaleMessages = {
   'filter.sortSales': '銷量',
   'filter.sortPrice': '價格',
   'filter.panelLabel': '篩選條件',
-  'filter.selectedCount': '已選 {count} 項',
   'filter.removeChip': '移除 {name}',
   'filter.reset': '重設',
   'filter.done': '完成',

@@ -92,6 +92,45 @@ describe('oas-goods-list', () => {
     expect(cols.reduce((n, col) => n + col.childElementCount, 0)).toBe(6)
   })
 
+  it('list 语义合法：role=list 在卡片网格容器上，more / empty / 哨兵等非卡节点不在 list 容器内', () => {
+    const el = mount({ items: JSON.stringify(ITEMS), columns: '2' })
+    const grid = part(el, 'grid')!
+    expect(grid.getAttribute('role')).toBe('list')
+    expect(grid.getAttribute('aria-label')).toBe('商品列表')
+    // wrap 回归普通区块（无 list 语义，装非卡片节点不再违规）
+    expect(part(el, 'wrap')!.getAttribute('role')).toBeNull()
+    // list 容器内只有列容器（presentation）与卡片（listitem）
+    const ok = [...grid.querySelectorAll('*')].every(
+      (n) =>
+        n.getAttribute('role') === 'presentation' ||
+        n.getAttribute('role') === 'listitem' ||
+        n.closest('[part="card"]') != null,
+    )
+    expect(ok).toBe(true)
+    // 非卡节点在 grid 之外
+    expect(part(el, 'grid')!.contains(part(el, 'more')!)).toBe(false)
+    expect(part(el, 'grid')!.contains(part(el, 'empty')!)).toBe(false)
+    expect(part(el, 'grid')!.contains(part(el, 'sentinel')!)).toBe(false)
+  })
+
+  it('插槽卡搬运进列后补 listitem 语义（宿主节点无 role 时）', async () => {
+    const el = mount({})
+    const custom = document.createElement('div')
+    custom.textContent = '宿主自定义卡'
+    custom.slot = ''
+    el.appendChild(custom)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.contains(custom)).toBe(true)
+    expect(custom.getAttribute('role')).toBe('listitem')
+    // 宿主自带 role 不覆盖
+    const withRole = document.createElement('button')
+    withRole.setAttribute('role', 'button')
+    withRole.slot = ''
+    el.appendChild(withRole)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(withRole.getAttribute('role')).toBe('button')
+  })
+
   it('固定 columns=3 渲染三列；list 形态恒单列', () => {
     const el3 = mount({ items: JSON.stringify(ITEMS), columns: '3' })
     expect(parts(el3, 'col')).toHaveLength(3)
@@ -152,6 +191,33 @@ describe('oas-goods-list', () => {
     // 宿主卡被分配进列
     expect(el.shadowRoot!.contains(custom)).toBe(true)
     expect(parts(el, 'col').some((col) => col.contains(custom))).toBe(true)
+  })
+
+  it('插槽卡增量追加：初始 2 张后再追加 3 张，全部捕获入列显示', async () => {
+    const el = mount({ columns: '2' })
+    const make = (text: string): HTMLElement => {
+      const d = document.createElement('div')
+      d.textContent = text
+      d.slot = ''
+      return d
+    }
+    const c1 = make('卡一')
+    const c2 = make('卡二')
+    el.append(c1)
+    el.append(c2)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(parts(el, 'col').reduce((n, col) => n + col.childElementCount, 0)).toBe(2)
+    // 追加 3 张：全部 5 张入列（不丢已捕获的）
+    el.append(make('卡三'))
+    el.append(make('卡四'))
+    el.append(make('卡五'))
+    await new Promise((r) => setTimeout(r, 0))
+    const inCols = parts(el, 'col').reduce((n, col) => n + col.childElementCount, 0)
+    expect(inCols).toBe(5)
+    expect(parts(el, 'col').some((col) => col.contains(c1))).toBe(true)
+    expect(parts(el, 'col').some((col) => col.contains(c2))).toBe(true)
+    // light DOM 不残留未分配卡
+    expect([...el.children].filter((c) => !el.shadowRoot!.contains(c))).toHaveLength(0)
   })
 
   it('空态：items 空显示缺省文案，empty 插槽可整体替换', async () => {
@@ -219,6 +285,64 @@ describe('oas-goods-list', () => {
     el.setAttribute('no-more', '')
     document.dispatchEvent(new Event('scroll'))
     expect(events).toHaveLength(2)
+  })
+
+  it('items 变化解除触底待应答：宿主只追加数据（不置 loading）→ 第二次触底再派发', () => {
+    const el = new OASGoodsList()
+    el.setAttribute('items', JSON.stringify(ITEMS.slice(0, 2)))
+    const events: number[] = []
+    el.addEventListener('oas-load-more', () => events.push(1))
+    document.body.appendChild(el)
+    expect(events).toHaveLength(1)
+    // 只追加 items（宿主未置 loading）→ 待应答解除
+    el.setAttribute('items', JSON.stringify(ITEMS))
+    document.dispatchEvent(new Event('scroll'))
+    expect(events).toHaveLength(2)
+    // items 未变时 pending 仍防重
+    document.dispatchEvent(new Event('scroll'))
+    expect(events).toHaveLength(2)
+  })
+
+  it('隐藏容器挂载零事件：display:none 下不误派 load-more，显示后滚动才派发', async () => {
+    const wrapper = document.createElement('div')
+    wrapper.style.display = 'none'
+    const el = new OASGoodsList()
+    el.setAttribute('items', JSON.stringify(ITEMS))
+    const events: number[] = []
+    el.addEventListener('oas-load-more', () => events.push(1))
+    wrapper.appendChild(el)
+    document.body.appendChild(wrapper)
+    expect(events).toHaveLength(0)
+    // 显示后滚动（rAF 节流异步落定）→ 哨兵可见 → 派发
+    wrapper.style.display = 'block'
+    document.dispatchEvent(new Event('scroll'))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(events).toHaveLength(1)
+  })
+
+  it('加载更多区是活区：role=status + aria-live=polite（loading / 到底文案变化可播报）', () => {
+    const el = mount({ items: JSON.stringify(ITEMS) })
+    const more = part(el, 'more')!
+    expect(more.getAttribute('role')).toBe('status')
+    expect(more.getAttribute('aria-live')).toBe('polite')
+  })
+
+  it('list 形态卡结构：media 与 info 分列（图文横排行），info 内含标题 / 标签 / 价格', () => {
+    const el = mount({
+      items: JSON.stringify([{ title: '行卡', price: 9, tags: ['标签'], image: 'a.svg' }]),
+      layout: 'list',
+    })
+    const card = part(el, 'card')!
+    const info = card.querySelector<HTMLElement>('[part="info"]')
+    expect(info).toBeInstanceOf(HTMLElement)
+    expect(info!.contains(card.querySelector('[part="title"]')!)).toBe(true)
+    expect(info!.contains(card.querySelector('[part="tags"]')!)).toBe(true)
+    expect(info!.contains(card.querySelector('[part="price"]')!)).toBe(true)
+    // media 是 info 的兄弟（横排左右分区）
+    expect(info!.contains(card.querySelector('[part="media"]')!)).toBe(false)
+    // waterfall 形态同样有 info 容器（同构 DOM，CSS 控制方向）
+    const el2 = mount({ items: JSON.stringify([{ title: '瀑布卡' }]) })
+    expect(part(el2, 'card')!.querySelector('[part="info"]')).toBeInstanceOf(HTMLElement)
   })
 
   it('layout 非法值告警一次并回落 waterfall', () => {

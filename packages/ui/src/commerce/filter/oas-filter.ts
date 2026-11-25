@@ -47,9 +47,12 @@ import { parseJsonArray } from '../../shared/json-array.js'
  * - 单选组容器 `role="radiogroup"`、多选组容器 `role="group"`（各带组名 `aria-label`）；
  *   选项 `role="radio"` / `role="checkbox"` + `aria-checked`，Tab 全可达，
  *   组内方向键移动焦点（不触发选择）。
- * - 触发器 `aria-haspopup` + `aria-expanded` + `aria-controls`；已选计数徽标纯文本。
- * - 开面板聚焦首个可聚焦条件；Esc 关闭回触发器；dropdown 外点关闭；drawer 遮罩 /
- *   「完成」按钮关闭。chips 为可聚焦按钮，`aria-label` = i18n「移除 {条件名}」。
+ * - 触发器 `aria-haspopup` + `aria-expanded` + `aria-controls`；可访问名从可见内容推导
+ *   （排序标签 + 计数徽标，不用 aria-label 包裹避免与可见文本不一致——WCAG 2.5.3）。
+ * - 开面板聚焦首个可聚焦条件；Esc 关闭回触发器；dropdown 外点关闭 + 视口空间翻转
+ *   （下方放不下贴顶展开）；drawer 面板为模态对话框（`role="dialog"` + `aria-modal="true"`，
+ *   Tab / Shift+Tab 焦点循环限制在面板内），遮罩 / 「完成」按钮关闭。
+ *   chips 为可聚焦按钮，`aria-label` = i18n「移除 {条件名}」，撤销后焦点迁相邻 chip。
  * - 汇总摘要渲染进 `role="status"` + `aria-live="polite"` 活区（视觉隐藏）。
  * 布局走逻辑属性（RTL 安全），颜色全走 token。
  */
@@ -224,7 +227,7 @@ const STYLE = `
   border: none;
   border-radius: var(--oas-radius-full, 999px);
   background: var(--oas-color-bg-hover);
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-primary);
   font-family: inherit;
   font-size: var(--oas-font-size-xs);
   line-height: 1.4;
@@ -271,12 +274,21 @@ const STYLE = `
   flex-direction: column;
   gap: var(--oas-space-3);
   box-sizing: border-box;
+  max-height: 70vh;
+  overflow-y: auto;
   margin-block-start: var(--oas-space-1);
   padding: var(--oas-space-3);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   background: var(--oas-color-bg);
   box-shadow: var(--oas-shadow-sm);
+}
+/* 下方空间不足且上方更宽裕时贴顶展开（视口空间翻转） */
+.panel[data-flip='up'] {
+  top: auto;
+  inset-block-end: 100%;
+  margin-block-start: 0;
+  margin-block-end: var(--oas-space-1);
 }
 .panel[hidden] {
   display: none;
@@ -455,6 +467,10 @@ export class OASFilter extends OASElement {
   private warnedGroups = false
   private warnedConditions = false
   private warnedPanel = false
+  /** 结构校验告警（缺 label / value 等），与「非法 JSON」告警分开计数，各一次 */
+  private warnedSortsShape = false
+  private warnedGroupsShape = false
+  private warnedConditionsShape = false
 
   /** 面板组区块渲染签名（groups JSON 变化才重建选项，保焦点与选中态增量同步） */
   private groupsSignature = ''
@@ -462,6 +478,8 @@ export class OASFilter extends OASElement {
   private chipsSignature = ''
   /** open 状态监听是否已挂（外点 + Esc） */
   private openListenersBound = false
+  /** 断连清理是否已注册（防开合循环重复注册 onCleanup） */
+  private openCleanupRegistered = false
   /** 打开前的焦点元素（关闭时焦点回带） */
   private openTriggerFocus: HTMLElement | null = null
 
@@ -473,11 +491,35 @@ export class OASFilter extends OASElement {
   }
 
   private readonly onDocKeydown = (e: KeyboardEvent): void => {
-    if (e.key !== 'Escape') return
-    if (!this.isOpen) return
-    e.stopPropagation()
-    this.setOpen(false)
-    this.restoreFocusToTrigger()
+    if (e.key === 'Escape' && this.isOpen) {
+      e.stopPropagation()
+      this.setOpen(false)
+      this.restoreFocusToTrigger()
+      return
+    }
+    // drawer 是模态对话框：Tab 循环限制在面板内（I8 焦点陷阱）
+    if (e.key === 'Tab' && this.isOpen && this.resolvePanel() === 'drawer') {
+      this.trapDrawerFocus(e)
+    }
+  }
+
+  /** drawer 焦点陷阱：Tab / Shift+Tab 在面板可聚焦项内循环；游离面板外的焦点拉回首项 */
+  private trapDrawerFocus(e: KeyboardEvent): void {
+    const panel = this.panelEl
+    if (!panel) return
+    const focusables = [...panel.querySelectorAll<HTMLElement>('[part="option"]:not([disabled]), [part="done"]')]
+    if (focusables.length === 0) return
+    const first = focusables[0]!
+    const last = focusables[focusables.length - 1]!
+    const active = this.deepActiveElement()
+    const inside = active != null && panel.contains(active)
+    if (!inside || (!e.shiftKey && active === last)) {
+      e.preventDefault()
+      first.focus({ preventScroll: true })
+    } else if (e.shiftKey && active === first) {
+      e.preventDefault()
+      last.focus({ preventScroll: true })
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -544,15 +586,15 @@ export class OASFilter extends OASElement {
           <span class="badge" part="badge" hidden></span>
           <svg class="caret" viewBox="0 0 16 16" aria-hidden="true" focusable="false">${CARET_PATH}</svg>
         </button>
+        <div class="panel" part="panel" data-form="dropdown" hidden>
+          <div class="groups-box"></div>
+          <div class="done-row" part="done-row" hidden>
+            <button class="done" part="done" type="button"></button>
+          </div>
+        </div>
       </div>
       <div class="chips" part="chips" hidden></div>
       <button class="mask" part="mask" type="button" aria-label="" tabindex="-1" hidden></button>
-      <div class="panel" part="panel" data-form="dropdown" hidden>
-        <div class="groups-box"></div>
-        <div class="done-row" part="done-row" hidden>
-          <button class="done" part="done" type="button"></button>
-        </div>
-      </div>
       <p class="live" part="live" role="status" aria-live="polite"></p>
     `
   }
@@ -610,13 +652,23 @@ export class OASFilter extends OASElement {
         devWarn('[oas-filter] sorts 不是合法 JSON 数组，已回落缺省排序项')
       }
     })
-    const valid = parsed.filter(
-      (s): s is FilterSortOption =>
+    const valid: FilterSortOption[] = []
+    for (const s of parsed) {
+      if (
         typeof s === 'object' &&
         s !== null &&
         typeof (s as FilterSortOption).key === 'string' &&
-        (s as FilterSortOption).key !== '',
-    )
+        (s as FilterSortOption).key !== '' &&
+        typeof (s as FilterSortOption).label === 'string' &&
+        (s as FilterSortOption).label !== ''
+      ) {
+        valid.push(s)
+      }
+    }
+    if (valid.length !== parsed.length && !this.warnedSortsShape) {
+      this.warnedSortsShape = true
+      devWarn('[oas-filter] sorts 存在缺 key / label 的条目，已跳过（一次告警）')
+    }
     return valid.length > 0 ? valid : this.defaultSorts()
   }
 
@@ -632,20 +684,42 @@ export class OASFilter extends OASElement {
   private parseGroups(): FilterGroup[] {
     const raw = this.getAttr('groups').trim()
     if (raw === '') return []
-    return parseJsonArray<FilterGroup>(raw, () => {
+    const parsed = parseJsonArray<FilterGroup>(raw, () => {
       if (!this.warnedGroups) {
         this.warnedGroups = true
         devWarn('[oas-filter] groups 不是合法 JSON 数组，已按空条件组处理')
       }
-    }).filter(
-      (g): g is FilterGroup =>
-        typeof g === 'object' &&
-        g !== null &&
-        typeof (g as FilterGroup).key === 'string' &&
-        (g as FilterGroup).key !== '' &&
-        Array.isArray((g as FilterGroup).options) &&
-        (g as FilterGroup).options.length > 0,
-    )
+    })
+    const valid: FilterGroup[] = []
+    for (const g of parsed) {
+      if (
+        typeof g !== 'object' ||
+        g === null ||
+        typeof (g as FilterGroup).key !== 'string' ||
+        (g as FilterGroup).key === '' ||
+        typeof (g as FilterGroup).label !== 'string' ||
+        (g as FilterGroup).label === '' ||
+        !Array.isArray((g as FilterGroup).options)
+      ) {
+        continue
+      }
+      const options = g.options.filter(
+        (o): o is FilterGroupOption =>
+          typeof o === 'object' &&
+          o !== null &&
+          typeof o.value === 'string' &&
+          o.value !== '' &&
+          typeof o.label === 'string' &&
+          o.label !== '',
+      )
+      if (options.length === 0) continue
+      valid.push({ ...g, options })
+    }
+    if (valid.length !== parsed.length && !this.warnedGroupsShape) {
+      this.warnedGroupsShape = true
+      devWarn('[oas-filter] groups 存在缺 key / label 或无合法选项的条目，已跳过（一次告警）')
+    }
+    return valid
   }
 
   private parseConditions(): FilterConditions {
@@ -654,7 +728,12 @@ export class OASFilter extends OASElement {
     try {
       const parsed: unknown = JSON.parse(raw)
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return this.sanitizeConditions(parsed as FilterConditions)
+        const clean = this.sanitizeConditions(parsed as FilterConditions)
+        // 清洗结果回写 attribute：getter 与 attribute 一致（宿主写脏值被规整）；
+        // 清洗幂等——回写后的值再清洗结果不变，不会循环触发
+        const cleanJson = JSON.stringify(clean)
+        if (cleanJson !== JSON.stringify(parsed)) this.setAttribute('conditions', cleanJson)
+        return clean
       }
     } catch {
       // 落到统一告警
@@ -677,7 +756,16 @@ export class OASFilter extends OASElement {
         if (!Array.isArray(values)) continue
         const strs = values.filter((v): v is string => typeof v === 'string')
         const def = this.parseGroups().find((g) => g.key === key)
-        groups[key] = def?.multiple ? strs : strs.slice(0, 1)
+        if (def?.multiple) {
+          groups[key] = strs
+        } else {
+          // 单选组恒 ≤1 项：超出部分截断并告警一次（空数组保留——「取消」语义的回显契约）
+          if (strs.length > 1 && !this.warnedConditionsShape) {
+            this.warnedConditionsShape = true
+            devWarn(`[oas-filter] conditions.groups.${key} 是单选组，多值已截断为首个（一次告警）`)
+          }
+          groups[key] = strs.slice(0, 1)
+        }
       }
       if (Object.keys(groups).length > 0) out.groups = groups
     }
@@ -807,11 +895,8 @@ export class OASFilter extends OASElement {
       this.badgeEl.hidden = count === 0
       this.badgeEl.textContent = count > 0 ? String(count) : ''
     }
-    // 可访问名带已选计数（读屏可感知当前筛选规模）
-    trigger.setAttribute(
-      'aria-label',
-      count > 0 ? `${this.t('filter.label')}（${this.t('filter.selectedCount', { count })}）` : this.t('filter.label'),
-    )
+    // 可访问名从可见内容推导（排序标签 + 计数徽标）——避免 aria-label 与可见文本
+    // 不一致违反 WCAG 2.5.3（label-in-name）：所见即所读
     const panelId = this.panelId()
     trigger.setAttribute('aria-controls', panelId)
     if (this.panelEl) this.panelEl.id = panelId
@@ -881,16 +966,50 @@ export class OASFilter extends OASElement {
     panel.setAttribute('data-form', form)
     const open = this.isOpen
     panel.hidden = !open
+    // drawer 是模态对话框（半屏遮罩交互面）；dropdown 非模态不挂 dialog 语义
+    if (form === 'drawer') {
+      panel.setAttribute('role', 'dialog')
+      panel.setAttribute('aria-modal', 'true')
+      panel.setAttribute('aria-label', this.t('filter.panelLabel'))
+    } else {
+      panel.removeAttribute('role')
+      panel.removeAttribute('aria-modal')
+      panel.removeAttribute('aria-label')
+    }
     if (this.maskEl) {
       this.maskEl.hidden = !(open && form === 'drawer')
       this.maskEl.setAttribute('aria-label', this.t('filter.panelLabel'))
     }
     this.syncGroupsBox()
+    this.syncPanelFlip()
     const isDrawer = open && form === 'drawer'
     if (this.doneRowEl) this.doneRowEl.hidden = !isDrawer
     if (this.doneEl && this.doneEl.textContent === '') this.doneEl.textContent = this.t('filter.done')
     if (open && !this.openListenersBound) this.bindOpenListeners()
     if (!open && this.openListenersBound) this.unbindOpenListeners()
+  }
+
+  /**
+   * dropdown 贴底锚定 + 视口翻转：先按向下形态测量（重置 data-flip），
+   * 下方放不下且上方更宽裕时翻到栏上方。happy-dom / 未布局时测量值全 0，
+   * 条件不成立维持向下（退化安全）。
+   */
+  private syncPanelFlip(): void {
+    const panel = this.panelEl
+    const bar = this.barEl
+    if (!panel || !bar) return
+    if (!this.isOpen || this.resolvePanel() !== 'dropdown') {
+      panel.removeAttribute('data-flip')
+      return
+    }
+    panel.removeAttribute('data-flip')
+    const barRect = bar.getBoundingClientRect()
+    const panelRect = panel.getBoundingClientRect()
+    const below = window.innerHeight - barRect.bottom
+    const above = barRect.top
+    if (panelRect.height > 0 && below < panelRect.height && above > below) {
+      panel.setAttribute('data-flip', 'up')
+    }
   }
 
   /** 组区块：签名变化才重建（重建后选中态由同一签名推导），增量只同步 aria-checked */
@@ -958,7 +1077,11 @@ export class OASFilter extends OASElement {
     this.openListenersBound = true
     document.addEventListener('keydown', this.onDocKeydown, true)
     addOutsideDismiss(this.onOutsideClick)
-    this.onCleanup(() => this.unbindOpenListeners())
+    // 断连清理只注册一次（开合循环反复 bind/unbind 不得使 cleanup 单调增长）
+    if (!this.openCleanupRegistered) {
+      this.openCleanupRegistered = true
+      this.onCleanup(() => this.unbindOpenListeners())
+    }
   }
 
   private unbindOpenListeners(): void {
@@ -1093,8 +1216,11 @@ export class OASFilter extends OASElement {
     if (resetEl) this.resetAll()
   }
 
-  /** 撤销一个已选值（chips 逐项撤销） */
+  /** 撤销一个已选值（chips 逐项撤销；焦点迁到相邻 chip，无相邻回触发器） */
   private removeValue(groupKey: string, value: string): void {
+    const chips = [...(this.chipsEl?.querySelectorAll<HTMLButtonElement>('[part="chip"]') ?? [])]
+    const idx = chips.findIndex((c) => c.dataset.group === groupKey && c.dataset.value === value)
+    if (idx < 0) return
     const conditions = this.parseConditions()
     const groups: Record<string, string[]> = { ...(conditions.groups ?? {}) }
     const current = groups[groupKey] ?? []
@@ -1102,6 +1228,10 @@ export class OASFilter extends OASElement {
     groups[groupKey] = current.filter((v) => v !== value)
     this.conditions = { ...conditions, groups }
     this.emitChange()
+    // conditions 写入已同步重建 chips：焦点迁到同位置的下一枚（无则最后一枚），全撤完回触发器
+    const rest = [...(this.chipsEl?.querySelectorAll<HTMLButtonElement>('[part="chip"]') ?? [])]
+    const target = rest[Math.min(idx, rest.length - 1)] ?? this.triggerEl
+    target?.focus({ preventScroll: true })
   }
 
   /** 一键重置：清全部条件 + 排序回缺省首项（空 conditions 语义，读数回落由 activeSort 承担） */

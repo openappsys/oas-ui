@@ -804,7 +804,6 @@ export const zhCN = {
   'filter.sortSales': '销量',
   'filter.sortPrice': '价格',
   'filter.panelLabel': '筛选条件',
-  'filter.selectedCount': '已选 {count} 项',
   'filter.removeChip': '移除 {name}',
   'filter.reset': '重置',
   'filter.done': '完成',

@@ -801,7 +801,6 @@ export const fa: LocaleMessages = {
   'filter.sortSales': 'فروش',
   'filter.sortPrice': 'قیمت',
   'filter.panelLabel': 'معیارهای فیلتر',
-  'filter.selectedCount': '{count} مورد انتخاب شد',
   'filter.removeChip': 'حذف {name}',
   'filter.reset': 'بازنشانی',
   'filter.done': 'انجام شد',

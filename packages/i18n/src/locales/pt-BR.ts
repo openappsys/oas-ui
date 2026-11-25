@@ -797,7 +797,6 @@ export const ptBR: LocaleMessages = {
   'filter.sortSales': 'Vendas',
   'filter.sortPrice': 'Preço',
   'filter.panelLabel': 'Critérios de filtro',
-  'filter.selectedCount': '{count} selecionados',
   'filter.removeChip': 'Remover {name}',
   'filter.reset': 'Redefinir',
   'filter.done': 'Concluído',

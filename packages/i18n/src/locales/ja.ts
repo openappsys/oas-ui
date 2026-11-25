@@ -797,7 +797,6 @@ export const ja: LocaleMessages = {
   'filter.sortSales': '売れ筋',
   'filter.sortPrice': '価格',
   'filter.panelLabel': '絞り込み条件',
-  'filter.selectedCount': '{count} 件選択中',
   'filter.removeChip': '{name} を削除',
   'filter.reset': 'リセット',
   'filter.done': '完了',

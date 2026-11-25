@@ -2,6 +2,30 @@
 
 ## [未发布]
 
+### 修复
+
+**commerce 首波（filter / goods-list）真实浏览器实测修复批**
+
+- **oas-filter**：
+  - **dropdown 面板锚定与视口翻转**：面板元素移入栏容器内（绝对定位锚定栏底，修复面板飞到页面底部的失锚问题）+ 展开时按视口空间判定翻转（下方放不下且上方更宽裕时贴顶展开，`data-flip` 属性区分）+ 面板补 `max-height: 70vh` + `overflow-y: auto`（多组条件不再溢出不可滚）。
+  - **drawer 升级模态对话框语义**：面板 `role="dialog"` + `aria-modal="true"`，Tab / Shift+Tab 焦点循环限制在面板内（游离面板外的焦点拉回首项）；dropdown 非模态不挂 dialog 语义。
+  - **触发器可访问名改为从可见内容推导**（排序标签 + 计数徽标，不再用 aria-label 包裹「筛选（已选 n 项）」——可见文本「筛选 n」与 aria-label 不连续包含违反 WCAG 2.5.3 label-in-name）。
+  - **chips / 触发器徽标对比度**：chips 文字色 `text-secondary` → `text-primary`（`bg-hover` 底上 4.39:1 不达 AA，两主题口径统一达标）。
+  - **解析健壮性**：`sorts` 缺 `label` 的条目、`groups` 缺 `label` / 选项缺 `value`/`label` 的条目解析期跳过并一次性 devWarn（不再渲染空文本按钮或写 "undefined" 值）；`conditions` 单选组多值截断时一次性 devWarn 且**清洗结果回写 attribute**（getter 与 attribute 一致，脏值规整可见）。
+  - **chips 撤销焦点迁移**：撤销一枚后焦点落到相邻 chip（无相邻回触发器），键盘连续撤销不再掉焦。
+  - **断连清理去重**：`onCleanup` 只在首次挂监听时注册，开合循环不再单调增长。
+- **oas-goods-list**：
+  - **list 语义合法化**：`role="list"` 从外层容器移到卡片网格容器（加载区 / 空态 / 哨兵 / 插槽源全部位于列表语义之外，消除 axe `aria-required-children` 严重违规）；插槽卡搬进列后组件补 `role="listitem"`（宿主自带 role 不覆盖）。
+  - **瀑布流测高修复**：测量容器 `align-items: flex-start`（修复 flex 默认 stretch 把所有卡拉成同高、列分配退化成轮转的问题——「按测得高度均衡」的描述自此成立）；回归断言收紧为「分配后列高差 < 最小卡高」（旧阈值连轮转退化都能过）。
+  - **list 形态改图文横排行**：图左固定小尺寸（104px，与 product-card 横排惯例一致）+ 右侧信息列（标题 / 标签 / 价格），纵向堆叠——修复「单列巨图卡」与文档「图文横排的列表视图」不符；内建卡 DOM 结构改 `media + info` 分区（waterfall / list 同构，方向由 CSS 控制）。
+  - **触底待应答解除补全**：`items` 签名变化（宿主只追加数据的分页场景）与置 `loading` 等价解除待应答——修复「宿主只追加数据则第二次触底永久停摆」。
+  - **插槽卡增量追加**：捕获集由「整体替换」改「合并」（保留已搬进列的旧卡 + 新分配卡入列），签名纳入捕获集数量——修复追加宿主卡不渲染；搬运窗口（同步 slotchange 重入的 detach 中间态）跳过剔除判定，真实浏览器与 happy-dom 行为一致。
+  - **隐藏容器守卫**：`display:none` 链路挂载不再误派 `oas-load-more`（几何值无意义不触发；真实浏览器 `getClientRects` 全链判定 + happy-dom 回退祖先链 computed display），显示后滚动才派发。
+  - **加载更多区活区**：`role="status"` + `aria-live="polite"`（加载中 / 到底文案变化自动播报）。
+- **文档**：filter / goods-list（zh+en 共 4 页）demo 的 `<script setup>` 全部上移页面级（此前写在 `DemoBlock` 内部被 VitePress 原样输出，页面 `Cannot use import statement` 报错 + Hydration mismatch + demo 全灭——console-sweep 与 a11y 修复前红、修复后绿）。
+- **范围条件组说明**：filter 的「范围条件组」（价格区间等自定义输入条件）属**预留 L3 能力子路径，本体未实现**（见 `packages/ui/src/commerce/filter/README.md`「预留能力面」），验收口径不包含该项。
+- 测试：单测 +13（filter 6 / goods-list 7）；qa-regression +2（filter dropdown 锚定几何与视口翻转真点击 / drawer 真键盘焦点陷阱）+ 改 1（瀑布流均衡断言收紧 + 测高有效性防线、list 形态横排几何断言）。
+
 ### 新增
 
 **电商扩容首波：commerce 族新组件（filter / goods-list，包体分级规矩首次实践）**

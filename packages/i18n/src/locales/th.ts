@@ -705,7 +705,6 @@ export const th: LocaleMessages = {
   'filter.sortSales': 'ยอดขาย',
   'filter.sortPrice': 'ราคา',
   'filter.panelLabel': 'เงื่อนไขการกรอง',
-  'filter.selectedCount': 'เลือกแล้ว {count} รายการ',
   'filter.removeChip': 'นำ {name} ออก',
   'filter.reset': 'รีเซ็ต',
   'filter.done': 'เสร็จ',

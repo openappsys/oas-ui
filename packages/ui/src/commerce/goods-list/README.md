@@ -4,7 +4,7 @@
 2. **属性默认值/空态**：`layout` 缺省 `waterfall`，非法值回落并告警一次；`columns` 缺省 `auto`（容器宽断点：<640→2、<1024→3、其余 4；非法宽回落 2；固定数值 clamp 1–8，非法回落 auto）；`items` 缺省 / 非法 JSON → 空列表（空态），非法告警一次；缺 `title` 的条目被忽略（标题是卡片最小可识别单元）；`loading` / `no-more` 缺省关；`currency` 缺省走内嵌 `oas-price` 的 CNY 缺省；插槽卡与 `items` 同时给时**插槽优先**（items 忽略）。
 3. **多步交互失败点**：瀑布流两阶段（测量容器测高 → 最短列放置）同帧完成，`offsetHeight` 不可用（未布局 / SSR / happy-dom）时纯函数退化为轮转均匀分布——**列表仍可用**，只是不精准均衡；列数重排（auto 跨断点）整体重建列，卡片无内部表单态可丢；触底失败点见第 1 条。
 4. **破坏性选项**：无破坏性动作；重排 / 重建不删除宿主数据（插槽卡节点被搬进 shadow 列，引用与监听保留；`items` 由宿主持有）；图片加载失败回落占位（同 `src` 不反复重试）。
-5. **键盘/ARIA**：容器 `role="list"` + 内建卡 `role="listitem"`（列容器 `role="presentation"` 不打断列表语义），组件 `aria-label` = i18n `goodsList.label`；内建卡可 Tab 聚焦、Enter 触发 `oas-item-click`，`aria-label` 取标题；图片 `alt` 取标题、缺失占位 `role="img"` + i18n 文案进 `aria-label`（无可见文字，与 product-card 同对比度口径）；加载中（spinner + 文本）与到底态（文本）读屏可读；哨兵 `aria-hidden`。插槽卡的可访问性完全由宿主卡自带。
+5. **键盘/ARIA**：卡片网格容器 `role="list"` + 内建卡 `role="listitem"`（列容器 `role="presentation"` 穿透不打断列表语义；加载区 / 空态 / 哨兵在 list 容器之外，非卡节点不进列表语义），组件 `aria-label` = i18n `goodsList.label`；内建卡可 Tab 聚焦、Enter 触发 `oas-item-click`，`aria-label` 取标题；图片 `alt` 取标题、缺失占位 `role="img"` + i18n 文案进 `aria-label`（无可见文字，与 product-card 同对比度口径）；加载更多区 `role="status"` + `aria-live="polite"` 活区（loading / 到底文案变化自动播报）；哨兵 `aria-hidden`。插槽卡搬进列后组件补 `role="listitem"`（宿主自带 role 不覆盖），可访问性其余部分由宿主卡自带。
 6. **受控/非受控与宿主桥接**：`items` get+set 访问器（setter 容忍数组与 JSON 字符串并反射 attribute），Vue/React 按 property 赋值不丢数据；`loading` / `no-more` 走原生 attribute 存在性通道（宿主 `el.setAttribute('loading','')` / 移除，或框架布尔绑定）；插槽卡是宿主 light DOM 节点——搬进 shadow 列后 Vue/React 的节点引用仍有效（事件与属性保留），宿主卸载卡片（从 light DOM 移除）→ 捕获集同步清空回退空态；属性名避开 DOM 内建（`layout` / `columns` / `items` / `loading` / `no-more` / `currency` / `locale` / `precision` 均无 HTMLElement 原型成员冲突；`items` 为 get+set 遮蔽形态）。
 
 ## 数据契约
@@ -18,7 +18,7 @@
 ```
 
 - 内建简版卡字段：`image?`（缺失 / 加载失败 → 虚线占位）、`title`（必填，两行截断）、`price?` / `originalPrice?`（透传内嵌 `oas-price` 划线通道）、`tags?: string[]`（浅底小签）。
-- 卡片位插槽（默认插槽）整体替换内建渲染：宿主放自己的 `oas-product-card` / 自定义卡，组件把插槽卡按序分配进列（瀑布流同样按测得高度均衡放置）。
+- 卡片位插槽（默认插槽）整体替换内建渲染：宿主放自己的 `oas-product-card` / 自定义卡，组件把插槽卡按序分配进列（瀑布流同样按测得高度均衡放置）；插槽卡增量追加走捕获集合并（已搬进列的旧卡保留，新卡入列）。
 - 加载更多协议：哨兵进入视口（240px 提前量）→ 派 `oas-load-more` → 宿主置 `loading` + 追加 `items` → 移除 `loading`；`no-more` 置位后哨兵不再触发。
 
 ## 预留能力面（包体分级：本体冻结在大众功能集）

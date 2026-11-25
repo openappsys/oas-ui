@@ -34,23 +34,69 @@ test('goods-list：瀑布流真实列布局——固定列数 + 卡片按测得�
   const layout = await page.locator('#gl-e2e-waterfall').evaluate((el) => {
     const root = el.shadowRoot!
     const cols = [...root.querySelectorAll<HTMLElement>('[part="col"]')]
+    const cards = [...root.querySelectorAll<HTMLElement>('[part="card"]')]
     return {
       colCount: cols.length,
       perCol: cols.map((col) => col.childElementCount),
       total: root.querySelectorAll('[part="card"]').length,
       colHeights: cols.map((col) => col.getBoundingClientRect().height),
+      cardHeights: cards.map((c) => c.getBoundingClientRect().height),
       cardsInGrid: cols.every((col) => [...col.children].every((c) => c.getAttribute('part') === 'card')),
     }
   })
   expect(layout.colCount).toBe(3)
   expect(layout.total).toBe(6)
   expect(layout.cardsInGrid).toBe(true)
-  // 均衡放置：不等高卡片（有图/无图）分布后，各列高度接近（最短列放置的可见结果），
-  // 且不出现「全部堆在一列」的退化
+  // 测高有效：卡片在真实浏览器里测得高度 > 0（stretch 失效回归防线——若全 0 则分配退化为轮转）
+  expect(layout.cardHeights.every((h) => h > 0)).toBe(true)
+  // 均衡放置（收紧断言）：不等高卡片分布后各列高度接近——列高差 < 最小卡高
+  // （旧阈值 max-min < max*0.9 连「全部轮转退化」都能过，抓不住测高失效）
   expect(layout.perCol.every((n) => n >= 1)).toBe(true)
   const maxHeight = Math.max(...layout.colHeights)
   const minHeight = Math.min(...layout.colHeights)
-  expect(maxHeight - minHeight).toBeLessThan(maxHeight * 0.9)
+  const minCardHeight = Math.min(...layout.cardHeights)
+  expect(maxHeight - minHeight).toBeLessThan(minCardHeight)
+})
+
+test('goods-list：list 形态图文横排行——图左固定小尺寸、信息列在右（纵向堆叠）', async ({ page }) => {
+  await page.goto('/components/goods-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-goods-list')
+  await mount(page, 'gl-e2e-list', {
+    layout: 'list',
+    items: JSON.stringify([
+      { title: '行卡一：图文横排', price: 9, tags: ['标签'], image: '/assets/demo-square-1.svg' },
+      { title: '行卡二：信息列在右', price: 19, image: '/assets/demo-square-2.svg' },
+    ]),
+  })
+
+  const rows = await page.locator('#gl-e2e-list').evaluate((el) => {
+    const root = el.shadowRoot!
+    const cards = [...root.querySelectorAll<HTMLElement>('[part="card"]')]
+    return cards.map((card) => {
+      const cardRect = card.getBoundingClientRect()
+      const media = card.querySelector<HTMLElement>('[part="media"]')!
+      const mediaRect = media.getBoundingClientRect()
+      const info = card.querySelector<HTMLElement>('[part="info"]')!
+      const infoRect = info.getBoundingClientRect()
+      return {
+        cardWidth: cardRect.width,
+        cardHeight: cardRect.height,
+        mediaWidth: mediaRect.width,
+        mediaHeight: mediaRect.height,
+        infoOnRight: infoRect.left > mediaRect.right - 2,
+      }
+    })
+  })
+  expect(rows.length).toBe(2)
+  for (const row of rows) {
+    // 图左固定小尺寸：media 宽远小于卡宽（~104px 档，非巨图占满行宽），且为正方形（aspect 1/1）
+    expect(row.mediaWidth).toBeLessThan(row.cardWidth * 0.5)
+    expect(Math.abs(row.mediaWidth - row.mediaHeight)).toBeLessThanOrEqual(2)
+    // 信息列在图右侧（图文横排行；纵向巨图形态 media 会占满卡宽）
+    expect(row.infoOnRight).toBe(true)
+    // 行高由 media 主导（横排行不因巨图纵向堆叠而超高）
+    expect(row.cardHeight).toBeLessThan(row.mediaHeight * 2)
+  }
 })
 
 test('goods-list：触底真滚动——滚动到底触发 oas-load-more，宿主协议追加数据 + loading 态可见', async ({ page }) => {

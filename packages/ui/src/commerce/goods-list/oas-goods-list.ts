@@ -21,7 +21,8 @@ export { assignColumns, resolveAutoColumns, resolveColumns, shouldRequestMore } 
  * 服务端瀑布流」等重增强预留为能力子路径面（见 README「预留能力面」）。
  *
  * 属性（kebab-case）：
- * - `layout`：`waterfall`（缺省，瀑布流多列）/ `list`（纵向单列）；非法值回落 waterfall 并告警一次
+ * - `layout`：`waterfall`（缺省，瀑布流多列）/ `list`（纵向单列，图文横排行：图左固定小尺寸 +
+ *   右侧信息列）；非法值回落 waterfall 并告警一次
  * - `columns`：瀑布流列数——固定数值（1–8，clamp）或 `auto`（缺省，容器宽断点：<640 → 2、
  *   <1024 → 3、其余 4；ResizeObserver 跟随容器宽变化重排）；list 形态恒单列
  * - `items`：JSON 数组 `[{ image?, title, price?, originalPrice?, tags?: string[] }]`
@@ -43,10 +44,12 @@ export { assignColumns, resolveAutoColumns, resolveColumns, shouldRequestMore } 
  *   均衡放置）；list 形态单列依次排列。
  * - `empty`：空态（items 空且无插槽卡时渲染；缺省 i18n `goodsList.empty` 文案）。
  *
- * a11y：容器 `role="list"` + 卡片 `role="listitem"`（列容器 `role="presentation"` 不打断语义）；
- * 内建卡可 Tab 聚焦、Enter 触发 `oas-item-click`；图片 `alt` 取标题，缺失占位 `role="img"` +
- * i18n 文案（文字进 aria-label 不上屏，与 product-card 同款对比度口径）；加载中 / 到底态
- * 均为文本可读。布局走逻辑属性（RTL 安全），颜色全走 token。
+ * a11y：卡片网格容器 `role="list"` + 卡片 `role="listitem"`（列容器 `role="presentation"`
+ * 穿透不打断语义；加载区 / 空态 / 哨兵在 list 容器之外）；内建卡可 Tab 聚焦、Enter 触发
+ * `oas-item-click`；图片 `alt` 取标题，缺失占位 `role="img"` + i18n 文案（文字进 aria-label
+ * 不上屏，与 product-card 同款对比度口径）；插槽卡搬进列后补 `role="listitem"`（宿主自带
+ * role 不覆盖）；加载更多区为 `role="status"` + `aria-live="polite"` 活区（loading / 到底
+ * 文案变化自动播报）。布局走逻辑属性（RTL 安全），颜色全走 token。
  */
 
 export type GoodsListLayout = 'waterfall' | 'list'
@@ -171,7 +174,7 @@ const STYLE = `
   padding: 0 var(--oas-space-2);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-color-bg-hover);
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-xs);
   line-height: 1.6;
 }
@@ -240,7 +243,26 @@ const STYLE = `
   inset-block-start: 0;
   visibility: hidden;
   display: flex;
+  align-items: flex-start;
   gap: var(--oas-space-3);
+}
+/* list 形态：图文横排行（图左固定小尺寸 + 右侧信息列），单列纵向堆叠 */
+:host([layout='list']) .card {
+  flex-direction: row;
+  align-items: flex-start;
+}
+:host([layout='list']) .media {
+  width: 104px;
+  flex: none;
+}
+:host([layout='list']) .info {
+  flex: 1 1 auto;
+}
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-2);
+  min-width: 0;
 }
 
 @media (forced-colors: active) {
@@ -261,7 +283,6 @@ export class OASGoodsList extends OASElement {
   }
 
   private gridEl: HTMLElement | null = null
-  private wrapEl: HTMLElement | null = null
   private moreEl: HTMLElement | null = null
   private spinnerEl: HTMLElement | null = null
   private moreTextEl: HTMLElement | null = null
@@ -278,6 +299,8 @@ export class OASGoodsList extends OASElement {
   private cardsSignature = ''
   /** 触底待应答（派发 oas-load-more 后直到宿主置 loading 或 items 变化才解除） */
   private loadPending = false
+  /** items attribute 原文签名（变化即解除触底待应答） */
+  private itemsSignature = ''
   /** rAF 节流句柄（scroll/resize 共用） */
   private scrollRaf = 0
   /** 已捕获的插槽卡（搬运进 shadow 列后 assignedElements 变空，靠此保持插槽模式） */
@@ -335,10 +358,10 @@ export class OASGoodsList extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <section class="wrap" part="wrap" role="list" aria-label="">
-        <div class="grid" part="grid"></div>
+      <section class="wrap" part="wrap">
+        <div class="grid" part="grid" role="list" aria-label=""></div>
         <slot class="slot-source"></slot>
-        <div class="more" part="more" hidden>
+        <div class="more" part="more" role="status" aria-live="polite" hidden>
           <span class="spinner" part="spinner" aria-hidden="true" hidden></span>
           <span class="more-text" part="more-text"></span>
         </div>
@@ -354,7 +377,6 @@ export class OASGoodsList extends OASElement {
 
   private bind(): void {
     this.gridEl = this.shadow.querySelector<HTMLElement>('[part="grid"]')
-    this.wrapEl = this.shadow.querySelector<HTMLElement>('[part="wrap"]')
     this.moreEl = this.shadow.querySelector<HTMLElement>('[part="more"]')
     this.spinnerEl = this.shadow.querySelector<HTMLElement>('[part="spinner"]')
     this.moreTextEl = this.shadow.querySelector<HTMLElement>('[part="more-text"]')
@@ -397,18 +419,32 @@ export class OASGoodsList extends OASElement {
 
   /**
    * 插槽卡捕获：宿主节点会被搬进 shadow 列（瀑布流分列的通用做法），搬运引发的
-   * slotchange（分配变空）不得回落 items 模式——以「已捕获且仍在组件内连接」判定保持；
-   * 宿主真正移除内容（节点断连）或追加新内容（分配非空）时同步捕获集。
+   * slotchange（分配变空）不得回落 items 模式——以「仍在组件 shadow 内或本轮 slot
+   * 分配中」判定保持；宿主追加新内容（分配非空）时**合并**进捕获集（保留已搬走的
+   * 旧卡，不整体替换）；宿主真正移除内容（节点离开组件树）时从捕获集剔除。
+   *
+   * 剔除判定避开搬运窗口（`assigning`）：把卡从 light DOM 搬进 shadow 的瞬时，
+   * happy-dom 会同步派发 slotchange 重入 update，此刻节点处于「已 detach 未 attach」
+   * 中间态，contains 为 false——此时跳过剔除；真实浏览器 slotchange 在微任务派发，
+   * 不存在该窗口，行为一致。
    */
   private captureSlotCards(): HTMLElement[] {
     const assigned = this.slotEl?.assignedElements({ flatten: true }) ?? []
+    const assignedSet = new Set(assigned)
     if (assigned.length > 0) {
-      this.capturedCards = assigned.filter((n): n is HTMLElement => n instanceof HTMLElement)
-    } else {
-      this.capturedCards = this.capturedCards.filter((c) => c.isConnected && this.shadow.contains(c))
+      const known = new Set(this.capturedCards)
+      for (const n of assigned) {
+        if (n instanceof HTMLElement && !known.has(n)) this.capturedCards.push(n)
+      }
+    }
+    if (!this.assigning) {
+      this.capturedCards = this.capturedCards.filter((c) => this.shadow.contains(c) || assignedSet.has(c))
     }
     return this.capturedCards
   }
+
+  /** 卡片搬运进行中（同步 slotchange 重入的瞬时窗口不做剔除判定） */
+  private assigning = false
 
   // -------------------------------------------------------------------------
   // 渲染同步
@@ -416,7 +452,13 @@ export class OASGoodsList extends OASElement {
 
   protected override update(): void {
     if (!this.gridEl) return
-    if (this.wrapEl) this.wrapEl.setAttribute('aria-label', this.t('goodsList.label'))
+    // items 签名变化（宿主只追加数据的分页场景）解除触底待应答——与置 loading 等价
+    const itemsRaw = this.getAttr('items')
+    if (itemsRaw !== this.itemsSignature) {
+      this.itemsSignature = itemsRaw
+      this.loadPending = false
+    }
+    this.gridEl.setAttribute('aria-label', this.t('goodsList.label'))
     this.syncCards()
     this.syncMore()
     this.syncEmpty()
@@ -434,22 +476,30 @@ export class OASGoodsList extends OASElement {
       layout === 'list'
         ? { columns: 1, mode: 'fixed' as const }
         : resolveColumns(this.getAttr('columns'), grid.clientWidth)
-    const signature = JSON.stringify([useSlot ? 'slot' : items.length, items, columns, layout])
+    // 签名纳入插槽捕获集数量：宿主增量追加卡时签名变化触发重排（不早退）
+    const signature = JSON.stringify([useSlot ? slotted.length : items.length, items, columns, layout])
     // auto 列数随容器宽变化需要重排：签名含 columns；列 DOM 数不匹配也要重建
     if (signature === this.cardsSignature && grid.childElementCount === columns) return
     this.cardsSignature = signature
     if (mode === 'auto') this.watchHostSize()
     else this.unwatchHostSize()
 
-    // 阶段 1：收集卡片节点（插槽卡搬移 / items 内建卡新建），先进测量容器测高
+    // 阶段 1：收集卡片节点（插槽卡搬移 / items 内建卡新建），先进测量容器测高。
+    // 搬运会同步引发 slotchange 重入（happy-dom），期间不做捕获集剔除判定
     const cards: HTMLElement[] = []
-    for (const node of slotted) cards.push(node as HTMLElement)
-    items.forEach((item, index) => cards.push(this.buildCard(item, index)))
-    const measure = this.measureEl
-    if (measure) {
-      measure.replaceChildren(...cards)
-      // 与列容器同宽（瀑布流 gap 占位由 assignColumns 的高度口径天然容忍）
-      if (measure.style.width !== '') measure.style.width = ''
+    this.assigning = true
+    try {
+      for (const node of slotted) {
+        const el = node as HTMLElement
+        // 插槽卡在列内也要有 listitem 语义（宿主自带 role 不覆盖）
+        if (!el.hasAttribute('role')) el.setAttribute('role', 'listitem')
+        cards.push(el)
+      }
+      items.forEach((item, index) => cards.push(this.buildCard(item, index)))
+      const measure = this.measureEl
+      if (measure) measure.replaceChildren(...cards)
+    } finally {
+      this.assigning = false
     }
 
     // 阶段 2：按累计高度最短列放置（纯函数分配；未布局 / happy-dom 全 0 高度退化为轮转）
@@ -504,11 +554,17 @@ export class OASGoodsList extends OASElement {
     }
     card.appendChild(media)
 
+    // 信息列容器（waterfall 纵排 / list 横排同构 DOM，方向由 CSS 控制）
+    const info = document.createElement('div')
+    info.className = 'info'
+    info.setAttribute('part', 'info')
+    card.appendChild(info)
+
     const title = document.createElement('h3')
     title.className = 'title'
     title.setAttribute('part', 'title')
     title.textContent = item.title
-    card.appendChild(title)
+    info.appendChild(title)
 
     const tags = item.tags ?? []
     const tagsBox = document.createElement('div')
@@ -522,7 +578,7 @@ export class OASGoodsList extends OASElement {
       el.textContent = tag
       tagsBox.appendChild(el)
     }
-    card.appendChild(tagsBox)
+    info.appendChild(tagsBox)
 
     const price = document.createElement('oas-price')
     price.className = 'price'
@@ -539,7 +595,7 @@ export class OASGoodsList extends OASElement {
     if (precision) price.setAttribute('precision', precision)
     const locale = this.getAttr('locale').trim()
     if (locale) price.setAttribute('locale', locale)
-    card.appendChild(price)
+    info.appendChild(price)
     return card
   }
 
@@ -586,12 +642,15 @@ export class OASGoodsList extends OASElement {
   // 加载更多（触底）
   // -------------------------------------------------------------------------
 
-  /** 检查哨兵可见性：rAF 节流由监听端承担，这里做纯判定 + 派发（空列表不触发） */
+  /** 检查哨兵可见性：rAF 节流由监听端承担，这里做纯判定 + 派发（空列表 / 不可见不触发） */
   private checkLoadMore(): void {
     const sentinel = this.sentinelEl
     if (!sentinel) return
     const hasCards = this.captureSlotCards().length > 0 || this.parseItems().length > 0
     if (!hasCards) return
+    // 可见性守卫：display:none 链路（如挂载在未激活的宿主容器里）几何值无意义，
+    // 不派发——否则首帧误派 load-more（rect.top=0 恒 ≤ 阈值）
+    if (this.isHiddenInTree()) return
     const rect = sentinel.getBoundingClientRect()
     const state = {
       loading: this.hasAttr('loading'),
@@ -601,6 +660,20 @@ export class OASGoodsList extends OASElement {
     if (!shouldRequestMore(rect.top, window.innerHeight, state)) return
     this.loadPending = true
     this.emit('load-more', {})
+  }
+
+  /**
+   * 组件是否处于 display:none 链路。真实浏览器：getClientRects 为空即全链不可见（一次调用判全链）；
+   * happy-dom 不实现布局（rects 恒 1 / rect 恒 0）：回退爬祖先链查 computed display。
+   */
+  private isHiddenInTree(): boolean {
+    if (this.getClientRects().length === 0) return true
+    let node: HTMLElement | null = this
+    while (node) {
+      if (getComputedStyle(node).display === 'none') return true
+      node = node.parentElement
+    }
+    return false
   }
 
   /** 容器宽变化（auto 列数重排）+ 触底检查的滚动监听（document capture 捕获子容器滚动） */

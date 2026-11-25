@@ -16,30 +16,6 @@ Filter loop for e-commerce list pages: sort options stay on the bar (featured / 
 <p id="filter-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
   Click a sort option, open the panel to pick conditions, or remove a chip to see oas-change feedback.
 </p>
-<script setup lang="ts">
-import { onMounted } from 'vue'
-onMounted(() => {
-  customElements.whenDefined('oas-filter').then(() => {
-    const el = document.getElementById('filter-basic')!
-    el.setAttribute('groups', JSON.stringify([
-      { key: 'brand', label: 'Brand', multiple: true, options: [
-        { value: 'a', label: 'Brand A' }, { value: 'b', label: 'Brand B' }, { value: 'c', label: 'Brand C' },
-      ] }),
-      { key: 'color', label: 'Color', options: [
-        { value: 'red', label: 'Red' }, { value: 'blue', label: 'Blue' },
-      ] },
-    ]))
-    const out = document.getElementById('filter-basic-out')!
-    el.addEventListener('oas-change', (e) => {
-      const d = (e as CustomEvent).detail
-      out.textContent = `oas-change: sort=${d.sort}${d.order ? ` (${d.order})` : ''}, summary=${d.summary || '(nothing selected)'}`
-    })
-    el.addEventListener('oas-open-change', (e) => {
-      out.textContent = `oas-open-change: panel ${(e as CustomEvent).detail.open ? 'opened' : 'closed'}`
-    })
-  })
-})
-</script>
 
 </DemoBlock>
 
@@ -119,41 +95,14 @@ Pair it with `oas-goods-list` for a closed list-page loop: filter changes refill
     ></oas-filter>
     <oas-goods-list id="goods-combo" columns="3"></oas-goods-list>
   </div>
-  <script setup lang="ts">
-  import { onMounted } from 'vue'
-  onMounted(() => {
-    Promise.all([
-      customElements.whenDefined('oas-filter'),
-      customElements.whenDefined('oas-goods-list'),
-    ]).then(() => {
-      const filter = document.getElementById('filter-combo')!
-      const list = document.getElementById('goods-combo')!
-      const catalog = [
-        { title: 'Cotton T-shirt', kind: 'clothes', price: 79 },
-        { title: 'Canvas sneakers', kind: 'shoes', price: 129 },
-        { title: 'Commuter shoulder bag', kind: 'bag', price: 199 },
-        { title: 'Knit cardigan', kind: 'clothes', price: 149 },
-        { title: 'Running shoes', kind: 'shoes', price: 259 },
-        { title: 'Hiking backpack', kind: 'bag', price: 329 },
-      ]
-      const render = () => {
-        const kinds = filter.conditions.groups?.kind ?? []
-        const rows = kinds.length > 0 ? catalog.filter((it) => kinds.includes(it.kind)) : catalog
-        list.items = rows.map(({ title, price }) => ({ title, price }))
-      }
-      render()
-      filter.addEventListener('oas-change', render)
-    })
-  })
-  </script>
 </DemoBlock>
 
 ## Keyboard and accessibility
 
 - The sort row and single-select groups carry `radiogroup` semantics (arrow keys move focus within a group); multi-select groups use `group` + `checkbox` semantics; every option is Tab-reachable.
-- The trigger carries `aria-haspopup` / `aria-expanded` / `aria-controls`, with the selected count in its accessible name; opening the panel focuses the first condition, Esc closes and restores focus to the trigger.
-- Chips are focusable buttons whose `aria-label` is "Remove condition-name"; the composed summary renders into an `aria-live="polite"` region.
-- The dropdown dismisses on outside click; the drawer closes via the mask / "Done" / Esc. Layout uses logical properties and mirrors automatically under RTL.
+- The trigger carries `aria-haspopup` / `aria-expanded` / `aria-controls`; its accessible name is derived from the visible content (sort label + count badge — what you see is what a screen reader reads). Opening the panel focuses the first condition, Esc closes and restores focus to the trigger.
+- Chips are focusable buttons whose `aria-label` is "Remove condition-name"; after removing, focus moves to the adjacent chip; the composed summary renders into an `aria-live="polite"` region.
+- The dropdown dismisses on outside click; **the drawer is a modal dialog** (`role="dialog"` + `aria-modal="true"` on the panel) whose Tab / Shift+Tab focus loop stays inside the panel, closing via the mask / "Done" / Esc. Layout uses logical properties and mirrors automatically under RTL.
 
 ## 自定义样式须知
 
@@ -197,9 +146,56 @@ Pair it with `oas-goods-list` for a closed list-page loop: filter changes refill
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+
+// Page-level script (VitePress only extracts the page-level script setup — all demo logic lives here, never inside a DemoBlock)
 onMounted(() => {
+  // —— Basic usage demo ——
   customElements.whenDefined('oas-filter').then(() => {
-    // Controlled demo: preset conditions + host-side clear
+    const el = document.getElementById('filter-basic')!
+    el.setAttribute('groups', JSON.stringify([
+      { key: 'brand', label: 'Brand', multiple: true, options: [
+        { value: 'a', label: 'Brand A' }, { value: 'b', label: 'Brand B' }, { value: 'c', label: 'Brand C' },
+      ] },
+      { key: 'color', label: 'Color', options: [
+        { value: 'red', label: 'Red' }, { value: 'blue', label: 'Blue' },
+      ] },
+    ]))
+    const out = document.getElementById('filter-basic-out')!
+    el.addEventListener('oas-change', (e) => {
+      const d = (e as CustomEvent).detail
+      out.textContent = `oas-change: sort=${d.sort}${d.order ? ` (${d.order})` : ''}, summary=${d.summary || '(nothing selected)'}`
+    })
+    el.addEventListener('oas-open-change', (e) => {
+      out.textContent = `oas-open-change: panel ${(e as CustomEvent).detail.open ? 'opened' : 'closed'}`
+    })
+  })
+
+  // —— Combined with the goods list demo ——
+  Promise.all([
+    customElements.whenDefined('oas-filter'),
+    customElements.whenDefined('oas-goods-list'),
+  ]).then(() => {
+    const filter = document.getElementById('filter-combo')!
+    const list = document.getElementById('goods-combo')!
+    const catalog = [
+      { title: 'Cotton T-shirt', kind: 'clothes', price: 79 },
+      { title: 'Canvas sneakers', kind: 'shoes', price: 129 },
+      { title: 'Commuter shoulder bag', kind: 'bag', price: 199 },
+      { title: 'Knit cardigan', kind: 'clothes', price: 149 },
+      { title: 'Running shoes', kind: 'shoes', price: 259 },
+      { title: 'Hiking backpack', kind: 'bag', price: 329 },
+    ]
+    const render = () => {
+      const kinds = filter.conditions.groups?.kind ?? []
+      const rows = kinds.length > 0 ? catalog.filter((it) => kinds.includes(it.kind)) : catalog
+      list.items = rows.map(({ title, price }) => ({ title, price }))
+    }
+    render()
+    filter.addEventListener('oas-change', render)
+  })
+
+  // —— Controlled demo: preset conditions + host-side clear ——
+  customElements.whenDefined('oas-filter').then(() => {
     const ctl = document.getElementById('filter-controlled')!
     const out = document.getElementById('filter-controlled-out')!
     out.textContent = 'Current conditions: ' + (ctl.getAttribute('conditions') ?? '(empty)')

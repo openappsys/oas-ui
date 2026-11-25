@@ -15,32 +15,6 @@ description: "商品列表容器：瀑布流（列数自适应 / 固定 + 列均
   <p id="gl-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     点商品卡观察 oas-item-click 反馈。
   </p>
-  <script setup lang="ts">
-  import { onMounted } from 'vue'
-  onMounted(() => {
-    customElements.whenDefined('oas-goods-list').then(() => {
-      const el = document.getElementById('gl-basic')!
-      el.setAttribute('items', JSON.stringify([
-        { title: '纯棉短袖T恤', price: 79, originalPrice: 99, tags: ['新品'], image: '/assets/demo-square-1.svg' },
-        { title: '轻便帆布鞋 透气网面 夏季款', price: 129, tags: ['热销'], image: '/assets/demo-square-2.svg' },
-        { title: '通勤单肩包', price: 199, originalPrice: 259, image: '/assets/demo-square-3.svg' },
-        { title: '针织开衫', price: 149, tags: ['包邮'], image: '/assets/demo-square-4.svg' },
-        { title: '跑步运动鞋 缓震回弹', price: 259, image: '/assets/demo-square-5.svg' },
-        { title: '防水登山包 40L', price: 329, originalPrice: 399, tags: ['户外'], image: '/assets/demo-square-6.svg' },
-        { title: '亚麻衬衫（无图占位示例）', price: 99 },
-        { title: '速干短裤', price: 59, tags: ['清仓'], image: '/assets/demo-square-1.svg' },
-      ]))
-      el.setAttribute('currency', 'CNY')
-      el.setAttribute('locale', 'zh-CN')
-      el.setAttribute('precision', '2')
-      const out = document.getElementById('gl-basic-out')!
-      el.addEventListener('oas-item-click', (e) => {
-        const d = (e as CustomEvent).detail
-        out.textContent = `oas-item-click：#${d.index} ${d.item.title}（¥${d.item.price ?? '-'}）`
-      })
-    })
-  })
-  </script>
 </DemoBlock>
 
 ## 固定列数与纵向列表
@@ -102,40 +76,6 @@ description: "商品列表容器：瀑布流（列数自适应 / 固定 + 列均
       <span id="gl-more-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </div>
   </div>
-  <script setup lang="ts">
-  import { onMounted } from 'vue'
-  onMounted(() => {
-    customElements.whenDefined('oas-goods-list').then(() => {
-      const el = document.getElementById('gl-more')!
-      const out = document.getElementById('gl-more-out')!
-      let page = 1
-      el.addEventListener('oas-load-more', () => {
-        // 宿主协议：置 loading → 追加 items → 移除 loading
-        el.setAttribute('loading', '')
-        out.textContent = 'oas-load-more：加载第 2 页…'
-        setTimeout(() => {
-          const next = Array.from({ length: 3 }, (_, i) => ({
-            title: `第二页商品 ${String.fromCharCode(65 + i)}`,
-            price: 100 + i * 10,
-            image: i % 2 === 0 ? '/assets/demo-square-3.svg' : undefined,
-          }))
-          const current = JSON.parse(el.getAttribute('items')!) as unknown[]
-          el.setAttribute('items', JSON.stringify([...current, ...next]))
-          el.removeAttribute('loading')
-          out.textContent = 'oas-load-more：已追加 3 条（哨兵进入视口同样会真实触发）'
-        }, 400)
-      })
-      document.getElementById('gl-load')?.addEventListener('click', () => {
-        el.scrollIntoView({ block: 'end' })
-        window.dispatchEvent(new Event('scroll'))
-      })
-      document.getElementById('gl-done')?.addEventListener('click', () => {
-        el.setAttribute('no-more', '')
-        out.textContent = 'no-more 已置位：显示到底态且不再触发'
-      })
-    })
-  })
-  </script>
 </DemoBlock>
 
 <DemoBlock title="空态（empty 插槽）">
@@ -151,14 +91,73 @@ description: "商品列表容器：瀑布流（列数自适应 / 固定 + 列均
 
 ## 键盘与无障碍
 
-- 容器 `role="list"` + 内建卡 `role="listitem"`（列容器 `presentation` 不打断语义），组件带 `aria-label`「商品列表」。
-- 内建卡可 Tab 聚焦、Enter 触发 `oas-item-click`；图片 `alt` 取标题，缺图占位文字进 `aria-label`（不上屏）。
-- 加载中 / 到底态均为文本可读；加载更多哨兵 `aria-hidden`。插槽卡的可访问性由宿主卡自带。
+- 卡片网格容器 `role="list"` + 内建卡 `role="listitem"`（列容器 `presentation` 穿透不打断语义），组件 `aria-label`「商品列表」；加载更多区为 `role="status"` + `aria-live="polite"` 活区（加载中 / 到底文案变化自动播报），与空态、哨兵一起位于列表语义之外。
+- 内建卡可 Tab 聚焦、Enter 触发 `oas-item-click`；图片 `alt` 取标题，缺图占位文字进 `aria-label`（不上屏）。插槽卡搬进列后组件补 `role="listitem"`（宿主自带 role 不覆盖）。
+- `layout="list"` 为图文横排行（图左固定小尺寸 + 右侧信息列）纵向堆叠。
 - 瀑布流 DOM 序即卡片声明序（分列不改变读屏顺序）；RTL 下布局走逻辑属性自动镜像。
 
 ## 自定义样式须知
 
 `::part(grid)` 为 flex 多列容器（列 `::part(col)` 等宽 column flex，间距走 `--oas-space-3`）；内建卡 `::part(card)` 结构同 `oas-product-card`（media / title / tags / price）。列数变化会整体重建列 DOM——对列容器做 `::part(col)` 布局覆写时注意子卡会被重新分配。
+
+
+<script setup lang="ts">
+import { onMounted } from 'vue'
+
+// 页面级 script（VitePress 只抽页面级 script setup——demo 逻辑统一收拢于此，不写进 DemoBlock 内部）
+onMounted(() => {
+  customElements.whenDefined('oas-goods-list').then(() => {
+    // —— 基础用法 demo ——
+    const basic = document.getElementById('gl-basic')!
+    basic.setAttribute('items', JSON.stringify([
+      { title: '纯棉短袖T恤', price: 79, originalPrice: 99, tags: ['新品'], image: '/assets/demo-square-1.svg' },
+      { title: '轻便帆布鞋 透气网面 夏季款', price: 129, tags: ['热销'], image: '/assets/demo-square-2.svg' },
+      { title: '通勤单肩包', price: 199, originalPrice: 259, image: '/assets/demo-square-3.svg' },
+      { title: '针织开衫', price: 149, tags: ['包邮'], image: '/assets/demo-square-4.svg' },
+      { title: '跑步运动鞋 缓震回弹', price: 259, image: '/assets/demo-square-5.svg' },
+      { title: '防水登山包 40L', price: 329, originalPrice: 399, tags: ['户外'], image: '/assets/demo-square-6.svg' },
+      { title: '亚麻衬衫（无图占位示例）', price: 99 },
+      { title: '速干短裤', price: 59, tags: ['清仓'], image: '/assets/demo-square-1.svg' },
+    ]))
+    basic.setAttribute('currency', 'CNY')
+    basic.setAttribute('locale', 'zh-CN')
+    basic.setAttribute('precision', '2')
+    const out = document.getElementById('gl-basic-out')!
+    basic.addEventListener('oas-item-click', (e) => {
+      const d = (e as CustomEvent).detail
+      out.textContent = `oas-item-click：#${d.index} ${d.item.title}（¥${d.item.price ?? '-'}）`
+    })
+
+    // —— 加载更多 demo ——
+    const more = document.getElementById('gl-more')!
+    const moreOut = document.getElementById('gl-more-out')!
+    more.addEventListener('oas-load-more', () => {
+      // 宿主协议：置 loading → 追加 items → 移除 loading
+      more.setAttribute('loading', '')
+      moreOut.textContent = 'oas-load-more：加载第 2 页…'
+      setTimeout(() => {
+        const next = Array.from({ length: 3 }, (_, i) => ({
+          title: `第二页商品 ${String.fromCharCode(65 + i)}`,
+          price: 100 + i * 10,
+          image: i % 2 === 0 ? '/assets/demo-square-3.svg' : undefined,
+        }))
+        const current = JSON.parse(more.getAttribute('items')!) as unknown[]
+        more.setAttribute('items', JSON.stringify([...current, ...next]))
+        more.removeAttribute('loading')
+        moreOut.textContent = 'oas-load-more：已追加 3 条（哨兵进入视口同样会真实触发）'
+      }, 400)
+    })
+    document.getElementById('gl-load')?.addEventListener('click', () => {
+      more.scrollIntoView({ block: 'end' })
+      window.dispatchEvent(new Event('scroll'))
+    })
+    document.getElementById('gl-done')?.addEventListener('click', () => {
+      more.setAttribute('no-more', '')
+      moreOut.textContent = 'no-more 已置位：显示到底态且不再触发'
+    })
+  })
+})
+</script>
 
 ## API
 

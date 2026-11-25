@@ -226,6 +226,63 @@ describe('oas-filter', () => {
     expect(warnSpy.mock.calls[0]?.[0]).toContain('oas-filter')
   })
 
+  it('单选组多值截断：devWarn 一次，清洗结果回写 attribute（getter 与 attribute 一致）', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ groups: GROUPS, conditions: JSON.stringify({ groups: { color: ['red', 'blue'] } }) })
+    await settled()
+    // 单选组恒 ≤1 项：保留首个
+    expect(el.conditions.groups?.color).toEqual(['red'])
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    // 清洗结果回写 attribute：getter 与 attribute 完全一致（宿主写脏值被规整）
+    expect(JSON.parse(el.getAttribute('conditions')!)).toEqual({ groups: { color: ['red'] } })
+    // 再次读取不再告警（一次性）
+    el.conditions
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('sorts 缺 label 的项被跳过并一次性告警；groups 选项缺 value / label 被跳过并一次性告警', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ sorts: '[{"key":"x"},{"key":"y","label":"Y"},{"key":"z","label":"Z"}]' })
+    expect(parts(el, 'sort-item').map((s) => s.textContent)).toEqual(['Y', 'Z'])
+    // groups：缺 value 的选项跳过；组缺 label 整组跳过
+    const el2 = mount({
+      groups: JSON.stringify([
+        { key: 'g1', label: '组一', options: [{ value: 'a', label: 'A' }, { label: '无值' }, { value: 'b' }] },
+        { key: 'g2', options: [{ value: 'c', label: 'C' }] },
+        { key: 'g3', label: '', options: [{ value: 'd', label: 'D' }] },
+      ]),
+    })
+    el2.setOpen(true)
+    await settled()
+    const group1 = parts(el2, 'group')[0]!
+    expect(group1.getAttribute('aria-label')).toBe('组一')
+    // 仅剩合法选项 a
+    expect([...group1.querySelectorAll('[part="option"]')]).toHaveLength(1)
+    expect(parts(el2, 'group')).toHaveLength(1)
+    // 两处解析告警各一次（sorts / groups 独立计数）
+    expect(warnSpy.mock.calls.filter((c) => String(c[0]).includes('sorts'))).toHaveLength(1)
+    expect(warnSpy.mock.calls.filter((c) => String(c[0]).includes('groups'))).toHaveLength(1)
+  })
+
+  it('chips 撤销后焦点迁到相邻 chip；撤销最后一枚焦点回触发器', async () => {
+    const el = mount({ groups: GROUPS, conditions: JSON.stringify({ groups: { brand: ['a', 'b'], color: ['red'] } }) })
+    await settled()
+    const chipA = chip(el, 'brand', 'a')!
+    chipA.focus()
+    chipA.click()
+    await settled()
+    // 第一枚撤掉后焦点落到原第二枚（brand:b）
+    expect(el.shadowRoot!.activeElement).toBe(chip(el, 'brand', 'b'))
+    // 撤到只剩一枚再撤 → 焦点回触发器
+    chip(el, 'brand', 'b')!.click()
+    const last = chip(el, 'color', 'red')!
+    last.focus()
+    last.click()
+    await settled()
+    expect(parts(el, 'chip')).toHaveLength(0)
+    expect(el.shadowRoot!.activeElement).toBe(part(el, 'trigger'))
+  })
+
   // —— 面板形态与开合 ——
 
   it('open 双通道：setOpen 回写 attribute 并派发 oas-open-change；宿主写 attribute 不派发', async () => {
@@ -268,6 +325,46 @@ describe('oas-filter', () => {
     expect(el.hasAttribute('open')).toBe(false)
   })
 
+  it('drawer 形态补 dialog 语义：role=dialog + aria-modal=true，dropdown 形态不挂 dialog', async () => {
+    const drawer = mount({ groups: GROUPS, panel: 'drawer' })
+    drawer.setOpen(true)
+    await settled()
+    expect(part(drawer, 'panel')!.getAttribute('role')).toBe('dialog')
+    expect(part(drawer, 'panel')!.getAttribute('aria-modal')).toBe('true')
+    drawer.setOpen(false)
+    await settled()
+    // dropdown（缺省）非模态，无 dialog 语义
+    const dropdown = mount({ groups: GROUPS })
+    dropdown.setOpen(true)
+    await settled()
+    expect(part(dropdown, 'panel')!.getAttribute('role')).toBeNull()
+    expect(part(dropdown, 'panel')!.getAttribute('aria-modal')).toBeNull()
+  })
+
+  it('drawer 焦点陷阱：Tab / Shift+Tab 循环限制在面板内', async () => {
+    const el = mount({ groups: GROUPS, panel: 'drawer' })
+    el.setOpen(true)
+    await settled()
+    const panel = part(el, 'panel')!
+    // 可聚焦集合与组件陷阱同口径：未禁用选项 + 「完成」按钮
+    const focusables = [...panel.querySelectorAll<HTMLElement>('[part="option"]:not([disabled]), [part="done"]')]
+    const last = focusables[focusables.length - 1]!
+    const first = focusables[0]!
+    // 焦点在最后一个可聚焦项 → Tab 循回首
+    last.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(el.shadowRoot!.activeElement).toBe(first)
+    // 焦点在首项 → Shift+Tab 循环到末项
+    first.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
+    expect(el.shadowRoot!.activeElement).toBe(last)
+    // 焦点游离面板外（如触发器）→ Tab 拉回面板首项
+    part(el, 'trigger')!.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(el.shadowRoot!.activeElement).toBe(first)
+    void panel
+  })
+
   it('面板打开聚焦首个条件选项，Esc 关闭并焦点回触发器（dropdown 形态）', async () => {
     const el = mount({ groups: GROUPS })
     const trigger = part(el, 'trigger')!
@@ -289,6 +386,16 @@ describe('oas-filter', () => {
     const badge = part(el, 'badge')!
     expect(badge.hidden).toBe(false)
     expect(badge.textContent).toBe('3')
+  })
+
+  it('触发器可访问名来自可见内容（不用 aria-label，避免 label-in-name 不一致）', async () => {
+    const el = mount({ groups: GROUPS, conditions: JSON.stringify({ groups: { brand: ['a', 'b'] } }) })
+    await settled()
+    const trigger = part(el, 'trigger')!
+    expect(trigger.hasAttribute('aria-label')).toBe(false)
+    // 可见文本 = 排序标签 + 计数徽标，可访问名从内容推导（所见即所读）
+    expect(trigger.textContent).toContain('筛选')
+    expect(trigger.textContent).toContain('2')
   })
 
   // —— groups 配置 ——

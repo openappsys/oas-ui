@@ -801,7 +801,6 @@ export const uk: LocaleMessages = {
   'filter.sortSales': 'Продажі',
   'filter.sortPrice': 'Ціна',
   'filter.panelLabel': 'Критерії фільтра',
-  'filter.selectedCount': 'Вибрано: {count}',
   'filter.removeChip': 'Видалити {name}',
   'filter.reset': 'Скинути',
   'filter.done': 'Готово',

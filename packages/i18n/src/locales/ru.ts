@@ -798,7 +798,6 @@ export const ru: LocaleMessages = {
   'filter.sortSales': 'Продажи',
   'filter.sortPrice': 'Цена',
   'filter.panelLabel': 'Критерии фильтра',
-  'filter.selectedCount': 'Выбрано: {count}',
   'filter.removeChip': 'Удалить {name}',
   'filter.reset': 'Сбросить',
   'filter.done': 'Готово',

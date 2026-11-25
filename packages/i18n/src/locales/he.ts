@@ -800,7 +800,6 @@ export const he: LocaleMessages = {
   'filter.sortSales': 'מכירות',
   'filter.sortPrice': 'מחיר',
   'filter.panelLabel': 'קריטריוני סינון',
-  'filter.selectedCount': 'נבחרו {count}',
   'filter.removeChip': 'הסרת {name}',
   'filter.reset': 'איפוס',
   'filter.done': 'סיום',

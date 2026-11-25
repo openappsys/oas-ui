@@ -800,7 +800,6 @@ export const hi: LocaleMessages = {
   'filter.sortSales': 'बिक्री',
   'filter.sortPrice': 'कीमत',
   'filter.panelLabel': 'फ़िल्टर मानदंड',
-  'filter.selectedCount': '{count} चयनित',
   'filter.removeChip': '{name} हटाएँ',
   'filter.reset': 'रीसेट',
   'filter.done': 'पूर्ण',

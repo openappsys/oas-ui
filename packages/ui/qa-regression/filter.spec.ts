@@ -126,11 +126,15 @@ test('filter：已选撤销与重置——chips 逐项移除、重置清全部�
   await mountDropdown(page, 'fr-e2e-chips', JSON.stringify({ conditions: '{"sort":"price","order":"desc"}' }))
 
   const host = page.locator('#fr-e2e-chips')
-  await host.locator('[part="trigger"]').click()
+  const trigger = host.locator('[part="trigger"]')
+  await trigger.click()
   await host.locator('[part="option"][data-group="brand"][data-value="a"]').click()
   await host.locator('[part="option"][data-group="color"][data-value="red"]').click()
   await expect(host.locator('[part="chip"]')).toHaveCount(2)
   await expect(host.locator('[part="badge"]')).toContainText('2')
+  // dropdown 面板锚定在栏下方（会盖住 chips 行）——选完条件先收面板，再操作 chips（用户真实操作流）
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
   // 逐项撤销
   await host.locator('[part="chip"][data-group="brand"][data-value="a"]').click()
@@ -181,4 +185,96 @@ test('filter：暗色 token——选中态底色与文字色随主题切换（�
   // 文字色发生变化（token 化，不是固定黑）
   expect(dark.optionColor).not.toBe(light.optionColor)
   await page.evaluate(() => document.documentElement.classList.remove('dark'))
+})
+
+test('filter：dropdown 面板锚定几何——面板贴在触发器正下方且与栏同宽；视口下方放不下时向上翻', async ({ page }) => {
+  await page.goto('/components/filter.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-filter')
+  await mountDropdown(page, 'fr-e2e-anchor')
+
+  const host = page.locator('#fr-e2e-anchor')
+  // 滚到视口顶部保证下方空间充足（贴底形态的前提；demo 位置靠下时面板会正确翻向上方）
+  await host.evaluate((el) => el.scrollIntoView({ block: 'start' }))
+  const trigger = host.locator('[part="trigger"]')
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+  const readGeometry = (): Promise<{
+    barTop: number
+    barBottom: number
+    barWidth: number
+    panelTop: number
+    panelWidth: number
+    panelHeight: number
+  }> =>
+    host.evaluate((el) => {
+      const root = el.shadowRoot!
+      const bar = root.querySelector<HTMLElement>('[part="bar"]')!
+      const panel = root.querySelector<HTMLElement>('[part="panel"]')!
+      const barRect = bar.getBoundingClientRect()
+      const panelRect = panel.getBoundingClientRect()
+      return {
+        barTop: barRect.top,
+        barBottom: barRect.bottom,
+        barWidth: barRect.width,
+        panelTop: panelRect.top,
+        panelWidth: panelRect.width,
+        panelHeight: panelRect.height,
+      }
+    })
+
+  // 贴底展开：面板顶边 ≈ 栏底边（+margin 空隙，±8px 容差），宽 ≈ 栏宽，data-flip 未翻转
+  const g = await readGeometry()
+  expect(g.panelTop).toBeGreaterThan(g.barTop)
+  expect(Math.abs(g.panelTop - g.barBottom)).toBeLessThanOrEqual(8)
+  expect(Math.abs(g.panelWidth - g.barWidth)).toBeLessThanOrEqual(2)
+
+  // 视口空间翻转：把视口压到只剩栏上方一小块 → 下方放不下，面板翻到栏上方（top < barTop）
+  await page.setViewportSize({ width: 800, height: 160 })
+  await host.evaluate((el) => {
+    // 收起再展开，重新触发翻转判定
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    trigger.click()
+    trigger.click()
+  })
+  const flipped = await host.evaluate((el) => {
+    const root = el.shadowRoot!
+    const bar = root.querySelector<HTMLElement>('[part="bar"]')!
+    const panel = root.querySelector<HTMLElement>('[part="panel"]')!
+    return {
+      flip: panel.getAttribute('data-flip'),
+      barTop: bar.getBoundingClientRect().top,
+      panelTop: panel.getBoundingClientRect().top,
+    }
+  })
+  expect(flipped.flip).toBe('up')
+  expect(flipped.panelTop).toBeLessThan(flipped.barTop)
+})
+
+test('filter：drawer 真键盘焦点陷阱——Tab 循环限制在面板内（dialog 语义 + aria-modal）', async ({ page }) => {
+  await page.goto('/components/filter.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-filter')
+
+  const host = page.locator('oas-filter[panel="drawer"]').first()
+  const trigger = host.locator('[part="trigger"]')
+  await trigger.scrollIntoViewIfNeeded()
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+  const panel = host.locator('[part="panel"]')
+  await expect(panel).toHaveAttribute('role', 'dialog')
+  await expect(panel).toHaveAttribute('aria-modal', 'true')
+
+  // 真键盘 Tab 循环：从最后一个可聚焦项（完成按钮）Tab → 回面板内首个未禁用选项
+  await host.locator('[part="done"]').focus()
+  await page.keyboard.press('Tab')
+  const firstOption = host.locator('[part="option"][data-group="brand"][data-value="a"]')
+  await expect(firstOption).toBeFocused()
+  // Shift+Tab 从首项循环到末项
+  await page.keyboard.press('Shift+Tab')
+  await expect(host.locator('[part="done"]')).toBeFocused()
+  // 焦点游离（触发器）→ Tab 拉回面板首项（不落到页面其它元素）
+  await trigger.focus()
+  await page.keyboard.press('Tab')
+  await expect(firstOption).toBeFocused()
 })

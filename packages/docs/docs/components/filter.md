@@ -16,30 +16,6 @@ description: "列表页筛选栏：排序项（综合 / 销量 / 价格升降）
 <p id="filter-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
   点排序项 / 展开面板选条件 / 点 chip 撤销，观察 oas-change 反馈。
 </p>
-<script setup lang="ts">
-import { onMounted } from 'vue'
-onMounted(() => {
-  customElements.whenDefined('oas-filter').then(() => {
-    const el = document.getElementById('filter-basic')!
-    el.setAttribute('groups', JSON.stringify([
-      { key: 'brand', label: '品牌', multiple: true, options: [
-        { value: 'a', label: '品牌A' }, { value: 'b', label: '品牌B' }, { value: 'c', label: '品牌C' },
-      ] }),
-      { key: 'color', label: '颜色', options: [
-        { value: 'red', label: '红色' }, { value: 'blue', label: '蓝色' },
-      ] },
-    ]))
-    const out = document.getElementById('filter-basic-out')!
-    el.addEventListener('oas-change', (e) => {
-      const d = (e as CustomEvent).detail
-      out.textContent = `oas-change：sort=${d.sort}${d.order ? `（${d.order === 'asc' ? '升序' : '降序'}）` : ''}，summary=${d.summary || '（无已选条件）'}`
-    })
-    el.addEventListener('oas-open-change', (e) => {
-      out.textContent = `oas-open-change：${(e as CustomEvent).detail.open ? '面板已展开' : '面板已收起'}`
-    })
-  })
-})
-</script>
 
 </DemoBlock>
 
@@ -119,41 +95,14 @@ onMounted(() => {
     ></oas-filter>
     <oas-goods-list id="goods-combo" columns="3"></oas-goods-list>
   </div>
-  <script setup lang="ts">
-  import { onMounted } from 'vue'
-  onMounted(() => {
-    Promise.all([
-      customElements.whenDefined('oas-filter'),
-      customElements.whenDefined('oas-goods-list'),
-    ]).then(() => {
-      const filter = document.getElementById('filter-combo')!
-      const list = document.getElementById('goods-combo')!
-      const catalog = [
-        { title: '纯棉短袖T恤', kind: 'clothes', price: 79 },
-        { title: '轻便帆布鞋', kind: 'shoes', price: 129 },
-        { title: '通勤单肩包', kind: 'bag', price: 199 },
-        { title: '针织开衫', kind: 'clothes', price: 149 },
-        { title: '跑步运动鞋', kind: 'shoes', price: 259 },
-        { title: '防水登山包', kind: 'bag', price: 329 },
-      ]
-      const render = () => {
-        const kinds = filter.conditions.groups?.kind ?? []
-        const rows = kinds.length > 0 ? catalog.filter((it) => kinds.includes(it.kind)) : catalog
-        list.items = rows.map(({ title, price }) => ({ title, price }))
-      }
-      render()
-      filter.addEventListener('oas-change', render)
-    })
-  })
-  </script>
 </DemoBlock>
 
 ## 键盘与无障碍
 
 - 排序行与单选组为 `radiogroup` 语义（方向键在组内移动焦点），多选组为 `group` + `checkbox` 语义；Tab 可达每个选项。
-- 触发器 `aria-haspopup` / `aria-expanded` / `aria-controls`，已选计数进可访问名；开面板自动聚焦首个条件，Esc 关闭并焦点回触发器。
-- chips 为可聚焦按钮，`aria-label` =「移除 条件名」；汇总摘要渲染进 `aria-live="polite"` 活区。
-- 下拉形态点面板外收起；抽屉形态遮罩 / 「完成」/ Esc 关闭。RTL 下布局走逻辑属性自动镜像。
+- 触发器 `aria-haspopup` / `aria-expanded` / `aria-controls`，可访问名从可见内容推导（排序标签 + 计数徽标，所见即所读）；开面板自动聚焦首个条件，Esc 关闭并焦点回触发器。
+- 下拉形态点面板外收起；**抽屉形态为模态对话框语义**（面板 `role="dialog"` + `aria-modal="true"`），Tab / Shift+Tab 焦点循环限制在面板内，遮罩 / 「完成」/ Esc 三路关闭。
+- chips 为可聚焦按钮，`aria-label` =「移除 条件名」，撤销后焦点迁到相邻 chip；汇总摘要渲染进 `aria-live="polite"` 活区。RTL 下布局走逻辑属性自动镜像。
 
 ## 自定义样式须知
 
@@ -197,9 +146,56 @@ onMounted(() => {
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+
+// 页面级 script（VitePress 只抽页面级 script setup——demo 逻辑统一收拢于此，不写进 DemoBlock 内部）
 onMounted(() => {
+  // —— 基础用法 demo ——
   customElements.whenDefined('oas-filter').then(() => {
-    // 受控 demo：预置条件 + 宿主清空
+    const el = document.getElementById('filter-basic')!
+    el.setAttribute('groups', JSON.stringify([
+      { key: 'brand', label: '品牌', multiple: true, options: [
+        { value: 'a', label: '品牌A' }, { value: 'b', label: '品牌B' }, { value: 'c', label: '品牌C' },
+      ] },
+      { key: 'color', label: '颜色', options: [
+        { value: 'red', label: '红色' }, { value: 'blue', label: '蓝色' },
+      ] },
+    ]))
+    const out = document.getElementById('filter-basic-out')!
+    el.addEventListener('oas-change', (e) => {
+      const d = (e as CustomEvent).detail
+      out.textContent = `oas-change：sort=${d.sort}${d.order ? `（${d.order === 'asc' ? '升序' : '降序'}）` : ''}，summary=${d.summary || '（无已选条件）'}`
+    })
+    el.addEventListener('oas-open-change', (e) => {
+      out.textContent = `oas-open-change：${(e as CustomEvent).detail.open ? '面板已展开' : '面板已收起'}`
+    })
+  })
+
+  // —— 组合商品列表 demo ——
+  Promise.all([
+    customElements.whenDefined('oas-filter'),
+    customElements.whenDefined('oas-goods-list'),
+  ]).then(() => {
+    const filter = document.getElementById('filter-combo')!
+    const list = document.getElementById('goods-combo')!
+    const catalog = [
+      { title: '纯棉短袖T恤', kind: 'clothes', price: 79 },
+      { title: '轻便帆布鞋', kind: 'shoes', price: 129 },
+      { title: '通勤单肩包', kind: 'bag', price: 199 },
+      { title: '针织开衫', kind: 'clothes', price: 149 },
+      { title: '跑步运动鞋', kind: 'shoes', price: 259 },
+      { title: '防水登山包', kind: 'bag', price: 329 },
+    ]
+    const render = () => {
+      const kinds = filter.conditions.groups?.kind ?? []
+      const rows = kinds.length > 0 ? catalog.filter((it) => kinds.includes(it.kind)) : catalog
+      list.items = rows.map(({ title, price }) => ({ title, price }))
+    }
+    render()
+    filter.addEventListener('oas-change', render)
+  })
+
+  // —— 受控 demo：预置条件 + 宿主清空 ——
+  customElements.whenDefined('oas-filter').then(() => {
     const ctl = document.getElementById('filter-controlled')!
     const out = document.getElementById('filter-controlled-out')!
     out.textContent = '当前 conditions：' + (ctl.getAttribute('conditions') ?? '（空）')

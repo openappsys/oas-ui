@@ -797,7 +797,6 @@ export const ko: LocaleMessages = {
   'filter.sortSales': '판매량',
   'filter.sortPrice': '가격',
   'filter.panelLabel': '필터 조건',
-  'filter.selectedCount': '{count}개 선택됨',
   'filter.removeChip': '{name} 제거',
   'filter.reset': '초기화',
   'filter.done': '완료',

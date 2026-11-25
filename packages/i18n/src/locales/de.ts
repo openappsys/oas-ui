@@ -797,7 +797,6 @@ export const de: LocaleMessages = {
   'filter.sortSales': 'Verkaufszahlen',
   'filter.sortPrice': 'Preis',
   'filter.panelLabel': 'Filterkriterien',
-  'filter.selectedCount': '{count} ausgewählt',
   'filter.removeChip': '{name} entfernen',
   'filter.reset': 'Zurücksetzen',
   'filter.done': 'Fertig',

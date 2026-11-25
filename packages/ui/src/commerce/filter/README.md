@@ -1,10 +1,10 @@
 # oas-filter 设计前必答
 
-1. **取消路径**：面板开合是唯一浮层态，随 `open` attribute 落盘（宿主可预置），断连时全局监听（外点 / Esc）经 `unbindOpenListeners` 全量摘除，无孤儿监听；drawer 形态遮罩点击 / 「完成」按钮 / Esc 三路出口都回到「关闭 + 焦点回触发器」，无中间卡死态。无异步、无计时器；「条件持久化 / 分页协议」不在本件内（见下方预留能力面）。
+1. **取消路径**：面板开合是唯一浮层态，随 `open` attribute 落盘（宿主可预置），断连时全局监听（外点 / Esc / drawer Tab 陷阱）经 `unbindOpenListeners` 全量摘除（断连清理只注册一次，开合循环不增长），无孤儿监听；drawer 形态遮罩点击 / 「完成」按钮 / Esc 三路出口都回到「关闭 + 焦点回触发器」，无中间卡死态。dropdown 展开时按视口空间判定翻转（下方放不下贴顶展开），测量全 0（未布局）时维持向下。无异步、无计时器；「条件持久化 / 分页协议」不在本件内（见下方预留能力面）。
 2. **属性默认值/空态**：`sorts` 缺省三件套（综合 / 销量 / 价格，价格 toggled——文案走 i18n 非硬编码），非法 JSON 告警一次回落缺省；`groups` 缺省 / 非法 → 空条件组，此时触发器隐藏（无可筛内容不渲染空钮）；`conditions` 缺省 / 非法 → 空条件（排序回落第一项显示），非法告警一次；`panel` 非法回落 dropdown 并告警一次；`order` 仅 toggled 排序项有意义，非 toggled 项无方向；已选计数为 0 时徽标隐藏。
 3. **多步交互失败点**：面板开合一步完成（点击立即回写 + 派发，无等待态）；选中值即时同步（aria-checked / chips / 摘要同帧），无「待应用」中间态；重置不派发确认（可逆操作，重置即回缺省）；`disabled` 选项按钮原生禁用，点击无效。
 4. **破坏性选项**：无破坏性动作；重置是唯一批量清除，语义为「回到不限」（可逆、无数据删除）；chips 逐项撤销 + 重置双粒度并存。
-5. **键盘/ARIA**：触发器 `aria-haspopup` + `aria-expanded` + `aria-controls`（面板 id 由 groups/sorts 派生 `stableHash36`，同页多实例唯一）；开面板聚焦首个未禁用条件，Esc 关闭焦点回触发器；排序行 `role="radiogroup"`（项 `role="radio"` + `aria-checked`，toggled 项 `aria-label` 附「，升序/降序」）；单选组 `radiogroup`、多选组 `group`（各带组名），选项 `radio`/`checkbox` 语义 + Tab 全可达 + 组内方向键移动焦点（不触发选择）；chips 是按钮，`aria-label` = i18n「移除 {条件名}」；汇总摘要进 `role="status"` + `aria-live="polite"` 活区（视觉隐藏），宿主可读 `oas-change` detail.summary 自行播报。
+5. **键盘/ARIA**：触发器 `aria-haspopup` + `aria-expanded` + `aria-controls`（面板 id 由 groups/sorts 派生 `stableHash36`，同页多实例唯一；可访问名从可见内容推导——排序标签 + 计数徽标，不用 aria-label 包裹避免 label-in-name 不一致）；开面板聚焦首个未禁用条件，Esc 关闭焦点回触发器；drawer 形态面板为模态对话框（`role="dialog"` + `aria-modal="true"`），Tab / Shift+Tab 焦点循环限制在面板内（游离面板外的焦点拉回首项），dropdown 非模态不挂 dialog 语义；排序行 `role="radiogroup"`（项 `role="radio"` + `aria-checked`，toggled 项 `aria-label` 附「，升序/降序」）；单选组 `radiogroup`、多选组 `group`（各带组名），选项 `radio`/`checkbox` 语义 + Tab 全可达 + 组内方向键移动焦点（不触发选择）；chips 是按钮，`aria-label` = i18n「移除 {条件名}」，撤销后焦点迁相邻 chip（无相邻回触发器）；汇总摘要进 `role="status"` + `aria-live="polite"` 活区（视觉隐藏），宿主可读 `oas-change` detail.summary 自行播报。
 6. **受控/非受控与宿主桥接**：`conditions` / `sorts` / `groups` 均为 get+set 访问器（setter 容忍对象/数组与 JSON 字符串并反射 attribute），Vue/React 按 property 赋值不丢数据；`open` get+set 双通道（宿主直写静默，`setOpen()` / 用户交互才派发 `oas-open-change`）；`oas-change` 在用户交互后派发（宿主写 `conditions` 不派发——受控与非受控同一通道不回环）；属性名避开 DOM 内建（`sorts` / `groups` / `conditions` / `panel` / `open` 均无 HTMLElement 原型成员冲突，`open` 为 get+set 遮蔽形态）。
 
 ## 值契约

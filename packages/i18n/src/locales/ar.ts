@@ -797,7 +797,6 @@ export const ar: LocaleMessages = {
   'filter.sortSales': 'المبيعات',
   'filter.sortPrice': 'السعر',
   'filter.panelLabel': 'معايير التصفية',
-  'filter.selectedCount': 'تم اختيار {count}',
   'filter.removeChip': 'إزالة {name}',
   'filter.reset': 'إعادة تعيين',
   'filter.done': 'تم',
