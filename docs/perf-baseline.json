@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 51676945,
+        "distTotalBytes": 51677126,
         "browserJs": {
           "files": 606,
-          "rawBytes": 12717160,
-          "gzipBytes": 3181089,
-          "brotliBytes": 2493624
+          "rawBytes": 12716257,
+          "gzipBytes": 3180695,
+          "brotliBytes": 2493771
         },
         "fullEntry": {
           "files": 623,
-          "rawBytes": 4527321,
-          "gzipBytes": 1288468,
-          "brotliBytes": 1105970,
+          "rawBytes": 4527166,
+          "gzipBytes": 1288427,
+          "brotliBytes": 1105929,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -644,9 +644,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3714194,
-          "gzipBytes": 846011,
-          "brotliBytes": 584382
+          "rawBytes": 3713895,
+          "gzipBytes": 845860,
+          "brotliBytes": 584387
         }
       },
       "@oas-ui/theme": {
@@ -761,10 +761,10 @@
       "tableEdit": {
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
-        "files": 61,
-        "rawBytes": 374779,
-        "gzipBytes": 113670,
-        "brotliBytes": 95680,
+        "files": 62,
+        "rawBytes": 374919,
+        "gzipBytes": 113852,
+        "brotliBytes": 95835,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -786,6 +786,7 @@
           "packages/ui/dist/shared/slot-template.js",
           "packages/ui/dist/shared/json-array.js",
           "packages/core/dist/form-element.js",
+          "packages/icons/dist/icons/chevron-down.js",
           "packages/icons/dist/runtime.js",
           "packages/ui/dist/shared/choice.js",
           "packages/ui/dist/shared/icon-hint.js",
@@ -1359,10 +1360,10 @@
       "commerceInvoice": {
         "entry": "commerce/invoice",
         "spec": "@oas-ui/ui/commerce/invoice",
-        "files": 11,
-        "rawBytes": 61538,
-        "gzipBytes": 20760,
-        "brotliBytes": 17296,
+        "files": 12,
+        "rawBytes": 61673,
+        "gzipBytes": 20887,
+        "brotliBytes": 17404,
         "fileList": [
           "packages/ui/dist/commerce/invoice/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1371,6 +1372,7 @@
           "packages/core/dist/locale-tag.js",
           "packages/core/dist/translator.js",
           "packages/ui/dist/commerce/invoice/oas-invoice.js",
+          "packages/icons/dist/icons/chevron-down.js",
           "packages/core/dist/oas-element.js",
           "packages/core/dist/config-context.js",
           "packages/ui/dist/shared/dev-warn.js",
@@ -1658,10 +1660,10 @@
       "select": {
         "entry": "form/select",
         "spec": "@oas-ui/ui/form/select",
-        "files": 30,
-        "rawBytes": 139322,
-        "gzipBytes": 47092,
-        "brotliBytes": 39773,
+        "files": 31,
+        "rawBytes": 139462,
+        "gzipBytes": 47274,
+        "brotliBytes": 39928,
         "fileList": [
           "packages/ui/dist/form/select/index.js",
           "packages/i18n/dist/slices/form.js",
@@ -1682,6 +1684,7 @@
           "packages/ui/dist/shared/slot-template.js",
           "packages/ui/dist/shared/json-array.js",
           "packages/core/dist/form-element.js",
+          "packages/icons/dist/icons/chevron-down.js",
           "packages/icons/dist/runtime.js",
           "packages/ui/dist/shared/choice.js",
           "packages/ui/dist/shared/icon-hint.js",
@@ -1767,9 +1770,9 @@
       },
       "commerce": {
         "files": 1,
-        "rawBytes": 340941,
-        "gzipBytes": 73064,
-        "brotliBytes": 58754
+        "rawBytes": 340788,
+        "gzipBytes": 72989,
+        "brotliBytes": 58757
       },
       "conversation": {
         "files": 1,
@@ -1779,9 +1782,9 @@
       },
       "data": {
         "files": 1,
-        "rawBytes": 1191011,
-        "gzipBytes": 305830,
-        "brotliBytes": 232121
+        "rawBytes": 1190863,
+        "gzipBytes": 305793,
+        "brotliBytes": 232102
       },
       "feedback": {
         "files": 1,
@@ -1791,9 +1794,9 @@
       },
       "form": {
         "files": 1,
-        "rawBytes": 1163791,
-        "gzipBytes": 264375,
-        "brotliBytes": 189332
+        "rawBytes": 1163643,
+        "gzipBytes": 264285,
+        "brotliBytes": 189531
       },
       "framework": {
         "files": 1,
@@ -1830,7 +1833,7 @@
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 846011,
+        "actualBytes": 845860,
         "limitBytes": 849920,
         "warnAtBytes": 764928,
         "pass": true,
@@ -1840,7 +1843,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1288468,
+        "actualBytes": 1288427,
         "limitBytes": 1300480,
         "warnAtBytes": 1170432,
         "pass": true,
@@ -1884,7 +1887,7 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 113670,
+        "actualBytes": 113852,
         "limitBytes": 122880,
         "warnAtBytes": 110592,
         "pass": true,
@@ -2298,12 +2301,12 @@
         "name": "@oas-ui/ui/commerce/invoice 链 gzip",
         "kind": "absolute",
         "componentId": "commerceInvoice",
-        "actualBytes": 20760,
+        "actualBytes": 20887,
         "limitBytes": 23552,
         "warnAtBytes": 21197,
         "pass": true,
         "warn": false,
-        "basis": "首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB / 21 文件（抬头表单 + 校验 + 弹层），上浮 ~15% 取整定档 23 KB"
+        "basis": "首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB，上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐——基线 28ee1fdf 的链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新）"
       },
       {
         "name": "@oas-ui/ui/commerce/ecard 链 gzip",
@@ -2441,12 +2444,12 @@
         "name": "@oas-ui/ui/form/select 链 gzip",
         "kind": "absolute",
         "componentId": "select",
-        "actualBytes": 47092,
+        "actualBytes": 47274,
         "limitBytes": 54272,
         "warnAtBytes": 48845,
         "pass": true,
         "warn": false,
-        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB"
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）后链 +1 文件（icons/icons/chevron-down），实测 46.2 KB / 31 文件，仍在 53 KB 档内（--update-baseline 刷新）"
       },
       {
         "name": "@oas-ui/ui/form/input 链 gzip",
@@ -2494,7 +2497,7 @@
       {
         "name": "CDN 族包 dist/cdn/commerce.js gzip",
         "kind": "absolute",
-        "actualBytes": 73064,
+        "actualBytes": 72989,
         "limitBytes": 84992,
         "warnAtBytes": 76493,
         "pass": true,
@@ -2514,7 +2517,7 @@
       {
         "name": "CDN 族包 dist/cdn/data.js gzip",
         "kind": "absolute",
-        "actualBytes": 305830,
+        "actualBytes": 305793,
         "limitBytes": 352256,
         "warnAtBytes": 317030,
         "pass": true,
@@ -2534,7 +2537,7 @@
       {
         "name": "CDN 族包 dist/cdn/form.js gzip",
         "kind": "absolute",
-        "actualBytes": 264375,
+        "actualBytes": 264285,
         "limitBytes": 304128,
         "warnAtBytes": 273715,
         "pass": true,

@@ -295,6 +295,17 @@ function familyBudgetCoverageViolations(measuredFamilies, budgetFamilyIds) {
   return out
 }
 
+/**
+ * 族包预算取值安全化（纯函数）：`dist/cdn/<family>.js` 缺失（产物被删 / dist/cdn 整体未构建）
+ * 时不抛 TypeError，返回 0——预算断言循环先于覆盖检查执行，直接解引用
+ * `familyBundles.<family>.gzipBytes` 会让未捕获堆栈抢在 stale-budget / 目录缺失
+ * 诊断之前炸掉（接线 bug，判定函数正确也救不回）。缺失族的违规由
+ * `familyBudgetCoverageViolations` 报告，这里只保证「读得到不炸」。
+ */
+function safeFamilyGzip(familyBundles, family) {
+  return familyBundles[family]?.gzipBytes ?? 0
+}
+
 /** 自测：`node scripts/perf/size.mjs --self-test`（不跑体积测量；`pnpm perf:size` 会先跑它，判定函数红绿两侧因此进 CI） */
 function runSelfTest() {
   const results = []
@@ -460,6 +471,9 @@ function runSelfTest() {
         'fresh:no-budget,stale:stale-budget',
       )
       check('族包预算覆盖：空对空放行（无族包无档属一致）', familyBudgetCoverageViolations([], []).length, 0)
+      // 预算 getter 安全化（接线修复的红绿两侧）：缺失族不抛错
+      check('族包预算取值：缺失族安全返回 0（不抛 TypeError）', safeFamilyGzip({}, 'basic'), 0)
+      check('族包预算取值：存在族取 gzipBytes', safeFamilyGzip({ basic: { gzipBytes: 5 } }, 'basic'), 5)
     }
   }
 
@@ -1197,7 +1211,7 @@ const BUDGETS = [
     get: () => componentMeasures.commerceInvoice.gzipBytes,
     limit: 23 * 1024,
     basis:
-      '首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB / 21 文件（抬头表单 + 校验 + 弹层），上浮 ~15% 取整定档 23 KB',
+      '首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB，上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐——基线 28ee1fdf 的链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新）',
   },
   {
     name: '@oas-ui/ui/commerce/ecard 链 gzip',
@@ -1318,7 +1332,7 @@ const BUDGETS = [
     get: () => componentMeasures.select.gzipBytes,
     limit: 53 * 1024,
     basis:
-      '首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB',
+      '首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）后链 +1 文件（icons/icons/chevron-down），实测 46.2 KB / 31 文件，仍在 53 KB 档内（--update-baseline 刷新）',
   },
   {
     name: '@oas-ui/ui/form/input 链 gzip',
@@ -1356,7 +1370,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/basic.js gzip',
     kind: 'absolute',
     familyId: 'basic',
-    get: () => familyBundles.basic.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'basic'),
     limit: 48 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 40.8 KB，上浮 ~15% 取整定档 48 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1365,7 +1379,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/commerce.js gzip',
     kind: 'absolute',
     familyId: 'commerce',
-    get: () => familyBundles.commerce.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'commerce'),
     limit: 83 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 71.4 KB，上浮 ~15% 取整定档 83 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警——本档即该推演的看守）',
@@ -1374,7 +1388,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/conversation.js gzip',
     kind: 'absolute',
     familyId: 'conversation',
-    get: () => familyBundles.conversation.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'conversation'),
     limit: 30 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 26.0 KB，上浮 ~15% 取整定档 30 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1383,7 +1397,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/data.js gzip',
     kind: 'absolute',
     familyId: 'data',
-    get: () => familyBundles.data.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'data'),
     limit: 344 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 298.7 KB（全库最重族——table/gantt/scheduler 大件所在），上浮 ~15% 取整定档 344 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1392,7 +1406,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/feedback.js gzip',
     kind: 'absolute',
     familyId: 'feedback',
-    get: () => familyBundles.feedback.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'feedback'),
     limit: 97 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 84.0 KB，上浮 ~15% 取整定档 97 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1401,7 +1415,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/form.js gzip',
     kind: 'absolute',
     familyId: 'form',
-    get: () => familyBundles.form.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'form'),
     limit: 297 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 258.2 KB（第二重组件族——date-picker/upload/table-select 等表单大件所在），上浮 ~15% 取整定档 297 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1410,7 +1424,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/framework.js gzip',
     kind: 'absolute',
     familyId: 'framework',
-    get: () => familyBundles.framework.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'framework'),
     limit: 16 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 13.1 KB（全库最轻族——app/config-provider/theme-editor），上浮 ~15% 取整定档 16 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1419,7 +1433,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/layout.js gzip',
     kind: 'absolute',
     familyId: 'layout',
-    get: () => familyBundles.layout.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'layout'),
     limit: 46 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 39.1 KB，上浮 ~15% 取整定档 46 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1428,7 +1442,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/navigation.js gzip',
     kind: 'absolute',
     familyId: 'navigation',
-    get: () => familyBundles.navigation.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'navigation'),
     limit: 148 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 128.5 KB（menubar/menu/navigation-menu 大件所在），上浮 ~15% 取整定档 148 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1437,7 +1451,7 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/overlay.js gzip',
     kind: 'absolute',
     familyId: 'overlay',
-    get: () => familyBundles.overlay.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'overlay'),
     limit: 27 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 23.1 KB，上浮 ~15% 取整定档 27 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
@@ -1446,12 +1460,39 @@ const BUDGETS = [
     name: 'CDN 族包 dist/cdn/workbench.js gzip',
     kind: 'absolute',
     familyId: 'workbench',
-    get: () => familyBundles.workbench.gzipBytes,
+    get: () => safeFamilyGzip(familyBundles, 'workbench'),
     limit: 36 * 1024,
     basis:
       '首档 2026-11-25（复用基建配套批）：实测 gzip 30.5 KB，上浮 ~15% 取整定档 36 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）',
   },
 ]
+
+// ---------- 3.0 CDN 族包预算覆盖（先于预算断言循环执行——接线修复：
+// 覆盖检查报 stale-budget / dist/cdn 缺失诊断时，预算循环里的安全 getter
+// （safeFamilyGzip）保证不抛 TypeError，诊断文案可达） ----------
+{
+  if (!existsSync(CDN_DIR)) {
+    fail = true
+    console.error('FAIL [CDN 族包预算覆盖] dist/cdn 目录不存在：族包体积门禁无从核对，请 pnpm build 重建 dist')
+  } else {
+    const measuredFamilies = Object.keys(familyBundles)
+    const budgetFamilyIds = BUDGETS.map((b) => b.familyId).filter(Boolean)
+    const violations = familyBudgetCoverageViolations(measuredFamilies, budgetFamilyIds)
+    for (const { family, reason } of violations) {
+      fail = true
+      console.error(
+        reason === 'no-budget'
+          ? `FAIL [CDN 族包预算覆盖] 族包 ${family} 无独立预算档（BUDGETS 缺 familyId='${family}' 条目）：新族包必须有看守，禁止无门禁交付`
+          : `FAIL [CDN 族包预算覆盖] 预算档 familyId='${family}' 指向不存在的族包：族包已下线/改名，请删除或更名该预算档`,
+      )
+    }
+    if (!violations.length) {
+      console.log(
+        `PASS [CDN 族包预算覆盖] ${measuredFamilies.length} 个族包（${measuredFamilies.join('/')}）均有独立预算档`,
+      )
+    }
+  }
+}
 
 console.log('\n=== 体积预算断言（全量类=天花板制；单组件链/theme=绝对值制；90% 预警线） ===')
 const WARN_RATIO = 0.9
@@ -1601,30 +1642,7 @@ for (const residue of ['data/table/core', join('types', 'data/table/core')]) {
   }
 }
 
-// ---------- 3.y CDN 族包预算覆盖（收集清单 = dist/cdn 实际产物；缺档/残档 fail closed） ----------
-{
-  if (!existsSync(CDN_DIR)) {
-    fail = true
-    console.error('FAIL [CDN 族包预算覆盖] dist/cdn 目录不存在：族包体积门禁无从核对，请 pnpm build 重建 dist')
-  } else {
-    const measuredFamilies = Object.keys(familyBundles)
-    const budgetFamilyIds = BUDGETS.map((b) => b.familyId).filter(Boolean)
-    const violations = familyBudgetCoverageViolations(measuredFamilies, budgetFamilyIds)
-    for (const { family, reason } of violations) {
-      fail = true
-      console.error(
-        reason === 'no-budget'
-          ? `FAIL [CDN 族包预算覆盖] 族包 ${family} 无独立预算档（BUDGETS 缺 familyId='${family}' 条目）：新族包必须有看守，禁止无门禁交付`
-          : `FAIL [CDN 族包预算覆盖] 预算档 familyId='${family}' 指向不存在的族包：族包已下线/改名，请删除或更名该预算档`,
-      )
-    }
-    if (!violations.length) {
-      console.log(
-        `PASS [CDN 族包预算覆盖] ${measuredFamilies.length} 个族包（${measuredFamilies.join('/')}）均有独立预算档`,
-      )
-    }
-  }
-}
+// ---------- 3.y CDN 族包预算覆盖（已前移至预算断言循环之前，见 3.0） ----------
 
 // ---------- 4. 写入基线（默认只测不写：基线是入库文件，见头部说明） ----------
 if (process.argv.includes('--update-baseline')) {
