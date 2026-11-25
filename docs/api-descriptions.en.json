@@ -433,7 +433,7 @@
       "height": "Stage height (plain numbers are px, CSS lengths accepted; default 200px)",
       "accessible": "Boolean; when present the barrage is exposed to screen readers (`role=\"log\"` + `aria-live=\"polite\"`); `aria-hidden` by default",
       "items": "Declarative bullet data (JSON array of strings or `{ text, color?, key? }`) aligned with addBatch: attribute changes batch-enqueue the new entries (append semantics, on-screen items kept); a same-name get/set accessor reflects arrays to the attribute",
-      "auto-play": "Loop playback: once every declared item of the current round has finished playing (queue empty and no looping item on stage), items re-enqueue automatically (only items-declared data loops; clear() only clears on-screen and queued items — remove items or auto-play to stop for good)",
+      "auto-play": "Loop playback: once every declared item of the current round has finished playing (queue empty and no looping item on stage), items re-enqueue automatically (only items-declared data loops); after clear() the declared items start rotating again (paused state holds), remove items or auto-play to stop for good",
       "banned-words": "Banned words (comma-separated or a JSON array string; case-insensitive): matching bullets are never queued or rendered (same rule for `add` / `addBatch` / `items` / auto-play refill — four enqueue channels, one gate); on-screen items are not retroactively removed",
       "likeable": "Each bullet carries a heart like control (tapping toggles the like state and dispatches `oas-like`; state is remembered by `key` / text across the item lifecycle)"
     },
@@ -447,7 +447,7 @@
       "addBatch": "Append many (strings or `{ text, color?, key? }`)",
       "pause": "Pause (writes the `paused` attribute)",
       "resume": "Resume (removes the `paused` attribute)",
-      "clear": "Clear on-screen and queued items",
+      "clear": "Clear on-screen and queued items; with auto-play on, declared items start rotating again (paused state holds)",
       "isLiked": "Reads the like state (key = `key`, or the text when no key; same identity as `oas-like`)",
       "likeCount": "Reads the like count"
     },
@@ -2265,7 +2265,7 @@
     },
     "methods": {
       "setZoom": "Set zoom (clamped to `[1, max-zoom]`, dispatches `oas-change` only when the value actually changes)",
-      "rotate": "Rotate by a delta (default +90°, dispatches `oas-change`)",
+      "rotate": "Rotate by a delta (default +90°; accepts any angle, dispatches `oas-change`)",
       "reset": "Restore initial zoom / rotation / image offset / crop frame (dispatches `oas-change`)",
       "toBlob": "Export the crop as a Blob (null when canvas is unavailable)",
       "toDataURL": "Export the crop as a dataURL (empty string when canvas is unavailable)"
@@ -4400,12 +4400,12 @@
     },
     "events": {
       "oas-change": "Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' | 'quantity' }` (sku is the matched object or null)",
-      "oas-open-change": "Sheet open state changed (interactive / imperative), `detail: { open }`; attribute writes stay silent",
+      "oas-open-change": "Sheet open state changed (interactive / imperative / layout-switch settle), `detail: { open }`; attribute writes stay silent",
       "oas-close": "Close request **passed through** from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component already collapses itself, so hosts need no handler (listen only for observation)"
     },
     "slots": {},
     "props": {
-      "open": "Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only)"
+      "open": "Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only). Switching popup back to embedded writes false and dispatches once — the sheet is hidden, so `open` never lingers stale"
     },
     "methods": {
       "openOverlay": "Open the sheet imperatively (idempotent; dispatches `oas-open-change`; warns once on the inline form)",
@@ -6016,7 +6016,7 @@
     "attrs": {
       "boundary": "Drag boundary: `viewport` (default) or a CSS selector whose element rect is the boundary (a miss warns once and falls back to the viewport)",
       "axis": "Drag axis: `both` (default) / `x` horizontal only / `y` vertical only; invalid values fall back to `both` with a warning",
-      "inertia": "Decaying glide after release (velocity decays 0.95 per frame for up to 60 frames, stopping instantly at the boundary; a last velocity sample older than 100ms counts as stopped, so no glide); instant stop under `prefers-reduced-motion: reduce`",
+      "inertia": "Decaying glide after release (velocity decays 0.95 per frame for up to 800ms of real time — consistent feel on 60/120Hz screens, stopping at the boundary or when speed falls below the threshold; a last velocity sample older than 100ms counts as stopped, so no glide); instant stop under `prefers-reduced-motion: reduce`",
       "remember": "Persist the position to `localStorage` and restore it on mount; silently degrades when unavailable (SSR / private mode / quota)",
       "storage-key": "Storage key for position memory (default `oas-drag`)",
       "keyboard": "Keyboard nudging: on by default (`tabindex=\"0\"`, 1px with arrow keys, 10px with Shift); write `false` to disable",
@@ -6036,7 +6036,7 @@
     "events": {
       "oas-drag-start": "Dispatched once when a pointer drag passes the 4px threshold and captures the pointer, `detail: { x, y, source }`",
       "oas-drag": "Dispatched on every position change (pointer drag / keyboard nudge / inertia), `detail: { x, y, source }`",
-      "oas-drag-end": "Dispatched when a pointer drag ends, `detail: { x, y, source }`; with inertia a single flick emits twice — once at pointerup and once when the glide settles (same source), and no glide-tail emission if the coast is preempted by a new pointerdown"
+      "oas-drag-end": "Dispatched when a pointer drag ends, `detail: { x, y, source, phase }`; with inertia a single flick emits twice — `phase: 'release'` at pointerup and `phase: 'coast-end'` when the glide settles; a coast preempted by a new pointerdown saves the current position without a glide-tail emission"
     },
     "slots": {
       "": "Default slot: the wrapped floating content (also the drag surface when the whole host drags)",

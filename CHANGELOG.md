@@ -139,6 +139,15 @@
 
 ### 修复
 
+**commerce 增强子批（已有组件交互打磨与行为收口，PRD「未发布：电商扩容与包体分级批」；全部向后兼容：`oas-drag-end` 新增字段 `phase`，其余为行为修正）**
+
+- **oas-cart 滑动手势三处收口**：① `pointercancel` 与 `pointerup` 分离结算——cancel 事件坐标不可信（Safari 类浏览器给 0 坐标），此前按坐标结算会把中断手势误判成「向行首拖满」→ 意外满展开 + 抑制紧随 click；现按手势开始前的吸附态落定（未展开回弹关闭、已展开保持展开），不读 cancel 坐标、不设 suppressClick。② 多点触控守卫——已有滑动会话在途时新指针按下直接忽略，旧会话起点与 `pointerId` 不被改写（修复前双指先后按两行会让第一行 `data-dragging` 永久残留）。③ 滑动展开行「点行体收起」——点已展开行的行体收起且不派 `oas-item-click`；点其他行收起已展开行、事件照常派发（购物车单行操作惯例）；顺带修掉「与已展开行无关的手势（tap 其他行）抹掉全局展开态」的状态/视觉脱节。单测 +5；`qa-regression/cart.spec.ts` +3（合成 pointercancel 0 坐标 / 双指序列 / 真鼠标点行体收起）。
+- **oas-image-cropper rotate 任意角度覆盖约束**：`fitScale` 此前按 `rotation % 180 !== 0` 互换宽高（等价 90° 倍数假设），45° 等中间角度覆盖不足（框角露舞台底色）。现按旋转包围盒数学收敛：`s = max(stageW / (nw·|cosθ| + nh·|sinθ|), stageH / (nw·|sinθ| + nh·|cosθ|))`——90° 倍数退化为宽高互换（与旧行为逐值一致），任意角度自由度保留。单测 +2（45° 精确界 + 90° 退化一致性）。
+- **oas-image-cropper 缩放边界放行页面滚动**：滚轮在缩放上下限（1 / max-zoom）此前仍 `preventDefault` 吞掉页面滚动（边界上滚轮「失灵」还锁死页面）。现先判 clamp 后值是否会真的变化，不变则不接管（页面照常滚）；中间值缩放语义不变。单测 +1。
+- **oas-sku 形态切换两处收口**：① 焦点保持——popup→embedded 面板搬移前记录面板内的深活跃元素（含 shadow 路径），搬移后活跃元素不再是原焦点时复原到原控件（键盘用户焦点不因形态切换丢失；真实浏览器保焦路径零副作用）。② `open` 悬空真值收口——popup 形态打开的弹层切回 embedded 后承载件已隐藏，`open` 残留会让宿主滚动锁 / 遮罩态挂空且永不解除（形态切换不经过 `openOverlay` / `onSheetClose`，没有其它派发点）；现同步回写 `false` 并派发一次 `oas-open-change`（受控宿主收到事件后按自己的状态清锁，不必回写）。单测 +2。
+- **oas-drag 惯性三处收口**：① `oas-drag-end` detail 新增 `phase: 'release' | 'coast-end'`——双派发语义显式化（松手含 cancel 为 `release`、滑行收尾为 `coast-end`），宿主按 phase 区分两次派发、不必按时间窗去重；既有 detail 字段不变（向后兼容）。② 滑行上限改真实时长口径——帧数上限（60 帧）在 120Hz 屏只有一半时长且末段急刹；现按 800ms 真实时长上限 + 速度阈值双条件（帧数只作 rAF 时间戳异常的兜底），60 / 120Hz 屏体感一致。③ 滑行被抢占落盘——滑行中被新 `pointerdown` 抢占 / `reset()` / 断连冻结时，`stopCoast()` 按滑行中的当前位置补落盘（修复前只保留松手时刻旧值，滑行已走过的路程丢失）。单测 +4（含 16ms / 8ms 双帧率时长一致性）；zh/en 文档与 API 语料同步（`oas-drag-end` 描述改 phase 口径，`inertia` 描述改时长口径）。
+- **oas-barrage `clear()` 后 auto-play 续播**：clear 清空后不再调度 pump——舞台空到下一次外部触发，与文档「`clear()` 只清在场与排队，声明数据仍在」的口径矛盾。现 clear 后若 auto-play 开启且未暂停，主动 `refillDeclared()` 从声明条目重新轮转（暂停中不续播、resume 后恢复）。单测 +3（续播轮转 / 无 auto-play 维持清空 / paused 语义优先）。
+
 **跨引擎收口（main 全量 e2e 抓到：撞名守卫 5 条 + 虚拟滚动滚动夹紧 + Firefox 用例时序）**
 
 - **撞名守卫（5 条，对外 attribute 名全部不变）**：attribute 的 camelCase 名撞同类实例成员时，框架按「key in el」把静态 attribute 写成 property，会遮蔽原型方法（内部 `this.xxx()` 直接 TypeError）或污染数据字段。现只改组件内部成员名：`max-select` 的解析方法 `maxSelect()` → `parseMaxSelect()`（oas-coupon，调用点 2）、`banned-words` 的解析方法 `bannedWords()` → `parseBannedWords()`（oas-barrage，1）、`score-rules` 的编译结果字段 `scoreRules` → `compiledScoreRules`（oas-questionnaire，4）、`snap-targets` / `snap-threshold` 的解析方法 `snapTargets()` / `snapThreshold()` → `parseSnapTargets()` / `parseSnapThreshold()`（oas-drag，各 2）。`collision-guard.spec.ts` 源码级守卫归零。

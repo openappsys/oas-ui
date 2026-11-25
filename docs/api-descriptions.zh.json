@@ -420,7 +420,7 @@
       "height": "舞台高度（纯数字按 px，亦接受 CSS 长度；默认 200px）",
       "accessible": "布尔，存在时弹幕进入读屏（`role=\"log\"` + `aria-live=\"polite\"`）；缺省 `aria-hidden`",
       "items": "声明式弹幕数据（JSON 数组，字符串或 `{ text, color?, key? }`）——语义对齐 addBatch：属性变化时把新条目批量入队（追加，不清空在场）；另有同名 get/set 访问器（赋数组自动序列化反射 attribute）",
-      "auto-play": "循环播放：本轮声明条目全部播完（队列空且无在场循环条目）后自动重新入队（只循环 items 声明的数据；clear() 只清在场与排队，永久停止请移除 items 或 auto-play）",
+      "auto-play": "循环播放：本轮声明条目全部播完（队列空且无在场循环条目）后自动重新入队（只循环 items 声明的数据）；clear() 清空在场与排队后从声明条目重新轮转（暂停中不续播），永久停止请移除 items 或 auto-play",
       "banned-words": "屏蔽词（逗号分隔或 JSON 数组字符串；大小写不敏感）：命中的条目不入队不渲染（`add` / `addBatch` / `items` / auto-play 重灌四条入队通道同一判据）；已在场条目不回溯移除",
       "likeable": "每条弹幕带心形点赞控件（点按切换点赞态并派发 `oas-like`；点赞態按 `key` / 文本跨条目生命周期记忆）"
     },
@@ -434,7 +434,7 @@
       "addBatch": "批量追加（字符串或 `{ text, color?, key? }`）",
       "pause": "暂停（写入 `paused` 属性）",
       "resume": "继续（移除 `paused` 属性）",
-      "clear": "清空在场与排队弹幕",
+      "clear": "清空在场与排队弹幕；开启 auto-play 时从声明条目重新轮转（暂停中不续播）",
       "isLiked": "查询点赞态（键 = `key`，缺省按文本；与 `oas-like` 的 `key` 口径一致）",
       "likeCount": "查询点赞数"
     },
@@ -2183,7 +2183,7 @@
     },
     "methods": {
       "setZoom": "设置缩放（夹到 `[1, max-zoom]`；值有变化才派发 `oas-change`）",
-      "rotate": "旋转指定角度（默认 +90° 并派发 `oas-change`）",
+      "rotate": "旋转指定角度（默认 +90°；接受任意角度并派发 `oas-change`）",
       "reset": "恢复初始缩放 / 旋转 / 图片位移 / 裁剪框（派发 `oas-change`）",
       "toBlob": "导出裁剪结果 Blob（canvas 不可用时返回 null）",
       "toDataURL": "导出裁剪结果 dataURL（canvas 不可用时返回空串）"
@@ -4201,11 +4201,11 @@
       "precision": "价格小数位，默认 2",
       "disabled": "全禁用（兼容 config-provider 注入禁用）",
       "layout": "承载形态：`embedded`（内嵌面板）/ `popup`（底部弹层，走 bottom-sheet 协议）；缺省按视口自动（≤480px 弹层）；非法值告警回落 embedded",
-      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；仅 popup 形态生效）。交互与 `openOverlay()` / `closeOverlay()` 改变时派发 `oas-open-change`"
+      "open": "弹层开合（受控：宿主写 attribute / property 静默生效；仅 popup 形态生效）。交互与 `openOverlay()` / `closeOverlay()` 改变时派发 `oas-open-change`；popup 切回 embedded 形态时组件同步回写 false 并派发一次（承载弹层已隐藏，open 不残留悬空真值）"
     },
     "events": {
       "oas-change": "规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' | 'quantity' }`（sku 为完整匹配对象或 null）",
-      "oas-open-change": "弹层开合变化（交互 / 命令式），`detail: { open }`；受控属性写入不派发",
+      "oas-open-change": "弹层开合变化（交互 / 命令式 / 形态切换收口），`detail: { open }`；受控属性写入不派发",
       "oas-close": "承载件 **透传** 的关闭请求（下滑 / 遮罩 / Esc），`detail: { reason }`；组件收到后已自行收起，宿主无需再处理（监听仅用于观测 / 联动）"
     },
     "slots": {},
@@ -5760,7 +5760,7 @@
     "attrs": {
       "boundary": "拖拽边界：`viewport`（缺省，视口）或 CSS 选择器（该元素的矩形；未命中告警一次并回落视口）",
       "axis": "拖拽方向轴：`both`（缺省）/ `x` 仅横向 / `y` 仅纵向；非法值回落 `both` 并告警",
-      "inertia": "松手后惯性滑行（按最后速度每帧衰减 0.95、最多 60 帧，触边即停；最后一次速度采样距今超过 100ms 视为已停住、不滑行）；`prefers-reduced-motion: reduce` 下瞬停",
+      "inertia": "松手后惯性滑行（按最后速度每帧衰减 0.95、最长 800ms 真实时长——60 / 120Hz 屏体感一致，触边或速度衰减到阈值即停；最后一次速度采样距今超过 100ms 视为已停住、不滑行）；`prefers-reduced-motion: reduce` 下瞬停",
       "remember": "把位置写入 `localStorage` 并在挂载时恢复；不可用（SSR / 隐私模式 / 配额满）时静默降级",
       "storage-key": "位置记忆的存储键（缺省 `oas-drag`）",
       "keyboard": "键盘微调：缺省开启（`tabindex=\"0\"` + 方向键 1px / Shift+方向键 10px）；写 `false` 关闭",
@@ -5780,7 +5780,7 @@
     "events": {
       "oas-drag-start": "指针拖拽越过 4px 阈值、接管指针时派发一次，`detail: { x, y, source }`",
       "oas-drag": "位置变化（指针拖拽 / 键盘微调 / 惯性滑行）时派发，`detail: { x, y, source }`",
-      "oas-drag-end": "指针拖拽结束时派发，`detail: { x, y, source }`；开惯性时一次甩动共派发两次——松手（pointerup）一次、惯性滑行收尾一次（source 同为 pointer），滑行被再次按下抢占时不派滑行收尾"
+      "oas-drag-end": "指针拖拽收尾时派发，`detail: { x, y, source, phase }`；开惯性时一次甩动共派发两次——松手（pointerup）`phase: 'release'`、惯性滑行收尾 `phase: 'coast-end'`，滑行被再次按下抢占时按当前位置落盘但不补派滑行收尾"
     },
     "slots": {
       "": "默认插槽：被包装的浮块内容（整宿主可拖时的拖拽面）",
