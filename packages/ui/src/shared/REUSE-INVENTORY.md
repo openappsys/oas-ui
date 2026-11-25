@@ -149,11 +149,17 @@
 
 ### 4b. 内联 RTL 判定变体（P4，行为漂移修正）
 
-4 处未走 `shared/direction` 的本地 RTL 判定，检测通道为 **computed style / attribute 直读**，与 shared `resolveDirection`（config-provider → 最近 [dir] 祖先 → document → locale 回退）不一致——**config-provider 的 direction 注入对这四处无效**（漂移风险，非纯重复）：
+> 归因更正（2026-11-26 R1 复核）：初版写「config-provider 的 direction 注入对这四处无效」
+> **不准确**——config-provider 的 direction 落在宿主 DOM（`dir` attribute），computed style
+> 可正常继承读取，该通道并不缺失。真实缺口只有一个：**locale 回退通道**——shared
+> `resolveDirection` 在无任何 DOM `dir` 声明时回退到当前 locale 的方向元数据（ar 等语言
+> 包自带 rtl），本地实现无此兜底（locale 注入方向时这四处感知不到）。
+
+4 处未走 `shared/direction` 的本地 RTL 判定，检测通道为 **computed style / attribute 直读**，与 shared `resolveDirection`（config-provider → 最近 [dir] 祖先 → document → locale 回退）相比缺 locale 回退通道（漂移面窄于初版判断，非纯重复）：
 
 | 位置 | 现状 | 差异 |
 |------|------|------|
-| commerce/cart/oas-cart.ts:1195-1197 | computed style + attribute 双分支 | 不接 config-provider / locale 回退 |
+| commerce/cart/oas-cart.ts:1195-1197 | computed style + attribute 双分支 | 缺 locale 回退 |
 | commerce/invoice/oas-invoice.ts:575 | computed style | 同上 |
 | data/table/range/index.ts:1017 | computed style + typeof 守卫 | 同上 |
 | form/questionnaire/oas-questionnaire.ts:598-602 | computed style（try/catch ltr 兜底）→ CSS var 符号 `--q-dir` | 符号翻转是合法本地逻辑，检测通道可换 shared |
