@@ -540,4 +540,39 @@ describe('oas-cart 滑动删除交互', () => {
     itemEl(el, 0).querySelector<HTMLElement>('[part="item-body"]')!.click()
     expect(clicks.map((c) => c.id)).toEqual(['a'])
   })
+
+  it('滑第二行展开时收起第一行（同屏至多一行展开）', () => {
+    const el = mount({ items: JSON_ITEMS, 'delete-mode': 'swipe' })
+    const innerA = itemEl(el, 0).querySelector<HTMLElement>('[part="item-inner"]')!
+    const innerB = itemEl(el, 1).querySelector<HTMLElement>('[part="item-inner"]')!
+    // 展开 A
+    swipePointer(el, 'pointerdown', 200, 20, 1)
+    swipePointer(el, 'pointermove', 130, 20, 1)
+    swipePointer(el, 'pointerup', 130, 20, 1)
+    expect(innerA.style.transform).toBe('translateX(-72px)')
+    // 滑 B 展开：吸附展开成立时旧展开行必须同时收起（否则同屏两行露删除钮、状态只剩 B）
+    swipePointer(el, 'pointerdown', 200, 60, 2, innerB)
+    swipePointer(el, 'pointermove', 130, 60, 2, innerB)
+    swipePointer(el, 'pointerup', 130, 60, 2, innerB)
+    expect(innerB.style.transform).toBe('translateX(-72px)')
+    expect(innerA.style.transform, '旧展开行随新行展开收起').toBe('')
+  })
+
+  it('同 pointerId 的新按下接管僵尸会话（丢 up 后可自愈，不永久锁死滑动）', () => {
+    const el = mount({ items: JSON_ITEMS, 'delete-mode': 'swipe' })
+    const innerA = itemEl(el, 0).querySelector<HTMLElement>('[part="item-inner"]')!
+    const innerB = itemEl(el, 1).querySelector<HTMLElement>('[part="item-inner"]')!
+    // 会话创建后 up 丢失（真实鼠标 pointerId 恒为 1；capture 失败 + 移出元素松手即可复现）
+    swipePointer(el, 'pointerdown', 200, 20, 1)
+    swipePointer(el, 'pointermove', 190, 20, 1)
+    expect(innerA.getAttribute('data-dragging')).toBe('true')
+    // 同一 pointer 不可能「按下两次」——旧会话已死，新按下必须接管而不是被永久拦下
+    swipePointer(el, 'pointerdown', 200, 60, 1, innerB)
+    expect(innerA.getAttribute('data-dragging'), '僵尸会话被收尾（拖拽态清除）').toBeNull()
+    expect(innerA.style.transform, '僵尸行位移回到吸附态（未展开 = 0）').toBe('')
+    swipePointer(el, 'pointermove', 130, 60, 1, innerB)
+    expect(innerB.getAttribute('data-dragging'), '新会话接管').toBe('true')
+    swipePointer(el, 'pointerup', 130, 60, 1, innerB)
+    expect(innerB.style.transform).toBe('translateX(-72px)')
+  })
 })

@@ -50,7 +50,7 @@ The stepper and the quantity input clamp automatically: below 1 becomes 1, above
 
 ## Delete
 
-`delete-mode` picks the delete affordance: `button` (default, a trailing delete button) / `swipe` (drag towards the inline start to reveal a delete button — it stays in the tab order, so keyboard users can reach it, and it reveals itself on focus) / `none` (not deletable). A **cancelable** `oas-remove` fires before removal: calling `preventDefault()` vetoes it (hosts can confirm with a dialog and then write `items` themselves).
+`delete-mode` picks the delete affordance: `button` (default, a trailing delete button) / `swipe` (drag towards the inline start to reveal a delete button — it stays in the tab order, so keyboard users can reach it, and it reveals itself on focus) / `none` (not deletable). A **cancelable** `oas-remove` fires before removal: calling `preventDefault()` vetoes it (hosts can confirm with a dialog and then write `items` themselves). Once a row is revealed, tapping that row's body **collapses** it (no `oas-item-click`); tapping another row's body first collapses the revealed row and still dispatches the event — at most one row is revealed at a time (swiping another row open collapses the previous one).
 
 <DemoBlock title="Button delete / swipe delete / no delete">
   <div style="display: grid; gap: var(--oas-space-3); width: 100%">

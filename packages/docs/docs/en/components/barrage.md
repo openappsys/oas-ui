@@ -41,7 +41,7 @@ Streaming barrage: each item occupies a track and drifts from right to left at a
 
 With `tracks="1"` all items share one track and scheduling guarantees no overlap — suitable for narrow areas or slower reading. `gap` sets the minimum horizontal gap between consecutive items on the same track (after the previous item has fully entered):
 
-> Changing `tracks` at runtime invalidates and clears on-screen and queued items (track ownership is re-mapped); set the track count at initialization.
+> Changing `tracks` at runtime invalidates and clears on-screen and queued items (track ownership is re-mapped); set the track count at initialization. With `auto-play` on, the declared items resume on the new tracks immediately (no blank gap).
 
 <DemoBlock title="tracks=1 / speed=80 / gap=120">
   <oas-barrage id="bg-single" tracks="1" speed="80" gap="120" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>

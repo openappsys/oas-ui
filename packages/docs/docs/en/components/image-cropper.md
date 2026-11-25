@@ -173,7 +173,7 @@ onMounted(() => {
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
 | `offset` | Current image offset `{ x, y }` (pixels from the stage centre, read-only; already clamped by the “image covers the crop frame” constraint) | `CropOffset` | — |
-| `rotation` | Current rotation in degrees (0 / 90 / 180 / 270, read-only) | `number` | `0` |
+| `rotation` | Current rotation in degrees (normalized 0–360, read-only; any angle can be set via `rotate()`) | `number` | `0` |
 | `zoom` | Current zoom (starts at 1). Writes apply immediately but dispatch **no event** — `oas-change` only reports user interaction, so echoing `el.zoom` back from the handler cannot recurse | `number` | `1` |
 
 #### Methods

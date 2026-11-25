@@ -41,7 +41,7 @@ description: 弹幕组件，多条弹幕在轨道上按速度漂过，同轨道�
 
 `tracks="1"` 时所有弹幕共用一条轨道，排期保证不重叠；适合窄区域或慢速阅读场景。`gap` 调同轨道相邻弹幕的最小水平间距（前一条完全进场后再留这段空隙）：
 
-> 运行中修改 `tracks` 会让在场与排队弹幕失效并清空（轨道归属重排），建议初始化时定好轨道数。
+> 运行中修改 `tracks` 会让在场与排队弹幕失效并清空（轨道归属重排），建议初始化时定好轨道数；开启 `auto-play` 时声明条目会立即在新轨道上续播（不出现空窗）。
 
 <DemoBlock title="tracks=1 / speed=80 / gap=120">
   <oas-barrage id="bg-single" tracks="1" speed="80" gap="120" height="72" style="width: 100%; background: var(--oas-color-bg-elevated); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-barrage>

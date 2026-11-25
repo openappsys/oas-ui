@@ -450,6 +450,20 @@ export class OASBarrage extends OASElement {
    * `pausedInternal` 守卫，resume() 会经 `pump()` 自然恢复）。
    */
   clear(): void {
+    this.resetPlayback()
+    if (this.hasAttribute('auto-play') && this.declaredItems.length > 0) this.refillDeclared()
+  }
+
+  /**
+   * 内部复位：只清在场与排队、清排期计时，**不重灌**（不派 auto-play 续轮）。
+   *
+   * 内部路径（轨道数变化重建）必须用这一层：`buildTracks()` 之后紧接
+   * `stage.replaceChildren()`，若在这里重灌，声明条目会挂进**即将被替换的旧轨道**——
+   * DOM 被丢掉但条目留在 `active`（僵尸），既占 `max-active` 名额，又让 update 尾部
+   * `pump()` 的 refill 守卫（`active.some(loop)`）一直挡住，舞台空窗一整个动画时长。
+   * 重置后由 update 尾部的 `pump()` 把声明条目灌进**新**轨道，同帧续播。
+   */
+  private resetPlayback(): void {
     this.queue.length = 0
     for (const item of this.active) {
       if (item.timer) clearTimeout(item.timer)
@@ -459,7 +473,6 @@ export class OASBarrage extends OASElement {
     this.trackNextAt.fill(0)
     if (this.pumpTimer) clearTimeout(this.pumpTimer)
     this.pumpTimer = null
-    if (this.hasAttribute('auto-play') && this.declaredItems.length > 0) this.refillDeclared()
   }
 
   // ---- 轨道与排期 ----
@@ -484,8 +497,9 @@ export class OASBarrage extends OASElement {
     const stage = this.stageEl
     if (!stage) return
     if (this.builtTracks === count) return
-    // 轨道数变化：既有弹幕的轨道归属失效，先清空再重建（文档明示）
-    this.clear()
+    // 轨道数变化：既有弹幕的轨道归属失效，先清空再重建（文档明示）。
+    // 这里只做内部复位（不重灌）：重建后的 pump 会把声明条目落到新轨道上，详见 resetPlayback。
+    this.resetPlayback()
     stage.replaceChildren()
     this.trackEls = []
     for (let i = 0; i < count; i++) {

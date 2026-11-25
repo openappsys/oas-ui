@@ -605,4 +605,42 @@ describe('oas-sku 形态切换收口', () => {
     expect(events, '同步派发一次 open 变化（受控宿主据此清滚动锁/遮罩态）').toEqual([{ open: false }])
     expect(el.shadowRoot!.querySelector('oas-bottom-sheet')!.hasAttribute('open')).toBe(false)
   })
+
+  it('挂载时预置 open + 内嵌形态：作为待生效意图保留，不抹除也不派事件', () => {
+    const el = new OASSku()
+    el.setAttribute('specs', SPECS)
+    el.setAttribute('skus', SKUS)
+    el.setAttribute('layout', 'embedded')
+    el.setAttribute('open', '')
+    const events: unknown[] = []
+    el.addEventListener('oas-open-change', (e) => events.push((e as CustomEvent).detail))
+    document.body.appendChild(el)
+    // 内嵌形态不承载弹层，但 `open` 是宿主的开合意图：抹掉会让「切到 popup 自动弹开」失效
+    expect(el.hasAttribute('open'), '内嵌形态下宿主的 open 意图必须保留').toBe(true)
+    expect(events, '受控属性写入不派发 open 变化').toEqual([])
+  })
+
+  it('内嵌形态运行时写 open：保留且静默；切到 popup 即自动弹开', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'embedded' })
+    const events: unknown[] = []
+    el.addEventListener('oas-open-change', (e) => events.push((e as CustomEvent).detail))
+    el.setAttribute('open', '')
+    expect(el.hasAttribute('open'), '受控写入静默生效').toBe(true)
+    expect(events, '受控属性写入不派发').toEqual([])
+
+    el.setAttribute('layout', 'popup')
+    const sheet = el.shadowRoot!.querySelector('oas-bottom-sheet')!
+    expect(sheet.hasAttribute('open'), '待生效的 open 在切到 popup 时自动弹开').toBe(true)
+  })
+
+  it('收口只作用于「popup 且已打开」的切换：embedded 内部更新不改写 open', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'embedded', open: '' })
+    const events: unknown[] = []
+    el.addEventListener('oas-open-change', (e) => events.push((e as CustomEvent).detail))
+    el.setAttribute('quantity', '3')
+    el.setAttribute('disabled', '')
+    el.removeAttribute('disabled')
+    expect(el.hasAttribute('open'), '内嵌形态的常规更新不得顺手清掉 open 意图').toBe(true)
+    expect(events).toEqual([])
+  })
 })

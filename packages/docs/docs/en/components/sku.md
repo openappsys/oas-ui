@@ -123,7 +123,7 @@ The price inside the panel is rendered by an embedded `oas-price`, so `currency`
 
 | Property | Description | Type | Default |
 | --- | --- | --- | --- |
-| `open` | Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only). Switching popup back to embedded writes false and dispatches once — the sheet is hidden, so `open` never lingers stale | `boolean \| string` | — |
+| `open` | Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only). Switching popup (while open) back to embedded writes false and dispatches once — the sheet is hidden, so `open` never lingers stale. A write while embedded is kept as a pending intent (no event) and the sheet opens automatically when the layout switches back to popup | `boolean \| string` | — |
 
 #### Methods
 

@@ -337,7 +337,7 @@ export class OASImageCropper extends OASElement {
     this.applyZoom(value)
   }
 
-  /** @apiProperty 当前旋转角度（0 / 90 / 180 / 270） */
+  /** @apiProperty 当前旋转角度（度，归一到 0–360；任意角度经 rotate() 设置） */
   get rotation(): number {
     return this.rotationValue
   }
@@ -680,15 +680,18 @@ export class OASImageCropper extends OASElement {
   }
 
   /**
-   * 图片「cover」适配比：按旋转后的**轴对齐包围盒**计算，保证舞台任意旋转角下都无留白。
+   * 图片「cover」适配比：按**倾斜矩形覆盖舞台**的真实判据计算，任意旋转角下舞台无留白。
    *
-   * 推导：绘制尺寸 (nw·s, nh·s) 旋转 θ 后的包围盒为
-   *   bw = s·(nw·|cosθ| + nh·|sinθ|)、bh = s·(nw·|sinθ| + nh·|cosθ|)
-   * cover 要求 bw ≥ stageW 且 bh ≥ stageH，解得
-   *   s = max(stageW / (nw·|cosθ| + nh·|sinθ|), stageH / (nw·|sinθ| + nh·|cosθ|))
-   * θ 为 90° 倍数时退化为「宽高互换」（|cos| / |sin| 一方为 0），与既有行为逐值一致；
-   * 45° 等中间角度按包围盒真实占位收敛——旧算法按 90° 倍数假设互换宽高，中间角度
-   * 覆盖不足，裁剪框角反旋区间落到图片外 → 框角露舞台底色。
+   * 推导：图片旋转 θ 后要覆盖轴对齐舞台，等价于「舞台四角反旋回图片局部坐标（R(-θ)）后
+   * 落在绘制矩形 ±(drawW/2, drawH/2) 内」。舞台四角在图片局部 u / v 轴上的最大投影为
+   *   max|u| = (stageW·|cosθ| + stageH·|sinθ|) / 2，max|v| = (stageW·|sinθ| + stageH·|cosθ|) / 2
+   * 代入 drawW = nw·s、drawH = nh·s，解得
+   *   s = max((stageW·|cosθ| + stageH·|sinθ|) / nw, (stageW·|sinθ| + stageH·|cosθ|) / nh)
+   *
+   * 注意判据方向：**不能用「图片的轴对齐包围盒 ⊇ 舞台」**（那只是必要条件）——倾斜矩形的
+   * 包围盒比矩形本身大，45° 下包围盒恰好等于舞台时，舞台四角其实远在图片外（图片反而缩小，
+   * 裁剪框整圈露舞台底色）。θ 为 90° 倍数时 |cos| / |sin| 一方为 0，退化为「宽高互换」，
+   * 与既有行为逐值一致。
    */
   private fitScale(): number {
     const img = this.imgEl
@@ -696,9 +699,9 @@ export class OASImageCropper extends OASElement {
     const rad = (this.rotationValue * Math.PI) / 180
     const cos = Math.abs(Math.cos(rad))
     const sin = Math.abs(Math.sin(rad))
-    const bw = img.naturalWidth * cos + img.naturalHeight * sin
-    const bh = img.naturalWidth * sin + img.naturalHeight * cos
-    return Math.max(this.stageW / bw, this.stageH / bh)
+    const needW = this.stageW * cos + this.stageH * sin
+    const needH = this.stageW * sin + this.stageH * cos
+    return Math.max(needW / img.naturalWidth, needH / img.naturalHeight)
   }
 
   private onImageLoad = (): void => {

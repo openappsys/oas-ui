@@ -369,3 +369,80 @@ test('image-cropper：舞台尺寸变小后位移钳回，裁剪框内不露舞�
   expect(resized.img.left).toBeLessThanOrEqual(resized.frame.left + 0.5)
   expect(resized.img.right).toBeGreaterThanOrEqual(resized.frame.right - 0.5)
 })
+
+// 回归（本批修复）：任意旋转角的 cover 适配比——倾斜矩形必须真覆盖舞台与裁剪框。
+// 判据用几何真值（把裁剪框/舞台四角反旋回图片局部坐标，与绘制尺寸比较），不能用
+// 「图片包围盒 ⊇ 舞台」：倾斜矩形的包围盒比矩形本身大，45° 下包围盒等于舞台时舞台四角
+// 其实远在图片外（修复前实测绘制尺寸 387.9×290.9，比舞台 480×320 还小，整圈露舞台底色）。
+test('image-cropper：rotate(45°) 后裁剪框四角与舞台四角都落在旋转后的图片内', async ({ page }) => {
+  await page.goto('/components/image-cropper.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ic-free')
+  await page.waitForFunction(
+    () => {
+      const img = document.querySelector('#ic-free')!.shadowRoot!.querySelector<HTMLImageElement>('[part="image"]')!
+      return img.complete && img.naturalWidth > 0
+    },
+    { timeout: 15000 },
+  )
+  await page.evaluate(() => {
+    const el = document.querySelector('#ic-free') as HTMLElement & { rotate(delta: number): void }
+    el.rotate(45)
+  })
+  const state = await page.evaluate(() => {
+    const el = document.querySelector('#ic-free') as HTMLElement & {
+      rotation: number
+      offset: { x: number; y: number }
+    }
+    el.scrollIntoView({ block: 'center', behavior: 'instant' })
+    const root = el.shadowRoot!
+    const stage = root.querySelector<HTMLElement>('[part="stage"]')!
+    const frame = root.querySelector<HTMLElement>('[part="frame"]')!
+    const img = root.querySelector<HTMLImageElement>('[part="image"]')!
+    const box = (node: HTMLElement) => {
+      const r = node.getBoundingClientRect()
+      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }
+    }
+    const drawW = Number.parseFloat(img.style.width)
+    const drawH = Number.parseFloat(img.style.height)
+    // 旋转不改元素中心：轴对齐包围盒的中心即旋转后矩形的中心
+    const ib = box(img)
+    const cx = ib.left + ib.width / 2
+    const cy = ib.top + ib.height / 2
+    const rad = (el.rotation * Math.PI) / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+    const covered = (px: number, py: number): boolean => {
+      const dx = px - cx
+      const dy = py - cy
+      const u = dx * cos + dy * sin
+      const v = -dx * sin + dy * cos
+      return Math.abs(u) <= drawW / 2 + 0.5 && Math.abs(v) <= drawH / 2 + 0.5
+    }
+    const fb = box(frame)
+    const sb = box(stage)
+    const frameCorners: Array<[number, number]> = [
+      [fb.left, fb.top],
+      [fb.right, fb.top],
+      [fb.left, fb.bottom],
+      [fb.right, fb.bottom],
+    ]
+    const stageCorners: Array<[number, number]> = [
+      [sb.left, sb.top],
+      [sb.right, sb.top],
+      [sb.left, sb.bottom],
+      [sb.right, sb.bottom],
+    ]
+    return {
+      rotation: el.rotation,
+      drawW,
+      drawH,
+      frameCovered: frameCorners.every(([x, y]) => covered(x, y)),
+      stageCovered: stageCorners.every(([x, y]) => covered(x, y)),
+    }
+  })
+  expect(state.rotation, '前置：旋转到 45°').toBe(45)
+  expect(state.frameCovered, '裁剪框四角必须在图片内（不得露舞台底色）').toBe(true)
+  expect(state.stageCovered, '舞台四角必须在图片内（恒 cover 舞台）').toBe(true)
+  // 反证公式方向：包围盒口径在该角度只给 ~0.485 的适配比（绘制宽 < 舞台宽），覆盖口径必须更大
+  expect(state.drawW, '倾斜角下绘制宽必须覆盖舞台宽').toBeGreaterThan(480)
+})

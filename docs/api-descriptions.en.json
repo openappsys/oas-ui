@@ -2260,7 +2260,7 @@
     "slots": {},
     "props": {
       "zoom": "Current zoom (starts at 1). Writes apply immediately but dispatch **no event** — `oas-change` only reports user interaction, so echoing `el.zoom` back from the handler cannot recurse",
-      "rotation": "Current rotation in degrees (0 / 90 / 180 / 270, read-only)",
+      "rotation": "Current rotation in degrees (normalized 0–360, read-only; any angle can be set via `rotate()`)",
       "offset": "Current image offset `{ x, y }` (pixels from the stage centre, read-only; already clamped by the “image covers the crop frame” constraint)"
     },
     "methods": {
@@ -4405,7 +4405,7 @@
     },
     "slots": {},
     "props": {
-      "open": "Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only). Switching popup back to embedded writes false and dispatches once — the sheet is hidden, so `open` never lingers stale"
+      "open": "Sheet open state (controlled: reads/writes mirror the `open` attribute silently; popup form only). Switching popup (while open) back to embedded writes false and dispatches once — the sheet is hidden, so `open` never lingers stale. A write while embedded is kept as a pending intent (no event) and the sheet opens automatically when the layout switches back to popup"
     },
     "methods": {
       "openOverlay": "Open the sheet imperatively (idempotent; dispatches `oas-open-change`; warns once on the inline form)",

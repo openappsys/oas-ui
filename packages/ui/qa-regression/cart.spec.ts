@@ -298,6 +298,37 @@ test('cart：多点触控守卫——第二指按下不改写第一行拖拽会�
   expect(state.bDragging, '行 B 全程无残留').toBeNull()
 })
 
+/**
+ * 真鼠标把某行滑开（展开删除钮）。
+ *
+ * 落点与稳定性要点（实测）：
+ * - **必须落在行体上，不能落在商品缩略图上**：`<img>` 上按下 + 横移会触发浏览器原生图片拖拽
+ *   （实测事件序列 `pointerdown → pointermove → dragstart → pointercancel`），滑动会话被 cancel
+ *   直接收掉，`data-dragging` 永远不会置位。行宽 574px 时缩略图占左侧约 100px，故取 ~0.35 宽处。
+ * - 不能「取一次 boundingBox 就直接大跨度 move」：冷启动下缩略图解码会带来布局位移，陈旧坐标会
+ *   让 pointerdown 落到别的元素上、整条链路静默失效。改为 hover（自带滚动 + 命中检查）→ 取当次
+ *   坐标 → 按下后先小位移并断言 `data-dragging` 已置位（越过 4px 阈值才置位，等价于「会话真的
+ *   建立了」）→ 再走完位移。
+ */
+async function swipeOpenRow(page: import('@playwright/test').Page, inner: import('@playwright/test').Locator) {
+  const probe = (await inner.boundingBox())!
+  const dx = Math.min(200, Math.round(probe.width * 0.35))
+  await inner.hover({ position: { x: dx, y: Math.round(probe.height / 2) } })
+  const box = (await inner.boundingBox())!
+  const x = box.x + dx
+  const y = box.y + box.height / 2
+  await page.mouse.down()
+  await page.mouse.move(x - 8, y, { steps: 2 })
+  await expect
+    .poll(() => inner.evaluate((el) => el.getAttribute('data-dragging')), {
+      message: '按下后首次横移必须建立滑动会话（落点被缩略图原生拖拽接管 / 坐标陈旧都会导致这里的空值）',
+    })
+    .toBe('true')
+  await page.mouse.move(x - 80, y, { steps: 4 })
+  await page.mouse.up()
+  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('translateX(-72px)')
+}
+
 test('cart：展开态点行体收起且不派 oas-item-click；点其他行收起已展开行', async ({ page }) => {
   await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-cart')
@@ -305,6 +336,15 @@ test('cart：展开态点行体收起且不派 oas-item-click；点其他行收�
   const host = page.locator('#cart-delete-swipe')
   const inner = host.locator('[part="item-inner"]').first()
   await inner.scrollIntoViewIfNeeded()
+  // 等 demo 内缩略图解码完成：图片 late-decode 会带来布局位移，让后续绝对坐标失效
+  await page.waitForFunction(
+    () => {
+      const root = document.getElementById('cart-delete-swipe')?.shadowRoot
+      const imgs = root ? [...root.querySelectorAll('img')] : []
+      return imgs.every((img) => img.complete)
+    },
+    { timeout: 15000 },
+  )
 
   await page.evaluate(() => {
     const w = window as unknown as { __cartItemClicks?: string[] }
@@ -315,12 +355,7 @@ test('cart：展开态点行体收起且不派 oas-item-click；点其他行收�
   })
 
   // 真鼠标滑动展开行 A
-  const box = (await inner.boundingBox())!
-  await page.mouse.move(box.x + 120, box.y + box.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(box.x + 50, box.y + box.height / 2, { steps: 6 })
-  await page.mouse.up()
-  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('translateX(-72px)')
+  await swipeOpenRow(page, inner)
 
   // 点已展开行的行体 → 收起，不派 oas-item-click
   await host.locator('[part="item-body"]').first().click()
@@ -330,17 +365,38 @@ test('cart：展开态点行体收起且不派 oas-item-click；点其他行收�
     .toEqual([])
 
   // 再展开行 A，点行 B 的行体 → 行 A 收起 + 行 B 派发 oas-item-click
-  // （上面的 locator.click 可能自动滚动页面：重新取坐标再起手势）
-  await inner.scrollIntoViewIfNeeded()
-  const box2 = (await inner.boundingBox())!
-  await page.mouse.move(box2.x + 120, box2.y + box2.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(box2.x + 50, box2.y + box2.height / 2, { steps: 6 })
-  await page.mouse.up()
-  await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('translateX(-72px)')
+  await swipeOpenRow(page, inner)
   await host.locator('[part="item-body"]').nth(1).click()
   await expect.poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform)).toBe('')
   await expect
     .poll(() => page.evaluate(() => (window as unknown as { __cartItemClicks?: string[] }).__cartItemClicks))
     .toEqual(['b'])
+})
+
+// 回归（本批修复）：滑开第二行时收起第一行——修复前两行同时露删除钮（状态只剩新行），
+// 用户可见的「同屏至多一行展开」不成立。
+test('cart：滑开第二行时收起第一行（同屏至多一行露删除钮）', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cart')
+  await page.waitForFunction(
+    () => {
+      const root = document.getElementById('cart-delete-swipe')?.shadowRoot
+      const imgs = root ? [...root.querySelectorAll('img')] : []
+      return imgs.every((img) => img.complete)
+    },
+    { timeout: 15000 },
+  )
+
+  const host = page.locator('#cart-delete-swipe')
+  const innerA = host.locator('[part="item-inner"]').nth(0)
+  const innerB = host.locator('[part="item-inner"]').nth(1)
+  const transformOf = (locator: import('@playwright/test').Locator) =>
+    locator.evaluate((el) => (el as HTMLElement).style.transform)
+
+  await swipeOpenRow(page, innerA)
+  expect(await transformOf(innerA)).toBe('translateX(-72px)')
+
+  await swipeOpenRow(page, innerB)
+  expect(await transformOf(innerB)).toBe('translateX(-72px)')
+  await expect.poll(() => transformOf(innerA), { message: '旧展开行必须同时收起（不得两行同时露删除钮）' }).toBe('')
 })

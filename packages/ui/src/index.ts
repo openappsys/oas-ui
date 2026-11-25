@@ -363,7 +363,7 @@ import './overlay/drag/index.js'
 export { OASShareSheet, type ShareSheetChannel } from './overlay/share-sheet/oas-share-sheet.js'
 export { OASCurtain } from './overlay/curtain/oas-curtain.js'
 export { OASDrag } from './overlay/drag/index.js'
-export type { DragAxis, DragPosition } from './overlay/drag/oas-drag.js'
+export type { DragAxis, DragEndDetail, DragEndPhase, DragPosition } from './overlay/drag/oas-drag.js'
 
 import './navigation/menu/index.js'
 import './navigation/dropdown/index.js'

@@ -1054,10 +1054,17 @@ export class OASCart extends OASElement {
     if (this.resolveDeleteMode() !== 'swipe') return
     if (this.isDisabled()) return
     if (event.button !== 0) return
-    // 多点触控守卫：已有会话在途时新指针直接忽略——覆盖 this.drag 会让旧会话的起点 /
-    // pointerId 被改写，旧行的 data-dragging 永久残留（抬起顺序无关：旧指针的 move/up
-    // 仍按旧 pointerId 结算，新指针的后续事件因 id 不匹配被忽略）
-    if (this.drag) return
+    // 多点触控守卫：已有会话在途时**不同** pointerId 的新指针直接忽略——覆盖 this.drag 会让
+    // 旧会话的起点 / pointerId 被改写，旧行的 data-dragging 永久残留（抬起顺序无关：旧指针的
+    // move/up 仍按旧 pointerId 结算，新指针的后续事件因 id 不匹配被忽略）。
+    // 同一 pointerId 的新按下则说明旧会话已死（丢了 pointerup / 行节点被重建；鼠标 pointerId
+    // 恒为 1）——必须收尾旧会话后重开，否则滑动入口会被永久锁死、再也无法自愈。
+    if (this.drag) {
+      if (this.drag.pointerId !== event.pointerId) return
+      const stale = this.drag
+      this.endDrag()
+      this.settleSwipe(stale.inner, this.openSwipeId === stale.id)
+    }
     const target = event.target as HTMLElement | null
     if (!target) return
     if (target.closest('[part="stepper"], [part="item-check"], [part="swipe-remove"]')) return
@@ -1119,15 +1126,20 @@ export class OASCart extends OASElement {
     // 展开态只随本次手势的行变化：本次吸附展开 → 切到该行（单行操作惯例）；
     // 本次收起且该行正是展开行 → 清；与已展开行无关的手势（如 tap 其他行）不得
     // 抹掉它的展开态（否则状态与视觉脱节：transform 残留而 openSwipeId 已丢）
-    if (open) this.openSwipeId = drag.id
-    else if (this.openSwipeId === drag.id) this.openSwipeId = ''
+    if (open) {
+      // 单行操作：新行吸附展开时先收起旧展开行——否则两行同时露出删除钮，
+      // 而状态只剩新行（旧行的 transform 再也没有归属，直到下一次 syncRows 才自愈）
+      if (this.openSwipeId !== '' && this.openSwipeId !== drag.id) this.closeSwipe()
+      this.openSwipeId = drag.id
+    } else if (this.openSwipeId === drag.id) {
+      this.openSwipeId = ''
+    }
     if (drag.moved) this.suppressClick = true
     // 先清拖拽态（恢复 transform 过渡动画），再写落定位置：
     // 过半吸附到完全露出、未过半回弹关闭。落定值不能复用跟手 clamp 值——
     // 否则拖到一半松手会停半路（过半时删除钮半露、未过半时不回弹）。
     this.endDrag()
-    const settle = resolveSwipeSettle({ open, reveal: SWIPE_REVEAL, rtl: this.swipeSign() === 1 })
-    drag.inner.style.transform = settle === 0 ? '' : `translateX(${settle}px)`
+    this.settleSwipe(drag.inner, open)
   }
 
   /**
@@ -1143,8 +1155,13 @@ export class OASCart extends OASElement {
     const open = this.openSwipeId === drag.id
     // openSwipeId 不改写：手势行已展开时值本就是 drag.id（保持），未展开时不动全局展开态
     this.endDrag()
+    this.settleSwipe(drag.inner, open)
+  }
+
+  /** 写落定位置：吸附展开 → sign×reveal，回弹关闭 → 清 transform（走 CSS 过渡） */
+  private settleSwipe(inner: HTMLElement, open: boolean): void {
     const settle = resolveSwipeSettle({ open, reveal: SWIPE_REVEAL, rtl: this.swipeSign() === 1 })
-    drag.inner.style.transform = settle === 0 ? '' : `translateX(${settle}px)`
+    inner.style.transform = settle === 0 ? '' : `translateX(${settle}px)`
   }
 
   private endDrag(): void {

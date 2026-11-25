@@ -101,6 +101,47 @@ function wheelEvent(x: number, y: number, deltaY: number): WheelEvent {
   return ev
 }
 
+/**
+ * 覆盖判据（几何真判据，与组件 `offsetBounds` 同一推导）：把舞台坐标点反旋到图片局部坐标
+ * （R(-θ)），判断是否落在绘制矩形 ±(drawW/2, drawH/2) 内。旋转后「图片包围盒比舞台大」
+ * 并不能推出「图片盖住舞台」——倾斜矩形的四角才是真判据，故断言必须走这一步。
+ */
+function pointCovered(el: OASImageCropper, px: number, py: number): boolean {
+  const img = image(el)
+  const drawW = Number.parseFloat(img.style.width)
+  const drawH = Number.parseFloat(img.style.height)
+  const rad = (el.rotation * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  const offset = el.offset
+  const cx = 480 / 2 + offset.x
+  const cy = 320 / 2 + offset.y
+  const dx = px - cx
+  const dy = py - cy
+  const u = dx * cos + dy * sin
+  const v = -dx * sin + dy * cos
+  return Math.abs(u) <= drawW / 2 + 0.5 && Math.abs(v) <= drawH / 2 + 0.5
+}
+
+function stageCorners(): Array<[number, number]> {
+  return [
+    [0, 0],
+    [480, 0],
+    [0, 320],
+    [480, 320],
+  ]
+}
+
+function frameCorners(el: OASImageCropper): Array<[number, number]> {
+  const f = frameBox(el)
+  return [
+    [f.x, f.y],
+    [f.x + f.w, f.y],
+    [f.x, f.y + f.h],
+    [f.x + f.w, f.y + f.h],
+  ]
+}
+
 describe('OASImageCropper', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -220,25 +261,45 @@ describe('OASImageCropper', () => {
     expect(el.rotation).toBe(0)
   })
 
-  it('rotate 任意角度：fitScale 按旋转包围盒数学收敛（45° 精确界，消除框角露底色）', () => {
+  it('rotate 45°：适配比按「舞台投影」收敛，裁剪框与舞台四角都落在图片内', () => {
     const el = mount({ src: 'data:image/png;base64,AAAA' })
     loadImage(el, 800, 600)
     el.rotate(45)
-    // 推导（旋转包围盒口径）：绘制尺寸 (800s, 600s) 旋转 θ 后的轴对齐包围盒为
-    //   bw = s·(nw·|cosθ| + nh·|sinθ|) = s·(800 + 600)·(√2/2) ≈ 989.949·s
-    //   bh = s·(nw·|sinθ| + nh·|cosθ|) = 同 ≈ 989.949·s
-    // cover 要求包围盒覆盖舞台 480×320 → s = max(480, 320) / 989.949 = 0.484869
-    // 旧算法（90° 倍数假设：45° 互换宽高）得 s = max(480/600, 320/800) = 0.8 →
-    // 图片局部坐标高度方向 (600×0.8=480) 盖不住裁剪框角反旋所需的区间 → 框角露底色。
-    const expectedScale = Math.max(480, 320) / ((800 + 600) * Math.SQRT1_2)
-    const w = Number.parseFloat(image(el).style.width)
-    const h = Number.parseFloat(image(el).style.height)
-    expect(w).toBeCloseTo(800 * expectedScale, 1)
-    expect(h).toBeCloseTo(600 * expectedScale, 1)
-    // 覆盖自检：绘制尺寸旋转 45° 后的包围盒必须覆盖舞台两个方向（无留白）
-    const bw = (w + h) * Math.SQRT1_2
-    expect(bw).toBeGreaterThanOrEqual(480 - 0.5)
-    expect(bw).toBeGreaterThanOrEqual(320 - 0.5)
+    // 推导（覆盖真实判据，不是包围盒「看起来够大」）：图片旋转 θ 后要覆盖轴对齐舞台，
+    // 等价于「舞台四角反旋回图片局部坐标后落在绘制矩形 ±(drawW/2, drawH/2) 内」。
+    // 舞台在图片局部 u 轴上的半宽投影 = (W·|cosθ| + H·|sinθ|)/2，故
+    //   drawW ≥ W|cosθ| + H|sinθ|、drawH ≥ W|sinθ| + H|cosθ|
+    // 代入 drawW = nw·s、drawH = nh·s 得
+    //   s = max((W|cos| + H|sin|)/nw, (W|sin| + H|cos|)/nh)
+    // 45°：s = (480 + 320)·(√2/2) / 600 = 0.942809…
+    const expected = ((480 + 320) * Math.SQRT1_2) / 600
+    expect(Number.parseFloat(image(el).style.width)).toBeCloseTo(800 * expected, 1)
+    expect(Number.parseFloat(image(el).style.height)).toBeCloseTo(600 * expected, 1)
+    expect(
+      stageCorners().every(([x, y]) => pointCovered(el, x, y)),
+      '舞台四角在图片内（恒 cover 舞台）',
+    ).toBe(true)
+    expect(
+      frameCorners(el).every(([x, y]) => pointCovered(el, x, y)),
+      '裁剪框四角在图片内（不露舞台底色）',
+    ).toBe(true)
+  })
+
+  it('rotate 任意角度：0/30/45/60/90/135/210/315 都覆盖裁剪框与舞台', () => {
+    for (const deg of [0, 30, 45, 60, 90, 135, 210, 315]) {
+      const el = mount({ src: 'data:image/png;base64,AAAA' })
+      loadImage(el, 800, 600)
+      el.rotate(deg)
+      expect(
+        frameCorners(el).every(([x, y]) => pointCovered(el, x, y)),
+        `${deg}° 裁剪框四角在图片内`,
+      ).toBe(true)
+      expect(
+        stageCorners().every(([x, y]) => pointCovered(el, x, y)),
+        `${deg}° 舞台四角在图片内`,
+      ).toBe(true)
+      el.remove()
+    }
   })
 
   it('rotate 90° 倍数：包围盒公式退化为宽高互换（与既有行为一致）', () => {

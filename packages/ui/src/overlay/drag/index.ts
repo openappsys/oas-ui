@@ -9,4 +9,4 @@ if (!customElements.get('oas-drag')) {
 }
 
 export { OASDrag }
-export type { DragAxis, DragPosition } from './oas-drag.js'
+export type { DragAxis, DragEndDetail, DragEndPhase, DragPosition } from './oas-drag.js'

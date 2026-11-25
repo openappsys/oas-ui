@@ -114,6 +114,52 @@ describe('barrage items 声明式数据 + auto-play', () => {
 })
 
 // ---------------------------------------------------------------------------
+// 本批修复：轨道数变更走「内部复位」（不重灌）——修复前 buildTracks 调公开 clear()
+// 会把声明条目灌进即将被替换的旧轨道，僵尸条目占 max-active 且舞台空窗一整个动画时长
+// ---------------------------------------------------------------------------
+
+describe('barrage 轨道数变更 × auto-play', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  it('运行时改 tracks 不中断循环流（内部复位不得触发重灌）', () => {
+    const el = mount({ items: '["甲","乙"]', 'auto-play': '', tracks: '2', gap: '1' })
+    vi.advanceTimersByTime(100)
+    expect(
+      items(el).map((n) => n.textContent),
+      '前置：两条声明条目都在场',
+    ).toEqual(['甲', '乙'])
+    el.setAttribute('tracks', '3')
+    // 轨道重建走内部复位（只清 active / queue / 计时器）；重灌由 update 尾部 pump 落到新轨道，
+    // 不得把声明条目灌进即将被替换的旧轨道（那会让 active 留僵尸、舞台空窗一整个动画时长）。
+    expect(
+      items(el).map((n) => n.textContent),
+      '改轨道数后同帧续播（不得出现空窗）',
+    ).toEqual(['甲', '乙'])
+    vi.advanceTimersByTime(1000)
+    expect(
+      items(el).map((n) => n.textContent),
+      '此后循环流持续在播',
+    ).toEqual(['甲', '乙'])
+  })
+
+  it('内部复位不产生僵尸在场条目：max-active 限额不被旧轨道条目占用', () => {
+    const el = mount({ items: '["甲","乙"]', 'auto-play': '', tracks: '2', 'max-active': '1', gap: '1' })
+    vi.advanceTimersByTime(100)
+    expect(items(el).length, '前置：限额 1 条在场').toBe(1)
+    el.setAttribute('tracks', '3')
+    expect(items(el).length, '改轨道数后仍应有 1 条在场（旧轨道条目不得占额）').toBe(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // 本批回归：clear() 后 auto-play 续播（清空即从声明条目重新轮转，与文档口径一致）
 // ---------------------------------------------------------------------------
 

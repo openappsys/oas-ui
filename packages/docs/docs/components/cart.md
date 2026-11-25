@@ -50,7 +50,7 @@ description: "购物车列表：条目勾选 / 内建数量步进（含库存上
 
 ## 删除
 
-`delete-mode` 决定删除形态：`button`（缺省，行尾删除钮）/ `swipe`（向行首拖出删除钮，键盘仍可用——按钮在 Tab 序里，聚焦即露出）/ `none`（不可删除）。删除前派发 **可取消**的 `oas-remove`，宿主 `preventDefault()` 即拦下（接确认框后自行写 `items`）。
+`delete-mode` 决定删除形态：`button`（缺省，行尾删除钮）/ `swipe`（向行首拖出删除钮，键盘仍可用——按钮在 Tab 序里，聚焦即露出）/ `none`（不可删除）。删除前派发 **可取消**的 `oas-remove`，宿主 `preventDefault()` 即拦下（接确认框后自行写 `items`）。滑动展开后的单行操作惯例：**点已展开行的行体 = 收起**（不派发 `oas-item-click`）；点其他行的行体先收起已展开行、事件照常派发（同屏至多一行展开，滑开另一行也会收起前一行）。
 
 <DemoBlock title="按钮删除 / 滑动删除 / 不可删除">
   <div style="display: grid; gap: var(--oas-space-3); width: 100%">

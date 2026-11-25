@@ -611,6 +611,7 @@ export class OASSku extends OASElement {
    * （`sheetHideSeq` 失效旧收尾），滑出中重开从当前位置自然回弹。
    */
   private syncLayout(): void {
+    const prevLayout = this.layoutValue
     const layout = this.resolveLayout()
     this.layoutValue = layout
     const popup = layout === 'popup'
@@ -662,11 +663,12 @@ export class OASSku extends OASElement {
       if (focusedInPanel && active && this.deepActiveElement() !== active) {
         active.focus({ preventScroll: true })
       }
-      // open 悬空真值收口：popup 形态下打开的弹层切回 embedded 后承载件已隐藏，
-      // `open` 残留会让宿主的滚动锁 / 遮罩态挂空且永不解除（形态切换不经过
-      // openOverlay / onSheetClose，没有其它派发点）。同步回写 false 并派发
-      // oas-open-change——受控宿主收到事件后按自己的状态清锁，不必再回写 open。
-      if (this.hasAttribute('open')) {
+      // open 悬空真值收口：**仅**当上一形态是 popup 且弹层确实处于打开时（popup → embedded 的
+      // 真实形态切换）才回写 false 并派发一次——此前面板已随承载件隐藏，`open` 残留会让宿主的
+      // 滚动锁 / 遮罩态挂空且永不解除（形态切换不经过 openOverlay / onSheetClose）。
+      // 内嵌形态下宿主写入的 `open` 是「待生效意图」（切到 popup 时自动弹开），不得抹除：
+      // 那既违反「受控属性写入静默生效」的契约，也让预置 open 的自动弹开彻底失效。
+      if (prevLayout === 'popup' && this.hasAttribute('open')) {
         this.removeAttribute('open')
         this.emit('open-change', { open: false } satisfies SkuOpenChangeDetail)
       }
