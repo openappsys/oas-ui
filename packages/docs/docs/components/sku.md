@@ -100,6 +100,71 @@ description: "商品规格选择：specs + skus 数据契约、选中组合精�
   ></oas-sku>
 </DemoBlock>
 
+## 多规格组（服装类目）
+
+真实服装类目常见 6 个售卖维度同屏（颜色 / 尺码 / 领型 / 袖型 / 披肩 / 材质）：组件按 `specs` 顺序逐组渲染，组合表只需收录实际售卖的热门组合（全笛卡尔积 288 条，这里 31 条）。选到组合表里不存在的搭配（如「V领 + 有披肩」）时，走不到在库组合的选项全部置灰标「缺货」，同组内改选仍可达的选项（如「圆领」）保持可选——部分选择的可行性引导把用户从死路里带出来。窄屏缺省会自动切弹层承载，这里显式固定 `layout="embedded"` 以便观察多组内嵌布局：
+
+<DemoBlock title="多规格组（服装类目）">
+  <oas-sku
+    id="sku-multi"
+    layout="embedded"
+    specs='[{"key":"color","label":"颜色","values":["黑","白","米"]},{"key":"size","label":"尺码","values":["S","M","L","XL"]},{"key":"collar","label":"领型","values":["圆领","V领","翻领"]},{"key":"sleeve","label":"袖型","values":["长袖","短袖"]},{"key":"shawl","label":"披肩","values":["无","有"]},{"key":"material","label":"材质","values":["棉","聚酯"]}]'
+    skus='[{"specs":{"color":"黑","size":"S","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":12},{"specs":{"color":"黑","size":"M","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":7},{"specs":{"color":"黑","size":"L","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":5},{"specs":{"color":"黑","size":"XL","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":0},{"specs":{"color":"白","size":"S","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":8},{"specs":{"color":"白","size":"M","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":6},{"specs":{"color":"白","size":"L","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":4},{"specs":{"color":"白","size":"XL","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":199,"stock":0},{"specs":{"color":"米","size":"M","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":209,"stock":3},{"specs":{"color":"米","size":"L","collar":"圆领","sleeve":"长袖","shawl":"无","material":"棉"},"price":209,"stock":2},{"specs":{"color":"黑","size":"M","collar":"圆领","sleeve":"长袖","shawl":"无","material":"聚酯"},"price":159,"stock":1},{"specs":{"color":"黑","size":"M","collar":"圆领","sleeve":"短袖","shawl":"无","material":"棉"},"price":129,"stock":9},{"specs":{"color":"黑","size":"L","collar":"圆领","sleeve":"短袖","shawl":"无","material":"棉"},"price":129,"stock":6},{"specs":{"color":"黑","size":"XL","collar":"圆领","sleeve":"短袖","shawl":"无","material":"棉"},"price":129,"stock":3},{"specs":{"color":"白","size":"S","collar":"圆领","sleeve":"短袖","shawl":"无","material":"棉"},"price":129,"stock":7},{"specs":{"color":"白","size":"M","collar":"圆领","sleeve":"短袖","shawl":"无","material":"棉"},"price":129,"stock":5},{"specs":{"color":"黑","size":"M","collar":"V领","sleeve":"短袖","shawl":"无","material":"棉"},"price":139,"stock":4},{"specs":{"color":"黑","size":"L","collar":"V领","sleeve":"短袖","shawl":"无","material":"棉"},"price":139,"stock":3},{"specs":{"color":"黑","size":"S","collar":"V领","sleeve":"短袖","shawl":"无","material":"聚酯"},"price":119,"stock":2},{"specs":{"color":"白","size":"M","collar":"V领","sleeve":"短袖","shawl":"无","material":"聚酯"},"price":119,"stock":1},{"specs":{"color":"黑","size":"M","collar":"翻领","sleeve":"短袖","shawl":"无","material":"聚酯"},"price":169,"stock":5},{"specs":{"color":"黑","size":"L","collar":"翻领","sleeve":"短袖","shawl":"无","material":"聚酯"},"price":169,"stock":4},{"specs":{"color":"黑","size":"XL","collar":"翻领","sleeve":"短袖","shawl":"无","material":"聚酯"},"price":169,"stock":2},{"specs":{"color":"白","size":"M","collar":"翻领","sleeve":"短袖","shawl":"无","material":"聚酯"},"price":169,"stock":3},{"specs":{"color":"白","size":"L","collar":"翻领","sleeve":"短袖","shawl":"无","material":"聚酯"},"price":169,"stock":0},{"specs":{"color":"米","size":"L","collar":"翻领","sleeve":"长袖","shawl":"无","material":"棉"},"price":219,"stock":1},{"specs":{"color":"黑","size":"M","collar":"圆领","sleeve":"长袖","shawl":"有","material":"棉"},"price":259,"stock":3},{"specs":{"color":"黑","size":"L","collar":"圆领","sleeve":"长袖","shawl":"有","material":"棉"},"price":259,"stock":2},{"specs":{"color":"米","size":"M","collar":"圆领","sleeve":"长袖","shawl":"有","material":"棉"},"price":269,"stock":1},{"specs":{"color":"白","size":"L","collar":"圆领","sleeve":"长袖","shawl":"有","material":"棉"},"price":259,"stock":0},{"specs":{"color":"黑","size":"L","collar":"翻领","sleeve":"长袖","shawl":"无","material":"聚酯"},"price":189,"stock":0}]'
+  ></oas-sku>
+  <p id="sku-multi-out" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    选择规格查看组合联动反馈。
+  </p>
+</DemoBlock>
+
+## 售卖维度 vs 描述属性
+
+`specs` 只收**售卖维度**——影响 SKU 组合拆分与库存核算的属性（颜色 / 尺码 / 领型 / 袖型 / 披肩有无），判据是「不同规格组合的价格或库存是否可能不同」。**描述属性不要进 `specs`**：产地、品牌、成分含量这类全组合共享的信息，同一商品不因规格而变，塞进 `specs` 只会让组合表按其选项数倍增——3 组各 3 选项已是 27 条组合起步，再加一个 2 选项的非售卖维度就是 54 条 `skus` 条目，但价格与库存完全相同（纯数据膨胀，无业务语义）。描述属性的推荐去处是宿主的商品详情区（组件外展示），组合表保持只含「真实可买、价格或库存可能不同」的组合；不必凑满笛卡尔积，未收录的组合自动按不可达置灰引导。
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  customElements.whenDefined('oas-sku').then(() => {
+    const out = document.getElementById('sku-basic-out')
+    document.getElementById('sku-basic')?.addEventListener('oas-change', (e) => {
+      const d = e.detail
+      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || '未选全'
+      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
+      out.textContent = 'oas-change：' + combo + ' × ' + d.quantity + '，单价 ' + price
+    })
+    const qtyOut = document.getElementById('sku-qty-out')
+    document.getElementById('sku-qty')?.addEventListener('oas-change', (e) => {
+      qtyOut.textContent = '数量：' + e.detail.quantity + '（' + e.detail.change + '）'
+    })
+
+    // 弹层形态：命令式打开；oas-close 由承载件透传（组件已自行收起，这里只做观测 / 埋点）
+    const popup = document.getElementById('sku-popup')
+    const popupOut = document.getElementById('sku-popup-out')
+    document.getElementById('sku-popup-open')?.addEventListener('click', () => popup?.openOverlay())
+    popup?.addEventListener('oas-open-change', (e) => {
+      popupOut.textContent = e.detail.open ? '弹层已打开（Esc / 点遮罩 / 下滑关闭）' : '弹层已关闭'
+    })
+    popup?.addEventListener('oas-close', (e) => {
+      popupOut.textContent = '关闭原因：' + e.detail.reason
+    })
+    popup?.addEventListener('oas-change', (e) => {
+      const d = e.detail
+      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || '未选全'
+      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
+      popupOut.textContent = '弹层内选择：' + combo + ' × ' + d.quantity + '，单价 ' + price
+    })
+
+    // 多规格组（服装类目）：组合联动反馈——6 组全选精确定位，部分选择展示可行性引导
+    const multiOut = document.getElementById('sku-multi-out')
+    document.getElementById('sku-multi')?.addEventListener('oas-change', (e) => {
+      const d = e.detail
+      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || '未选全'
+      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
+      multiOut.textContent = 'oas-change：' + combo + ' × ' + d.quantity + '，单价 ' + price
+    })
+  })
+})
+</script>
+
 ## API
 
 ### oas-sku
@@ -139,39 +204,3 @@ description: "商品规格选择：specs + skus 数据契约、选中组合精�
 | `oas-change` | 规格或数量变化派发，detail `{ value, quantity, sku, change: 'spec' \| 'quantity' }`（sku 为完整匹配对象或 null） |
 | `oas-close` | 承载件 **透传** 的关闭请求（下滑 / 遮罩 / Esc），`detail: { reason }`；组件收到后已自行收起，宿主无需再处理（监听仅用于观测 / 联动） |
 | `oas-open-change` | 弹层开合变化（交互 / 命令式 / 形态切换收口），`detail: { open }`；受控属性写入不派发 |
-
-<script setup>
-import { onMounted } from 'vue'
-onMounted(() => {
-  customElements.whenDefined('oas-sku').then(() => {
-    const out = document.getElementById('sku-basic-out')
-    document.getElementById('sku-basic')?.addEventListener('oas-change', (e) => {
-      const d = e.detail
-      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || '未选全'
-      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
-      out.textContent = 'oas-change：' + combo + ' × ' + d.quantity + '，单价 ' + price
-    })
-    const qtyOut = document.getElementById('sku-qty-out')
-    document.getElementById('sku-qty')?.addEventListener('oas-change', (e) => {
-      qtyOut.textContent = '数量：' + e.detail.quantity + '（' + e.detail.change + '）'
-    })
-
-    // 弹层形态：命令式打开；oas-close 由承载件透传（组件已自行收起，这里只做观测 / 埋点）
-    const popup = document.getElementById('sku-popup')
-    const popupOut = document.getElementById('sku-popup-out')
-    document.getElementById('sku-popup-open')?.addEventListener('click', () => popup?.openOverlay())
-    popup?.addEventListener('oas-open-change', (e) => {
-      popupOut.textContent = e.detail.open ? '弹层已打开（Esc / 点遮罩 / 下滑关闭）' : '弹层已关闭'
-    })
-    popup?.addEventListener('oas-close', (e) => {
-      popupOut.textContent = '关闭原因：' + e.detail.reason
-    })
-    popup?.addEventListener('oas-change', (e) => {
-      const d = e.detail
-      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || '未选全'
-      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
-      popupOut.textContent = '弹层内选择：' + combo + ' × ' + d.quantity + '，单价 ' + price
-    })
-  })
-})
-</script>

@@ -644,3 +644,382 @@ describe('oas-sku 形态切换收口', () => {
     expect(events).toEqual([])
   })
 })
+
+// ---------------------------------------------------------------------------
+// 多组场景（6 规格组真实服装类目）：架构维度无关性的工程验证。
+// 组件按 specs 数组 + 组合键字典 + 渲染循环实现，逻辑维度无关；此前工程验证只锁过
+// 2-3 组。这里用 6 组真实服装数据（颜色 / 尺码 / 领型 / 袖型 / 披肩 / 材质）锁定：
+// 多组渲染、全选精确定位、部分选择的可行性引导、售罄组合禁用、value 多键回写。
+// ---------------------------------------------------------------------------
+
+/** 真实服装 6 售卖维度。全笛卡尔积 = 3×4×3×2×2×2 = 288 组合，组合表只录热门子集 */
+function clothingSpecs(): SkuSpecGroup[] {
+  return [
+    {
+      key: 'color',
+      label: '颜色',
+      values: [
+        { value: 'black', label: '黑' },
+        { value: 'white', label: '白' },
+        { value: 'ivory', label: '米' },
+      ],
+    },
+    { key: 'size', label: '尺码', values: ['S', 'M', 'L', 'XL'].map((v) => ({ value: v, label: v })) },
+    {
+      key: 'collar',
+      label: '领型',
+      values: [
+        { value: 'crew', label: '圆领' },
+        { value: 'vneck', label: 'V领' },
+        { value: 'polo', label: '翻领' },
+      ],
+    },
+    {
+      key: 'sleeve',
+      label: '袖型',
+      values: [
+        { value: 'long', label: '长袖' },
+        { value: 'short', label: '短袖' },
+      ],
+    },
+    {
+      key: 'shawl',
+      label: '披肩',
+      values: [
+        { value: 'none', label: '无' },
+        { value: 'with', label: '有' },
+      ],
+    },
+    {
+      key: 'material',
+      label: '材质',
+      values: [
+        { value: 'cotton', label: '棉' },
+        { value: 'poly', label: '聚酯' },
+      ],
+    },
+  ]
+}
+
+type ClothingRow = {
+  specs: Record<string, string>
+  price: number
+  stock: number
+  image?: string
+  imageAlt?: string
+}
+
+/**
+ * 热门组合子集（31 条，含 5 条售罄 stock:0）。真实分布约束：
+ * - 披肩款只有圆领长袖棉（黑/白/米）——「V领 + 有披肩」「翻领 + 有披肩」不存在任何组合；
+ * - V 领只有短袖且无披肩；翻领棉只有米色长袖一条；
+ * - XL 在圆领长袖棉黑/白、翻领短袖聚酯黑售罄。
+ */
+function clothingSkus(): SkuItem[] {
+  const rows: ClothingRow[] = [
+    // 圆领长袖棉（基础款 黑/白/米）
+    {
+      specs: { color: 'black', size: 'S', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 12,
+    },
+    {
+      specs: { color: 'black', size: 'M', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 7,
+      image: '/img/sku-multi-black-m.svg',
+      imageAlt: '黑色圆领长袖棉 T恤 M 码',
+    },
+    {
+      specs: { color: 'black', size: 'L', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 5,
+    },
+    {
+      specs: { color: 'black', size: 'XL', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 0,
+    },
+    {
+      specs: { color: 'white', size: 'S', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 8,
+    },
+    {
+      specs: { color: 'white', size: 'M', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 6,
+    },
+    {
+      specs: { color: 'white', size: 'L', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 4,
+    },
+    {
+      specs: { color: 'white', size: 'XL', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 199,
+      stock: 0,
+    },
+    {
+      specs: { color: 'ivory', size: 'M', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 209,
+      stock: 3,
+    },
+    {
+      specs: { color: 'ivory', size: 'L', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 209,
+      stock: 2,
+    },
+    // 圆领长袖聚酯（速干款）
+    {
+      specs: { color: 'black', size: 'M', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'poly' },
+      price: 159,
+      stock: 1,
+    },
+    // 圆领短袖棉
+    {
+      specs: { color: 'black', size: 'M', collar: 'crew', sleeve: 'short', shawl: 'none', material: 'cotton' },
+      price: 129,
+      stock: 9,
+    },
+    {
+      specs: { color: 'black', size: 'L', collar: 'crew', sleeve: 'short', shawl: 'none', material: 'cotton' },
+      price: 129,
+      stock: 6,
+    },
+    {
+      specs: { color: 'black', size: 'XL', collar: 'crew', sleeve: 'short', shawl: 'none', material: 'cotton' },
+      price: 129,
+      stock: 3,
+    },
+    {
+      specs: { color: 'white', size: 'S', collar: 'crew', sleeve: 'short', shawl: 'none', material: 'cotton' },
+      price: 129,
+      stock: 7,
+    },
+    {
+      specs: { color: 'white', size: 'M', collar: 'crew', sleeve: 'short', shawl: 'none', material: 'cotton' },
+      price: 129,
+      stock: 5,
+    },
+    // V领短袖棉
+    {
+      specs: { color: 'black', size: 'M', collar: 'vneck', sleeve: 'short', shawl: 'none', material: 'cotton' },
+      price: 139,
+      stock: 4,
+    },
+    {
+      specs: { color: 'black', size: 'L', collar: 'vneck', sleeve: 'short', shawl: 'none', material: 'cotton' },
+      price: 139,
+      stock: 3,
+    },
+    // V领短袖聚酯
+    {
+      specs: { color: 'black', size: 'S', collar: 'vneck', sleeve: 'short', shawl: 'none', material: 'poly' },
+      price: 119,
+      stock: 2,
+    },
+    {
+      specs: { color: 'white', size: 'M', collar: 'vneck', sleeve: 'short', shawl: 'none', material: 'poly' },
+      price: 119,
+      stock: 1,
+    },
+    // 翻领短袖聚酯（polo）
+    {
+      specs: { color: 'black', size: 'M', collar: 'polo', sleeve: 'short', shawl: 'none', material: 'poly' },
+      price: 169,
+      stock: 5,
+    },
+    {
+      specs: { color: 'black', size: 'L', collar: 'polo', sleeve: 'short', shawl: 'none', material: 'poly' },
+      price: 169,
+      stock: 4,
+    },
+    {
+      specs: { color: 'black', size: 'XL', collar: 'polo', sleeve: 'short', shawl: 'none', material: 'poly' },
+      price: 169,
+      stock: 2,
+    },
+    {
+      specs: { color: 'white', size: 'M', collar: 'polo', sleeve: 'short', shawl: 'none', material: 'poly' },
+      price: 169,
+      stock: 3,
+    },
+    {
+      specs: { color: 'white', size: 'L', collar: 'polo', sleeve: 'short', shawl: 'none', material: 'poly' },
+      price: 169,
+      stock: 0,
+    },
+    // 翻领长袖棉（米色一条）
+    {
+      specs: { color: 'ivory', size: 'L', collar: 'polo', sleeve: 'long', shawl: 'none', material: 'cotton' },
+      price: 219,
+      stock: 1,
+    },
+    // 披肩款（只有圆领长袖棉）
+    {
+      specs: { color: 'black', size: 'M', collar: 'crew', sleeve: 'long', shawl: 'with', material: 'cotton' },
+      price: 259,
+      stock: 3,
+    },
+    {
+      specs: { color: 'black', size: 'L', collar: 'crew', sleeve: 'long', shawl: 'with', material: 'cotton' },
+      price: 259,
+      stock: 2,
+    },
+    {
+      specs: { color: 'ivory', size: 'M', collar: 'crew', sleeve: 'long', shawl: 'with', material: 'cotton' },
+      price: 269,
+      stock: 1,
+    },
+    {
+      specs: { color: 'white', size: 'L', collar: 'crew', sleeve: 'long', shawl: 'with', material: 'cotton' },
+      price: 259,
+      stock: 0,
+    },
+    // 翻领长袖聚酯（售罄，组合存在但不可选）
+    {
+      specs: { color: 'black', size: 'L', collar: 'polo', sleeve: 'long', shawl: 'none', material: 'poly' },
+      price: 189,
+      stock: 0,
+    },
+  ]
+  return rows.map((row, i) => ({
+    id: `cloth-${String(i + 1).padStart(2, '0')}`,
+    specs: row.specs,
+    price: row.price,
+    stock: row.stock,
+    image: row.image ?? '',
+    imageAlt: row.imageAlt ?? '',
+  }))
+}
+
+describe('oas-sku 多组场景（6 规格组服装类目）', () => {
+  function mountClothing(attrs: Record<string, string> = {}): OASSku {
+    return mount({
+      specs: JSON.stringify(clothingSpecs()),
+      skus: JSON.stringify(clothingSkus()),
+      ...attrs,
+    })
+  }
+
+  it('6 规格组全渲染：fieldset 数 = 6，legend 顺序与各组选项数逐组正确', () => {
+    const el = mountClothing()
+    const list = groups(el)
+    expect(list).toHaveLength(6)
+    expect(list.map((g) => g.querySelector('legend')!.textContent)).toEqual([
+      '颜色',
+      '尺码',
+      '领型',
+      '袖型',
+      '披肩',
+      '材质',
+    ])
+    expect(list.map((g) => g.querySelectorAll('input[type="radio"]').length)).toEqual([3, 4, 3, 2, 2, 2])
+  })
+
+  it('6 组全选：精确定位组合表热门子集的价格 / 库存 / 图片', () => {
+    const el = mountClothing({
+      value: JSON.stringify({
+        color: 'black',
+        size: 'M',
+        collar: 'crew',
+        sleeve: 'long',
+        shawl: 'none',
+        material: 'cotton',
+      }),
+    })
+    const price = el.shadowRoot!.querySelector('oas-price')!
+    expect(price.hasAttribute('hidden')).toBe(false)
+    expect(price.getAttribute('value')).toBe('199')
+    expect(part(el, 'sold-out')!.hidden).toBe(true)
+    const thumb = el.shadowRoot!.querySelector<HTMLImageElement>('[part="image"]')!
+    expect(thumb.getAttribute('src')).toBe('/img/sku-multi-black-m.svg')
+    expect(thumb.getAttribute('alt')).toBe('黑色圆领长袖棉 T恤 M 码')
+  })
+
+  it('不可行组合引导：选「V领 + 有披肩」（组合表无此组合）后其余维度全置灰，同组改选圆领可走出死路', () => {
+    const el = mountClothing()
+    choose(optionInput(el, 2, 'vneck'))
+    choose(optionInput(el, 4, 'with'))
+    // 死路确认：其余组没有任何选项能走到「V领 + 有披肩」的在库组合 → 全部禁用并标缺货
+    for (const size of ['S', 'M', 'L', 'XL']) {
+      expect(optionInput(el, 1, size).disabled, `尺码 ${size}`).toBe(true)
+      expect(optionLabel(el, 1, size).textContent).toContain('缺货')
+    }
+    expect(optionLabel(el, 0, 'black').getAttribute('data-available')).toBe('false')
+    expect(optionLabel(el, 0, 'white').getAttribute('data-available')).toBe('false')
+    expect(optionLabel(el, 3, 'long').getAttribute('data-available')).toBe('false')
+    expect(optionLabel(el, 5, 'cotton').getAttribute('data-available')).toBe('false')
+    // 同组内改选仍可达：圆领 + 有披肩 有在库组合（黑 M/L、米 M）
+    expect(optionLabel(el, 2, 'crew').getAttribute('data-available')).toBe('true')
+    expect(optionLabel(el, 2, 'polo').getAttribute('data-available')).toBe('false')
+    // 改选圆领后其余维度恢复可选（部分尺码仍受组合表约束：S 无披肩款 → 仍禁用）
+    choose(optionInput(el, 2, 'crew'))
+    expect(optionInput(el, 1, 'M').disabled).toBe(false)
+    expect(optionInput(el, 1, 'L').disabled).toBe(false)
+    expect(optionInput(el, 1, 'S').disabled).toBe(true)
+    expect(optionInput(el, 3, 'long').disabled).toBe(false)
+    expect(optionInput(el, 5, 'cotton').disabled).toBe(false)
+  })
+
+  it('多组联动收敛：选「米 + 圆领」后短袖 / 聚酯走不到在库组合置灰', () => {
+    const el = mountClothing({ value: JSON.stringify({ color: 'ivory', collar: 'crew' }) })
+    // 米色圆领只有长袖棉（含披肩款）→ 短袖、聚酯全缺货
+    expect(optionLabel(el, 3, 'short').getAttribute('data-available')).toBe('false')
+    expect(optionLabel(el, 3, 'short').textContent).toContain('缺货')
+    expect(optionLabel(el, 3, 'long').getAttribute('data-available')).toBe('true')
+    expect(optionLabel(el, 5, 'poly').getAttribute('data-available')).toBe('false')
+    expect(optionLabel(el, 5, 'cotton').getAttribute('data-available')).toBe('true')
+  })
+
+  it('售罄组合：部分选择时 XL 置灰标缺货；全选后缺货提示 + 数量禁用 + 价格保留', () => {
+    const partial = mountClothing({
+      value: JSON.stringify({ color: 'black', collar: 'crew', sleeve: 'long', shawl: 'none', material: 'cotton' }),
+    })
+    // 5/6 组选中：XL 售罄（stock 0）→ 置灰标缺货；S/M/L 有库存可选
+    expect(optionInput(partial, 1, 'XL').disabled).toBe(true)
+    expect(optionLabel(partial, 1, 'XL').textContent).toContain('缺货')
+    expect(optionInput(partial, 1, 'L').disabled).toBe(false)
+    expect(optionInput(partial, 1, 'S').disabled).toBe(false)
+
+    const full = mountClothing({
+      value: JSON.stringify({
+        color: 'black',
+        size: 'XL',
+        collar: 'crew',
+        sleeve: 'long',
+        shawl: 'none',
+        material: 'cotton',
+      }),
+    })
+    expect(part(full, 'sold-out')!.hidden).toBe(false)
+    expect(part(full, 'sold-out')!.textContent).toBe('缺货')
+    expect((part(full, 'quantity-input') as HTMLInputElement).disabled).toBe(true)
+    expect((part(full, 'plus') as HTMLButtonElement).disabled).toBe(true)
+    expect(full.shadowRoot!.querySelector('oas-price')!.getAttribute('value')).toBe('199')
+  })
+
+  it('逐组选择：value 字典回写 6 键齐全且与所选组合一致，命中在库组合后数量按库存钳制', () => {
+    const el = mountClothing()
+    choose(optionInput(el, 0, 'ivory'))
+    expect(Object.keys(JSON.parse(el.getAttribute('value')!))).toEqual(['color'])
+    choose(optionInput(el, 1, 'M'))
+    choose(optionInput(el, 2, 'crew'))
+    choose(optionInput(el, 3, 'long'))
+    choose(optionInput(el, 4, 'with'))
+    choose(optionInput(el, 5, 'cotton'))
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual({
+      color: 'ivory',
+      size: 'M',
+      collar: 'crew',
+      sleeve: 'long',
+      shawl: 'with',
+      material: 'cotton',
+    })
+    // 命中米色披肩款 M（269 / 库存 1）：价格联动 + 数量到顶禁用
+    expect(el.shadowRoot!.querySelector('oas-price')!.getAttribute('value')).toBe('269')
+    expect((part(el, 'quantity-input') as HTMLInputElement).value).toBe('1')
+    expect((part(el, 'plus') as HTMLButtonElement).disabled).toBe(true)
+  })
+})

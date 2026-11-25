@@ -196,3 +196,51 @@ test('sku popup 关闭态 a11y：Tab 不可达、命中测试穿透、焦点回�
   })
   expect(hit, '视口底部命中测试不得穿透到隐藏抽屉').toBe(false)
 })
+
+// 多组场景（6 规格组服装类目）：窄视口 embedded 面板的高度表现——6 组逐组可达，
+// 最后一组（材质）滚入视口后可点选且联动反馈可见。
+// 口径：embedded 面板随文档流排版（组件不做内部滚动裁切，滚动语义交给页面/宿主容器）；
+// 「最后一组可达可点」是用户可见的不变量——点选成功即证明无溢出裁切、无命中遮挡。
+test('sku 多规格组：375×600 窄视口 embedded 面板 6 组全渲染，最后一组可达可点', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 600 })
+  await page.goto('/components/sku.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-sku')
+
+  const host = page.locator('#sku-multi')
+  const groupLoc = host.locator('[part="group"]')
+  await expect(groupLoc, '6 规格组全渲染').toHaveCount(6)
+
+  // 记录实测几何（报告口径）：面板高度可能超视口（文档流自然排版），不断言溢出与否
+  const geom = await host.evaluate((el) => {
+    const panel = el.shadowRoot!.querySelector('[part="panel"]') as HTMLElement
+    const groups = el.shadowRoot!.querySelectorAll('[part="group"]')
+    return {
+      panelHeight: Math.round(panel.getBoundingClientRect().height),
+      groupCount: groups.length,
+      lastGroupLabel: groups[groups.length - 1]!.querySelector('legend')!.textContent,
+      viewport: { w: window.innerWidth, h: window.innerHeight },
+    }
+  })
+  expect(geom.groupCount).toBe(6)
+  expect(geom.lastGroupLabel).toBe('材质')
+
+  // 逐组可达抽验：真点最后一组（材质）的「聚酯」——Playwright 自动滚入视口，点选成功即证明可达
+  const poly = host.locator('[part="option"][data-value="聚酯"]')
+  await expect(poly).toHaveAttribute('data-available', 'true')
+  await poly.click()
+  await expect(poly, '最后一组选项点选后选中态生效（无裁切 / 无遮挡 / 无死区）').toHaveAttribute('data-checked', 'true')
+  // 联动反馈落到页面输出（用户可见，不是只看 console）
+  await expect(page.locator('#sku-multi-out')).toContainText('聚酯')
+
+  // 换选可行路径（多组联动收敛）：聚酯下「有披肩」不可达（披肩款全是棉）→ 切回棉 + 选黑，
+  // 「有」恢复可达后点选（黑圆领长袖披肩棉在库）——组合联动在窄视口下同样正确
+  const cotton = host.locator('[part="option"][data-value="棉"]')
+  const black = host.locator('[part="option"][data-value="黑"]')
+  const withShawl = host.locator('[part="option"][data-value="有"]')
+  await cotton.click()
+  await black.click()
+  await expect(withShawl, '切回棉 + 黑后披肩款恢复可达（多组联动收敛）').toHaveAttribute('data-available', 'true')
+  await withShawl.click()
+  await expect(withShawl).toHaveAttribute('data-checked', 'true')
+  await expect(page.locator('#sku-multi-out')).toContainText('有')
+})

@@ -100,6 +100,73 @@ The price inside the panel is rendered by an embedded `oas-price`, so `currency`
   ></oas-sku>
 </DemoBlock>
 
+## Multiple spec groups (apparel)
+
+Real apparel categories commonly show 6 selling dimensions at once (color / size / collar / sleeve / shawl / material): the component renders one group per `specs` entry in order, and the SKU table only needs the combinations actually sold (288 in the full cartesian product, 31 here). Picking a combination that is not in the table (e.g. "V-neck + With shawl") greys out every option that cannot reach an in-stock combination and marks it "Sold out", while options in the same group that still lead to stock (e.g. "Crew") stay selectable — the path hint walks users out of the dead end. Narrow viewports switch to the sheet by default; this demo pins `layout="embedded"` to show the multi-group inline layout:
+
+<DemoBlock title="Multiple spec groups (apparel)">
+  <oas-sku
+    id="sku-multi-en"
+    layout="embedded"
+    specs='[{"key":"color","label":"Color","values":["Black","White","Ivory"]},{"key":"size","label":"Size","values":["S","M","L","XL"]},{"key":"collar","label":"Collar","values":["Crew","V-neck","Polo"]},{"key":"sleeve","label":"Sleeve","values":["Long","Short"]},{"key":"shawl","label":"Shawl","values":["None","With"]},{"key":"material","label":"Material","values":["Cotton","Poly"]}]'
+    skus='[{"specs":{"color":"Black","size":"S","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":12},{"specs":{"color":"Black","size":"M","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":7},{"specs":{"color":"Black","size":"L","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":5},{"specs":{"color":"Black","size":"XL","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":0},{"specs":{"color":"White","size":"S","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":8},{"specs":{"color":"White","size":"M","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":6},{"specs":{"color":"White","size":"L","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":4},{"specs":{"color":"White","size":"XL","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":199,"stock":0},{"specs":{"color":"Ivory","size":"M","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":209,"stock":3},{"specs":{"color":"Ivory","size":"L","collar":"Crew","sleeve":"Long","shawl":"None","material":"Cotton"},"price":209,"stock":2},{"specs":{"color":"Black","size":"M","collar":"Crew","sleeve":"Long","shawl":"None","material":"Poly"},"price":159,"stock":1},{"specs":{"color":"Black","size":"M","collar":"Crew","sleeve":"Short","shawl":"None","material":"Cotton"},"price":129,"stock":9},{"specs":{"color":"Black","size":"L","collar":"Crew","sleeve":"Short","shawl":"None","material":"Cotton"},"price":129,"stock":6},{"specs":{"color":"Black","size":"XL","collar":"Crew","sleeve":"Short","shawl":"None","material":"Cotton"},"price":129,"stock":3},{"specs":{"color":"White","size":"S","collar":"Crew","sleeve":"Short","shawl":"None","material":"Cotton"},"price":129,"stock":7},{"specs":{"color":"White","size":"M","collar":"Crew","sleeve":"Short","shawl":"None","material":"Cotton"},"price":129,"stock":5},{"specs":{"color":"Black","size":"M","collar":"V-neck","sleeve":"Short","shawl":"None","material":"Cotton"},"price":139,"stock":4},{"specs":{"color":"Black","size":"L","collar":"V-neck","sleeve":"Short","shawl":"None","material":"Cotton"},"price":139,"stock":3},{"specs":{"color":"Black","size":"S","collar":"V-neck","sleeve":"Short","shawl":"None","material":"Poly"},"price":119,"stock":2},{"specs":{"color":"White","size":"M","collar":"V-neck","sleeve":"Short","shawl":"None","material":"Poly"},"price":119,"stock":1},{"specs":{"color":"Black","size":"M","collar":"Polo","sleeve":"Short","shawl":"None","material":"Poly"},"price":169,"stock":5},{"specs":{"color":"Black","size":"L","collar":"Polo","sleeve":"Short","shawl":"None","material":"Poly"},"price":169,"stock":4},{"specs":{"color":"Black","size":"XL","collar":"Polo","sleeve":"Short","shawl":"None","material":"Poly"},"price":169,"stock":2},{"specs":{"color":"White","size":"M","collar":"Polo","sleeve":"Short","shawl":"None","material":"Poly"},"price":169,"stock":3},{"specs":{"color":"White","size":"L","collar":"Polo","sleeve":"Short","shawl":"None","material":"Poly"},"price":169,"stock":0},{"specs":{"color":"Ivory","size":"L","collar":"Polo","sleeve":"Long","shawl":"None","material":"Cotton"},"price":219,"stock":1},{"specs":{"color":"Black","size":"M","collar":"Crew","sleeve":"Long","shawl":"With","material":"Cotton"},"price":259,"stock":3},{"specs":{"color":"Black","size":"L","collar":"Crew","sleeve":"Long","shawl":"With","material":"Cotton"},"price":259,"stock":2},{"specs":{"color":"Ivory","size":"M","collar":"Crew","sleeve":"Long","shawl":"With","material":"Cotton"},"price":269,"stock":1},{"specs":{"color":"White","size":"L","collar":"Crew","sleeve":"Long","shawl":"With","material":"Cotton"},"price":259,"stock":0},{"specs":{"color":"Black","size":"L","collar":"Polo","sleeve":"Long","shawl":"None","material":"Poly"},"price":189,"stock":0}]'
+  ></oas-sku>
+  <p id="sku-multi-out-en" style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    Pick specs to see combination linkage.
+  </p>
+</DemoBlock>
+
+## Selling dimensions vs descriptive attributes
+
+`specs` is for **selling dimensions** only — attributes that split SKU combinations and stock (color / size / collar / sleeve / shawl). The test: "can price or stock differ between spec combinations?". **Descriptive attributes do not belong in `specs`**: info shared by every combination (origin, brand, fabric content) never varies within one product, and putting it in `specs` multiplies the SKU table by its option count — 3 groups of 3 options already start at 27 combinations; adding one 2-option descriptive dimension yields 54 `skus` entries with identical price and stock (pure data bloat, zero business meaning). Descriptive attributes belong in the host's product detail area (outside the component); keep the SKU table to combinations that are actually purchasable and can differ in price or stock. There is no need to fill the full cartesian product — combinations absent from the table are greyed out automatically as unreachable.
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  customElements.whenDefined('oas-sku').then(() => {
+    const out = document.getElementById('sku-basic-out-en')
+    document.getElementById('sku-basic-en')?.addEventListener('oas-change', (e) => {
+      const d = e.detail
+      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || 'incomplete'
+      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
+      out.textContent = 'oas-change: ' + combo + ' x ' + d.quantity + ', unit price ' + price
+    })
+    const qtyOut = document.getElementById('sku-qty-out-en')
+    document.getElementById('sku-qty-en')?.addEventListener('oas-change', (e) => {
+      qtyOut.textContent = 'Quantity: ' + e.detail.quantity + ' (' + e.detail.change + ')'
+    })
+
+    // Popup form: imperative open; oas-close is passed through from the sheet (the component already
+    // collapses itself — listen only for observation / analytics)
+    const popup = document.getElementById('sku-popup-en')
+    const popupOut = document.getElementById('sku-popup-out-en')
+    document.getElementById('sku-popup-open-en')?.addEventListener('click', () => popup?.openOverlay())
+    popup?.addEventListener('oas-open-change', (e) => {
+      popupOut.textContent = e.detail.open ? 'Sheet open (Esc / backdrop / drag down to close)' : 'Sheet closed'
+    })
+    popup?.addEventListener('oas-close', (e) => {
+      popupOut.textContent = 'Close reason: ' + e.detail.reason
+    })
+    popup?.addEventListener('oas-change', (e) => {
+      const d = e.detail
+      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || 'incomplete'
+      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
+      popupOut.textContent = 'Picked in sheet: ' + combo + ' x ' + d.quantity + ', unit price ' + price
+    })
+
+    // Multiple spec groups: combination linkage feedback — exact match on full selection,
+    // path hints during partial selection
+    const multiOut = document.getElementById('sku-multi-out-en')
+    document.getElementById('sku-multi-en')?.addEventListener('oas-change', (e) => {
+      const d = e.detail
+      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || 'incomplete'
+      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
+      multiOut.textContent = 'oas-change: ' + combo + ' x ' + d.quantity + ', unit price ' + price
+    })
+  })
+})
+</script>
+
 ## API
 
 ### oas-sku
@@ -139,40 +206,3 @@ The price inside the panel is rendered by an embedded `oas-price`, so `currency`
 | `oas-change` | Dispatched on spec or quantity change with `{ value, quantity, sku, change: 'spec' \| 'quantity' }` (sku is the matched object or null), `detail: { value: { ...this.selected }, quantity: qty, sku, change: 'quantity', } satisfies SkuChangeDetail \| { value: { ...this.selected }, quantity, sku, change, } satisfies SkuChangeDetail` |
 | `oas-close` | Close request **passed through** from `oas-bottom-sheet` (drag down / backdrop / Esc), `detail: { reason }`; the component already collapses itself, so hosts need no handler (listen only for observation) |
 | `oas-open-change` | Sheet open state changed (interactive / imperative / layout-switch settle), `detail: { open }`; attribute writes stay silent |
-
-<script setup>
-import { onMounted } from 'vue'
-onMounted(() => {
-  customElements.whenDefined('oas-sku').then(() => {
-    const out = document.getElementById('sku-basic-out-en')
-    document.getElementById('sku-basic-en')?.addEventListener('oas-change', (e) => {
-      const d = e.detail
-      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || 'incomplete'
-      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
-      out.textContent = 'oas-change: ' + combo + ' x ' + d.quantity + ', unit price ' + price
-    })
-    const qtyOut = document.getElementById('sku-qty-out-en')
-    document.getElementById('sku-qty-en')?.addEventListener('oas-change', (e) => {
-      qtyOut.textContent = 'Quantity: ' + e.detail.quantity + ' (' + e.detail.change + ')'
-    })
-
-    // Popup form: imperative open; oas-close is passed through from the sheet (the component already
-    // collapses itself — listen only for observation / analytics)
-    const popup = document.getElementById('sku-popup-en')
-    const popupOut = document.getElementById('sku-popup-out-en')
-    document.getElementById('sku-popup-open-en')?.addEventListener('click', () => popup?.openOverlay())
-    popup?.addEventListener('oas-open-change', (e) => {
-      popupOut.textContent = e.detail.open ? 'Sheet open (Esc / backdrop / drag down to close)' : 'Sheet closed'
-    })
-    popup?.addEventListener('oas-close', (e) => {
-      popupOut.textContent = 'Close reason: ' + e.detail.reason
-    })
-    popup?.addEventListener('oas-change', (e) => {
-      const d = e.detail
-      const combo = Object.keys(d.value || {}).map((k) => d.value[k]).join(' / ') || 'incomplete'
-      const price = d.sku && d.sku.price != null ? d.sku.price : '—'
-      popupOut.textContent = 'Picked in sheet: ' + combo + ' x ' + d.quantity + ', unit price ' + price
-    })
-  })
-})
-</script>
