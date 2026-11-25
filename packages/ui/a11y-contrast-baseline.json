@@ -9,7 +9,7 @@
     "exempt": 700,
     "skipped": {
       "local": 4076,
-      "ci": 4422
+      "ci": 4406
     }
   },
   "topPairs": [],
@@ -946,7 +946,7 @@
       "exempt": 0,
       "skipped": {
         "local": 3,
-        "ci": 7
+        "ci": 3
       }
     },
     "image-picker.html::dark": {
@@ -957,7 +957,7 @@
       "exempt": 0,
       "skipped": {
         "local": 3,
-        "ci": 7
+        "ci": 3
       }
     },
     "image.html": {
@@ -1518,7 +1518,7 @@
       "exempt": 0,
       "skipped": {
         "local": 21,
-        "ci": 25
+        "ci": 21
       }
     },
     "questionnaire.html::dark": {
@@ -1529,7 +1529,7 @@
       "exempt": 0,
       "skipped": {
         "local": 21,
-        "ci": 25
+        "ci": 21
       }
     },
     "radio.html": {

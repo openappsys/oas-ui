@@ -216,6 +216,25 @@ describe('oas-logistics', () => {
     expect(String(warn.mock.calls[0])).toContain('current')
   })
 
+  it('III-4 告警独立性：非法 state 与多 current 两类问题各自告警一次（共享 flag 会静默后者）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // 一份数据同时含非法 state（多触发一条告警）与双 current（另一类告警）
+    const steps = JSON.stringify([
+      { title: 'A', state: 'weird' },
+      { title: 'B', state: 'current' },
+      { title: 'C', state: 'current' },
+    ])
+    const el = mount({ steps })
+    const lis = items(el)
+    // 推导：weird 视同未声明；双 current 归一后 firstOpen=B；A 在分界前 → done、C → pending
+    expect(lis[0]!.getAttribute('data-state')).toBe('done')
+    expect(lis[1]!.getAttribute('data-state')).toBe('current')
+    expect(lis[2]!.getAttribute('data-state')).toBe('pending')
+    expect(warn).toHaveBeenCalledTimes(2)
+    expect(String(warn.mock.calls[0])).toContain('weird')
+    expect(String(warn.mock.calls[1])).toContain('current')
+  })
+
   it('M5 time 可解析时渲染 <time datetime>；不可解析文本不写 datetime（数据用显式 UTC 串，全时区稳定）', () => {
     const steps = JSON.stringify([
       { title: 'ISO 节点', time: '2026-11-24T10:20:00Z' },
