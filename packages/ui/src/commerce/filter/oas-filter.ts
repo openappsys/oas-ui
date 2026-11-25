@@ -1126,12 +1126,22 @@ export class OASFilter extends OASElement {
     first?.focus({ preventScroll: true })
   }
 
+  /**
+   * 关闭后把焦点收回触发器。归属判定：
+   * - 焦点在面板内 / 在遮罩上（用户交互路径）→ 收回；
+   * - 焦点「无主」（null / body / documentElement）→ 收回——面板隐藏时浏览器会把焦点
+   *   回收到 body，若不认这一档，遮罩点击关闭后焦点就永久停在 body（键盘用户失位）；
+   * - 焦点已落到页面其它可聚焦元素（用户点了别处触发的「外点关闭」）→ 不抢焦点。
+   */
   private restoreFocusToTrigger(): void {
     const trigger = this.triggerEl
     if (!trigger || trigger.hidden) return
     const active = this.deepActiveElement()
+    const loose =
+      active == null ||
+      (typeof document !== 'undefined' && (active === document.body || active === document.documentElement))
     const inside = active != null && (this.panelEl?.contains(active) || this.maskEl === active)
-    if (!active || inside) trigger.focus({ preventScroll: true })
+    if (loose || inside) trigger.focus({ preventScroll: true })
   }
 
   // -------------------------------------------------------------------------

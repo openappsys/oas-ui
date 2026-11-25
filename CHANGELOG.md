@@ -16,15 +16,18 @@
   - **断连清理去重**：`onCleanup` 只在首次挂监听时注册，开合循环不再单调增长。
 - **oas-goods-list**：
   - **list 语义合法化**：`role="list"` 从外层容器移到卡片网格容器（加载区 / 空态 / 哨兵 / 插槽源全部位于列表语义之外，消除 axe `aria-required-children` 严重违规）；插槽卡搬进列后组件补 `role="listitem"`（宿主自带 role 不覆盖）。
-  - **瀑布流测高修复**：测量容器 `align-items: flex-start`（修复 flex 默认 stretch 把所有卡拉成同高、列分配退化成轮转的问题——「按测得高度均衡」的描述自此成立）；回归断言收紧为「分配后列高差 < 最小卡高」（旧阈值连轮转退化都能过）。
+  - **瀑布流测高修复**：测量容器 `align-items: flex-start`（修复 flex 默认 stretch 把所有卡拉成同高、列分配退化成轮转的问题）；回归改为「按真实卡高复算最短列贪婪，逐列比对成员集合」（旧「列高差 < 最小卡高」判据对 demo 数据无判别力：正确分配差 28、轮转退化差 27 都能过）。
   - **list 形态改图文横排行**：图左固定小尺寸（104px，与 product-card 横排惯例一致）+ 右侧信息列（标题 / 标签 / 价格），纵向堆叠——修复「单列巨图卡」与文档「图文横排的列表视图」不符；内建卡 DOM 结构改 `media + info` 分区（waterfall / list 同构，方向由 CSS 控制）。
   - **触底待应答解除补全**：`items` 签名变化（宿主只追加数据的分页场景）与置 `loading` 等价解除待应答——修复「宿主只追加数据则第二次触底永久停摆」。
-  - **插槽卡增量追加**：捕获集由「整体替换」改「合并」（保留已搬进列的旧卡 + 新分配卡入列），签名纳入捕获集数量——修复追加宿主卡不渲染；搬运窗口（同步 slotchange 重入的 detach 中间态）跳过剔除判定，真实浏览器与 happy-dom 行为一致。
+  - **插槽卡增量追加**：捕获集由「整体替换」改「合并」（保留已搬进列的旧卡 + 新分配卡入列），重排签名取**节点身份序列**（WeakMap 分配 id，非数量）——修复追加宿主卡不渲染，以及「移除一张 + 追加一张」等数量增删因计数签名早退永不入列；搬运窗口（同步 slotchange 重入的 detach 中间态）跳过剔除判定，真实浏览器与 happy-dom 行为一致。
   - **隐藏容器守卫**：`display:none` 链路挂载不再误派 `oas-load-more`（几何值无意义不触发；真实浏览器 `getClientRects` 全链判定 + happy-dom 回退祖先链 computed display），显示后滚动才派发。
   - **加载更多区活区**：`role="status"` + `aria-live="polite"`（加载中 / 到底文案变化自动播报）。
-- **文档**：filter / goods-list（zh+en 共 4 页）demo 的 `<script setup>` 全部上移页面级（此前写在 `DemoBlock` 内部被 VitePress 原样输出，页面 `Cannot use import statement` 报错 + Hydration mismatch + demo 全灭——console-sweep 与 a11y 修复前红、修复后绿）。
+- **插槽内容替换契约（行为说明）**：插槽卡被搬进 shadow 后宿主 light DOM 恒为空，`el.replaceChildren(新卡)` 与 `el.append(新卡)` 在 DOM 层是同一操作序列（无 removedNodes、无 previousSibling），组件无法识别「整替换」意图——单调用 `replaceChildren` 等价**追加**（旧卡保留）。整替换的受支持做法：宿主持有引用逐张 `remove()` 旧卡后再追加，捕获集按「节点离开组件树」即时剔除并重排。README（宿主桥接 / 数据契约）与真实浏览器回归已按此口径固化。
+- **oas-filter（复审跟修）**：遮罩点击关闭时回收焦点——面板 / 遮罩隐藏后浏览器先把焦点回收到 `body`，原守卫只认「面板内焦点」而跳过恢复，焦点于是永久停在 body（键盘用户失位）；现把「焦点无主（null / `body` / `documentElement`）」并入应恢复情形，「用户点了页面别处」仍不抢焦点。
+- **i18n（消费者可见面）**：移除 `filter.selectedCount`（触发器不再用「已选 n 项」aria-label，可访问名改从可见内容推导）。宿主自定义 locale 包里覆盖该键将不再生效，可同步删除该条目；其余 `filter.*` 键（`removeChip` / `reset` / `done` / `panelLabel` 等）不变。
+- **文档**：filter / goods-list（zh+en 共 4 页）demo 的 `<script setup>` 全部上移页面级（此前写在 `DemoBlock` 内部被 VitePress 原样输出，页面 `Cannot use import statement` 报错 + Hydration mismatch + demo 全灭——console-sweep 与 a11y 修复前红、修复后绿）；页面级脚本统一放在 `## API` 之前（该章节为 api:gen 生成区），并加位置锚点注释防回退。英文页补齐 4 处中文残留标题（卡片位插槽 / 加载更多与空态 / 自定义样式须知 ×2），「自定义样式须知」补 `::part(info)` 与新 `data-flip` 属性说明。
 - **范围条件组说明**：filter 的「范围条件组」（价格区间等自定义输入条件）属**预留 L3 能力子路径，本体未实现**（见 `packages/ui/src/commerce/filter/README.md`「预留能力面」），验收口径不包含该项。
-- 测试：单测 +13（filter 6 / goods-list 7）；qa-regression +2（filter dropdown 锚定几何与视口翻转真点击 / drawer 真键盘焦点陷阱）+ 改 1（瀑布流均衡断言收紧 + 测高有效性防线、list 形态横排几何断言）。
+- 测试：单测 +17（首波 13：filter 6 / goods-list 7；复审跟修 4：filter 遮罩关闭焦点回收 1 + goods-list 等数量替换 / replaceChildren 契约 / 整替换支持做法 3）。qa-regression +5（首波 2：dropdown 锚定几何与视口翻转真点击 / drawer 真键盘焦点陷阱；复审跟修 3：瀑布流分配逐列成员核对、插槽等数量增删、replaceChildren 契约），改 4（瀑布流均衡断言换口径 + list 形态横排几何 + drawer 遮罩关闭补焦点回收断言 + 撤销 chips 前置收面板）。
 
 ### 新增
 

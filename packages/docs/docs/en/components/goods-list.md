@@ -34,7 +34,7 @@ Write a fixed number (1–8) into `columns`; `layout="list"` ignores it and rend
   </div>
 </DemoBlock>
 
-## 卡片位插槽整体替换
+## Card-slot replacement
 
 When the default slot has content, `items` is ignored — the host supplies its own cards (e.g. `oas-product-card`), and the container balances them into columns by measured height; card content, clicks and navigation are fully owned by the host:
 
@@ -63,7 +63,7 @@ When the default slot has content, `items` is ignored — the host supplies its 
   </oas-goods-list>
 </DemoBlock>
 
-## 加载更多与空态
+## Load more and empty state
 
 Reaching the bottom emits `oas-load-more` (a sentinel enters the viewport 240px early); the host sets `loading` to show the spinner, appends `items`, then removes `loading`; `no-more` shows the end-of-list text and stops further emission. The `empty` slot replaces the empty state (default "no products yet" text):
 
@@ -94,15 +94,16 @@ Reaching the bottom emits `oas-load-more` (a sentinel enters the viewport 240px 
 - `layout="list"` renders horizontal rows (fixed-size image on the start side + an info column beside it), stacked vertically.
 - The waterfall DOM order matches the declared card order (column placement does not change the screen-reader order); layout uses logical properties and mirrors automatically under RTL.
 
-## 自定义样式须知
+## Styling notes
 
-`::part(grid)` is the multi-column flex container (columns `::part(col)` are equal-width column flex with `--oas-space-3` gaps); the built-in card `::part(card)` mirrors `oas-product-card` (media / title / tags / price). Column changes rebuild the column DOM — keep that in mind when overriding `::part(col)` layout, since cards are re-assigned.
-
+`::part(grid)` is the multi-column flex container (columns `::part(col)` are equal-width column flex with `--oas-space-3` gaps); the built-in card `::part(card)` splits into `::part(media)` + `::part(info)` (same DOM for waterfall vertical layout and `layout="list"` horizontal rows — the direction is switched by CSS): `::part(info)` is the info column that holds `::part(title)` / `::part(tags)` / `::part(tag)` / `::part(price)`, and in list form `::part(media)` is a fixed 104px square with the info column taking the remaining inline space. Column changes rebuild the column DOM — keep that in mind when overriding `::part(col)` layout, since cards are re-assigned.
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-// Page-level script (VitePress only extracts the page-level script setup — all demo logic lives here, never inside a DemoBlock)
+// Demo script convention (do not move): (1) page-level script setup only — VitePress does not extract
+// a script setup written inside a DemoBlock, so it is emitted as page text (Cannot use import statement /
+// hydration mismatch, every demo dies); (2) keep it before `## API`, which is the api:gen generated region.
 onMounted(() => {
   customElements.whenDefined('oas-goods-list').then(() => {
     // —— Basic usage demo ——

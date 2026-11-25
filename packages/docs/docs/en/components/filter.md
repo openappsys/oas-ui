@@ -104,50 +104,16 @@ Pair it with `oas-goods-list` for a closed list-page loop: filter changes refill
 - Chips are focusable buttons whose `aria-label` is "Remove condition-name"; after removing, focus moves to the adjacent chip; the composed summary renders into an `aria-live="polite"` region.
 - The dropdown dismisses on outside click; **the drawer is a modal dialog** (`role="dialog"` + `aria-modal="true"` on the panel) whose Tab / Shift+Tab focus loop stays inside the panel, closing via the mask / "Done" / Esc. Layout uses logical properties and mirrors automatically under RTL.
 
-## 自定义样式须知
+## Styling notes
 
-`::part(bar)` lays out both ends (sort row at the inline start, trigger at the end); `::part(panel)` is absolutely positioned under the bar in dropdown form and `position: fixed` to the bottom in drawer form (distinguished by the `data-form` attribute); `::part(chips)` is a flex wrap row. The selected option background is a 10% `color-mix` of the primary color — keep the token linkage when overriding.
-
-## API
-
-### oas-filter
-
-#### Attributes
-
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `conditions` | Current value as JSON `{ sort?, order?, groups? }` (`order` only matters for toggled sort items: `asc` / `desc`; `groups` maps group key to a value array, single-select groups keep at most 1). The component writes this back and emits oas-change on user interaction; host writes only sync the view | `FilterConditions \| string` | — |
-| `groups` | Filter groups as a JSON array `[{ key, label, multiple?, options: [{ value, label, disabled? }] }]`; entries without `options` are ignored, invalid JSON warns once and clears (the trigger hides when no groups remain) | `FilterGroup[] \| string` | — |
-| `open` | Panel expanded state: user interaction / `setOpen()` writes it back and emits oas-open-change; host writes only sync the view | `boolean` | — |
-| `panel` | Panel form: `dropdown` (default, anchored under the bar, dismisses on outside click) / `drawer` (half-screen sheet with a mask; recommended on narrow screens); invalid values fall back to `dropdown` and warn once | — | — |
-| `sorts` | Sort options as a JSON array `[{ key, label, toggled? }]`; defaults to the featured/sales/price trio (price toggled), invalid JSON warns once and falls back; `toggled` items flip descending on first click, ascending on the next | `FilterSortOption[] \| string` | — |
-
-#### Property (JS property; see each row for attribute reflection)
-
-| Property | Description | Type | Default |
-| --- | --- | --- | --- |
-| `conditions` | Current value: get+set dual channel (object or JSON string), writes reflect the `conditions` attribute (controlled writes do not emit oas-change) | `FilterConditions \| string` | — |
-| `groups` | Filter groups: get+set dual channel (array or JSON string), writes reflect the `groups` attribute | `FilterGroup[] \| string` | — |
-| `open` | Panel expanded state: get+set dual channel (boolean), writes reflect the `open` attribute (silent; only `setOpen()` emits) | `boolean` | — |
-| `sorts` | Sort options: get+set dual channel (array or JSON string), writes reflect the `sorts` attribute | `FilterSortOption[] \| string` | — |
-
-#### Methods
-
-| Method | Signature | Description |
-| --- | --- | --- |
-| `setOpen` | `setOpen(open: boolean): void` | Programmatic open/close (equivalent to user interaction): reflects the `open` attribute + emits oas-open-change + focus management (opening focuses the first condition, closing restores the trigger) |
-
-#### Events
-
-| Event | Description |
-| --- | --- |
-| `oas-change` | Emitted after sorting / picking conditions / removing a chip / resetting, `detail: { sort, order, groups, summary }` (summary is a composed text for host-side aria-live); host writes to `conditions` do not emit |
-| `oas-open-change` | Emitted after the panel opens / closes via user interaction or `setOpen()`, `detail: { open }`; host writes to `open` do not emit |
+`::part(bar)` lays out both ends (sort row at the inline start, trigger at the end); `::part(panel)` is absolutely positioned under the bar in dropdown form and `position: fixed` to the bottom in drawer form (distinguished by the `data-form` attribute); when the space below is insufficient, the dropdown adds `data-flip="up"` to the panel (it then opens above the bar), so panel-positioning overrides must handle `::part(panel)[data-flip='up']` as well; the panel carries `max-height: 70vh` with vertical scrolling. `::part(chips)` is a flex wrap row. The selected option background is a 10% `color-mix` of the primary color — keep the token linkage when overriding.
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-// Page-level script (VitePress only extracts the page-level script setup — all demo logic lives here, never inside a DemoBlock)
+// Demo script convention (do not move): (1) page-level script setup only — VitePress does not extract
+// a script setup written inside a DemoBlock, so it is emitted as page text (Cannot use import statement /
+// hydration mismatch, every demo dies); (2) keep it before `## API`, which is the api:gen generated region.
 onMounted(() => {
   // —— Basic usage demo ——
   customElements.whenDefined('oas-filter').then(() => {
@@ -208,3 +174,39 @@ onMounted(() => {
   })
 })
 </script>
+
+## API
+
+### oas-filter
+
+#### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `conditions` | Current value as JSON `{ sort?, order?, groups? }` (`order` only matters for toggled sort items: `asc` / `desc`; `groups` maps group key to a value array, single-select groups keep at most 1). The component writes this back and emits oas-change on user interaction; host writes only sync the view | `FilterConditions \| string` | — |
+| `groups` | Filter groups as a JSON array `[{ key, label, multiple?, options: [{ value, label, disabled? }] }]`; entries without `options` are ignored, invalid JSON warns once and clears (the trigger hides when no groups remain) | `FilterGroup[] \| string` | — |
+| `open` | Panel expanded state: user interaction / `setOpen()` writes it back and emits oas-open-change; host writes only sync the view | `boolean` | — |
+| `panel` | Panel form: `dropdown` (default, anchored under the bar, dismisses on outside click) / `drawer` (half-screen sheet with a mask; recommended on narrow screens); invalid values fall back to `dropdown` and warn once | — | — |
+| `sorts` | Sort options as a JSON array `[{ key, label, toggled? }]`; defaults to the featured/sales/price trio (price toggled), invalid JSON warns once and falls back; `toggled` items flip descending on first click, ascending on the next | `FilterSortOption[] \| string` | — |
+
+#### Property (JS property; see each row for attribute reflection)
+
+| Property | Description | Type | Default |
+| --- | --- | --- | --- |
+| `conditions` | Current value: get+set dual channel (object or JSON string), writes reflect the `conditions` attribute (controlled writes do not emit oas-change) | `FilterConditions \| string` | — |
+| `groups` | Filter groups: get+set dual channel (array or JSON string), writes reflect the `groups` attribute | `FilterGroup[] \| string` | — |
+| `open` | Panel expanded state: get+set dual channel (boolean), writes reflect the `open` attribute (silent; only `setOpen()` emits) | `boolean` | — |
+| `sorts` | Sort options: get+set dual channel (array or JSON string), writes reflect the `sorts` attribute | `FilterSortOption[] \| string` | — |
+
+#### Methods
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `setOpen` | `setOpen(open: boolean): void` | Programmatic open/close (equivalent to user interaction): reflects the `open` attribute + emits oas-open-change + focus management (opening focuses the first condition, closing restores the trigger) |
+
+#### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Emitted after sorting / picking conditions / removing a chip / resetting, `detail: { sort, order, groups, summary }` (summary is a composed text for host-side aria-live); host writes to `conditions` do not emit |
+| `oas-open-change` | Emitted after the panel opens / closes via user interaction or `setOpen()`, `detail: { open }`; host writes to `open` do not emit |

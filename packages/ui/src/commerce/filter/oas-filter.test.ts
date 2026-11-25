@@ -325,6 +325,20 @@ describe('oas-filter', () => {
     expect(el.hasAttribute('open')).toBe(false)
   })
 
+  it('drawer 遮罩点击关闭：焦点已落回 body 时也要收回触发器（不把焦点留在 body）', async () => {
+    const el = mount({ groups: GROUPS, panel: 'drawer' })
+    el.setOpen(true)
+    await settled()
+    // 真实浏览器点遮罩的时序：遮罩/面板隐藏后焦点先被浏览器回收到 body，
+    // 组件再恢复焦点——守卫若只认「面板内焦点」就会漏掉这一次，焦点永久停在 body
+    ;(el.shadowRoot!.activeElement as HTMLElement | null)?.blur?.()
+    expect(document.activeElement).toBe(document.body)
+    part(el, 'mask')!.click()
+    await settled()
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(part(el, 'trigger'))
+  })
+
   it('drawer 形态补 dialog 语义：role=dialog + aria-modal=true，dropdown 形态不挂 dialog', async () => {
     const drawer = mount({ groups: GROUPS, panel: 'drawer' })
     drawer.setOpen(true)

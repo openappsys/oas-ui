@@ -69,6 +69,23 @@ export interface GoodsItemClickDetail {
 
 const LAYOUTS: readonly string[] = ['waterfall', 'list']
 
+/**
+ * 宿主节点身份 id（签名用）：插槽卡被搬进 shadow 后 `assignedElements` 变空，
+ * 只靠数量签名无法区分「换掉一张」与「内容不变」（等数量增删会早退不重排）。
+ * WeakMap 存身份：节点被宿主回收即自动释放，不产生泄漏；id 单调递增不复用。
+ */
+const NODE_IDS = new WeakMap<HTMLElement, number>()
+let nextNodeId = 1
+
+function identityOf(node: HTMLElement): number {
+  let id = NODE_IDS.get(node)
+  if (id === undefined) {
+    id = nextNodeId++
+    NODE_IDS.set(node, id)
+  }
+  return id
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -427,6 +444,11 @@ export class OASGoodsList extends OASElement {
    * happy-dom 会同步派发 slotchange 重入 update，此刻节点处于「已 detach 未 attach」
    * 中间态，contains 为 false——此时跳过剔除；真实浏览器 slotchange 在微任务派发，
    * 不存在该窗口，行为一致。
+   *
+   * **内容替换契约**：卡被搬走后宿主 light DOM 恒为空，`el.replaceChildren(新卡)` 与
+   * `el.append(新卡)` 在 DOM 层是同一操作序列（无 removedNodes、无 previousSibling），
+   * 组件无法区分宿主意图 —— 故单调用 replaceChildren 等价追加（旧卡保留）。要整替换，
+   * 宿主持有引用逐张 `remove()` 旧卡后再追加，捕获集按下一条剔除规则即时收敛。
    */
   private captureSlotCards(): HTMLElement[] {
     const assigned = this.slotEl?.assignedElements({ flatten: true }) ?? []
@@ -476,8 +498,14 @@ export class OASGoodsList extends OASElement {
       layout === 'list'
         ? { columns: 1, mode: 'fixed' as const }
         : resolveColumns(this.getAttr('columns'), grid.clientWidth)
-    // 签名纳入插槽捕获集数量：宿主增量追加卡时签名变化触发重排（不早退）
-    const signature = JSON.stringify([useSlot ? slotted.length : items.length, items, columns, layout])
+    // 签名纳入插槽卡**身份序列**（不是数量）：等数量增删 / 换卡 / 纯追加都能触发重排，
+    // 只比数量会让「移除一张 + 追加一张」早退，新卡永不入列
+    const signature = JSON.stringify([
+      useSlot ? slotted.map((node) => identityOf(node)) : items.length,
+      items,
+      columns,
+      layout,
+    ])
     // auto 列数随容器宽变化需要重排：签名含 columns；列 DOM 数不匹配也要重建
     if (signature === this.cardsSignature && grid.childElementCount === columns) return
     this.cardsSignature = signature

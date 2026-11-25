@@ -106,48 +106,14 @@ description: "列表页筛选栏：排序项（综合 / 销量 / 价格升降）
 
 ## 自定义样式须知
 
-`::part(bar)` 为两端布局（排序行在行首、触发器在行尾）；`::part(panel)` 下拉形态绝对定位于栏底、抽屉形态 `position: fixed` 贴底（`data-form` 属性区分）；`::part(chips)` 为 flex wrap 行。选项选中态底色是主色 10% `color-mix`，覆写选中样式时注意保持与 token 的联动。
-
-## API
-
-### oas-filter
-
-#### 属性
-
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `conditions` | 当前值 JSON `{ sort?, order?, groups? }`（`order` 仅 toggled 排序项有意义：`asc` / `desc`；`groups` 为 `组key: [值…]`，单选组 ≤1 项）。用户交互后组件回写并派发 oas-change；宿主写入只同步视图不派发 | `FilterConditions \| string` | — |
-| `groups` | 条件组配置 JSON 数组 `[{ key, label, multiple?, options: [{ value, label, disabled? }] }]`；缺 `options` 或非法条目被忽略，非法 JSON 告警一次按空处理（无可筛组时触发器隐藏） | `FilterGroup[] \| string` | — |
-| `open` | 面板展开态：用户 / `setOpen()` 开合回写并派发 oas-open-change；宿主直写只同步视图不派发 | `boolean` | — |
-| `panel` | 面板形态：`dropdown`（缺省，贴底下拉，点面板外收起）/ `drawer`（半屏抽屉 + 遮罩，窄屏建议）；非法值回落 dropdown 并告警一次 | — | — |
-| `sorts` | 排序项配置 JSON 数组 `[{ key, label, toggled? }]`；缺省三件套（综合 / 销量 / 价格，价格 toggled），非法 JSON 告警一次回落缺省；`toggled` 项首次点击降序、再点升序 | `FilterSortOption[] \| string` | — |
-
-#### Property（JS property；是否写回 attribute 见各行说明）
-
-| Property | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `conditions` | 当前值：get+set 双通道（对象或 JSON 字符串），写即反射 `conditions` attribute（受控写入不派发 oas-change） | `FilterConditions \| string` | — |
-| `groups` | 条件组配置：get+set 双通道（数组或 JSON 字符串），写即反射 `groups` attribute | `FilterGroup[] \| string` | — |
-| `open` | 面板展开态：get+set 双通道（布尔），写即反射 `open` attribute（静默；`setOpen()` 才派发事件） | `boolean` | — |
-| `sorts` | 排序项配置：get+set 双通道（数组或 JSON 字符串），写即反射 `sorts` attribute | `FilterSortOption[] \| string` | — |
-
-#### 方法
-
-| 方法 | 签名 | 说明 |
-| --- | --- | --- |
-| `setOpen` | `setOpen(open: boolean): void` | 编程式开合（等价用户交互）：回写 `open` attribute + 派发 oas-open-change + 焦点管理（开面板聚焦首个条件、关闭回触发器） |
-
-#### 事件
-
-| 事件 | 说明 |
-| --- | --- |
-| `oas-change` | 排序 / 选条件 / 撤 chip / 重置后派发，`detail: { sort, order, groups, summary }`（summary 为汇总摘要文本，供宿主 aria-live 播报）；宿主写 `conditions` attribute 不派发 |
-| `oas-open-change` | 用户 / `setOpen()` 开合面板后派发，`detail: { open }`；宿主写 `open` attribute 不派发 |
+`::part(bar)` 为两端布局（排序行在行首、触发器在行尾）；`::part(panel)` 下拉形态绝对定位于栏底、抽屉形态 `position: fixed` 贴底（`data-form` 属性区分）；下拉形态下方空间不足时组件会把 `data-flip="up"` 加到面板上（贴栏上方展开），覆写面板定位时需同时处理 `::part(panel)[data-flip='up']`；面板自带 `max-height: 70vh` + 纵向滚动。`::part(chips)` 为 flex wrap 行。选项选中态底色是主色 10% `color-mix`，覆写选中样式时注意保持与 token 的联动。
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-// 页面级 script（VitePress 只抽页面级 script setup——demo 逻辑统一收拢于此，不写进 DemoBlock 内部）
+// demo 脚本约定（勿改位置）：① 必须是**页面级** script setup——写进 DemoBlock 内部时 VitePress 不会抽取，
+// 会被原样输出成页面正文（Cannot use import statement / hydration mismatch，demo 全灭）；
+// ② 放在 `## API` 之前：该章节是 api:gen 生成区，业务脚本不得落在生成区内。
 onMounted(() => {
   // —— 基础用法 demo ——
   customElements.whenDefined('oas-filter').then(() => {
@@ -208,3 +174,39 @@ onMounted(() => {
   })
 })
 </script>
+
+## API
+
+### oas-filter
+
+#### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `conditions` | 当前值 JSON `{ sort?, order?, groups? }`（`order` 仅 toggled 排序项有意义：`asc` / `desc`；`groups` 为 `组key: [值…]`，单选组 ≤1 项）。用户交互后组件回写并派发 oas-change；宿主写入只同步视图不派发 | `FilterConditions \| string` | — |
+| `groups` | 条件组配置 JSON 数组 `[{ key, label, multiple?, options: [{ value, label, disabled? }] }]`；缺 `options` 或非法条目被忽略，非法 JSON 告警一次按空处理（无可筛组时触发器隐藏） | `FilterGroup[] \| string` | — |
+| `open` | 面板展开态：用户 / `setOpen()` 开合回写并派发 oas-open-change；宿主直写只同步视图不派发 | `boolean` | — |
+| `panel` | 面板形态：`dropdown`（缺省，贴底下拉，点面板外收起）/ `drawer`（半屏抽屉 + 遮罩，窄屏建议）；非法值回落 dropdown 并告警一次 | — | — |
+| `sorts` | 排序项配置 JSON 数组 `[{ key, label, toggled? }]`；缺省三件套（综合 / 销量 / 价格，价格 toggled），非法 JSON 告警一次回落缺省；`toggled` 项首次点击降序、再点升序 | `FilterSortOption[] \| string` | — |
+
+#### Property（JS property；是否写回 attribute 见各行说明）
+
+| Property | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `conditions` | 当前值：get+set 双通道（对象或 JSON 字符串），写即反射 `conditions` attribute（受控写入不派发 oas-change） | `FilterConditions \| string` | — |
+| `groups` | 条件组配置：get+set 双通道（数组或 JSON 字符串），写即反射 `groups` attribute | `FilterGroup[] \| string` | — |
+| `open` | 面板展开态：get+set 双通道（布尔），写即反射 `open` attribute（静默；`setOpen()` 才派发事件） | `boolean` | — |
+| `sorts` | 排序项配置：get+set 双通道（数组或 JSON 字符串），写即反射 `sorts` attribute | `FilterSortOption[] \| string` | — |
+
+#### 方法
+
+| 方法 | 签名 | 说明 |
+| --- | --- | --- |
+| `setOpen` | `setOpen(open: boolean): void` | 编程式开合（等价用户交互）：回写 `open` attribute + 派发 oas-open-change + 焦点管理（开面板聚焦首个条件、关闭回触发器） |
+
+#### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 排序 / 选条件 / 撤 chip / 重置后派发，`detail: { sort, order, groups, summary }`（summary 为汇总摘要文本，供宿主 aria-live 播报）；宿主写 `conditions` attribute 不派发 |
+| `oas-open-change` | 用户 / `setOpen()` 开合面板后派发，`detail: { open }`；宿主写 `open` attribute 不派发 |

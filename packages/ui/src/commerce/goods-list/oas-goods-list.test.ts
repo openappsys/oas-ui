@@ -26,6 +26,11 @@ function parts(el: OASGoodsList, name: string): HTMLElement[] {
   return [...el.shadowRoot!.querySelectorAll<HTMLElement>(`[part="${name}"]`)]
 }
 
+/** 列内卡片文本（按列扁平展开；插槽卡无 part="card"，按列子元素文本取） */
+function colTexts(el: OASGoodsList): string[] {
+  return parts(el, 'col').flatMap((col) => [...col.children].map((c) => (c.textContent ?? '').trim()))
+}
+
 describe('goods-list 纯函数内核', () => {
   it('assignColumns：累计高度最短列放置（不均高度分布不集中于首列）', () => {
     const assignment = assignColumns([300, 100, 200, 150, 400, 50], 3)
@@ -218,6 +223,62 @@ describe('oas-goods-list', () => {
     expect(parts(el, 'col').some((col) => col.contains(c2))).toBe(true)
     // light DOM 不残留未分配卡
     expect([...el.children].filter((c) => !el.shadowRoot!.contains(c))).toHaveLength(0)
+  })
+
+  it('插槽卡等数量替换：移除一张旧卡 + 追加一张新卡，列成员即时更新（总数不变也要重排）', async () => {
+    const el = mount({ columns: '2' })
+    const make = (text: string): HTMLElement => {
+      const d = document.createElement('div')
+      d.textContent = text
+      return d
+    }
+    const c1 = make('卡一')
+    const c2 = make('卡二')
+    el.append(c1, c2)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(colTexts(el).sort()).toEqual(['卡一', '卡二'].sort())
+    // 宿主持有引用移除旧卡（搬进 shadow 后只能对引用 remove），再追加一张新卡——卡片总数不变
+    c1.remove()
+    el.append(make('卡三'))
+    await new Promise((r) => setTimeout(r, 0))
+    // 计数签名会早退（2 == 2）导致新卡永不入列；节点身份签名必须重排
+    expect(colTexts(el).sort()).toEqual(['卡二', '卡三'].sort())
+  })
+
+  it('插槽卡 replaceChildren 单调用等价追加（契约：搬运后 light DOM 已空，整替换须先移除旧卡引用）', async () => {
+    const el = mount({ columns: '2' })
+    const make = (text: string): HTMLElement => {
+      const d = document.createElement('div')
+      d.textContent = text
+      return d
+    }
+    const c1 = make('卡一')
+    const c2 = make('卡二')
+    el.append(c1, c2)
+    await new Promise((r) => setTimeout(r, 0))
+    // 卡被搬进 shadow 后宿主 light DOM 恒为空：replaceChildren(新卡) 与 append(新卡)
+    // 在 DOM 层是同一操作序列（无 removedNodes、无 previousSibling），组件无法区分宿主意图。
+    el.replaceChildren(make('卡三'))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(colTexts(el).sort()).toEqual(['卡一', '卡三', '卡二'].sort())
+  })
+
+  it('插槽卡整替换的支持做法：逐张移除旧卡引用后再追加新卡 → 列内恰剩新卡', async () => {
+    const el = mount({ columns: '2' })
+    const make = (text: string): HTMLElement => {
+      const d = document.createElement('div')
+      d.textContent = text
+      return d
+    }
+    const c1 = make('卡一')
+    const c2 = make('卡二')
+    el.append(c1, c2)
+    await new Promise((r) => setTimeout(r, 0))
+    c1.remove()
+    c2.remove()
+    el.append(make('卡三'))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(colTexts(el)).toEqual(['卡三'])
   })
 
   it('空态：items 空显示缺省文案，empty 插槽可整体替换', async () => {

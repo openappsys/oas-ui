@@ -98,13 +98,14 @@ description: "商品列表容器：瀑布流（列数自适应 / 固定 + 列均
 
 ## 自定义样式须知
 
-`::part(grid)` 为 flex 多列容器（列 `::part(col)` 等宽 column flex，间距走 `--oas-space-3`）；内建卡 `::part(card)` 结构同 `oas-product-card`（media / title / tags / price）。列数变化会整体重建列 DOM——对列容器做 `::part(col)` 布局覆写时注意子卡会被重新分配。
-
+`::part(grid)` 为 flex 多列容器（列 `::part(col)` 等宽 column flex，间距走 `--oas-space-3`）；内建卡 `::part(card)` 为 `::part(media)` + `::part(info)` 两分区结构（瀑布流纵排 / `layout="list"` 横排同构，方向由 CSS 切换）：`::part(info)` 是标题 / 标签 / 价格的信息列容器（`::part(title)` / `::part(tags)` / `::part(tag)` / `::part(price)` 都在它内部），list 形态下图 `::part(media)` 固定 104px 方图、信息列占右侧剩余宽。列数变化会整体重建列 DOM——对列容器做 `::part(col)` 布局覆写时注意子卡会被重新分配。
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-// 页面级 script（VitePress 只抽页面级 script setup——demo 逻辑统一收拢于此，不写进 DemoBlock 内部）
+// demo 脚本约定（勿改位置）：① 必须是**页面级** script setup——写进 DemoBlock 内部时 VitePress 不会抽取，
+// 会被原样输出成页面正文（Cannot use import statement / hydration mismatch，demo 全灭）；
+// ② 放在 `## API` 之前：该章节是 api:gen 生成区，业务脚本不得落在生成区内。
 onMounted(() => {
   customElements.whenDefined('oas-goods-list').then(() => {
     // —— 基础用法 demo ——

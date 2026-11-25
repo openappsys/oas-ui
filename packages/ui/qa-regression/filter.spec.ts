@@ -80,6 +80,15 @@ test('filter：drawer 形态真点击——遮罩下条件可选，「完成」/
   await expect(mask).toBeVisible()
   await mask.click({ position: { x: 10, y: 10 } })
   await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  // 焦点回收：遮罩点击后面板/遮罩隐藏时浏览器先把焦点回收到 body——关闭路径必须把焦点
+  // 收回触发器（否则键盘用户失位，下一次 Tab 从文档头开始）
+  const focusedPart = (): Promise<string | null> =>
+    host.evaluate((el) => {
+      let a: Element | null = document.activeElement
+      while (a && a.shadowRoot?.activeElement) a = a.shadowRoot.activeElement
+      return a?.getAttribute?.('part') ?? null
+    })
+  await expect.poll(focusedPart).toBe('trigger')
 })
 
 test('filter：键盘闭环——Enter 开面板聚焦首条件，方向键移动，Esc 关回触发器', async ({ page }) => {
