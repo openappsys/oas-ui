@@ -220,6 +220,36 @@ describe('OASImageCropper', () => {
     expect(el.rotation).toBe(0)
   })
 
+  it('rotate 任意角度：fitScale 按旋转包围盒数学收敛（45° 精确界，消除框角露底色）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el, 800, 600)
+    el.rotate(45)
+    // 推导（旋转包围盒口径）：绘制尺寸 (800s, 600s) 旋转 θ 后的轴对齐包围盒为
+    //   bw = s·(nw·|cosθ| + nh·|sinθ|) = s·(800 + 600)·(√2/2) ≈ 989.949·s
+    //   bh = s·(nw·|sinθ| + nh·|cosθ|) = 同 ≈ 989.949·s
+    // cover 要求包围盒覆盖舞台 480×320 → s = max(480, 320) / 989.949 = 0.484869
+    // 旧算法（90° 倍数假设：45° 互换宽高）得 s = max(480/600, 320/800) = 0.8 →
+    // 图片局部坐标高度方向 (600×0.8=480) 盖不住裁剪框角反旋所需的区间 → 框角露底色。
+    const expectedScale = Math.max(480, 320) / ((800 + 600) * Math.SQRT1_2)
+    const w = Number.parseFloat(image(el).style.width)
+    const h = Number.parseFloat(image(el).style.height)
+    expect(w).toBeCloseTo(800 * expectedScale, 1)
+    expect(h).toBeCloseTo(600 * expectedScale, 1)
+    // 覆盖自检：绘制尺寸旋转 45° 后的包围盒必须覆盖舞台两个方向（无留白）
+    const bw = (w + h) * Math.SQRT1_2
+    expect(bw).toBeGreaterThanOrEqual(480 - 0.5)
+    expect(bw).toBeGreaterThanOrEqual(320 - 0.5)
+  })
+
+  it('rotate 90° 倍数：包围盒公式退化为宽高互换（与既有行为一致）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el, 800, 600)
+    el.rotate(90)
+    // 90°：|cos|=0、|sin|=1 → bw = nh·s、bh = nw·s → s = max(480/600, 320/800) = 0.8
+    expect(Number.parseFloat(image(el).style.width)).toBeCloseTo(800 * 0.8, 1)
+    expect(Number.parseFloat(image(el).style.height)).toBeCloseTo(600 * 0.8, 1)
+  })
+
   it('canvas 不可用时 toBlob 返回 null、toDataURL 返回空串（不抛错）', async () => {
     const el = mount({ src: 'data:image/png;base64,AAAA' })
     await expect(el.toBlob()).resolves.toBeNull()
@@ -423,6 +453,27 @@ describe('OASImageCropper', () => {
     Object.defineProperty(ctrlWheel, 'ctrlKey', { value: true, configurable: true })
     expect(stage(el).dispatchEvent(ctrlWheel)).toBe(true)
     expect(el.zoom).toBe(zoomBefore)
+  })
+
+  it('缩放已到上下限时滚轮不再吞事件（放行页面滚动）', () => {
+    const el = mount({ src: 'data:image/png;base64,AAAA' })
+    loadImage(el)
+    stubStageRect(el)
+    // 上限（缺省 max-zoom=3）：再放大不会变化 → 不 preventDefault，页面照常滚
+    el.setZoom(3)
+    const atMax = wheelEvent(240, 300, -100)
+    expect(stage(el).dispatchEvent(atMax), '上限再放大：放行页面滚动').toBe(true)
+    expect(el.zoom).toBe(3)
+    // 下限（1）：再缩小不会变化 → 同样放行
+    el.setZoom(1)
+    const atMin = wheelEvent(240, 300, 100)
+    expect(stage(el).dispatchEvent(atMin), '下限再缩小：放行页面滚动').toBe(true)
+    expect(el.zoom).toBe(1)
+    // 中间值仍然吞（缩放语义不变）
+    el.setZoom(2)
+    const mid = wheelEvent(240, 300, -100)
+    expect(stage(el).dispatchEvent(mid), '中间值照常接管').toBe(false)
+    expect(el.zoom).toBe(2.25)
   })
 
   it('缩放变小时按覆盖约束重新钳回；旋转后同样重新钳制', () => {

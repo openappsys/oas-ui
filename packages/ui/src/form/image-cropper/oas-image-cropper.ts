@@ -679,14 +679,26 @@ export class OASImageCropper extends OASElement {
     this.syncImage()
   }
 
-  /** 图片「cover」适配比（按旋转后的占位尺寸计算，保证舞台无留白） */
+  /**
+   * 图片「cover」适配比：按旋转后的**轴对齐包围盒**计算，保证舞台任意旋转角下都无留白。
+   *
+   * 推导：绘制尺寸 (nw·s, nh·s) 旋转 θ 后的包围盒为
+   *   bw = s·(nw·|cosθ| + nh·|sinθ|)、bh = s·(nw·|sinθ| + nh·|cosθ|)
+   * cover 要求 bw ≥ stageW 且 bh ≥ stageH，解得
+   *   s = max(stageW / (nw·|cosθ| + nh·|sinθ|), stageH / (nw·|sinθ| + nh·|cosθ|))
+   * θ 为 90° 倍数时退化为「宽高互换」（|cos| / |sin| 一方为 0），与既有行为逐值一致；
+   * 45° 等中间角度按包围盒真实占位收敛——旧算法按 90° 倍数假设互换宽高，中间角度
+   * 覆盖不足，裁剪框角反旋区间落到图片外 → 框角露舞台底色。
+   */
   private fitScale(): number {
     const img = this.imgEl
     if (!img || img.naturalWidth === 0 || img.naturalHeight === 0) return 1
-    const quarter = this.rotationValue % 180 !== 0
-    const w = quarter ? img.naturalHeight : img.naturalWidth
-    const h = quarter ? img.naturalWidth : img.naturalHeight
-    return Math.max(this.stageW / w, this.stageH / h)
+    const rad = (this.rotationValue * Math.PI) / 180
+    const cos = Math.abs(Math.cos(rad))
+    const sin = Math.abs(Math.sin(rad))
+    const bw = img.naturalWidth * cos + img.naturalHeight * sin
+    const bh = img.naturalWidth * sin + img.naturalHeight * cos
+    return Math.max(this.stageW / bw, this.stageH / bh)
   }
 
   private onImageLoad = (): void => {
@@ -877,12 +889,6 @@ export class OASImageCropper extends OASElement {
     if (we.ctrlKey) return
     const delta = we.deltaY ?? 0
     if (delta === 0) return
-    we.preventDefault()
-    const rect = this.stageEl?.getBoundingClientRect?.()
-    const anchor: StagePoint = {
-      x: (we.clientX ?? 0) - (rect?.left ?? 0),
-      y: (we.clientY ?? 0) - (rect?.top ?? 0),
-    }
     let step: number
     if ((we.deltaMode ?? 0) === 0) {
       const fine = (-delta / PIXELS_PER_ZOOM_STEP) * ZOOM_STEP
@@ -890,7 +896,16 @@ export class OASImageCropper extends OASElement {
     } else {
       step = delta < 0 ? ZOOM_STEP : -ZOOM_STEP
     }
+    // 缩放已到上下限且本次不会变化：不吞滚轮，放行页面滚动（否则边界上滚轮「失灵」还
+    // 锁死页面滚动）；变化判定用 clamp 后的值（越界请求 clamp 回界内等于当前值 = 不变）
     const next = this.zoomValue + step
+    if (clamp(Number(next), 1, this.resolveMaxZoom()) === this.zoomValue) return
+    we.preventDefault()
+    const rect = this.stageEl?.getBoundingClientRect?.()
+    const anchor: StagePoint = {
+      x: (we.clientX ?? 0) - (rect?.left ?? 0),
+      y: (we.clientY ?? 0) - (rect?.top ?? 0),
+    }
     if (this.applyZoom(next, anchor)) this.emitChange()
   }
 
