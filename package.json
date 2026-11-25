@@ -9,7 +9,7 @@
     "pnpm": ">=12"
   },
   "scripts": {
-    "predev": "pnpm -r --filter @oas-ui/ui... build && pnpm --filter @oas-ui/theme build",
+    "predev": "pnpm -r --filter @oas-ui/ui... build && pnpm --filter @oas-ui/theme build && node scripts/clear-vitepress-cache.mjs",
     "dev": "cross-env CI=true pnpm --parallel --filter @oas-ui/core --filter @oas-ui/i18n --filter @oas-ui/icons --filter @oas-ui/theme --filter @oas-ui/ui --filter @oas-ui/docs dev",
     "build": "pnpm -r build && node scripts/check-exports.mjs",
     "exports:check": "node scripts/check-exports.mjs",
