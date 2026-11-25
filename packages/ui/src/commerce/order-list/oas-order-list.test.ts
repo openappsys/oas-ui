@@ -263,18 +263,18 @@ describe('oas-order-list', () => {
     expect(String(warn.mock.calls[0])).toContain('b')
   })
 
-  it('I2 告警独立性：非法 JSON 与 roving 兜底两类问题各自告警一次（共享 flag 会静默后者）', () => {
+  it('I2 告警独立性：同元素先非法 JSON、再 roving 兜底，两类问题各自告警一次（共享 flag 会静默后者）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    // 第一实例：非法 JSON 触发 JSON 告警
-    mount({ tabs: 'not-json', active: 'a' })
-    // 第二实例：合法但 active 指向 disabled 触发 roving 兜底告警——若两类共用 flag 则此条静默
-    mount({
-      tabs: JSON.stringify([
+    // 同一元素两步：先非法 JSON 触发 JSON 告警；再改写 tabs 合法但 active 指向 disabled → roving 兜底告警。
+    // 若两类共用一个 flag，第二步的 roving 告警会被第一步置位静默
+    const el = mount({ tabs: 'not-json', active: 'a' })
+    el.setAttribute(
+      'tabs',
+      JSON.stringify([
         { key: 'a', label: 'A', disabled: true },
         { key: 'b', label: 'B' },
       ]),
-      active: 'a',
-    })
+    )
     expect(warn).toHaveBeenCalledTimes(2)
     // 第二条必须是 roving 兜底告警（含指向 disabled 的 key）——若与 JSON 告警共用 flag 则此条缺失
     expect(String(warn.mock.calls[1])).toContain('"a"')
