@@ -1,21 +1,21 @@
 {
   "size": {
-    "generatedAt": "2026-11-25",
+    "generatedAt": "2026-11-26",
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 51645823,
+        "distTotalBytes": 51676945,
         "browserJs": {
           "files": 606,
-          "rawBytes": 12709950,
-          "gzipBytes": 3178512,
-          "brotliBytes": 2491976
+          "rawBytes": 12717160,
+          "gzipBytes": 3181089,
+          "brotliBytes": 2493624
         },
         "fullEntry": {
           "files": 623,
-          "rawBytes": 4524760,
-          "gzipBytes": 1287547,
-          "brotliBytes": 1105188,
+          "rawBytes": 4527321,
+          "gzipBytes": 1288468,
+          "brotliBytes": 1105970,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -644,9 +644,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3711881,
-          "gzipBytes": 845188,
-          "brotliBytes": 583955
+          "rawBytes": 3714194,
+          "gzipBytes": 846011,
+          "brotliBytes": 584382
         }
       },
       "@oas-ui/theme": {
@@ -762,9 +762,9 @@
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
         "files": 61,
-        "rawBytes": 374753,
-        "gzipBytes": 113659,
-        "brotliBytes": 95676,
+        "rawBytes": 374779,
+        "gzipBytes": 113670,
+        "brotliBytes": 95680,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -1360,9 +1360,9 @@
         "entry": "commerce/invoice",
         "spec": "@oas-ui/ui/commerce/invoice",
         "files": 11,
-        "rawBytes": 60819,
-        "gzipBytes": 20522,
-        "brotliBytes": 17096,
+        "rawBytes": 61538,
+        "gzipBytes": 20760,
+        "brotliBytes": 17296,
         "fileList": [
           "packages/ui/dist/commerce/invoice/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1573,9 +1573,9 @@
         "entry": "commerce/search-bar",
         "spec": "@oas-ui/ui/commerce/search-bar",
         "files": 12,
-        "rawBytes": 48106,
-        "gzipBytes": 18040,
-        "brotliBytes": 14868,
+        "rawBytes": 48214,
+        "gzipBytes": 18045,
+        "brotliBytes": 14873,
         "fileList": [
           "packages/ui/dist/commerce/search-bar/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1595,9 +1595,9 @@
         "entry": "commerce/logistics",
         "spec": "@oas-ui/ui/commerce/logistics",
         "files": 11,
-        "rawBytes": 47431,
-        "gzipBytes": 18128,
-        "brotliBytes": 14970,
+        "rawBytes": 47921,
+        "gzipBytes": 18331,
+        "brotliBytes": 15134,
         "fileList": [
           "packages/ui/dist/commerce/logistics/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1616,9 +1616,9 @@
         "entry": "commerce/order-list",
         "spec": "@oas-ui/ui/commerce/order-list",
         "files": 13,
-        "rawBytes": 51242,
-        "gzipBytes": 19552,
-        "brotliBytes": 16254,
+        "rawBytes": 52285,
+        "gzipBytes": 19968,
+        "brotliBytes": 16615,
         "fileList": [
           "packages/ui/dist/commerce/order-list/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1639,9 +1639,9 @@
         "entry": "commerce/member-card",
         "spec": "@oas-ui/ui/commerce/member-card",
         "files": 10,
-        "rawBytes": 43603,
-        "gzipBytes": 16776,
-        "brotliBytes": 13834,
+        "rawBytes": 43778,
+        "gzipBytes": 16824,
+        "brotliBytes": 13882,
         "fileList": [
           "packages/ui/dist/commerce/member-card/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1654,28 +1654,198 @@
           "packages/core/dist/config-context.js",
           "packages/ui/dist/shared/dev-warn.js"
         ]
+      },
+      "select": {
+        "entry": "form/select",
+        "spec": "@oas-ui/ui/form/select",
+        "files": 30,
+        "rawBytes": 139322,
+        "gzipBytes": 47092,
+        "brotliBytes": 39773,
+        "fileList": [
+          "packages/ui/dist/form/select/index.js",
+          "packages/i18n/dist/slices/form.js",
+          "packages/i18n/dist/registry.js",
+          "packages/i18n/dist/locale-name.js",
+          "packages/core/dist/locale-tag.js",
+          "packages/core/dist/translator.js",
+          "packages/ui/dist/form/select/oas-option.js",
+          "packages/core/dist/oas-element.js",
+          "packages/core/dist/config-context.js",
+          "packages/ui/dist/form/select/oas-select.js",
+          "packages/ui/dist/feedback/bottom-sheet/index.js",
+          "packages/ui/dist/feedback/bottom-sheet/oas-bottom-sheet.js",
+          "packages/ui/dist/shared/overlay-stack.js",
+          "packages/ui/dist/data/virtual-list/index.js",
+          "packages/ui/dist/data/virtual-list/dynamic-height.js",
+          "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
+          "packages/ui/dist/shared/slot-template.js",
+          "packages/ui/dist/shared/json-array.js",
+          "packages/core/dist/form-element.js",
+          "packages/icons/dist/runtime.js",
+          "packages/ui/dist/shared/choice.js",
+          "packages/ui/dist/shared/icon-hint.js",
+          "packages/ui/dist/shared/dev-warn.js",
+          "packages/ui/dist/shared/touch-target.js",
+          "packages/ui/dist/shared/css-var.js",
+          "packages/ui/dist/shared/measure-text.js",
+          "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/overlay/floating/floating.js",
+          "packages/ui/dist/shared/outside-dismiss.js",
+          "packages/ui/dist/shared/mobile-sheet.js"
+        ]
+      },
+      "input": {
+        "entry": "form/input",
+        "spec": "@oas-ui/ui/form/input",
+        "files": 14,
+        "rawBytes": 98982,
+        "gzipBytes": 32135,
+        "brotliBytes": 26857,
+        "fileList": [
+          "packages/ui/dist/form/input/index.js",
+          "packages/i18n/dist/slices/form.js",
+          "packages/i18n/dist/registry.js",
+          "packages/i18n/dist/locale-name.js",
+          "packages/core/dist/locale-tag.js",
+          "packages/core/dist/translator.js",
+          "packages/ui/dist/form/input/oas-input.js",
+          "packages/icons/dist/icons/eye.js",
+          "packages/core/dist/form-element.js",
+          "packages/core/dist/oas-element.js",
+          "packages/core/dist/config-context.js",
+          "packages/icons/dist/runtime.js",
+          "packages/ui/dist/shared/dev-warn.js",
+          "packages/ui/dist/shared/direction.js"
+        ]
+      },
+      "picker": {
+        "entry": "form/picker",
+        "spec": "@oas-ui/ui/form/picker",
+        "files": 11,
+        "rawBytes": 70765,
+        "gzipBytes": 25724,
+        "brotliBytes": 21344,
+        "fileList": [
+          "packages/ui/dist/form/picker/index.js",
+          "packages/i18n/dist/slices/form.js",
+          "packages/i18n/dist/registry.js",
+          "packages/i18n/dist/locale-name.js",
+          "packages/core/dist/locale-tag.js",
+          "packages/core/dist/translator.js",
+          "packages/ui/dist/form/picker/oas-picker.js",
+          "packages/core/dist/form-element.js",
+          "packages/core/dist/oas-element.js",
+          "packages/core/dist/config-context.js",
+          "packages/ui/dist/shared/stable-id.js"
+        ]
+      },
+      "bottomSheet": {
+        "entry": "feedback/bottom-sheet",
+        "spec": "@oas-ui/ui/feedback/bottom-sheet",
+        "files": 7,
+        "rawBytes": 33902,
+        "gzipBytes": 13513,
+        "brotliBytes": 11233,
+        "fileList": [
+          "packages/ui/dist/feedback/bottom-sheet/index.js",
+          "packages/ui/dist/feedback/bottom-sheet/oas-bottom-sheet.js",
+          "packages/core/dist/oas-element.js",
+          "packages/core/dist/config-context.js",
+          "packages/core/dist/translator.js",
+          "packages/core/dist/locale-tag.js",
+          "packages/ui/dist/shared/overlay-stack.js"
+        ]
+      }
+    },
+    "cdnFamilies": {
+      "basic": {
+        "files": 1,
+        "rawBytes": 195425,
+        "gzipBytes": 41812,
+        "brotliBytes": 34560
+      },
+      "commerce": {
+        "files": 1,
+        "rawBytes": 340941,
+        "gzipBytes": 73064,
+        "brotliBytes": 58754
+      },
+      "conversation": {
+        "files": 1,
+        "rawBytes": 113145,
+        "gzipBytes": 26657,
+        "brotliBytes": 22934
+      },
+      "data": {
+        "files": 1,
+        "rawBytes": 1191011,
+        "gzipBytes": 305830,
+        "brotliBytes": 232121
+      },
+      "feedback": {
+        "files": 1,
+        "rawBytes": 388075,
+        "gzipBytes": 86055,
+        "brotliBytes": 66752
+      },
+      "form": {
+        "files": 1,
+        "rawBytes": 1163791,
+        "gzipBytes": 264375,
+        "brotliBytes": 189332
+      },
+      "framework": {
+        "files": 1,
+        "rawBytes": 47841,
+        "gzipBytes": 13371,
+        "brotliBytes": 11677
+      },
+      "layout": {
+        "files": 1,
+        "rawBytes": 158869,
+        "gzipBytes": 40085,
+        "brotliBytes": 33765
+      },
+      "navigation": {
+        "files": 1,
+        "rawBytes": 593500,
+        "gzipBytes": 131611,
+        "brotliBytes": 95653
+      },
+      "overlay": {
+        "files": 1,
+        "rawBytes": 90547,
+        "gzipBytes": 23658,
+        "brotliBytes": 20623
+      },
+      "workbench": {
+        "files": 1,
+        "rawBytes": 137660,
+        "gzipBytes": 31258,
+        "brotliBytes": 26896
       }
     },
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 845188,
+        "actualBytes": 846011,
         "limitBytes": 849920,
         "warnAtBytes": 764928,
         "pass": true,
         "warn": true,
-        "basis": "天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB（schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档——实测 2.9KB / 档 3.4KB）；批 B 交易链路 3 组件（cart/order-card/product-card）+19.0KB 实测触 800 档，微调 810 KB（2026-11-24）；批 A（form-list/array-table 虚拟滚动内核 + image-picker compress/EXIF 管线 + cropper 触控板缩放 + number-keyboard 长按连删）+9.3KB 实测 811.9 触 810 档，归因后微调 820 KB（2026-11-25）；电商扩容（oas-filter + oas-goods-list 两组件本体与复核修复 + commerce 增强子批交互收口叠加）+8.3KB 实测 820.2 触 820 档，归因后微调 830 KB（2026-11-25）。前档 800 KB 定档于 2026-11-23；再前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测）"
+        "basis": "天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB（schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档——实测 2.9KB / 档 3.4KB）；批 B 交易链路 3 组件（cart/order-card/product-card）+19.0KB 实测触 800 档，微调 810 KB（2026-11-24）；批 A（form-list/array-table 虚拟滚动内核 + image-picker compress/EXIF 管线 + cropper 触控板缩放 + number-keyboard 长按连删）+9.3KB 实测 811.9 触 810 档，归因后微调 820 KB（2026-11-25）；电商扩容（oas-filter + oas-goods-list 两组件本体与复核修复 + commerce 增强子批交互收口叠加）+8.3KB 实测 820.2 触 820 档，归因后微调 830 KB（2026-11-25）；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件本体与 i18n 文案，union 基座共享不重计）实测 825.4 KB，仍在 830 KB 天花板内（90% 预警线已越过，随下批增长再评估重定档）。前档 800 KB 定档于 2026-11-23；再前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测）"
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1287547,
+        "actualBytes": 1288468,
         "limitBytes": 1300480,
         "warnAtBytes": 1170432,
         "pass": true,
         "warn": true,
-        "basis": "天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；2026-11-25 电商扩容首波（oas-filter 筛选栏 + oas-goods-list 商品列表容器）后实测 1244.0 KB 顶穿前档 1240——边际增量 ≈ +11 KB（两组件本体与 i18n 文案，core/i18n 基座共享不重计），按实测微调 1255 KB；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件）后实测 1257.4 KB 顶穿前档 1255——边际增量 ≈ +13.4 KB（四组件本体与 i18n 文案，基座共享不重计），按实测微调 1270 KB；commerce 逐链预算已独立建立（commerce* 档位）"
+        "basis": "天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；2026-11-25 电商扩容首波（oas-filter 筛选栏 + oas-goods-list 商品列表容器）后实测 1244.0 KB 顶穿前档 1240——边际增量 ≈ +11 KB（两组件本体与 i18n 文案，core/i18n 基座共享不重计），按实测微调 1255 KB；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件）后实测 1257.4 KB 顶穿前档 1255——边际增量 ≈ +12.0 KB（1257.4−1245.4，四组件本体与 i18n 文案，基座共享不重计），按实测微调 1270 KB；commerce 逐链预算已独立建立（commerce* 档位）"
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
@@ -1714,7 +1884,7 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 113659,
+        "actualBytes": 113670,
         "limitBytes": 122880,
         "warnAtBytes": 110592,
         "pass": true,
@@ -2128,7 +2298,7 @@
         "name": "@oas-ui/ui/commerce/invoice 链 gzip",
         "kind": "absolute",
         "componentId": "commerceInvoice",
-        "actualBytes": 20522,
+        "actualBytes": 20760,
         "limitBytes": 23552,
         "warnAtBytes": 21197,
         "pass": true,
@@ -2227,7 +2397,7 @@
         "name": "@oas-ui/ui/commerce/search-bar 链 gzip",
         "kind": "absolute",
         "componentId": "commerceSearchBar",
-        "actualBytes": 18040,
+        "actualBytes": 18045,
         "limitBytes": 21504,
         "warnAtBytes": 19354,
         "pass": true,
@@ -2238,7 +2408,7 @@
         "name": "@oas-ui/ui/commerce/logistics 链 gzip",
         "kind": "absolute",
         "componentId": "commerceLogistics",
-        "actualBytes": 18128,
+        "actualBytes": 18331,
         "limitBytes": 21504,
         "warnAtBytes": 19354,
         "pass": true,
@@ -2249,7 +2419,7 @@
         "name": "@oas-ui/ui/commerce/order-list 链 gzip",
         "kind": "absolute",
         "componentId": "commerceOrderList",
-        "actualBytes": 19552,
+        "actualBytes": 19968,
         "limitBytes": 22528,
         "warnAtBytes": 20275,
         "pass": true,
@@ -2260,12 +2430,166 @@
         "name": "@oas-ui/ui/commerce/member-card 链 gzip",
         "kind": "absolute",
         "componentId": "commerceMemberCard",
-        "actualBytes": 16776,
+        "actualBytes": 16824,
         "limitBytes": 19456,
         "warnAtBytes": 17510,
         "pass": true,
         "warn": false,
         "basis": "首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 16.4 KB / 10 文件（纯展示卡零事件——属性反射 + 两插槽显隐 + variant token 化底色；链只含 core + i18n，为 commerce 最轻链），上浮 ~15% 取整定档 19 KB；等级进度条 / 卡面二维码走 L3 能力子路径另立档"
+      },
+      {
+        "name": "@oas-ui/ui/form/select 链 gzip",
+        "kind": "absolute",
+        "componentId": "select",
+        "actualBytes": 47092,
+        "limitBytes": 54272,
+        "warnAtBytes": 48845,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB"
+      },
+      {
+        "name": "@oas-ui/ui/form/input 链 gzip",
+        "kind": "absolute",
+        "componentId": "input",
+        "actualBytes": 32135,
+        "limitBytes": 37888,
+        "warnAtBytes": 34099,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 31.4 KB / 14 文件（输入基座：core + i18n + icons eye 精确 path + dev-warn/direction；复用决策基线（2026-11-25 复用权衡框架 review：select 链从未计量是估算错 3 倍的根因，input 为表单共享内核下沉的主要候选宿主）），上浮 ~15% 取整定档 37 KB"
+      },
+      {
+        "name": "@oas-ui/ui/form/picker 链 gzip",
+        "kind": "absolute",
+        "componentId": "picker",
+        "actualBytes": 25724,
+        "limitBytes": 30720,
+        "warnAtBytes": 27648,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 25.1 KB / 11 文件（滚轮选择器：core + i18n + stable-id，无浮层/虚拟滚动依赖；复用决策基线同 select 档——2026-11-25 复用权衡框架 review 补齐的宿主链计量），上浮 ~15% 取整定档 30 KB"
+      },
+      {
+        "name": "@oas-ui/ui/feedback/bottom-sheet 链 gzip",
+        "kind": "absolute",
+        "componentId": "bottomSheet",
+        "actualBytes": 13513,
+        "limitBytes": 16384,
+        "warnAtBytes": 14746,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 13.2 KB / 7 文件（底部弹层：core + overlay-stack，feedback 族轻链——被 select/sku 作为弹层承载复用的共享底座；复用决策基线（2026-11-25 复用权衡框架 review：select 链从未计量是估算错 3 倍的根因，bottom-sheet 链体积是评估「复用 vs 自实现弹层」的关键输入）），上浮 ~15% 取整定档 16 KB"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/basic.js gzip",
+        "kind": "absolute",
+        "actualBytes": 41812,
+        "limitBytes": 49152,
+        "warnAtBytes": 44237,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 40.8 KB，上浮 ~15% 取整定档 48 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/commerce.js gzip",
+        "kind": "absolute",
+        "actualBytes": 73064,
+        "limitBytes": 84992,
+        "warnAtBytes": 76493,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 71.4 KB，上浮 ~15% 取整定档 83 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警——本档即该推演的看守）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/conversation.js gzip",
+        "kind": "absolute",
+        "actualBytes": 26657,
+        "limitBytes": 30720,
+        "warnAtBytes": 27648,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 26.0 KB，上浮 ~15% 取整定档 30 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/data.js gzip",
+        "kind": "absolute",
+        "actualBytes": 305830,
+        "limitBytes": 352256,
+        "warnAtBytes": 317030,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 298.7 KB（全库最重族——table/gantt/scheduler 大件所在），上浮 ~15% 取整定档 344 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/feedback.js gzip",
+        "kind": "absolute",
+        "actualBytes": 86055,
+        "limitBytes": 99328,
+        "warnAtBytes": 89395,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 84.0 KB，上浮 ~15% 取整定档 97 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/form.js gzip",
+        "kind": "absolute",
+        "actualBytes": 264375,
+        "limitBytes": 304128,
+        "warnAtBytes": 273715,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 258.2 KB（第二重组件族——date-picker/upload/table-select 等表单大件所在），上浮 ~15% 取整定档 297 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/framework.js gzip",
+        "kind": "absolute",
+        "actualBytes": 13371,
+        "limitBytes": 16384,
+        "warnAtBytes": 14746,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 13.1 KB（全库最轻族——app/config-provider/theme-editor），上浮 ~15% 取整定档 16 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/layout.js gzip",
+        "kind": "absolute",
+        "actualBytes": 40085,
+        "limitBytes": 47104,
+        "warnAtBytes": 42394,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 39.1 KB，上浮 ~15% 取整定档 46 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/navigation.js gzip",
+        "kind": "absolute",
+        "actualBytes": 131611,
+        "limitBytes": 151552,
+        "warnAtBytes": 136397,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 128.5 KB（menubar/menu/navigation-menu 大件所在），上浮 ~15% 取整定档 148 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/overlay.js gzip",
+        "kind": "absolute",
+        "actualBytes": 23658,
+        "limitBytes": 27648,
+        "warnAtBytes": 24883,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 23.1 KB，上浮 ~15% 取整定档 27 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
+      },
+      {
+        "name": "CDN 族包 dist/cdn/workbench.js gzip",
+        "kind": "absolute",
+        "actualBytes": 31258,
+        "limitBytes": 36864,
+        "warnAtBytes": 33178,
+        "pass": true,
+        "warn": false,
+        "basis": "首档 2026-11-25（复用基建配套批）：实测 gzip 30.5 KB，上浮 ~15% 取整定档 36 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）"
       }
     ]
   },
