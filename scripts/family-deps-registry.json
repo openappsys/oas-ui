@@ -1,0 +1,130 @@
+{
+  "description": [
+    "跨族边单向依赖登记表（消费方 scripts/check-family-deps.mjs，2026-11-25 复用基建配套批首建）。",
+    "契约：登记表 = 生产代码跨族 import 的现状事实（先全量扫描登记，再拦新增反边）——",
+    "登记条目在现状里必须真实出现（条目失效 = 事实已消失，须删除条目而非保留空头审批）；",
+    "现状里出现登记表之外的跨族 import 即红灯。方向语义：",
+    "- 任意族 → leafLayer（shared）= 叶子方向，放行（基座共享件被全族消费是分层设计）;",
+    "- shared → 族 = 叶子反向边，必须逐条登记（本表 shared→data / shared→form 两条）；",
+    "- 族 → 族 = 跨组件依赖，必须逐条登记；",
+    "- entryLayer（families/）= CDN 族包入口层，按设计 import 任意族，不入图不登记；",
+    "- 任意族 → entryLayer 的 import 一律违规（入口层不被任何族反向依赖）；",
+    "- @oas-ui/* workspace 包 = 基座与叶子（core/i18n/icons），放行（外部裸导入由 perf:size 裸导入门禁管辖）。",
+    "knownCycles：登记边闭合的族级环簇（强连通分量 SCC）留名——稠密登记图里二元环会",
+    "组合出大量复合环（逐环留名不可维护），环簇才是稳定留名单位；现状环簇在此留名并",
+    "写明理由，环簇扩大/新增/消失（留名失效）未对应登记即红灯。",
+    "背景（2026-11-25 复用权衡 review）：form 当前零 commerce import 是加门禁的最佳时机；",
+    "共享内核（date-grid 日期数学 / virtual-list 虚拟滚动 / overlay-floating 浮层定位）",
+    "下沉决策需要单向依赖面可审计，双向回环必须留名可查。"
+  ],
+  "entryLayer": "families",
+  "leafLayer": "shared",
+  "edges": [
+    {
+      "from": "commerce",
+      "to": "feedback",
+      "reason": "sku 弹层承载复用 oas-bottom-sheet（2026-11-25 复用权衡 review 登记的设计内跨组件依赖）"
+    },
+    {
+      "from": "data",
+      "to": "basic",
+      "reason": "timeline 入口副作用 import basic/icon——组件 icon 属性内部渲染 <oas-icon>，入口注册兜底"
+    },
+    {
+      "from": "data",
+      "to": "feedback",
+      "reason": "ellipsis 入口副作用挂载 feedback/tooltip、statistic 入口副作用挂载 feedback/skeleton（加载/提示组合）"
+    },
+    {
+      "from": "data",
+      "to": "form",
+      "reason": "gantt（helpers/level/utils/oas-gantt）、number-animation、resource（model/oas-resource/resource-utils）消费 form/calendar/date-grid 日期数学共享内核（parseISODate/toISODate/formatToken 等）"
+    },
+    {
+      "from": "data",
+      "to": "navigation",
+      "reason": "table 入口副作用 import navigation/pagination（表格分页组合）"
+    },
+    {
+      "from": "data",
+      "to": "overlay",
+      "reason": "avatar-group/chart/table 消费 overlay/floating 浮层定位内核（computePosition/getViewport）"
+    },
+    {
+      "from": "feedback",
+      "to": "data",
+      "reason": "notice-bar 入口副作用 import data/marquee（滚动文本内核复用）"
+    },
+    {
+      "from": "feedback",
+      "to": "framework",
+      "reason": "命令式组件（drawer/loading-bar/message/modal/notification/toast）经 framework/app/app-host 解析消息宿主（resolveMessageHost/getApp*Config）"
+    },
+    {
+      "from": "feedback",
+      "to": "overlay",
+      "reason": "hover-card/popconfirm/popover/tooltip 消费 overlay/floating 浮层定位内核"
+    },
+    {
+      "from": "form",
+      "to": "basic",
+      "reason": "segmented/switch/upload 入口副作用 import basic/icon——icon 属性内部渲染 <oas-icon>，入口注册兜底"
+    },
+    {
+      "from": "form",
+      "to": "data",
+      "reason": "select/tree-select/cascader/combobox/auto-complete/transfer 消费 data/virtual-list 虚拟滚动内核（import type OASVirtualList 等）"
+    },
+    {
+      "from": "form",
+      "to": "feedback",
+      "reason": "select/cascader/combobox/tree-select 弹层承载 bottom-sheet、rate 挂 tooltip、date-picker/time-picker 挂面板反馈、upload 挂 progress（提示/承载组合）"
+    },
+    {
+      "from": "form",
+      "to": "overlay",
+      "reason": "auto-complete/cascader/color-picker/combobox/date-picker/mentions/select/time-picker/tree-select 消费 overlay/floating 浮层定位内核"
+    },
+    {
+      "from": "layout",
+      "to": "overlay",
+      "reason": "sidebar 消费 overlay/floating 浮层定位内核"
+    },
+    {
+      "from": "navigation",
+      "to": "data",
+      "reason": "command 消费 data/virtual-list 虚拟滚动内核"
+    },
+    {
+      "from": "navigation",
+      "to": "overlay",
+      "reason": "breadcrumb/contextmenu/dropdown/navigation-menu/tour 消费 overlay/floating 浮层定位内核"
+    },
+    {
+      "from": "overlay",
+      "to": "basic",
+      "reason": "share-sheet 入口副作用 import basic/icon"
+    },
+    {
+      "from": "overlay",
+      "to": "framework",
+      "reason": "overlay 经 framework/app/app-host 解析消息宿主（resolveMessageHost）"
+    },
+    {
+      "from": "shared",
+      "to": "data",
+      "reason": "resource-load/resource-level 实现件消费 data/resource 模型与 gantt 类型——L3 分层登记既定设计「实现居 src/shared/，组件属性静态消费同一份实现」"
+    },
+    {
+      "from": "shared",
+      "to": "form",
+      "reason": "resource-level 消费 form/calendar/date-grid 日期数学（addMonthsClamped/toISODate）"
+    }
+  ],
+  "knownCycles": [
+    {
+      "nodes": ["data", "form", "feedback", "navigation"],
+      "reason": "现状环簇（强连通分量）：data⇄form（date-grid 日期数学共享内核双向消费）、data⇄feedback（ellipsis/statistic 挂载 tooltip/skeleton ↔ notice-bar 复用 marquee 内核）、data⇄navigation（table 入口挂 pagination ↔ command 复用 virtual-list 内核）互相咬合成单簇；簇内组合边 form→feedback（tooltip/bottom-sheet 承载）。均为入口副作用挂载与数学/虚拟滚动内核单点组合，非组件级回环。新增任何使本环簇扩大的登记边须先评估能否下沉 shared 叶子层。"
+    }
+  ]
+}

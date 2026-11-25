@@ -25,6 +25,8 @@
     "qa:audit": "node scripts/qa/assert-audit.mjs",
     "qa:audit:check": "node scripts/qa/assert-audit.mjs --check",
     "qa:dead-exports": "node scripts/qa/dead-exports.mjs",
+    "family-deps:test": "node --test scripts/check-family-deps.test.mjs",
+    "family-deps:check": "node scripts/check-family-deps.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "api:scan": "node scripts/api-docs/scan.mjs",
