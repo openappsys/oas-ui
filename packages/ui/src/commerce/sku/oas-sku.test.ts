@@ -564,3 +564,45 @@ function stubViewport(initialNarrow: boolean): { setNarrow: (narrow: boolean) =>
     },
   }
 }
+
+// ---------------------------------------------------------------------------
+// 形态切换收口（本批：焦点保持 / open 悬空真值收口）
+// ---------------------------------------------------------------------------
+
+describe('oas-sku 形态切换收口', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('popup→embedded 搬移面板后焦点保持（焦点元素跟着面板走，不丢到 body）', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    el.openOverlay()
+    const radio = optionInput(el, 0, '红')
+    radio.focus()
+    expect(el.shadowRoot!.querySelector('oas-bottom-sheet')!.contains(radio)).toBe(true)
+    // shadow 内焦点在 document 层面表现为 host，这里直接按 shadowRoot.activeElement 断言
+    expect(el.shadowRoot!.activeElement, '聚焦已落在该单选上').toBe(radio)
+
+    // 切到内嵌（显式 layout 与视口越界走同一搬移路径）
+    el.setAttribute('layout', 'embedded')
+    expect(part(el, 'panel-host')!.contains(radio), '面板搬回内嵌容器').toBe(true)
+    expect(el.shadowRoot!.activeElement, '搬移前聚焦的单选在搬移后仍是活跃元素（焦点不掉到 body/host）').toBe(radio)
+  })
+
+  it('popup→embedded 切换时 open 悬空真值收口：open 回写 false 并派发 oas-open-change', () => {
+    const el = mount({ specs: SPECS, skus: SKUS, layout: 'popup' })
+    el.openOverlay()
+    expect(el.hasAttribute('open')).toBe(true)
+    const events: Array<{ open: boolean }> = []
+    el.addEventListener('oas-open-change', (e) => events.push((e as CustomEvent<{ open: boolean }>).detail))
+
+    el.setAttribute('layout', 'embedded')
+    expect(el.hasAttribute('open'), '承载切换后弹层已隐藏，open 不得残留悬空真值').toBe(false)
+    expect(events, '同步派发一次 open 变化（受控宿主据此清滚动锁/遮罩态）').toEqual([{ open: false }])
+    expect(el.shadowRoot!.querySelector('oas-bottom-sheet')!.hasAttribute('open')).toBe(false)
+  })
+})

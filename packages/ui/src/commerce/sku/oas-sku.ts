@@ -649,10 +649,27 @@ export class OASSku extends OASElement {
       }
     } else {
       this.cancelSheetHide()
+      // 焦点保持：搬移前记录面板内的深活跃元素（含 shadow 路径）。同文档 appendChild
+      // 理论上焦点随节点走，但部分环境（happy-dom / 宿主框架重排）会把焦点丢掉——
+      // 复活后表现为活跃元素退到 body 或 host。搬移后若活跃元素不再是原焦点，复原到
+      // 原控件，避免键盘用户焦点丢失；真实浏览器保焦路径下判定不成立、零副作用。
+      const active = this.deepActiveElement()
+      const focusedInPanel = active != null && panel.contains(active)
       if (panel.parentElement !== host) host.appendChild(panel)
       // 内嵌形态不留幽灵弹层：收起并隐藏承载件（空 dialog 不进读屏树）
       sheet.removeAttribute('open')
       sheet.setAttribute('hidden', '')
+      if (focusedInPanel && active && this.deepActiveElement() !== active) {
+        active.focus({ preventScroll: true })
+      }
+      // open 悬空真值收口：popup 形态下打开的弹层切回 embedded 后承载件已隐藏，
+      // `open` 残留会让宿主的滚动锁 / 遮罩态挂空且永不解除（形态切换不经过
+      // openOverlay / onSheetClose，没有其它派发点）。同步回写 false 并派发
+      // oas-open-change——受控宿主收到事件后按自己的状态清锁，不必再回写 open。
+      if (this.hasAttribute('open')) {
+        this.removeAttribute('open')
+        this.emit('open-change', { open: false } satisfies SkuOpenChangeDetail)
+      }
     }
   }
 
