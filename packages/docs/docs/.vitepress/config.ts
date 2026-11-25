@@ -47,6 +47,16 @@ const guideItemsZh: DefaultTheme.SidebarItem[] = [
   { text: '框架接入（React、Vue 等）', link: '/guide/frameworks' },
   { text: '集成 FAQ', link: '/guide/faq' },
   { text: '场景方案', link: '/guide/recipes' },
+  {
+    text: '电商场景配方',
+    collapsed: false,
+    items: [
+      { text: '秒杀与限时抢购', link: '/guide/flash-sale' },
+      { text: '领券中心', link: '/guide/coupon-center' },
+      { text: '库存紧张提示', link: '/guide/stock-alert' },
+      { text: '商品详情页骨架', link: '/guide/product-detail' },
+    ],
+  },
   { text: '导航形态组合', link: '/guide/navigation-patterns' },
   { text: '服务端窗口取数', link: '/guide/windowed-data' },
   { text: 'AI 会话接入', link: '/guide/ai-chat' },
@@ -66,6 +76,16 @@ const guideItemsEn: DefaultTheme.SidebarItem[] = [
   { text: 'Framework Integration (React, Vue, etc.)', link: '/en/guide/frameworks' },
   { text: 'Integration FAQ', link: '/en/guide/faq' },
   { text: 'Scenarios', link: '/en/guide/recipes' },
+  {
+    text: 'E-commerce recipes',
+    collapsed: false,
+    items: [
+      { text: 'Flash sale', link: '/en/guide/flash-sale' },
+      { text: 'Coupon center', link: '/en/guide/coupon-center' },
+      { text: 'Low-stock alerts', link: '/en/guide/stock-alert' },
+      { text: 'Product detail skeleton', link: '/en/guide/product-detail' },
+    ],
+  },
   { text: 'Navigation patterns', link: '/en/guide/navigation-patterns' },
   { text: 'Server-side windowed data', link: '/en/guide/windowed-data' },
   { text: 'AI chat integration', link: '/en/guide/ai-chat' },

@@ -1,15 +1,15 @@
 {
-  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。 债务台账（2026-11-25 电商扩容二波批登记）：goods-list.html ratio=2 为 oas-tag success/warning 色对 4.35:1 / 4.42:1 的既有 token 债务（非本批引入，属既有组件——修 tag 色对另立批次，基线登记保留只许降不许升）。",
+  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。债务台账（2026-11-25 电商扩容二波批登记）：goods-list.html ratio=2：oas-tag success/warning 色对 4.35:1 / 4.42:1 的既有 token 债务（非本批引入，属既有组件——修 tag 色对另立批次，基线登记保留只许降不许升）。",
   "totals": {
-    "sampled": 63526,
+    "sampled": 66872,
     "below30": 0,
     "below45": 0,
     "below60": 0,
     "ratio": 293,
-    "exempt": 700,
+    "exempt": 708,
     "skipped": {
-      "local": 4076,
-      "ci": 4406
+      "local": 4224,
+      "ci": 4554
     }
   },
   "topPairs": [],
@@ -945,8 +945,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 3,
-        "ci": 3
+        "local": 4,
+        "ci": 4
       }
     },
     "image-picker.html::dark": {
@@ -956,8 +956,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 3,
-        "ci": 3
+        "local": 4,
+        "ci": 4
       }
     },
     "image.html": {
@@ -1517,8 +1517,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 21,
-        "ci": 21
+        "local": 23,
+        "ci": 23
       }
     },
     "questionnaire.html::dark": {
@@ -1528,8 +1528,8 @@
       "ratio": 0,
       "exempt": 0,
       "skipped": {
-        "local": 21,
-        "ci": 21
+        "local": 23,
+        "ci": 23
       }
     },
     "radio.html": {
@@ -2236,6 +2236,50 @@
         "ci": 6
       }
     },
+    "guide/coupon-center.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 2,
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
+    },
+    "guide/coupon-center.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 2,
+      "skipped": {
+        "local": 4,
+        "ci": 4
+      }
+    },
+    "guide/flash-sale.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
+    "guide/flash-sale.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 1,
+        "ci": 1
+      }
+    },
     "guide/frameworks.html": {
       "below30": 0,
       "below45": 0,
@@ -2324,6 +2368,28 @@
         "ci": 8
       }
     },
+    "guide/product-detail.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
+    },
+    "guide/product-detail.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
+    },
     "guide/recipes.html": {
       "below30": 0,
       "below45": 0,
@@ -2366,6 +2432,28 @@
       "skipped": {
         "local": 44,
         "ci": 64
+      }
+    },
+    "guide/stock-alert.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 15,
+        "ci": 15
+      }
+    },
+    "guide/stock-alert.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 15,
+        "ci": 15
       }
     },
     "guide/theming.html": {
@@ -2445,6 +2533,28 @@
         "ci": 1
       }
     },
+    "en/coupon-center.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 2,
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
+    },
+    "en/coupon-center.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 2,
+      "skipped": {
+        "local": 6,
+        "ci": 6
+      }
+    },
     "en/faq.html": {
       "below30": 0,
       "below45": 0,
@@ -2465,6 +2575,28 @@
       "skipped": {
         "local": 1,
         "ci": 1
+      }
+    },
+    "en/flash-sale.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 3,
+        "ci": 3
+      }
+    },
+    "en/flash-sale.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 3,
+        "ci": 3
       }
     },
     "en/frameworks.html": {
@@ -2555,6 +2687,28 @@
         "ci": 10
       }
     },
+    "en/product-detail.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
+    },
+    "en/product-detail.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 12,
+        "ci": 12
+      }
+    },
     "en/recipes.html": {
       "below30": 0,
       "below45": 0,
@@ -2619,6 +2773,28 @@
       "skipped": {
         "local": 48,
         "ci": 67
+      }
+    },
+    "en/stock-alert.html": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 18,
+        "ci": 18
+      }
+    },
+    "en/stock-alert.html::dark": {
+      "below30": 0,
+      "below45": 0,
+      "below60": 0,
+      "ratio": 0,
+      "exempt": 0,
+      "skipped": {
+        "local": 18,
+        "ci": 18
       }
     },
     "en/theming.html": {
