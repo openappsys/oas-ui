@@ -216,14 +216,15 @@ describe('oas-logistics', () => {
     expect(String(warn.mock.calls[0])).toContain('current')
   })
 
-  it('M5 time 可解析时渲染 <time datetime>（ISO 数据）；不可解析文本不写 datetime', () => {
+  it('M5 time 可解析时渲染 <time datetime>；不可解析文本不写 datetime（数据用显式 UTC 串，全时区稳定）', () => {
     const steps = JSON.stringify([
-      { title: 'ISO 节点', time: '2026-11-24 18:20' },
+      { title: 'ISO 节点', time: '2026-11-24T10:20:00Z' },
       { title: '文本节点', time: '昨天 18:20' },
     ])
     const el = mount({ steps })
     const times = [...el.shadowRoot!.querySelectorAll<HTMLElement>('time[part="time"]')]
     expect(times).toHaveLength(2)
+    // 显式 UTC 串 → Date.parse 与 toISOString 全时区恒定（无 TZ 依赖；III-0）
     expect(times[0]!.getAttribute('datetime')).toBe('2026-11-24T10:20:00.000Z')
     expect(times[1]!.getAttribute('datetime')).toBeNull()
   })

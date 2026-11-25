@@ -88,11 +88,18 @@ describe('oas-member-card', () => {
     expect(btn.parentElement).toBe(el)
   })
 
-  it('M3 宿主预置 aria-label 时组件不覆盖（oas-compact 先例守卫）', () => {
+  it('M3 宿主显式命名不被冲掉（grade 更新触发 update 后仍保留）；删除后恢复接管并跟随 grade', () => {
     const el = mount({ grade: '黄金会员' })
+    // 宿主显式命名。注意 aria-label 不在 observedAttributes——仅 setAttribute 不触发 update，
+    // 随后的 grade 变化才把「宿主命名在场」暴露给 update（旧强写实现正是在这条路径冲掉宿主命名）
     el.setAttribute('aria-label', '我的会员卡')
-    expect(el.getAttribute('aria-label')).toBe('我的会员卡')
-    // 无预置时仍走 i18n 缺省命名
+    el.setAttribute('grade', '钻石会员')
+    expect(el.getAttribute('aria-label'), '宿主显式命名应优先（不因 grade 更新被冲掉）').toBe('我的会员卡')
+    // 宿主删除 → 恢复接管 → 跟随 grade 派生
+    el.removeAttribute('aria-label')
+    el.setAttribute('grade', '白金会员')
+    expect(el.getAttribute('aria-label')).toBe('会员卡：白金会员')
+    // 无预置时缺省命名口径不变
     const el2 = mount({ grade: '黄金会员' })
     expect(el2.getAttribute('aria-label')).toBe('会员卡：黄金会员')
   })

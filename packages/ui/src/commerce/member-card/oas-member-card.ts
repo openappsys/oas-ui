@@ -24,7 +24,10 @@ import { devWarn } from '../../shared/dev-warn.js'
  * - `perks`：权益区（无内容时整体隐藏）。
  * - `actions`：操作区（无内容时整体隐藏；按钮文案与可访问名归宿主）。
  *
- * a11y：卡片 `role="group"` + `aria-label`（「会员卡：{grade}」，缺省「会员卡」）；
+ * a11y：卡片 `role="group"` + `aria-label`（「会员卡：{grade}」，缺省「会员卡」）。
+ * aria-label 所有权：宿主显式写入的自定义名优先（组件不覆盖、grade 变化不冲掉）；宿主删除后
+ * 组件恢复接管并跟随 grade 派生；宿主恰好写入与派生值相同的串会被视为组件接管（值型所有权
+ * 的固有限制，语义等价）。
  * 等级徽章可见文本即等级 + sr-only 前缀（不只靠颜色）；有效期前缀 i18n（语义标签
  * 可读）。颜色全走 token（暗色自动跟随），布局走逻辑属性（RTL 安全）。
  */
@@ -232,7 +235,9 @@ export class OASMemberCard extends OASElement {
 
     // 可访问性挂在宿主（host 即可访问节点——shadow 内容器不重复挂 group 语义）。
     // aria-label 所有权追踪（oas-compact 守卫先例的增强）：宿主预置/改写的值 ≠ 组件上次派生值
-    // → 视为宿主显式命名，组件不覆盖；宿主未动（值 = 组件上次写的）→ 组件跟随 grade 更新。
+    // → 视为宿主显式命名，组件不覆盖；宿主未动（值 = 组件上次写的）→ 组件跟随 grade 更新；
+    // 宿主删除 → 恢复接管。已知固有限制：宿主恰好写入与派生值相同的串会被视为组件接管（值型
+    // 所有权无法区分来源，语义等价故可接受）。
     const grade = this.getAttr('grade').trim()
     const derived = grade === '' ? this.t('memberCard.label') : `${this.t('memberCard.label')}：${grade}`
     if (!this.hasAttribute('role')) this.setAttribute('role', 'group')

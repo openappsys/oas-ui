@@ -103,6 +103,11 @@ const STYLE = `
   cursor: pointer;
   transition: background var(--oas-transition-fast) var(--oas-ease-out), color var(--oas-transition-fast) var(--oas-ease-out);
 }
+/* 未选中页签 hover：bg-hover 向文字色混 6% 得可感知加深一档（无独立 bg-active token）；
+   text-primary on 合成底 ≈ 10:1，对比度不因 hover 回退（III-1 交互态回归） */
+.tab:hover:not([aria-selected='true']):not(:disabled) {
+  background: color-mix(in srgb, var(--oas-color-text-primary) 6%, var(--oas-color-bg-hover));
+}
 .tab:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
@@ -211,7 +216,9 @@ export class OASOrderList extends OASElement {
   private slotEl: HTMLSlotElement | null = null
   private emptySlot: HTMLSlotElement | null = null
 
-  private warnedTabs = false
+  private warnedTabsJson = false
+  /** active 指向 disabled / 不存在的 roving 兜底告警（与非法 JSON 告警独立，各一次） */
+  private warnedRovingFallback = false
   /** 触底待应答（派发 oas-load-more 后直到宿主置 loading 或插槽内容变化才解除） */
   private loadPending = false
   /** slot 分配卡身份序列签名（变化即解除触底待应答——对齐 goods-list 等数量增删教训，见 NODE_IDS） */
@@ -268,8 +275,8 @@ export class OASOrderList extends OASElement {
 
   private parseTabs(): OrderTab[] {
     return parseJsonArray<OrderTab>(this.getAttr('tabs'), () => {
-      if (!this.warnedTabs) {
-        this.warnedTabs = true
+      if (!this.warnedTabsJson) {
+        this.warnedTabsJson = true
         devWarn('[oas-order-list] tabs 不是合法 JSON 数组，已按空列表处理')
       }
     }).filter(
@@ -388,8 +395,8 @@ export class OASOrderList extends OASElement {
     const activeDef = tabs.find((t) => t.key === activeKey)
     if (!activeDef || activeDef.disabled) {
       rovingKey = tabs.find((t) => !t.disabled)?.key ?? ''
-      if (rovingKey && !this.warnedTabs) {
-        this.warnedTabs = true
+      if (rovingKey && !this.warnedRovingFallback) {
+        this.warnedRovingFallback = true
         devWarn(
           `[oas-order-list] active "${activeKey}" 指向 disabled / 不存在的页签，roving tabindex 已兜底首个可用页签 "${rovingKey}"`,
         )
@@ -422,10 +429,13 @@ export class OASOrderList extends OASElement {
       fragment.appendChild(btn)
     })
     tablist.replaceChildren(fragment)
-    // 焦点复原：重建前焦点在 tablist 内 → 落回同 key 的新 tab（找不到 = 该 tab 已不存在，焦点归还文档流）
+    // 焦点复原：重建前焦点在 tablist 内 → 优先落回同 key 的新 tab；命中 disabled（focus 会
+    // no-op、焦点丢 body）时落 roving 兜底 tab（III-3）；同 key 不存在则归还文档流
     if (focusedKey !== null) {
-      const restored = tablist.querySelector<HTMLElement>(`[part="tab"][data-key="${CSS.escape(focusedKey)}"]`)
-      restored?.focus()
+      const restored = tablist.querySelector<HTMLButtonElement>(`[part="tab"][data-key="${CSS.escape(focusedKey)}"]`)
+      const roving = tablist.querySelector<HTMLButtonElement>('[part="tab"][tabindex="0"]')
+      if (restored && !restored.disabled) restored.focus()
+      else roving?.focus()
     }
   }
 

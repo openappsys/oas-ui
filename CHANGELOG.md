@@ -14,7 +14,23 @@
 
 ### 修复
 
-**commerce 二波（search-bar / logistics / order-list / member-card）真实浏览器复核修复批（R1 实测：2C + 7I + Minor）**
+**commerce 二波终验跟修批（真实浏览器复核：III 系列）**
+
+- **oas-logistics**：
+  - **M5 单测时区依赖（C 级）**：datetime 断言用「无时区本地时间串 + 写死期望 ISO」——TZ=UTC 下 Date.parse 把本地串当 UTC 解析，期望值错位 8 小时（CI 实测必红）；测试数据改显式 UTC 串（`2026-11-24T10:20:00Z`），Date.parse/toISOString 全时区恒定。`TZ=UTC` 本地复现红 → 绿。
+  - **告警 flag 拆分**：非法 state 与「多 current 归一」共用一个 warned flag——先触发者静默后者；拆 `warnedStateInvalid` / `warnedStateMultiCurrent` 各自独立一次。
+- **oas-order-list**：
+  - **焦点复原命中 disabled 落 body**：复原 `focus()` 对 disabled tab 是 no-op（roving 兜底已算出没用上）——复原命中 disabled 时改落 roving tab；单测固化（改配置使焦点 tab 变 disabled，断言焦点在兜底 tab 不丢 body）。
+  - **未选中页签 hover 反馈缺失**（I5 对比度修复时删了 hover 分支）：补 hover 底（bg-hover 向 text-primary 混 6% 的可感知加深一档，无独立 bg-active token；text-primary on 合成底 ≈ 10:1 对比度不回退）；qa-regression +1（hover 底色变化 + 文字色不回退 text-secondary）。
+  - **告警 flag 拆分**：非法 tabs JSON 与 roving 兜底共用 warned flag → 拆 `warnedTabsJson` / `warnedRovingFallback`。
+- **oas-member-card**：
+  - **aria-label 回归测试恒真**：原测试「mount 后 setAttribute」不触发 update（aria-label 不在 observedAttributes），旧强写实现同样通过（抓不到原 bug）——改真断言路径：宿主写 label → **改 grade 触发 update** → 宿主命名不被冲掉（旧实现此路径必红，已用强写实现复现 RED 验证）→ 宿主删除 → 恢复接管跟随 grade。
+- **demo（member-card）**：「升级下一档」primary 实底钮在 light 下与 gradient 卡面同色融合——改 default 表面按钮（不透明 surface 底 + primary 文字，light/dark 双态与卡面区分明确，不依赖卡面 surface 色）。
+- **文档同步（aria-label 所有权）**：member-card README / 组件 jsdoc / zh-en 文档「键盘与无障碍」补所有权三态说明（宿主显式命名优先 / 删除后恢复接管 / 巧合同串被视为接管属值型所有权固有限制）。
+- **a11y 基线**：本批新页与回退页的 `skipped.ci` 补 +4 跨 OS 字体排版余量（约定 ci = 实测 + 4；生成逻辑 ci = max(实测, 旧 ci) 不会回落）；债务台账入基线 note——goods-list `ratio=2` 为 oas-tag success/warning 色对 4.35:1 / 4.42:1 的**既有 token 债务**（非本批引入，修 tag 另立批次，基线登记保留只许降不许升）。
+- **内部轮次归属清理**：CHANGELOG 与组件注释里的内部审核轮次编号（如「R1 实测」类）改中性表述（「真实浏览器复核」）；本批提交 message 同步改写（未 push 安全，树内容不变仅 message 变）。历史批次的既有轮次编号不在本批范围（属各自批次的登记内容）。
+
+**commerce 二波（search-bar / logistics / order-list / member-card）真实浏览器复核修复批（2C + 7I + Minor）**
 
 - **oas-search-bar**：
   - **搜索钮空白胶囊（C 级）**：`part="go"` 按钮漏放图标子节点（渲染成 16×32 蓝色空条，与文档「图标」口径不符）——补内联放大镜 svg（与输入框左侧占位图标同源 `searchPath`，`aria-hidden`）；qa-regression 断言 svg 存在 + 渲染尺寸 > 10px。

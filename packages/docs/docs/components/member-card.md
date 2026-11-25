@@ -26,7 +26,7 @@ description: "会员卡：等级徽章（可见文本即等级标识）+ 权益�
       <div slot="perks">全店 88 折</div>
       <div slot="perks">专属客服与优先发货</div>
       <oas-button slot="actions" size="small" data-demo-action="续费">立即续费</oas-button>
-      <oas-button slot="actions" size="small" type="primary" data-demo-action="升级">升级下一档</oas-button>
+      <oas-button slot="actions" size="small" data-demo-action="升级">升级下一档</oas-button>
     </oas-member-card>
     <p id="mc-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
       点操作钮观察宿主侧动作反馈（组件零事件协议——行为归宿主）。
@@ -55,7 +55,7 @@ description: "会员卡：等级徽章（可见文本即等级标识）+ 权益�
 
 ## 键盘与无障碍
 
-- 卡片宿主 `role="group"` + `aria-label`（「会员卡：{grade}」，等级名进可访问名——读屏不进卡片也知道等级）。
+- 卡片宿主 `role="group"` + `aria-label`（「会员卡：{grade}」，等级名进可访问名——读屏不进卡片也知道等级）。**aria-label 所有权**：宿主显式写入的自定义名优先（组件不覆盖，grade 变化也不冲掉）；宿主删除后组件恢复接管并跟随 grade 派生；宿主恰好写入与派生值相同的串会被视为组件接管（值型所有权的固有限制，语义等价）。
 - 等级徽章**可见文本即等级标识**（不只靠颜色——底色档位只是视觉强化），sr-only「会员等级」前缀增强读屏语义（先读语义再读等级名）。
 - 有效期行带 i18n 前缀（「有效期：」语义可读）；操作钮可访问名由宿主按钮自带（组件不加包装层）。
 - `perks` / `actions` 插槽无内容时各区整体隐藏（不出空区块）；RTL 与暗色走逻辑属性与 token 自动跟随。

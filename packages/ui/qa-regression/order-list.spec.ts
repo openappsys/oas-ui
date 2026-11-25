@@ -43,6 +43,25 @@ test('order-list：键盘方向键移动焦点 + Enter 激活（manual activatio
   await expect(page.locator('#ol-basic-out')).toContainText('shipped')
 })
 
+test('order-list：未选中页签 hover 有可见底色反馈（交互态不缺失）且文字对比度不回退', async ({ page }) => {
+  await page.goto('/components/order-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ol-basic')
+  const host = page.locator('#ol-basic')
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  // 选一个未选中页签（初始 active=pending → nth(0) 未选中）
+  const tab = host.locator('[part="tab"]').nth(0)
+  const baseBg = await tab.evaluate((el) => getComputedStyle(el).backgroundColor)
+  await tab.hover()
+  const hoverBg = await tab.evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(hoverBg, 'hover 应有可见底色变化（I5 删 hover 分支前的交互态回归）').not.toBe(baseBg)
+  // hover 态文字不回退到 text-secondary（I5 修复口径：文字恒 text-primary，hover 只变底色）
+  const baseColor = await tab.evaluate((el) => getComputedStyle(el).color)
+  const hoverColor = await tab.evaluate((el) => getComputedStyle(el).color)
+  expect(hoverColor).toBe(baseColor)
+  // text-secondary 的 rgb（#71717a）不得再出现在未选中页签文字上
+  expect(hoverColor).not.toBe('rgb(113, 113, 122)')
+})
+
 test('order-list：键盘 Enter 激活后焦点保持在 tablist（I1——激活回写重建 tablist 后焦点不丢）', async ({ page }) => {
   await page.goto('/components/order-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ol-basic')

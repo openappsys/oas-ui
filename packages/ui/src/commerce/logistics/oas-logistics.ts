@@ -229,7 +229,9 @@ export class OASLogistics extends OASElement {
   private actionsSlot: HTMLSlotElement | null = null
 
   private warnedSteps = false
-  private warnedState = false
+  private warnedStateInvalid = false
+  /** 多 current 归一告警（与非法 state 告警独立，各一次） */
+  private warnedStateMultiCurrent = false
 
   // -------------------------------------------------------------------------
   // property 通道
@@ -284,8 +286,11 @@ export class OASLogistics extends OASElement {
       VALID_STATES.includes(String(s.state)) ? (s.state as LogisticsStepState) : undefined,
     )
     // 非法 state 告警一次
-    if (!this.warnedState && steps.some((s) => s.state !== undefined && !VALID_STATES.includes(String(s.state)))) {
-      this.warnedState = true
+    if (
+      !this.warnedStateInvalid &&
+      steps.some((s) => s.state !== undefined && !VALID_STATES.includes(String(s.state)))
+    ) {
+      this.warnedStateInvalid = true
       const bad = steps.find((s) => s.state !== undefined && !VALID_STATES.includes(String(s.state)))
       devWarn(`[oas-logistics] state "${String(bad?.state)}" 非法（done / current / pending），已按未声明处理`)
     }
@@ -301,8 +306,8 @@ export class OASLogistics extends OASElement {
         multiCurrent = true
       }
     }
-    if (multiCurrent && !this.warnedState) {
-      this.warnedState = true
+    if (multiCurrent && !this.warnedStateMultiCurrent) {
+      this.warnedStateMultiCurrent = true
       devWarn('[oas-logistics] steps 声明了多个 current，已归一为首个（其余按 pending 处理）')
     }
     const declaredIdx = declared.findIndex((s) => s !== undefined)

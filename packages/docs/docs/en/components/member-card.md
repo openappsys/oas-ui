@@ -26,7 +26,7 @@ Membership tier / benefits card: `grade` (tier badge — **the visible text is t
       <div slot="perks">12% off storewide</div>
       <div slot="perks">Priority support & shipping</div>
       <oas-button slot="actions" size="small" data-demo-action="Renew">Renew now</oas-button>
-      <oas-button slot="actions" size="small" type="primary" data-demo-action="Upgrade">Upgrade tier</oas-button>
+      <oas-button slot="actions" size="small" data-demo-action="Upgrade">Upgrade tier</oas-button>
     </oas-member-card>
     <p id="mc-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
       Click an action button to see the host-side feedback (zero event protocol — behavior owned by the host).
@@ -55,7 +55,7 @@ Membership tier / benefits card: `grade` (tier badge — **the visible text is t
 
 ## Keyboard & accessibility
 
-- Card host carries `role="group"` + `aria-label` (“Membership card: {grade}” — the tier name is in the accessible name, screen readers know the tier without entering the card).
+- Card host carries `role="group"` + `aria-label` (“Membership card: {grade}” — the tier name is in the accessible name, screen readers know the tier without entering the card). **aria-label ownership**: an explicit host-provided name wins (the component never overwrites it, and grade changes don't clobber it); removing the attribute hands ownership back to the component, which follows grade again; a host value that happens to equal the derived string is treated as component-owned (an inherent limit of value-based ownership, semantically equivalent).
 - The grade badge's **visible text is the tier identifier** (not color-only — the background variant is just visual emphasis), with an sr-only “Membership tier” prefix for screen-reader semantics.
 - The validity row carries the i18n prefix (“Valid until:”); action buttons take accessible names from the host buttons (no wrapper layer).
 - `perks` / `actions` hide entirely when empty (no empty blocks); RTL and dark theme follow via logical properties and tokens.

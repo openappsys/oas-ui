@@ -282,6 +282,27 @@ describe('oas-order-list', () => {
     expect(events, '等数量换卡后应解除待应答并再次派发').toHaveLength(2)
   })
 
+  it('III-3 焦点复原命中 disabled 时落 roving 兜底 tab（不落 body）', () => {
+    const el = mount({
+      tabs: JSON.stringify([
+        { key: 'a', label: 'A' },
+        { key: 'b', label: 'B' },
+      ]),
+    })
+    tabs(el)[0]!.focus()
+    // 宿主改配置：a 变 disabled（此时 active 缺省仍解析 a → roving 兜底 b）——重建后
+    // 焦点复原 key=a 命中 disabled tab，focus() 会 no-op；必须落到 roving 兜底 tab
+    el.setAttribute(
+      'tabs',
+      JSON.stringify([
+        { key: 'a', label: 'A', disabled: true },
+        { key: 'b', label: 'B' },
+      ]),
+    )
+    const focusedKey = el.shadowRoot!.activeElement?.getAttribute('data-key')
+    expect(focusedKey, '焦点应落在 roving 兜底 tab（b），不得丢到 body').toBe('b')
+  })
+
   it('M6 用户激活页签不重复渲染（回写 attribute 由属性通道触发一次 update，无手动二次调用）', () => {
     const el = mount({ tabs: TABS })
     const original = (OASOrderList.prototype as unknown as { update(): void }).update
