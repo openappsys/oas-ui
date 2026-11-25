@@ -109,6 +109,50 @@ test('cart：滑动删除——真实拖拽露出删除钮，再点删除即移�
   await expect(page.locator('#cart-delete-out')).toContainText('删除后剩 1 件')
 })
 
+// 回归（本批修复）：起手点落在**商品缩略图上**也必须能滑动删除。
+// 修复前 `<img>` 未禁原生拖拽：按住缩略图横移会走浏览器图片拖拽
+// （实测 pointerdown → pointermove → dragstart → pointercancel），滑动会话被 cancel 收掉，
+// 缩略图那一段（行宽 574px 时约左侧 100px）滑不出删除钮。
+test('cart：从缩略图上起手滑动同样能露出删除钮并进入可删除态', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-cart')
+  await page.waitForFunction(
+    () => {
+      const root = document.getElementById('cart-delete-swipe')?.shadowRoot
+      const imgs = root ? [...root.querySelectorAll('img')] : []
+      return imgs.every((img) => img.complete)
+    },
+    { timeout: 15000 },
+  )
+
+  const host = page.locator('#cart-delete-swipe')
+  const inner = host.locator('[part="item-inner"]').first()
+  const thumb = host.locator('[part="thumb"]').first()
+  await thumb.scrollIntoViewIfNeeded()
+  await thumb.hover() // 指针落到缩略图中心（命中检查由 Playwright 保证）
+  const box = (await thumb.boundingBox())!
+
+  await page.mouse.down()
+  await page.mouse.move(box.x - 20, box.y + box.height / 2, { steps: 8 })
+  await expect
+    .poll(() => inner.evaluate((el) => el.getAttribute('data-dragging')), {
+      message: '缩略图上按下 + 横移必须建立滑动会话（不得被原生图片拖拽 dragstart 接管）',
+    })
+    .toBe('true')
+  await page.mouse.up()
+
+  await expect
+    .poll(() => inner.evaluate((el) => (el as HTMLElement).style.transform), {
+      message: '从缩略图起手的滑动必须吸附展开（删除钮完全露出）',
+    })
+    .toBe('translateX(-72px)')
+
+  // 进入可删除态：露出的删除钮可点，且真的移除条目
+  await expect(host.locator('[part="item"]')).toHaveCount(2)
+  await host.locator('[part="swipe-remove"]').first().click()
+  await expect(host.locator('[part="item"]')).toHaveCount(1)
+})
+
 test('cart：滑动拖拽移出列表后松手仍正确结算（pointer capture）', async ({ page }) => {
   await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-cart')

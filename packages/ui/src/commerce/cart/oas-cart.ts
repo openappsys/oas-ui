@@ -239,6 +239,9 @@ const STYLE = `
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* 图片处在滑动删除的手势面上：禁原生拖拽与文本选择，避免 dragstart / 选区抢走指针 */
+  -webkit-user-drag: none;
+  user-select: none;
 }
 .thumb img[hidden] {
   display: none;
@@ -773,6 +776,10 @@ export class OASCart extends OASElement {
       img.setAttribute('part', 'image')
       img.alt = ''
       img.loading = 'lazy'
+      // 缩略图处在滑动删除的手势面上：不禁原生拖拽的话，按住缩略图横移会走浏览器图片拖拽
+      // （pointerdown → dragstart → pointercancel），滑动会话被 cancel 收掉——缩略图那一段
+      // 永远滑不出删除钮。draggable=false + CSS -webkit-user-drag:none 双保险。
+      img.draggable = false
       const image = img
       image.addEventListener('error', () => {
         image.hidden = true
