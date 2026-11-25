@@ -32,12 +32,14 @@ description: "物流时间线：steps JSON 双通道（状态 / 时间 / 描述�
 `collapsed` 只显示最新 2 条 + 「展开全部 N 条」切换钮；点击组件回写 attribute 并派 `oas-toggle`（detail `{ collapsed }`，order-card 同名事件惯例）；steps ≤2 条不显示切换钮：
 
 <DemoBlock title="折叠（只看最新 2 条）+ 切换反馈">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-logistics id="lg-collapse" collapsed
     steps='[{"title":"包裹已签收","time":"11-24 18:20"},{"title":"正在派送","time":"11-24 08:05"},{"title":"到达转运中心","time":"11-23 21:40"},{"title":"商家已发货","time":"11-22 12:00"},{"title":"订单已创建","time":"11-21 10:00"}]'
   ></oas-logistics>
   <p id="lg-collapse-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     点「展开全部 5 条」/「收起」观察 oas-toggle 反馈。
   </p>
+  </div>
 </DemoBlock>
 
 ## 动作插槽（复制单号 / 复制地址）
@@ -45,6 +47,7 @@ description: "物流时间线：steps JSON 双通道（状态 / 时间 / 描述�
 `actions` 插槽：复制逻辑归宿主（`navigator.clipboard` 自行调用），组件提供槽位容器与布局；插槽无内容时动作区整体隐藏：
 
 <DemoBlock title="复制单号 / 复制地址动作位">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-logistics id="lg-actions"
     steps='[{"title":"包裹已签收","time":"11-24 18:20","desc":"运单号 SF1380000221108"}]'
   >
@@ -54,6 +57,7 @@ description: "物流时间线：steps JSON 双通道（状态 / 时间 / 描述�
   <p id="lg-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     点动作钮观察宿主复制反馈。
   </p>
+  </div>
 </DemoBlock>
 
 ## 键盘与无障碍

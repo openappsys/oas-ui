@@ -136,6 +136,8 @@ export class OASMemberCard extends OASElement {
   private actionsSlot: HTMLSlotElement | null = null
 
   private warnedVariant = false
+  /** aria-label 所有权追踪：组件上次写入的派生值（宿主显式值 ≠ 此值时不覆盖） */
+  private lastOwnedAriaLabel: string | null = null
 
   // -------------------------------------------------------------------------
   // 生命周期
@@ -228,13 +230,17 @@ export class OASMemberCard extends OASElement {
     const variant = this.resolveVariant()
     if (this.getAttribute('data-variant') !== variant) this.setAttribute('data-variant', variant)
 
-    // 可访问性挂在宿主（host 即可访问节点——shadow 内容器不重复挂 group 语义）
+    // 可访问性挂在宿主（host 即可访问节点——shadow 内容器不重复挂 group 语义）。
+    // aria-label 所有权追踪（oas-compact 守卫先例的增强）：宿主预置/改写的值 ≠ 组件上次派生值
+    // → 视为宿主显式命名，组件不覆盖；宿主未动（值 = 组件上次写的）→ 组件跟随 grade 更新。
     const grade = this.getAttr('grade').trim()
+    const derived = grade === '' ? this.t('memberCard.label') : `${this.t('memberCard.label')}：${grade}`
     if (!this.hasAttribute('role')) this.setAttribute('role', 'group')
-    this.setAttribute(
-      'aria-label',
-      grade === '' ? this.t('memberCard.label') : `${this.t('memberCard.label')}：${grade}`,
-    )
+    const current = this.getAttribute('aria-label')
+    if (current === null || current === this.lastOwnedAriaLabel) {
+      if (current !== derived) this.setAttribute('aria-label', derived)
+      this.lastOwnedAriaLabel = derived
+    }
     if (this.gradeEl) this.gradeEl.hidden = grade === ''
     if (this.gradeTextEl) this.gradeTextEl.textContent = grade
     const gradeLabel = this.shadow.querySelector<HTMLElement>('[part="grade-label"]')

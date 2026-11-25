@@ -32,12 +32,14 @@ Full-flow node data: declare `done` / `current` / `pending` explicitly; undeclar
 `collapsed` shows only the latest 2 entries plus an “expand all N” toggle; clicking writes the attribute back and fires `oas-toggle` (detail `{ collapsed }`, the order-card event convention); steps ≤ 2 entries hide the toggle:
 
 <DemoBlock title="Collapsed (latest 2 only) + toggle feedback">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-logistics id="lg-collapse" collapsed
     steps='[{"title":"Package delivered","time":"11-24 18:20"},{"title":"Out for delivery","time":"11-24 08:05"},{"title":"Arrived at hub","time":"11-23 21:40"},{"title":"Shipped by seller","time":"11-22 12:00"},{"title":"Order created","time":"11-21 10:00"}]'
   ></oas-logistics>
   <p id="lg-collapse-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Click “expand all 5” / “collapse” to see the oas-toggle feedback.
   </p>
+  </div>
 </DemoBlock>
 
 ## Action slots (copy tracking / address)
@@ -45,6 +47,7 @@ Full-flow node data: declare `done` / `current` / `pending` explicitly; undeclar
 The `actions` slot: the copy logic belongs to the host (`navigator.clipboard` on your side); the component provides the slot container and layout; with no content the whole action row hides:
 
 <DemoBlock title="Copy tracking number / address actions">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-logistics id="lg-actions"
     steps='[{"title":"Package delivered","time":"11-24 18:20","desc":"Tracking no. SF1380000221108"}]'
   >
@@ -54,6 +57,7 @@ The `actions` slot: the copy logic belongs to the host (`navigator.clipboard` on
   <p id="lg-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Click an action button to see the host-side copy feedback.
   </p>
+  </div>
 </DemoBlock>
 
 ## Keyboard & accessibility

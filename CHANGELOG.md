@@ -14,6 +14,26 @@
 
 ### 修复
 
+**commerce 二波（search-bar / logistics / order-list / member-card）真实浏览器复核修复批（R1 实测：2C + 7I + Minor）**
+
+- **oas-search-bar**：
+  - **搜索钮空白胶囊（C 级）**：`part="go"` 按钮漏放图标子节点（渲染成 16×32 蓝色空条，与文档「图标」口径不符）——补内联放大镜 svg（与输入框左侧占位图标同源 `searchPath`，`aria-hidden`）；qa-regression 断言 svg 存在 + 渲染尺寸 > 10px。
+  - **demo 联想点击静默空操作**：demo 在宿主元素派 `KeyboardEvent`，而 keydown 监听在 shadow 内 input——事件穿不进 shadow，点联想词无任何反馈；改为 `input.focus()` 后对 shadow input 派发（zh/en 两页同步），qa-regression 断言点联想词后 `#sb-suggest-out` 出现 oas-search 反馈。
+- **oas-order-list**：
+  - **页签激活后焦点丢失**：`syncTabs` 全量重建 tablist 未捕获焦点——键盘 Enter 激活后焦点丢到 body；对齐 oas-tabs 的 captureFocused/restoreFocus 模式（重建前记焦点 tab 的 data-key，重建后 focus 复原；同 key 不存在则归还文档流）。qa-regression 真键盘用例 + 单测各 +1。
+  - **`active` 指向 disabled 页签 → tablist 不可 Tab 达**：roving tabindex 未排除 disabled（可聚焦 tab 数 0，违反 ARIA tabs「恰一个 tabindex=0」不变量）——对齐 oas-tabs 写法 `active 匹配 && !disabled` 才给 0，active 落空 / 指向 disabled 时**兜底首个 enabled tab** 并一次性 devWarn（宿主配置无效可诊断）。单测 +1（tabindex 断言 + devWarn）。
+  - **触底待应答按数量签名（首波 I3 同款教训）**：换页签后宿主等数量换卡不解除 pending → 触底永久停摆；签名改**节点身份序列**（WeakMap 分配 id，goods-list 同款模式），等数量换卡即解除并可再次派发。单测 +1。
+  - **未选中页签对比度（axe ratio 违规真修）**：text-secondary on bg-hover = 4.40:1 不达 AA——基态改 text-primary（≈11:1），count 徽标随 currentColor 同步受益，hover 分支删除（与基态同色）。基线收敛后 order-list 页**全零违规**（不进基线）。
+  - **重复渲染**：用户激活页签删除手动 `update()`（attributeChangedCallback 属性通道已触发，双轮渲染纯浪费）。
+- **oas-member-card**：
+  - **aria-label 覆盖宿主**：组件每轮 update 强写派生名，宿主预置的自定义名被吞——改**所有权追踪**（宿主值 ≠ 组件上次派生值 = 宿主显式命名不覆盖；值相同 = 组件接管跟随 grade 更新；宿主删除恢复接管；oas-compact 守卫先例增强）。单测 +1（预置不覆盖 / 缺省命名 / grade 跟随三态）。
+- **oas-logistics**：
+  - **多 current 声明归一**：`aria-current` 语义只允许一个——保留首个、其余降级 pending + devWarn 一次（与非法 state 告警同通道）。单测 +1。
+  - **`<time>` 补 `datetime`**：`steps.time` 可被 `Date.parse` 解析时写标准化 ISO `datetime`（读屏 / 检索可读）；不可解析文本不写。单测 +1（ISO 有 / 中文相对文案无）。
+  - **demo 布局**：折叠 / 动作插槽两个 DemoBlock 的组件与提示行被 `.demo-block__body`（flex row）排到同一水平线——grid 包裹让组件占满行（对齐 goods-list 先例）。
+- **demo 布局批**：member-card 基础 / 渐变卡被 flex 收缩成窄条——补 `width: 100%`（保留 max-width 420）；search-bar（3 处）/ order-list（1 处）组件与提示行同类排版一并 grid 包裹；member-card 黑金卡「升级下一档」plain 按钮在暗色 gradient 浅蓝卡面上白字不可读——改 primary 实底档位（不依赖卡面 surface 色，light/dark 双态可读）。
+- **登记面修正**：`oas-order-list.slots` 语料键误写「默认」（manifest 为空串键）→ api:gen --check 双向缺口 + API 表三行重复，改空串键重生成，api:check 全绿；perf 归因算式修正（全量入口边际增量 +13.4 → **+12.0** = 1257.4−1245.4）；cdn.js 依据补二波归因（820.2 → 825.4 仍在 830 天花板内）；总览页「176 个」写死数字漂移改动态措辞（以页面清单 / 侧栏为准，zh/en 同步）；a11y 对比度基线收敛——回退与本批无关的 image-picker / questionnaire 口径漂移（回 main 值 + totals 同步），基线 diff 只含本批最小增量（member-card 渐变卡 skipped 登记保留，order-list 全零违规不进基线）。
+
 **commerce 首波（filter / goods-list）真实浏览器实测修复批**
 
 - **oas-filter**：

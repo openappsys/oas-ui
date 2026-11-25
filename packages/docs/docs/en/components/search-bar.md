@@ -13,10 +13,12 @@ Boundary with `oas-input`: oas-input is the general text input (it already suppo
 Enter or the search button fires `oas-search` (detail `{ value }`; **empty values do not fire**); typing writes the `value` attribute in real time and fires `oas-input` (the host can render suggestions from it); the clear button empties and fires `oas-input` (focus returns to the input):
 
 <DemoBlock title="Basic search (Enter / search button / clear)">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-search-bar id="sb-basic" value="sneakers"></oas-search-bar>
   <p id="sb-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Type and press Enter (or click the search button) to see the oas-search feedback.
   </p>
+  </div>
 </DemoBlock>
 
 ## History & hot keywords slots
@@ -24,10 +26,12 @@ Enter or the search button fires `oas-search` (detail `{ value }`; **empty value
 The `history` / `hot` slots render history and hot keywords (persistence owned by the host — the demo keeps an in-memory array), **shown when the value is empty and the input is focused**; clicks inside the panel keep focus via the panel's `pointerdown` guard (history chips stay clickable); Esc collapses the panel, refocusing expands it again:
 
 <DemoBlock title="History + hot keywords (expand on focus, click to fill)">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-search-bar id="sb-panel" placeholder="Search products"></oas-search-bar>
   <p id="sb-panel-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Focus the input → the panel shows history / hot keywords; click a chip to fill and search.
   </p>
+  </div>
 </DemoBlock>
 
 ## Suggestions slot
@@ -35,10 +39,12 @@ The `history` / `hot` slots render history and hot keywords (persistence owned b
 The `suggestions` slot shows **when a value is present and the input is focused** (the empty/filled grouping is driven by the component); the host listens to `oas-input` and renders suggestion items:
 
 <DemoBlock title="Suggestions (type to see suggestions)">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-search-bar id="sb-suggest"></oas-search-bar>
   <p id="sb-suggest-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Type “shoe” to see suggestions; click one to fill and search.
   </p>
+  </div>
 </DemoBlock>
 
 ## Variants: cancel / hide-cancel / disabled
@@ -134,7 +140,10 @@ onMounted(() => {
         btn.textContent = item
         btn.addEventListener('click', () => {
           suggest.setAttribute('value', item)
-          suggest.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+          // Trigger search via the shadow input (the keydown listener lives on it — events dispatched on the host element never reach the shadow)
+          const input = suggest.shadowRoot.querySelector('[part="input"]')
+          input.focus()
+          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
         })
         suggest.appendChild(btn)
       }

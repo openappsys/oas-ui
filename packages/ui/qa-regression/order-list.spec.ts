@@ -43,6 +43,18 @@ test('order-list：键盘方向键移动焦点 + Enter 激活（manual activatio
   await expect(page.locator('#ol-basic-out')).toContainText('shipped')
 })
 
+test('order-list：键盘 Enter 激活后焦点保持在 tablist（I1——激活回写重建 tablist 后焦点不丢）', async ({ page }) => {
+  await page.goto('/components/order-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ol-basic')
+  const host = page.locator('#ol-basic')
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  const tabs = host.locator('[part="tab"]')
+  await tabs.nth(1).focus()
+  await page.keyboard.press('Enter')
+  // 激活回写 active → syncTabs 全量重建；焦点必须仍在新 tab 上（不得丢到 body）
+  await expect(tabs.nth(1)).toBeFocused()
+})
+
 test('order-list：触底真滚动——oas-load-more 派发 + 宿主协议追加订单卡 + no-more 到底态', async ({ page }) => {
   await page.goto('/components/order-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ol-more')

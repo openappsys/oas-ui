@@ -95,15 +95,13 @@ const STYLE = `
   border: 0;
   border-radius: var(--oas-radius-full, 999px);
   background: var(--oas-color-bg-hover);
-  color: var(--oas-color-text-secondary);
+  /* text-secondary on bg-hover = 4.40:1 不达 AA（axe ratio 违规真修）：基态走 text-primary */
+  color: var(--oas-color-text-primary);
   font: inherit;
   font-size: var(--oas-font-size-sm);
   white-space: nowrap;
   cursor: pointer;
   transition: background var(--oas-transition-fast) var(--oas-ease-out), color var(--oas-transition-fast) var(--oas-ease-out);
-}
-.tab:hover {
-  color: var(--oas-color-text-primary);
 }
 .tab:focus-visible {
   outline: none;
@@ -216,8 +214,25 @@ export class OASOrderList extends OASElement {
   private warnedTabs = false
   /** 触底待应答（派发 oas-load-more 后直到宿主置 loading 或插槽内容变化才解除） */
   private loadPending = false
-  /** slot 分配数量签名（变化即解除触底待应答——对齐 goods-list items 签名解除） */
-  private slotSignature = -1
+  /** slot 分配卡身份序列签名（变化即解除触底待应答——对齐 goods-list 等数量增删教训，见 NODE_IDS） */
+  private slotSignature = ''
+
+  /**
+   * 宿主节点身份 id（签名用）：等数量增删（换页签后宿主等数量换卡）时数量签名不变，
+   * 只靠数量无法区分「换掉一张」与「内容不变」——身份序列才能触发解除。
+   * WeakMap 存身份：节点被宿主回收即自动释放；id 单调递增不复用（goods-list 同款模式）。
+   */
+  private static NODE_IDS = new WeakMap<HTMLElement, number>()
+  private static nextNodeId = 1
+
+  private static identityOf(node: HTMLElement): number {
+    let id = OASOrderList.NODE_IDS.get(node)
+    if (id === undefined) {
+      id = OASOrderList.nextNodeId++
+      OASOrderList.NODE_IDS.set(node, id)
+    }
+    return id
+  }
 
   // -------------------------------------------------------------------------
   // property 通道
@@ -351,7 +366,7 @@ export class OASOrderList extends OASElement {
     this.syncEmpty()
   }
 
-  /** 页签：签名比对才重建；roving tabindex + aria-selected + aria-controls */
+  /** 页签：签名比对才重建；roving tabindex + aria-selected + aria-controls；重建前后焦点捕获/复原 */
   private syncTabs(tabs: OrderTab[]): void {
     const tablist = this.tablistEl
     if (!tablist) return
@@ -361,10 +376,25 @@ export class OASOrderList extends OASElement {
     const signature = JSON.stringify([tabs, activeKey])
     if (signature === tablist.dataset.sig) return
     tablist.dataset.sig = signature
+    // 焦点捕获（oas-tabs 先例）：全量重建会丢焦点——记录当前焦点 tab 身份，重建后复原
+    const focusedKey = this.shadow.activeElement?.closest('[part="tab"]')?.getAttribute('data-key') ?? null
     // tabpanel id：身份属性串派生（stableHash36，SSR/同页多实例安全）
     const panelId = `ol-panel-${stableHash36(this.getAttr('tabs') + '|' + this.tagName.toLowerCase())}`
     this.bodyEl?.setAttribute('id', panelId)
     const fragment = document.createDocumentFragment()
+    // roving tabindex：激活 tab 进 Tab 序（disabled 恒 -1）；active 指向 disabled / 不存在时
+    // 兜底首个 enabled tab（tablist 恒有一个 Tab 达节点，ARIA tabs 不变量）+ devWarn 一次
+    let rovingKey = activeKey
+    const activeDef = tabs.find((t) => t.key === activeKey)
+    if (!activeDef || activeDef.disabled) {
+      rovingKey = tabs.find((t) => !t.disabled)?.key ?? ''
+      if (rovingKey && !this.warnedTabs) {
+        this.warnedTabs = true
+        devWarn(
+          `[oas-order-list] active "${activeKey}" 指向 disabled / 不存在的页签，roving tabindex 已兜底首个可用页签 "${rovingKey}"`,
+        )
+      }
+    }
     tabs.forEach((tab) => {
       const btn = document.createElement('button')
       btn.type = 'button'
@@ -374,7 +404,7 @@ export class OASOrderList extends OASElement {
       btn.setAttribute('data-key', tab.key)
       btn.setAttribute('aria-selected', String(tab.key === activeKey))
       btn.setAttribute('aria-controls', panelId)
-      btn.tabIndex = tab.key === activeKey ? 0 : -1
+      btn.tabIndex = tab.key === rovingKey && !tab.disabled ? 0 : -1
       if (tab.disabled) {
         btn.disabled = true
         btn.setAttribute('aria-disabled', 'true')
@@ -392,6 +422,11 @@ export class OASOrderList extends OASElement {
       fragment.appendChild(btn)
     })
     tablist.replaceChildren(fragment)
+    // 焦点复原：重建前焦点在 tablist 内 → 落回同 key 的新 tab（找不到 = 该 tab 已不存在，焦点归还文档流）
+    if (focusedKey !== null) {
+      const restored = tablist.querySelector<HTMLElement>(`[part="tab"][data-key="${CSS.escape(focusedKey)}"]`)
+      restored?.focus()
+    }
   }
 
   /** 加载更多区：loading / no-more / 缺省（哨兵常驻）三态；无卡时整区隐藏 */
@@ -444,10 +479,14 @@ export class OASOrderList extends OASElement {
   private checkLoadMore(): void {
     const sentinel = this.sentinelEl
     if (!sentinel) return
-    // 插槽内容变化解除待应答（宿主只追加订单卡的分页场景——对齐 goods-list items 解除修复）
-    const count = this.slotEl?.assignedElements({ flatten: true }).length ?? 0
-    if (count !== this.slotSignature) {
-      this.slotSignature = count
+    // 插槽内容变化解除待应答（宿主只追加订单卡的分页场景——对齐 goods-list items 解除修复）；
+    // 签名取**节点身份序列**（不是数量）：等数量增删 / 换页签换卡都能解除（首波 I3 同款教训）
+    const cards = this.slotEl?.assignedElements({ flatten: true }) ?? []
+    const signature = JSON.stringify(
+      cards.filter((n): n is HTMLElement => n instanceof HTMLElement).map((n) => OASOrderList.identityOf(n)),
+    )
+    if (signature !== this.slotSignature) {
+      this.slotSignature = signature
       this.loadPending = false
     }
     if (!this.hasSlotCards()) return
@@ -562,7 +601,7 @@ export class OASOrderList extends OASElement {
     tab.focus()
   }
 
-  /** 激活页签：回写 active + 派发（宿主直写静默——不回环） */
+  /** 激活页签：回写 active + 派发（宿主直写静默——不回环）；update 由属性通道触发（M6：不手动二次调用） */
   private activateTab(tab: HTMLElement): void {
     if ((tab as HTMLButtonElement).disabled) return
     const key = tab.getAttribute('data-key') ?? ''
@@ -574,7 +613,6 @@ export class OASOrderList extends OASElement {
       return
     }
     this.setAttribute('active', key)
-    this.update()
     this.emit('tab-change', { key, label: tabDef.label } satisfies OrderTabChangeDetail)
   }
 }

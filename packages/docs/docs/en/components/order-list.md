@@ -13,12 +13,14 @@ Two delivery options: the container (this component — tabs, bottom-reached loa
 `active` is the current tab key (user clicks / keyboard activation write it back and fire; host writes are silent); `count` renders a badge and the accessible name derives from visible content (label + badge as continuous text). On switch the host swaps the slot content by key (the demo uses light cards as stand-ins):
 
 <DemoBlock title="Status tabs + order-card slot (switch swaps content)">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-order-list id="ol-basic" active="pending"
     tabs='[{"key":"all","label":"All","count":8},{"key":"pending","label":"Pending","count":2},{"key":"shipped","label":"Shipped","count":4},{"key":"done","label":"Done"}]'
   ></oas-order-list>
   <p id="ol-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     Click a tab to see the oas-tab-change feedback and the list swap.
   </p>
+  </div>
 </DemoBlock>
 
 ## Load more (bottom-reached protocol)

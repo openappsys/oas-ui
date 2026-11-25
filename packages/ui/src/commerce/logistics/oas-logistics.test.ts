@@ -203,6 +203,31 @@ describe('oas-logistics', () => {
     expect(actions.hidden).toBe(false)
   })
 
+  it('M4 steps 声明多个 current 时归一为首个 + devWarn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const steps = JSON.stringify([{ title: 'A', state: 'current' }, { title: 'B', state: 'current' }, { title: 'C' }])
+    const el = mount({ steps })
+    const lis = items(el)
+    expect(lis[0]!.getAttribute('data-state')).toBe('current')
+    // 多余 current 归一为 pending（只有首个 current 保留）
+    expect(lis[1]!.getAttribute('data-state')).toBe('pending')
+    expect(lis[1]!.getAttribute('aria-current')).toBeNull()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0])).toContain('current')
+  })
+
+  it('M5 time 可解析时渲染 <time datetime>（ISO 数据）；不可解析文本不写 datetime', () => {
+    const steps = JSON.stringify([
+      { title: 'ISO 节点', time: '2026-11-24 18:20' },
+      { title: '文本节点', time: '昨天 18:20' },
+    ])
+    const el = mount({ steps })
+    const times = [...el.shadowRoot!.querySelectorAll<HTMLElement>('time[part="time"]')]
+    expect(times).toHaveLength(2)
+    expect(times[0]!.getAttribute('datetime')).toBe('2026-11-24T10:20:00.000Z')
+    expect(times[1]!.getAttribute('datetime')).toBeNull()
+  })
+
   it('断开重连后交互恢复（折叠切换仍可用）', async () => {
     const el = mount({ steps: STEPS, collapsed: '' })
     el.remove()

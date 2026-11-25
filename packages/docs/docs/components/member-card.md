@@ -9,7 +9,7 @@ description: "会员卡：等级徽章（可见文本即等级标识）+ 权益�
 ## 基础会员卡（solid + 权益 + 有效期）
 
 <DemoBlock title="黄金会员（solid 底 + 权益插槽 + 有效期）">
-  <oas-member-card grade="黄金会员" expire="2027-11-25" style="max-width: 420px">
+  <oas-member-card grade="黄金会员" expire="2027-11-25" style="width: 100%; max-width: 420px">
     <div slot="perks">每月 2 张免邮券</div>
     <div slot="perks">会员日 95 折</div>
     <div slot="perks">生日专属礼包</div>
@@ -21,15 +21,17 @@ description: "会员卡：等级徽章（可见文本即等级标识）+ 权益�
 `variant="gradient"` 渐变底（`linear-gradient(135deg, primary, primary-active)`，token 化暗色自动跟随）；`actions` 插槽放续费 / 升级按钮（行为与可访问名归宿主按钮）：
 
 <DemoBlock title="黑金会员（gradient 底 + 续费/升级操作区）">
-  <oas-member-card id="mc-actions" grade="黑金会员" variant="gradient" expire="2028-01-31" style="max-width: 420px">
-    <div slot="perks">全店 88 折</div>
-    <div slot="perks">专属客服与优先发货</div>
-    <oas-button slot="actions" size="small" data-demo-action="续费">立即续费</oas-button>
-    <oas-button slot="actions" size="small" plain data-demo-action="升级">升级下一档</oas-button>
-  </oas-member-card>
-  <p id="mc-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    点操作钮观察宿主侧动作反馈（组件零事件协议——行为归宿主）。
-  </p>
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-member-card id="mc-actions" grade="黑金会员" variant="gradient" expire="2028-01-31" style="width: 100%; max-width: 420px">
+      <div slot="perks">全店 88 折</div>
+      <div slot="perks">专属客服与优先发货</div>
+      <oas-button slot="actions" size="small" data-demo-action="续费">立即续费</oas-button>
+      <oas-button slot="actions" size="small" type="primary" data-demo-action="升级">升级下一档</oas-button>
+    </oas-member-card>
+    <p id="mc-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      点操作钮观察宿主侧动作反馈（组件零事件协议——行为归宿主）。
+    </p>
+  </div>
 </DemoBlock>
 
 ## 等级档位对比

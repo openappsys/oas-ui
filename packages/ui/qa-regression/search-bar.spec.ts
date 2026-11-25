@@ -70,6 +70,32 @@ test('search-bar：聚焦展开历史词面板 + 点历史词回填 + Esc 收起
   await expect(host.locator('[part="panel"]')).toBeHidden()
 })
 
+test('search-bar：搜索钮为可见图标按钮（非空白胶囊）；联想词点击后 demo 反馈更新（I4）', async ({ page }) => {
+  await page.goto('/components/search-bar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#sb-basic')
+  const host = page.locator('#sb-basic')
+  await host.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  // C1：搜索钮内有可见 svg（尺寸可测且非空白），非 16×32 空白蓝条
+  await expect(host.locator('[part="go"] svg')).toHaveCount(1)
+  const goBox = await host.locator('[part="go"] svg').boundingBox()
+  expect(goBox!.width).toBeGreaterThan(10)
+  expect(goBox!.height).toBeGreaterThan(10)
+
+  // I4：联想位 demo——输入触发联想渲染后，点联想词应回填并给出可见反馈（此前宿主元素派 KeyboardEvent 穿不进 shadow，静默空操作）
+  const suggest = page.locator('#sb-suggest')
+  await suggest.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await suggest.evaluate((el) => {
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!
+    input.focus()
+    input.value = '鞋'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  const chip = suggest.locator('[slot="suggestions"]').first()
+  await expect(chip).toBeVisible()
+  await chip.click()
+  await expect(page.locator('#sb-suggest-out')).toContainText('oas-search')
+})
+
 test('search-bar：暗色下输入行 / 搜索钮配色随主题翻转（token 非硬编码）', async ({ page }) => {
   await page.goto('/components/search-bar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#sb-basic')

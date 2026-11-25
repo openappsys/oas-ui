@@ -289,6 +289,22 @@ export class OASLogistics extends OASElement {
       const bad = steps.find((s) => s.state !== undefined && !VALID_STATES.includes(String(s.state)))
       devWarn(`[oas-logistics] state "${String(bad?.state)}" 非法（done / current / pending），已按未声明处理`)
     }
+    // 多 current 归一（aria-current 语义只允许一个）：保留首个，其余降级 pending + devWarn 一次
+    let multiCurrent = false
+    for (
+      let i = declared.indexOf('current') >= 0 ? declared.indexOf('current') + 1 : declared.length;
+      i < declared.length;
+      i++
+    ) {
+      if (declared[i] === 'current') {
+        declared[i] = 'pending'
+        multiCurrent = true
+      }
+    }
+    if (multiCurrent && !this.warnedState) {
+      this.warnedState = true
+      devWarn('[oas-logistics] steps 声明了多个 current，已归一为首个（其余按 pending 处理）')
+    }
     const declaredIdx = declared.findIndex((s) => s !== undefined)
     if (declaredIdx < 0) {
       // 全部未声明：首条 current（数据最新），其余 done
@@ -418,6 +434,9 @@ export class OASLogistics extends OASElement {
       time.className = 'time'
       time.setAttribute('part', 'time')
       time.textContent = step.time
+      // 时间可机器解析（Date.parse 成功）时写 datetime（HTML 语义：读屏/检索可读标准化时刻）
+      const parsed = Date.parse(step.time)
+      if (!Number.isNaN(parsed)) time.setAttribute('datetime', new Date(parsed).toISOString())
       body.appendChild(time)
     }
     if (step.desc) {
@@ -459,11 +478,11 @@ export class OASLogistics extends OASElement {
   // -------------------------------------------------------------------------
 
   private readonly onToggle = (): void => {
-    // 用户切换：回写 attribute + 派发（宿主直写 collapsed 静默——不回环）
+    // 用户切换：回写 attribute + 派发（宿主直写 collapsed 静默——不回环）；
+    // update 由 attributeChangedCallback 属性通道触发（M6：不再手动二次调用）
     const next = !this.hasAttr('collapsed')
     if (next) this.setAttribute('collapsed', '')
     else this.removeAttribute('collapsed')
-    this.update()
     this.emit('toggle', { collapsed: next } satisfies LogisticsToggleDetail)
   }
 }

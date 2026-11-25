@@ -13,12 +13,14 @@ description: "订单列表容器：状态页签（tabs JSON 双通道 + 键盘 r
 `active` 当前页签 key（用户点击 / 键盘激活时组件回写并派发；宿主直写静默）；`count` 渲染徽标、可访问名从可见内容推导（标签 + 徽标连续文本）。点页签切换后宿主按 key 换插槽内容（demo 以轻量卡模拟订单卡）：
 
 <DemoBlock title="状态页签 + 订单卡插槽（切页签换内容）">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
   <oas-order-list id="ol-basic" active="pending"
     tabs='[{"key":"all","label":"全部","count":8},{"key":"pending","label":"待付款","count":2},{"key":"shipped","label":"已发货","count":4},{"key":"done","label":"已完成"}]'
   ></oas-order-list>
   <p id="ol-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     点页签观察 oas-tab-change 反馈与卡列表切换。
   </p>
+  </div>
 </DemoBlock>
 
 ## 加载更多（触底协议）

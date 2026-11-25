@@ -233,6 +233,72 @@ describe('oas-order-list', () => {
     expect(part(el, 'more')!.textContent).toContain('加载中')
   })
 
+  it('I1 键盘激活后焦点保持在 tablist 内（重建后焦点复原到激活 tab）', () => {
+    const el = mount({ tabs: TABS })
+    const tabsEls = tabs(el)
+    tabsEls[1]!.focus()
+    tabsEls[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    // activateTab → 回写 active → attributeChangedCallback → update() → syncTabs 重建 tablist；
+    // 焦点必须仍在（新渲染的）tab 上，不得丢失到 body
+    const focusedKey = el.shadowRoot!.activeElement?.getAttribute('data-key')
+    expect(focusedKey, '激活后焦点应落在 shadow 内某 tab').toBe('pending')
+  })
+
+  it('I2 active 指向 disabled 页签时 roving 兜底到首个 enabled tab（tablist 仍可 Tab 达 + devWarn 一次）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({
+      tabs: JSON.stringify([
+        { key: 'a', label: 'A' },
+        { key: 'b', label: 'B', disabled: true },
+      ]),
+      active: 'b',
+    })
+    const tabsEls = tabs(el)
+    const zeroTabs = tabsEls.filter((t) => t.getAttribute('tabindex') === '0')
+    expect(zeroTabs, '必须恰好有可 Tab 达的 tab').toHaveLength(1)
+    expect(zeroTabs[0]!.getAttribute('data-key')).toBe('a')
+    expect(zeroTabs[0]!.getAttribute('aria-selected')).toBe('false')
+    expect(tabByKey(el, 'b')!.getAttribute('tabindex')).toBe('-1')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0])).toContain('b')
+  })
+
+  it('I3 触底待应答按插槽卡身份签名解除——等数量换卡（移除一张 + 追加一张）也解除并可再次派发', () => {
+    const el = new OASOrderList()
+    el.setAttribute('tabs', TABS)
+    const cardA = document.createElement('div')
+    cardA.textContent = '订单卡 A'
+    el.appendChild(cardA)
+    const events: number[] = []
+    el.addEventListener('oas-load-more', () => events.push(1))
+    document.body.appendChild(el)
+    expect(events).toHaveLength(1)
+    // 等数量换卡：数量签名不变、身份签名变化 → 必须解除待应答（换页签后宿主换卡场景）
+    cardA.remove()
+    const cardB = document.createElement('div')
+    cardB.textContent = '订单卡 B'
+    el.appendChild(cardB)
+    document.dispatchEvent(new Event('scroll'))
+    expect(events, '等数量换卡后应解除待应答并再次派发').toHaveLength(2)
+  })
+
+  it('M6 用户激活页签不重复渲染（回写 attribute 由属性通道触发一次 update，无手动二次调用）', () => {
+    const el = mount({ tabs: TABS })
+    const original = (OASOrderList.prototype as unknown as { update(): void }).update
+    let count = 0
+    ;(OASOrderList.prototype as unknown as { update(): void }).update = function (this: OASOrderList) {
+      count++
+      original.call(this)
+    }
+    try {
+      tabByKey(el, 'shipped')!.click()
+    } finally {
+      ;(OASOrderList.prototype as unknown as { update(): void }).update = original
+    }
+    expect(count, '点击激活应只触发一轮 update').toBe(1)
+    expect(el.getAttribute('active')).toBe('shipped')
+  })
+
   it('断开重连后滚动监听恢复（触底仍可用）', () => {
     const el = new OASOrderList()
     el.setAttribute('tabs', TABS)

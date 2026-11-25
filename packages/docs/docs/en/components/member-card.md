@@ -9,7 +9,7 @@ Membership tier / benefits card: `grade` (tier badge — **the visible text is t
 ## Basic card (solid + perks + validity)
 
 <DemoBlock title="Gold member (solid + perks slot + validity period)">
-  <oas-member-card grade="Gold member" expire="2027-11-25" style="max-width: 420px">
+  <oas-member-card grade="Gold member" expire="2027-11-25" style="width: 100%; max-width: 420px">
     <div slot="perks">2 free-shipping coupons monthly</div>
     <div slot="perks">5% off on member days</div>
     <div slot="perks">Birthday gift pack</div>
@@ -21,15 +21,17 @@ Membership tier / benefits card: `grade` (tier badge — **the visible text is t
 `variant="gradient"` gives the gradient background (`linear-gradient(135deg, primary, primary-active)` — token-based, dark follows); the `actions` slot holds renew / upgrade buttons (behavior and accessible names owned by the host):
 
 <DemoBlock title="Black-gold member (gradient + renew/upgrade actions)">
-  <oas-member-card id="mc-actions" grade="Black-gold member" variant="gradient" expire="2028-01-31" style="max-width: 420px">
-    <div slot="perks">12% off storewide</div>
-    <div slot="perks">Priority support & shipping</div>
-    <oas-button slot="actions" size="small" data-demo-action="Renew">Renew now</oas-button>
-    <oas-button slot="actions" size="small" plain data-demo-action="Upgrade">Upgrade tier</oas-button>
-  </oas-member-card>
-  <p id="mc-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    Click an action button to see the host-side feedback (zero event protocol — behavior owned by the host).
-  </p>
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-member-card id="mc-actions" grade="Black-gold member" variant="gradient" expire="2028-01-31" style="width: 100%; max-width: 420px">
+      <div slot="perks">12% off storewide</div>
+      <div slot="perks">Priority support & shipping</div>
+      <oas-button slot="actions" size="small" data-demo-action="Renew">Renew now</oas-button>
+      <oas-button slot="actions" size="small" type="primary" data-demo-action="Upgrade">Upgrade tier</oas-button>
+    </oas-member-card>
+    <p id="mc-actions-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      Click an action button to see the host-side feedback (zero event protocol — behavior owned by the host).
+    </p>
+  </div>
 </DemoBlock>
 
 ## Tier comparison

@@ -88,6 +88,15 @@ describe('oas-member-card', () => {
     expect(btn.parentElement).toBe(el)
   })
 
+  it('M3 宿主预置 aria-label 时组件不覆盖（oas-compact 先例守卫）', () => {
+    const el = mount({ grade: '黄金会员' })
+    el.setAttribute('aria-label', '我的会员卡')
+    expect(el.getAttribute('aria-label')).toBe('我的会员卡')
+    // 无预置时仍走 i18n 缺省命名
+    const el2 = mount({ grade: '黄金会员' })
+    expect(el2.getAttribute('aria-label')).toBe('会员卡：黄金会员')
+  })
+
   it('variant 变化即时重渲染（data-variant 跟随 attribute）', () => {
     const el = mount({ grade: '黄金会员' })
     expect(el.getAttribute('data-variant')).toBe('solid')

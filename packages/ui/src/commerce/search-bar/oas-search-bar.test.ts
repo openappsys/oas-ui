@@ -46,6 +46,14 @@ describe('oas-search-bar', () => {
     expect(input.getAttribute('placeholder')).toBe('搜索商品')
   })
 
+  it('搜索钮为图标按钮：part=go 有可见 svg 子节点（非空白胶囊——文档口径「图标」）', () => {
+    const el = mount({ value: '外套' })
+    const svgs = el.shadowRoot!.querySelectorAll('[part="go"] svg')
+    expect(svgs).toHaveLength(1)
+    // 图标路径非空（searchPath 含描边圆与手柄，确定性特征断言）
+    expect(svgs[0]!.innerHTML).toContain('stroke')
+  })
+
   it('hide-cancel 隐藏取消钮；placeholder 属性覆盖缺省文案', () => {
     const el = mount({ 'hide-cancel': '', placeholder: '搜店铺' })
     expect(part(el, 'cancel')!.hidden).toBe(true)

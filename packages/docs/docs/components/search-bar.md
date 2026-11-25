@@ -13,10 +13,12 @@ description: "搜索栏：输入框 + 清除 / 取消 / 搜索触发（Enter / �
 Enter 或搜索钮触发 `oas-search`（detail `{ value }`，**空值不派发**）；输入过程实时回写 `value` attribute 并派 `oas-input`（宿主可做联想渲染）；点卡片清除钮清空并派 `oas-input`（焦点回输入框）：
 
 <DemoBlock title="基础搜索（Enter / 搜索钮 / 清除）">
-  <oas-search-bar id="sb-basic" value="运动鞋"></oas-search-bar>
-  <p id="sb-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    输入后按 Enter（或点搜索钮）观察 oas-search 反馈。
-  </p>
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-search-bar id="sb-basic" value="运动鞋"></oas-search-bar>
+    <p id="sb-basic-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      输入后按 Enter（或点搜索钮）观察 oas-search 反馈。
+    </p>
+  </div>
 </DemoBlock>
 
 ## 历史词与热门词插槽
@@ -24,10 +26,12 @@ Enter 或搜索钮触发 `oas-search`（detail `{ value }`，**空值不派发**
 `history` / `hot` 插槽渲染历史词与热门词（持久化归宿主：demo 用内存数组模拟宿主记录），**空值 + 聚焦时显示**；插槽内容点击经面板 `pointerdown` 保持焦点（历史词可点中）；Esc 收起面板、重新聚焦再展开：
 
 <DemoBlock title="历史词 + 热门词（聚焦展开，点词回填）">
-  <oas-search-bar id="sb-panel" placeholder="搜索商品"></oas-search-bar>
-  <p id="sb-panel-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    点输入框聚焦 → 面板展示历史词 / 热门词；点词回填并触发搜索。
-  </p>
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-search-bar id="sb-panel" placeholder="搜索商品"></oas-search-bar>
+    <p id="sb-panel-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      点输入框聚焦 → 面板展示历史词 / 热门词；点词回填并触发搜索。
+    </p>
+  </div>
 </DemoBlock>
 
 ## 联想位插槽
@@ -35,10 +39,12 @@ Enter 或搜索钮触发 `oas-search`（detail `{ value }`，**空值不派发**
 `suggestions` 插槽在**有值 + 聚焦**时显示（空值 / 有值的分组切换由组件驱动）；宿主监听 `oas-input` 动态渲染联想条目：
 
 <DemoBlock title="联想位（输入即出联想）">
-  <oas-search-bar id="sb-suggest"></oas-search-bar>
-  <p id="sb-suggest-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    输入「鞋」观察联想；点联想词回填并触发搜索。
-  </p>
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-search-bar id="sb-suggest"></oas-search-bar>
+    <p id="sb-suggest-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      输入「鞋」观察联想；点联想词回填并触发搜索。
+    </p>
+  </div>
 </DemoBlock>
 
 ## 形态：取消钮 / 隐藏取消 / 禁用
@@ -137,7 +143,10 @@ onMounted(() => {
         btn.textContent = item
         btn.addEventListener('click', () => {
           suggest.setAttribute('value', item)
-          suggest.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+          // 搜索触发走组件 shadow 内 input（keydown 监听在 input 上——宿主元素派发穿不进 shadow）
+          const input = suggest.shadowRoot!.querySelector<HTMLInputElement>('[part="input"]')!
+          input.focus()
+          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
         })
         suggest.appendChild(btn)
       }

@@ -265,7 +265,9 @@ export class OASSearchBar extends OASElement {
               <svg viewBox="0 0 16 16" fill="none" focusable="false" aria-hidden="true">${closePath}</svg>
             </button>
           </div>
-          <button class="btn go" part="go" type="button" aria-label=""></button>
+          <button class="btn go" part="go" type="button" aria-label="">
+            <svg viewBox="0 0 16 16" fill="none" focusable="false" aria-hidden="true">${searchPath}</svg>
+          </button>
           <button class="btn cancel" part="cancel" type="button" hidden></button>
         </div>
         <div class="panel" part="panel" hidden>
