@@ -77,7 +77,7 @@ The thresholds are business parameters — 100 / 20 above are examples; substitu
 ## Key code
 
 ```ts
-// tag / text are element references from the demo above (#sa-tag / #sa-text, getElementById on this page)
+// tag / text are element references from the demo above (#sa-tag-en / #sa-text-en, getElementById on this page)
 // Threshold tiers (host policy, copy-ready; replace 100 / 20 with your own policy)
 function stockTier(n: number) {
   if (n <= 0) return { tag: 'Sold out', type: 'default', text: 'Sold out, check similar items', buyable: false }
