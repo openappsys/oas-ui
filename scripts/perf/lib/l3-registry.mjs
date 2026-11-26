@@ -156,6 +156,18 @@ export const L3_REGISTRY = [
   // 本就摇除——resource-utils 既有同款）。独立按需链计量保留：宿主显式 import 本入口
   // 绕开组件本体（抽核前须经组件模块单文件 16.25 KB gz；抽核后瘦链 ~13.2 KB，见预算档）。
   { id: 'resourceLevel', entry: 'data/resource/level', family: 'data', kind: 'helper', measured: true },
+  // —— commerce 家族 helper 型 L3（2026-11-26 能力包批；独立计量 + 独立预算档） ——
+  // 批量操作编排（applyBatch / executeBatch）：宿主勾选多卡后显式 import 执行，
+  // 无 HTML/属性触发面（批量按钮归宿主 actions 插槽——收藏语义必须宿主定义）；
+  // 进 L1/commerce 族包即死重，必须显式 import。
+  { id: 'cartBatch', entry: 'commerce/cart/batch', family: 'commerce', kind: 'helper', measured: true },
+  // 条件持久化（encode/decode/toQuery/fromQuery/save/load）：conditions JSON 的
+  // URL / Storage 双后端纯函数编排，零 DOM 零组件依赖；进族包即死重。
+  { id: 'filterPersist', entry: 'commerce/filter/persist', family: 'commerce', kind: 'helper', measured: true },
+  // 服务端分页协议（createPagedSource cursor 状态机）：headless 状态机工厂，
+  // 宿主侧胶水对接本体触底协议（oas-load-more / loading / no-more）；
+  // 先例同 layout/scroll-area/infinite；进族包即死重。
+  { id: 'goodsListPaged', entry: 'commerce/goods-list/paged', family: 'commerce', kind: 'helper', measured: true },
 ]
 
 const normalize = (file) => file.replaceAll('\\', '/')

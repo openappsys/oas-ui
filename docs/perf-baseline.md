@@ -24,8 +24,8 @@
 <!-- BEGIN:generated:perf-baseline:packages -->
 | 包 | 文件数 | raw | gzip | brotli |
 | --- | --- | --- | --- | --- |
-| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 49.28 MB | — | — |
-| @oas-ui/ui（浏览器可加载 JS） | 606 | 12418.2 KB | 3106.1 KB | — |
+| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 49.34 MB | — | — |
+| @oas-ui/ui（浏览器可加载 JS） | 609 | 12423.4 KB | 3108.5 KB | — |
 | @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 623 | 4421.1 KB | 1258.2 KB | — |
 | @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3626.9 KB | 826.0 KB | 570.7 KB |
 | @oas-ui/theme（index.css） | 1 | 8.1 KB | 1.9 KB | — |
@@ -66,6 +66,9 @@
 | resourcePool | `@oas-ui/ui/data/resource/pool` | 1 | 1.4 KB | 0.6 KB |
 | resourceLoad | `@oas-ui/ui/data/resource/load` | 2 | 4.4 KB | 1.8 KB |
 | resourceLevel | `@oas-ui/ui/data/resource/level` | 11 | 41.1 KB | 15.9 KB |
+| cartBatch | `@oas-ui/ui/commerce/cart/batch` | 3 | 7.0 KB | 3.2 KB |
+| filterPersist | `@oas-ui/ui/commerce/filter/persist` | 1 | 1.7 KB | 0.7 KB |
+| goodsListPaged | `@oas-ui/ui/commerce/goods-list/paged` | 1 | 1.4 KB | 0.6 KB |
 | form | `@oas-ui/ui/form/form` | 10 | 64.7 KB | 22.1 KB |
 | schemaFormExpr | `@oas-ui/ui/form/schema-form/expr` | 2 | 10.4 KB | 4.2 KB |
 | gantt | `@oas-ui/ui/data/gantt` | 23 | 252.2 KB | 74.2 KB |
@@ -218,6 +221,9 @@
 | @oas-ui/ui/commerce/logistics 链 gzip | 17.9 KB | 21.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 17.7 KB / 11 文件（steps 解析 + 状态推导纯规则 + 折叠状态机 + ol/li 时间线渲染；零跨组件依赖——链只含 core + i18n），上浮 ~15% 取整定档 21 KB；地图轨迹联动 / 复制动作内建走 L3 能力子路径另立档 |
 | @oas-ui/ui/commerce/order-list 链 gzip | 19.5 KB | 22.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 19.1 KB / 13 文件（页签 roving tabindex 状态机 + 触底协议——shouldRequestMore 复用 goods-list 导出纯函数不增链 + 插槽化零卡片渲染；链只含 core + i18n + goods-list 的 column-assign 单文件），上浮 ~15% 取整定档 22 KB；分页协议 / 页签溢出指示走 L3 能力子路径另立档 |
 | @oas-ui/ui/commerce/member-card 链 gzip | 16.4 KB | 19.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 16.4 KB / 10 文件（纯展示卡零事件——属性反射 + 两插槽显隐 + variant token 化底色；链只含 core + i18n，为 commerce 最轻链），上浮 ~15% 取整定档 19 KB；等级进度条 / 卡面二维码走 L3 能力子路径另立档 |
+| @oas-ui/ui/commerce/cart/batch 链 gzip | 3.2 KB | 4.0 KB（绝对值） | helper 编排子路径，按需引入；首档 2026-11-26 实测 gzip 1.1 KB / 2 文件（编排 + dev-warn）；真实浏览器复核修复批（C1 数据破坏：config-provider 注入禁用时 executeBatch 仍执行删除——只判 attribute 漏掉注入判定）引入 core 的 injectDisabled 同语义判定后链实测 gzip 3.2 KB / 4 文件（编排 + dev-warn + core/config-context 的 findConfigProvider/parseProviderConfig——禁用判定与本体 isDisabled 同一实现，注入禁用下 helper 与本体行为一致），按实测 ×1.15 取整定档 4 KB |
+| @oas-ui/ui/commerce/filter/persist 链 gzip | 0.7 KB | 1.5 KB（绝对值） | helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.7 KB / 1 文件（conditions 编解码——URL encodeURIComponent 往返 + Storage try-catch 降级，单文件零依赖，<1KB gz 目标达成），上浮 ~15% 取整定档 1.5 KB |
+| @oas-ui/ui/commerce/goods-list/paged 链 gzip | 0.6 KB | 2.0 KB（绝对值） | helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.6 KB / 1 文件（createPagedSource cursor 状态机——代际守卫 reset / 在途防重 / 错误恢复，单文件零依赖；headless 先例同 layout/scroll-area/infinite），上浮 ~15% 取整定档 2 KB |
 | @oas-ui/ui/form/select 链 gzip | 46.2 KB | 53.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）后链 +1 文件（icons/icons/chevron-down），实测 46.2 KB / 31 文件，仍在 53 KB 档内（--update-baseline 刷新） |
 | @oas-ui/ui/form/input 链 gzip | 31.4 KB | 37.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 31.4 KB / 14 文件（输入基座：core + i18n + icons eye 精确 path + dev-warn/direction；复用决策基线（2026-11-25 复用权衡框架 review：select 链从未计量是估算错 3 倍的根因，input 为表单共享内核下沉的主要候选宿主）），上浮 ~15% 取整定档 37 KB |
 | @oas-ui/ui/form/picker 链 gzip | 25.1 KB | 30.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 25.1 KB / 11 文件（滚轮选择器：core + i18n + stable-id，无浮层/虚拟滚动依赖；复用决策基线同 select 档——2026-11-25 复用权衡框架 review 补齐的宿主链计量），上浮 ~15% 取整定档 30 KB |

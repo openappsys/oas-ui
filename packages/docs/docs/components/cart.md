@@ -150,6 +150,38 @@ description: "购物车列表：条目勾选 / 内建数量步进（含库存上
   </div>
 </DemoBlock>
 
+## 批量操作（能力子路径）
+
+批量删除 / 批量移收藏走**能力子路径** `@oas-ui/ui/commerce/cart/batch`（helper：按需显式 import，不随本体进链——本体 API 零变化）。目标 = 勾选集（`items[].selected === true`），禁用条目与不存在的 id 自动跳过；执行后回写 `items` 并派发 `oas-batch`（detail = `{ op, items, succeeded, skipped, changed }`），宿主据此给反馈：
+
+<DemoBlock title="批量删除 / 批量收藏（executeBatch 编排）">
+  <div style="display: grid; gap: var(--oas-space-3); width: 100%">
+    <oas-cart
+      id="cart-batch"
+      items='[{"id":"a","title":"纯棉短袖T恤","spec":"白色 / M","price":99,"quantity":2,"selected":true,"image":"/assets/demo-square-1.svg"},{"id":"b","title":"轻便帆布鞋","spec":"42 / 米白","price":199,"quantity":1,"selected":true,"image":"/assets/demo-square-2.svg"},{"id":"c","title":"棉质渔夫帽","spec":"均码","price":59,"quantity":1,"image":"/assets/demo-square-3.svg"},{"id":"d","title":"已下架的商品","spec":"缺货","price":29,"quantity":1,"selected":true,"disabled":true,"image":"/assets/demo-square-6.svg"}]'
+    >
+      <oas-button id="cart-batch-remove" slot="actions" size="small">删除所选</oas-button>
+      <oas-button id="cart-batch-favorite" slot="actions" size="small">收藏所选</oas-button>
+    </oas-cart>
+    <p id="cart-batch-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      勾选条目后点「删除所选 / 收藏所选」；已下架商品（禁用卡勾不中也不会被编排误删）。
+    </p>
+  </div>
+</DemoBlock>
+
+宿主侧胶水（demo 同款）：
+
+```js
+import { executeBatch } from '@oas-ui/ui/commerce/cart/batch'
+
+removeBtn.addEventListener('click', () => {
+  const outcome = executeBatch(cart, { type: 'remove' })
+  // outcome.skipped 含跳过原因（disabled / not-found），宿主据此提示
+})
+// 批量收藏：favorite 是宿主业务约定字段（favorite: true/false 写回 items）
+executeBatch(cart, { type: 'favorite' })
+```
+
 ## 自定义样式须知
 
 行结构是 `::part(item)`（`li`）→ `::part(item-inner)`（内容层）+（滑动模式）`::part(swipe-remove)`。内容层自带背景并压在删除钮之上，覆写 `::part(item)` 背景 / 圆角时要注意滑动展开态（露出的是 `::part(swipe-remove)`）。条目点击（进详情）走 `oas-item-click`，detail 为 `{ id, item }`。
@@ -192,6 +224,7 @@ description: "购物车列表：条目勾选 / 内建数量步进（含库存上
 
 <script setup>
 import { onMounted } from 'vue'
+import { executeBatch } from '@oas-ui/ui/commerce/cart/batch'
 onMounted(() => {
   customElements.whenDefined('oas-cart').then(() => {
     const out = document.getElementById('cart-basic-out')
@@ -216,6 +249,21 @@ onMounted(() => {
     cart?.addEventListener('oas-change', (e) => {
       bar.setAttribute('total', String(e.detail.total))
       checkoutOut.textContent = 'oas-change：合计 ' + e.detail.total + '（已同步到结算栏）'
+    })
+
+    // —— 批量操作 demo（能力子路径 helper）——
+    const batchCart = document.getElementById('cart-batch')
+    const batchOut = document.getElementById('cart-batch-out')
+    batchCart?.addEventListener('oas-batch', (e) => {
+      const d = e.detail
+      const skipped = d.skipped.length > 0 ? `，跳过 ${d.skipped.length} 件（${d.skipped.map((s) => s.reason === 'disabled' ? '禁用' : '不存在').join('/')}）` : ''
+      batchOut.textContent = `oas-batch（${d.op.type}）：成功 ${d.succeeded.length} 件${skipped}；购物车剩 ${d.items.length} 件`
+    })
+    document.getElementById('cart-batch-remove')?.addEventListener('click', () => {
+      executeBatch(batchCart, { type: 'remove' })
+    })
+    document.getElementById('cart-batch-favorite')?.addEventListener('click', () => {
+      executeBatch(batchCart, { type: 'favorite' })
     })
   })
 })

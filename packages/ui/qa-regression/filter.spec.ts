@@ -287,3 +287,69 @@ test('filter：drawer 真键盘焦点陷阱——Tab 循环限制在面板内（
   await page.keyboard.press('Tab')
   await expect(firstOption).toBeFocused()
 })
+
+// —— T19 L3：persist 能力子路径 demo（条件持久化章节）——
+// 「保存」→ 编码串与 localStorage 直存反馈可见；「还原」→ conditions 回写可见。
+test('filter：持久化 demo——保存出编码串与 localStorage 反馈、还原回写 conditions', async ({ page }) => {
+  await page.goto('/components/filter.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#filter-persist')
+  const host = page.locator('#filter-persist')
+  const out = page.locator('#filter-persist-out')
+
+  // 选一个条件（真点面板选项），选完收起面板（面板开着会遮挡下方按钮行）
+  const trigger = host.locator('[part="trigger"]')
+  await trigger.scrollIntoViewIfNeeded()
+  await trigger.click()
+  await host.locator('[part="option"][data-group="brand"][data-value="a"]').click()
+  await expect(host.locator('[part="badge"]')).toContainText('1')
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+  // 保存 → 反馈行出现 URL 串（含 conditions=）与 localStorage JSON
+  await page.locator('#filter-persist-save').click()
+  await expect(out).toContainText('conditions=')
+  await expect(out).toContainText('localStorage')
+  await expect(out).toContainText('"groups"')
+
+  // 改条件（重新开面板选第二个品牌）→ 还原 → conditions 回写为保存时的值
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  await host.locator('[part="option"][data-group="brand"][data-value="b"]').click()
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  await page.locator('#filter-persist-restore').click()
+  await expect(out).toContainText('已还原')
+  const conditions = await host.evaluate((el) => el.getAttribute('conditions'))
+  expect(conditions && JSON.parse(conditions)).toMatchObject({ groups: { brand: ['a'] } })
+})
+
+// —— 复核修复批（用户可见）：persist demo 的操作按钮行在筛选器上方——
+// 条件面板展开（dropdown 向下铺开）时不再遮挡按钮：面板开启态 elementFromPoint 命中按钮自身。
+test('filter：persist demo 面板开启态不遮挡操作按钮（elementFromPoint 命中按钮）', async ({ page }) => {
+  await page.goto('/components/filter.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#filter-persist')
+  const host = page.locator('#filter-persist')
+  const trigger = host.locator('[part="trigger"]')
+  await trigger.scrollIntoViewIfNeeded()
+
+  // 开面板（面板向下铺开，覆盖 filter 本体下方区域）+ 选一个条件（保存后反馈需含非空条件）
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  await expect(host.locator('[part="panel"]')).toBeVisible()
+  await host.locator('[part="option"][data-group="brand"][data-value="a"]').click()
+
+  // 面板开启态：三个操作按钮的几何中心 elementFromPoint 必须命中按钮自身（不被 filter 面板拦截）
+  const hitIds = await page.evaluate(() => {
+    const probe = (id: string): string => {
+      const btn = document.getElementById(id)!
+      const rect = btn.getBoundingClientRect()
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+      return hit && (hit === btn || btn.contains(hit)) ? id : `blocked:${hit?.tagName}`
+    }
+    return [probe('filter-persist-save'), probe('filter-persist-restore'), probe('filter-persist-clear')]
+  })
+  expect(hitIds).toEqual(['filter-persist-save', 'filter-persist-restore', 'filter-persist-clear'])
+  // 且按钮真实可点（面板开着直接点保存）
+  await page.locator('#filter-persist-save').click()
+  await expect(page.locator('#filter-persist-out')).toContainText('conditions=')
+})

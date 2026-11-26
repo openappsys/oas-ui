@@ -89,6 +89,44 @@ description: "商品列表容器：瀑布流（列数自适应 / 固定 + 列均
   </oas-goods-list>
 </DemoBlock>
 
+## 服务端分页协议（能力子路径）
+
+触底加载接**服务端 cursor 分页**走能力子路径 `@oas-ui/ui/commerce/goods-list/paged`（helper：headless cursor 状态机，按需显式 import，不随本体进链——本体 API 零变化，对接全走既有触底协议）。`createPagedSource` 负责状态编排：首页无 cursor、此后携带上一页尾 cursor；在途防重；加载失败 cursor 不推进（重试 = 再调 `loadPage()`）；`reset()` 覆盖切筛选场景（清累计 + 代际守卫——旧在途页 resolve 后丢弃，陈旧响应不污染新列表）：
+
+<DemoBlock title="服务端分页闭环（模拟服务端 cursor 取数，触底真实触发）">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-goods-list id="gl-paged" columns="3"></oas-goods-list>
+    <div style="display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button id="gl-paged-reset" size="small">重置（切筛选场景）</oas-button>
+      <span id="gl-paged-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">滚到列表底部触发加载（哨兵 240px 提前量），观察 cursor 逐页推进与到底态。</span>
+    </div>
+  </div>
+</DemoBlock>
+
+宿主侧胶水（demo 同款完整闭环——触底 → `loadPage` → 追加 → cursor 更新 → `no-more` 到底）：
+
+```js
+import { createPagedSource } from '@oas-ui/ui/commerce/goods-list/paged'
+
+const source = createPagedSource({
+  load: ({ cursor, page }) => fetch(`/api/goods?cursor=${cursor ?? ''}&page=${page}`).then((r) => r.json()),
+  getItems: (res) => res.data.list,         // 缺省读 res.items
+  getCursor: (res) => res.data.nextCursor,  // 缺省读 res.cursor
+})
+list.addEventListener('oas-load-more', async () => {
+  if (source.pending) return                        // 防重
+  if (source.done) { list.setAttribute('no-more', ''); return }
+  list.setAttribute('loading', '')                  // 应答触底（解除本体待应答）
+  try {
+    await source.loadPage()
+    list.items = source.items                       // 追加渲染
+  } catch { /* 失败呈现归宿主；cursor 未推进，可直接重试 */ } finally {
+    list.removeAttribute('loading')
+    if (source.done) list.setAttribute('no-more', '')
+  }
+})
+```
+
 ## 键盘与无障碍
 
 - 卡片网格容器 `role="list"` + 内建卡 `role="listitem"`（列容器 `presentation` 穿透不打断语义），组件 `aria-label`「商品列表」；加载更多区为 `role="status"` + `aria-live="polite"` 活区（加载中 / 到底文案变化自动播报），与空态、哨兵一起位于列表语义之外。
@@ -102,6 +140,7 @@ description: "商品列表容器：瀑布流（列数自适应 / 固定 + 列均
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { createPagedSource } from '@oas-ui/ui/commerce/goods-list/paged'
 
 // demo 脚本约定（勿改位置）：① 必须是**页面级** script setup——写进 DemoBlock 内部时 VitePress 不会抽取，
 // 会被原样输出成页面正文（Cannot use import statement / hydration mismatch，demo 全灭）；
@@ -155,6 +194,72 @@ onMounted(() => {
     document.getElementById('gl-done')?.addEventListener('click', () => {
       more.setAttribute('no-more', '')
       moreOut.textContent = 'no-more 已置位：显示到底态且不再触发'
+    })
+
+    // —— 服务端分页 demo（能力子路径 helper：模拟服务端 cursor 取数）——
+    const paged = document.getElementById('gl-paged')!
+    const pagedOut = document.getElementById('gl-paged-out')!
+    // 模拟服务端：3 页（p1→c2→p2→c3→p3→无 cursor），600ms 延迟
+    const SERVER: Record<string, { list: { title: string; price: number; image?: string }[]; next?: string | null }> = {
+      first: {
+        list: [
+          { title: '分页 1 · 商品 A', price: 10, image: '/assets/demo-square-1.svg' },
+          { title: '分页 1 · 商品 B', price: 20 },
+          { title: '分页 1 · 商品 C', price: 30, image: '/assets/demo-square-2.svg' },
+        ],
+        next: 'c2',
+      },
+      c2: {
+        list: [
+          { title: '分页 2 · 商品 D', price: 40, image: '/assets/demo-square-3.svg' },
+          { title: '分页 2 · 商品 E', price: 50 },
+          { title: '分页 2 · 商品 F', price: 60, image: '/assets/demo-square-4.svg' },
+        ],
+        next: 'c3',
+      },
+      c3: {
+        list: [
+          { title: '分页 3（末页）· 商品 G', price: 70, image: '/assets/demo-square-5.svg' },
+          { title: '分页 3（末页）· 商品 H', price: 80 },
+        ],
+        next: null,
+      },
+    }
+    const pagedSource = createPagedSource<{ title: string; price: number; image?: string }, { list: { title: string; price: number; image?: string }[]; next?: string | null }>({
+      load: async ({ cursor }) => {
+        await new Promise((r) => setTimeout(r, 600))
+        return SERVER[cursor ?? 'first']!
+      },
+      getItems: (res) => res.list,
+      getCursor: (res) => res.next ?? null,
+    })
+    const pagedFetch = async () => {
+      if (pagedSource.pending) return
+      if (pagedSource.done) {
+        paged.setAttribute('no-more', '')
+        return
+      }
+      paged.setAttribute('loading', '')
+      pagedOut.textContent = `oas-load-more：加载第 ${pagedSource.page + 1} 页（cursor=${pagedSource.cursor ?? 'null'}）…`
+      try {
+        await pagedSource.loadPage()
+        ;(paged as unknown as { items: unknown }).items = pagedSource.items
+        if (pagedSource.done) paged.setAttribute('no-more', '')
+        pagedOut.textContent = `第 ${pagedSource.page} 页已追加（共 ${pagedSource.items.length} 条，cursor=${pagedSource.cursor ?? '—'}${pagedSource.done ? '，到底' : ''}）`
+      } catch {
+        pagedOut.textContent = '加载失败（demo 模拟服务端不会失败；真实场景 error 落盘 source.error，重试 = 再调 loadPage）'
+      } finally {
+        paged.removeAttribute('loading')
+      }
+    }
+    paged.addEventListener('oas-load-more', pagedFetch)
+    pagedFetch() // 首页加载
+    document.getElementById('gl-paged-reset')?.addEventListener('click', async () => {
+      paged.removeAttribute('no-more')
+      pagedOut.textContent = 'reset：清累计并重新加载首页（旧在途页会被代际守卫丢弃）'
+      await pagedSource.reset()
+      ;(paged as unknown as { items: unknown }).items = pagedSource.items
+      pagedOut.textContent = `reset 完成：首页 ${pagedSource.items.length} 条（cursor=${pagedSource.cursor ?? '—'}）`
     })
   })
 })

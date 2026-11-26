@@ -26,9 +26,73 @@
 以下为「重量级、可选、场景化」增强，**不在本体内联**；落地时走 L3 能力子路径
 `commerce/filter/<能力>`（登记 `scripts/perf/lib/l3-registry.mjs` + `docs/perf-baseline.md` §4 独立预算档）：
 
-- **条件持久化**（localStorage / URL search 同步）：历史筛选记忆与深链还原。
+- **条件持久化**（localStorage / URL search 同步）：历史筛选记忆与深链还原。**已落地**——见下方「已落地：条件持久化」。
 - **服务端筛选协议**：条件变更 → 请求取消 / 防抖 / 重试的宿主侧 helper。
 - **范围条件组**（价格区间等自定义输入条件）：配置面扩展 + 区间校验。
 - **面板位置自适应**（窄屏自动 drawer / 宽屏 dropdown）：视口侦测联动。
 
 当前本体接口（attribute / event / slot）对上述能力保持开放：能力子路径以「读取 conditions / 调用 setOpen / 监听 oas-change」的宿主组合实现，无需改本体 API。
+
+### 已落地：条件持久化（`commerce/filter/persist`）
+
+上表第 1 项已落地——**helper 型能力子路径**（按需显式 import，不随本体进链；登记
+`scripts/perf/lib/l3-registry.mjs` id `filterPersist`，独立预算档见
+`docs/perf-baseline.md` §4）。URL（query / hash）与 Storage（localStorage /
+sessionStorage / 宿主自有实现）双后端，宿主按场景取用或双写：
+
+```js
+import { fromQuery, toQuery, save, load } from '@oas-ui/ui/commerce/filter/persist'
+
+// 进页还原：URL 优先（分享 / 深链），回落本地记忆（回访）
+const restored = fromQuery(location.search) ?? load(localStorage, 'oas:filter')
+if (restored) filter.conditions = restored // 直接可喂——decode 已按本体规则结构清洗
+
+// 交互后落盘（双写示例；URL 写回由宿主 history.replaceState 承担）
+filter.addEventListener('oas-change', () => {
+  const params = toQuery(new URLSearchParams(location.search), filter.conditions)
+  history.replaceState(null, '', `?${params}`)
+  save(localStorage, 'oas:filter', filter.conditions)
+})
+```
+
+接口面：`encode(conditions)` / `decode(raw)`（URL 安全串互逆；decode 宽容裸 JSON，
+垃圾串 → null）、`toQuery(params, conditions)` / `fromQuery(search)`（`conditions=`
+键，空条件移除不留尾巴；`fromQuery` 接受带 / 不带 `?` `#` 前缀）、
+`save(storage, key, conditions)` / `load(storage, key)`（JSON 原文直存可调试直读；
+storage 异常 try-catch 降级——save 返回 false、load 返回 null，不抛错）。
+
+**清洗口径**：与本体 `sanitizeConditions` 同规则的字段类型收敛（sort 非空串 /
+order 只认 asc·desc / groups 值数组只留字符串项；空数组组保留——本体「取消」语义
+的回显契约）；「单选组 ≤1 项」截断依赖 groups 定义，本层不做——decode 输出直接喂
+`filter.conditions` 时本体读取侧自然截断，无污染路径。
+
+#### 形态决策记录
+
+**helper 型**（任务书既定方向 + 判据核对）：`conditions` 是纯 JSON 对象，编解码
+零 DOM 依赖、零组件依赖（`FilterConditions` 仅 `import type` 构建期擦除）；本体
+无须感知持久化（README 预留能力面已声明「宿主组合实现，无需改本体 API」）。无
+attribute / 无类成员（collision-guard 不适用，本体 API 零变化）。
+
+#### 三账表
+
+| 账 | 数字 | 说明 |
+| --- | --- | --- |
+| 按需链档 | 实测 **0.7 KB gz / 1 文件**，预算 **1.5 KB**（×1.15 取整） | 单文件零依赖（<1KB gz 目标达成）——三账中按需链 ≈ 0 |
+| CDN 族包增量 | **0**（helper 不进 commerce 族包） | `familyInclusionViolations` 断言把关 |
+| 消费者共载概率 | 中（列表页几乎必带 filter 本体 22.1 KB 链；persist 只在要持久化的页面引入） | +0.7 KB 换 URL 深链还原 + 本地记忆双后端，按需付费合理 |
+
+#### 设计前必答（helper 面）
+
+1. **取消路径**：纯函数零副作用；不调用即零效果；toQuery 的 params 是宿主传入的
+   （mutate 语义显式——返回同一实例便于链式），不触碰 location。
+2. **属性默认值/空态**：空条件 → toQuery 移除键 / save removeItem（URL 与存储不留
+   空尾巴）；decode 有效但空 → `{}`（与「无有效持久化」null 区分——宿主还原行为
+   可区分「用户清空了条件」与「从未设置」）。
+3. **多步交互失败点**：JSON.parse / decodeURIComponent / storage 全部 try-catch
+   降级（垃圾串 → null、quota → false），不抛错不炸页面；脏值不回写不污染。
+4. **破坏性选项**：无破坏性动作（save 覆写旧值是持久化的正常语义；removeItem 只
+   在显式保存空条件时发生）。
+5. **键盘/ARIA**：纯函数零 UI，N/A。
+6. **受控/非受控与宿主桥接**：输出对象可直接赋 `filter.conditions`（受控写入静默
+   不派发——还原场景正确：还原不应触发宿主二次请求回调，宿主自行在还原后刷列表）；
+   `FilterConditions` 类型与本体同源（import type），漂移编译期可见。

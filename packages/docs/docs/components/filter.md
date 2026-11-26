@@ -97,6 +97,44 @@ description: "列表页筛选栏：排序项（综合 / 销量 / 价格升降）
   </div>
 </DemoBlock>
 
+## 条件持久化（能力子路径）
+
+`conditions` 的持久化走**能力子路径** `@oas-ui/ui/commerce/filter/persist`（helper：按需显式 import，不随本体进链）。URL（query / hash）与 Storage（localStorage 等）双后端，宿主按场景取用或双写——URL 后端给「分享 / 深链还原」，Storage 后端给「回访记忆」。编码串对中文与 `& = # %` 等保留字全转义（可安全拼进 hash），解码带结构清洗（垃圾串 → `null` 不污染；输出可直接喂 `filter.conditions`）：
+
+<DemoBlock title="URL 编码往返 + localStorage 记忆（save / load / toQuery / fromQuery）">
+  <div style="display: grid; gap: var(--oas-space-3); width: 100%">
+    <!-- 操作按钮在筛选器上方：条件面板（dropdown）向下展开会覆盖其正下方区域，按钮放上方不被遮挡 -->
+    <div style="display: flex; flex-wrap: wrap; gap: var(--oas-space-2)">
+      <oas-button id="filter-persist-save" size="small">保存（URL 串 + localStorage）</oas-button>
+      <oas-button id="filter-persist-restore" size="small">从 URL 串还原</oas-button>
+      <oas-button id="filter-persist-clear" size="small">清空条件与持久化</oas-button>
+    </div>
+    <oas-filter
+      id="filter-persist"
+      groups='[{"key":"brand","label":"品牌","multiple":true,"options":[{"value":"a","label":"品牌A"},{"value":"b","label":"品牌B"}]},{"key":"color","label":"颜色","options":[{"value":"red","label":"红色"},{"value":"blue","label":"蓝色"}]}]'
+    ></oas-filter>
+    <p id="filter-persist-out" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); overflow-wrap: anywhere">
+      点排序 / 选条件后点「保存」，观察编码串（中文全转义）与 localStorage 直存 JSON；再改条件后点「还原」回看深链还原效果。
+    </p>
+  </div>
+</DemoBlock>
+
+宿主侧胶水（demo 同款三步）：
+
+```js
+import { toQuery, fromQuery, save, load } from '@oas-ui/ui/commerce/filter/persist'
+
+// ① 进页还原：URL 优先，回落本地记忆
+const restored = fromQuery(location.search) ?? load(localStorage, 'oas:filter')
+if (restored) filter.conditions = restored
+
+// ② 交互后落盘（双写；URL 写回由宿主 history.replaceState 承担）
+filter.addEventListener('oas-change', () => {
+  toQuery(new URLSearchParams(location.search), filter.conditions)
+  save(localStorage, 'oas:filter', filter.conditions)
+})
+```
+
 ## 键盘与无障碍
 
 - 排序行与单选组为 `radiogroup` 语义（方向键在组内移动焦点），多选组为 `group` + `checkbox` 语义；Tab 可达每个选项。
@@ -110,6 +148,7 @@ description: "列表页筛选栏：排序项（综合 / 销量 / 价格升降）
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { fromQuery, save, toQuery, load } from '@oas-ui/ui/commerce/filter/persist'
 
 // demo 脚本约定（勿改位置）：① 必须是**页面级** script setup——写进 DemoBlock 内部时 VitePress 不会抽取，
 // 会被原样输出成页面正文（Cannot use import statement / hydration mismatch，demo 全灭）；
@@ -170,6 +209,40 @@ onMounted(() => {
     })
     document.getElementById('filter-clear')?.addEventListener('click', () => {
       ctl.conditions = {}
+    })
+  })
+
+  // —— 条件持久化 demo（能力子路径 helper；虚拟 URL 串演示往返，不动浏览器地址栏）——
+  customElements.whenDefined('oas-filter').then(() => {
+    const filter = document.getElementById('filter-persist')!
+    const out = document.getElementById('filter-persist-out')!
+    const KEY = 'oas:filter-doc-demo'
+    let savedQuery = ''
+    const report = (text: string) => {
+      const memo = load(localStorage, KEY)
+      out.textContent =
+        `${text}｜URL 串：${savedQuery || '（空）'}｜localStorage：${memo ? JSON.stringify(memo) : '（空）'}`
+    }
+    document.getElementById('filter-persist-save')?.addEventListener('click', () => {
+      const params = toQuery(new URLSearchParams('page=1'), filter.conditions)
+      savedQuery = `?${params.toString()}` // 宿主自行 history.replaceState(null, '', savedQuery)
+      save(localStorage, KEY, filter.conditions)
+      report(`已保存（URL 串不含 page 之外的变化；空条件会移除 ${'conditions'} 键不留尾巴）`)
+    })
+    document.getElementById('filter-persist-restore')?.addEventListener('click', () => {
+      const restored = savedQuery ? fromQuery(savedQuery) : null
+      if (restored === null) {
+        report('URL 串还没有有效条件——先点「保存」')
+        return
+      }
+      filter.conditions = restored
+      report(`已还原：${JSON.stringify(restored)}`)
+    })
+    document.getElementById('filter-persist-clear')?.addEventListener('click', () => {
+      filter.conditions = {}
+      savedQuery = ''
+      save(localStorage, KEY, {}) // 空条件 = removeItem（不留空尾巴）
+      report('已清空条件与 localStorage 记忆')
     })
   })
 })

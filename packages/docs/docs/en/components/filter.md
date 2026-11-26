@@ -97,6 +97,44 @@ Pair it with `oas-goods-list` for a closed list-page loop: filter changes refill
   </div>
 </DemoBlock>
 
+## Condition persistence (capability subpath)
+
+Persisting `conditions` goes through the **capability subpath** `@oas-ui/ui/commerce/filter/persist` (helper: import on demand, not shipped with the base component). Two backends — URL (query / hash) and Storage (localStorage etc.) — used individually or together: the URL backend powers share / deep-link restore, the Storage backend powers returning-visitor memory. Encoded strings escape CJK characters and reserved characters such as `& = # %` (safe to embed in a hash); decoding applies structural sanitization (garbage input → `null`, output can be fed straight into `filter.conditions`):
+
+<DemoBlock title="URL encode round-trip + localStorage memory (save / load / toQuery / fromQuery)">
+  <div style="display: grid; gap: var(--oas-space-3); width: 100%">
+    <!-- Action buttons above the filter: the open panel (dropdown) overlays the area right below it -->
+    <div style="display: flex; flex-wrap: wrap; gap: var(--oas-space-2)">
+      <oas-button id="filter-persist-save-en" size="small">Save (URL string + localStorage)</oas-button>
+      <oas-button id="filter-persist-restore-en" size="small">Restore from URL string</oas-button>
+      <oas-button id="filter-persist-clear-en" size="small">Clear conditions and persistence</oas-button>
+    </div>
+    <oas-filter
+      id="filter-persist-en"
+      groups='[{"key":"brand","label":"Brand","multiple":true,"options":[{"value":"a","label":"Brand A"},{"value":"b","label":"Brand B"}]},{"key":"color","label":"Color","options":[{"value":"red","label":"Red"},{"value":"blue","label":"Blue"}]}]'
+    ></oas-filter>
+    <p id="filter-persist-out-en" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); overflow-wrap: anywhere">
+      Pick a sort or a condition, then click "Save" to see the encoded string (CJK fully escaped) and the raw JSON stored in localStorage; change the conditions and click "Restore" to replay the deep-link restore.
+    </p>
+  </div>
+</DemoBlock>
+
+Host glue (the demo's three steps):
+
+```js
+import { toQuery, fromQuery, save, load } from '@oas-ui/ui/commerce/filter/persist'
+
+// (1) On load: URL first, fall back to local memory
+const restored = fromQuery(location.search) ?? load(localStorage, 'oas:filter')
+if (restored) filter.conditions = restored
+
+// (2) Persist on interaction (dual write; the URL write-back is the host's history.replaceState)
+filter.addEventListener('oas-change', () => {
+  toQuery(new URLSearchParams(location.search), filter.conditions)
+  save(localStorage, 'oas:filter', filter.conditions)
+})
+```
+
 ## Keyboard and accessibility
 
 - The sort row and single-select groups carry `radiogroup` semantics (arrow keys move focus within a group); multi-select groups use `group` + `checkbox` semantics; every option is Tab-reachable.
@@ -110,6 +148,7 @@ Pair it with `oas-goods-list` for a closed list-page loop: filter changes refill
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { fromQuery, save, toQuery, load } from '@oas-ui/ui/commerce/filter/persist'
 
 // Demo script convention (do not move): (1) page-level script setup only — VitePress does not extract
 // a script setup written inside a DemoBlock, so it is emitted as page text (Cannot use import statement /
@@ -170,6 +209,40 @@ onMounted(() => {
     })
     document.getElementById('filter-clear')?.addEventListener('click', () => {
       ctl.conditions = {}
+    })
+  })
+
+  // —— Persistence demo (capability subpath helper; virtual URL string, browser address bar untouched) ——
+  customElements.whenDefined('oas-filter').then(() => {
+    const filter = document.getElementById('filter-persist-en')!
+    const out = document.getElementById('filter-persist-out-en')!
+    const KEY = 'oas:filter-doc-demo-en'
+    let savedQuery = ''
+    const report = (text: string) => {
+      const memo = load(localStorage, KEY)
+      out.textContent =
+        `${text} | URL string: ${savedQuery || '(empty)'} | localStorage: ${memo ? JSON.stringify(memo) : '(empty)'}`
+    }
+    document.getElementById('filter-persist-save-en')?.addEventListener('click', () => {
+      const params = toQuery(new URLSearchParams('page=1'), filter.conditions)
+      savedQuery = `?${params.toString()}` // host applies history.replaceState(null, '', savedQuery)
+      save(localStorage, KEY, filter.conditions)
+      report(`Saved (an empty condition removes the conditions key — no empty tail in the URL)`)
+    })
+    document.getElementById('filter-persist-restore-en')?.addEventListener('click', () => {
+      const restored = savedQuery ? fromQuery(savedQuery) : null
+      if (restored === null) {
+        report('No valid conditions in the URL string yet — click "Save" first')
+        return
+      }
+      filter.conditions = restored
+      report(`Restored: ${JSON.stringify(restored)}`)
+    })
+    document.getElementById('filter-persist-clear-en')?.addEventListener('click', () => {
+      filter.conditions = {}
+      savedQuery = ''
+      save(localStorage, KEY, {}) // empty condition = removeItem (no empty tail)
+      report('Conditions and localStorage memory cleared')
     })
   })
 })

@@ -442,3 +442,67 @@ test('cart：滑开第二行时收起第一行（同屏至多一行露删除钮�
   expect(await transformOf(innerB)).toBe('translateX(-72px)')
   await expect.poll(() => transformOf(innerA), { message: '旧展开行必须同时收起（不得两行同时露删除钮）' }).toBe('')
 })
+
+// —— T19 L3：batch 能力子路径 demo（能力子路径章节）——
+// 勾选 → 点「删除所选」→ executeBatch 编排回写 + oas-batch 反馈可见（条目减少 + 输出行）；
+// 禁用条目（勾不中）不被编排误删。
+test('cart：批量操作 demo——勾选后删除所选，oas-batch 反馈可见、禁用卡保留', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cart-batch')
+  const host = page.locator('#cart-batch')
+
+  // 初始 4 条（含 1 条禁用）
+  const itemsBefore = await host.evaluate((el) => JSON.parse(el.getAttribute('items') ?? '[]') as { id: string }[])
+  expect(itemsBefore).toHaveLength(4)
+
+  // 再勾选一条（初始 a/b 已勾选；c 未勾选）→ 勾上 c
+  const checkC = host.locator('[part="item-check"]').nth(2)
+  await checkC.click()
+  await expect(checkC).toBeChecked()
+
+  // 点「删除所选」→ a/b/c 被删、禁用 d 保留
+  await page.locator('#cart-batch-remove').click()
+  await expect
+    .poll(() =>
+      host.evaluate((el) =>
+        (JSON.parse(el.getAttribute('items') ?? '[]') as { id: string; disabled?: boolean }[]).map((i) => i.id),
+      ),
+    )
+    .toEqual(['d'])
+  await expect(page.locator('#cart-batch-out')).toContainText('oas-batch')
+  await expect(page.locator('#cart-batch-out')).toContainText('成功 3 件')
+
+  // 批量收藏：剩 1 条禁用卡勾不中 → 零操作反馈可见
+  await page.locator('#cart-batch-favorite').click()
+  await expect(page.locator('#cart-batch-out')).toContainText('成功 0 件')
+})
+
+// —— 复核修复批（C1）：config-provider 注入禁用时 executeBatch 必须全部跳过——
+// 注入禁用是 provider 属性级判定不写 cart attribute；helper 若只判 attribute 会照删。
+// e2e 把 demo 的 batch cart 移进 disabled provider 包裹，点击批量按钮走页面内真实 helper。
+test('cart：config-provider 注入禁用——批量操作全跳过、items 零变化', async ({ page }) => {
+  await page.goto('/components/cart.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cart-batch')
+  const host = page.locator('#cart-batch')
+
+  // 把 cart 移进 disabled provider 包裹（provider 未注册也无妨——判定只看 tag 名与属性）
+  await page.evaluate(() => {
+    const provider = document.createElement('oas-config-provider')
+    provider.setAttribute('disabled', '')
+    const cart = document.getElementById('cart-batch')!
+    provider.appendChild(cart)
+    document.querySelector('.demo-block')!.appendChild(provider)
+  })
+  await up(page, '#cart-batch')
+
+  const before = await host.evaluate((el) => el.getAttribute('items'))
+  // 触发用 DOM API click（诊断实证：DOM 移动后 playwright 坐标点击的 hit-target 派发不稳，
+  // capture/bubble 全空；btn.click() 从元素派发事件，capture/bubble/公开 handler 全部一致，
+  // 对「注入禁用判定」这一验证目标语义等价）
+  await page.evaluate(() => (document.getElementById('cart-batch-remove') as HTMLButtonElement).click())
+  // items 零变化（修复前：只判 attribute，注入禁用下照删 4→1）
+  expect(await host.evaluate((el) => el.getAttribute('items'))).toBe(before)
+  await expect(page.locator('#cart-batch-out')).toContainText('成功 0 件')
+  // oas-batch 仍派发（skipped 全量）且本体按钮禁用态一致
+  await expect(page.locator('#cart-batch-out')).toContainText('oas-batch')
+})

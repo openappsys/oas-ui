@@ -386,3 +386,43 @@ test('goods-list：插槽卡 replaceChildren 单调用等价追加（搬运后 l
 
   expect(state.after.sort()).toEqual(['卡一', '卡二', '卡三'].sort())
 })
+
+// —— T19 L3：paged 能力子路径 demo（服务端分页协议章节）——
+// 触底 → oas-load-more → loading → loadPage → 追加 → cursor 推进 → 末页 no-more 到底。
+test('goods-list：分页 demo——触底加载推进 cursor、末页出现到底态', async ({ page }) => {
+  await page.goto('/components/goods-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#gl-paged')
+  const host = page.locator('#gl-paged')
+  const out = page.locator('#gl-paged-out')
+
+  // 首页自动加载：条目数下界 ≥1（不与按本机校准的常数比较），并等与卡片 DOM 现算一致
+  const itemsLen = () => host.evaluate((el) => (JSON.parse(el.getAttribute('items') ?? '[]') as unknown[]).length)
+  const cardCount = () => host.evaluate((el) => el.shadowRoot!.querySelectorAll('[part="card"]').length)
+  await expect.poll(cardCount, { timeout: 5000 }).toBeGreaterThanOrEqual(1)
+  await expect.poll(itemsLen, { timeout: 5000 }).toBeGreaterThanOrEqual(1)
+  const firstLen = await itemsLen()
+  await expect(out).toContainText('cursor=c2')
+
+  // 触底：滚到列表底（哨兵进入视口）
+  const scroll = async () => {
+    await host.evaluate((el) => {
+      el.scrollIntoView({ block: 'end' })
+      window.dispatchEvent(new Event('scroll'))
+    })
+  }
+  await scroll()
+  await expect(out).toContainText('第 2 页已追加', { timeout: 8000 })
+  await expect(host).not.toHaveAttribute('loading', '')
+
+  await scroll()
+  await expect(out).toContainText('第 3 页已追加', { timeout: 8000 })
+  await expect(out).toContainText('到底')
+
+  // 末页后宿主已置 no-more：加载区显示到底文案
+  await expect(host).toHaveAttribute('no-more', '')
+  await expect(host.locator('[part="more-text"]')).toContainText('没有更多了')
+
+  // reset：清累计回首页（与首页现算长度一致——非常数比较）
+  await page.locator('#gl-paged-reset').click()
+  await expect.poll(itemsLen, { timeout: 5000 }).toBe(firstLen)
+})
