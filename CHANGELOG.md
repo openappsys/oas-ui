@@ -28,7 +28,6 @@
 
 ### 修复
 
-<<<<<<< HEAD
 **RTL 键盘镜像修正（order-list 页签 / filter 组内选项）**
 
 - **order-list 页签**：水平方向键原先 `ArrowRight || ArrowDown` 恒为前进，RTL 下 `→` 仍向右移动（视觉方向反了）；统一走 `shared/listbox` 内核后左右键按书写方向镜像（RTL 下 `→` 向左移），与 time-select 既有口径一致；qa-regression 新增 RTL 断言（ArrowRight 回退、ArrowLeft 前进、manual activation 不变）。
@@ -41,7 +40,6 @@
 - **`shared/flip-up.ts`（视口翻转谓词）**：filter `syncPanelFlip` 与 invoice `placePicker` 的同构判据收敛为 `shouldFlipUp`（含视口 / 高度 / 坐标退化守卫），组件只保留 data 属性名与开合联动。
 - **RTL 判定收敛（cart / invoice / table-range / questionnaire）**：四组件内联 `getComputedStyle(...).direction` 判定改走 `shared/direction`（table-range 走同源的零依赖 DOM 层 `direction-dom`，避免叶子 helper 预算档被 core/i18n 闭包撑爆）；computed style 通道改为 `{ computed: true }` 按需开启（只认 rtl、不短路 locale 回退）——四个方向敏感点保留原先直读样式表的语义，其余 70+ 处默认零重算（每次 `getComputedStyle` 触发样式重算，千行表单实测会拖垮渲染）。
 - **体积账**：四个内核随组件链进入既有预算档，新增 gz 实测见各模块头注；不新增门禁（族依赖门禁对「族→shared 叶子方向」放行）。
-=======
 **L3 能力包三件真实浏览器复核修复批（1C + 3I + 1 用户可见）**
 
 - **cart/batch 注入禁用下照删（C 级，数据破坏）**：`executeBatch` 只判 `cart.hasAttribute('disabled')`，而 config-provider 注入禁用是 provider 属性/JSON 级判定不写 attribute——`<oas-config-provider disabled>` 包裹下本体按钮全禁、helper 照删（items 4→0）。修复：改用 core 的 `injectDisabled`（与本体 `isDisabled()` 同一实现，attribute / 注入 / `disabled-skip` 豁免同语义），禁用时全部跳过（reason disabled）、不回写、仍派 `oas-batch`。链因 import core/config-context 从 1.1 KB 增至 3.2 KB，预算档重定 1.5 → 4 KB（×1.15）。单测 +1（注入禁用零变化 + skipped 全量 + skip 豁免）；qa-regression +1。
@@ -49,7 +47,6 @@
 - **filter/persist fromQuery 对含裸 % 的值丢失/篡改（I 级）**：`decode` 无条件 `decodeURIComponent`——toQuery 存 JSON 原文后 `URLSearchParams.get()` 已解一层，再 decode 即对 JSON 内容二次解码（`%` 后非十六进制 → URIError → 整批 null；`%41` → 静默篡改 `A`）。修复：`fromQuery` 改「先直接解析原文，失败再 decode 回退」——原文形态优先、手工 encode 形态兼容。回归 3 组（非十六进制 % / 十六进制 %41 不经 URL 路径 / 加号与空格——URLSearchParams 层的合法 %XX 属转义语义，宿主经 toQuery 产生合法 query）。
 - **goods-list/paged 响应适配抛错 → 状态机永久卡死（I 级）**：`load(ctx)` 同步抛错逃出 Promise 契约；`getItems`/`getCursor` 在成功回调里抛错 → pending 恒 true / inflight 残留 / error=null → 宿主胶水 `if (source.pending) return` 永久阻断（`getItems: res => res.data.list` + 500 错误体是最常见分支）。修复：`run` 重构为 async IIFE——load 同步抛错与适配抛错统一走失败分支（error 落盘、pending 复位、状态不推进可重试）；修复中发现并同修 inflight 清理时序缺陷（清理链挂两跳会晚于宿主 await resume 执行，导致上一次完成后防重占位未清、下一页永不加载——改单跳注册，与调用方同队列且先执行）。回归 2 组（适配抛错后可重试成功 / load 同步抛错走失败分支）。
 - **demo（filter persist）面板遮挡操作按钮（用户可见）**：条件面板展开时（dropdown 绝对定位）完全覆盖下方「保存 / 还原 / 清空」按钮行——操作按钮移到筛选器上方，面板展开不再遮挡。
->>>>>>> work/t19-l3
 
 **commerce 二波终验跟修批（真实浏览器复核：III 系列）**
 
