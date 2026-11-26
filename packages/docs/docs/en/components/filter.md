@@ -103,7 +103,7 @@ Persisting `conditions` goes through the **capability subpath** `@oas-ui/ui/comm
 
 <DemoBlock title="URL encode round-trip + localStorage memory (save / load / toQuery / fromQuery)">
   <div style="display: grid; gap: var(--oas-space-3); width: 100%">
-    <!-- Action buttons above the filter: the open panel (dropdown) overlays the area right below it -->
+    <!-- Action buttons above the filter: the open panel (dropdown) overlays the area right below it; when space is tight the panel flips up (data-flip=up) and may temporarily cover content above it - overlays covering adjacent content are inherent to overlays, click outside the panel to close and operate -->
     <div style="display: flex; flex-wrap: wrap; gap: var(--oas-space-2)">
       <oas-button id="filter-persist-save-en" size="small">Save (URL string + localStorage)</oas-button>
       <oas-button id="filter-persist-restore-en" size="small">Restore from URL string</oas-button>

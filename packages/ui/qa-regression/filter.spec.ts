@@ -323,8 +323,7 @@ test('filter：持久化 demo——保存出编码串与 localStorage 反馈、�
   expect(conditions && JSON.parse(conditions)).toMatchObject({ groups: { brand: ['a'] } })
 })
 
-// —— 复核修复批（用户可见）：persist demo 的操作按钮行在筛选器上方——
-// 条件面板展开（dropdown 向下铺开）时不再遮挡按钮：面板开启态 elementFromPoint 命中按钮自身。
+// —— 复核修复批（用户可见）：persist demo 的操作按钮行移到筛选器上方——\r\n// 条件面板向下展开（dropdown 默认方向）时不再遮挡按钮：面板开启态 elementFromPoint 命中按钮自身。\r\n// 已知限制：面板空间不足向上翻转（data-flip=up）时会临时覆盖上方按钮行——浮层覆盖邻近内容属浮层本质，\r\n// 点面板外区域关闭即可操作（filter.md 注意事项已说明）。
 test('filter：persist demo 面板开启态不遮挡操作按钮（elementFromPoint 命中按钮）', async ({ page }) => {
   await page.goto('/components/filter.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#filter-persist')

@@ -103,7 +103,8 @@ description: "列表页筛选栏：排序项（综合 / 销量 / 价格升降）
 
 <DemoBlock title="URL 编码往返 + localStorage 记忆（save / load / toQuery / fromQuery）">
   <div style="display: grid; gap: var(--oas-space-3); width: 100%">
-    <!-- 操作按钮在筛选器上方：条件面板（dropdown）向下展开会覆盖其正下方区域，按钮放上方不被遮挡 -->
+    <!-- 操作按钮在筛选器上方：条件面板（dropdown）向下展开会覆盖其正下方区域，按钮放上方不被遮挡；
+         面板空间不足向上翻转（data-flip=up）时会临时覆盖上方内容——浮层覆盖邻近内容属浮层本质，点面板外区域关闭即可操作 -->
     <div style="display: flex; flex-wrap: wrap; gap: var(--oas-space-2)">
       <oas-button id="filter-persist-save" size="small">保存（URL 串 + localStorage）</oas-button>
       <oas-button id="filter-persist-restore" size="small">从 URL 串还原</oas-button>
