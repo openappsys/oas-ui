@@ -184,6 +184,17 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 
 > 来源：2026-11-25 commerce 扩容批复盘（review 实测修正——初版「弹层复杂即复用」被 filter / invoice / time-select / address 四个已交付自绘组件反证；一次跨族增量估算曾错 3 倍）。**判据 = 被复用件的传递闭包实测体积 × 是否需要模态/多层协同**，不是「交互复杂度」。
 
+**复用粒度谱系（四级，先分类再走决策树）**——「不复用整个组件」从不意味着「部分代码不复用」：
+
+| 粒度 | 形态 | 项目成熟度 |
+| --- | --- | --- |
+| ① 整组件复用 | 渲染内嵌（price ×6 / sku→bottom-sheet 跨族） | 成熟 |
+| ② 纯函数复用 | import 导出函数（shouldRequestMore 触底判定） | 成熟 |
+| ③ 部分代码复用 | 组件内的状态机/键盘导航/翻转/外点下沉为 shared 叶子模块（<1KB gz） | 路径成熟（overlay-stack / outside-dismiss / stable-id / direction 六先例）；**重复实现需盘点**（见 `packages/ui/src/shared/REUSE-INVENTORY.md`） |
+| ④ 配方组合 | 文档教组装（guide 场景配方） | 成熟（本批四篇新实践） |
+
+③ 级性价比最高（overlay-stack 0.71KB 被 coupon/sku 共用的实证），且是「复用与自绘」分歧的最大来源——**组件内的重复实现段先查本谱系与 REUSE-INVENTORY 盘点，再决定下沉或自绘**。
+
 决策树（按序判定，命中即停）：
 
 1. **组合可达**（页面级组装已有组件）→ 配方层 guide，0 体积
