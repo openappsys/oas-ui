@@ -26,7 +26,7 @@
 | **P1 7 条** | submit-bar tip / coupon 分组与「不用券」出口 / coupon 多选 / number-keyboard 附加键 / barrage items+auto-play / share-sheet 描述 / address 自定义校验 | ✅ 已完成（v2.6.9） |
 | **P2 4 条** | rolling-text 方向与手动控制 / pin-input 说明栏 / goods-action 类型与自定义色 / address 区划编码档 | ✅ 已完成（v2.6.9） |
 
-## v2.6.9（v2.6.9 追加批：虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾）
+## v2.6.9（追加批：虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
