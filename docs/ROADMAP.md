@@ -7,42 +7,42 @@
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
 | **批 1：V2 数组体系** | array-table 行内编辑（单元格常驻编辑器派）/ form-list 复制排序 / 结构重建行数快照 | 📋 待开发（设计稿评审中） |
-| **批 2：V2 数据流** | convert/transform 双钩子 / 异步选项加载窄面 / 表达式函数库扩至 ~20 | 📋 待开发（设计稿先行） |
-| **批 3：组件完善** | cropper 平移 / SKU 弹层 / drag 惯性 / coupon 层叠 / barrage 重连 | 📋 待开发 |
+| **批 2：V2 数据流** | convert/transform 双钩子 / 异步选项加载窄面 / 表达式函数库扩至 ~20 | ✅ 已完成（v2.6.9）（设计稿先行） |
+| **批 3：组件完善** | cropper 平移 / SKU 弹层 / drag 惯性 / coupon 层叠 / barrage 重连 | ✅ 已完成（v2.6.9） |
 
 ## 未发布（V2 增强与长尾清欠批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **批 4：schema-form V2 增强** | array-table 列宽拖拽 / 列序重排 / 跨行粘贴 / 值联动 value / 异步 convert / dateAdd month / 切换不丢数据 | 📋 待开发 |
-| **批 5：测试长尾** | drag-start e2e / 模式组 RTL e2e / a11y 生成器断言重构 | 📋 待开发 |
-| **批 6：组件级转正** | coupon z-index / 嵌套极限测试 / barrage RTL 重连与 reduced-motion / drag 惯性 e2e | 📋 待开发 |
+| **批 4：schema-form V2 增强** | array-table 列宽拖拽 / 列序重排 / 跨行粘贴 / 值联动 value / 异步 convert / dateAdd month / 切换不丢数据 | ✅ 已完成（v2.6.9） |
+| **批 5：测试长尾** | drag-start e2e / 模式组 RTL e2e / a11y 生成器断言重构 | ✅ 已完成（v2.6.9） |
+| **批 6：组件级转正** | coupon z-index / 嵌套极限测试 / barrage RTL 重连与 reduced-motion / drag 惯性 e2e | ✅ 已完成（v2.6.9） |
 
 ## 未发布（新组件能力补强批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **P0 4 条** | submit-bar 安全区+占位配方 / goods-action loading / address 编辑入口 / address 删除+saving 态 | 📋 待开发 |
-| **P1 7 条** | submit-bar tip / coupon 分组与「不用券」出口 / coupon 多选 / number-keyboard 附加键 / barrage items+auto-play / share-sheet 描述 / address 自定义校验 | 📋 待开发 |
-| **P2 4 条** | rolling-text 方向与手动控制 / pin-input 说明栏 / goods-action 类型与自定义色 / address 区划编码档 | 📋 待开发 |
+| **P0 4 条** | submit-bar 安全区+占位配方 / goods-action loading / address 编辑入口 / address 删除+saving 态 | ✅ 已完成（v2.6.9） |
+| **P1 7 条** | submit-bar tip / coupon 分组与「不用券」出口 / coupon 多选 / number-keyboard 附加键 / barrage items+auto-play / share-sheet 描述 / address 自定义校验 | ✅ 已完成（v2.6.9） |
+| **P2 4 条** | rolling-text 方向与手动控制 / pin-input 说明栏 / goods-action 类型与自定义色 / address 区划编码档 | ✅ 已完成（v2.6.9） |
 
 ## 未发布（v2.6.9 追加批：虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **批 A：大数组虚拟化 + 上传体验** | form-list/array-table 虚拟滚动 / image-picker 压缩+EXIF / cropper 触控板缩放 / number-keyboard 长按连删 | 📋 待开发 |
-| **批 B：交易链路闭环** | oas-cart 购物车 / oas-order-card 订单卡片 / oas-product-card 商品卡片（commerce 新组件 ×3） | 📋 待开发 |
-| **批 C：问卷引擎** | questionnaire 逻辑跳转谓词（复用 expr 引擎）/ 评分汇总（score-rules + oas-score） | 📋 待开发 |
-| **批 D：交互长尾** | coupon 多券叠加 / barrage 点赞·屏蔽 / drag 吸附点 / Z1·Z2 测试长尾 | 📋 待开发 |
+| **批 A：大数组虚拟化 + 上传体验** | form-list/array-table 虚拟滚动 / image-picker 压缩+EXIF / cropper 触控板缩放 / number-keyboard 长按连删 | ✅ 已完成（v2.6.9） |
+| **批 B：交易链路闭环** | oas-cart 购物车 / oas-order-card 订单卡片 / oas-product-card 商品卡片（commerce 新组件 ×3） | ✅ 已完成（v2.6.9） |
+| **批 C：问卷引擎** | questionnaire 逻辑跳转谓词（复用 expr 引擎）/ 评分汇总（score-rules + oas-score） | ✅ 已完成（v2.6.9） |
+| **批 D：交互长尾** | coupon 多券叠加 / barrage 点赞·屏蔽 / drag 吸附点 / Z1·Z2 测试长尾 | ✅ 已完成（v2.6.9） |
 
 ## 未发布（电商扩容与包体分级批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
-| **包体分级约定** | 组件本体冻结大众功能集 / 重增强走 L3 能力子路径（不内联本体、族入口不 re-export）/ commerce 逐链预算档 / 族级分级决策记入 architecture §3.1 | 📋 待开发 |
-| **增强子批（已有组件 ×5）** | cart 滑动会话收口 ×3 / cropper 任意角度覆盖 + 边界滚轮放行 / sku 焦点保持 + open 悬空收口 / drag phase 字段 + 时长口径 + 抢占落盘 / barrage clear 续播 | 📋 待开发 |
-| **新组件 ×6** | oas-filter 筛选栏 / oas-search-bar 搜索栏 / oas-goods-list 商品列表容器 / oas-order-list 订单列表容器（或降级配方）/ oas-logistics 物流时间线 / oas-member-card 会员卡 | 📋 待开发 |
-| **场景配方层** | 秒杀 / 领券中心 / 库存紧张提示 / 详情页骨架（guide + demo，不做新组件） | 📋 待开发 |
+| **包体分级约定** | 组件本体冻结大众功能集 / 重增强走 L3 能力子路径（不内联本体、族入口不 re-export）/ commerce 逐链预算档 / 族级分级决策记入 architecture §3.1 | ✅ 已完成（v2.6.9） |
+| **增强子批（已有组件 ×5）** | cart 滑动会话收口 ×3 / cropper 任意角度覆盖 + 边界滚轮放行 / sku 焦点保持 + open 悬空收口 / drag phase 字段 + 时长口径 + 抢占落盘 / barrage clear 续播 | ✅ 已完成（v2.6.9） |
+| **新组件 ×6** | oas-filter 筛选栏 / oas-search-bar 搜索栏 / oas-goods-list 商品列表容器 / oas-order-list 订单列表容器（或降级配方）/ oas-logistics 物流时间线 / oas-member-card 会员卡 | ✅ 已完成（v2.6.9） |
+| **场景配方层** | 秒杀 / 领券中心 / 库存紧张提示 / 详情页骨架（guide + demo，不做新组件） | ✅ 已完成（v2.6.9） |
 
 ## v2.6.9（文档站 SEO：语言机制去跳转化）
 
