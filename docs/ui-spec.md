@@ -212,6 +212,15 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 
 **配套纪律**：a) 复用留下的第二套实现不得与既有实现并存于同一组件（同组件两套下拉 = 一致性倒退）；b) 跨族边必须单向（form 当前无 commerce import——保持；建议补环检测门禁）；c) 组件 chrome 图标统一从 `@oas-ui/icons` 取，不内联重复 path（防止几何漂移失同步——select/invoice 的 chevron 内联为已知偏离）。
 
+**自绘时的形态一致性义务（2026-11-25 用户确立的第二原则）**：权衡选自绘 ≠ 形态自由——自绘控件的**形态必须与既有组件一致**，除非有组件独特的理由不应一致（理由须在设计前必答显式记录，如 invoice `.saved` 弹层「纯内部状态」vs `oas-coupon` 受控弹层的语义差异已记档）。一致性义务的最低清单：
+
+1. **命名形态**：attribute kebab-case 且不得撞实例成员（collision-guard 门禁强制）；事件 `oas-*` + 动词、detail 携带数据、受控属性写入不回派——全部按 §2.2
+2. **行为形态**：`disabled` / `readonly` / `loading` 语义按 §2.3 状态表；RTL、焦点管理、`aria-label` 所有权（宿主显式命名优先——`oas-compact` / `oas-member-card` 先例）对齐既有组件先例
+3. **受控模式形态**：同类交互采用同类受控形态（弹层开合 = `open` 双通道 + 受控写入静默；纯内部状态弹层须在设计必答记录与受控先例的差异）
+4. **视觉形态**：token 化样式 + 箭头/图标对齐组件体系节奏（`appearance` 重置 + viewBox 留白补偿为既定手法——select 先例）
+
+反例警示（review 实证）：attribute 撞实例成员 ×5（coupon `max-select` 等）、RTL 判定内联变体 ×4、`aria-label` 所有权不一致 ×2——形态漂移的实际代价是宿主心智分裂与 review 反复返工，自绘前对照本清单。
+
 ## 3. 交互与无障碍基线
 
 - 键盘可达：Tab 进、方向键/Enter/Space 操作、Esc 关闭浮层（焦点返回触发元素）
