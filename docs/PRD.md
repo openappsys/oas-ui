@@ -31,7 +31,9 @@
 **form-list 行操作**：行尾操作区内建复制/上移/下移三钮（part 暴露可定制）——复制 = 取内核 `getValues()` 行子树 JSON 串解析→序列化插入下一行（upload 行内字段 skip）；上移/下移 = 相邻行**值交换**（不走 DOM 交换，焦点语义同上）；事件/值同步/错误清理与 array-table 行操作列同契约（一套语义两处承载）。
 
 **结构重建行数快照（评审修正）**：
+
 - **rebuild 内局部捕获**（不建常驻 map——断开保留 DOM，重建开头从 DOM 现取行数即可；常驻态只会与 reset/重连打架）。
+
 - **优先级（评审修正）**：`initialChanged || 受控 values 写入` 触发的重建**忽略行数快照**（否则宿主 initialValues 1→3 行时出行数 1/值 3 行的混合态）；其余重建按快照行数恢复（> 初始长度空值填充）。
 - **reset() 走 bypass**：reset → rebuild 行数回初始（既有测试断言此行为，保持不变）。
 - **受控 shrink 缺陷同修（评审新发现）**：`syncHostArrayMin` 只增不减——宿主删行留空行；本批修为按受控值长度收敛（补删行回归）。
@@ -41,21 +43,27 @@
 #### 批 2 设计稿（评审稿 v2，2026-11-24，按 R1 评审修订）
 
 **convert / transform 值变换双钩子（评审修正后）**：
+
 - **裸键无前缀**（对齐 V1 冻结契约）：`convert` / `transform`，补进 uiSchema 已知键表（`ui:` 前缀违反 V1「独立层裸键」约定）。
+
 - **入向（convert）应用面（评审修正，四入口收敛为二）**：仅 `initialValues` 回填与受控 `values` / `setValues()` 写入两条入向通道应用 convert；**键入交互不经过**（widget 值已是组件语义）；**快照回填不经过**（否则二次换算）；**schema `default` 不经过**；空串/缺省不调用 convert（防 `moneyToCents(undefined)`→NaN）。投影归一发生在校验读侧——convert 定义在「写入组件前」一步：输入 = 宿主给的原始值（字符串或对象），输出 = 组件值字符串（number/boolean/array/object 按 schema type 序列化口径，与 value 契约一致）。
 - **出向（transform）机制（评审修正）**：schema-form 在内核 form 上监听 `oas-submit` / `oas-validate-fail` / `oas-values-change`（**就地改写 detail.values / detail.value**，冒泡顺序先于宿主、target 不变、不停冒泡）；公开 `getValues()` 出口应用 transform；**内部 dirty / 快照 / appliedValues 走内核原始值**（syncDirty 现用公开 getValues，须改接原始通道，防往返出错）。
 - **注册表（评审修正）**：convert/transform 用**独立注册表**（`registerSchemaConverter` / `registerSchemaTransformer`，不与表达式函数同表——防表达式调用值变换并撞名）；宿主函数与内置同名 = **宿主优先 + devWarn**（修正表达式解析器现「内置优先静默遮蔽」策略，函数库扩充同批生效）。
 - 签名 `(value, fieldPath, wholeValues) => value`；抛错按「钩子失效」口径（devWarn + 回落恒等）。V2 不做异步钩子。
 
 **异步选项加载（内建窄面，评审修正）**：
+
 - `options.source = "<函数名>"`，宿主注册签名为 **`(values, path) => Promise<Option[]>`**——补 `options.sourceDeps = ["<路径>"]` 声明值依赖：依赖变化自动 reload（评审确认的真实缺口「A 变重载 B 选项」的正式入口）。
+
 - **竞态口径（评审修正）**：seq 序号守卫（晚到响应丢弃）+ 重建期间去重 + 卸载后丢弃——一次性调用无去抖意义，不做去抖。
 - **三通道优先级**：`enum/const`（数据 schema）> `options.options` > `options.source`，多通道并存 devWarn 一次。
 - **loading 态承载（评审修正）**：oas-select 有 `loading`（向后兼容沿用）；**radio-group / checkbox-group 本批新增 `loading` 布尔属性**（选项区 spinner 占位，向后兼容增量）；失败态 = 错误文案 + 重试按钮（i18n）；SSR 首帧无选项 = 空态渲染（无骨架，写入文档）。
 - `reloadOptions(path)` 方法供宿主手动刷新；**不做**请求取消/进度/缓存（通用网络层不进库）。
 
 **表达式函数库扩充（评审修正，目标 20 → 实定 20）**：现库 10 个（9 + contains）。新增 **10 个**（评审指出原列 12 个计数有误，砍 2）：文本 `join(arr, sep)` / `split(s, sep)` / `substring(s, start, end?)` / `replace(s, from, to)` / `trim(s)`；数学 `round(n, digits?)` / `abs(n)` / `floor(n)` / `ceil(n)`；日期 `formatDate(ts, fmt?)` / `dateAdd(ts, n, unit)`——**砍 `now()`**（非确定性与 reaction 静态重算模型冲突，宿主需要当前时间应走受控值）。合计 20 整。
+
 - **日期口径（评审修正）**：V1 排除项「日期函数」收窄为「**除 formatDate/dateAdd 外的日期函数**」；`formatDate` 冻结 token 表 = `yyyy MM dd HH mm ss`（未知 token 原样输出 + devWarn 一次）、本地时区（不做 UTC/时区参数——不做清单写明）；`dateAdd` 单位冻结 `day/hour/minute`。
+
 - 表达式预算档按新函数表**重实测重定档**（3.4KB 档可能上浮，实测定档）。
 
 ### 批 3：新组件完善批（PRD 条目即实现依据）
@@ -101,13 +109,17 @@
 对既有组件的小增量（无新组件/无架构改动），逐条验收 = 单测 + 文档 + CHANGELOG，全部增量向后兼容。
 
 **P0（4 条）**
+
 - **submit-bar 底部安全区 + 占位配方** ✅ 已完成（v2.6.9）：`padding-block-end: max(…, env(safe-area-inset-bottom))`；占位走文档配方——宿主 fixed 时自加 `padding-bottom` + `--oas-submit-bar-height` token 对齐（修复批撤销组件内 `placeholder` 属性：占位块与栏体同属 host，fixed 下不占文档流反而撑高栏体）。
+
 - **goods-action 主按钮 loading** ✅ 已完成（v2.6.9）：`actions[].loading`——禁用点击 + `aria-busy` + spinner，与 `disabled` 正交。
 - **address 列表编辑入口** ✅ 已完成（v2.6.9）：列表行编辑钮 + `oas-edit({id, item})` 事件，宿主据此进 edit 模式。
 - **address 删除 + 保存/删除 loading** ✅ 已完成（v2.6.9）：`show-delete` + `oas-delete` 事件（确认弹层由宿主用 `oas-popconfirm` 组合）+ `saving` / `deleting` 态。
 
 **P1（7 条）**
+
 - **submit-bar tip 提示行** ✅ 已完成（v2.6.9）：`tip` + `tip-icon`（运费/发票提示高频位）。
+
 - **coupon 分组与出口** ✅ 已完成（v2.6.9）：可用/不可用分组标题 + 计数（`show-count`）+ 「不使用优惠券」出口（`oas-clear` 事件，`oas-select` detail 支持空选）。
 - **coupon 多选** ✅ 已完成（v2.6.9）：`multiple` + 多选 UI + `oas-select` detail 数组（默认单选不变）。
 - **number-keyboard 附加键** ✅ 已完成（v2.6.9）：`extra-key`（字符串或数组，附加键挂数字区底行 0 键右侧、栅格第 3 列）+ 侧栏型扩展（如身份证 X 键）。
@@ -116,7 +128,9 @@
 - **address 自定义校验钩子** ✅ 已完成（v2.6.9）：`validator(key, value)` function property（返回错误串；失败并入 `oas-invalid`）。
 
 **P2（4 条）**
+
 - **rolling-text 方向与手动控制** ✅ 已完成（v2.6.9）：`direction`（up/down）+ `stop-order` + `start()` / `reset()` 方法。
+
 - **pin-input 语义说明栏** ✅ 已完成（v2.6.9）：`info` / `error-info` 属性（统一 message 槽）。
 - **goods-action 按钮类型与自定义色** ✅ 已完成（v2.6.9）：`actions[].type`（default/primary/success/warning/danger）+ `items[].color`。
 - **address 区划编码值约定** ✅ 已完成（v2.6.9）：`value-format="name|code"`（默认名不变，code 档兼容税务/接口场景）。
