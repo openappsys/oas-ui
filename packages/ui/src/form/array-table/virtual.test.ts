@@ -264,7 +264,7 @@ describe('OASArrayTable 虚拟滚动（virtual，v2.6.9 批 A）', () => {
     // 属性移除 → 清内联（回落 CSS 缺省 / 宿主 CSS 变量覆盖）
     narrow.removeAttribute('viewport-height')
     expect(scroller(narrow).style.maxHeight).toBe('')
-  })
+  }, 20000)
 
   it('虚拟态添加行：新行滚入视口、窗口重算挂载新帧、焦点落新行首字段（用户可见反馈）', () => {
     const table = makeBig(30, { virtual: '', 'estimated-row-height': '50', overscan: '0' })

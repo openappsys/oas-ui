@@ -119,11 +119,11 @@ describe('OASPopover contextmenu 能力边界（纯核 core 入口：未 import 
   it('普通 hover/click 浮层不告警、功能正常（无右键族配置不触发 false positive）', async () => {
     const el = mount({ trigger: 'click hover', 'hover-delay': '0' })
     ;(el.querySelector('button') as HTMLElement).click()
-    // happy-dom 的事件派发走微任务：flush 一次即可确定性落定，与墙钟/负载无关
-    // （曾两轮 CI 实发 open 未置位：真实时钟 waitFor 2s 被打败；假时钟方案实测引入
-    // 新的不确定性已弃用——根因是微任务边界而非定时器）
-    await Promise.resolve()
-    expect(el.hasAttribute('open'), 'click 后浮层应打开').toBe(true)
+    // 开路径经 openTimer（setTimeout 宏任务，oas-popover.ts:1124）或同步 requestOpen 落定——
+    // 微任务 flush 不跨宏任务边界：快机器上碰巧赶在断言前跑完，CPU 饥饿（2 核 CI /
+    // 本机 affinity 复现）下断言先于定时器执行。改为谓词轮询（真实时钟、条件达成即返回，
+    // 非固定等待）。
+    await vi.waitFor(() => expect(el.hasAttribute('open'), 'click 后浮层应打开').toBe(true), { timeout: 3000 })
     const ctxWarns = warnSpy.mock.calls.filter((call: unknown[]) =>
       String(call[0]).includes('feedback/popover/contextmenu'),
     )

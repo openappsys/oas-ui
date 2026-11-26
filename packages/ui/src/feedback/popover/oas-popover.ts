@@ -696,9 +696,9 @@ export class OASPopover extends OASElement {
   /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
   private unsubCaps: (() => void) | undefined = undefined
   /** mousedown 触发的时间戳：同一次按压的合成 click 在时间窗内吞没（防双路径叠加切换） */
-  private lastMousedownToggle = 0
+  private lastMousedownToggle = -MOUSE_SUPPRESS_MS
   /** trigger-keys 切换的时间戳：同一次按键的合成 click 在时间窗内吞没（P2 幂等守卫） */
-  private lastKeydownToggle = 0
+  private lastKeydownToggle = -MOUSE_SUPPRESS_MS
   /** 指针坐标打开（右键光标 / 触屏长按）时刻：tap 降级下抬手合成 click 在守卫窗口内跳过切换 */
   private lastPointerOpenAt = 0
   /** 打开瞬间的页面 scrollY：滞留 scroll 事件（滚动发生在打开前、事件 task 异步派发晚于

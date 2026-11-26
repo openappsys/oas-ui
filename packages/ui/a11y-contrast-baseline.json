@@ -1,5 +1,5 @@
 {
-  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）。scannedPages 是本次生成时的扫描页快照，pages ∪ zeroPages 必须恰好覆盖它（zeroPages = 两项全零的页）；当前 docs 新增页按零基线参与门禁，删页/改名须重生成。2026-11-26 手工标定补记：en/product-detail.html ci 12→20——该页为电商批新增配方页，基线 ci 列此前无 Linux 实测（ci=local=12）；CI run 1771 Linux 实测 16，按「ci = CI 实测 + 4」政策补足，totals.skipped.ci 同步 +8。更新方式见 a11y.spec.ts 顶部说明。",
+  "note": "感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）。scannedPages 是本次生成时的扫描页快照，pages ∪ zeroPages 必须恰好覆盖它（zeroPages = 两项全零的页）；当前 docs 新增页按零基线参与门禁，删页/改名须重生成。2026-11-26 手工标定补记：product-detail 四条目（zh/en × light/dark）ci 12→20——该页为电商批新增配方页，基线 ci 列此前无 Linux 实测（ci=local=12）；CI run 1771/1772 实测 Linux 无法评分 15~16（en dark 于两 run 间 15→16 摆动，±1 跨越「ci + 3」容差线），按「ci = CI 实测 + 4」政策对整页四条目统一标定为 20，totals.skipped.ci 同步 +32（4566→4598）。更新方式见 a11y.spec.ts 顶部说明。",
   "totals": {
     "sampled": 67084,
     "below30": 0,
@@ -9,7 +9,7 @@
     "exempt": 708,
     "skipped": {
       "local": 4234,
-      "ci": 4574
+      "ci": 4598
     }
   },
   "topPairs": [],
@@ -2376,7 +2376,7 @@
       "exempt": 0,
       "skipped": {
         "local": 12,
-        "ci": 12
+        "ci": 20
       }
     },
     "guide/product-detail.html::dark": {
@@ -2387,7 +2387,7 @@
       "exempt": 0,
       "skipped": {
         "local": 12,
-        "ci": 12
+        "ci": 20
       }
     },
     "guide/recipes.html": {
@@ -2706,7 +2706,7 @@
       "exempt": 0,
       "skipped": {
         "local": 12,
-        "ci": 12
+        "ci": 20
       }
     },
     "en/recipes.html": {
