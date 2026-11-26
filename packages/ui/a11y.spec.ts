@@ -85,13 +85,82 @@ function scopeFor(page: string): string {
 /**
  * 基线 / 容差表 key：组件页沿用历史 basename（如 `stepper.html`，171 条既有基线不动）；
  * guide 页 zh（`/guide/x.html`）与 en（`/en/guide/x.html`）的 basename 相同——必须带目录段
- * 消歧（`guide/x.html` / `en/guide/x.html`），否则基线登记相互覆盖、totals 与逐页求和脱节
+ * 消歧（`guide/x.html` / `en/x.html`），否则基线登记相互覆盖、totals 与逐页求和脱节
  * （实测：en 覆盖 zh 后 mismatch = zh 各页计数，生成自校验直接红灯）。
  */
 function baselineKey(page: string): string {
   const base = basename(page)
   if (!page.includes('/guide/')) return base
   return page.startsWith('/en/') ? `en/${base}` : `guide/${base}`
+}
+
+// ---------- 页覆盖校验：数据驱动（生成时扫描快照 + 当前扫描域双向对账，不硬编码任何实测页数） ----------
+/**
+ * 扫描域：当前 docs 里全部页面经 baselineKey 归一化后的键集合。
+ * 基线文件用 `scannedPages` 记录**生成时**的扫描快照，并对快照里每个页给出明确交代——要么有计数
+ * 条目（light/dark 各一条），要么登记进 `zeroPages`（两项全零、无需 ratchet 的页）。这一对一的账本
+ * 才是「防意外丢页」的根据：只数条目会随债务清零而缩水（修好的页自然不再登记），无法区分
+ * 「修好了」与「生成漏了」。
+ *
+ * 为什么用快照而不是直接对当前扫描域做全量相等：docs 新增页是常态（readdirSync 自动收集），
+ * 新页按零基线参与门禁即可，不该强制每次新页都重跑 8 分钟基线；而 docs 删页/改名必须重生成
+ * （快照里的页已不在当前扫描域 → 判红），避免残留条目静默吃掉覆盖。
+ */
+const SCANNED_PAGE_KEYS = [...new Set(PAGES.map(baselineKey))].sort()
+
+/**
+ * 基线页覆盖校验（结构性，与数值无关）：
+ * ① `scannedPages` / `zeroPages` 必须是字符串数组、无重复（旧格式缺失即判红，迫使按新格式重生成）；
+ * ② 快照里的页必须仍在当前扫描域内——docs 删页/改名后残留即判红；
+ * ③ pages ∪ zeroPages 必须恰好覆盖快照——生成漏页/同页两处登记判红；
+ * ④ 条目键不得落在快照外（基线不得比生成时的扫描多页）；
+ * ⑤ 条目数不得超过「当前扫描页数 × 2 主题」——重复写入/键冲突会让一页覆盖另一页。
+ * 当前扫描域里比快照新出现的页不在此校验范围（按零基线参与逐页 ratchet）。
+ */
+function pageCoverageIssues(baseline: {
+  pages?: Record<string, unknown>
+  zeroPages?: unknown
+  scannedPages?: unknown
+}): string[] {
+  const current = new Set(SCANNED_PAGE_KEYS)
+  const issues: string[] = []
+  const keys = Object.keys(baseline.pages ?? {})
+  const registered = new Set(keys.map((k) => k.replace(/::dark$/, '')))
+  const zero = baseline.zeroPages
+  const scanned = baseline.scannedPages
+  if (!Array.isArray(zero) || !zero.every((p) => typeof p === 'string')) {
+    issues.push('基线缺少 zeroPages 登记（无法证明逐页覆盖；运行 CONTRAST_BASELINE=update 重新生成）')
+  }
+  if (!Array.isArray(scanned) || !scanned.every((p) => typeof p === 'string')) {
+    issues.push('基线缺少 scannedPages 快照（无法证明逐页覆盖；运行 CONTRAST_BASELINE=update 重新生成）')
+    return issues
+  }
+  const snapshot = new Set(scanned as string[])
+  if (snapshot.size !== scanned.length) issues.push('scannedPages 含重复项')
+  const stale = [...snapshot].filter((p) => !current.has(p))
+  if (stale.length) {
+    issues.push(`scannedPages 含当前扫描域外的页（docs 已删/改名，需重新生成）：${stale.slice(0, 8).join('、')}`)
+  }
+  if (Array.isArray(zero)) {
+    const zeroSet = new Set(zero as string[])
+    if (zeroSet.size !== zero.length) issues.push('zeroPages 含重复项')
+    const both = [...zeroSet].filter((p) => registered.has(p))
+    if (both.length) issues.push(`页同时登记为有计数与零基线：${both.slice(0, 8).join('、')}`)
+    const outside = [...new Set([...registered, ...zeroSet])].filter((p) => !snapshot.has(p))
+    if (outside.length) issues.push(`基线登记了 scannedPages 快照外的页：${outside.slice(0, 8).join('、')}`)
+    const missing = [...snapshot].filter((p) => !registered.has(p) && !zeroSet.has(p))
+    if (missing.length) {
+      issues.push(
+        `快照页未登记（有计数或零基线必须二选一，防意外丢页）：${missing.slice(0, 8).join('、')}${
+          missing.length > 8 ? ` 等 ${missing.length} 页` : ''
+        }`,
+      )
+    }
+  }
+  if (keys.length > current.size * 2) {
+    issues.push(`基线条目数 ${keys.length} 超过扫描页数 × 2 上界 ${current.size * 2}（键冲突/重复登记）`)
+  }
+  return issues
 }
 
 // ---------- 感知对比度：度量函数（公式真源 packages/theme/oklab.ts，与派生规则/守卫同源） ----------
@@ -138,13 +207,6 @@ if (UPDATE_BASELINE) {
   )
 }
 const LEVELS = [30, 45, 60] as const
-/**
- * 页数下限（结构断言）：**不硬编码实测页数**——新页面/新 demo 块会让基线页数持续增长，硬编码会在
- * 官方 update 命令的最后一步必红（历史 219/221 vs 实测 233）。这里只保证「基线覆盖了足够多的页」，
- * 真正的正确性由 totals 求和一致性 + 逐页 ratchet 承担。下限按当前实测留出余量（生成器只写计数非零
- * 的页，手工登记页不在其中），删页导致跌破时人工复核。
- */
-const PAGE_COUNT_FLOOR = 200
 const ZERO_COUNTS: PageCounts = { below30: 0, below45: 0, below60: 0, ratio: 0, exempt: 0, skipped: 0 }
 
 // ---------- 无法评分（skipped）基线：双环境口径（本地 / CI） ----------
@@ -203,10 +265,17 @@ interface AxeResultsLike {
   incomplete: AxeRuleLike[]
 }
 
-function loadBaseline(): { pages: Record<string, BaselineCounts>; totals: Record<string, number | EnvCounts> } {
+function loadBaseline(): {
+  pages: Record<string, BaselineCounts>
+  zeroPages?: string[]
+  scannedPages?: string[]
+  totals: Record<string, number | EnvCounts>
+} {
   try {
     return JSON.parse(readFileSync(BASELINE_FILE, 'utf8')) as unknown as {
       pages: Record<string, BaselineCounts>
+      zeroPages?: string[]
+      scannedPages?: string[]
       totals: Record<string, number | EnvCounts>
     }
   } catch {
@@ -737,6 +806,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
   // CI 口径退回本地值，跨 OS 误红立刻复发；要下调 ci 侧须在 CI 上以 CONTRAST_BASELINE=update 跑。
   const prevPages = loadBaseline().pages
   const pages: Record<string, BaselineCounts> = {}
+  const zeroPages = new Set<string>()
   const totals = { sampled: 0, below30: 0, below45: 0, below60: 0, ratio: 0, exempt: 0, skipped: { local: 0, ci: 0 } }
   const pairHistogram = new Map<string, number>()
   const ciRaised: string[] = []
@@ -744,6 +814,7 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
     await p.emulateMedia({ reducedMotion: 'reduce' })
     const key0 = basename(page)
     const pageKey = baselineKey(page)
+    let registered = false
     // 与正常审计路径同机制：冻结定时追加型 demo，保证基线与门禁两侧测量一致
     if (TIMER_FROZEN_PAGES.has(key0)) await hookTimers(p)
     await p.goto(page, { waitUntil: 'networkidle' })
@@ -781,8 +852,11 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
         if (counts.skipped > prevCi) ciRaised.push(key)
         totals.skipped.ci += ci
         pages[key] = { ...counts, skipped: { local: counts.skipped, ci } }
+        registered = true
       }
     }
+    // 逐页账本：光/暗两主题都没有任何计数 → 登记为零基线（页覆盖校验据此证明「没有丢页」）
+    if (!registered) zeroPages.add(pageKey)
   }
   if (ciRaised.length > 0) {
     console.warn(
@@ -795,36 +869,37 @@ test('生成对比度基线（CONTRAST_BASELINE=update --workers=1 -g 生成对�
     .slice(0, 40)
     .map(([pair, n]) => ({ pair, n }))
   const out = {
-    note: '感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）；未登记的页必须为零。更新方式见 a11y.spec.ts 顶部说明。',
+    note: '感知对比度 ratchet 基线（只许降不许升）：逐页记录 <30/<45/<60 档节点数、axe 比值违规数、禁用态豁免数（exempt）与无法评分数（skipped，非纯色 fg/bg，双环境 {local, ci}：CI 取 ci 侧、本地取 local 侧）。scannedPages 是本次生成时的扫描页快照，pages ∪ zeroPages 必须恰好覆盖它（zeroPages = 两项全零的页）；当前 docs 新增页按零基线参与门禁，删页/改名须重生成。更新方式见 a11y.spec.ts 顶部说明。',
     totals,
     topPairs: pairs,
     pages,
+    zeroPages: [...zeroPages].sort(),
+    scannedPages: SCANNED_PAGE_KEYS,
   }
   writeFileSync(BASELINE_FILE, `${JSON.stringify(out, null, 2)}\n`)
-  // 生成后立刻校验求和不变量：totals 与逐页必须严格一致（结构性保证，防生成逻辑漂移）
-  const mismatch = totalsMismatch(JSON.parse(readFileSync(BASELINE_FILE, 'utf8')))
+  // 生成后立刻自检（结构性保证，防生成逻辑漂移）：
+  // ① totals 与逐页求和严格一致；② 快照页全部被 pages/zeroPages 覆盖（页数不硬编码）。
+  const written = JSON.parse(readFileSync(BASELINE_FILE, 'utf8'))
+  const mismatch = totalsMismatch(written)
   expect(mismatch, `新生成的基线 totals 与 pages 求和不一致：${mismatch.join('；')}`).toEqual([])
-  // 生成会写的页数 = 各项计数非零的页（light/dark 各一条），另含手工登记的页。
-  // **结构断言，不硬编码实测页数**：新页/新 demo 块只增不减，硬编码会让官方 update 命令最后一步必红。
-  // 一致性由 totals 求和承担（上一行），这里只校「覆盖量」与「上界」。
-  const pageCount = Object.keys(pages).length
-  expect(pageCount, `生成页数不得低于下限 ${PAGE_COUNT_FLOOR}（覆盖量骤降需人工复核）`).toBeGreaterThanOrEqual(
-    PAGE_COUNT_FLOOR,
-  )
-  expect(pageCount, '生成页数不得超过「页数 × 2 主题」上界（重复写入说明键冲突）').toBeLessThanOrEqual(PAGES.length * 2)
+  const coverage = pageCoverageIssues(written)
+  expect(coverage, `新生成的基线页覆盖不完整（生成漏页/键冲突）：${coverage.join('；')}`).toEqual([])
 })
 
 // ---------- totals 求和不变量门禁 ----------
 // 门禁本体：已提交基线的五项单值计数 + skipped 双环境两侧都必须等于逐页求和。手改 totals /
 // 基线残留已删页面的陈旧条目 / 生成逻辑漂移都会让两侧脱节，这里显式红灯而不是静默放行。
-test('a11y 基线 totals 求和不变量：各项计数等于逐页求和（skipped 双环境、sampled 不按同一规则）', () => {
+test('a11y 基线结构与自洽：扫描快照逐页覆盖（pages ∪ zeroPages）+ totals 等于逐页求和', () => {
   const baseline = loadBaseline()
-  const pageCount = Object.keys(baseline.pages ?? {}).length
-  // 空基线 = 门禁空转；只校下限 + 上界，不硬编码实测页数（新页面会让页数增长）
-  expect(pageCount, `基线应覆盖足够多的页（下限 ${PAGE_COUNT_FLOOR}）；空基线 = 门禁空转`).toBeGreaterThanOrEqual(
-    PAGE_COUNT_FLOOR,
-  )
-  expect(pageCount, '基线页数不得超过「页数 × 2 主题」上界（键冲突会覆盖条目）').toBeLessThanOrEqual(PAGES.length * 2)
+  // ① 页覆盖：以生成时扫描快照为真源——快照页不得漏登记、条目不得落在快照外，
+  // 快照本身必须仍在当前扫描域内；条目数上界 = 当前扫描页数 × 2 主题。不硬编码任何历史页数常数。
+  const coverage = pageCoverageIssues(baseline)
+  expect(
+    coverage,
+    `基线页覆盖与扫描快照不一致（防生成漏页 / docs 删页后残留条目）：${coverage.join('；')}。` +
+      '修复：CONTRAST_BASELINE=update --workers=1 重新生成。',
+  ).toEqual([])
+  // ② 自洽：totals 五项单值 + skipped 双环境等于逐页求和（防手改 totals / 生成逻辑漂移）
   const mismatch = totalsMismatch(baseline)
   expect(
     mismatch,
@@ -901,4 +976,66 @@ test('a11y 基线不变量自检：篡改 totals 必须被判红（checker 反�
     totalsMismatch(flat).some((m) => m.startsWith('skipped:')),
     'totals.skipped 必须是双环境对象',
   ).toBe(true)
+  // ⑤ 快照外的孤儿页键 → 判红（docs 删页/改名后未重生成）
+  const orphan = {
+    ...baseline,
+    pages: { ...baseline.pages, 'ghost-page.html': { ...ZERO_COUNTS, skipped: { local: 0, ci: 0 } } },
+  }
+  expect(
+    pageCoverageIssues(orphan).some((m) => m.includes('ghost-page.html')),
+    '快照外的页键必须被判红',
+  ).toBe(true)
+  // ⑥ 删掉某个零基线页的登记 → 该快照页失联，必须判红（防意外丢页）
+  const zeroPage = baseline.zeroPages?.[0] ?? ''
+  expect(zeroPage, '基线应登记至少一个零基线页（否则本反证选样失效）').toMatch(/\.html$/)
+  const droppedZero = { ...baseline, zeroPages: baseline.zeroPages!.filter((p) => p !== zeroPage) }
+  expect(
+    pageCoverageIssues(droppedZero).some((m) => m.startsWith('快照页未登记')),
+    '快照页既无计数条目又不在 zeroPages 时必须判红',
+  ).toBe(true)
+  // ⑦ 同一页同时出现在 pages 与 zeroPages → 判红（账本重复）
+  const doubleBooked = {
+    ...baseline,
+    pages: { ...baseline.pages, [zeroPage!]: { ...ZERO_COUNTS, skipped: { local: 0, ci: 0 } } },
+  }
+  expect(
+    pageCoverageIssues(doubleBooked).some((m) => m.includes('同时登记为有计数与零基线')),
+    '同一页不得同时登记为有计数与零基线',
+  ).toBe(true)
+  // ⑧ 缺 zeroPages（旧格式/手写基线）→ 判红（无法证明逐页覆盖）
+  expect(
+    pageCoverageIssues({ pages: baseline.pages }).some((m) => m.includes('缺少 zeroPages')),
+    '缺 zeroPages 的基线必须判红，迫使按新格式重生成',
+  ).toBe(true)
+  // ⑨ 条目数超过「扫描页数 × 2 主题」→ 判红（键冲突/重复写入）
+  const overflow = Object.fromEntries(
+    Array.from({ length: SCANNED_PAGE_KEYS.length * 2 + 1 }, (_, i) => [`overflow-${i}.html`, {}]),
+  )
+  expect(
+    pageCoverageIssues({ pages: overflow, zeroPages: [], scannedPages: SCANNED_PAGE_KEYS }).some((m) =>
+      m.includes('超过扫描页数 × 2 上界'),
+    ),
+    '条目数上界必须生效',
+  ).toBe(true)
+  // ⑩ 快照里有、当前扫描域已没有（docs 删页/改名）→ 判红，迫使重生成
+  expect(
+    pageCoverageIssues({ ...baseline, scannedPages: [...baseline.scannedPages!, 'deleted-page.html'] }).some((m) =>
+      m.includes('当前扫描域外的页'),
+    ),
+    '快照残留已删页必须判红',
+  ).toBe(true)
+  // ⑪ 当前扫描域新增页（快照里没有）→ 允许零基线，不强制重跑 update（readdirSync 自动收集语义）
+  const omit = SCANNED_PAGE_KEYS[0]!
+  const pagesSansOmit = Object.fromEntries(
+    Object.entries(baseline.pages).filter(([k]) => k.replace(/::dark$/, '') !== omit),
+  )
+  const newerPageBaseline = {
+    ...baseline,
+    pages: pagesSansOmit,
+    zeroPages: baseline.zeroPages!.filter((p) => p !== omit),
+    scannedPages: baseline.scannedPages!.filter((p) => p !== omit),
+  }
+  expect(pageCoverageIssues(newerPageBaseline), '当前扫描域新增页应允许零基线（新增 docs 页不强制重跑基线）').toEqual(
+    [],
+  )
 })
