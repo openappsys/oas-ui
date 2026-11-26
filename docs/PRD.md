@@ -9,9 +9,9 @@
 
 ### 批 1：schema-form V2 · 数组体系（设计稿先行 + 评审后实现）
 
-- **array-table 行内编辑表格件** 📋：单元格常驻编辑器派——行内容由 schema-form 渲染（form-item 走内核收集，零 table 全家桶依赖），array-table 只做二维布局 + 行操作列（增/删/复制/上移/下移）；`ui:widget: 'array-table'` 承接对象数组；与 oas-table 全功能表明确不混用（轻量表单场景）。
-- **对象数组复制/排序** 📋：form-list 行操作补 复制（深拷贝行值插入）/ 上移 / 下移，与 array-table 行操作列同语义同事件。
-- **结构重建行数快照** 📋：schema/uiSchema 变化触发重建时，快照各数组当前行数、重建后按快照恢复（超出初始长度的行空值填充）——「行数快照 > 初始长度」优先级进契约。
+- **array-table 行内编辑表格件** ✅ 已完成（v2.6.9）：单元格常驻编辑器派——行内容由 schema-form 渲染（form-item 走内核收集，零 table 全家桶依赖），array-table 只做二维布局 + 行操作列（增/删/复制/上移/下移）；`ui:widget: 'array-table'` 承接对象数组；与 oas-table 全功能表明确不混用（轻量表单场景）。
+- **对象数组复制/排序** ✅ 已完成（v2.6.9）：form-list 行操作补 复制（深拷贝行值插入）/ 上移 / 下移，与 array-table 行操作列同语义同事件。
+- **结构重建行数快照** ✅ 已完成（v2.6.9）：schema/uiSchema 变化触发重建时，快照各数组当前行数、重建后按快照恢复（超出初始长度的行空值填充）——「行数快照 > 初始长度」优先级进契约。
 
 #### 批 1 设计稿（评审稿 v2，2026-11-24，按 R1 评审修订）
 
@@ -60,11 +60,11 @@
 
 ### 批 3：新组件完善批（PRD 条目即实现依据）
 
-- **oas-image-cropper 图片平移** 📋：激活 offset——拖拽图片移动、缩放以光标为中心、「图片恒覆盖裁剪框」边界约束。
-- **oas-sku 弹层形态** 📋：底部弹层 = 内嵌面板响应式变体（`layout="popup"` 或窄屏自动切换，走 bottom-sheet 协议），一件两态。
-- **oas-drag 惯性** 📋：rAF 滑行衰减，reduced-motion 复用瞬停降级。
-- **oas-coupon 层叠协议** 📋：接入 overlay-stack（body 滚动锁 + Esc 走层栈，对齐 modal）。
-- **oas-barrage 重连计时** 📋：断连重连按剩余时间 epoch 重算重排。
+- **oas-image-cropper 图片平移** ✅ 已完成（v2.6.9）：激活 offset——拖拽图片移动、缩放以光标为中心、「图片恒覆盖裁剪框」边界约束。
+- **oas-sku 弹层形态** ✅ 已完成（v2.6.9）：底部弹层 = 内嵌面板响应式变体（`layout="popup"` 或窄屏自动切换，走 bottom-sheet 协议），一件两态。
+- **oas-drag 惯性** ✅ 已完成（v2.6.9）：rAF 滑行衰减，reduced-motion 复用瞬停降级。
+- **oas-coupon 层叠协议** ✅ 已完成（v2.6.9）：接入 overlay-stack（body 滚动锁 + Esc 走层栈，对齐 modal）。
+- **oas-barrage 重连计时** ✅ 已完成（v2.6.9）：断连重连按剩余时间 epoch 重算重排。
 
 ---
 
@@ -72,13 +72,13 @@
 
 ### 批 4：schema-form V2 增强（批 1/2「不做」清单按需求转正）
 
-- **array-table 列宽拖拽** 📋：列头分割线拖拽调宽（`ui:width` 数值 = 初始宽），宽度入内存态（不序列化）。
-- **array-table 列顺序重排** 📋：列头拖拽重排列序（uiSchema 顺序仍权威，运行时重排为展示态）。
-- **array-table 跨行粘贴** 📋：表格区粘贴 TSV——按 `\t`/换行解析成多行多列填充，超 `maxItems` 截断 + 告警；类型不符单元格校验承接。
-- **值联动 `value` 键** 📋：reactions `fulfill.value` 表达式生效（V1 devWarn 占位转正）——写入目标字段、依赖图纳入、循环守卫沿用（只读值 + 8 轮上限）；写值引发的连锁重算走既有二次传播。
-- **异步 convert** 📋：convert 函数可返回 Promise（异步换算如汇率）——seq 序号守卫（晚到丢弃）+ 空串不触发语义不变；README 标注异步换算期间字段值陈旧窗口。
-- **dateAdd `month` 单位** 📋：月加减（月末钳制语义：1-31 → 2-28/29 落当月最后一天）。
-- **array-table ↔ form-list 切换不丢数据** 📋：同 schema 两种 widget 切换时行数快照 + 值快照组合保障（补显式测试）。
+- **array-table 列宽拖拽** ✅ 已完成（v2.6.9）：列头分割线拖拽调宽（`ui:width` 数值 = 初始宽），宽度入内存态（不序列化）。
+- **array-table 列顺序重排** ✅ 已完成（v2.6.9）：列头拖拽重排列序（uiSchema 顺序仍权威，运行时重排为展示态）。
+- **array-table 跨行粘贴** ✅ 已完成（v2.6.9）：表格区粘贴 TSV——按 `\t`/换行解析成多行多列填充，超 `maxItems` 截断 + 告警；类型不符单元格校验承接。
+- **值联动 `value` 键** ✅ 已完成（v2.6.9）：reactions `fulfill.value` 表达式生效（V1 devWarn 占位转正）——写入目标字段、依赖图纳入、循环守卫沿用（只读值 + 8 轮上限）；写值引发的连锁重算走既有二次传播。
+- **异步 convert** ✅ 已完成（v2.6.9）：convert 函数可返回 Promise（异步换算如汇率）——seq 序号守卫（晚到丢弃）+ 空串不触发语义不变；README 标注异步换算期间字段值陈旧窗口。
+- **dateAdd `month` 单位** ✅ 已完成（v2.6.9）：月加减（月末钳制语义：1-31 → 2-28/29 落当月最后一天）。
+- **array-table ↔ form-list 切换不丢数据** ✅ 已完成（v2.6.9）：同 schema 两种 widget 切换时行数快照 + 值快照组合保障（补显式测试）。
 
 ### 批 5：测试长尾（Z 台账清欠）
 
@@ -88,11 +88,11 @@
 
 ### 批 6：组件级记录不修项转正
 
-- **coupon z-index 属性通道** 📋：`z-index` 属性对齐 modal/drawer（缺省沿用层叠阶梯，宿主可覆写）。
-- **行数快照 ≥4 层嵌套极限测试** 📋：4 轮上限下深层嵌套数组的行为固化测试。
-- **barrage RTL 重连 e2e** 📋：RTL 镜像关键帧 + 负延迟续播的真实浏览器断言。
-- **barrage 重连 reduced-motion** 📋：20ms 时长下重连行为的显式断言。
-- **drag 惯性 e2e** 📋：惯性滑行几何终值断言（fake rAF 已有单测）。
+- **coupon z-index 属性通道** ✅ 已完成（v2.6.9）：`z-index` 属性对齐 modal/drawer（缺省沿用层叠阶梯，宿主可覆写）。
+- **行数快照 ≥4 层嵌套极限测试** ✅ 已完成（v2.6.9）：4 轮上限下深层嵌套数组的行为固化测试。
+- **barrage RTL 重连 e2e** ✅ 已完成（v2.6.9）：RTL 镜像关键帧 + 负延迟续播的真实浏览器断言。
+- **barrage 重连 reduced-motion** ✅ 已完成（v2.6.9）：20ms 时长下重连行为的显式断言。
+- **drag 惯性 e2e** ✅ 已完成（v2.6.9）：惯性滑行几何终值断言（fake rAF 已有单测）。
 
 ---
 
@@ -101,25 +101,25 @@
 对既有组件的小增量（无新组件/无架构改动），逐条验收 = 单测 + 文档 + CHANGELOG，全部增量向后兼容。
 
 **P0（4 条）**
-- **submit-bar 底部安全区 + 占位配方** 📋：`padding-block-end: max(…, env(safe-area-inset-bottom))`；占位走文档配方——宿主 fixed 时自加 `padding-bottom` + `--oas-submit-bar-height` token 对齐（修复批撤销组件内 `placeholder` 属性：占位块与栏体同属 host，fixed 下不占文档流反而撑高栏体）。
-- **goods-action 主按钮 loading** 📋：`actions[].loading`——禁用点击 + `aria-busy` + spinner，与 `disabled` 正交。
-- **address 列表编辑入口** 📋：列表行编辑钮 + `oas-edit({id, item})` 事件，宿主据此进 edit 模式。
-- **address 删除 + 保存/删除 loading** 📋：`show-delete` + `oas-delete` 事件（确认弹层由宿主用 `oas-popconfirm` 组合）+ `saving` / `deleting` 态。
+- **submit-bar 底部安全区 + 占位配方** ✅ 已完成（v2.6.9）：`padding-block-end: max(…, env(safe-area-inset-bottom))`；占位走文档配方——宿主 fixed 时自加 `padding-bottom` + `--oas-submit-bar-height` token 对齐（修复批撤销组件内 `placeholder` 属性：占位块与栏体同属 host，fixed 下不占文档流反而撑高栏体）。
+- **goods-action 主按钮 loading** ✅ 已完成（v2.6.9）：`actions[].loading`——禁用点击 + `aria-busy` + spinner，与 `disabled` 正交。
+- **address 列表编辑入口** ✅ 已完成（v2.6.9）：列表行编辑钮 + `oas-edit({id, item})` 事件，宿主据此进 edit 模式。
+- **address 删除 + 保存/删除 loading** ✅ 已完成（v2.6.9）：`show-delete` + `oas-delete` 事件（确认弹层由宿主用 `oas-popconfirm` 组合）+ `saving` / `deleting` 态。
 
 **P1（7 条）**
-- **submit-bar tip 提示行** 📋：`tip` + `tip-icon`（运费/发票提示高频位）。
-- **coupon 分组与出口** 📋：可用/不可用分组标题 + 计数（`show-count`）+ 「不使用优惠券」出口（`oas-clear` 事件，`oas-select` detail 支持空选）。
-- **coupon 多选** 📋：`multiple` + 多选 UI + `oas-select` detail 数组（默认单选不变）。
-- **number-keyboard 附加键** 📋：`extra-key`（字符串或数组，附加键挂数字区底行 0 键右侧、栅格第 3 列）+ 侧栏型扩展（如身份证 X 键）。
-- **barrage items 声明式数据 + auto-play** 📋：`items` JSON 双通道 + `auto-play`（对齐 addBatch 语义，Vue 双向绑定顺手）。
-- **share-sheet 描述文案** 📋：标题描述 + `channels[].description`。
-- **address 自定义校验钩子** 📋：`validator(key, value)` function property（返回错误串；失败并入 `oas-invalid`）。
+- **submit-bar tip 提示行** ✅ 已完成（v2.6.9）：`tip` + `tip-icon`（运费/发票提示高频位）。
+- **coupon 分组与出口** ✅ 已完成（v2.6.9）：可用/不可用分组标题 + 计数（`show-count`）+ 「不使用优惠券」出口（`oas-clear` 事件，`oas-select` detail 支持空选）。
+- **coupon 多选** ✅ 已完成（v2.6.9）：`multiple` + 多选 UI + `oas-select` detail 数组（默认单选不变）。
+- **number-keyboard 附加键** ✅ 已完成（v2.6.9）：`extra-key`（字符串或数组，附加键挂数字区底行 0 键右侧、栅格第 3 列）+ 侧栏型扩展（如身份证 X 键）。
+- **barrage items 声明式数据 + auto-play** ✅ 已完成（v2.6.9）：`items` JSON 双通道 + `auto-play`（对齐 addBatch 语义，Vue 双向绑定顺手）。
+- **share-sheet 描述文案** ✅ 已完成（v2.6.9）：标题描述 + `channels[].description`。
+- **address 自定义校验钩子** ✅ 已完成（v2.6.9）：`validator(key, value)` function property（返回错误串；失败并入 `oas-invalid`）。
 
 **P2（4 条）**
-- **rolling-text 方向与手动控制** 📋：`direction`（up/down）+ `stop-order` + `start()` / `reset()` 方法。
-- **pin-input 语义说明栏** 📋：`info` / `error-info` 属性（统一 message 槽）。
-- **goods-action 按钮类型与自定义色** 📋：`actions[].type`（default/primary/success/warning/danger）+ `items[].color`。
-- **address 区划编码值约定** 📋：`value-format="name|code"`（默认名不变，code 档兼容税务/接口场景）。
+- **rolling-text 方向与手动控制** ✅ 已完成（v2.6.9）：`direction`（up/down）+ `stop-order` + `start()` / `reset()` 方法。
+- **pin-input 语义说明栏** ✅ 已完成（v2.6.9）：`info` / `error-info` 属性（统一 message 槽）。
+- **goods-action 按钮类型与自定义色** ✅ 已完成（v2.6.9）：`actions[].type`（default/primary/success/warning/danger）+ `items[].color`。
+- **address 区划编码值约定** ✅ 已完成（v2.6.9）：`value-format="name|code"`（默认名不变，code 档兼容税务/接口场景）。
 
 ---
 
@@ -127,29 +127,29 @@
 
 ### 批 A：大数组虚拟化 + 上传体验（form 族增强）
 
-- **form-list / array-table 虚拟滚动** 📋：大数据集窗口化渲染（千行级数组表单），只渲染可视窗口 + overscan；行高动态测量；受控/校验/快照/name 重编号语义不变；与既有 `rows`/`min`/行操作共存。
-- **image-picker 自动压缩 + EXIF 方向** 📋：`compress`（quality / max-dimension），输出 File 通道不变；浏览器解码已按 EXIF 正立渲染，压缩重编码不做二次转正（避免方向写坏），EXIF 方向作为元信息进 detail。
-- **image-cropper 触控板细粒度缩放** 📋：deltaMode 像素级缩放 + Ctrl/Cmd+滚轮步进保留（修复触控板跳变）。
-- **number-keyboard 长按连删** 📋：删除键长按 400ms 起连删（间隔递减），pointerup 释放停止。
+- **form-list / array-table 虚拟滚动** ✅ 已完成（v2.6.9）：大数据集窗口化渲染（千行级数组表单），只渲染可视窗口 + overscan；行高动态测量；受控/校验/快照/name 重编号语义不变；与既有 `rows`/`min`/行操作共存。
+- **image-picker 自动压缩 + EXIF 方向** ✅ 已完成（v2.6.9）：`compress`（quality / max-dimension），输出 File 通道不变；浏览器解码已按 EXIF 正立渲染，压缩重编码不做二次转正（避免方向写坏），EXIF 方向作为元信息进 detail。
+- **image-cropper 触控板细粒度缩放** ✅ 已完成（v2.6.9）：deltaMode 像素级缩放 + Ctrl/Cmd+滚轮步进保留（修复触控板跳变）。
+- **number-keyboard 长按连删** ✅ 已完成（v2.6.9）：删除键长按 400ms 起连删（间隔递减），pointerup 释放停止。
 
 ### 批 B：交易链路闭环（commerce 族新组件 ×3）
 
-- **oas-cart（购物车列表）** 📋：条目勾选 / 数量步进（步进器内建）/ 删除（滑动或按钮）/ 小计与全选联动 / 结算栏组合配方（与 goods-action / submit-bar）；`items` JSON 双通道 + `oas-change`（detail 含合计）。
-- **oas-order-card（订单卡片）** 📋：状态徽标（待付款/待发货/已完成…可配置语义映射）/ 条目摘要（图+名+规格×数量）/ 金额区 / 操作按钮区（插槽化）/ 展开明细。
-- **oas-product-card（商品卡片）** 📋：图（比例可选）/ 标题（两行截断）/ 价格（划线价+现价）/ 标签与促销位插槽 / 按钮区（插槽化）；横向/纵向两形态。
+- **oas-cart（购物车列表）** ✅ 已完成（v2.6.9）：条目勾选 / 数量步进（步进器内建）/ 删除（滑动或按钮）/ 小计与全选联动 / 结算栏组合配方（与 goods-action / submit-bar）；`items` JSON 双通道 + `oas-change`（detail 含合计）。
+- **oas-order-card（订单卡片）** ✅ 已完成（v2.6.9）：状态徽标（待付款/待发货/已完成…可配置语义映射）/ 条目摘要（图+名+规格×数量）/ 金额区 / 操作按钮区（插槽化）/ 展开明细。
+- **oas-product-card（商品卡片）** ✅ 已完成（v2.6.9）：图（比例可选）/ 标题（两行截断）/ 价格（划线价+现价）/ 标签与促销位插槽 / 按钮区（插槽化）；横向/纵向两形态。
 
 ### 批 C：问卷引擎（questionnaire 增强）
 
-- **逻辑跳转谓词引擎** 📋：steps 增加 `when` 表达式（复用 schema-form expr 引擎与依赖图），驱动步骤显隐 / 跳转目标 / 自动跳过；与宿主手动控制正交（可关闭）。
-- **评分汇总** 📋：`score-rules`（表达式 + 分值映射）+ 只读 `score` property + `oas-score` 事件（作答变化时重算）；评分题型由宿主组合（rate/scale 等既有件），引擎只做汇总。
+- **逻辑跳转谓词引擎** ✅ 已完成（v2.6.9）：steps 增加 `when` 表达式（复用 schema-form expr 引擎与依赖图），驱动步骤显隐 / 跳转目标 / 自动跳过；与宿主手动控制正交（可关闭）。
+- **评分汇总** ✅ 已完成（v2.6.9）：`score-rules`（表达式 + 分值映射）+ 只读 `score` property + `oas-score` 事件（作答变化时重算）；评分题型由宿主组合（rate/scale 等既有件），引擎只做汇总。
 
 ### 批 D：交互长尾与测试补齐
 
-- **coupon 多券叠加规则** 📋：`max-select` / 列表条目互斥组标记（`exclusiveGroup`）+ 组合校验事件。
-- **barrage 弹幕交互** 📋：per-item 点赞（`oas-like`）/ 屏蔽（关键字过滤 `banned-words`）。
-- **oas-drag 吸附点/网格** 📋：`snap`（targets 数组或 grid 尺寸）+ 吸附阈值与视觉提示。
-- **Z1 测试长尾** 📋：drag-start 真实拖拽 e2e / 模式组 RTL 键盘 e2e（随批 D time-select/drag 触达后自然覆盖，不足则补）。
-- **Z2 a11y 生成器断言结构化** 📋：页数硬编码改结构断言（随 V2 批已完成项核对，未完成则本批补）。
+- **coupon 多券叠加规则** ✅ 已完成（v2.6.9）：`max-select` / 列表条目互斥组标记（`exclusiveGroup`）+ 组合校验事件。
+- **barrage 弹幕交互** ✅ 已完成（v2.6.9）：per-item 点赞（`oas-like`）/ 屏蔽（关键字过滤 `banned-words`）。
+- **oas-drag 吸附点/网格** ✅ 已完成（v2.6.9）：`snap`（targets 数组或 grid 尺寸）+ 吸附阈值与视觉提示。
+- **Z1 测试长尾** ✅ 已完成（v2.6.9）：drag-start 真实拖拽 e2e / 模式组 RTL 键盘 e2e（随批 D time-select/drag 触达后自然覆盖，不足则补）。
+- **Z2 a11y 生成器断言结构化** ✅ 已完成（v2.6.9）：页数硬编码改结构断言（随 V2 批已完成项核对，未完成则本批补）。
 
 ---
 
@@ -163,25 +163,25 @@
 
 ### 新组件（commerce 扩容 ×6）
 
-- **oas-filter（筛选栏）** 📋：列表页筛选闭环——排序项（综合 / 销量 / 价格升降）+ 筛选面板（多组条件：单选 / 多选；**范围条件组属 L3 预留能力面，不进本体**）+ 已选条件回显与逐项撤销 + 一键重置；面板承载分下拉 / 半屏抽屉两形态（dropdown 补滚动上限与视口翻转；drawer 为 dialog 语义 + 焦点陷阱）；`conditions` JSON 双通道 + `oas-change`；键盘与 a11y 对齐 ui-spec 基线。
-- **oas-search-bar（搜索栏）** 📋：输入框 + 清除 / 取消 / 搜索触发 + 历史词与热门词插槽（持久化归宿主）+ 联想位插槽；`oas-search` / `oas-cancel` 事件。
-- **oas-goods-list（商品列表容器）** 📋：product-card 的列表闭环——瀑布流（列数自适应 / 固定）/ 纵向列表两形态 + `items` JSON 双通道（卡片数据）+ 加载更多 / 到底态；卡片位插槽可整体替换为自定义内容。
-- **oas-order-list（订单列表容器）** 📋：状态页签（语义映射对齐 order-card 的 status-map 惯例）+ 订单卡片列表插槽 + 加载更多 / 空态；轻量容器，同时提供配方版（tabs + order-card 手工组装指南），二选一交付。
-- **oas-logistics（物流时间线）** 📋：节点时间线（`steps` JSON 双通道：状态 / 时间 / 描述）+ 折叠（展开全部 / 收起只看最新）+ 复制单号 / 复制地址动作插槽。
-- **oas-member-card（会员卡）** 📋：等级 / 权益卡（等级标识 / 权益插槽 / 有效期）+ 操作区按钮插槽；底色分实底 / 渐变两档 token 化。
+- **oas-filter（筛选栏）** ✅ 已完成（v2.6.9）：列表页筛选闭环——排序项（综合 / 销量 / 价格升降）+ 筛选面板（多组条件：单选 / 多选；**范围条件组属 L3 预留能力面，不进本体**）+ 已选条件回显与逐项撤销 + 一键重置；面板承载分下拉 / 半屏抽屉两形态（dropdown 补滚动上限与视口翻转；drawer 为 dialog 语义 + 焦点陷阱）；`conditions` JSON 双通道 + `oas-change`；键盘与 a11y 对齐 ui-spec 基线。
+- **oas-search-bar（搜索栏）** ✅ 已完成（v2.6.9）：输入框 + 清除 / 取消 / 搜索触发 + 历史词与热门词插槽（持久化归宿主）+ 联想位插槽；`oas-search` / `oas-cancel` 事件。
+- **oas-goods-list（商品列表容器）** ✅ 已完成（v2.6.9）：product-card 的列表闭环——瀑布流（列数自适应 / 固定）/ 纵向列表两形态 + `items` JSON 双通道（卡片数据）+ 加载更多 / 到底态；卡片位插槽可整体替换为自定义内容。
+- **oas-order-list（订单列表容器）** ✅ 已完成（v2.6.9）：状态页签（语义映射对齐 order-card 的 status-map 惯例）+ 订单卡片列表插槽 + 加载更多 / 空态；轻量容器，同时提供配方版（tabs + order-card 手工组装指南），二选一交付。
+- **oas-logistics（物流时间线）** ✅ 已完成（v2.6.9）：节点时间线（`steps` JSON 双通道：状态 / 时间 / 描述）+ 折叠（展开全部 / 收起只看最新）+ 复制单号 / 复制地址动作插槽。
+- **oas-member-card（会员卡）** ✅ 已完成（v2.6.9）：等级 / 权益卡（等级标识 / 权益插槽 / 有效期）+ 操作区按钮插槽；底色分实底 / 渐变两档 token 化。
 
 ### commerce 增强子批（已有组件交互打磨与行为收口，2026-11-25 用户定方向）
 
-- **oas-cart** 📋：pointercancel 单独结算（中断手势回弹关闭，不读 cancel 坐标——防 Safari 类浏览器给 0 坐标误判成满展开）；多点触控守卫（起手先结束旧滑动会话）；滑动展开行「点行体收起」。
-- **oas-image-cropper** 📋：rotate 任意角度的覆盖约束（fitScale 改旋转包围盒数学，保留自由角度，消除 45° 一类中间角度的框角露底色）；缩放到达上下限后放行页面滚动（不再吞滚轮）。
-- **oas-sku** 📋：形态切换焦点保持（记录深活跃元素，面板搬移后复原）；popup→embedded 切换时 `open` 悬空真值收口（同步回写并派 `oas-open-change`）。
-- **oas-drag** 📋：`oas-drag-end` detail 增 `phase: 'release' | 'coast-end'`（双派发语义显式化，宿主可按需去重）；滑行上限改真实时长口径（60 / 120Hz 屏体感一致）；滑行被新指针抢占时最终位置落盘。
-- **oas-barrage** 📋：`clear()` 后 auto-play 续播（清空即从声明条目重新轮转，与文档口径一致）。
-- **oas-sku 多组场景补强** 📋（2026-11-25 用户提出：服装类目实际规格远超颜色/尺码两维——产地/材质/领型/袖口/披肩等）：① 补 5-6 组真实服装场景单测 + demo（多组面板密度 / 分组滚动 / 长选项列表）；② 文档补「售卖维度（进 specs 笛卡尔积）vs 描述属性（宿主展示，不进 specs）」使用指引，防组合表爆炸；③ 万级 skus 组合表的匹配性能实测口径；④ 多组时 embedded 面板的溢出与滚动表现验证。
-- **oas-invoice 控件选型演进评估** 📋（2026-11-25 用户确立「复合组件优先内部组件」原则后衍生；**2026-11-25 review 实测修正**）：「发票内容」下拉现为原生 `<select>` + 视觉对齐层（已修 UA 箭头贴边）。R3 复核实测：**不内嵌 `oas-select`**——其传递闭包 +33.2KB gz（select 链 46.0KB/30 文件，含 virtual-list / form-element / form i18n slice），为同类最贵档；invoice 链将 20.0 → 53.4KB（+167%），预算档 23 → ≈62KB。演进方向改为**抽 shared listbox 内核**（键盘/翻转/外点统一本组件 `.saved` 与 content 两处下拉，预计 <1.5KB）——待评估立项（含 form/select、form/input、form/picker、basic/button、feedback/bottom-sheet 补逐链预算档与族包体积门禁的配套基建）。
-- **shared 原语下沉批（③ 级部分代码复用）** 📋（盘点产出 `packages/ui/src/shared/REUSE-INVENTORY.md`；下沉前置——逐链预算档——已由复用基建批落地，**2026-11-26 可排**）：① `shared/bottom-reach` 触底协议状态机（P1：goods-list/order-list 状态机本体重复，shouldRequestMore 已复用）② `shared/listbox` 键盘导航内核（P2：filter/invoice/search-bar/select/order-list/time-select 六处 roving+方向键，~285 行；**顺带修 RTL 水平方向键不镜像的行为不一致观察项**）③ `shared/flip-up` 视口翻转谓词（P3：filter/invoice 两处同构）④ RTL 判定收敛（P4：cart/invoice/table-range/questionnaire 四处内联变体）。重构批须以复用基建批三套门禁做回归背书。
+- **oas-cart** ✅ 已完成（v2.6.9）：pointercancel 单独结算（中断手势回弹关闭，不读 cancel 坐标——防 Safari 类浏览器给 0 坐标误判成满展开）；多点触控守卫（起手先结束旧滑动会话）；滑动展开行「点行体收起」。
+- **oas-image-cropper** ✅ 已完成（v2.6.9）：rotate 任意角度的覆盖约束（fitScale 改旋转包围盒数学，保留自由角度，消除 45° 一类中间角度的框角露底色）；缩放到达上下限后放行页面滚动（不再吞滚轮）。
+- **oas-sku** ✅ 已完成（v2.6.9）：形态切换焦点保持（记录深活跃元素，面板搬移后复原）；popup→embedded 切换时 `open` 悬空真值收口（同步回写并派 `oas-open-change`）。
+- **oas-drag** ✅ 已完成（v2.6.9）：`oas-drag-end` detail 增 `phase: 'release' | 'coast-end'`（双派发语义显式化，宿主可按需去重）；滑行上限改真实时长口径（60 / 120Hz 屏体感一致）；滑行被新指针抢占时最终位置落盘。
+- **oas-barrage** ✅ 已完成（v2.6.9）：`clear()` 后 auto-play 续播（清空即从声明条目重新轮转，与文档口径一致）。
+- **oas-sku 多组场景补强** ✅ 已完成（v2.6.9）（2026-11-25 用户提出：服装类目实际规格远超颜色/尺码两维——产地/材质/领型/袖口/披肩等）：① 补 5-6 组真实服装场景单测 + demo（多组面板密度 / 分组滚动 / 长选项列表）；② 文档补「售卖维度（进 specs 笛卡尔积）vs 描述属性（宿主展示，不进 specs）」使用指引，防组合表爆炸；③ 万级 skus 组合表的匹配性能实测口径；④ 多组时 embedded 面板的溢出与滚动表现验证。
+- **oas-invoice 控件选型演进评估** ✅ 已完成（v2.6.9）（2026-11-25 用户确立「复合组件优先内部组件」原则后衍生；**2026-11-25 review 实测修正**）：「发票内容」下拉现为原生 `<select>` + 视觉对齐层（已修 UA 箭头贴边）。R3 复核实测：**不内嵌 `oas-select`**——其传递闭包 +33.2KB gz（select 链 46.0KB/30 文件，含 virtual-list / form-element / form i18n slice），为同类最贵档；invoice 链将 20.0 → 53.4KB（+167%），预算档 23 → ≈62KB。演进方向改为**抽 shared listbox 内核**（键盘/翻转/外点统一本组件 `.saved` 与 content 两处下拉，预计 <1.5KB）——待评估立项（含 form/select、form/input、form/picker、basic/button、feedback/bottom-sheet 补逐链预算档与族包体积门禁的配套基建）。
+- **shared 原语下沉批（③ 级部分代码复用）** ✅ 已完成（v2.6.9）（盘点产出 `packages/ui/src/shared/REUSE-INVENTORY.md`；下沉前置——逐链预算档——已由复用基建批落地，**2026-11-26 可排**）：① `shared/bottom-reach` 触底协议状态机（P1：goods-list/order-list 状态机本体重复，shouldRequestMore 已复用）② `shared/listbox` 键盘导航内核（P2：filter/invoice/search-bar/select/order-list/time-select 六处 roving+方向键，~285 行；**顺带修 RTL 水平方向键不镜像的行为不一致观察项**）③ `shared/flip-up` 视口翻转谓词（P3：filter/invoice 两处同构）④ RTL 判定收敛（P4：cart/invoice/table-range/questionnaire 四处内联变体）。重构批须以复用基建批三套门禁做回归背书。
 - **L3 能力包三件** ✅（2026-11-25 用户排期，2026-11-26 交付；三账制——按需链档/族包增量/消费者共载——首次应用）：① `commerce/cart/batch` 批量操作模式（批量删除 / 移收藏编排逻辑，注册型 or helper 视宿主交互面定 → **定 helper 型**：编排是纯数据变换、勾选基础设施本体已齐、收藏语义必须宿主定义）② `commerce/filter/persist` 筛选条件持久化（URL hash / localStorage 双后端，helper 型优先 → helper：encode/decode/toQuery/fromQuery/save/load，实测 0.7 KB gz 达成 <1KB 目标）③ `commerce/goods-list/paged` 服务端分页协议（cursor 状态机，与本体触底协议 `oas-load-more` + `loading` / `no-more` 对接 → **定 helper 型** headless 状态机工厂 createPagedSource，paged 不改本体、宿主侧胶水闭环）。逐链预算档已就绪（复用基建批），复用账直接查基线。三件登记 l3-registry + 独立预算档（3.2 / 0.7 / 0.6 KB gz 实测 ×1.15 定档；cart/batch 因注入禁用判定 import core 后由首版 1.1 KB 重定 4 KB 档），helper 不进 L1/CDN 由 perf:size 族包断言把关。
-- **shared 原语下沉批（③ 级部分代码复用）** 📋（盘点产出 `packages/ui/src/shared/REUSE-INVENTORY.md`；下沉前置——逐链预算档——已由复用基建批落地，**2026-11-26 可排**）：① `shared/bottom-reach` 触底协议状态机（P1：goods-list/order-list 状态机本体重复，shouldRequestMore 已复用）② `shared/listbox` 键盘导航内核（P2：filter/invoice/search-bar/select/order-list/time-select 六处 roving+方向键，~285 行；**顺带修 RTL 水平方向键不镜像的行为不一致观察项**）③ `shared/flip-up` 视口翻转谓词（P3：filter/invoice 两处同构）④ RTL 判定收敛（P4：cart/invoice/table-range/questionnaire 四处内联变体）。重构批须以复用基建批三套门禁做回归背书。
+- **shared 原语下沉批（③ 级部分代码复用）** ✅ 已完成（v2.6.9）（盘点产出 `packages/ui/src/shared/REUSE-INVENTORY.md`；下沉前置——逐链预算档——已由复用基建批落地，**2026-11-26 可排**）：① `shared/bottom-reach` 触底协议状态机（P1：goods-list/order-list 状态机本体重复，shouldRequestMore 已复用）② `shared/listbox` 键盘导航内核（P2：filter/invoice/search-bar/select/order-list/time-select 六处 roving+方向键，~285 行；**顺带修 RTL 水平方向键不镜像的行为不一致观察项**）③ `shared/flip-up` 视口翻转谓词（P3：filter/invoice 两处同构）④ RTL 判定收敛（P4：cart/invoice/table-range/questionnaire 四处内联变体）。重构批须以复用基建批三套门禁做回归背书。
 
 ### 场景配方层（guide + demo，不做新组件）
 
@@ -210,15 +210,15 @@
 
 ### 细粒度需求（按组件）
 
-- **oas-sku 商品规格选择** 📋：`specs`（规格组 + 选项）与 `skus`（选项组合 → 价格 / 库存 / 图片）数据契约；内置组合匹配算法（选中组合 → sku 定位）；缺货组合置灰；部分选择时的可选路径提示；数量步进；值契约 = 选中组合 + 数量。形态：桌面内嵌面板优先，底部弹层形态后续补。
-- **oas-coupon 优惠券** 📋：券面卡片（面额 / 使用门槛 / 有效期 / 状态语义色）+ 领取 / 选择列表弹层；不可用态（已过期 / 已使用 / 未达门槛）完整覆盖。
-- **oas-submit-bar 结算栏** 📋：页面底部固定栏——合计金额 + 主操作按钮（加载 / 禁用 / 危险态）；支持扩展为通用底部操作栏布局。
-- **oas-goods-action 商品导航** 📋：底部 icon 按钮组（收藏 / 店铺 / 购物车，含角标）+ 主按钮组。
-- **oas-address 地址** 📋：地址编辑表单（校验规则）+ 地址列表（默认地址标记、单选）+ 省市区三级联动选择（数据契约设计：内置数据或宿主注入）；含 contact 轻模式（联系人姓名 + 电话，不独立成件）。
-- **oas-invoice 发票** 📋：发票信息表单（个人 / 企业抬头、税号校验）+ 已保存抬头选择弹层。
-- **oas-ecard 电子卡** 📋：储值卡 / 礼品卡选择（卡面列表、自定义面额、协议勾选确认）。
-- **oas-category 分类选择** 📋：左类右品双栏联动（左侧类目树 + 右侧当前类子类宫格 / 商品位）。
-- **oas-price 价格展示** 📋：价格格式化（币种符号 / 千分位 / 划线价 / 区间价）+ 趋势箭头（涨跌幅语义色与方向）。
+- **oas-sku 商品规格选择** ✅ 已完成（v2.6.9）：`specs`（规格组 + 选项）与 `skus`（选项组合 → 价格 / 库存 / 图片）数据契约；内置组合匹配算法（选中组合 → sku 定位）；缺货组合置灰；部分选择时的可选路径提示；数量步进；值契约 = 选中组合 + 数量。形态：桌面内嵌面板优先，底部弹层形态后续补。
+- **oas-coupon 优惠券** ✅ 已完成（v2.6.9）：券面卡片（面额 / 使用门槛 / 有效期 / 状态语义色）+ 领取 / 选择列表弹层；不可用态（已过期 / 已使用 / 未达门槛）完整覆盖。
+- **oas-submit-bar 结算栏** ✅ 已完成（v2.6.9）：页面底部固定栏——合计金额 + 主操作按钮（加载 / 禁用 / 危险态）；支持扩展为通用底部操作栏布局。
+- **oas-goods-action 商品导航** ✅ 已完成（v2.6.9）：底部 icon 按钮组（收藏 / 店铺 / 购物车，含角标）+ 主按钮组。
+- **oas-address 地址** ✅ 已完成（v2.6.9）：地址编辑表单（校验规则）+ 地址列表（默认地址标记、单选）+ 省市区三级联动选择（数据契约设计：内置数据或宿主注入）；含 contact 轻模式（联系人姓名 + 电话，不独立成件）。
+- **oas-invoice 发票** ✅ 已完成（v2.6.9）：发票信息表单（个人 / 企业抬头、税号校验）+ 已保存抬头选择弹层。
+- **oas-ecard 电子卡** ✅ 已完成（v2.6.9）：储值卡 / 礼品卡选择（卡面列表、自定义面额、协议勾选确认）。
+- **oas-category 分类选择** ✅ 已完成（v2.6.9）：左类右品双栏联动（左侧类目树 + 右侧当前类子类宫格 / 商品位）。
+- **oas-price 价格展示** ✅ 已完成（v2.6.9）：价格格式化（币种符号 / 千分位 / 划线价 / 区间价）+ 趋势箭头（涨跌幅语义色与方向）。
 
 ---
 
@@ -226,11 +226,11 @@
 
 按族归位的新组件批（归属已在需求定稿时按使用心智划分）。通用验收同电商族。
 
-- **form 族**：oas-number-keyboard 数字键盘（含车牌号键盘布局变体）📋；oas-code-button 验证码发送按钮（倒计时 / 重发冷却 / 插槽自定义内容）📋；oas-image-picker 多图选择（拍照 / 相册、预览、排序、数量上限）📋；oas-image-cropper 图片裁剪（固定 / 自由比例、旋转、缩放，服务上传链路）📋。
-- **overlay 族**：oas-share-sheet 分享面板（宫格渠道 + 取消，底部弹出）📋；oas-curtain 幕帘（进入后一次性全屏浮层，本地记忆关闭）📋。
-- **data 族**：oas-rolling-text 翻滚文本（数字 / 字符逐位滚动动画）📋；oas-barrage 弹幕（流式轨道、速度 / 密度控制、防重叠）📋。
-- **layout 族**：oas-safe-area 安全区占位（移动端嵌入宿主时底部 / 顶部 inset 适配）📋；oas-status-bar 状态栏占位📋。
-- **feedback 族**：oas-offline 断网提示（在线状态侦测 + 提示条 / 块，恢复自动消失）📋；oas-page-loading 整页加载态（骨架 / 转菊花 / 进度三形态）📋。
+- **form 族**：oas-number-keyboard 数字键盘（含车牌号键盘布局变体）✅ 已完成（v2.6.9）；oas-code-button 验证码发送按钮（倒计时 / 重发冷却 / 插槽自定义内容）✅ 已完成（v2.6.9）；oas-image-picker 多图选择（拍照 / 相册、预览、排序、数量上限）✅ 已完成（v2.6.9）；oas-image-cropper 图片裁剪（固定 / 自由比例、旋转、缩放，服务上传链路）✅ 已完成（v2.6.9）。
+- **overlay 族**：oas-share-sheet 分享面板（宫格渠道 + 取消，底部弹出）✅ 已完成（v2.6.9）；oas-curtain 幕帘（进入后一次性全屏浮层，本地记忆关闭）✅ 已完成（v2.6.9）。
+- **data 族**：oas-rolling-text 翻滚文本（数字 / 字符逐位滚动动画）✅ 已完成（v2.6.9）；oas-barrage 弹幕（流式轨道、速度 / 密度控制、防重叠）✅ 已完成（v2.6.9）。
+- **layout 族**：oas-safe-area 安全区占位（移动端嵌入宿主时底部 / 顶部 inset 适配）✅ 已完成（v2.6.9）；oas-status-bar 状态栏占位✅ 已完成（v2.6.9）。
+- **feedback 族**：oas-offline 断网提示（在线状态侦测 + 提示条 / 块，恢复自动消失）✅ 已完成（v2.6.9）；oas-page-loading 整页加载态（骨架 / 转菊花 / 进度三形态）✅ 已完成（v2.6.9）。
 
 ---
 
@@ -315,16 +315,16 @@ Shadow DOM 渲染（复用全部现有组件与 token；定向刷新 keyed 复�
 
 调研结论（2026-11-22）：questionnaire × schema-form 组合已可支撑问卷「填写端」主体，但调研产品的两个标配题型组件缺位。两组件归 `form` 族（问卷是表单的特化场景，题型控件同时服务通用表单）。通用验收同新组件纪律（TDD / 暗色 / RTL / a11y / zh/en / qa-regression / perf 预算）。
 
-- **oas-matrix 矩阵题** 📋：行 = 子问题、列 = 选项的矩阵选择——`mode="radio" | "checkbox"`（行内单选 / 行内多选）；数据契约 = `rows`（子问题数组）+ `columns`（选项数组），值契约 = 每行选中列 key 的对象（radio：`{rowKey: colKey}`）或数组（checkbox：`{rowKey: [colKey]}`）；行全不选/部分选的校验语义（`required` 行级与全表级两档）；a11y：每行一个 radiogroup/checkbox-group 语义（fieldset + legend 承载行标题），方向键行内切换；批量禁用 / 只读态。
-- **oas-rank 排序题** 📋：选项按名次选择——点击 / 键盘将选项加入排名序列（已选置灰或标记名次徽标），已选项可上移 / 下移调整或再点取消；数据契约 = `options`（可排序项数组）；值契约 = 按名次排序的 key 数组（部分排名 = 已选子集有序数组，`min-ranks` 下限校验）；a11y：选项按钮 + 名次播报（aria-live），调整操作为可见按钮（非仅拖拽）。
+- **oas-matrix 矩阵题** ✅ 已完成（v2.6.9）：行 = 子问题、列 = 选项的矩阵选择——`mode="radio" | "checkbox"`（行内单选 / 行内多选）；数据契约 = `rows`（子问题数组）+ `columns`（选项数组），值契约 = 每行选中列 key 的对象（radio：`{rowKey: colKey}`）或数组（checkbox：`{rowKey: [colKey]}`）；行全不选/部分选的校验语义（`required` 行级与全表级两档）；a11y：每行一个 radiogroup/checkbox-group 语义（fieldset + legend 承载行标题），方向键行内切换；批量禁用 / 只读态。
+- **oas-rank 排序题** ✅ 已完成（v2.6.9）：选项按名次选择——点击 / 键盘将选项加入排名序列（已选置灰或标记名次徽标），已选项可上移 / 下移调整或再点取消；数据契约 = `options`（可排序项数组）；值契约 = 按名次排序的 key 数组（部分排名 = 已选子集有序数组，`min-ranks` 下限校验）；a11y：选项按钮 + 名次播报（aria-live），调整操作为可见按钮（非仅拖拽）。
 
 ---
 
 ## v2.6.9：电商可捞件与 schema-form 尾巴批
 
-- **oas-time-select（commerce 族，配送时段选择）** 📋：下单链路的时间选择——日期列（今日起 N 天）+ 时段网格（如 14:00–16:00，跨天可配 `slots` 数据），支持「尽快送达 / 预约配送」两模式；不可选时段置灰（满约/休息）；值契约 = 选中的日期 + 时段 key；delivery 语境通用件。
-- **oas-drag（overlay 族，自由拖拽）** 📋：任意子元素的自由拖拽浮块——pointer 拖拽移动（触屏/鼠标/笔统一），边界钳制（视口或指定容器），惯性可选；记忆位置可选（localStorage）；a11y：键盘方向键微调 + 可关闭拖拽（`disabled`）；典型场景 = 悬浮客服钮、悬浮工具块。
-- **schema-form 配置通道打通（尾巴②）** 📋：PROP_ALLOWLIST 扩 `columns`（matrix）与 `options` 数据语义（rank），打通后 matrix/rank 回纳 KNOWN_WIDGETS，问卷题型纯 JSON 驱动闭环；捎带尾巴①（嵌套数组 array-of-enum 受控整写补显式测试）。
+- **oas-time-select（commerce 族，配送时段选择）** ✅ 已完成（v2.6.9）：下单链路的时间选择——日期列（今日起 N 天）+ 时段网格（如 14:00–16:00，跨天可配 `slots` 数据），支持「尽快送达 / 预约配送」两模式；不可选时段置灰（满约/休息）；值契约 = 选中的日期 + 时段 key；delivery 语境通用件。
+- **oas-drag（overlay 族，自由拖拽）** ✅ 已完成（v2.6.9）：任意子元素的自由拖拽浮块——pointer 拖拽移动（触屏/鼠标/笔统一），边界钳制（视口或指定容器），惯性可选；记忆位置可选（localStorage）；a11y：键盘方向键微调 + 可关闭拖拽（`disabled`）；典型场景 = 悬浮客服钮、悬浮工具块。
+- **schema-form 配置通道打通（尾巴②）** ✅ 已完成（v2.6.9）：PROP_ALLOWLIST 扩 `columns`（matrix）与 `options` 数据语义（rank），打通后 matrix/rank 回纳 KNOWN_WIDGETS，问卷题型纯 JSON 驱动闭环；捎带尾巴①（嵌套数组 array-of-enum 受控整写补显式测试）。
 
 ---
 
