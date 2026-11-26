@@ -5,7 +5,9 @@
 
 ---
 
-## 未发布：schema-form V2 与组件完善批（用户批 2026-11-23：①+② 全做、分三批）
+## v2.6.9：schema-form V2 与组件完善批（用户批 2026-11-23：①+② 全做、分三批）
+
+> ✅ 已完成（v2.6.9）
 
 ### 批 1：schema-form V2 · 数组体系（设计稿先行 + 评审后实现）
 
@@ -38,7 +40,7 @@
 - **reset() 走 bypass**：reset → rebuild 行数回初始（既有测试断言此行为，保持不变）。
 - **受控 shrink 缺陷同修（评审新发现）**：`syncHostArrayMin` 只增不减——宿主删行留空行；本批修为按受控值长度收敛（补删行回归）。
 
-### 批 2：schema-form V2 · 数据流（设计稿先行 + 评审后实现）
+### 批 2：schema-form V2 · 数据流（设计稿先行 + 评审后实现）✅ 已完成（v2.6.9）
 
 #### 批 2 设计稿（评审稿 v2，2026-11-24，按 R1 评审修订）
 
@@ -76,7 +78,9 @@
 
 ---
 
-## 未发布：V2 增强与长尾清欠批（用户批 2026-11-24，遗留清单前三类）
+## v2.6.9：V2 增强与长尾清欠批（用户批 2026-11-24，遗留清单前三类）
+
+> ✅ 已完成（v2.6.9）
 
 ### 批 4：schema-form V2 增强（批 1/2「不做」清单按需求转正）
 
@@ -88,7 +92,7 @@
 - **dateAdd `month` 单位** ✅ 已完成（v2.6.9）：月加减（月末钳制语义：1-31 → 2-28/29 落当月最后一天）。
 - **array-table ↔ form-list 切换不丢数据** ✅ 已完成（v2.6.9）：同 schema 两种 widget 切换时行数快照 + 值快照组合保障（补显式测试）。
 
-### 批 5：测试长尾（Z 台账清欠）
+### 批 5：测试长尾（Z 台账清欠）✅ 已完成（v2.6.9）
 
 - **drag-start 真实浏览器断言**：qa-regression drag.spec 补 `oas-drag-start` 真实拖拽派发断言（现仅 happy-dom）。
 - **time-select 模式组 RTL 键盘 e2e**：RTL 下 ArrowLeft/Right 镜像切换模式（现仅 happy-dom）。
@@ -104,7 +108,9 @@
 
 ---
 
-## 未发布：新组件能力补强批（用户批 2026-11-24，能力面 diff 产出的 15 条）
+## v2.6.9：新组件能力补强批（用户批 2026-11-24，能力面 diff 产出的 15 条）
+
+> ✅ 已完成（v2.6.9）
 
 对既有组件的小增量（无新组件/无架构改动），逐条验收 = 单测 + 文档 + CHANGELOG，全部增量向后兼容。
 
@@ -137,7 +143,9 @@
 
 ---
 
-## 未发布：v2.6.9 追加批（虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾，用户批 2026-11-24）
+## v2.6.9：v2.6.9 追加批（虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾，用户批 2026-11-24）
+
+> ✅ 已完成（v2.6.9）
 
 ### 批 A：大数组虚拟化 + 上传体验（form 族增强）
 
@@ -167,9 +175,11 @@
 
 ---
 
-## 未发布：电商扩容与包体分级批（用户批 2026-11-25）
+## v2.6.9：电商扩容与包体分级批（用户批 2026-11-25）
 
-### 包体分级约定（三条规矩，自本批起生效）
+> ✅ 已完成（v2.6.9）
+
+### 包体分级约定（三条规矩，自本批起生效）✅ 已完成（v2.6.9）
 
 - **组件本体冻结在大众功能集**：commerce 各组件本体只承载大众功能与既有 API；后续新增「重量级、可选、场景化」的增强能力一律走 L3 能力子路径（`commerce/<组件>/<能力>` 独立子路径，按需 import），不内联进本体、主入口 / 族入口不做 re-export。
 - **逐链预算档**：为 commerce 建立逐组件 / 逐能力 perf 档（对齐 table 家族逐链计量惯例），膨胀由门禁拦截，不再事后调天花板。
@@ -192,12 +202,11 @@
 - **oas-drag** ✅ 已完成（v2.6.9）：`oas-drag-end` detail 增 `phase: 'release' | 'coast-end'`（双派发语义显式化，宿主可按需去重）；滑行上限改真实时长口径（60 / 120Hz 屏体感一致）；滑行被新指针抢占时最终位置落盘。
 - **oas-barrage** ✅ 已完成（v2.6.9）：`clear()` 后 auto-play 续播（清空即从声明条目重新轮转，与文档口径一致）。
 - **oas-sku 多组场景补强** ✅ 已完成（v2.6.9）（2026-11-25 用户提出：服装类目实际规格远超颜色/尺码两维——产地/材质/领型/袖口/披肩等）：① 补 5-6 组真实服装场景单测 + demo（多组面板密度 / 分组滚动 / 长选项列表）；② 文档补「售卖维度（进 specs 笛卡尔积）vs 描述属性（宿主展示，不进 specs）」使用指引，防组合表爆炸；③ 万级 skus 组合表的匹配性能实测口径；④ 多组时 embedded 面板的溢出与滚动表现验证。
-- **oas-invoice 控件选型演进评估** ✅ 已完成（v2.6.9）（2026-11-25 用户确立「复合组件优先内部组件」原则后衍生；**2026-11-25 review 实测修正**）：「发票内容」下拉现为原生 `<select>` + 视觉对齐层（已修 UA 箭头贴边）。R3 复核实测：**不内嵌 `oas-select`**——其传递闭包 +33.2KB gz（select 链 46.0KB/30 文件，含 virtual-list / form-element / form i18n slice），为同类最贵档；invoice 链将 20.0 → 53.4KB（+167%），预算档 23 → ≈62KB。演进方向改为**抽 shared listbox 内核**（键盘/翻转/外点统一本组件 `.saved` 与 content 两处下拉，预计 <1.5KB）——待评估立项（含 form/select、form/input、form/picker、basic/button、feedback/bottom-sheet 补逐链预算档与族包体积门禁的配套基建）。
+- **oas-invoice 控件选型演进评估** ✅ 已完成（v2.6.9）（2026-11-25 用户确立「复合组件优先内部组件」原则后衍生；**2026-11-25 review 实测修正**）：「发票内容」下拉现为原生 `<select>` + 视觉对齐层（已修 UA 箭头贴边）。复核实测：**不内嵌 `oas-select`**——其传递闭包 +33.2KB gz（select 链 46.0KB/30 文件，含 virtual-list / form-element / form i18n slice），为同类最贵档；invoice 链将 20.0 → 53.4KB（+167%），预算档 23 → ≈62KB。演进方向改为**抽 shared listbox 内核**（键盘/翻转/外点统一本组件 `.saved` 与 content 两处下拉，预计 <1.5KB）——已随 shared 下沉批交付（含 form/select、form/input、form/picker、basic/button、feedback/bottom-sheet 补逐链预算档与族包体积门禁的配套基建）。
 - **shared 原语下沉批（③ 级部分代码复用）** ✅ 已完成（v2.6.9）（盘点产出 `packages/ui/src/shared/REUSE-INVENTORY.md`；下沉前置——逐链预算档——已由复用基建批落地，**2026-11-26 可排**）：① `shared/bottom-reach` 触底协议状态机（P1：goods-list/order-list 状态机本体重复，shouldRequestMore 已复用）② `shared/listbox` 键盘导航内核（P2：filter/invoice/search-bar/select/order-list/time-select 六处 roving+方向键，~285 行；**顺带修 RTL 水平方向键不镜像的行为不一致观察项**）③ `shared/flip-up` 视口翻转谓词（P3：filter/invoice 两处同构）④ RTL 判定收敛（P4：cart/invoice/table-range/questionnaire 四处内联变体）。重构批须以复用基建批三套门禁做回归背书。
-- **L3 能力包三件** ✅（2026-11-25 用户排期，2026-11-26 交付；三账制——按需链档/族包增量/消费者共载——首次应用）：① `commerce/cart/batch` 批量操作模式（批量删除 / 移收藏编排逻辑，注册型 or helper 视宿主交互面定 → **定 helper 型**：编排是纯数据变换、勾选基础设施本体已齐、收藏语义必须宿主定义）② `commerce/filter/persist` 筛选条件持久化（URL hash / localStorage 双后端，helper 型优先 → helper：encode/decode/toQuery/fromQuery/save/load，实测 0.7 KB gz 达成 <1KB 目标）③ `commerce/goods-list/paged` 服务端分页协议（cursor 状态机，与本体触底协议 `oas-load-more` + `loading` / `no-more` 对接 → **定 helper 型** headless 状态机工厂 createPagedSource，paged 不改本体、宿主侧胶水闭环）。逐链预算档已就绪（复用基建批），复用账直接查基线。三件登记 l3-registry + 独立预算档（3.2 / 0.7 / 0.6 KB gz 实测 ×1.15 定档；cart/batch 因注入禁用判定 import core 后由首版 1.1 KB 重定 4 KB 档），helper 不进 L1/CDN 由 perf:size 族包断言把关。
-- **shared 原语下沉批（③ 级部分代码复用）** ✅ 已完成（v2.6.9）（盘点产出 `packages/ui/src/shared/REUSE-INVENTORY.md`；下沉前置——逐链预算档——已由复用基建批落地，**2026-11-26 可排**）：① `shared/bottom-reach` 触底协议状态机（P1：goods-list/order-list 状态机本体重复，shouldRequestMore 已复用）② `shared/listbox` 键盘导航内核（P2：filter/invoice/search-bar/select/order-list/time-select 六处 roving+方向键，~285 行；**顺带修 RTL 水平方向键不镜像的行为不一致观察项**）③ `shared/flip-up` 视口翻转谓词（P3：filter/invoice 两处同构）④ RTL 判定收敛（P4：cart/invoice/table-range/questionnaire 四处内联变体）。重构批须以复用基建批三套门禁做回归背书。
+- **L3 能力包三件** ✅ 已完成（v2.6.9）（2026-11-25 用户排期，2026-11-26 交付；三账制——按需链档/族包增量/消费者共载——首次应用）：① `commerce/cart/batch` 批量操作模式（批量删除 / 移收藏编排逻辑，注册型 or helper 视宿主交互面定 → **定 helper 型**：编排是纯数据变换、勾选基础设施本体已齐、收藏语义必须宿主定义）② `commerce/filter/persist` 筛选条件持久化（URL hash / localStorage 双后端，helper 型优先 → helper：encode/decode/toQuery/fromQuery/save/load，实测 0.7 KB gz 达成 <1KB 目标）③ `commerce/goods-list/paged` 服务端分页协议（cursor 状态机，与本体触底协议 `oas-load-more` + `loading` / `no-more` 对接 → **定 helper 型** headless 状态机工厂 createPagedSource，paged 不改本体、宿主侧胶水闭环）。逐链预算档已就绪（复用基建批），复用账直接查基线。三件登记 l3-registry + 独立预算档（3.2 / 0.7 / 0.6 KB gz 实测 ×1.15 定档；cart/batch 因注入禁用判定 import core 后由首版 1.1 KB 重定 4 KB 档），helper 不进 L1/CDN 由 perf:size 族包断言把关。
 
-### 场景配方层（guide + demo，不做新组件）
+### 场景配方层（guide + demo，不做新组件）✅ 已完成（v2.6.9）
 
 秒杀场景（countdown+progress+submit-bar 组合）/ 领券中心（coupon+popup 组合）/ 库存紧张提示（price+tag）/ 商品详情页骨架（sku+goods-action+submit-bar 组装指南）。
 
@@ -209,7 +218,7 @@
 
 - **D1 移除自动跳转**：删除 `navigator.language` 首页自动跳转（原 v2.6.7「Landing 语言适配」行为下线）；显式 `oas-lang` 偏好深链跳转保留（爬虫无 localStorage 永不命中）。
 - **D2 语言提示条**：语言明显不匹配时提示另一语言版本（zh 页无 zh / en 页含 zh 才提示，第三语言用户收敛到英文版后不再提示）；可关闭持久；点击 = 显式切换写偏好；绘制前预布局让位零 CLS；暗色固定品牌蓝。
-- **D3 分段切换器**：桌面导航栏「中 / EN」分段控件替换默认语言下拉（永久可见、深链互指、点击写偏好）；移动端隐藏，汉堡菜单语言入口保留。
+- **D3 分段切换器**：桌面导航栏「中 / EN」分段控件替换默认语言下拉（永久可见、深链互指、点击写偏好）；移动端常驻（紧凑 22px 高，位于汉堡按钮前），汉堡菜单语言入口保留为补充路径。
 - **D4 sitemap lastmod + x-default 修复**：git 提交时间注入 `<lastmod>`（浅克隆宁缺勿假）；修复同组共享 links 数组导致第二语言缺 x-default。
 - **D5 页面级 description**：170×2 文档页 frontmatter `description` 全量覆盖；llms-full 拼接剥离 frontmatter。
 - **D6 结构化数据**：全站 `BreadcrumbList`（侧栏层级映射）；组件页独立 `SoftwareApplication`；OG alt 随语言、`max-image-preview:large`。
@@ -319,7 +328,7 @@ Shadow DOM 渲染（复用全部现有组件与 token；定向刷新 keyed 复�
 - **V1 已知差距（显式声明，非静默）**：array-table 与研究必做清单的差距延至 V2（三家实证刚需，V1 用 form-list 承接）；对象数组暂只有增删。
 - **不做**：分步 / 问卷编排（归 questionnaire）；纯 JS 表达式求值；远程 $ref；拖拽设计器（另立项目评估）。
 
-**验收（逐项可验）**：TDD（编译器纯函数单测 + 组件单测 + 嵌套数组 RED 首测）；a11y——label 来源（`title`→label、`description`→help）、联动驱动 `aria-required` 同步、错误关联走 form-item 既有 ariaDescribedByElements、warning 走 role=status；dark——warning/error 两色对比度实测 + 截图；RTL——schema-form 自带容器（分组 / 数组增删钮）全逻辑属性，**增删钮有可访问名（i18n `schemaForm.addItem/removeItem`）、tabs/group 容器键盘可达**；SSR——**登记白名单**（已定，见 V1a）；i18n——新增 `schemaForm.*` key 清单随实现登记（locale completeness 双层守卫同步，「不新增 key」口径作废）；**生命周期**——编译缓存 / 事件监听 / MutationObserver 全部走 onCleanup，断连重连无损；**空态**——空 schema / 零字段 / 空数组有占位（非空白渲染）；**宿主桥接**——`schema / uiSchema / values` 对象 property + attribute JSON 反射双通道，Vue 属性名冲突核对进 vue-prop-hijack 契约表；**生成物门禁**——api:scan/gen、llms:gen、stats:gen、CHANGELOG [未发布] 条目随批同步；**异步时序**——宿主异步 validator 与 whenSchema 求值顺序固化（先值归一 → 求值 → 校验）；zh/en 文档 + 可交互 demo（基础表单 / 联动 / 数组 / questionnaire 组合）；qa-regression 按「渲染 / whenSchema 联动 / 错误注入 / 数组增删 / 嵌套数组 / 受控回环」逐条真实浏览器断言；perf——组件进 L1/CDN union（form 族），V1b 表达式求值器立独立预算档（实测定档 3.4 KB gzip，实测 2.90 KB，2026-11-23 定档）。
+**验收（逐项可验）**：TDD（编译器纯函数单测 + 组件单测 + 嵌套数组 RED 首测）；a11y——label 来源（`title`→label、`description`→help）、联动驱动 `aria-required` 同步、错误关联走 form-item 既有 ariaDescribedByElements、warning 走 role=status；dark——warning/error 两色对比度实测 + 截图；RTL——schema-form 自带容器（分组 / 数组增删钮）全逻辑属性，**增删钮有可访问名（i18n `schemaForm.addItem/removeItem`）、tabs/group 容器键盘可达**；SSR——**登记白名单**（已定，见 V1a）；i18n——新增 `schemaForm.*` key 清单随实现登记（locale completeness 双层守卫同步，「不新增 key」口径作废）；**生命周期**——编译缓存 / 事件监听 / MutationObserver 全部走 onCleanup，断连重连无损；**空态**——空 schema / 零字段 / 空数组有占位（非空白渲染）；**宿主桥接**——`schema / uiSchema / values` 对象 property + attribute JSON 反射双通道，Vue 属性名冲突核对进 vue-prop-hijack 契约表；**生成物门禁**——api:scan/gen、llms:gen、stats:gen、CHANGELOG（当时的发布分支）条目随批同步；**异步时序**——宿主异步 validator 与 whenSchema 求值顺序固化（先值归一 → 求值 → 校验）；zh/en 文档 + 可交互 demo（基础表单 / 联动 / 数组 / questionnaire 组合）；qa-regression 按「渲染 / whenSchema 联动 / 错误注入 / 数组增删 / 嵌套数组 / 受控回环」逐条真实浏览器断言；perf——组件进 L1/CDN union（form 族），V1b 表达式求值器立独立预算档（实测定档 3.4 KB gzip，实测 2.90 KB，2026-11-23 定档）。
 
 **评审焦点结论记录（R1 四问）**：Q1 uiSchema 独立层维持，补编译期路径对齐校验；Q2 表达式语法按上述冻结清单；Q3 warning 复用 form-item 错误位结构（error 独占、warning role=status 弱一档、不阻断）；Q4 `whenSchema` 为一等轨（V1a 即可交付），表达式轨 V1b 补位，两轨表达力不同不宣传等价。
 

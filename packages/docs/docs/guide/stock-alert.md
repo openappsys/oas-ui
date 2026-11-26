@@ -77,7 +77,7 @@ description: "库存紧张提示配方：oas-price + oas-tag 的阈值联动—�
 ## 关键代码
 
 ```ts
-// stockTag / stockText / buyBar 为上方 demo 元素引用（getElementById 取自本页 demo）
+// tag / text 为上方 demo 元素引用（#sa-tag / #sa-text，getElementById 取自本页 demo）
 // 阈值分档（宿主策略，可整体拷贝；100 / 20 换成你的运营口径）
 function stockTier(n: number) {
   if (n <= 0) return { tag: '已售罄', type: 'default', text: '已售罄，看看相似商品', buyable: false }
@@ -88,13 +88,14 @@ function stockTier(n: number) {
 
 function renderStock(n: number) {
   const t = stockTier(n)
-  stockTag.setAttribute('type', t.type)
+  tag.setAttribute('type', t.type)
   // 强态（success / warning / danger）实底醒目；售罄弱态回落浅底，与下方商品卡静态「已售罄」一致
-  if (t.type === 'default') stockTag.removeAttribute('variant')
-  else stockTag.setAttribute('variant', 'solid')
-  stockTag.textContent = t.tag
-  stockText.textContent = t.text
-  buyBar.toggleAttribute('disabled', !t.buyable) // 售罄禁用购买入口（presence 属性用 toggleAttribute，别写 setAttribute 三元）
+  if (t.type === 'default') tag.removeAttribute('variant')
+  else tag.setAttribute('variant', 'solid')
+  tag.textContent = t.tag
+  text.textContent = t.text
+  // 售罄时宿主同时禁用购买入口（submit-bar / goods-action 的按钮）：
+  // buyButton.toggleAttribute('disabled', !t.buyable) // presence 属性用 toggleAttribute，别写 setAttribute 三元
 }
 ```
 

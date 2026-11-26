@@ -77,7 +77,7 @@ The thresholds are business parameters — 100 / 20 above are examples; substitu
 ## Key code
 
 ```ts
-// stockTag / stockText / buyBar are element references from the demo above (getElementById on this page)
+// tag / text are element references from the demo above (#sa-tag / #sa-text, getElementById on this page)
 // Threshold tiers (host policy, copy-ready; replace 100 / 20 with your own policy)
 function stockTier(n: number) {
   if (n <= 0) return { tag: 'Sold out', type: 'default', text: 'Sold out, check similar items', buyable: false }
@@ -88,13 +88,14 @@ function stockTier(n: number) {
 
 function renderStock(n: number) {
   const t = stockTier(n)
-  stockTag.setAttribute('type', t.type)
+  tag.setAttribute('type', t.type)
   // Strong states (success / warning / danger) stay solid; the sold-out weak state falls back to soft, matching the static "Sold out" card below
-  if (t.type === 'default') stockTag.removeAttribute('variant')
-  else stockTag.setAttribute('variant', 'solid')
-  stockTag.textContent = t.tag
-  stockText.textContent = t.text
-  buyBar.toggleAttribute('disabled', !t.buyable) // sold out disables the buy entry (presence attribute → toggleAttribute)
+  if (t.type === 'default') tag.removeAttribute('variant')
+  else tag.setAttribute('variant', 'solid')
+  tag.textContent = t.tag
+  text.textContent = t.text
+  // The host disables the buy entry on sold-out (submit-bar / goods-action button):
+  // buyButton.toggleAttribute('disabled', !t.buyable) // presence attribute → toggleAttribute
 }
 ```
 

@@ -177,7 +177,7 @@ description: 用于以行列表格形式展示结构化数据，支持排序、�
 
 设置 `editable` 开启行内编辑，列配置 `editable: true` 标记可编辑列（`editor: 'input'` 文本输入 / `editor: 'select'` 下拉选择 + `editOptions`），`actions: true` 渲染操作列（编辑/保存/取消按钮）。双击单元格或聚焦后按 Enter / F2 进入编辑：Enter 或失焦提交、Esc 取消；提交派发 `oas-edit`（`detail: { rowIndex, key, column, value, oldValue, oldRawValue }`），取消派发 `oas-edit-cancel`（同样带旧值字段）。空值提交默认还原旧值（非破坏）。
 
-> **行内编辑能力（自 v2.6.4 起按需引入）**：默认入口 `@oas-ui/ui/data/table` 只含基础表格，**不再内置编辑**；使用 `editable` / `actions` 时需显式 `import '@oas-ui/ui/data/table/edit'`（import 即注册），否则编辑配置静默失效并 dev 告警。全量入口 `@oas-ui/ui` 与 CDN 数据族包仍内含编辑能力（下方 demo 走全量入口，无需额外 import）。旧别名 `@oas-ui/ui/data/table/core` 已于 v2.6.5 移除（尚未发布），迁移：把 `table/core` 改为 `table` 即可（需要编辑时补 `table/edit`）。
+> **行内编辑能力（自 v2.6.4 起按需引入）**：默认入口 `@oas-ui/ui/data/table` 只含基础表格，**不再内置编辑**；使用 `editable` / `actions` 时需显式 `import '@oas-ui/ui/data/table/edit'`（import 即注册），否则编辑配置静默失效并 dev 告警。全量入口 `@oas-ui/ui` 与 CDN 数据族包仍内含编辑能力（下方 demo 走全量入口，无需额外 import）。旧别名 `@oas-ui/ui/data/table/core` 已于 v2.6.5 移除，迁移：把 `table/core` 改为 `table` 即可（需要编辑时补 `table/edit`）。
 
 可编辑单元格自带可感知线索：hover 或键盘聚焦（focus-visible）时显示淡底色与右上角铅笔图标（图标不拦截交互），悬停有 `title` 提示「双击编辑」；三种方式进入编辑——双击、聚焦后按 Enter、聚焦后按 F2。
 
@@ -588,7 +588,7 @@ windowed 模式下**本地排序 / 筛选 / 分组 / 分页 / 树形展开 / 合
 
 **打印限制**：全量数据在服务端、客户端只有已装载切片——打印 / 导出 PDF（`print` 媒体）时**无法全量渲染**，输出 = 已装载切片的每一行（组件 devWarn 提示一次）。需要全量打印请让宿主预装载全部切片，或对该场景关闭 windowed。打印几何（占位行不占纸面、sticky 复位）与本地虚拟同口径。
 
-**例外——树形懒装载（hasChildren 契约（未发布））**：windowed 切片行带 `hasChildren: true` 元数据即进入树形懒装载模式（嵌套 `children` 数组维持 legacy 忽略语义，不触发本模式）。契约三件套：
+**例外——树形懒装载（hasChildren 契约）**：windowed 切片行带 `hasChildren: true` 元数据即进入树形懒装载模式（嵌套 `children` 数组维持 legacy 忽略语义，不触发本模式）。契约三件套：
 
 - **展开交互**：点击树形 toggle 只派发 `oas-expand`（`detail { key, expanded }`），组件**不本地改 `expanded`**——宿主监听后取子孙、把子孙以**平铺行**（带 `depth` 元数据）合并进切片并重喂 `data`，同时更新 `total`（当前展开态拍平总行数）与 `expanded` 属性。
 - **行元数据**：`hasChildren: boolean`（**仅认布尔 `true`**，字符串形态不触发）——该行为父节点、子孙未随切片装载时靠它渲染展开钮；+ `depth: number`（缩进层级，缺省 0；拍平数据行的渲染层级）。数据行经属性 JSON 透传，无清洗白名单。与可选视觉协议同场时展开亦由宿主控制，且**必须同时更新 `total`**（两协议正交可叠加，非互斥）。

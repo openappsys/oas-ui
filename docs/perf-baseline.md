@@ -24,10 +24,10 @@
 <!-- BEGIN:generated:perf-baseline:packages -->
 | 包 | 文件数 | raw | gzip | brotli |
 | --- | --- | --- | --- | --- |
-| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 49.34 MB | — | — |
-| @oas-ui/ui（浏览器可加载 JS） | 609 | 12423.4 KB | 3108.5 KB | — |
-| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 623 | 4421.1 KB | 1258.2 KB | — |
-| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3626.9 KB | 826.0 KB | 570.7 KB |
+| @oas-ui/ui（dist 总大小，含 map/d.ts） | — | 49.42 MB | — | — |
+| @oas-ui/ui（浏览器可加载 JS） | 613 | 12428.3 KB | 3111.8 KB | — |
+| @oas-ui/ui（全量入口链 `import '@oas-ui/ui'`） | 627 | 4423.1 KB | 1259.6 KB | — |
+| @oas-ui/ui（dist/cdn.js 单文件全量 bundle） | 1 | 3627.0 KB | 826.6 KB | 570.7 KB |
 | @oas-ui/theme（index.css） | 1 | 8.1 KB | 1.9 KB | — |
 | @oas-ui/core | 8 | 46.0 KB | 19.0 KB | — |
 | @oas-ui/i18n | 48 | 615.5 KB | 164.4 KB | — |
@@ -41,13 +41,13 @@
 | 组件链 | 入口 | 文件数 | raw | gzip |
 | --- | --- | --- | --- | --- |
 | button | `@oas-ui/ui/basic/button` | 13 | 63.8 KB | 20.6 KB |
-| table | `@oas-ui/ui/data/table` | 43 | 256.2 KB | 78.7 KB |
-| tableEdit | `@oas-ui/ui/data/table/edit` | 62 | 366.1 KB | 111.2 KB |
+| table | `@oas-ui/ui/data/table` | 44 | 256.6 KB | 79.0 KB |
+| tableEdit | `@oas-ui/ui/data/table/edit` | 64 | 367.4 KB | 111.9 KB |
 | tableStructuralRender | `@oas-ui/ui/data/table/structural-render` | 2 | 1.4 KB | 0.7 KB |
 | tableAdvanced | `@oas-ui/ui/data/table/advanced` | 11 | 26.0 KB | 10.9 KB |
 | tableFormat | `@oas-ui/ui/data/table/format` | 5 | 11.6 KB | 4.6 KB |
 | tableView | `@oas-ui/ui/data/table/view` | 1 | 2.4 KB | 1.0 KB |
-| tableRange | `@oas-ui/ui/data/table/range` | 7 | 45.5 KB | 13.4 KB |
+| tableRange | `@oas-ui/ui/data/table/range` | 8 | 46.0 KB | 13.7 KB |
 | tableHistory | `@oas-ui/ui/data/table/history` | 4 | 7.9 KB | 3.4 KB |
 | tableDetail | `@oas-ui/ui/data/table/detail` | 3 | 9.3 KB | 3.7 KB |
 | tablePivot | `@oas-ui/ui/data/table/pivot` | 1 | 3.4 KB | 1.2 KB |
@@ -71,7 +71,7 @@
 | goodsListPaged | `@oas-ui/ui/commerce/goods-list/paged` | 1 | 1.4 KB | 0.6 KB |
 | form | `@oas-ui/ui/form/form` | 10 | 64.7 KB | 22.1 KB |
 | schemaFormExpr | `@oas-ui/ui/form/schema-form/expr` | 2 | 10.4 KB | 4.2 KB |
-| gantt | `@oas-ui/ui/data/gantt` | 23 | 252.2 KB | 74.2 KB |
+| gantt | `@oas-ui/ui/data/gantt` | 24 | 252.6 KB | 74.5 KB |
 | jsonViewer | `@oas-ui/ui/data/json-viewer` | 13 | 77.4 KB | 26.1 KB |
 | diffViewer | `@oas-ui/ui/data/diff-viewer` | 10 | 70.6 KB | 24.2 KB |
 | commercePrice | `@oas-ui/ui/commerce/price` | 11 | 44.8 KB | 17.2 KB |
@@ -80,21 +80,21 @@
 | commerceCoupon | `@oas-ui/ui/commerce/coupon` | 15 | 63.3 KB | 22.4 KB |
 | commerceSku | `@oas-ui/ui/commerce/sku` | 20 | 79.0 KB | 27.8 KB |
 | commerceAddress | `@oas-ui/ui/commerce/address` | 11 | 68.1 KB | 21.9 KB |
-| commerceInvoice | `@oas-ui/ui/commerce/invoice` | 12 | 60.2 KB | 20.4 KB |
+| commerceInvoice | `@oas-ui/ui/commerce/invoice` | 16 | 62.4 KB | 21.7 KB |
 | commerceECard | `@oas-ui/ui/commerce/ecard` | 11 | 52.5 KB | 18.5 KB |
 | commerceCategory | `@oas-ui/ui/commerce/category` | 11 | 52.3 KB | 18.8 KB |
-| commerceTimeSelect | `@oas-ui/ui/commerce/time-select` | 12 | 61.9 KB | 21.2 KB |
-| commerceCart | `@oas-ui/ui/commerce/cart` | 18 | 72.3 KB | 25.1 KB |
+| commerceTimeSelect | `@oas-ui/ui/commerce/time-select` | 14 | 63.1 KB | 21.9 KB |
+| commerceCart | `@oas-ui/ui/commerce/cart` | 20 | 73.3 KB | 25.7 KB |
 | commerceOrderCard | `@oas-ui/ui/commerce/order-card` | 17 | 62.0 KB | 22.3 KB |
 | commerceProductCard | `@oas-ui/ui/commerce/product-card` | 14 | 53.7 KB | 20.2 KB |
-| commerceFilter | `@oas-ui/ui/commerce/filter` | 13 | 65.0 KB | 22.1 KB |
-| commerceGoodsList | `@oas-ui/ui/commerce/goods-list` | 16 | 61.2 KB | 22.7 KB |
+| commerceFilter | `@oas-ui/ui/commerce/filter` | 17 | 67.4 KB | 23.4 KB |
+| commerceGoodsList | `@oas-ui/ui/commerce/goods-list` | 17 | 62.1 KB | 23.2 KB |
 | commerceSearchBar | `@oas-ui/ui/commerce/search-bar` | 12 | 47.1 KB | 17.6 KB |
 | commerceLogistics | `@oas-ui/ui/commerce/logistics` | 11 | 46.8 KB | 17.9 KB |
-| commerceOrderList | `@oas-ui/ui/commerce/order-list` | 13 | 51.1 KB | 19.5 KB |
+| commerceOrderList | `@oas-ui/ui/commerce/order-list` | 16 | 52.9 KB | 20.6 KB |
 | commerceMemberCard | `@oas-ui/ui/commerce/member-card` | 10 | 42.8 KB | 16.4 KB |
-| select | `@oas-ui/ui/form/select` | 31 | 136.2 KB | 46.2 KB |
-| input | `@oas-ui/ui/form/input` | 14 | 96.7 KB | 31.4 KB |
+| select | `@oas-ui/ui/form/select` | 33 | 137.5 KB | 46.9 KB |
+| input | `@oas-ui/ui/form/input` | 15 | 97.1 KB | 31.6 KB |
 | picker | `@oas-ui/ui/form/picker` | 11 | 69.1 KB | 25.1 KB |
 | bottomSheet | `@oas-ui/ui/feedback/bottom-sheet` | 7 | 33.1 KB | 13.2 KB |
 <!-- END:generated:perf-baseline:components -->
@@ -165,17 +165,17 @@
 <!-- BEGIN:generated:perf-baseline:budgets -->
 | 预算项 | 实测 gzip | 预算（制式） | 依据 |
 | --- | --- | --- | --- |
-| dist/cdn.js gzip | 826.0 KB | 830.0 KB（天花板） | 天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB（schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档——实测 2.9KB / 档 3.4KB）；批 B 交易链路 3 组件（cart/order-card/product-card）+19.0KB 实测触 800 档，微调 810 KB（2026-11-24）；批 A（form-list/array-table 虚拟滚动内核 + image-picker compress/EXIF 管线 + cropper 触控板缩放 + number-keyboard 长按连删）+9.3KB 实测 811.9 触 810 档，归因后微调 820 KB（2026-11-25）；电商扩容（oas-filter + oas-goods-list 两组件本体与复核修复 + commerce 增强子批交互收口叠加）+8.3KB 实测 820.2 触 820 档，归因后微调 830 KB（2026-11-25）；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件本体与 i18n 文案，union 基座共享不重计）实测 825.4 KB，仍在 830 KB 天花板内（90% 预警线已越过，随下批增长再评估重定档）。前档 800 KB 定档于 2026-11-23；再前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测） |
-| @oas-ui/ui 全量入口链 gzip | 1258.2 KB | 1270.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；2026-11-25 电商扩容首波（oas-filter 筛选栏 + oas-goods-list 商品列表容器）后实测 1244.0 KB 顶穿前档 1240——边际增量 ≈ +11 KB（两组件本体与 i18n 文案，core/i18n 基座共享不重计），按实测微调 1255 KB；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件）后实测 1257.4 KB 顶穿前档 1255——边际增量 ≈ +12.0 KB（1257.4−1245.4，四组件本体与 i18n 文案，基座共享不重计），按实测微调 1270 KB；commerce 逐链预算已独立建立（commerce* 档位） |
+| dist/cdn.js gzip | 826.6 KB | 830.0 KB（天花板） | 天花板制：v2.6.9 批（26 新组件 + schema-form V1a/V1b 全家）实测 775.4 KB 触前档 770 KB（schema-form 链 23.5KB + matrix/rank + commerce 10 件/time-select/drag 等累计增量真实；表达式轨已分离独立预算档——实测 2.9KB / 档 3.4KB）；批 B 交易链路 3 组件（cart/order-card/product-card）+19.0KB 实测触 800 档，微调 810 KB（2026-11-24）；批 A（form-list/array-table 虚拟滚动内核 + image-picker compress/EXIF 管线 + cropper 触控板缩放 + number-keyboard 长按连删）+9.3KB 实测 811.9 触 810 档，归因后微调 820 KB（2026-11-25）；电商扩容（oas-filter + oas-goods-list 两组件本体与复核修复 + commerce 增强子批交互收口叠加）+8.3KB 实测 820.2 触 820 档，归因后微调 830 KB（2026-11-25）；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件本体与 i18n 文案，union 基座共享不重计）实测 825.4 KB，仍在 830 KB 天花板内（90% 预警线已越过，随下批增长再评估重定档）。前档 800 KB 定档于 2026-11-23；再前档 770 KB 定档于 2026-10-08（665.4 KB 实测），再前档 730 KB（2026-10-07 / 628.7 KB 实测） |
+| @oas-ui/ui 全量入口链 gzip | 1259.6 KB | 1270.0 KB（天花板） | 天花板制：实测 gzip 984.6 KB（并入 workbench 构件族后），上浮约 15% 定档 1140 KB；前档 1080 KB 定档于 2026-10-07（917.7 KB 实测），再前档 1024 KB 定档于 2026-10-05（890.9 KB 实测）；2026-11-03 core 子路径导入批后实测 1015.4 KB（逐文件上界口径随子路径拆分的文件数微涨 +0.7 KB 属求和特性；真实 bundler 打包下非表单链普遍 -5.9~-6.7 KB）；2026-11-06 gantt 资源增强批（reassign/泳道缩略）+1.2 KB 与 scheduler resource-timeline 视图批 +2.7 KB 后实测 1027.9 KB，触前档预警线（1024）——双批增量均为新视图/新引擎的合理增长，上浮定档 1180 KB（余量约 15%）；2026-11-24 schema-form V2 批 1（array-table 容器 + 行操作共用机制 + 行数快照/受控缩容）后实测 1188.5 KB，顶穿前档 1180——增量为真实新组件与新契约（共享行操作实现只计一次），按实测上浮约 4% 重定档 1240 KB；2026-11-25 电商扩容首波（oas-filter 筛选栏 + oas-goods-list 商品列表容器）后实测 1244.0 KB 顶穿前档 1240——边际增量 ≈ +11 KB（两组件本体与 i18n 文案，core/i18n 基座共享不重计），按实测微调 1255 KB；同日电商扩容二波（search-bar / logistics / order-list / member-card 轻量四件）后实测 1257.4 KB 顶穿前档 1255——边际增量 ≈ +12.0 KB（1257.4−1245.4，四组件本体与 i18n 文案，基座共享不重计），按实测微调 1270 KB；commerce 逐链预算已独立建立（commerce* 档位） |
 | @oas-ui/ui/basic/button 链 gzip | 20.6 KB | 30.0 KB（绝对值） | 实测 gzip 26.7 KB（2026-10-12：dev-warn 统一告警通道（101 处 console.warn 迁移，含模块本体）+ 当批行为修复增量；此前 25.0 KB 为图标库 opt-in 后口径），上浮约 12% 定档 30 KB；前档 29 KB 定档于 2026-10-08（25.0 KB 实测），再前档 39 KB 定档于 2026-10-05（33.5 KB 实测，含全量图标注册表）；2026-11-03 core 子路径导入批后实测 19.5 KB（内部源码改走 core 模块子路径绕开 barrel，button 值链只携带 oas-element/escape/config-context） |
-| @oas-ui/ui/data/table 链 gzip | 78.7 KB | 88.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）；2026-11-15 渲染组织批后实测 77.1 KB（前档 76.1，+1.0 KB：render-chunk 分批渲染接线——首帧 chunk + rAF 追加 + 代次守卫），顶穿前预警线 76.5，按实测上浮约 12% 重定档 87 KB（预警线恢复有效）；2026-11-16 缺口补齐续批 G/H/I + 列虚拟×server 分组兼容后实测 78.6 KB（前档 77.9，+1.5 KB：缓冲上界淘汰/空值组/宿主合计行 + 组行列窗口兼容），按实测上浮约 12% 重定档 88 KB（预警线恢复有效） |
+| @oas-ui/ui/data/table 链 gzip | 79.0 KB | 88.0 KB（绝对值） | 实测 gzip 66.2 KB（v2.6.4 默认入口 = 基础表格，不含 edit；链含 core 骨架 + virtual-list + i18n + pagination + 列设置/导出/移动降级与展示集快照，不含编辑器族），上浮约 12% 定档 74 KB；前档 108 KB 为默认入口含 edit 口径；2026-11-03 core 子路径导入批后实测 60.7 KB（绕开 barrel 不再连带 form-element+escape 虚重，回落至预警线以下）；2026-11-14 行模型数据层接线批后实测 73.0 KB（前测 70.7 KB，+2.3 KB / +5 文件），触前档预警线——增量为 preserveModules 拆分税（headless 公开面与组件同源接线，model-core 实现文件随组件链拆分入链；真实 bundler 单 bundle 打包下为中性或更小，同 2026-11-03 core 子路径批先例），同源搬迁无真实代码增量，上浮约 15% 重定档 84 KB；2026-11-15 server 分组批后实测 76.1 KB（前档 75.0，+1.1 KB：请求协议 groupBy/分组行分区接线/组行双形态渲染与层级折叠），顶穿前预警线 75.6，按实测上浮约 12% 重定档 85 KB（预警线恢复有效）；2026-11-15 渲染组织批后实测 77.1 KB（前档 76.1，+1.0 KB：render-chunk 分批渲染接线——首帧 chunk + rAF 追加 + 代次守卫），顶穿前预警线 76.5，按实测上浮约 12% 重定档 87 KB（预警线恢复有效）；2026-11-16 缺口补齐续批 G/H/I + 列虚拟×server 分组兼容后实测 78.6 KB（前档 77.9，+1.5 KB：缓冲上界淘汰/空值组/宿主合计行 + 组行列窗口兼容），按实测上浮约 12% 重定档 88 KB（预警线恢复有效） |
 | @oas-ui/ui/data/table/model 链 gzip | 5.1 KB | 6.0 KB（绝对值） | helper 纯函数子路径，按需引入；首档 2026-11-14：实测 gzip 4.3 KB / 8 文件（入口壳转发 1 + 行模型管道实现 7：过滤解析/匹配 + 排序状态解析与类型感知比较器 + 分页切片三态 + 分组展平 + 可见集 + 管道入口 computeRowModel；oas-table 组件同源 import 同一份实现，组件侧消费不重复计体积），上浮约 16% 定档 5 KB；2026-11-15 server 分组批后实测 5.0 KB（前档 4.3，+0.8 KB / +1 文件：server-group.ts 分区纯函数 partitionServerGroupRows/groupAggregateValue + visible 层级折叠增强 + FlatRow.aggregates 类型），上浮约 20% 定档 6 KB |
-| @oas-ui/ui/data/table/edit 链 gzip | 111.2 KB | 120.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0，原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）。首档→现档主要增量来源（已归因汇总，均为 oas-table 本体随链进入 edit 链的合理增长）：行高批（多行单元格三件套 + 虚拟截断/wrap 三态）、结构渲染批（structural-render 七槽壳接线）、print 感知（打印媒体口径）、无限滚动 + cursor 批 A 接线（appendRows/装载缓冲/load-more 协议）、server 分组批接线（groupBy/组行双形态渲染） |
+| @oas-ui/ui/data/table/edit 链 gzip | 111.9 KB | 120.0 KB（绝对值） | 实测 gzip 89.7 KB / 43 文件（首次独立计量：链含 edit 控制器 + 编辑器族 + select/switch 浮层编辑通道 + i18n；edit 链大于默认 table 链是「编辑器族依赖浮层组件」的合理结果，也正是默认入口不含 edit 的原因）；2026-11-06 重定档 105 KB（实测 94.0×1.12≈105）：首档后多批增量已把实测推到 94.0，原预警线 93.6 被日常增量常态化顶穿、WARN 失焦，按实测上浮 12% 重定；2026-11-15 server 分组批后实测 106.0 KB（前档 105，+1.0 KB：oas-table 本体 server 分组协议接线——detail.groupBy/buildGroupRow 双形态/层级折叠判定），前预警线 94.5 已被日常增量常态化顶穿（WARN 失焦），按实测上浮约 12% 重定档 120 KB（预警线恢复有效 108 KB）。首档→现档主要增量来源（已归因汇总，均为 oas-table 本体随链进入 edit 链的合理增长）：行高批（多行单元格三件套 + 虚拟截断/wrap 三态）、结构渲染批（structural-render 七槽壳接线）、print 感知（打印媒体口径）、无限滚动 + cursor 批 A 接线（appendRows/装载缓冲/load-more 协议）、server 分组批接线（groupBy/组行双形态渲染） |
 | @oas-ui/ui/data/table/auto-height 链 gzip | 2.0 KB | 2.8 KB（绝对值） | 注册型 L3（逐行动态行高：HeightCache 前缀和几何 + RO 生命周期 + 收缩轮询），按需引入；首档 2026-11-04：实测 gzip 2.0 KB / 1.8 KB brotli / 3 文件（能力注册表 + dynamic-height 几何 + 本模块；core/oas-table 为类型导入编译期擦除——table 本体消费方自带），上浮约 40% 定档 2.8 KB；核心判空钩子（row-geometry 锚定数学 + 几何接缝）随默认 table 链计亚 KB 常数 |
 | @oas-ui/ui/data/table/structural-render 链 gzip | 0.7 KB | 1.2 KB（绝对值） | 注册型 L3（结构级渲染四槽委托：headerRow/headerCell/bodyRow/bodyCell），按需引入；首档 2026-11-04：实测 gzip 649 B / 2 文件（能力注册表 + 委托控制器，零生命周期、零组件依赖——table 本体由消费方自带），上浮约 40% 取整定档 1.2 KB |
 | @oas-ui/ui/form/form 链 gzip | 22.1 KB | 29.0 KB（绝对值） | 实测 gzip 29692 B / 预算 29696 B（余量仅 4 B，全库最危险档；链含 core + i18n；四批合并后 25.6 KB 上浮约 15% 定档 29 KB，前档 28 KB 定档于 2026-10-05 24.8 KB 实测）。预算上限不抬高：2026-10-29 新增外部 label 动态 observer 后已饱和，后续 form 链任何扩展前必须先评估/瘦身或按流程重新定档，禁止把余量当常量；2026-11-03 core 子路径导入批后实测 16.8 KB（绕开 barrel，余量恢复充裕，但预算上限仍按上述纪律不自行抬高） |
 | @oas-ui/ui/form/schema-form/expr 链 gzip | 4.2 KB | 4.6 KB（绝对值） | 受限表达式轨（parser + evaluator）独立计量：按需链为单文件实现（粘性正则单遍词法 + Pratt 递归下降 + 解析期闭包求值 + 冻结函数库 + 宿主函数注册表，零第三方依赖，不拉 path.js）。2026-11-23 首测：实测 gzip 2.90 KB / 7.0 KB raw / 1 文件。设计稿目标 ≤2.5 KB 未达成——已做两轮瘦身（AST 改为解析期闭包、词法改粘性正则单遍、路径占位校验本地化以免连带 path.js 进链），仍差约 0.4 KB：差距来自仓库体积口径为「逐文件 gzip 上界 + 未压缩 dist」与完整中文诊断文案；继续压到 2.5 KB 需把诊断文案降级为 ASCII 错误码（错误信息在调用层拼装）或收窄通配读值能力。按实测上浮约 17% 定档 3.4 KB；2026-11-23 用户已批按实测定档收口（PRD 口径同步为「实测定档 3.4 KB」），超原 2.5 KB 设计目标部分登记在组件 README「已知差距」。2026-11-24 V2 批 2：函数库扩到 20 个（文本 5 + 数学 4 + 日期 2，含 formatDate 冻结 token 拼装与 dateAdd 单位表）+ 宿主优先 devWarn 通道（新增 dev-warn 共享模块入链，链文件数 1 → 2），实测 gzip 4.11 KB / 10.0 KB raw / 2 文件——增量全部是真实函数实现与告警通道（无冗余可清：函数表以 [min,max,fn] 元组形式已是最紧凑表达），按实测上浮约 12% 重定档 4.6 KB；预警线恢复有效（4.05 KB） |
-| @oas-ui/ui/data/gantt 链 gzip | 74.2 KB | 80.0 KB（绝对值） | v2.6.2 定档 70 KB → 2026-11-03 定档 75 KB（P2 审计无冗余）→ 2026-11-03 定档 80 KB：其后增量全部已归因真实特性——pool 超配检测 +2.2 KB（静态引 resourcePool + 检测/事件/tooltip）、show-resource-load 负荷面板 +2.9 KB（shared 实现本体 1.74 + 渲染/CSS 1 + i18n 3 键 0.15，@oas-ui/ui/data/resource/load helper 档独立计量 1.8 KB）；2026-11-02 P2 式归因审计结论继续有效（无冗余）；2026-11-03 core 子路径导入批后实测 62.3 KB——此前「core barrel 上界口径产物真实可摇除」已由「内部源码直走 core 模块子路径绕开 barrel」取代，非表单链实测普遍 -5.9~-6.7 KB。预警线 72 KB；下次扩展仍须先归因评估 |
+| @oas-ui/ui/data/gantt 链 gzip | 74.5 KB | 80.0 KB（绝对值） | v2.6.2 定档 70 KB → 2026-11-03 定档 75 KB（P2 审计无冗余）→ 2026-11-03 定档 80 KB：其后增量全部已归因真实特性——pool 超配检测 +2.2 KB（静态引 resourcePool + 检测/事件/tooltip）、show-resource-load 负荷面板 +2.9 KB（shared 实现本体 1.74 + 渲染/CSS 1 + i18n 3 键 0.15，@oas-ui/ui/data/resource/load helper 档独立计量 1.8 KB）；2026-11-02 P2 式归因审计结论继续有效（无冗余）；2026-11-03 core 子路径导入批后实测 62.3 KB——此前「core barrel 上界口径产物真实可摇除」已由「内部源码直走 core 模块子路径绕开 barrel」取代，非表单链实测普遍 -5.9~-6.7 KB。预警线 72 KB；下次扩展仍须先归因评估 |
 | @oas-ui/ui/data/json-viewer 链 gzip | 26.1 KB | 35.0 KB（绝对值） | 实测 gzip 31.5 KB（链含 core + i18n + 树模型/虚拟窗口/工具栏/搜索/复制/复制浮层；无第三方运行时、无图标全量注册），上浮约 10% 定档 35 KB；PRD 目标 ≤32 KB；2026-11-03 core 子路径导入批后实测 22.8 KB（绕开 barrel） |
 | @oas-ui/ui/data/diff-viewer 链 gzip | 24.2 KB | 34.0 KB（绝对值） | 实测 gzip 30.6 KB（链含 core + i18n + 自研 Myers 行级差异/词级高亮/折叠/并排/虚拟窗口；无第三方 diff 依赖、无图标全量注册），上浮约 11% 定档 34 KB；PRD 目标 ≤32 KB；2026-11-03 core 子路径导入批后实测 21.3 KB（绕开 barrel） |
 | @oas-ui/theme index.css gzip | 1.9 KB | 4.0 KB（绝对值） | 实测 gzip 3.52 KB（skins 皮肤层变量族 + 阴影双层精修后），上浮约 15%；前档 3.5 KB 定档于 2026-09-15（3.0 KB 实测） |
@@ -185,7 +185,7 @@
 | @oas-ui/ui/data/table/advanced 链 gzip | 10.9 KB | 12.0 KB（绝对值） | 首档 2026-10-25：实测 7.0 KB 上浮约 14% 定档 8 KB。2026-10-28 收口：视觉适配器协议批使链增至 8146 B（余量仅 46 B 触顶）；无行为变化瘦身（公式解析器 class → 模块函数，消除产物方法名税）后实测 8011 B。2026-10-31 复核重定档：逐文件复读 8 个模块（formula 2317 / windowed 1996 / pivot 1097 / query 851 / conditional 565 / history 490 / clipboard 363 / index 332），无可无行为变化清除的冗余（最大可清项 evaluateFormula 仅 19 B 且属公开导出，geometrySummary 的 try/catch 25 B 属已声明防御路径）；2.2% 余量已无预警意义，按实测上浮 15% 重定档 9 KB（利用率 86.9%）。2026-11-14 重定档 9.5 KB：createServerSource 重复创建守卫引入共享 dev-warn（236 B，统一告警通道，dev 提示、生产静默）——宿主同时使用 table 主链时 dev-warn 已被包含，advanced 侧真实增量为 0；再次扩展前必须先做包体评估或瘦身。2026-11-15 批 C 数据层缓存重构定档 11 KB：server-rows-cache 签名/TTL/在途合并纯逻辑 596 B + 缓存接线（fresh/陈旧/复用/正常四路 + SWR 背景控制器 + purge/destroy）487 B——缓存功能集固有体量，无行为变化瘦身空间（评估 60-120 B 不足）；动态拆分规避计量已否决（属规避且默认启用语义下首屏时序复杂化）；定档时误按 10342 B 记实测（缓存批交割时点实测 10585 B，原预警线 10138 已被顶穿、WARN 失焦）。2026-11-15 同批修复批（交叉审 R1-R3 + ttlMs 0/非法值守卫：分组键维度 + epoch 写缓存分层 + LRU 上界/过期即删，较 10585 B +377 B）后复核实测 10962 B，按实测上浮约 12% 重定档 12 KB（12288 B，利用率 89.2%，预警线 11059 恢复有效） |
 | @oas-ui/ui/data/table/format 链 gzip | 4.6 KB | 6.0 KB（绝对值） | 实测 gzip 4.7 KB（条件格式 capability + 规则引擎，无表单控件；不进入 table 默认链），上浮约 27% 定档 6 KB |
 | @oas-ui/ui/data/table/view 链 gzip | 1.0 KB | 1.5 KB（绝对值） | 实测 gzip 1.0 KB（完整视图快照 + 可配置 key 的持久化适配器，无 table 运行时依赖），上浮定档 1.5 KB |
-| @oas-ui/ui/data/table/range 链 gzip | 13.4 KB | 15.0 KB（绝对值） | 实测 gzip 12181 B（range/index 9715 = 选区控制器本体，未内联 table 运行时；window-data 840 / interactive 626 / clipboard 363 / capability 340 / row-key 297），其中 662 B 为本链未使用的导出（window-data 534 / clipboard 128），真实消费者构建经 tree-shaking 不携带，故真实量级约 11.5 KB。2026-10-31 复核：唯一可去重项是 findRowPath 与 indexRowPaths 的双实现（69 B），低于瘦身阈值；旧宿主视图签名回退（30 B）无测试覆盖但属 getDisplaySnapshot? 兼容契约，保留。按实测上浮 13.5% 重定档 13.5 KB（利用率 88.1%） |
+| @oas-ui/ui/data/table/range 链 gzip | 13.7 KB | 15.0 KB（绝对值） | 实测 gzip 12181 B（range/index 9715 = 选区控制器本体，未内联 table 运行时；window-data 840 / interactive 626 / clipboard 363 / capability 340 / row-key 297），其中 662 B 为本链未使用的导出（window-data 534 / clipboard 128），真实消费者构建经 tree-shaking 不携带，故真实量级约 11.5 KB。2026-10-31 复核：唯一可去重项是 findRowPath 与 indexRowPaths 的双实现（69 B），低于瘦身阈值；旧宿主视图签名回退（30 B）无测试覆盖但属 getDisplaySnapshot? 兼容契约，保留。按实测上浮 13.5% 重定档 13.5 KB（利用率 88.1%） |
 | @oas-ui/ui/data/table/history 链 gzip | 3.4 KB | 4.0 KB（绝对值） | 实测 gzip 3.4 KB（撤销/重做栈 + 受控记录/事务 + oas-edit 行键/原类型回写 + 树形子行递归 + 交互宿主穿透），上浮约 18% 定档 4 KB |
 | @oas-ui/ui/data/table/detail 链 gzip | 3.7 KB | 4.5 KB（绝对值） | 实测 gzip 3805 B（detail/index 2882 / interactive 626 / row-key 297，无未用导出虚高）。2026-10-31 复核：唯一重复实现是 isInputTarget 与 isInteractiveEvent（排除清单已含 input/select/textarea/[contenteditable]），实测仅 60 B；其余（内联 findIndex / activeEscapeClose 冗余状态）合计 ≤25 B。无冗余可清，按实测上浮 18% 重定档 4.5 KB（利用率 82.6%） |
 | @oas-ui/ui/data/table/pivot 链 gzip | 1.2 KB | 1.8 KB（绝对值） | helper 纯函数子路径，按需引入；首档 2026-11-03：实测 gzip 1276 B / 1 文件（二维透视矩阵：行列分组 + 5 种聚合 + 多值指标展列 + 可选合计行/列/全表，单文件零依赖），上浮约 40% 取整定档 1.75 KB |
@@ -208,37 +208,37 @@
 | @oas-ui/ui/commerce/coupon 链 gzip | 22.4 KB | 26.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 22.1 KB / 15 文件（券面卡 + 选择弹层 + 多选叠加规则），上浮 ~15% 取整定档 26 KB |
 | @oas-ui/ui/commerce/sku 链 gzip | 27.8 KB | 32.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 27.5 KB / 20 文件（组合匹配算法 + 底部弹层承载 oas-bottom-sheet，全族最重链——跨组件依赖为设计内），上浮 ~15% 取整定档 32 KB |
 | @oas-ui/ui/commerce/address 链 gzip | 21.9 KB | 25.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 21.7 KB / 21 文件（编辑表单 + 列表 + 三级联动），上浮 ~15% 取整定档 25 KB |
-| @oas-ui/ui/commerce/invoice 链 gzip | 20.4 KB | 23.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB（55508723 实测），上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐；基线 28ee1fdf 复测 20.0 KB，链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新） |
+| @oas-ui/ui/commerce/invoice 链 gzip | 21.7 KB | 23.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB（55508723 实测），上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐；基线 28ee1fdf 复测 20.0 KB，链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新） |
 | @oas-ui/ui/commerce/ecard 链 gzip | 18.5 KB | 21.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 18.3 KB / 21 文件（卡面列表 + 自定义面额 + 协议确认），上浮 ~15% 取整定档 21 KB |
 | @oas-ui/ui/commerce/category 链 gzip | 18.8 KB | 22.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 18.6 KB / 21 文件（左类右品双栏联动），上浮 ~15% 取整定档 22 KB |
-| @oas-ui/ui/commerce/time-select 链 gzip | 21.2 KB | 25.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 21.0 KB / 22 文件（日期列 + 时段网格 + roving 键盘），上浮 ~15% 取整定档 25 KB |
-| @oas-ui/ui/commerce/cart 链 gzip | 25.1 KB | 29.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 24.7 KB / 28 文件（条目勾选/步进/滑动删除 + 全选联动 + 增量同步），上浮 ~15% 取整定档 29 KB |
+| @oas-ui/ui/commerce/time-select 链 gzip | 21.9 KB | 25.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 21.0 KB / 22 文件（日期列 + 时段网格 + roving 键盘），上浮 ~15% 取整定档 25 KB |
+| @oas-ui/ui/commerce/cart 链 gzip | 25.7 KB | 29.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 24.7 KB / 28 文件（条目勾选/步进/滑动删除 + 全选联动 + 增量同步），上浮 ~15% 取整定档 29 KB |
 | @oas-ui/ui/commerce/order-card 链 gzip | 22.3 KB | 26.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 22.1 KB / 17 文件（状态徽标映射 + 金额区 + 折叠明细），上浮 ~15% 取整定档 26 KB |
 | @oas-ui/ui/commerce/product-card 链 gzip | 20.2 KB | 23.0 KB（绝对值） | 首档 2026-11-25（commerce 逐链初建）：实测 gzip 20.0 KB / 14 文件（图片比例 + 三插槽纯展示卡），上浮 ~15% 取整定档 23 KB |
-| @oas-ui/ui/commerce/filter 链 gzip | 22.1 KB | 25.0 KB（绝对值） | 首档 2026-11-25（电商扩容首波随批定档）：实测 gzip 21.2 KB / 13 文件（排序 toggle + 两形态条件面板 + chips 回显撤销；面板自实现轻量浮层，零跨组件依赖——链只含 core + i18n），上浮 ~15% 取整定档 25 KB；条件持久化 / 服务端筛选协议等重增强走 L3 能力子路径另立档 |
-| @oas-ui/ui/commerce/goods-list 链 gzip | 22.7 KB | 26.0 KB（绝对值） | 首档 2026-11-25（电商扩容首波随批定档）：实测 gzip 22.1 KB / 16 文件（瀑布流列均衡纯函数内核 + items 内建简版卡（内嵌 oas-price）+ 触底加载更多状态机；列分配与触底判定为纯函数可摇除面），上浮 ~15% 取整定档 26 KB；分页协议 / 虚拟滚动等重增强走 L3 能力子路径另立档 |
+| @oas-ui/ui/commerce/filter 链 gzip | 23.4 KB | 25.0 KB（绝对值） | 首档 2026-11-25（电商扩容首波随批定档）：实测 gzip 21.2 KB / 13 文件（排序 toggle + 两形态条件面板 + chips 回显撤销；面板自实现轻量浮层，零跨组件依赖——链只含 core + i18n），上浮 ~15% 取整定档 25 KB；条件持久化 / 服务端筛选协议等重增强走 L3 能力子路径另立档 |
+| @oas-ui/ui/commerce/goods-list 链 gzip | 23.2 KB | 26.0 KB（绝对值） | 首档 2026-11-25（电商扩容首波随批定档）：实测 gzip 22.1 KB / 16 文件（瀑布流列均衡纯函数内核 + items 内建简版卡（内嵌 oas-price）+ 触底加载更多状态机；列分配与触底判定为纯函数可摇除面），上浮 ~15% 取整定档 26 KB；分页协议 / 虚拟滚动等重增强走 L3 能力子路径另立档 |
 | @oas-ui/ui/commerce/search-bar 链 gzip | 17.6 KB | 21.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 17.6 KB / 12 文件（胶囊输入行 + 聚焦惯例面板三分组（历史/热门/联想）+ 触发语义状态机；零跨组件依赖——链只含 core + i18n + icons 两枚精确 path，与 oas-input 的边界见组件 README），上浮 ~15% 取整定档 21 KB；搜索历史持久化 / 联想防抖取消器走 L3 能力子路径另立档 |
 | @oas-ui/ui/commerce/logistics 链 gzip | 17.9 KB | 21.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 17.7 KB / 11 文件（steps 解析 + 状态推导纯规则 + 折叠状态机 + ol/li 时间线渲染；零跨组件依赖——链只含 core + i18n），上浮 ~15% 取整定档 21 KB；地图轨迹联动 / 复制动作内建走 L3 能力子路径另立档 |
-| @oas-ui/ui/commerce/order-list 链 gzip | 19.5 KB | 22.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 19.1 KB / 13 文件（页签 roving tabindex 状态机 + 触底协议——shouldRequestMore 复用 goods-list 导出纯函数不增链 + 插槽化零卡片渲染；链只含 core + i18n + goods-list 的 column-assign 单文件），上浮 ~15% 取整定档 22 KB；分页协议 / 页签溢出指示走 L3 能力子路径另立档 |
+| @oas-ui/ui/commerce/order-list 链 gzip | 20.6 KB | 22.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 19.1 KB / 13 文件（页签 roving tabindex 状态机 + 触底协议——shouldRequestMore 复用 goods-list 导出纯函数不增链 + 插槽化零卡片渲染；链只含 core + i18n + goods-list 的 column-assign 单文件），上浮 ~15% 取整定档 22 KB；分页协议 / 页签溢出指示走 L3 能力子路径另立档 |
 | @oas-ui/ui/commerce/member-card 链 gzip | 16.4 KB | 19.0 KB（绝对值） | 首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 16.4 KB / 10 文件（纯展示卡零事件——属性反射 + 两插槽显隐 + variant token 化底色；链只含 core + i18n，为 commerce 最轻链），上浮 ~15% 取整定档 19 KB；等级进度条 / 卡面二维码走 L3 能力子路径另立档 |
-| @oas-ui/ui/commerce/cart/batch 链 gzip | 3.2 KB | 4.0 KB（绝对值） | helper 编排子路径，按需引入；首档 2026-11-26 实测 gzip 1.1 KB / 2 文件（编排 + dev-warn）；真实浏览器复核修复批（C1 数据破坏：config-provider 注入禁用时 executeBatch 仍执行删除——只判 attribute 漏掉注入判定）引入 core 的 injectDisabled 同语义判定后链实测 gzip 3.2 KB / 4 文件（编排 + dev-warn + core/config-context 的 findConfigProvider/parseProviderConfig——禁用判定与本体 isDisabled 同一实现，注入禁用下 helper 与本体行为一致），按实测 ×1.15 取整定档 4 KB |
+| @oas-ui/ui/commerce/cart/batch 链 gzip | 3.2 KB | 4.0 KB（绝对值） | helper 编排子路径，按需引入；首档 2026-11-26 实测 gzip 1.1 KB / 2 文件（编排 + dev-warn）；真实浏览器复核修复批（C1 数据破坏：config-provider 注入禁用时 executeBatch 仍执行删除——只判 attribute 漏掉注入判定）引入 core 的 injectDisabled 同语义判定后链实测 gzip 3.2 KB / 3 文件（编排 + dev-warn + core/config-context 的 findConfigProvider/parseProviderConfig——禁用判定与本体 isDisabled 同一实现，注入禁用下 helper 与本体行为一致），按实测 ×1.15 取整定档 4 KB |
 | @oas-ui/ui/commerce/filter/persist 链 gzip | 0.7 KB | 1.5 KB（绝对值） | helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.7 KB / 1 文件（conditions 编解码——URL encodeURIComponent 往返 + Storage try-catch 降级，单文件零依赖，<1KB gz 目标达成），上浮 ~15% 取整定档 1.5 KB |
 | @oas-ui/ui/commerce/goods-list/paged 链 gzip | 0.6 KB | 2.0 KB（绝对值） | helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.6 KB / 1 文件（createPagedSource cursor 状态机——代际守卫 reset / 在途防重 / 错误恢复，单文件零依赖；headless 先例同 layout/scroll-area/infinite），上浮 ~15% 取整定档 2 KB |
-| @oas-ui/ui/form/select 链 gzip | 46.2 KB | 53.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）后链 +1 文件（icons/icons/chevron-down），实测 46.2 KB / 31 文件，仍在 53 KB 档内（--update-baseline 刷新） |
-| @oas-ui/ui/form/input 链 gzip | 31.4 KB | 37.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 31.4 KB / 14 文件（输入基座：core + i18n + icons eye 精确 path + dev-warn/direction；复用决策基线（2026-11-25 复用权衡框架 review：select 链从未计量是估算错 3 倍的根因，input 为表单共享内核下沉的主要候选宿主）），上浮 ~15% 取整定档 37 KB |
+| @oas-ui/ui/form/select 链 gzip | 46.9 KB | 53.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 46.0 KB / 30 文件（form 族最重组件链——列表浮层承载 bottom-sheet + 虚拟滚动 virtual-list + 浮层定位 floating + choice/measure-text/outside-dismiss 等共享件；复用决策基线：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，共享内核下沉决策以宿主链真实体积为输入），上浮 ~15% 取整定档 53 KB；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）后链 +1 文件（icons/icons/chevron-down），实测 46.2 KB / 31 文件，仍在 53 KB 档内（--update-baseline 刷新） |
+| @oas-ui/ui/form/input 链 gzip | 31.6 KB | 37.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 31.4 KB / 14 文件（输入基座：core + i18n + icons eye 精确 path + dev-warn/direction；复用决策基线（2026-11-25 复用权衡框架 review：select 链从未计量是估算错 3 倍的根因，input 为表单共享内核下沉的主要候选宿主）），上浮 ~15% 取整定档 37 KB |
 | @oas-ui/ui/form/picker 链 gzip | 25.1 KB | 30.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 25.1 KB / 11 文件（滚轮选择器：core + i18n + stable-id，无浮层/虚拟滚动依赖；复用决策基线同 select 档——2026-11-25 复用权衡框架 review 补齐的宿主链计量），上浮 ~15% 取整定档 30 KB |
 | @oas-ui/ui/feedback/bottom-sheet 链 gzip | 13.2 KB | 16.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 13.2 KB / 7 文件（底部弹层：core + overlay-stack，feedback 族轻链——被 select/sku 作为弹层承载复用的共享底座；复用决策基线（2026-11-25 复用权衡框架 review：select 链从未计量是估算错 3 倍的根因，bottom-sheet 链体积是评估「复用 vs 自实现弹层」的关键输入）），上浮 ~15% 取整定档 16 KB |
-| CDN 族包 dist/cdn/basic.js gzip | 40.8 KB | 48.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 40.8 KB，上浮 ~15% 取整定档 48 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
-| CDN 族包 dist/cdn/commerce.js gzip | 71.3 KB | 83.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 71.4 KB，上浮 ~15% 取整定档 83 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警——本档即该推演的看守） |
-| CDN 族包 dist/cdn/conversation.js gzip | 26.0 KB | 30.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 26.0 KB，上浮 ~15% 取整定档 30 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
-| CDN 族包 dist/cdn/data.js gzip | 298.6 KB | 344.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 298.7 KB（全库最重族——table/gantt/scheduler 大件所在），上浮 ~15% 取整定档 344 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
-| CDN 族包 dist/cdn/feedback.js gzip | 84.0 KB | 97.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 84.0 KB，上浮 ~15% 取整定档 97 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
-| CDN 族包 dist/cdn/form.js gzip | 258.1 KB | 297.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 258.2 KB（第二重组件族——date-picker/upload/table-select 等表单大件所在），上浮 ~15% 取整定档 297 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/basic.js gzip | 40.9 KB | 48.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 40.8 KB，上浮 ~15% 取整定档 48 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/commerce.js gzip | 71.8 KB | 83.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 71.4 KB，上浮 ~15% 取整定档 83 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警——本档即该推演的看守） |
+| CDN 族包 dist/cdn/conversation.js gzip | 26.1 KB | 30.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 26.0 KB，上浮 ~15% 取整定档 30 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/data.js gzip | 298.9 KB | 344.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 298.7 KB（全库最重族——table/gantt/scheduler 大件所在），上浮 ~15% 取整定档 344 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/feedback.js gzip | 84.1 KB | 97.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 84.0 KB，上浮 ~15% 取整定档 97 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/form.js gzip | 258.4 KB | 297.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 258.2 KB（第二重组件族——date-picker/upload/table-select 等表单大件所在），上浮 ~15% 取整定档 297 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
 | CDN 族包 dist/cdn/framework.js gzip | 13.1 KB | 16.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 13.1 KB（全库最轻族——app/config-provider/theme-editor），上浮 ~15% 取整定档 16 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
-| CDN 族包 dist/cdn/layout.js gzip | 39.1 KB | 46.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 39.1 KB，上浮 ~15% 取整定档 46 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
-| CDN 族包 dist/cdn/navigation.js gzip | 128.5 KB | 148.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 128.5 KB（menubar/menu/navigation-menu 大件所在），上浮 ~15% 取整定档 148 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/layout.js gzip | 39.2 KB | 46.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 39.1 KB，上浮 ~15% 取整定档 46 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/navigation.js gzip | 128.6 KB | 148.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 128.5 KB（menubar/menu/navigation-menu 大件所在），上浮 ~15% 取整定档 148 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
 | CDN 族包 dist/cdn/overlay.js gzip | 23.1 KB | 27.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 23.1 KB，上浮 ~15% 取整定档 27 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
-| CDN 族包 dist/cdn/workbench.js gzip | 30.5 KB | 36.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 30.5 KB，上浮 ~15% 取整定档 36 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
+| CDN 族包 dist/cdn/workbench.js gzip | 30.6 KB | 36.0 KB（绝对值） | 首档 2026-11-25（复用基建配套批）：实测 gzip 30.5 KB，上浮 ~15% 取整定档 36 KB；门禁归因——2026-11-25 复用权衡 review：跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警） |
 <!-- END:generated:perf-baseline:budgets -->
 
 > `@oas-ui/ui/data/table/core` 兼容别名已删除（v2.6.5 未发布，DEP-EXPORT-0001 单点例外），不再单独计量；`perf:size` 含 dist 零残留门禁。历史计量口径（删除前各版本）不变。

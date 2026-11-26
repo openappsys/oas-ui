@@ -2,7 +2,7 @@
 
 版本遵循 SemVer。v1.0.0 为首个正式发布。每个版本 = 一个可独立交付/可试用的里程碑。
 
-## 未发布（schema-form V2 与组件完善批）
+## v2.6.9（schema-form V2 与组件完善批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -10,7 +10,7 @@
 | **批 2：V2 数据流** | convert/transform 双钩子 / 异步选项加载窄面 / 表达式函数库扩至 ~20 | ✅ 已完成（v2.6.9）（设计稿先行） |
 | **批 3：组件完善** | cropper 平移 / SKU 弹层 / drag 惯性 / coupon 层叠 / barrage 重连 | ✅ 已完成（v2.6.9） |
 
-## 未发布（V2 增强与长尾清欠批）
+## v2.6.9（V2 增强与长尾清欠批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -18,7 +18,7 @@
 | **批 5：测试长尾** | drag-start e2e / 模式组 RTL e2e / a11y 生成器断言重构 | ✅ 已完成（v2.6.9） |
 | **批 6：组件级转正** | coupon z-index / 嵌套极限测试 / barrage RTL 重连与 reduced-motion / drag 惯性 e2e | ✅ 已完成（v2.6.9） |
 
-## 未发布（新组件能力补强批）
+## v2.6.9（新组件能力补强批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -26,7 +26,7 @@
 | **P1 7 条** | submit-bar tip / coupon 分组与「不用券」出口 / coupon 多选 / number-keyboard 附加键 / barrage items+auto-play / share-sheet 描述 / address 自定义校验 | ✅ 已完成（v2.6.9） |
 | **P2 4 条** | rolling-text 方向与手动控制 / pin-input 说明栏 / goods-action 类型与自定义色 / address 区划编码档 | ✅ 已完成（v2.6.9） |
 
-## 未发布（v2.6.9 追加批：虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾）
+## v2.6.9（v2.6.9 追加批：虚拟化 / 交易闭环 / 问卷引擎 / 交互长尾）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -35,7 +35,7 @@
 | **批 C：问卷引擎** | questionnaire 逻辑跳转谓词（复用 expr 引擎）/ 评分汇总（score-rules + oas-score） | ✅ 已完成（v2.6.9） |
 | **批 D：交互长尾** | coupon 多券叠加 / barrage 点赞·屏蔽 / drag 吸附点 / Z1·Z2 测试长尾 | ✅ 已完成（v2.6.9） |
 
-## 未发布（电商扩容与包体分级批）
+## v2.6.9（电商扩容与包体分级批）
 
 | 范围 | 内容 | 状态 |
 | --- | --- | --- |
@@ -43,6 +43,17 @@
 | **增强子批（已有组件 ×5）** | cart 滑动会话收口 ×3 / cropper 任意角度覆盖 + 边界滚轮放行 / sku 焦点保持 + open 悬空收口 / drag phase 字段 + 时长口径 + 抢占落盘 / barrage clear 续播 | ✅ 已完成（v2.6.9） |
 | **新组件 ×6** | oas-filter 筛选栏 / oas-search-bar 搜索栏 / oas-goods-list 商品列表容器 / oas-order-list 订单列表容器（或降级配方）/ oas-logistics 物流时间线 / oas-member-card 会员卡 | ✅ 已完成（v2.6.9） |
 | **场景配方层** | 秒杀 / 领券中心 / 库存紧张提示 / 详情页骨架（guide + demo，不做新组件） | ✅ 已完成（v2.6.9） |
+| **L3 能力包三件** | commerce/cart/batch 批量操作 / commerce/filter/persist 条件持久化 / commerce/goods-list/paged 服务端分页（均 helper 型，三账制首次应用） | ✅ 已完成（v2.6.9） |
+| **shared 原语下沉批** | shared/bottom-reach + shared/listbox + shared/flip-up 三内核 + direction-dom 拆分 + 八处接入（含 RTL 键盘镜像修复） | ✅ 已完成（v2.6.9） |
+
+## v2.6.9（复用基建配套批）
+
+| 范围 | 内容 | 状态 |
+| --- | --- | --- |
+| **五组件逐链预算档** | form/select / form/input / form/picker / basic/button / feedback/bottom-sheet 按需链测量与独立预算档 | ✅ 已完成（v2.6.9） |
+| **CDN 族包体积门禁** | dist/cdn 11 族包逐档预算 + 覆盖 fail closed（新族包缺档 / 残档红灯） | ✅ 已完成（v2.6.9） |
+| **跨族边单向依赖登记 + 环检测** | scripts/check-family-deps.mjs（Tarjan SCC + family-deps-registry + CI 接线），登记即审批 | ✅ 已完成（v2.6.9） |
+| **select / invoice chevron 统一** | 内联 path 改消费 @oas-ui/icons chevronDownPath，消除几何漂移 | ✅ 已完成（v2.6.9） |
 
 ## v2.6.9（文档站 SEO：语言机制去跳转化）
 

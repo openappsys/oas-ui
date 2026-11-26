@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.6.9] - 2026-11-26
+## [2.6.9] - 2026-11-26
 
 ### 新增
 
@@ -25,91 +25,6 @@
 - **CDN 族包体积门禁**：`perf:size` 增 `dist/cdn/<family>.js` 全族 11 包逐档计量与预算（basic 48 / commerce 83 / conversation 30 / data 344 / feedback 97 / form 297 / framework 16 / layout 46 / navigation 148 / overlay 27 / workbench 36 KB；首档 = 实测 ×1.15 取整），收集清单 = dist/cdn 实际产物、覆盖 fail closed——新族包缺预算档或族包下线残档都红灯。归因：2026-11-25 复用权衡 review——跨族边对族包膨胀无门禁（推演 commerce 族内联 select 闭包 +20~27KB gz 无告警）。
 - **跨族边单向依赖登记 + 环检测**：新脚本 `scripts/check-family-deps.mjs`（CI test job 接线 `family-deps:test` + `family-deps:check`）——扫描 `packages/ui/src` 生产文件相对 import 面（含副作用与动态 import），断言 `scripts/family-deps-registry.json` 登记边之外无跨族 import（现状 20 条边全部按事实登记：commerce→feedback 的 sku→bottom-sheet、data→form 的 date-grid 日期数学、各族→shared 叶子方向放行、shared→data / shared→form 叶子反向边等）；登记条目现状零命中 = 空头审批红灯；环检测对登记边图求强连通分量（环簇），现状环簇 data ⇄ form ⇄ feedback ⇄ navigation 留名，环簇扩大 / 新增 / 留名失效均红灯。判定函数 16 组单测（红绿两侧），live 树三条可红路径实证（未登记边 / 幽灵条目 / 新环簇咬合扩大）。
 - **select / invoice 内联 chevron 统一 `@oas-ui/icons`**：两组件的内联 `<path d="M4 6 L8 10 L12 6">` 改消费 icons 包导出的 `chevronDownPath`（几何与内联版完全一致，select 的 -3px 留白补偿推导依据不变；stroke=currentColor 渲染属性随 path 自带），path 几何唯一来源化、消除与 icons 包的漂移失同步。`style-conventions` 守卫同步（内联 chevron 计数 6→5、正则锚定 `<path` 防跨元素误抓 + 新增「icons chevronDownPath 几何即规范 V 形」断言——icons 侧几何漂移从此红灯）；qa-regression select + invoice 补迁移后渲染产物断言（路径 / viewBox / 尺寸 / stroke=currentColor 主题色接线 / 定位不漂移），浅色 + 暗色截图核对通过。
-
-### 修复
-
-**RTL 键盘镜像修正（order-list 页签 / filter 组内选项）**
-
-- **order-list 页签**：水平方向键原先 `ArrowRight || ArrowDown` 恒为前进，RTL 下 `→` 仍向右移动（视觉方向反了）；统一走 `shared/listbox` 内核后左右键按书写方向镜像（RTL 下 `→` 向左移），与 time-select 既有口径一致；qa-regression 新增 RTL 断言（ArrowRight 回退、ArrowLeft 前进、manual activation 不变）。
-- **filter 组内选项 / 排序行**：同场景同缺口（`ArrowRight` 不镜像），内核统一后 RTL 下左右键镜像；qa-regression 新增 RTL 断言（RTL 下 ArrowRight 从第二项回退到第一项，修复前会 clamp 停在原位）。
-
-**部分代码复用下沉批：四个 shared 叶子内核 + 五组件接入（除上述 RTL 修复外行为零变更）**
-
-- **`shared/bottom-reach.ts`（触底协议内核）**：goods-list / order-list 的 `checkLoadMore` 骨架、`isHiddenInTree` 可见性守卫、rAF 节流监听、加载区三态渲染收敛为单一真源（`shouldRequestMore` 判定移入本模块，`column-assign` 保留 re-export 兼容既有导入面）；`createBottomReach` 以回调参数承载两处语义差异（内容源、解除信号源——组件各自接 `items` 签名 / slot 节点身份序列），组件侧只留元素查询与 `oas-load-more` 派发。
-- **`shared/listbox.ts`（键盘导航内核）**：`resolveRovingMove` 统一键序解析与 index 推进（垂直 / 水平、回绕 / clamp、Home / End、RTL 镜像、disabled 跳过）；键集声明式收窄承载各组差异（select / invoice 仅上下键、filter 不回绕、order-list / time-select 全键 + Home / End）。焦点载体（activedescendant / DOM focus / roving tabindex）与激活语义（manual / follows-focus）仍留组件。
-- **`shared/flip-up.ts`（视口翻转谓词）**：filter `syncPanelFlip` 与 invoice `placePicker` 的同构判据收敛为 `shouldFlipUp`（含视口 / 高度 / 坐标退化守卫），组件只保留 data 属性名与开合联动。
-- **RTL 判定收敛（cart / invoice / table-range / questionnaire）**：四组件内联 `getComputedStyle(...).direction` 判定改走 `shared/direction`（table-range 走同源的零依赖 DOM 层 `direction-dom`，避免叶子 helper 预算档被 core/i18n 闭包撑爆）；computed style 通道改为 `{ computed: true }` 按需开启（只认 rtl、不短路 locale 回退）——四个方向敏感点保留原先直读样式表的语义，其余 70+ 处默认零重算（每次 `getComputedStyle` 触发样式重算，千行表单实测会拖垮渲染）。
-- **体积账**：四个内核随组件链进入既有预算档，新增 gz 实测见各模块头注；不新增门禁（族依赖门禁对「族→shared 叶子方向」放行）。
-**L3 能力包三件真实浏览器复核修复批（1C + 3I + 1 用户可见）**
-
-- **cart/batch 注入禁用下照删（C 级，数据破坏）**：`executeBatch` 只判 `cart.hasAttribute('disabled')`，而 config-provider 注入禁用是 provider 属性/JSON 级判定不写 attribute——`<oas-config-provider disabled>` 包裹下本体按钮全禁、helper 照删（items 4→0）。修复：改用 core 的 `injectDisabled`（与本体 `isDisabled()` 同一实现，attribute / 注入 / `disabled-skip` 豁免同语义），禁用时全部跳过（reason disabled）、不回写、仍派 `oas-batch`。链因 import core/config-context 从 1.1 KB 增至 3.2 KB，预算档重定 1.5 → 4 KB（×1.15）。单测 +1（注入禁用零变化 + skipped 全量 + skip 豁免）；qa-regression +1。
-- **cart/batch 零操作也回写 items（I 级）**：executeBatch 用归一后 items 整体回写——零操作补写默认值 + 抹掉宿主手工设置的禁用条目 `selected:true`。修复：回写以宿主 attribute **原文为基座**、仅成功项应用操作；`succeeded.length === 0` 时不回写只派事件。单测 +3（空勾选 attribute 不变 / 仅禁用被勾选原文不变 / 部分成功未成功条目原文保留）。
-- **filter/persist fromQuery 对含裸 % 的值丢失/篡改（I 级）**：`decode` 无条件 `decodeURIComponent`——toQuery 存 JSON 原文后 `URLSearchParams.get()` 已解一层，再 decode 即对 JSON 内容二次解码（`%` 后非十六进制 → URIError → 整批 null；`%41` → 静默篡改 `A`）。修复：`fromQuery` 改「先直接解析原文，失败再 decode 回退」——原文形态优先、手工 encode 形态兼容。回归 3 组（非十六进制 % / 十六进制 %41 不经 URL 路径 / 加号与空格——URLSearchParams 层的合法 %XX 属转义语义，宿主经 toQuery 产生合法 query）。
-- **goods-list/paged 响应适配抛错 → 状态机永久卡死（I 级）**：`load(ctx)` 同步抛错逃出 Promise 契约；`getItems`/`getCursor` 在成功回调里抛错 → pending 恒 true / inflight 残留 / error=null → 宿主胶水 `if (source.pending) return` 永久阻断（`getItems: res => res.data.list` + 500 错误体是最常见分支）。修复：`run` 重构为 async IIFE——load 同步抛错与适配抛错统一走失败分支（error 落盘、pending 复位、状态不推进可重试）；修复中发现并同修 inflight 清理时序缺陷（清理链挂两跳会晚于宿主 await resume 执行，导致上一次完成后防重占位未清、下一页永不加载——改单跳注册，与调用方同队列且先执行）。回归 2 组（适配抛错后可重试成功 / load 同步抛错走失败分支）。
-- **demo（filter persist）面板遮挡操作按钮（用户可见）**：条件面板展开时（dropdown 绝对定位）完全覆盖下方「保存 / 还原 / 清空」按钮行——操作按钮移到筛选器上方，面板展开不再遮挡。
-
-**commerce 二波终验跟修批（真实浏览器复核：III 系列）**
-
-- **oas-logistics**：
-  - **M5 单测时区依赖（C 级）**：datetime 断言用「无时区本地时间串 + 写死期望 ISO」——TZ=UTC 下 Date.parse 把本地串当 UTC 解析，期望值错位 8 小时（CI 实测必红）；测试数据改显式 UTC 串（`2026-11-24T10:20:00Z`），Date.parse/toISOString 全时区恒定。`TZ=UTC` 本地复现红 → 绿。
-  - **告警 flag 拆分**：非法 state 与「多 current 归一」共用一个 warned flag——先触发者静默后者；拆 `warnedStateInvalid` / `warnedStateMultiCurrent` 各自独立一次。
-- **oas-order-list**：
-  - **焦点复原命中 disabled 落 body**：复原 `focus()` 对 disabled tab 是 no-op（roving 兜底已算出没用上）——复原命中 disabled 时改落 roving tab；单测固化（改配置使焦点 tab 变 disabled，断言焦点在兜底 tab 不丢 body）。
-  - **未选中页签 hover 反馈缺失**（I5 对比度修复时删了 hover 分支）：补 hover 底（bg-hover 向 text-primary 混 6% 的可感知加深一档，无独立 bg-active token；text-primary on 合成底 ≈ 10:1 对比度不回退）；qa-regression +1（hover 底色变化 + 文字色不回退 text-secondary）。
-  - **告警 flag 拆分**：非法 tabs JSON 与 roving 兜底共用 warned flag → 拆 `warnedTabsJson` / `warnedRovingFallback`。
-- **oas-member-card**：
-  - **aria-label 回归测试恒真**：原测试「mount 后 setAttribute」不触发 update（aria-label 不在 observedAttributes），旧强写实现同样通过（抓不到原 bug）——改真断言路径：宿主写 label → **改 grade 触发 update** → 宿主命名不被冲掉（旧实现此路径必红，已用强写实现复现 RED 验证）→ 宿主删除 → 恢复接管跟随 grade。
-- **demo（member-card）**：「升级下一档」primary 实底钮在 light 下与 gradient 卡面同色融合——改 default 表面按钮（不透明 surface 底 + primary 文字，light/dark 双态与卡面区分明确，不依赖卡面 surface 色）。
-- **文档同步（aria-label 所有权）**：member-card README / 组件 jsdoc / zh-en 文档「键盘与无障碍」补所有权三态说明（宿主显式命名优先 / 删除后恢复接管 / 巧合同串被视为接管属值型所有权固有限制）。
-- **a11y 基线**：本批新页与回退页的 `skipped.ci` 补 +4 跨 OS 字体排版余量（约定 ci = 实测 + 4；生成逻辑 ci = max(实测, 旧 ci) 不会回落）；债务台账入基线 note——goods-list `ratio=2` 为 oas-tag success/warning 色对 4.35:1 / 4.42:1 的**既有 token 债务**（非本批引入，修 tag 另立批次，基线登记保留只许降不许升）。
-- **内部轮次归属清理**：CHANGELOG 与组件注释里的内部审核轮次编号（如「R1 实测」类）改中性表述（「真实浏览器复核」）；本批提交 message 同步改写（未 push 安全，树内容不变仅 message 变）。历史批次的既有轮次编号不在本批范围（属各自批次的登记内容）。
-
-**commerce 二波（search-bar / logistics / order-list / member-card）真实浏览器复核修复批（2C + 7I + Minor）**
-
-- **oas-search-bar**：
-  - **搜索钮空白胶囊（C 级）**：`part="go"` 按钮漏放图标子节点（渲染成 16×32 蓝色空条，与文档「图标」口径不符）——补内联放大镜 svg（与输入框左侧占位图标同源 `searchPath`，`aria-hidden`）；qa-regression 断言 svg 存在 + 渲染尺寸 > 10px。
-  - **demo 联想点击静默空操作**：demo 在宿主元素派 `KeyboardEvent`，而 keydown 监听在 shadow 内 input——事件穿不进 shadow，点联想词无任何反馈；改为 `input.focus()` 后对 shadow input 派发（zh/en 两页同步），qa-regression 断言点联想词后 `#sb-suggest-out` 出现 oas-search 反馈。
-- **oas-order-list**：
-  - **页签激活后焦点丢失**：`syncTabs` 全量重建 tablist 未捕获焦点——键盘 Enter 激活后焦点丢到 body；对齐 oas-tabs 的 captureFocused/restoreFocus 模式（重建前记焦点 tab 的 data-key，重建后 focus 复原；同 key 不存在则归还文档流）。qa-regression 真键盘用例 + 单测各 +1。
-  - **`active` 指向 disabled 页签 → tablist 不可 Tab 达**：roving tabindex 未排除 disabled（可聚焦 tab 数 0，违反 ARIA tabs「恰一个 tabindex=0」不变量）——对齐 oas-tabs 写法 `active 匹配 && !disabled` 才给 0，active 落空 / 指向 disabled 时**兜底首个 enabled tab** 并一次性 devWarn（宿主配置无效可诊断）。单测 +1（tabindex 断言 + devWarn）。
-  - **触底待应答按数量签名（首波 I3 同款教训）**：换页签后宿主等数量换卡不解除 pending → 触底永久停摆；签名改**节点身份序列**（WeakMap 分配 id，goods-list 同款模式），等数量换卡即解除并可再次派发。单测 +1。
-  - **未选中页签对比度（axe ratio 违规真修）**：text-secondary on bg-hover = 4.40:1 不达 AA——基态改 text-primary（≈11:1），count 徽标随 currentColor 同步受益，hover 分支删除（与基态同色）。基线收敛后 order-list 页**全零违规**（不进基线）。
-  - **重复渲染**：用户激活页签删除手动 `update()`（attributeChangedCallback 属性通道已触发，双轮渲染纯浪费）。
-- **oas-member-card**：
-  - **aria-label 覆盖宿主**：组件每轮 update 强写派生名，宿主预置的自定义名被吞——改**所有权追踪**（宿主值 ≠ 组件上次派生值 = 宿主显式命名不覆盖；值相同 = 组件接管跟随 grade 更新；宿主删除恢复接管；oas-compact 守卫先例增强）。单测 +1（预置不覆盖 / 缺省命名 / grade 跟随三态）。
-- **oas-logistics**：
-  - **多 current 声明归一**：`aria-current` 语义只允许一个——保留首个、其余降级 pending + devWarn 一次（与非法 state 告警同通道）。单测 +1。
-  - **`<time>` 补 `datetime`**：`steps.time` 可被 `Date.parse` 解析时写标准化 ISO `datetime`（读屏 / 检索可读）；不可解析文本不写。单测 +1（ISO 有 / 中文相对文案无）。
-  - **demo 布局**：折叠 / 动作插槽两个 DemoBlock 的组件与提示行被 `.demo-block__body`（flex row）排到同一水平线——grid 包裹让组件占满行（对齐 goods-list 先例）。
-- **demo 布局批**：member-card 基础 / 渐变卡被 flex 收缩成窄条——补 `width: 100%`（保留 max-width 420）；search-bar（3 处）/ order-list（1 处）组件与提示行同类排版一并 grid 包裹；member-card 黑金卡「升级下一档」plain 按钮在暗色 gradient 浅蓝卡面上白字不可读——改 primary 实底档位（不依赖卡面 surface 色，light/dark 双态可读）。
-- **登记面修正**：`oas-order-list.slots` 语料键误写「默认」（manifest 为空串键）→ api:gen --check 双向缺口 + API 表三行重复，改空串键重生成，api:check 全绿；perf 归因算式修正（全量入口边际增量 +13.4 → **+12.0** = 1257.4−1245.4）；cdn.js 依据补二波归因（820.2 → 825.4 仍在 830 天花板内）；总览页「176 个」写死数字漂移改动态措辞（以页面清单 / 侧栏为准，zh/en 同步）；a11y 对比度基线收敛——回退与本批无关的 image-picker / questionnaire 口径漂移（回 main 值 + totals 同步），基线 diff 只含本批最小增量（member-card 渐变卡 skipped 登记保留，order-list 全零违规不进基线）。
-
-**commerce 首波（filter / goods-list）真实浏览器实测修复批**
-
-- **oas-filter**：
-  - **dropdown 面板锚定与视口翻转**：面板元素移入栏容器内（绝对定位锚定栏底，修复面板飞到页面底部的失锚问题）+ 展开时按视口空间判定翻转（下方放不下且上方更宽裕时贴顶展开，`data-flip` 属性区分）+ 面板补 `max-height: 70vh` + `overflow-y: auto`（多组条件不再溢出不可滚）。
-  - **drawer 升级模态对话框语义**：面板 `role="dialog"` + `aria-modal="true"`，Tab / Shift+Tab 焦点循环限制在面板内（游离面板外的焦点拉回首项）；dropdown 非模态不挂 dialog 语义。
-  - **触发器可访问名改为从可见内容推导**（排序标签 + 计数徽标，不再用 aria-label 包裹「筛选（已选 n 项）」——可见文本「筛选 n」与 aria-label 不连续包含违反 WCAG 2.5.3 label-in-name）。
-  - **chips / 触发器徽标对比度**：chips 文字色 `text-secondary` → `text-primary`（`bg-hover` 底上 4.39:1 不达 AA，两主题口径统一达标）。
-  - **解析健壮性**：`sorts` 缺 `label` 的条目、`groups` 缺 `label` / 选项缺 `value`/`label` 的条目解析期跳过并一次性 devWarn（不再渲染空文本按钮或写 "undefined" 值）；`conditions` 单选组多值截断时一次性 devWarn 且**清洗结果回写 attribute**（getter 与 attribute 一致，脏值规整可见）。
-  - **chips 撤销焦点迁移**：撤销一枚后焦点落到相邻 chip（无相邻回触发器），键盘连续撤销不再掉焦。
-  - **断连清理去重**：`onCleanup` 只在首次挂监听时注册，开合循环不再单调增长。
-- **oas-goods-list**：
-  - **list 语义合法化**：`role="list"` 从外层容器移到卡片网格容器（加载区 / 空态 / 哨兵 / 插槽源全部位于列表语义之外，消除 axe `aria-required-children` 严重违规）；插槽卡搬进列后组件补 `role="listitem"`（宿主自带 role 不覆盖）。
-  - **瀑布流测高修复**：测量容器 `align-items: flex-start`（修复 flex 默认 stretch 把所有卡拉成同高、列分配退化成轮转的问题）；回归改为「按真实卡高复算最短列贪婪，逐列比对成员集合」（旧「列高差 < 最小卡高」判据对 demo 数据无判别力：正确分配差 28、轮转退化差 27 都能过）。
-  - **list 形态改图文横排行**：图左固定小尺寸（104px，与 product-card 横排惯例一致）+ 右侧信息列（标题 / 标签 / 价格），纵向堆叠——修复「单列巨图卡」与文档「图文横排的列表视图」不符；内建卡 DOM 结构改 `media + info` 分区（waterfall / list 同构，方向由 CSS 控制）。
-  - **触底待应答解除补全**：`items` 签名变化（宿主只追加数据的分页场景）与置 `loading` 等价解除待应答——修复「宿主只追加数据则第二次触底永久停摆」。
-  - **插槽卡增量追加**：捕获集由「整体替换」改「合并」（保留已搬进列的旧卡 + 新分配卡入列），重排签名取**节点身份序列**（WeakMap 分配 id，非数量）——修复追加宿主卡不渲染，以及「移除一张 + 追加一张」等数量增删因计数签名早退永不入列；搬运窗口（同步 slotchange 重入的 detach 中间态）跳过剔除判定，真实浏览器与 happy-dom 行为一致。
-  - **隐藏容器守卫**：`display:none` 链路挂载不再误派 `oas-load-more`（几何值无意义不触发；真实浏览器 `getClientRects` 全链判定 + happy-dom 回退祖先链 computed display），显示后滚动才派发。
-  - **加载更多区活区**：`role="status"` + `aria-live="polite"`（加载中 / 到底文案变化自动播报）。
-- **插槽内容替换契约（行为说明）**：插槽卡被搬进 shadow 后宿主 light DOM 恒为空，`el.replaceChildren(新卡)` 与 `el.append(新卡)` 在 DOM 层是同一操作序列（无 removedNodes、无 previousSibling），组件无法识别「整替换」意图——单调用 `replaceChildren` 等价**追加**（旧卡保留）。整替换的受支持做法：宿主持有引用逐张 `remove()` 旧卡后再追加，捕获集按「节点离开组件树」即时剔除并重排。README（宿主桥接 / 数据契约）与真实浏览器回归已按此口径固化。
-- **oas-filter（复审跟修）**：遮罩点击关闭时回收焦点——面板 / 遮罩隐藏后浏览器先把焦点回收到 `body`，原守卫只认「面板内焦点」而跳过恢复，焦点于是永久停在 body（键盘用户失位）；现把「焦点无主（null / `body` / `documentElement`）」并入应恢复情形，「用户点了页面别处」仍不抢焦点。
-- **i18n（消费者可见面）**：移除 `filter.selectedCount`（触发器不再用「已选 n 项」aria-label，可访问名改从可见内容推导）。宿主自定义 locale 包里覆盖该键将不再生效，可同步删除该条目；其余 `filter.*` 键（`removeChip` / `reset` / `done` / `panelLabel` 等）不变。
-- **文档**：filter / goods-list（zh+en 共 4 页）demo 的 `<script setup>` 全部上移页面级（此前写在 `DemoBlock` 内部被 VitePress 原样输出，页面 `Cannot use import statement` 报错 + Hydration mismatch + demo 全灭——console-sweep 与 a11y 修复前红、修复后绿）；页面级脚本统一放在 `## API` 之前（该章节为 api:gen 生成区），并加位置锚点注释防回退。英文页补齐 4 处中文残留标题（卡片位插槽 / 加载更多与空态 / 自定义样式须知 ×2），「自定义样式须知」补 `::part(info)` 与新 `data-flip` 属性说明。
-- **范围条件组说明**：filter 的「范围条件组」（价格区间等自定义输入条件）属**预留 L3 能力子路径，本体未实现**（见 `packages/ui/src/commerce/filter/README.md`「预留能力面」），验收口径不包含该项。
-- 测试：单测 +17（首波 13：filter 6 / goods-list 7；复审跟修 4：filter 遮罩关闭焦点回收 1 + goods-list 等数量替换 / replaceChildren 契约 / 整替换支持做法 3）。qa-regression +5（首波 2：dropdown 锚定几何与视口翻转真点击 / drawer 真键盘焦点陷阱；复审跟修 3：瀑布流分配逐列成员核对、插槽等数量增删、replaceChildren 契约），改 4（瀑布流均衡断言换口径 + list 形态横排几何 + drawer 遮罩关闭补焦点回收断言 + 撤销 chips 前置收面板）。
-
-### 新增
 
 **电商扩容首波：commerce 族新组件（filter / goods-list，包体分级规矩首次实践）**
 
@@ -258,62 +173,6 @@
 
 - **oas-sku 弹层形态**：`layout="embedded|popup"`——同一份面板两种承载（面板节点在「内嵌容器」与 `oas-bottom-sheet` 默认 slot 之间搬移，选中态 / 焦点 / 数量输入随节点走，不重建不复制）；`layout` 缺省按视口自动（`matchMedia('(max-width: 480px)')` 越界即时重判，显式值不被视口覆盖，非法值告警回落 embedded）；开合走 bottom-sheet 协议——`open` 受控属性（宿主写入静默）、下滑 / 遮罩 / Esc 由承载件派发 `oas-close` 后组件自动收起、交互与命令式 `openOverlay()` / `closeOverlay()` 派发 `oas-open-change`（内嵌形态调用只告警一次，不产生幽灵 open 态）；打开即聚焦面板首个可聚焦控件、Tab 循环由 bottom-sheet 承载；内嵌形态承载件 `hidden`（空 dialog 不进读屏树）。单测 +7（缺省内嵌 / 面板搬移复用 / 开合协议 / 焦点 / 窄屏自动 + 显式优先 + 回宽屏 / 非法值 / 内嵌命令式告警 / 切换不丢选中）+ qa-regression 真实弹层（面板贴底可见、面板内选择联动、Esc 关闭回写）+ zh/en 文档与 demo。
 
-### 修复
-
-**commerce 增强子批（已有组件交互打磨与行为收口，PRD「电商扩容与包体分级批」（已随 v2.6.9 发布）；全部向后兼容：`oas-drag-end` 新增字段 `phase`，其余为行为修正）**
-
-- **oas-cart 滑动手势收口**：① `pointercancel` 与 `pointerup` 分离结算——cancel 事件坐标不可信（Safari 类浏览器给 0 坐标），此前按坐标结算会把中断手势误判成「向行首拖满」→ 意外满展开 + 抑制紧随 click；现按手势开始前的吸附态落定（未展开回弹关闭、已展开保持展开），不读 cancel 坐标、不设 suppressClick。② 多点触控守卫——已有滑动会话在途时**不同** pointerId 的新指针按下直接忽略，旧会话起点与 `pointerId` 不被改写（修复前双指先后按两行会让第一行 `data-dragging` 永久残留）；同一 pointerId 的新按下（旧会话已丢 up，鼠标 pointerId 恒为 1）则收尾旧会话后重开，滑动入口不会被永久锁死。③ 滑动展开行「点行体收起」——点已展开行的行体收起且不派 `oas-item-click`；点其他行收起已展开行、事件照常派发（购物车单行操作惯例）；顺带修掉「与已展开行无关的手势（tap 其他行）抹掉全局展开态」的状态/视觉脱节。④ 单行展开——滑开另一行时旧展开行同时收起（修复前两行同时露删除钮、而状态只剩新行，旧行 transform 失去归属）。⑤ 缩略图起手——缩略图 `<img>` 禁原生拖拽（`draggable="false"` + CSS `-webkit-user-drag: none` / `user-select: none`）：修复前按住缩略图横移会走浏览器图片拖拽（实测 `pointerdown → dragstart → pointercancel`），滑动会话被 cancel 收掉，行内左侧缩略图那一段滑不出删除钮。单测 +7；`qa-regression/cart.spec.ts` +5（合成 pointercancel 0 坐标 / 双指序列 / 真鼠标点行体收起 / 滑开第二行收起第一行 / 从缩略图起手滑动）。
-- **oas-image-cropper rotate 任意角度覆盖约束**：`fitScale` 此前按 `rotation % 180 !== 0` 互换宽高（等价 90° 倍数假设），45° 等中间角度覆盖不足（框角露舞台底色）。现按**倾斜矩形覆盖舞台**的真实判据收敛：`s = max((stageW·|cosθ| + stageH·|sinθ|) / nw, (stageW·|sinθ| + stageH·|cosθ|) / nh)`——把舞台四角反旋回图片局部坐标后必须落在绘制矩形内；90° 倍数退化为宽高互换（与旧行为逐值一致），中间角度按真实占位放大。**不能用「图片轴对齐包围盒 ⊇ 舞台」**：那只是必要条件，倾斜矩形的包围盒比矩形本身大，45° 下包围盒等于舞台时舞台四角其实远在图片外（实测该口径给出 387.9×290.9 的绘制尺寸，比 480×320 的舞台还小）。单测 +2（45° 精确界 + 9 个角度的框/舞台四角覆盖循环，判据为几何反旋而非包围盒）；`qa-regression/image-cropper.spec.ts` +1（真实浏览器量测 45° 下框角与舞台角都在图片内）。
-- **oas-image-cropper 缩放边界放行页面滚动**：滚轮在缩放上下限（1 / max-zoom）此前仍 `preventDefault` 吞掉页面滚动（边界上滚轮「失灵」还锁死页面）。现先判 clamp 后值是否会真的变化，不变则不接管（页面照常滚）；中间值缩放语义不变。单测 +1。
-- **oas-sku 形态切换两处收口**：① 焦点保持——popup→embedded 面板搬移前记录面板内的深活跃元素（含 shadow 路径），搬移后活跃元素不再是原焦点时复原到原控件（键盘用户焦点不因形态切换丢失；真实浏览器保焦路径零副作用）。② `open` 悬空真值收口——**仅当上一形态是 popup 且弹层当时处于打开态**（真实 popup→embedded 切换）时回写 `false` 并派发一次 `oas-open-change`：此刻承载件已隐藏，`open` 残留会让宿主滚动锁 / 遮罩态挂空且永不解除（形态切换不经过 `openOverlay` / `onSheetClose`）。内嵌形态下宿主写入的 `open` 是**待生效意图**，组件不抹除、也不派发事件（受控写入静默；切到 popup 时自动弹开），内嵌形态内部的常规更新同样不动 `open`。单测 +4。
-- **oas-drag 惯性三处收口**：① `oas-drag-end` detail 新增 `phase: 'release' | 'coast-end'`——双派发语义显式化（松手含 cancel 为 `release`、滑行收尾为 `coast-end`），宿主按 phase 区分两次派发、不必按时间窗去重；既有 detail 字段不变（向后兼容）。② 滑行上限改真实时长口径——帧数上限（60 帧）在 120Hz 屏只有一半时长且末段急刹；现按 800ms 真实时长上限 + 速度阈值双条件（帧数只作 rAF 时间戳异常的兜底），60 / 120Hz 屏体感一致。③ 滑行被抢占落盘——滑行中被新 `pointerdown` 抢占 / `reset()` / 断连冻结时，`stopCoast()` 按滑行中的当前位置补落盘（修复前只保留松手时刻旧值，滑行已走过的路程丢失）。单测 +4（含 16ms / 8ms 双帧率时长一致性）；`DragEndDetail` / `DragEndPhase` 从组件入口与包入口导出（与其它组件的 detail 类型惯例一致）；zh/en 文档与 API 语料同步（`oas-drag-end` 描述改 phase 口径，`inertia` 描述改时长口径）。
-- **oas-barrage `clear()` 后 auto-play 续播 + 轨道重构不中断循环流**：① 公开 `clear()` 清空后不再调度 pump——舞台空到下一次外部触发，与文档「`clear()` 只清在场与排队，声明数据仍在」的口径矛盾；现清空后若 auto-play 开启且未暂停，主动 `refillDeclared()` 从声明条目重新轮转（暂停中不续播、resume 后恢复）。② 内部路径拆出 `resetPlayback()`（只清在场 / 排队 / 排期计时，**不重灌**）——轨道数变化重建时若走公开 `clear()`，声明条目会挂进即将被替换的旧轨道：DOM 被丢弃但条目留在 `active`（僵尸），既占 `max-active` 名额、又让 rebuild 后 `pump()` 的续轮守卫（`active.some(loop)`）一直挡住，舞台空窗一整个动画时长（实测 7s）。改后由 update 尾部的 `pump()` 把声明条目灌进新轨道，同帧续播。单测 +5（续播轮转 / 无 auto-play 维持清空 / paused 语义优先 / 改 tracks 同帧续播 / max-active 不被旧轨道条目占额）。
-
-**跨引擎收口（main 全量 e2e 抓到：撞名守卫 5 条 + 虚拟滚动滚动夹紧 + Firefox 用例时序）**
-
-- **撞名守卫（5 条，对外 attribute 名全部不变）**：attribute 的 camelCase 名撞同类实例成员时，框架按「key in el」把静态 attribute 写成 property，会遮蔽原型方法（内部 `this.xxx()` 直接 TypeError）或污染数据字段。现只改组件内部成员名：`max-select` 的解析方法 `maxSelect()` → `parseMaxSelect()`（oas-coupon，调用点 2）、`banned-words` 的解析方法 `bannedWords()` → `parseBannedWords()`（oas-barrage，1）、`score-rules` 的编译结果字段 `scoreRules` → `compiledScoreRules`（oas-questionnaire，4）、`snap-targets` / `snap-threshold` 的解析方法 `snapTargets()` / `snapThreshold()` → `parseSnapTargets()` / `parseSnapThreshold()`（oas-drag，各 2）。`collision-guard.spec.ts` 源码级守卫归零。
-- **oas-form-list / oas-array-table 虚拟态滚到底后新行进不了视口（Firefox）**：窗口重算此前「先挂窗口帧、后落 spacer」，挂载后 `measureMounted` 的 `offsetHeight` 读取把过渡态布局坐实——此时 spacer 还是上一窗偏移，容器高少一行；Firefox 会就地按这个更矮的内容高夹紧 `scrollTop`（Chromium 把夹紧推迟到下一次滚动更新），滚到底后每次重算都被拉回一行，`oas-add` 的新行永远差一行在视口外（焦点已落进去，用户看不到）。现改为 spacer 先按目标窗口落位再挂载（过渡态只可能偏高，不触发夹紧），两引擎统一。单测 +2（窗口挂载时上下 spacer 必须已是本次窗口的定稿值，撤掉排序即红）；`qa-regression/form-list.spec.ts` 两条「虚拟态添加行」在 Chromium / Firefox / WebKit 三引擎全绿。
-- **qa-regression/goods-action hover 底色跨引擎不稳（用例时序，非样式差异）**：hover 底色（`transition-fast`）此前只按「computed 值是 `color()` 记法」判稳态——Chromium 过渡中走 oklab 插值该判据才有效，Firefox 一开始就是 `color(srgb …)`，判据立刻通过、读到过渡中途值（实测 g 通道 133.7/134.5 波动，稳态 129.6）。现改为等「连续两次采样同值且已离开基色」，稳态逐通道锚定断言不变。
-- **qa-regression/image-cropper 舞台撑高用例跨引擎不稳（用例时序，非钳制缺陷）**：① 注入舞台高度后只等「舞台变高」，裁剪框的 ResizeObserver 重排可能还没落定（Chromium 读到旧的 304 高框、Firefox 读到新的 494 高框，两引擎起跑几何不同）——补等裁剪框按新高度落定；② 拖拽距离 600px 会越出视口，Firefox 对窗口外的 `pointermove` 送来无效坐标（实测 `clientX=0 / clientY=-85`），位移被算到负方向——改为把拖拽限制在视口内并断言仍有足够下拖空间。位移钳回的用户可见断言（裁剪框内不露舞台底色）不变。
-- **oas-number-keyboard 补 `no-repeat-delete` 演示**：zh/en 文档新增「严格单发（关闭长按连删）」demo 块（带值回显），`demo-coverage` 属性覆盖闭环。
-
-**组件完善批 3 修复批（review 补审收口：平移覆盖约束 / 光标提示 / 惯性陈旧速度）**
-
-- **oas-image-cropper 舞台尺寸变化后位移未按覆盖约束重钳**：`ResizeObserver` 回调此前只重测尺寸并同步样式，位移可行区间随舞台变化后不重新钳制——舞台变矮时裁剪框内露出舞台底色。现抽出 `handleStageResize()`（RO 回调与单测共同入口）：重测 → 重排裁剪框 → `applyOffset` 重钳。单测 +1（舞台 480×320 → 400×320，位移 208 → 168）。
-- **oas-image-cropper 加载完成缺平移光标提示**：`data-pannable`（`cursor: grab`）此前只在 `update()` 里写，而 `load` 是异步事件、不会触发 `update()`——真机上图片加载完成后舞台始终没有抓取光标（happy-dom 对 `data:` URL 同步派发 load，掩盖了该时序）。现抽出 `syncPannable()`，`onImageLoad` / `onImageError` 一并调用（错误态不残留提示）。单测 +1。
-- **oas-image-cropper 框外单击派噪声事件**：平移会话记录 `moved`，按下即抬起（位移未变）不再派 `oas-change`；`pointercancel` 同口径（没动过就没有「回退」）。单测 +1。
-- **oas-image-cropper 非主键与多指针**：右键 / 中键按下不再平移图片或移动裁剪框（对齐 oas-drag 的主键口径）；已有会话在跑时新指针落下不抢占（第二根手指不再改写起点造成坐标跳变）。单测 +2。
-- **oas-image-cropper 旋转回归断言改按新朝向**：原用例拿旋转前的可行上界（±28）当旋转后的断言上界，恒真无判别力；改为按 90° 绘制 640×480 推导的精确界（纵向 ±168 / 横向 ±8）。
-- **oas-image-cropper README**：取消路径与尺寸变化口径同步（`pointercancel` 只有真动过才补一次同值 `oas-change`）。
-- **oas-drag 停顿后松手仍滑行**：惯性起始速度此前无条件复用最后一次 pointermove 采样——「快速拖一下 → 按住不动 → 松手」会带着停顿前的速度滑出去。现该采样距今超过 100ms 视为已停住、速度归零（`willCoast` 自然为 false，落点吸附照做）。单测 +3（停顿不滑行 / 停顿仍吸附 / 快速松手仍滑行）；zh/en 文档与 API 语料同步。
-- **oas-sku 反复开合累积断开清理**：`scheduleSheetHide` 每次关闭都追加一条 `onCleanup` 注册——`cleanupFns` 随开合次数单调增长。现改为成员句柄，断连清理在 `bind()` 里一次性注册（待生效的隐藏收尾仍随断连取消）。单测 +1。
-- **oas-sku `oas-close` 文档口径**：明确它是承载件**透传**事件（组件收到后已自行收起，宿主无需处理，仅用于观测 / 埋点）；zh/en 文档与 api 语料同步。
-
-**交易链路批 review 收口（滑动删除 / 失败图片 / 金额区 / 测试口径）**
-
-- **oas-cart 滑动指针捕获**：横向意图确立后捕获指针（`setPointerCapture`）——鼠标拖出列表范围松手也能收到 `pointerup` 正常结算，不再卡在半途（`data-dragging` 残留 + 位移停在最后一步）；纯点击不捕获，click 目标不受影响。`qa-regression/cart.spec.ts` +1（真实鼠标拖出列表松手，断言结算干净）。
-- **oas-cart 滑动松手落定语义**：落定值此前复用跟手 clamp 值——拖到一半松手会停半路（过半时删除钮半露、未过半时不回弹），只有拖满才碰巧视觉正确。现落定与跟手分离（`resolveSwipeSettle` 纯函数）：过半吸附到完全露出、未过半回弹关闭，落定位移以过渡动画滑到位。单测 +1。
-- **oas-cart 失败图片记忆键改 id+src**：此前按条目 id 记忆——同 id 换新图 URL 永不显示。现键含 src，换图重试加载、再次失败才重新回落占位。单测 +1。
-- **oas-order-card 金额区空壳条**：只设 `original` 不设 `payable` 时容器此前仍可见（`original` 只经实付通道渲染划线价，自身无独立出口），渲染出只有边框内距的空壳条。现容器隐藏条件去掉 `original`。单测 +1。
-- **oas-cart 浮点合计测试口径**：0.1×4 恰为 IEEE754 精确值，判别不了 toFixed 收敛缺失——改 0.1×3（`0.30000000000000004`）非整倍口径。
-
-**批 C / D 修复批（review 收口）**
-
-- **oas-barrage auto-play × 屏蔽词**：循环重灌此前直接写入队列，绕过 `banned-words` 判据——开启 `auto-play` 后命中屏蔽词的声明条目会随循环重新进场。现重灌与 `add` / `addBatch` / `items` 共用同一入队判据（空文本 + 屏蔽词命中即不入队）。
-- **oas-barrage auto-play 首轮重复 mount**：重灌时机由「队列排空瞬间」收紧为「本轮声明条目全部播完」（队列空且无在场循环条目；`add()` 手动条目不计入轮次）——修复前首轮排空即重灌，同一条弹幕双份在场、独占双倍轨道。单测 +2，`qa-regression/barrage.spec.ts` +1（真实浏览器多轮循环采样）。
-- **oas-questionnaire 断开重连清理对称**：`onReconnect` 注册的清理补上评分防抖定时器（与 `bind()` 对齐）——修复前重连后再断开，待派的 `oas-score` 仍会在已脱离文档的宿主上派发。单测 +1。
-- **问卷 demo 补 `conditions="false"` 实演示**：宿主组合通道 demo 改为关闭条件引擎（该实例给「发票信息」步写了 `when`，引擎关闭后条件不生效、分支只认宿主 `hidden`），并把 when/goto demo 的下拉换成选项组、去掉隐藏面板里的多余输入——axe「无法评分节点」回落，感知对比度 ratchet 只许降。
-- **demo-coverage 探针补齐登记配套**：questionnaire `oas-goto` / `oas-score`、barrage `oas-like`、coupon `oas-select-invalid` 与 questionnaire `conditions` 属性演示全部补上。
-- **PRD 措辞对齐实现**：coupon 互斥组落点写 `exclusiveGroup`（列表条目字段，非 `exclusive-group` 属性）。
-
-### 文档站（语言机制后续增强）
-
-- **移动端导航栏常驻分段语言切换**：中/EN 切换器此前在移动断点隐藏（横幅关闭后的移动端二访客没有任何语言入口），现移动端同样常驻显示（紧凑 22px 高，位于汉堡按钮前）；汉堡菜单内默认语言入口保留为补充路径。
-
-## [2.6.9] - 2026-11-23
-
-### 新增
-
 **电商可捞件：oas-time-select（commerce 族）**
 
 - **oas-time-select（配送时段选择）**：日期列（今日起 `days` 天，缺省 3）+ 时段网格（`slots` 通用时段，`slots-override` 按日期覆盖），「尽快送达（`mode="express"`，自动取首个可用时段）/ 预约配送（`mode="schedule"`）」两模式；不可选时段区分**休息**（`disabled`，置灰 + 「休息」标注）与**满约**（`full`，置灰 + 删除线 + 「已满约」标注），均带 `aria-disabled` 且点击不改值；值契约 `{ date, slot }` 的 property + attribute JSON 双通道，用户切换模式 / 日期 / 时段派发 `oas-change`；a11y：日期列 `role="tablist"` + `role="tab"`、时段网格 `role="radiogroup"` + `role="radio"`，两处各自 roving tabindex，方向键只在可用项之间移动（跳过休息 / 满约 / 不可配送日），Home / End 到首末可用项，RTL 镜像，网格可访问名称 = 分组标题 + 当前日期；日期文案 `Intl.DateTimeFormat` 感知 locale，今天 / 明天用相对文案；空时段集合渲染空态占位；i18n `timeSelect.*`（16 语言）+ 单测 19 + qa-regression e2e（真实点击选中态 / 休息满约视觉区分 / 键盘跳过不可选项）+ zh/en 文档与 demo。
@@ -383,12 +242,146 @@
 
 ### 修复
 
+**RTL 键盘镜像修正（order-list 页签 / filter 组内选项）**
+
+- **order-list 页签**：水平方向键原先 `ArrowRight || ArrowDown` 恒为前进，RTL 下 `→` 仍向右移动（视觉方向反了）；统一走 `shared/listbox` 内核后左右键按书写方向镜像（RTL 下 `→` 向左移），与 time-select 既有口径一致；qa-regression 新增 RTL 断言（ArrowRight 回退、ArrowLeft 前进、manual activation 不变）。
+- **filter 组内选项 / 排序行**：同场景同缺口（`ArrowRight` 不镜像），内核统一后 RTL 下左右键镜像；qa-regression 新增 RTL 断言（RTL 下 ArrowRight 从第二项回退到第一项，修复前会 clamp 停在原位）。
+
+**部分代码复用下沉批：四个 shared 叶子内核 + 五组件接入（除上述 RTL 修复外行为零变更）**
+
+- **`shared/bottom-reach.ts`（触底协议内核）**：goods-list / order-list 的 `checkLoadMore` 骨架、`isHiddenInTree` 可见性守卫、rAF 节流监听、加载区三态渲染收敛为单一真源（`shouldRequestMore` 判定移入本模块，`column-assign` 保留 re-export 兼容既有导入面）；`createBottomReach` 以回调参数承载两处语义差异（内容源、解除信号源——组件各自接 `items` 签名 / slot 节点身份序列），组件侧只留元素查询与 `oas-load-more` 派发。
+- **`shared/listbox.ts`（键盘导航内核）**：`resolveRovingMove` 统一键序解析与 index 推进（垂直 / 水平、回绕 / clamp、Home / End、RTL 镜像、disabled 跳过）；键集声明式收窄承载各组差异（select / invoice 仅上下键、filter 不回绕、order-list / time-select 全键 + Home / End）。焦点载体（activedescendant / DOM focus / roving tabindex）与激活语义（manual / follows-focus）仍留组件。
+- **`shared/flip-up.ts`（视口翻转谓词）**：filter `syncPanelFlip` 与 invoice `placePicker` 的同构判据收敛为 `shouldFlipUp`（含视口 / 高度 / 坐标退化守卫），组件只保留 data 属性名与开合联动。
+- **RTL 判定收敛（cart / invoice / table-range / questionnaire）**：四组件内联 `getComputedStyle(...).direction` 判定改走 `shared/direction`（table-range 走同源的零依赖 DOM 层 `direction-dom`，避免叶子 helper 预算档被 core/i18n 闭包撑爆）；computed style 通道改为 `{ computed: true }` 按需开启（只认 rtl、不短路 locale 回退）——四个方向敏感点保留原先直读样式表的语义，其余 70+ 处默认零重算（每次 `getComputedStyle` 触发样式重算，千行表单实测会拖垮渲染）。
+- **体积账**：四个内核随组件链进入既有预算档，新增 gz 实测见各模块头注；不新增门禁（族依赖门禁对「族→shared 叶子方向」放行）。
+**L3 能力包三件真实浏览器复核修复批（1C + 3I + 1 用户可见）**
+
+- **cart/batch 注入禁用下照删（C 级，数据破坏）**：`executeBatch` 只判 `cart.hasAttribute('disabled')`，而 config-provider 注入禁用是 provider 属性/JSON 级判定不写 attribute——`<oas-config-provider disabled>` 包裹下本体按钮全禁、helper 照删（items 4→0）。修复：改用 core 的 `injectDisabled`（与本体 `isDisabled()` 同一实现，attribute / 注入 / `disabled-skip` 豁免同语义），禁用时全部跳过（reason disabled）、不回写、仍派 `oas-batch`。链因 import core/config-context 从 1.1 KB 增至 3.2 KB，预算档重定 1.5 → 4 KB（×1.15）。单测 +1（注入禁用零变化 + skipped 全量 + skip 豁免）；qa-regression +1。
+- **cart/batch 零操作也回写 items（I 级）**：executeBatch 用归一后 items 整体回写——零操作补写默认值 + 抹掉宿主手工设置的禁用条目 `selected:true`。修复：回写以宿主 attribute **原文为基座**、仅成功项应用操作；`succeeded.length === 0` 时不回写只派事件。单测 +3（空勾选 attribute 不变 / 仅禁用被勾选原文不变 / 部分成功未成功条目原文保留）。
+- **filter/persist fromQuery 对含裸 % 的值丢失/篡改（I 级）**：`decode` 无条件 `decodeURIComponent`——toQuery 存 JSON 原文后 `URLSearchParams.get()` 已解一层，再 decode 即对 JSON 内容二次解码（`%` 后非十六进制 → URIError → 整批 null；`%41` → 静默篡改 `A`）。修复：`fromQuery` 改「先直接解析原文，失败再 decode 回退」——原文形态优先、手工 encode 形态兼容。回归 3 组（非十六进制 % / 十六进制 %41 不经 URL 路径 / 加号与空格——URLSearchParams 层的合法 %XX 属转义语义，宿主经 toQuery 产生合法 query）。
+- **goods-list/paged 响应适配抛错 → 状态机永久卡死（I 级）**：`load(ctx)` 同步抛错逃出 Promise 契约；`getItems`/`getCursor` 在成功回调里抛错 → pending 恒 true / inflight 残留 / error=null → 宿主胶水 `if (source.pending) return` 永久阻断（`getItems: res => res.data.list` + 500 错误体是最常见分支）。修复：`run` 重构为 async IIFE——load 同步抛错与适配抛错统一走失败分支（error 落盘、pending 复位、状态不推进可重试）；修复中发现并同修 inflight 清理时序缺陷（清理链挂两跳会晚于宿主 await resume 执行，导致上一次完成后防重占位未清、下一页永不加载——改单跳注册，与调用方同队列且先执行）。回归 2 组（适配抛错后可重试成功 / load 同步抛错走失败分支）。
+- **demo（filter persist）面板遮挡操作按钮（用户可见）**：条件面板展开时（dropdown 绝对定位）完全覆盖下方「保存 / 还原 / 清空」按钮行——操作按钮移到筛选器上方，面板展开不再遮挡。
+
+**commerce 二波终验跟修批（真实浏览器复核：III 系列）**
+
+- **oas-logistics**：
+  - **M5 单测时区依赖（C 级）**：datetime 断言用「无时区本地时间串 + 写死期望 ISO」——TZ=UTC 下 Date.parse 把本地串当 UTC 解析，期望值错位 8 小时（CI 实测必红）；测试数据改显式 UTC 串（`2026-11-24T10:20:00Z`），Date.parse/toISOString 全时区恒定。`TZ=UTC` 本地复现红 → 绿。
+  - **告警 flag 拆分**：非法 state 与「多 current 归一」共用一个 warned flag——先触发者静默后者；拆 `warnedStateInvalid` / `warnedStateMultiCurrent` 各自独立一次。
+- **oas-order-list**：
+  - **焦点复原命中 disabled 落 body**：复原 `focus()` 对 disabled tab 是 no-op（roving 兜底已算出没用上）——复原命中 disabled 时改落 roving tab；单测固化（改配置使焦点 tab 变 disabled，断言焦点在兜底 tab 不丢 body）。
+  - **未选中页签 hover 反馈缺失**（I5 对比度修复时删了 hover 分支）：补 hover 底（bg-hover 向 text-primary 混 6% 的可感知加深一档，无独立 bg-active token；text-primary on 合成底 ≈ 10:1 对比度不回退）；qa-regression +1（hover 底色变化 + 文字色不回退 text-secondary）。
+  - **告警 flag 拆分**：非法 tabs JSON 与 roving 兜底共用 warned flag → 拆 `warnedTabsJson` / `warnedRovingFallback`。
+- **oas-member-card**：
+  - **aria-label 回归测试恒真**：原测试「mount 后 setAttribute」不触发 update（aria-label 不在 observedAttributes），旧强写实现同样通过（抓不到原 bug）——改真断言路径：宿主写 label → **改 grade 触发 update** → 宿主命名不被冲掉（旧实现此路径必红，已用强写实现复现 RED 验证）→ 宿主删除 → 恢复接管跟随 grade。
+- **demo（member-card）**：「升级下一档」primary 实底钮在 light 下与 gradient 卡面同色融合——改 default 表面按钮（不透明 surface 底 + primary 文字，light/dark 双态与卡面区分明确，不依赖卡面 surface 色）。
+- **文档同步（aria-label 所有权）**：member-card README / 组件 jsdoc / zh-en 文档「键盘与无障碍」补所有权三态说明（宿主显式命名优先 / 删除后恢复接管 / 巧合同串被视为接管属值型所有权固有限制）。
+- **a11y 基线**：本批新页与回退页的 `skipped.ci` 补 +4 跨 OS 字体排版余量（约定 ci = 实测 + 4；生成逻辑 ci = max(实测, 旧 ci) 不会回落）；债务台账入基线 note——goods-list `ratio=2` 为 oas-tag success/warning 色对 4.35:1 / 4.42:1 的**既有 token 债务**（非本批引入，修 tag 另立批次，基线登记保留只许降不许升）。
+- **内部轮次归属清理**：CHANGELOG 与组件注释里的内部审核轮次编号（如「R1 实测」类）改中性表述（「真实浏览器复核」）；本批提交 message 同步改写（未 push 安全，树内容不变仅 message 变）。历史批次的既有轮次编号不在本批范围（属各自批次的登记内容）。
+
+**commerce 二波（search-bar / logistics / order-list / member-card）真实浏览器复核修复批（2C + 7I + Minor）**
+
+- **oas-search-bar**：
+  - **搜索钮空白胶囊（C 级）**：`part="go"` 按钮漏放图标子节点（渲染成 16×32 蓝色空条，与文档「图标」口径不符）——补内联放大镜 svg（与输入框左侧占位图标同源 `searchPath`，`aria-hidden`）；qa-regression 断言 svg 存在 + 渲染尺寸 > 10px。
+  - **demo 联想点击静默空操作**：demo 在宿主元素派 `KeyboardEvent`，而 keydown 监听在 shadow 内 input——事件穿不进 shadow，点联想词无任何反馈；改为 `input.focus()` 后对 shadow input 派发（zh/en 两页同步），qa-regression 断言点联想词后 `#sb-suggest-out` 出现 oas-search 反馈。
+- **oas-order-list**：
+  - **页签激活后焦点丢失**：`syncTabs` 全量重建 tablist 未捕获焦点——键盘 Enter 激活后焦点丢到 body；对齐 oas-tabs 的 captureFocused/restoreFocus 模式（重建前记焦点 tab 的 data-key，重建后 focus 复原；同 key 不存在则归还文档流）。qa-regression 真键盘用例 + 单测各 +1。
+  - **`active` 指向 disabled 页签 → tablist 不可 Tab 达**：roving tabindex 未排除 disabled（可聚焦 tab 数 0，违反 ARIA tabs「恰一个 tabindex=0」不变量）——对齐 oas-tabs 写法 `active 匹配 && !disabled` 才给 0，active 落空 / 指向 disabled 时**兜底首个 enabled tab** 并一次性 devWarn（宿主配置无效可诊断）。单测 +1（tabindex 断言 + devWarn）。
+  - **触底待应答按数量签名（首波 I3 同款教训）**：换页签后宿主等数量换卡不解除 pending → 触底永久停摆；签名改**节点身份序列**（WeakMap 分配 id，goods-list 同款模式），等数量换卡即解除并可再次派发。单测 +1。
+  - **未选中页签对比度（axe ratio 违规真修）**：text-secondary on bg-hover = 4.40:1 不达 AA——基态改 text-primary（≈11:1），count 徽标随 currentColor 同步受益，hover 分支删除（与基态同色）。基线收敛后 order-list 页**全零违规**（不进基线）。
+  - **重复渲染**：用户激活页签删除手动 `update()`（attributeChangedCallback 属性通道已触发，双轮渲染纯浪费）。
+- **oas-member-card**：
+  - **aria-label 覆盖宿主**：组件每轮 update 强写派生名，宿主预置的自定义名被吞——改**所有权追踪**（宿主值 ≠ 组件上次派生值 = 宿主显式命名不覆盖；值相同 = 组件接管跟随 grade 更新；宿主删除恢复接管；oas-compact 守卫先例增强）。单测 +1（预置不覆盖 / 缺省命名 / grade 跟随三态）。
+- **oas-logistics**：
+  - **多 current 声明归一**：`aria-current` 语义只允许一个——保留首个、其余降级 pending + devWarn 一次（与非法 state 告警同通道）。单测 +1。
+  - **`<time>` 补 `datetime`**：`steps.time` 可被 `Date.parse` 解析时写标准化 ISO `datetime`（读屏 / 检索可读）；不可解析文本不写。单测 +1（ISO 有 / 中文相对文案无）。
+  - **demo 布局**：折叠 / 动作插槽两个 DemoBlock 的组件与提示行被 `.demo-block__body`（flex row）排到同一水平线——grid 包裹让组件占满行（对齐 goods-list 先例）。
+- **demo 布局批**：member-card 基础 / 渐变卡被 flex 收缩成窄条——补 `width: 100%`（保留 max-width 420）；search-bar（3 处）/ order-list（1 处）组件与提示行同类排版一并 grid 包裹；member-card 黑金卡「升级下一档」plain 按钮在暗色 gradient 浅蓝卡面上白字不可读——改 primary 实底档位（不依赖卡面 surface 色，light/dark 双态可读）。
+- **登记面修正**：`oas-order-list.slots` 语料键误写「默认」（manifest 为空串键）→ api:gen --check 双向缺口 + API 表三行重复，改空串键重生成，api:check 全绿；perf 归因算式修正（全量入口边际增量 +13.4 → **+12.0** = 1257.4−1245.4）；cdn.js 依据补二波归因（820.2 → 825.4 仍在 830 天花板内）；总览页「176 个」写死数字漂移改动态措辞（以页面清单 / 侧栏为准，zh/en 同步）；a11y 对比度基线收敛——回退与本批无关的 image-picker / questionnaire 口径漂移（回 main 值 + totals 同步），基线 diff 只含本批最小增量（member-card 渐变卡 skipped 登记保留，order-list 全零违规不进基线）。
+
+**commerce 首波（filter / goods-list）真实浏览器实测修复批**
+
+- **oas-filter**：
+  - **dropdown 面板锚定与视口翻转**：面板元素移入栏容器内（绝对定位锚定栏底，修复面板飞到页面底部的失锚问题）+ 展开时按视口空间判定翻转（下方放不下且上方更宽裕时贴顶展开，`data-flip` 属性区分）+ 面板补 `max-height: 70vh` + `overflow-y: auto`（多组条件不再溢出不可滚）。
+  - **drawer 升级模态对话框语义**：面板 `role="dialog"` + `aria-modal="true"`，Tab / Shift+Tab 焦点循环限制在面板内（游离面板外的焦点拉回首项）；dropdown 非模态不挂 dialog 语义。
+  - **触发器可访问名改为从可见内容推导**（排序标签 + 计数徽标，不再用 aria-label 包裹「筛选（已选 n 项）」——可见文本「筛选 n」与 aria-label 不连续包含违反 WCAG 2.5.3 label-in-name）。
+  - **chips / 触发器徽标对比度**：chips 文字色 `text-secondary` → `text-primary`（`bg-hover` 底上 4.39:1 不达 AA，两主题口径统一达标）。
+  - **解析健壮性**：`sorts` 缺 `label` 的条目、`groups` 缺 `label` / 选项缺 `value`/`label` 的条目解析期跳过并一次性 devWarn（不再渲染空文本按钮或写 "undefined" 值）；`conditions` 单选组多值截断时一次性 devWarn 且**清洗结果回写 attribute**（getter 与 attribute 一致，脏值规整可见）。
+  - **chips 撤销焦点迁移**：撤销一枚后焦点落到相邻 chip（无相邻回触发器），键盘连续撤销不再掉焦。
+  - **断连清理去重**：`onCleanup` 只在首次挂监听时注册，开合循环不再单调增长。
+- **oas-goods-list**：
+  - **list 语义合法化**：`role="list"` 从外层容器移到卡片网格容器（加载区 / 空态 / 哨兵 / 插槽源全部位于列表语义之外，消除 axe `aria-required-children` 严重违规）；插槽卡搬进列后组件补 `role="listitem"`（宿主自带 role 不覆盖）。
+  - **瀑布流测高修复**：测量容器 `align-items: flex-start`（修复 flex 默认 stretch 把所有卡拉成同高、列分配退化成轮转的问题）；回归改为「按真实卡高复算最短列贪婪，逐列比对成员集合」（旧「列高差 < 最小卡高」判据对 demo 数据无判别力：正确分配差 28、轮转退化差 27 都能过）。
+  - **list 形态改图文横排行**：图左固定小尺寸（104px，与 product-card 横排惯例一致）+ 右侧信息列（标题 / 标签 / 价格），纵向堆叠——修复「单列巨图卡」与文档「图文横排的列表视图」不符；内建卡 DOM 结构改 `media + info` 分区（waterfall / list 同构，方向由 CSS 控制）。
+  - **触底待应答解除补全**：`items` 签名变化（宿主只追加数据的分页场景）与置 `loading` 等价解除待应答——修复「宿主只追加数据则第二次触底永久停摆」。
+  - **插槽卡增量追加**：捕获集由「整体替换」改「合并」（保留已搬进列的旧卡 + 新分配卡入列），重排签名取**节点身份序列**（WeakMap 分配 id，非数量）——修复追加宿主卡不渲染，以及「移除一张 + 追加一张」等数量增删因计数签名早退永不入列；搬运窗口（同步 slotchange 重入的 detach 中间态）跳过剔除判定，真实浏览器与 happy-dom 行为一致。
+  - **隐藏容器守卫**：`display:none` 链路挂载不再误派 `oas-load-more`（几何值无意义不触发；真实浏览器 `getClientRects` 全链判定 + happy-dom 回退祖先链 computed display），显示后滚动才派发。
+  - **加载更多区活区**：`role="status"` + `aria-live="polite"`（加载中 / 到底文案变化自动播报）。
+- **插槽内容替换契约（行为说明）**：插槽卡被搬进 shadow 后宿主 light DOM 恒为空，`el.replaceChildren(新卡)` 与 `el.append(新卡)` 在 DOM 层是同一操作序列（无 removedNodes、无 previousSibling），组件无法识别「整替换」意图——单调用 `replaceChildren` 等价**追加**（旧卡保留）。整替换的受支持做法：宿主持有引用逐张 `remove()` 旧卡后再追加，捕获集按「节点离开组件树」即时剔除并重排。README（宿主桥接 / 数据契约）与真实浏览器回归已按此口径固化。
+- **oas-filter（复审跟修）**：遮罩点击关闭时回收焦点——面板 / 遮罩隐藏后浏览器先把焦点回收到 `body`，原守卫只认「面板内焦点」而跳过恢复，焦点于是永久停在 body（键盘用户失位）；现把「焦点无主（null / `body` / `documentElement`）」并入应恢复情形，「用户点了页面别处」仍不抢焦点。
+- **i18n（消费者可见面）**：移除 `filter.selectedCount`（触发器不再用「已选 n 项」aria-label，可访问名改从可见内容推导）。宿主自定义 locale 包里覆盖该键将不再生效，可同步删除该条目；其余 `filter.*` 键（`removeChip` / `reset` / `done` / `panelLabel` 等）不变。
+- **文档**：filter / goods-list（zh+en 共 4 页）demo 的 `<script setup>` 全部上移页面级（此前写在 `DemoBlock` 内部被 VitePress 原样输出，页面 `Cannot use import statement` 报错 + Hydration mismatch + demo 全灭——console-sweep 与 a11y 修复前红、修复后绿）；页面级脚本统一放在 `## API` 之前（该章节为 api:gen 生成区），并加位置锚点注释防回退。英文页补齐 4 处中文残留标题（卡片位插槽 / 加载更多与空态 / 自定义样式须知 ×2），「自定义样式须知」补 `::part(info)` 与新 `data-flip` 属性说明。
+- **范围条件组说明**：filter 的「范围条件组」（价格区间等自定义输入条件）属**预留 L3 能力子路径，本体未实现**（见 `packages/ui/src/commerce/filter/README.md`「预留能力面」），验收口径不包含该项。
+- 测试：单测 +17（首波 13：filter 6 / goods-list 7；复审跟修 4：filter 遮罩关闭焦点回收 1 + goods-list 等数量替换 / replaceChildren 契约 / 整替换支持做法 3）。qa-regression +5（首波 2：dropdown 锚定几何与视口翻转真点击 / drawer 真键盘焦点陷阱；复审跟修 3：瀑布流分配逐列成员核对、插槽等数量增删、replaceChildren 契约），改 4（瀑布流均衡断言换口径 + list 形态横排几何 + drawer 遮罩关闭补焦点回收断言 + 撤销 chips 前置收面板）。
+
+**commerce 增强子批（已有组件交互打磨与行为收口，PRD「电商扩容与包体分级批」（已随 v2.6.9 发布）；全部向后兼容：`oas-drag-end` 新增字段 `phase`，其余为行为修正）**
+
+- **oas-cart 滑动手势收口**：① `pointercancel` 与 `pointerup` 分离结算——cancel 事件坐标不可信（Safari 类浏览器给 0 坐标），此前按坐标结算会把中断手势误判成「向行首拖满」→ 意外满展开 + 抑制紧随 click；现按手势开始前的吸附态落定（未展开回弹关闭、已展开保持展开），不读 cancel 坐标、不设 suppressClick。② 多点触控守卫——已有滑动会话在途时**不同** pointerId 的新指针按下直接忽略，旧会话起点与 `pointerId` 不被改写（修复前双指先后按两行会让第一行 `data-dragging` 永久残留）；同一 pointerId 的新按下（旧会话已丢 up，鼠标 pointerId 恒为 1）则收尾旧会话后重开，滑动入口不会被永久锁死。③ 滑动展开行「点行体收起」——点已展开行的行体收起且不派 `oas-item-click`；点其他行收起已展开行、事件照常派发（购物车单行操作惯例）；顺带修掉「与已展开行无关的手势（tap 其他行）抹掉全局展开态」的状态/视觉脱节。④ 单行展开——滑开另一行时旧展开行同时收起（修复前两行同时露删除钮、而状态只剩新行，旧行 transform 失去归属）。⑤ 缩略图起手——缩略图 `<img>` 禁原生拖拽（`draggable="false"` + CSS `-webkit-user-drag: none` / `user-select: none`）：修复前按住缩略图横移会走浏览器图片拖拽（实测 `pointerdown → dragstart → pointercancel`），滑动会话被 cancel 收掉，行内左侧缩略图那一段滑不出删除钮。单测 +7；`qa-regression/cart.spec.ts` +5（合成 pointercancel 0 坐标 / 双指序列 / 真鼠标点行体收起 / 滑开第二行收起第一行 / 从缩略图起手滑动）。
+- **oas-image-cropper rotate 任意角度覆盖约束**：`fitScale` 此前按 `rotation % 180 !== 0` 互换宽高（等价 90° 倍数假设），45° 等中间角度覆盖不足（框角露舞台底色）。现按**倾斜矩形覆盖舞台**的真实判据收敛：`s = max((stageW·|cosθ| + stageH·|sinθ|) / nw, (stageW·|sinθ| + stageH·|cosθ|) / nh)`——把舞台四角反旋回图片局部坐标后必须落在绘制矩形内；90° 倍数退化为宽高互换（与旧行为逐值一致），中间角度按真实占位放大。**不能用「图片轴对齐包围盒 ⊇ 舞台」**：那只是必要条件，倾斜矩形的包围盒比矩形本身大，45° 下包围盒等于舞台时舞台四角其实远在图片外（实测该口径给出 387.9×290.9 的绘制尺寸，比 480×320 的舞台还小）。单测 +2（45° 精确界 + 9 个角度的框/舞台四角覆盖循环，判据为几何反旋而非包围盒）；`qa-regression/image-cropper.spec.ts` +1（真实浏览器量测 45° 下框角与舞台角都在图片内）。
+- **oas-image-cropper 缩放边界放行页面滚动**：滚轮在缩放上下限（1 / max-zoom）此前仍 `preventDefault` 吞掉页面滚动（边界上滚轮「失灵」还锁死页面）。现先判 clamp 后值是否会真的变化，不变则不接管（页面照常滚）；中间值缩放语义不变。单测 +1。
+- **oas-sku 形态切换两处收口**：① 焦点保持——popup→embedded 面板搬移前记录面板内的深活跃元素（含 shadow 路径），搬移后活跃元素不再是原焦点时复原到原控件（键盘用户焦点不因形态切换丢失；真实浏览器保焦路径零副作用）。② `open` 悬空真值收口——**仅当上一形态是 popup 且弹层当时处于打开态**（真实 popup→embedded 切换）时回写 `false` 并派发一次 `oas-open-change`：此刻承载件已隐藏，`open` 残留会让宿主滚动锁 / 遮罩态挂空且永不解除（形态切换不经过 `openOverlay` / `onSheetClose`）。内嵌形态下宿主写入的 `open` 是**待生效意图**，组件不抹除、也不派发事件（受控写入静默；切到 popup 时自动弹开），内嵌形态内部的常规更新同样不动 `open`。单测 +4。
+- **oas-drag 惯性三处收口**：① `oas-drag-end` detail 新增 `phase: 'release' | 'coast-end'`——双派发语义显式化（松手含 cancel 为 `release`、滑行收尾为 `coast-end`），宿主按 phase 区分两次派发、不必按时间窗去重；既有 detail 字段不变（向后兼容）。② 滑行上限改真实时长口径——帧数上限（60 帧）在 120Hz 屏只有一半时长且末段急刹；现按 800ms 真实时长上限 + 速度阈值双条件（帧数只作 rAF 时间戳异常的兜底），60 / 120Hz 屏体感一致。③ 滑行被抢占落盘——滑行中被新 `pointerdown` 抢占 / `reset()` / 断连冻结时，`stopCoast()` 按滑行中的当前位置补落盘（修复前只保留松手时刻旧值，滑行已走过的路程丢失）。单测 +4（含 16ms / 8ms 双帧率时长一致性）；`DragEndDetail` / `DragEndPhase` 从组件入口与包入口导出（与其它组件的 detail 类型惯例一致）；zh/en 文档与 API 语料同步（`oas-drag-end` 描述改 phase 口径，`inertia` 描述改时长口径）。
+- **oas-barrage `clear()` 后 auto-play 续播 + 轨道重构不中断循环流**：① 公开 `clear()` 清空后不再调度 pump——舞台空到下一次外部触发，与文档「`clear()` 只清在场与排队，声明数据仍在」的口径矛盾；现清空后若 auto-play 开启且未暂停，主动 `refillDeclared()` 从声明条目重新轮转（暂停中不续播、resume 后恢复）。② 内部路径拆出 `resetPlayback()`（只清在场 / 排队 / 排期计时，**不重灌**）——轨道数变化重建时若走公开 `clear()`，声明条目会挂进即将被替换的旧轨道：DOM 被丢弃但条目留在 `active`（僵尸），既占 `max-active` 名额、又让 rebuild 后 `pump()` 的续轮守卫（`active.some(loop)`）一直挡住，舞台空窗一整个动画时长（实测 7s）。改后由 update 尾部的 `pump()` 把声明条目灌进新轨道，同帧续播。单测 +5（续播轮转 / 无 auto-play 维持清空 / paused 语义优先 / 改 tracks 同帧续播 / max-active 不被旧轨道条目占额）。
+
+**跨引擎收口（main 全量 e2e 抓到：撞名守卫 5 条 + 虚拟滚动滚动夹紧 + Firefox 用例时序）**
+
+- **撞名守卫（5 条，对外 attribute 名全部不变）**：attribute 的 camelCase 名撞同类实例成员时，框架按「key in el」把静态 attribute 写成 property，会遮蔽原型方法（内部 `this.xxx()` 直接 TypeError）或污染数据字段。现只改组件内部成员名：`max-select` 的解析方法 `maxSelect()` → `parseMaxSelect()`（oas-coupon，调用点 2）、`banned-words` 的解析方法 `bannedWords()` → `parseBannedWords()`（oas-barrage，1）、`score-rules` 的编译结果字段 `scoreRules` → `compiledScoreRules`（oas-questionnaire，4）、`snap-targets` / `snap-threshold` 的解析方法 `snapTargets()` / `snapThreshold()` → `parseSnapTargets()` / `parseSnapThreshold()`（oas-drag，各 2）。`collision-guard.spec.ts` 源码级守卫归零。
+- **oas-form-list / oas-array-table 虚拟态滚到底后新行进不了视口（Firefox）**：窗口重算此前「先挂窗口帧、后落 spacer」，挂载后 `measureMounted` 的 `offsetHeight` 读取把过渡态布局坐实——此时 spacer 还是上一窗偏移，容器高少一行；Firefox 会就地按这个更矮的内容高夹紧 `scrollTop`（Chromium 把夹紧推迟到下一次滚动更新），滚到底后每次重算都被拉回一行，`oas-add` 的新行永远差一行在视口外（焦点已落进去，用户看不到）。现改为 spacer 先按目标窗口落位再挂载（过渡态只可能偏高，不触发夹紧），两引擎统一。单测 +2（窗口挂载时上下 spacer 必须已是本次窗口的定稿值，撤掉排序即红）；`qa-regression/form-list.spec.ts` 两条「虚拟态添加行」在 Chromium / Firefox / WebKit 三引擎全绿。
+- **qa-regression/goods-action hover 底色跨引擎不稳（用例时序，非样式差异）**：hover 底色（`transition-fast`）此前只按「computed 值是 `color()` 记法」判稳态——Chromium 过渡中走 oklab 插值该判据才有效，Firefox 一开始就是 `color(srgb …)`，判据立刻通过、读到过渡中途值（实测 g 通道 133.7/134.5 波动，稳态 129.6）。现改为等「连续两次采样同值且已离开基色」，稳态逐通道锚定断言不变。
+- **qa-regression/image-cropper 舞台撑高用例跨引擎不稳（用例时序，非钳制缺陷）**：① 注入舞台高度后只等「舞台变高」，裁剪框的 ResizeObserver 重排可能还没落定（Chromium 读到旧的 304 高框、Firefox 读到新的 494 高框，两引擎起跑几何不同）——补等裁剪框按新高度落定；② 拖拽距离 600px 会越出视口，Firefox 对窗口外的 `pointermove` 送来无效坐标（实测 `clientX=0 / clientY=-85`），位移被算到负方向——改为把拖拽限制在视口内并断言仍有足够下拖空间。位移钳回的用户可见断言（裁剪框内不露舞台底色）不变。
+- **oas-number-keyboard 补 `no-repeat-delete` 演示**：zh/en 文档新增「严格单发（关闭长按连删）」demo 块（带值回显），`demo-coverage` 属性覆盖闭环。
+
+**组件完善批 3 修复批（review 补审收口：平移覆盖约束 / 光标提示 / 惯性陈旧速度）**
+
+- **oas-image-cropper 舞台尺寸变化后位移未按覆盖约束重钳**：`ResizeObserver` 回调此前只重测尺寸并同步样式，位移可行区间随舞台变化后不重新钳制——舞台变矮时裁剪框内露出舞台底色。现抽出 `handleStageResize()`（RO 回调与单测共同入口）：重测 → 重排裁剪框 → `applyOffset` 重钳。单测 +1（舞台 480×320 → 400×320，位移 208 → 168）。
+- **oas-image-cropper 加载完成缺平移光标提示**：`data-pannable`（`cursor: grab`）此前只在 `update()` 里写，而 `load` 是异步事件、不会触发 `update()`——真机上图片加载完成后舞台始终没有抓取光标（happy-dom 对 `data:` URL 同步派发 load，掩盖了该时序）。现抽出 `syncPannable()`，`onImageLoad` / `onImageError` 一并调用（错误态不残留提示）。单测 +1。
+- **oas-image-cropper 框外单击派噪声事件**：平移会话记录 `moved`，按下即抬起（位移未变）不再派 `oas-change`；`pointercancel` 同口径（没动过就没有「回退」）。单测 +1。
+- **oas-image-cropper 非主键与多指针**：右键 / 中键按下不再平移图片或移动裁剪框（对齐 oas-drag 的主键口径）；已有会话在跑时新指针落下不抢占（第二根手指不再改写起点造成坐标跳变）。单测 +2。
+- **oas-image-cropper 旋转回归断言改按新朝向**：原用例拿旋转前的可行上界（±28）当旋转后的断言上界，恒真无判别力；改为按 90° 绘制 640×480 推导的精确界（纵向 ±168 / 横向 ±8）。
+- **oas-image-cropper README**：取消路径与尺寸变化口径同步（`pointercancel` 只有真动过才补一次同值 `oas-change`）。
+- **oas-drag 停顿后松手仍滑行**：惯性起始速度此前无条件复用最后一次 pointermove 采样——「快速拖一下 → 按住不动 → 松手」会带着停顿前的速度滑出去。现该采样距今超过 100ms 视为已停住、速度归零（`willCoast` 自然为 false，落点吸附照做）。单测 +3（停顿不滑行 / 停顿仍吸附 / 快速松手仍滑行）；zh/en 文档与 API 语料同步。
+- **oas-sku 反复开合累积断开清理**：`scheduleSheetHide` 每次关闭都追加一条 `onCleanup` 注册——`cleanupFns` 随开合次数单调增长。现改为成员句柄，断连清理在 `bind()` 里一次性注册（待生效的隐藏收尾仍随断连取消）。单测 +1。
+- **oas-sku `oas-close` 文档口径**：明确它是承载件**透传**事件（组件收到后已自行收起，宿主无需处理，仅用于观测 / 埋点）；zh/en 文档与 api 语料同步。
+
+**交易链路批 review 收口（滑动删除 / 失败图片 / 金额区 / 测试口径）**
+
+- **oas-cart 滑动指针捕获**：横向意图确立后捕获指针（`setPointerCapture`）——鼠标拖出列表范围松手也能收到 `pointerup` 正常结算，不再卡在半途（`data-dragging` 残留 + 位移停在最后一步）；纯点击不捕获，click 目标不受影响。`qa-regression/cart.spec.ts` +1（真实鼠标拖出列表松手，断言结算干净）。
+- **oas-cart 滑动松手落定语义**：落定值此前复用跟手 clamp 值——拖到一半松手会停半路（过半时删除钮半露、未过半时不回弹），只有拖满才碰巧视觉正确。现落定与跟手分离（`resolveSwipeSettle` 纯函数）：过半吸附到完全露出、未过半回弹关闭，落定位移以过渡动画滑到位。单测 +1。
+- **oas-cart 失败图片记忆键改 id+src**：此前按条目 id 记忆——同 id 换新图 URL 永不显示。现键含 src，换图重试加载、再次失败才重新回落占位。单测 +1。
+- **oas-order-card 金额区空壳条**：只设 `original` 不设 `payable` 时容器此前仍可见（`original` 只经实付通道渲染划线价，自身无独立出口），渲染出只有边框内距的空壳条。现容器隐藏条件去掉 `original`。单测 +1。
+- **oas-cart 浮点合计测试口径**：0.1×4 恰为 IEEE754 精确值，判别不了 toFixed 收敛缺失——改 0.1×3（`0.30000000000000004`）非整倍口径。
+
+**批 C / D 修复批（review 收口）**
+
+- **oas-barrage auto-play × 屏蔽词**：循环重灌此前直接写入队列，绕过 `banned-words` 判据——开启 `auto-play` 后命中屏蔽词的声明条目会随循环重新进场。现重灌与 `add` / `addBatch` / `items` 共用同一入队判据（空文本 + 屏蔽词命中即不入队）。
+- **oas-barrage auto-play 首轮重复 mount**：重灌时机由「队列排空瞬间」收紧为「本轮声明条目全部播完」（队列空且无在场循环条目；`add()` 手动条目不计入轮次）——修复前首轮排空即重灌，同一条弹幕双份在场、独占双倍轨道。单测 +2，`qa-regression/barrage.spec.ts` +1（真实浏览器多轮循环采样）。
+- **oas-questionnaire 断开重连清理对称**：`onReconnect` 注册的清理补上评分防抖定时器（与 `bind()` 对齐）——修复前重连后再断开，待派的 `oas-score` 仍会在已脱离文档的宿主上派发。单测 +1。
+- **问卷 demo 补 `conditions="false"` 实演示**：宿主组合通道 demo 改为关闭条件引擎（该实例给「发票信息」步写了 `when`，引擎关闭后条件不生效、分支只认宿主 `hidden`），并把 when/goto demo 的下拉换成选项组、去掉隐藏面板里的多余输入——axe「无法评分节点」回落，感知对比度 ratchet 只许降。
+- **demo-coverage 探针补齐登记配套**：questionnaire `oas-goto` / `oas-score`、barrage `oas-like`、coupon `oas-select-invalid` 与 questionnaire `conditions` 属性演示全部补上。
+- **PRD 措辞对齐实现**：coupon 互斥组落点写 `exclusiveGroup`（列表条目字段，非 `exclusive-group` 属性）。
+
 - **oas-bottom-sheet（WebKit 焦点路由缺陷）**：Esc 监听原挂在 shadowRoot 上依赖焦点路由——用户点击面板空白、焦点落 body 后按 Esc 关不掉弹层（用户可感知）。改走 `overlay-stack` 共享 Esc 层栈（文档级监听，对齐 modal/drawer/coupon 先例）：焦点落在任何位置都能关、多层浮层同开时后开者先关（LIFO）、每实例 `open` 才压栈 / 关闭与断开连接即退栈（`active` 守卫防幽灵层吞 Esc）；Tab 焦点陷阱监听从 shadowRoot 移到宿主（light DOM slot 控件的 keydown 冒泡路径不含 shadowRoot，原挂点漏掉全部真实焦点场景，与 Esc 缺陷同源）。打开态聚焦补 WebKit 时序兜底：首控件 `focus()` 首帧未生效（焦点掉 body）时 rAF 重试一次，仍失败聚焦面板容器（新增 `tabindex="-1"`，`:focus` outline 与 glass-ring 接线一致不闪 UA 焦点环）；Chromium/Firefox 首帧即成功的路径零行为变化（幂等）。回归：单测（文档层 Esc / 层栈 LIFO / 退栈守卫 / 焦点兜底）+ qa-regression（点空白后 Esc 关闭、打开后焦点在面板内、两层 LIFO + 无幽灵层），连带跑 modal / drawer / confirm / sku / overlay-stack 三引擎不漂移。
 - **oas-schema-form（发布前修复批）**：断开重连后联动求值与数组增删监听失效（覆写 `onReconnect()` 调幂等 `bind()`，处理器改为稳定引用免叠双份）；联动 `required` 不参与校验（字段规则与数组级必填判据合并联动效果——`fulfill:{required:true}` 会真拦截提交，README 数组示例从「只加星号」变为生效）；结构重建回压用户编辑（仅当 `initialValues` 通道本次变化时初始值才覆盖快照，加无关字段不再把已编辑字段重置）；校验时序对齐设计稿（先内核字段校验、后数组级校验，事件载荷仍为错误并集）；`uniqueItems` 改深比较（键序不同不再漏判重复）；`$ref` 深度上限只计引用链（深层普通嵌套不再误判循环）；uiSchema 根路径死代码删除（明确不支持根级注解，README 记录决策）。
 - **oas-form-list**：`add-text` / `remove-text` 的 camelCase 撞私有解析方法（框架 property 写入会遮蔽方法致 TypeError）——方法改名 `resolveAddText` / `resolveRemoveText`，公开属性名不变；补属性覆盖与撞名守卫单测。
 - **e2e 门禁口径**：`vue-prop-hijack` 的 schema-form 契约改按结构选择器判定渲染（`oas-form-item` ∪ `[part="array"]`，零字段空态实例单独豁免）；`a11y` 登记 schema-form light/dark 无法评分节点基线（8/主题）；DSD 快照验收撤下 oas-schema-form（字段树在客户端渲染进自身 shadow，DSD 只覆盖宿主一层 → 快照零高度且水合后布局漂移；SSR 白名单登记保留，待 light DOM 渲染改造后再纳入）。
 
+**工程与 demo 收尾（归档补记）**
+
+- **dev 链路缓存清理**：`pnpm dev` 的 predev 尾部自动清理 `.vitepress/cache`——消除 Windows 上 pnpm workspace symlink + Vite 模块图在 dist 被 watch 重写时不失效导致的「组件不注册 / 新 demo 空白」常态复发；`AGENTS.md` 补判别口诀与恢复路径。
+- **order-list 触底 demo 收尾**：首屏补至 3 张卡、追加编号连续化，每页数据耗尽自动置 `no-more`——消除「无限追加」观感，真实呈现「每页 2 条 × 3 页 → 到底 9 张」。
+
 ### 文档站（SEO 与语言机制）
+
+- **移动端导航栏常驻分段语言切换**：中/EN 切换器此前在移动断点隐藏（横幅关闭后的移动端二访客没有任何语言入口），现移动端同样常驻显示（紧凑 22px 高，位于汉堡按钮前）；汉堡菜单内默认语言入口保留为补充路径。
 
 - **移除浏览器语言自动跳转**：不再按 `navigator.language` 把访客从首页改写到 `/en/`——URL 即真源，爬虫/用户/外链看到一致内容（原 v2.6.7「Landing 语言适配」自动跳转行为下线；显式保存的语言偏好深链跳转保留，爬虫无 localStorage 不受影响）。语言引导改由 hreflang + 新增的语言提示条与导航栏分段切换器（中 / EN）承接。
 - **语言提示条（LangHint）**：浏览器语言与页面语言明显不匹配时（zh 页浏览器无 zh / en 页浏览器含 zh）置顶提示另一语言版本，可关闭且持久、点击即显式切换；绘制前内联脚本预布局让位，无 CLS；暗色固定品牌蓝保证对比度。

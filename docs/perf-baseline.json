@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 51731761,
+        "distTotalBytes": 51822349,
         "browserJs": {
-          "files": 609,
-          "rawBytes": 12721578,
-          "gzipBytes": 3183099,
-          "brotliBytes": 2495836
+          "files": 613,
+          "rawBytes": 12726536,
+          "gzipBytes": 3186513,
+          "brotliBytes": 2497789
         },
         "fullEntry": {
-          "files": 623,
-          "rawBytes": 4527166,
-          "gzipBytes": 1288427,
-          "brotliBytes": 1105929,
+          "files": 627,
+          "rawBytes": 4529207,
+          "gzipBytes": 1289850,
+          "brotliBytes": 1107187,
           "fileList": [
             "packages/ui/dist/index.js",
             "packages/icons/dist/register.js",
@@ -91,9 +91,12 @@
             "packages/ui/dist/commerce/member-card/oas-member-card.js",
             "packages/ui/dist/commerce/order-list/index.js",
             "packages/ui/dist/commerce/order-list/oas-order-list.js",
-            "packages/ui/dist/commerce/goods-list/column-assign.js",
             "packages/ui/dist/shared/stable-id.js",
+            "packages/ui/dist/shared/listbox.js",
             "packages/ui/dist/shared/json-array.js",
+            "packages/ui/dist/shared/direction.js",
+            "packages/ui/dist/shared/direction-dom.js",
+            "packages/ui/dist/shared/bottom-reach.js",
             "packages/ui/dist/commerce/logistics/index.js",
             "packages/ui/dist/commerce/logistics/oas-logistics.js",
             "packages/ui/dist/commerce/search-bar/index.js",
@@ -102,9 +105,11 @@
             "packages/ui/dist/commerce/goods-list/oas-goods-list.js",
             "packages/ui/dist/commerce/price/index.js",
             "packages/ui/dist/commerce/price/oas-price.js",
+            "packages/ui/dist/commerce/goods-list/column-assign.js",
             "packages/ui/dist/commerce/filter/index.js",
             "packages/ui/dist/commerce/filter/oas-filter.js",
             "packages/ui/dist/shared/outside-dismiss.js",
+            "packages/ui/dist/shared/flip-up.js",
             "packages/ui/dist/commerce/product-card/index.js",
             "packages/ui/dist/commerce/product-card/oas-product-card.js",
             "packages/ui/dist/commerce/order-card/index.js",
@@ -113,7 +118,6 @@
             "packages/ui/dist/commerce/cart/oas-cart.js",
             "packages/ui/dist/commerce/time-select/index.js",
             "packages/ui/dist/commerce/time-select/oas-time-select.js",
-            "packages/ui/dist/shared/direction.js",
             "packages/ui/dist/commerce/category/index.js",
             "packages/ui/dist/commerce/category/oas-category.js",
             "packages/ui/dist/commerce/ecard/index.js",
@@ -644,9 +648,9 @@
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 3713895,
-          "gzipBytes": 845860,
-          "brotliBytes": 584387
+          "rawBytes": 3714069,
+          "gzipBytes": 846405,
+          "brotliBytes": 584419
         }
       },
       "@oas-ui/theme": {
@@ -708,10 +712,10 @@
       "table": {
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
-        "files": 43,
-        "rawBytes": 262367,
-        "gzipBytes": 80618,
-        "brotliBytes": 67393,
+        "files": 44,
+        "rawBytes": 262797,
+        "gzipBytes": 80892,
+        "brotliBytes": 67629,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/ui/dist/navigation/pagination/index.js",
@@ -728,6 +732,7 @@
           "packages/ui/dist/shared/safe-url.js",
           "packages/ui/dist/shared/dev-warn.js",
           "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js",
           "packages/ui/dist/shared/size.js",
           "packages/i18n/dist/slices/data.js",
           "packages/ui/dist/data/table/oas-table-capability.js",
@@ -761,10 +766,10 @@
       "tableEdit": {
         "entry": "data/table/edit",
         "spec": "@oas-ui/ui/data/table/edit",
-        "files": 62,
-        "rawBytes": 374919,
-        "gzipBytes": 113852,
-        "brotliBytes": 95835,
+        "files": 64,
+        "rawBytes": 376248,
+        "gzipBytes": 114596,
+        "brotliBytes": 96511,
         "fileList": [
           "packages/ui/dist/data/table/edit/index.js",
           "packages/ui/dist/form/select/index.js",
@@ -794,7 +799,9 @@
           "packages/ui/dist/shared/touch-target.js",
           "packages/ui/dist/shared/css-var.js",
           "packages/ui/dist/shared/measure-text.js",
+          "packages/ui/dist/shared/listbox.js",
           "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js",
           "packages/ui/dist/overlay/floating/floating.js",
           "packages/ui/dist/shared/outside-dismiss.js",
           "packages/ui/dist/shared/mobile-sheet.js",
@@ -890,14 +897,15 @@
       "tableRange": {
         "entry": "data/table/range",
         "spec": "@oas-ui/ui/data/table/range",
-        "files": 7,
-        "rawBytes": 46543,
-        "gzipBytes": 13687,
-        "brotliBytes": 12089,
+        "files": 8,
+        "rawBytes": 47110,
+        "gzipBytes": 14001,
+        "brotliBytes": 12326,
         "fileList": [
           "packages/ui/dist/data/table/range/index.js",
           "packages/ui/dist/data/table/range/fill-series.js",
           "packages/ui/dist/data/table/advanced/clipboard.js",
+          "packages/ui/dist/shared/direction-dom.js",
           "packages/ui/dist/shared/window-data.js",
           "packages/ui/dist/data/table/model-core/row-key.js",
           "packages/ui/dist/data/table/oas-table-interactive.js",
@@ -1168,10 +1176,10 @@
       "gantt": {
         "entry": "data/gantt",
         "spec": "@oas-ui/ui/data/gantt",
-        "files": 23,
-        "rawBytes": 258224,
-        "gzipBytes": 75990,
-        "brotliBytes": 64157,
+        "files": 24,
+        "rawBytes": 258654,
+        "gzipBytes": 76264,
+        "brotliBytes": 64393,
         "fileList": [
           "packages/ui/dist/data/gantt/index.js",
           "packages/i18n/dist/slices/data.js",
@@ -1192,6 +1200,7 @@
           "packages/ui/dist/data/resource/pool/index.js",
           "packages/ui/dist/shared/slot-template.js",
           "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js",
           "packages/ui/dist/shared/window-data.js",
           "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
           "packages/ui/dist/shared/json-array.js",
@@ -1391,10 +1400,10 @@
       "commerceInvoice": {
         "entry": "commerce/invoice",
         "spec": "@oas-ui/ui/commerce/invoice",
-        "files": 12,
-        "rawBytes": 61673,
-        "gzipBytes": 20887,
-        "brotliBytes": 17404,
+        "files": 16,
+        "rawBytes": 63926,
+        "gzipBytes": 22198,
+        "brotliBytes": 18551,
         "fileList": [
           "packages/ui/dist/commerce/invoice/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1406,8 +1415,12 @@
           "packages/icons/dist/icons/chevron-down.js",
           "packages/core/dist/oas-element.js",
           "packages/core/dist/config-context.js",
+          "packages/ui/dist/shared/listbox.js",
           "packages/ui/dist/shared/dev-warn.js",
-          "packages/ui/dist/shared/json-array.js"
+          "packages/ui/dist/shared/json-array.js",
+          "packages/ui/dist/shared/flip-up.js",
+          "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js"
         ]
       },
       "commerceECard": {
@@ -1455,10 +1468,10 @@
       "commerceTimeSelect": {
         "entry": "commerce/time-select",
         "spec": "@oas-ui/ui/commerce/time-select",
-        "files": 12,
-        "rawBytes": 63371,
-        "gzipBytes": 21736,
-        "brotliBytes": 18187,
+        "files": 14,
+        "rawBytes": 64656,
+        "gzipBytes": 22434,
+        "brotliBytes": 18799,
         "fileList": [
           "packages/ui/dist/commerce/time-select/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1470,17 +1483,19 @@
           "packages/core/dist/oas-element.js",
           "packages/core/dist/config-context.js",
           "packages/ui/dist/shared/stable-id.js",
+          "packages/ui/dist/shared/listbox.js",
           "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js",
           "packages/ui/dist/shared/dev-warn.js"
         ]
       },
       "commerceCart": {
         "entry": "commerce/cart",
         "spec": "@oas-ui/ui/commerce/cart",
-        "files": 18,
-        "rawBytes": 74017,
-        "gzipBytes": 25702,
-        "brotliBytes": 21627,
+        "files": 20,
+        "rawBytes": 75068,
+        "gzipBytes": 26311,
+        "brotliBytes": 22134,
         "fileList": [
           "packages/ui/dist/commerce/cart/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1499,6 +1514,8 @@
           "packages/icons/dist/icons/minus.js",
           "packages/icons/dist/icons/close.js",
           "packages/ui/dist/shared/json-array.js",
+          "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js",
           "packages/ui/dist/shared/dev-warn.js"
         ]
       },
@@ -1556,10 +1573,10 @@
       "commerceFilter": {
         "entry": "commerce/filter",
         "spec": "@oas-ui/ui/commerce/filter",
-        "files": 13,
-        "rawBytes": 66549,
-        "gzipBytes": 22665,
-        "brotliBytes": 18941,
+        "files": 17,
+        "rawBytes": 68973,
+        "gzipBytes": 24006,
+        "brotliBytes": 20100,
         "fileList": [
           "packages/ui/dist/commerce/filter/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1570,19 +1587,23 @@
           "packages/ui/dist/commerce/filter/oas-filter.js",
           "packages/core/dist/oas-element.js",
           "packages/core/dist/config-context.js",
+          "packages/ui/dist/shared/listbox.js",
           "packages/ui/dist/shared/json-array.js",
           "packages/ui/dist/shared/stable-id.js",
           "packages/ui/dist/shared/outside-dismiss.js",
-          "packages/ui/dist/shared/dev-warn.js"
+          "packages/ui/dist/shared/flip-up.js",
+          "packages/ui/dist/shared/dev-warn.js",
+          "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js"
         ]
       },
       "commerceGoodsList": {
         "entry": "commerce/goods-list",
         "spec": "@oas-ui/ui/commerce/goods-list",
-        "files": 16,
-        "rawBytes": 62695,
-        "gzipBytes": 23220,
-        "brotliBytes": 19395,
+        "files": 17,
+        "rawBytes": 63567,
+        "gzipBytes": 23793,
+        "brotliBytes": 19889,
         "fileList": [
           "packages/ui/dist/commerce/goods-list/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1598,6 +1619,7 @@
           "packages/core/dist/oas-element.js",
           "packages/core/dist/config-context.js",
           "packages/ui/dist/commerce/goods-list/column-assign.js",
+          "packages/ui/dist/shared/bottom-reach.js",
           "packages/ui/dist/shared/json-array.js",
           "packages/ui/dist/shared/dev-warn.js"
         ]
@@ -1648,10 +1670,10 @@
       "commerceOrderList": {
         "entry": "commerce/order-list",
         "spec": "@oas-ui/ui/commerce/order-list",
-        "files": 13,
-        "rawBytes": 52285,
-        "gzipBytes": 19968,
-        "brotliBytes": 16615,
+        "files": 16,
+        "rawBytes": 54136,
+        "gzipBytes": 21131,
+        "brotliBytes": 17643,
         "fileList": [
           "packages/ui/dist/commerce/order-list/index.js",
           "packages/i18n/dist/slices/commerce.js",
@@ -1662,10 +1684,13 @@
           "packages/ui/dist/commerce/order-list/oas-order-list.js",
           "packages/core/dist/oas-element.js",
           "packages/core/dist/config-context.js",
-          "packages/ui/dist/commerce/goods-list/column-assign.js",
           "packages/ui/dist/shared/stable-id.js",
+          "packages/ui/dist/shared/listbox.js",
           "packages/ui/dist/shared/json-array.js",
-          "packages/ui/dist/shared/dev-warn.js"
+          "packages/ui/dist/shared/dev-warn.js",
+          "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js",
+          "packages/ui/dist/shared/bottom-reach.js"
         ]
       },
       "commerceMemberCard": {
@@ -1691,10 +1716,10 @@
       "select": {
         "entry": "form/select",
         "spec": "@oas-ui/ui/form/select",
-        "files": 31,
-        "rawBytes": 139462,
-        "gzipBytes": 47274,
-        "brotliBytes": 39928,
+        "files": 33,
+        "rawBytes": 140791,
+        "gzipBytes": 48018,
+        "brotliBytes": 40604,
         "fileList": [
           "packages/ui/dist/form/select/index.js",
           "packages/i18n/dist/slices/form.js",
@@ -1723,7 +1748,9 @@
           "packages/ui/dist/shared/touch-target.js",
           "packages/ui/dist/shared/css-var.js",
           "packages/ui/dist/shared/measure-text.js",
+          "packages/ui/dist/shared/listbox.js",
           "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js",
           "packages/ui/dist/overlay/floating/floating.js",
           "packages/ui/dist/shared/outside-dismiss.js",
           "packages/ui/dist/shared/mobile-sheet.js"
@@ -1732,10 +1759,10 @@
       "input": {
         "entry": "form/input",
         "spec": "@oas-ui/ui/form/input",
-        "files": 14,
-        "rawBytes": 98982,
-        "gzipBytes": 32135,
-        "brotliBytes": 26857,
+        "files": 15,
+        "rawBytes": 99412,
+        "gzipBytes": 32409,
+        "brotliBytes": 27093,
         "fileList": [
           "packages/ui/dist/form/input/index.js",
           "packages/i18n/dist/slices/form.js",
@@ -1750,7 +1777,8 @@
           "packages/core/dist/config-context.js",
           "packages/icons/dist/runtime.js",
           "packages/ui/dist/shared/dev-warn.js",
-          "packages/ui/dist/shared/direction.js"
+          "packages/ui/dist/shared/direction.js",
+          "packages/ui/dist/shared/direction-dom.js"
         ]
       },
       "picker": {
@@ -1795,39 +1823,39 @@
     "cdnFamilies": {
       "basic": {
         "files": 1,
-        "rawBytes": 195425,
-        "gzipBytes": 41812,
-        "brotliBytes": 34560
+        "rawBytes": 195609,
+        "gzipBytes": 41884,
+        "brotliBytes": 34621
       },
       "commerce": {
         "files": 1,
-        "rawBytes": 340788,
-        "gzipBytes": 72989,
-        "brotliBytes": 58757
+        "rawBytes": 341054,
+        "gzipBytes": 73554,
+        "brotliBytes": 59037
       },
       "conversation": {
         "files": 1,
-        "rawBytes": 113145,
-        "gzipBytes": 26657,
-        "brotliBytes": 22934
+        "rawBytes": 113329,
+        "gzipBytes": 26710,
+        "brotliBytes": 22973
       },
       "data": {
         "files": 1,
-        "rawBytes": 1190863,
-        "gzipBytes": 305793,
-        "brotliBytes": 232102
+        "rawBytes": 1191577,
+        "gzipBytes": 306079,
+        "brotliBytes": 232332
       },
       "feedback": {
         "files": 1,
-        "rawBytes": 388075,
-        "gzipBytes": 86055,
-        "brotliBytes": 66752
+        "rawBytes": 388259,
+        "gzipBytes": 86105,
+        "brotliBytes": 66726
       },
       "form": {
         "files": 1,
-        "rawBytes": 1163643,
-        "gzipBytes": 264285,
-        "brotliBytes": 189531
+        "rawBytes": 1164294,
+        "gzipBytes": 264552,
+        "brotliBytes": 189626
       },
       "framework": {
         "files": 1,
@@ -1837,15 +1865,15 @@
       },
       "layout": {
         "files": 1,
-        "rawBytes": 158869,
-        "gzipBytes": 40085,
-        "brotliBytes": 33765
+        "rawBytes": 159053,
+        "gzipBytes": 40141,
+        "brotliBytes": 33808
       },
       "navigation": {
         "files": 1,
-        "rawBytes": 593500,
-        "gzipBytes": 131611,
-        "brotliBytes": 95653
+        "rawBytes": 593684,
+        "gzipBytes": 131647,
+        "brotliBytes": 95608
       },
       "overlay": {
         "files": 1,
@@ -1855,16 +1883,16 @@
       },
       "workbench": {
         "files": 1,
-        "rawBytes": 137660,
-        "gzipBytes": 31258,
-        "brotliBytes": 26896
+        "rawBytes": 137844,
+        "gzipBytes": 31318,
+        "brotliBytes": 26911
       }
     },
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
         "kind": "ceiling",
-        "actualBytes": 845860,
+        "actualBytes": 846405,
         "limitBytes": 849920,
         "warnAtBytes": 764928,
         "pass": true,
@@ -1874,7 +1902,7 @@
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
         "kind": "ceiling",
-        "actualBytes": 1288427,
+        "actualBytes": 1289850,
         "limitBytes": 1300480,
         "warnAtBytes": 1170432,
         "pass": true,
@@ -1896,7 +1924,7 @@
         "name": "@oas-ui/ui/data/table 链 gzip",
         "kind": "absolute",
         "componentId": "table",
-        "actualBytes": 80618,
+        "actualBytes": 80892,
         "limitBytes": 90112,
         "warnAtBytes": 81101,
         "pass": true,
@@ -1918,7 +1946,7 @@
         "name": "@oas-ui/ui/data/table/edit 链 gzip",
         "kind": "absolute",
         "componentId": "tableEdit",
-        "actualBytes": 113852,
+        "actualBytes": 114596,
         "limitBytes": 122880,
         "warnAtBytes": 110592,
         "pass": true,
@@ -1973,7 +2001,7 @@
         "name": "@oas-ui/ui/data/gantt 链 gzip",
         "kind": "absolute",
         "componentId": "gantt",
-        "actualBytes": 75990,
+        "actualBytes": 76264,
         "limitBytes": 81920,
         "warnAtBytes": 73728,
         "pass": true,
@@ -2079,11 +2107,11 @@
         "name": "@oas-ui/ui/data/table/range 链 gzip",
         "kind": "absolute",
         "componentId": "tableRange",
-        "actualBytes": 13687,
+        "actualBytes": 14001,
         "limitBytes": 15360,
         "warnAtBytes": 13824,
         "pass": true,
-        "warn": false,
+        "warn": true,
         "basis": "实测 gzip 12181 B（range/index 9715 = 选区控制器本体，未内联 table 运行时；window-data 840 / interactive 626 / clipboard 363 / capability 340 / row-key 297），其中 662 B 为本链未使用的导出（window-data 534 / clipboard 128），真实消费者构建经 tree-shaking 不携带，故真实量级约 11.5 KB。2026-10-31 复核：唯一可去重项是 findRowPath 与 indexRowPaths 的双实现（69 B），低于瘦身阈值；旧宿主视图签名回退（30 B）无测试覆盖但属 getDisplaySnapshot? 兼容契约，保留。按实测上浮 13.5% 重定档 13.5 KB（利用率 88.1%）"
       },
       {
@@ -2332,11 +2360,11 @@
         "name": "@oas-ui/ui/commerce/invoice 链 gzip",
         "kind": "absolute",
         "componentId": "commerceInvoice",
-        "actualBytes": 20887,
+        "actualBytes": 22198,
         "limitBytes": 23552,
         "warnAtBytes": 21197,
         "pass": true,
-        "warn": false,
+        "warn": true,
         "basis": "首档 2026-11-25（commerce 逐链初建）：实测 gzip 19.8 KB（55508723 实测），上浮 ~15% 取整定档 23 KB（首档记录 21 文件与后续实测不可对齐；基线 28ee1fdf 复测 20.0 KB，链实况即 11 文件轻链：core + i18n + dev-warn + json-array）；2026-11-26 chevron 同源批（内联 path 迁 icons 包 chevronDownPath）+1 文件（icons/icons/chevron-down）→ 实测 20.4 KB / 12 文件，仍在 23 KB 档内（--update-baseline 刷新）"
       },
       {
@@ -2365,7 +2393,7 @@
         "name": "@oas-ui/ui/commerce/time-select 链 gzip",
         "kind": "absolute",
         "componentId": "commerceTimeSelect",
-        "actualBytes": 21736,
+        "actualBytes": 22434,
         "limitBytes": 25600,
         "warnAtBytes": 23040,
         "pass": true,
@@ -2376,7 +2404,7 @@
         "name": "@oas-ui/ui/commerce/cart 链 gzip",
         "kind": "absolute",
         "componentId": "commerceCart",
-        "actualBytes": 25702,
+        "actualBytes": 26311,
         "limitBytes": 29696,
         "warnAtBytes": 26726,
         "pass": true,
@@ -2409,18 +2437,18 @@
         "name": "@oas-ui/ui/commerce/filter 链 gzip",
         "kind": "absolute",
         "componentId": "commerceFilter",
-        "actualBytes": 22665,
+        "actualBytes": 24006,
         "limitBytes": 25600,
         "warnAtBytes": 23040,
         "pass": true,
-        "warn": false,
+        "warn": true,
         "basis": "首档 2026-11-25（电商扩容首波随批定档）：实测 gzip 21.2 KB / 13 文件（排序 toggle + 两形态条件面板 + chips 回显撤销；面板自实现轻量浮层，零跨组件依赖——链只含 core + i18n），上浮 ~15% 取整定档 25 KB；条件持久化 / 服务端筛选协议等重增强走 L3 能力子路径另立档"
       },
       {
         "name": "@oas-ui/ui/commerce/goods-list 链 gzip",
         "kind": "absolute",
         "componentId": "commerceGoodsList",
-        "actualBytes": 23220,
+        "actualBytes": 23793,
         "limitBytes": 26624,
         "warnAtBytes": 23962,
         "pass": true,
@@ -2453,11 +2481,11 @@
         "name": "@oas-ui/ui/commerce/order-list 链 gzip",
         "kind": "absolute",
         "componentId": "commerceOrderList",
-        "actualBytes": 19968,
+        "actualBytes": 21131,
         "limitBytes": 22528,
         "warnAtBytes": 20275,
         "pass": true,
-        "warn": false,
+        "warn": true,
         "basis": "首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 19.1 KB / 13 文件（页签 roving tabindex 状态机 + 触底协议——shouldRequestMore 复用 goods-list 导出纯函数不增链 + 插槽化零卡片渲染；链只含 core + i18n + goods-list 的 column-assign 单文件），上浮 ~15% 取整定档 22 KB；分页协议 / 页签溢出指示走 L3 能力子路径另立档"
       },
       {
@@ -2480,7 +2508,7 @@
         "warnAtBytes": 3686,
         "pass": true,
         "warn": false,
-        "basis": "helper 编排子路径，按需引入；首档 2026-11-26 实测 gzip 1.1 KB / 2 文件（编排 + dev-warn）；真实浏览器复核修复批（C1 数据破坏：config-provider 注入禁用时 executeBatch 仍执行删除——只判 attribute 漏掉注入判定）引入 core 的 injectDisabled 同语义判定后链实测 gzip 3.2 KB / 4 文件（编排 + dev-warn + core/config-context 的 findConfigProvider/parseProviderConfig——禁用判定与本体 isDisabled 同一实现，注入禁用下 helper 与本体行为一致），按实测 ×1.15 取整定档 4 KB"
+        "basis": "helper 编排子路径，按需引入；首档 2026-11-26 实测 gzip 1.1 KB / 2 文件（编排 + dev-warn）；真实浏览器复核修复批（C1 数据破坏：config-provider 注入禁用时 executeBatch 仍执行删除——只判 attribute 漏掉注入判定）引入 core 的 injectDisabled 同语义判定后链实测 gzip 3.2 KB / 3 文件（编排 + dev-warn + core/config-context 的 findConfigProvider/parseProviderConfig——禁用判定与本体 isDisabled 同一实现，注入禁用下 helper 与本体行为一致），按实测 ×1.15 取整定档 4 KB"
       },
       {
         "name": "@oas-ui/ui/commerce/filter/persist 链 gzip",
@@ -2508,7 +2536,7 @@
         "name": "@oas-ui/ui/form/select 链 gzip",
         "kind": "absolute",
         "componentId": "select",
-        "actualBytes": 47274,
+        "actualBytes": 48018,
         "limitBytes": 54272,
         "warnAtBytes": 48845,
         "pass": true,
@@ -2519,7 +2547,7 @@
         "name": "@oas-ui/ui/form/input 链 gzip",
         "kind": "absolute",
         "componentId": "input",
-        "actualBytes": 32135,
+        "actualBytes": 32409,
         "limitBytes": 37888,
         "warnAtBytes": 34099,
         "pass": true,
@@ -2551,7 +2579,7 @@
       {
         "name": "CDN 族包 dist/cdn/basic.js gzip",
         "kind": "absolute",
-        "actualBytes": 41812,
+        "actualBytes": 41884,
         "limitBytes": 49152,
         "warnAtBytes": 44237,
         "pass": true,
@@ -2561,7 +2589,7 @@
       {
         "name": "CDN 族包 dist/cdn/commerce.js gzip",
         "kind": "absolute",
-        "actualBytes": 72989,
+        "actualBytes": 73554,
         "limitBytes": 84992,
         "warnAtBytes": 76493,
         "pass": true,
@@ -2571,7 +2599,7 @@
       {
         "name": "CDN 族包 dist/cdn/conversation.js gzip",
         "kind": "absolute",
-        "actualBytes": 26657,
+        "actualBytes": 26710,
         "limitBytes": 30720,
         "warnAtBytes": 27648,
         "pass": true,
@@ -2581,7 +2609,7 @@
       {
         "name": "CDN 族包 dist/cdn/data.js gzip",
         "kind": "absolute",
-        "actualBytes": 305793,
+        "actualBytes": 306079,
         "limitBytes": 352256,
         "warnAtBytes": 317030,
         "pass": true,
@@ -2591,7 +2619,7 @@
       {
         "name": "CDN 族包 dist/cdn/feedback.js gzip",
         "kind": "absolute",
-        "actualBytes": 86055,
+        "actualBytes": 86105,
         "limitBytes": 99328,
         "warnAtBytes": 89395,
         "pass": true,
@@ -2601,7 +2629,7 @@
       {
         "name": "CDN 族包 dist/cdn/form.js gzip",
         "kind": "absolute",
-        "actualBytes": 264285,
+        "actualBytes": 264552,
         "limitBytes": 304128,
         "warnAtBytes": 273715,
         "pass": true,
@@ -2621,7 +2649,7 @@
       {
         "name": "CDN 族包 dist/cdn/layout.js gzip",
         "kind": "absolute",
-        "actualBytes": 40085,
+        "actualBytes": 40141,
         "limitBytes": 47104,
         "warnAtBytes": 42394,
         "pass": true,
@@ -2631,7 +2659,7 @@
       {
         "name": "CDN 族包 dist/cdn/navigation.js gzip",
         "kind": "absolute",
-        "actualBytes": 131611,
+        "actualBytes": 131647,
         "limitBytes": 151552,
         "warnAtBytes": 136397,
         "pass": true,
@@ -2651,7 +2679,7 @@
       {
         "name": "CDN 族包 dist/cdn/workbench.js gzip",
         "kind": "absolute",
-        "actualBytes": 31258,
+        "actualBytes": 31318,
         "limitBytes": 36864,
         "warnAtBytes": 33178,
         "pass": true,
