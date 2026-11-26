@@ -1,8 +1,11 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { shouldFlipUp } from '../../shared/flip-up.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { stableHash36 } from '../../shared/stable-id.js'
 import { parseJsonArray } from '../../shared/json-array.js'
+import { resolveRovingMove } from '../../shared/listbox.js'
 
 /**
  * oas-filter —— 列表页筛选栏（commerce 族）。
@@ -991,8 +994,8 @@ export class OASFilter extends OASElement {
 
   /**
    * dropdown 贴底锚定 + 视口翻转：先按向下形态测量（重置 data-flip），
-   * 下方放不下且上方更宽裕时翻到栏上方。happy-dom / 未布局时测量值全 0，
-   * 条件不成立维持向下（退化安全）。
+   * 下方放不下且上方更宽裕时翻到栏上方（判据 = shared/flip-up 唯一真源；
+   * happy-dom / 未布局时测量值全 0，退化守卫维持向下）。
    */
   private syncPanelFlip(): void {
     const panel = this.panelEl
@@ -1004,12 +1007,8 @@ export class OASFilter extends OASElement {
     }
     panel.removeAttribute('data-flip')
     const barRect = bar.getBoundingClientRect()
-    const panelRect = panel.getBoundingClientRect()
-    const below = window.innerHeight - barRect.bottom
-    const above = barRect.top
-    if (panelRect.height > 0 && below < panelRect.height && above > below) {
-      panel.setAttribute('data-flip', 'up')
-    }
+    const panelHeight = panel.getBoundingClientRect().height
+    if (shouldFlipUp(barRect, panelHeight, window.innerHeight)) panel.setAttribute('data-flip', 'up')
   }
 
   /** 组区块：签名变化才重建（重建后选中态由同一签名推导），增量只同步 aria-checked */
@@ -1261,22 +1260,25 @@ export class OASFilter extends OASElement {
     } satisfies FilterChangeDetail)
   }
 
-  /** 组内 / 排序行方向键焦点移动（不触发选择；Tab 语义不受影响） */
+  /** 组内 / 排序行方向键焦点移动（不触发选择；Tab 语义不受影响）；RTL 下左右键镜像 */
   private moveFocusWithin(box: HTMLElement | null, e: KeyboardEvent): void {
     if (!box) return
-    const key = e.key
-    const forward = key === 'ArrowDown' || key === 'ArrowRight'
-    const backward = key === 'ArrowUp' || key === 'ArrowLeft'
-    if (!forward && !backward) return
     const items = [
       ...box.querySelectorAll<HTMLElement>('[part="sort-item"]:not([disabled]), [part="option"]:not([disabled])'),
     ]
     const active = this.deepActiveElement()
     const idx = items.findIndex((el) => el === active)
     if (idx < 0) return
+    const next = resolveRovingMove(e.key, {
+      count: items.length,
+      current: idx,
+      wrap: false,
+      rtl: isRtl(this),
+      keys: ['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'],
+    })
+    if (next === null) return
     e.preventDefault()
     e.stopPropagation()
-    const next = forward ? Math.min(idx + 1, items.length - 1) : Math.max(idx - 1, 0)
     items[next]?.focus({ preventScroll: true })
   }
 }

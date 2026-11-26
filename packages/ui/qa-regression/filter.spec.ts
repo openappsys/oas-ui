@@ -260,6 +260,28 @@ test('filter：dropdown 面板锚定几何——面板贴在触发器正下方�
   expect(flipped.panelTop).toBeLessThan(flipped.barTop)
 })
 
+test('filter：RTL 下组内水平方向键镜像——ArrowRight 向先前移（对齐 time-select 口径）', async ({ page }) => {
+  await page.goto('/components/filter.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-filter')
+  await mountDropdown(page, 'fr-e2e-rtl', JSON.stringify({ dir: 'rtl' }))
+
+  const host = page.locator('#fr-e2e-rtl')
+  const trigger = host.locator('[part="trigger"]')
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+  const first = host.locator('[part="option"][data-group="brand"][data-value="a"]')
+  const second = host.locator('[part="option"][data-group="brand"][data-value="b"]')
+  await second.focus()
+  await page.keyboard.press('ArrowRight')
+  // RTL：ArrowRight = 视觉向右 = 前一项（LTR 下会 clamp 停在第二项，此断言可区分修复前后）
+  await expect(first).toBeFocused()
+  await page.keyboard.press('ArrowLeft')
+  await expect(second).toBeFocused()
+  // 焦点移动不改变条件（仍不触发选择）
+  await expect(host.locator('[part="chip"]')).toHaveCount(0)
+})
+
 test('filter：drawer 真键盘焦点陷阱——Tab 循环限制在面板内（dialog 语义 + aria-modal）', async ({ page }) => {
   await page.goto('/components/filter.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-filter')

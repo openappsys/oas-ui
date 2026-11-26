@@ -2,6 +2,7 @@ import { OASElement } from '@oas-ui/core/oas-element'
 import { getLocaleName } from '@oas-ui/i18n/registry'
 import { devWarn } from '../../shared/dev-warn.js'
 import { isRtl } from '../../shared/direction.js'
+import { resolveRovingMove } from '../../shared/listbox.js'
 import { stableHash36 } from '../../shared/stable-id.js'
 
 /**
@@ -841,7 +842,7 @@ export class OASTimeSelect extends OASElement {
 
   /**
    * 模式组键盘导航（radiogroup + roving）：左右方向键切换模式并迁移焦点，Home / End 到首末模式。
-   * 只有 2 个模式时方向键恒切到另一个模式；RTL 下左右语义镜像（与日期列 / 时段网格一致）。
+   * 只有 2 个模式时方向键恒切到另一个模式；RTL 下左右语义镜像（shared/listbox 内核统一镜像）。
    */
   private onModeKeydown = (event: KeyboardEvent): void => {
     const target = event.target
@@ -852,18 +853,15 @@ export class OASTimeSelect extends OASElement {
     if (!keys.includes(event.key)) return
     event.preventDefault()
     if (this.injectDisabled()) return
-    const rtl = isRtl(this)
-    const forward = (event.key === 'ArrowRight' && !rtl) || (event.key === 'ArrowLeft' && rtl)
     const current = VALID_MODES.indexOf(button.dataset.mode ?? '')
-    let next: string
-    if (event.key === 'Home') {
-      next = VALID_MODES[0]!
-    } else if (event.key === 'End') {
-      next = VALID_MODES[VALID_MODES.length - 1]!
-    } else {
-      const base = current < 0 ? 0 : current
-      next = VALID_MODES[(base + (forward ? 1 : -1) + VALID_MODES.length) % VALID_MODES.length]!
-    }
+    const index = resolveRovingMove(event.key, {
+      count: VALID_MODES.length,
+      current: current < 0 ? 0 : current,
+      rtl: isRtl(this),
+      keys,
+    })
+    if (index === null) return
+    const next = VALID_MODES[index]!
     this.selectMode(next)
     // 切换模式会按签名重建模式钮：焦点必须落到新节点上，否则键盘用户丢失位置
     this.modeButton(next)?.focus()
@@ -944,19 +942,14 @@ export class OASTimeSelect extends OASElement {
     }
     const candidates = this.dateKeys.filter((key) => this.hasSelectable(key))
     if (candidates.length === 0) return
-    const rtl = isRtl(this)
     const current = candidates.indexOf(this.activeDate)
-    let index: number
-    if (event.key === 'Home') {
-      index = 0
-    } else if (event.key === 'End') {
-      index = candidates.length - 1
-    } else {
-      const forward =
-        event.key === 'ArrowDown' || (event.key === 'ArrowRight' && !rtl) || (event.key === 'ArrowLeft' && rtl)
-      const base = current < 0 ? 0 : current
-      index = (base + (forward ? 1 : -1) + candidates.length) % candidates.length
-    }
+    const index = resolveRovingMove(event.key, {
+      count: candidates.length,
+      current: current < 0 ? 0 : current,
+      rtl: isRtl(this),
+      keys: ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'],
+    })
+    if (index === null) return
     const nextKey = candidates[index]!
     this.selectDate(nextKey)
     this.dateButtons.get(nextKey)?.focus()
@@ -978,19 +971,15 @@ export class OASTimeSelect extends OASElement {
       .map((slot, index) => (this.isSelectableSlot(slot) ? index : -1))
       .filter((index) => index >= 0)
     if (enabledIndexes.length === 0) return
-    const rtl = isRtl(this)
     const currentSlotIndex = this.slotSnapshot.findIndex((slot) => slot.key === this.activeSlot)
     const currentPos = Math.max(0, enabledIndexes.indexOf(currentSlotIndex))
-    let pos: number
-    if (event.key === 'Home') {
-      pos = 0
-    } else if (event.key === 'End') {
-      pos = enabledIndexes.length - 1
-    } else {
-      const forward =
-        event.key === 'ArrowDown' || (event.key === 'ArrowRight' && !rtl) || (event.key === 'ArrowLeft' && rtl)
-      pos = (currentPos + (forward ? 1 : -1) + enabledIndexes.length) % enabledIndexes.length
-    }
+    const pos = resolveRovingMove(event.key, {
+      count: enabledIndexes.length,
+      current: currentPos,
+      rtl: isRtl(this),
+      keys: ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'],
+    })
+    if (pos === null) return
     const index = enabledIndexes[pos]!
     const slot = this.slotSnapshot[index]!
     this.selectSlot(slot.key)

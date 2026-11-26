@@ -8,6 +8,7 @@ import { watchMobileSheetMode } from '../../shared/mobile-sheet.js'
 import { addOutsideDismiss, removeOutsideDismiss } from '../../shared/outside-dismiss.js'
 import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { resolveDirection } from '../../shared/direction.js'
+import { resolveRovingMove } from '../../shared/listbox.js'
 import { measureMaxTextWidth } from '../../shared/measure-text.js'
 import { cssVarPx } from '../../shared/css-var.js'
 import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
@@ -1300,10 +1301,10 @@ export class OASSelect extends OASFormElement {
     } else {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        this.moveActive(1)
+        this.moveActive(e.key)
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        this.moveActive(-1)
+        this.moveActive(e.key)
       } else if (e.key === 'Enter') {
         e.preventDefault()
         this.selectActive()
@@ -1319,10 +1320,10 @@ export class OASSelect extends OASFormElement {
       this.triggerEl?.focus()
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      this.moveActive(1)
+      this.moveActive(e.key)
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      this.moveActive(-1)
+      this.moveActive(e.key)
     } else if (e.key === 'Enter') {
       e.preventDefault()
       this.selectActive()
@@ -1336,12 +1337,17 @@ export class OASSelect extends OASFormElement {
 
   /**
    * 移动高亮：增量同步（不重建 DOM）——虚拟滚动下重建会打断窗口渲染，
-   * 改走 scrollActiveIntoView + syncActive（class / aria-activedescendant / 选中态）
+   * 改走 scrollActiveIntoView + syncActive（class / aria-activedescendant / 选中态）。
+   * 键序解析 / 回绕由 shared/listbox 内核承担（本组只支持上下方向键，无 Home/End）。
    */
-  private moveActive(dir: 1 | -1): void {
-    const n = this.navigableCount()
-    if (n === 0) return
-    this.activeIndex = (this.activeIndex + dir + n) % n
+  private moveActive(key: string): void {
+    const next = resolveRovingMove(key, {
+      count: this.navigableCount(),
+      current: this.activeIndex,
+      keys: ['ArrowDown', 'ArrowUp'],
+    })
+    if (next === null) return
+    this.activeIndex = next
     this.scrollActiveIntoView()
     this.syncActive()
   }

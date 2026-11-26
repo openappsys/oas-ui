@@ -1,9 +1,10 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { createBottomReach, isHiddenInTree, renderMoreState, watchBottomReach } from '../../shared/bottom-reach.js'
+import { isRtl } from '../../shared/direction.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { parseJsonArray } from '../../shared/json-array.js'
+import { resolveRovingMove } from '../../shared/listbox.js'
 import { stableHash36 } from '../../shared/stable-id.js'
-// 触底判定纯函数复用 goods-list 已验证内核（单一函数依赖，不抽新 shared——决策记录见 README）
-import { shouldRequestMore } from '../goods-list/column-assign.js'
 
 /**
  * oas-order-list —— 订单列表容器（commerce 族）。
@@ -13,9 +14,10 @@ import { shouldRequestMore } from '../goods-list/column-assign.js'
  * 加载更多（对齐 goods-list 触底协议：哨兵 + 待应答防重 + 插槽内容变化解除 + 隐藏
  * 容器守卫——两个首波修复都带上）+ 空态。页签切换派 `oas-tab-change`。
  *
- * 与 goods-list 的关系：触底判定直接复用 goods-list 导出的纯函数
- * `shouldRequestMore`（单一函数依赖；数据变化解除的信号源不同——goods-list 是
- * `items` attribute 签名，本件是 slot 分配元素数量签名，其余状态机一致）。
+ * 与 goods-list 的关系：触底协议内核统一在 `shared/bottom-reach.ts`（判定骨架 / 可见性守卫 /
+ * rAF 节流监听 / 加载区三态单一真源；`shouldRequestMore` 亦由该模块导出）；两件差异以回调
+ * 参数承载——goods-list 解除信号源是 `items` attribute 签名，本件是 slot 分配节点的**身份序列**
+ * 签名，其余状态机一致。
  *
  * 属性（kebab-case）：
  * - `tabs`：页签 JSON 数组（缺 `key` 或 `label` 的条目忽略；非法 JSON 告警一次按空处理，
@@ -41,7 +43,8 @@ import { shouldRequestMore } from '../goods-list/column-assign.js'
  * ——标签 + count 徽标连续文本，不用 aria-label 包裹破坏 label-in-name）；卡区为对应
  * `role="tabpanel"`（tab `aria-controls` 指向，id 由 tabs/active 派生 `stableHash36`，
  * 同页多实例唯一）；键盘 roving tabindex（方向键移动焦点，Enter / Space 激活——manual
- * activation），disabled 页签跳过焦点；空态 / 加载区 / 哨兵在 tabpanel 语义之外；加载区
+ * activation），disabled 页签跳过焦点；左右方向键按书写方向镜像（RTL 下 `→` 向左移，与
+ * time-select 同口径），Home / End 跳首末；空态 / 加载区 / 哨兵在 tabpanel 语义之外；加载区
  * `role="status"` + `aria-live="polite"` 活区。颜色全走 token，布局走逻辑属性（RTL 安全）。
  */
 export interface OrderTab {
@@ -223,6 +226,32 @@ export class OASOrderList extends OASElement {
   private loadPending = false
   /** slot 分配卡身份序列签名（变化即解除触底待应答——对齐 goods-list 等数量增删教训，见 NODE_IDS） */
   private slotSignature = ''
+  /** 触底内核（shared/bottom-reach）：解除信号源 = slot 节点身份序列，内容源 = slot 分配卡 */
+  private readonly bottomReach = createBottomReach({
+    sentinel: () => this.sentinelEl,
+    hasContent: () => this.hasSlotCards(),
+    hidden: () => isHiddenInTree(this),
+    state: () => ({
+      loading: this.hasAttr('loading'),
+      noMore: this.hasAttr('no-more'),
+      pending: this.loadPending,
+    }),
+    release: () => {
+      const cards = this.slotEl?.assignedElements({ flatten: true }) ?? []
+      const signature = JSON.stringify(
+        cards.filter((n): n is HTMLElement => n instanceof HTMLElement).map((n) => OASOrderList.identityOf(n)),
+      )
+      if (signature === this.slotSignature) return false
+      this.slotSignature = signature
+      return true
+    },
+    setPending: (pending) => {
+      this.loadPending = pending
+    },
+    request: () => this.emit('load-more', {}),
+  })
+  /** 触底监听解绑句柄（连接 / 重连挂载，断连经 onCleanup 摘） */
+  private unbindBottomReach: (() => void) | null = null
 
   /**
    * 宿主节点身份 id（签名用）：等数量增删（换页签后宿主等数量换卡）时数量签名不变，
@@ -441,20 +470,20 @@ export class OASOrderList extends OASElement {
 
   /** 加载更多区：loading / no-more / 缺省（哨兵常驻）三态；无卡时整区隐藏 */
   private syncMore(): void {
-    const more = this.moreEl
-    if (!more) return
     const loading = this.hasAttr('loading')
     const noMore = this.hasAttr('no-more')
-    const hasCards = this.hasSlotCards()
-    more.hidden = !hasCards
-    if (this.spinnerEl) this.spinnerEl.hidden = !loading
-    if (this.moreTextEl) {
-      this.moreTextEl.textContent = loading ? this.t('orderList.loading') : noMore ? this.t('orderList.noMore') : ''
-      this.moreTextEl.hidden = !loading && !noMore
-    }
+    renderMoreState({
+      more: this.moreEl,
+      spinner: this.spinnerEl,
+      text: this.moreTextEl,
+      labels: { loading: this.t('orderList.loading'), noMore: this.t('orderList.noMore') },
+      hasContent: this.hasSlotCards(),
+      loading,
+      noMore,
+    })
     // loading 置位 = 宿主应答本轮触底，解除待应答
     if (loading) this.loadPending = false
-    this.checkLoadMore()
+    this.bottomReach.check()
   }
 
   private syncEmpty(): void {
@@ -482,76 +511,19 @@ export class OASOrderList extends OASElement {
   }
 
   // -------------------------------------------------------------------------
-  // 加载更多（触底；复用 goods-list shouldRequestMore 纯函数）
+  // 加载更多（触底；内核见 shared/bottom-reach.ts）
   // -------------------------------------------------------------------------
-
-  /** 供单测直达的检查入口（滚动监听同样走这里） */
-  private checkLoadMore(): void {
-    const sentinel = this.sentinelEl
-    if (!sentinel) return
-    // 插槽内容变化解除待应答（宿主只追加订单卡的分页场景——对齐 goods-list items 解除修复）；
-    // 签名取**节点身份序列**（不是数量）：等数量增删 / 换页签换卡都能解除（首波 I3 同款教训）
-    const cards = this.slotEl?.assignedElements({ flatten: true }) ?? []
-    const signature = JSON.stringify(
-      cards.filter((n): n is HTMLElement => n instanceof HTMLElement).map((n) => OASOrderList.identityOf(n)),
-    )
-    if (signature !== this.slotSignature) {
-      this.slotSignature = signature
-      this.loadPending = false
-    }
-    if (!this.hasSlotCards()) return
-    // 可见性守卫：display:none 链路（如挂载在未激活的宿主容器里）几何值无意义，不派发
-    if (this.isHiddenInTree()) return
-    const rect = sentinel.getBoundingClientRect()
-    const state = {
-      loading: this.hasAttr('loading'),
-      noMore: this.hasAttr('no-more'),
-      pending: this.loadPending,
-    }
-    if (!shouldRequestMore(rect.top, window.innerHeight, state)) return
-    this.loadPending = true
-    this.emit('load-more', {})
-  }
-
-  /**
-   * 组件是否处于 display:none 链路。真实浏览器：getClientRects 为空即全链不可见（一次调用判全链）；
-   * happy-dom 不实现布局（rects 恒 1 / rect 恒 0）：回退爬祖先链查 computed display。
-   */
-  private isHiddenInTree(): boolean {
-    if (this.getClientRects().length === 0) return true
-    let node: HTMLElement | null = this
-    while (node) {
-      if (getComputedStyle(node).display === 'none') return true
-      node = node.parentElement
-    }
-    return false
-  }
-
-  /** rAF 节流句柄（scroll/resize 共用） */
-  private scrollRaf = 0
-
-  private readonly onScrollOrResize = (): void => {
-    if (this.scrollRaf) return
-    this.scrollRaf = requestAnimationFrame(() => {
-      this.scrollRaf = 0
-      this.checkLoadMore()
-    })
-  }
 
   /** 全局监听（滚动触底）：连接 / 重连时挂，断开时经 onCleanup 摘 */
   private bindLoadMoreListeners(): void {
-    document.addEventListener('scroll', this.onScrollOrResize, { capture: true, passive: true })
-    window.addEventListener('resize', this.onScrollOrResize)
+    if (this.unbindBottomReach) return
+    this.unbindBottomReach = watchBottomReach(() => this.bottomReach.check())
     this.onCleanup(() => this.unbindLoadMoreListeners())
   }
 
   private unbindLoadMoreListeners(): void {
-    document.removeEventListener('scroll', this.onScrollOrResize, { capture: true })
-    window.removeEventListener('resize', this.onScrollOrResize)
-    if (this.scrollRaf) {
-      cancelAnimationFrame(this.scrollRaf)
-      this.scrollRaf = 0
-    }
+    this.unbindBottomReach?.()
+    this.unbindBottomReach = null
   }
 
   // -------------------------------------------------------------------------
@@ -565,39 +537,29 @@ export class OASOrderList extends OASElement {
   }
 
   private readonly onTabKeydown = (e: Event): void => {
-    const key = (e as KeyboardEvent).key
+    const event = e as KeyboardEvent
     const tabs = this.parseTabs()
     const enabled = tabs.filter((t) => !t.disabled)
     if (enabled.length === 0) return
     const focusables = [...this.tablistEl!.querySelectorAll<HTMLElement>('[part="tab"]:not(:disabled)')]
     const current = this.tablistEl!.querySelector<HTMLElement>('[part="tab"][tabindex="0"]')
     const idx = current ? focusables.indexOf(current) : -1
-    if (key === 'ArrowRight' || key === 'ArrowDown') {
-      e.preventDefault()
-      const next = focusables[(idx + 1) % focusables.length]!
-      this.moveFocus(next)
+    // 水平 / 垂直方向键 + Home / End 统一走 shared/listbox 内核；RTL 下左右键镜像（与 time-select 对齐）
+    const next = resolveRovingMove(event.key, {
+      count: focusables.length,
+      current: idx,
+      rtl: isRtl(this),
+      keys: ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'],
+    })
+    if (next !== null) {
+      event.preventDefault()
+      this.moveFocus(focusables[next]!)
       return
     }
-    if (key === 'ArrowLeft' || key === 'ArrowUp') {
-      e.preventDefault()
-      const prev = focusables[(idx - 1 + focusables.length) % focusables.length]!
-      this.moveFocus(prev)
-      return
-    }
-    if (key === 'Home') {
-      e.preventDefault()
-      this.moveFocus(focusables[0]!)
-      return
-    }
-    if (key === 'End') {
-      e.preventDefault()
-      this.moveFocus(focusables[focusables.length - 1]!)
-      return
-    }
-    if (key === 'Enter' || key === ' ') {
-      const tab = (e.target as Element | null)?.closest<HTMLElement>('[part="tab"]')
+    if (event.key === 'Enter' || event.key === ' ') {
+      const tab = (event.target as Element | null)?.closest<HTMLElement>('[part="tab"]')
       if (!tab) return
-      e.preventDefault()
+      event.preventDefault()
       this.activateTab(tab)
     }
   }

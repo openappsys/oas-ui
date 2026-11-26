@@ -10,7 +10,7 @@
 4. **破坏性选项**：无；切换抬头类型保留已输入草稿（切换前固化到属性，避免 update 回写吞输入）。
 5. **键盘 / ARIA**：类型切换为 `role="radiogroup"` + 两项 `role="radio"`（`←` / `→`）；弹层触发按钮 `aria-haspopup="listbox"` / `aria-expanded`，列表 `role="listbox"` + `role="option"`，`↑` / `↓` / `Enter` / `Esc` 全支持。
 6. **受控 / 非受控**：`type` / `title` / `tax-id` / `content` 受控；输入只派发 `oas-change` 不反写属性；外部属性变化回写输入框。
-7. **控件选型（复合组件第一决策；2026-11-25 review 实测修正）**：按 ui-spec §2.5.1 决策树判定——**判据是被复用件的传递闭包实测体积 × 是否需要模态协同，不是交互复杂度**。本组件现状：「发票内容」为非模态轻下拉 → 按树属自绘（原生 select + 视觉对齐层 + 自绘 `.saved` listbox 并存），**不内嵌 `oas-select`**（其传递闭包 +33.2KB gz 实测，为同类最贵档，拖入 virtual-list / form-element / form i18n slice）；演进方向 = 抽 shared listbox 内核统一本组件两处下拉的键盘/翻转/外点（≈+0），而非内嵌重组件。原生控件的对齐理由：表单语义 / 移动端原生选择器体验 / 避免 commerce→form 跨族闭包（三条准入见 ui-spec §2.5.1）。
+7. **控件选型（复合组件第一决策；2026-11-25 review 实测修正）**：按 ui-spec §2.5.1 决策树判定——**判据是被复用件的传递闭包实测体积 × 是否需要模态协同，不是交互复杂度**。本组件现状：「发票内容」为非模态轻下拉 → 按树属自绘（原生 select + 视觉对齐层 + 自绘 `.saved` listbox 并存），**不内嵌 `oas-select`**（其传递闭包 +33.2KB gz 实测，为同类最贵档，拖入 virtual-list / form-element / form i18n slice）；键盘导航 / 视口翻转已走 `shared/listbox` + `shared/flip-up` 内核（≈0 体积），而非内嵌重组件。原生控件的对齐理由：表单语义 / 移动端原生选择器体验 / 避免 commerce→form 跨族闭包（三条准入见 ui-spec §2.5.1）。
 
 ## 数据契约（宿主注入）
 

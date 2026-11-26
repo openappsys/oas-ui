@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { isRtl } from '../../shared/direction.js'
 import { normalizeSizeStrict, ALL_SIZES } from '../../shared/size.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import {
@@ -589,17 +590,11 @@ export class OASQuestionnaire extends OASElement {
     return eff > this.lastEff ? 'forward' : 'backward'
   }
 
-  /** RTL 位移轴：host 计算 direction 写入 bodyEl 内联（keyframes 乘 var(--q-dir, 1) 镜像）
-   *（happy-dom 等环境 getComputedStyle 可能受限，异常兜底 ltr） */
+  /** RTL 位移轴：host 方向判定收敛 shared/direction（computed 通道保留原直读语义），
+   * 写入 bodyEl 内联（keyframes 乘 var(--q-dir, 1) 镜像）；符号翻转仍是本件合法本地逻辑 */
   private syncAnimDir(): void {
     if (!this.bodyEl) return
-    let dir = 'ltr'
-    try {
-      dir = getComputedStyle(this).direction || 'ltr'
-    } catch {
-      /* 保持 ltr 兜底 */
-    }
-    this.bodyEl.style.setProperty('--q-dir', dir === 'rtl' ? '-1' : '1')
+    this.bodyEl.style.setProperty('--q-dir', isRtl(this, { computed: true }) ? '-1' : '1')
   }
 
   /**

@@ -3,6 +3,7 @@ import { registerTableCapability } from '../oas-table-capability.js'
 import { isInteractiveEvent } from '../oas-table-interactive.js'
 import { rowKeyValue } from '../model-core/row-key.js'
 import { expandWindow, loadedRange, windowCovered, WINDOW_MARGIN } from '../../../shared/window-data.js'
+import { isRtlDom } from '../../../shared/direction-dom.js'
 import { parseTsv } from '../advanced/clipboard.js'
 import { inferFillValue, type FillDirection } from './fill-series.js'
 import type { RangeWriteChange, RangeWriteDetail, RangeWriteKind } from '../oas-table-range-write.js'
@@ -1013,9 +1014,8 @@ class RangeSelectionController {
     const step = stepOf(key)
     if (!step) return
     if (step.col !== 0) {
-      // RTL 下左右方向与 DOM 列序相反
-      const rtl = typeof getComputedStyle === 'function' && getComputedStyle(this.host).direction === 'rtl'
-      if (rtl) step.col = -step.col
+      // RTL 下左右方向与 DOM 列序相反（DOM 通道走 shared/direction-dom，叶子 helper 不拉 core/i18n 闭包）
+      if (isRtlDom(this.host, { computed: true })) step.col = -step.col
     }
     // Shift+方向键：扩展选区。捕获阶段拦截，避免下游网格导航再移一格
     if (event.shiftKey) {

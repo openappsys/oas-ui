@@ -1,6 +1,9 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { isRtl } from '../../shared/direction.js'
+import { shouldFlipUp } from '../../shared/flip-up.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import { devWarn } from '../../shared/dev-warn.js'
+import { resolveRovingMove } from '../../shared/listbox.js'
 // 下拉箭头 path 与 icons 包同源（几何唯一来源：消除与 chevron-down 的漂移失同步——
 // 复用基建配套批 2026-11-25；chevronDownPath 自带 stroke=currentColor 渲染属性）
 import { chevronDownPath } from '@oas-ui/icons/icons/chevron-down'
@@ -557,7 +560,7 @@ export class OASInvoice extends OASElement {
 
   private onTypeKey(e: KeyboardEvent): void {
     // RTL：视觉顺序镜像，方向键语义随之互换（segmentedStep 单一真源，单测覆盖两向）
-    const step = segmentedStep(e.key, this.isRtl())
+    const step = segmentedStep(e.key, isRtl(this, { computed: true }))
     if (step === 0) return
     e.preventDefault()
     if (this.disabledOrReadonly()) return
@@ -567,15 +570,6 @@ export class OASInvoice extends OASElement {
     if (next === options[current]) return
     this.selectType(next)
     this.shadow.querySelector<HTMLButtonElement>(`.segment[data-value="${next}"]`)?.focus()
-  }
-
-  /** 宿主方向（RTL 镜像判定；happy-dom 等环境取不到 computed direction 时兜底 ltr） */
-  private isRtl(): boolean {
-    try {
-      return getComputedStyle(this).direction === 'rtl'
-    } catch {
-      return false
-    }
   }
 
   private parseContents(): void {
@@ -674,22 +668,15 @@ export class OASInvoice extends OASElement {
 
   /**
    * 弹层空间检测：视口下缘放不下弹层且上方更宽裕时向上翻转（写 data-placement，
-   * CSS 按 `[data-placement='up']` 走 inset-block-end）。视口/尺寸拿不到（SSR、happy-dom）时
-   * 保持默认向下，不做无依据翻转。
+   * CSS 按 `[data-placement='up']` 走 inset-block-end）。判据 = shared/flip-up 唯一真源；
+   * 视口/尺寸拿不到（SSR、happy-dom）时退化守卫保持默认向下。
    */
   private placePicker(): void {
     if (!this.picker || !this.savedTrigger) return
     const trigger = this.savedTrigger.getBoundingClientRect()
-    const popup = this.picker.getBoundingClientRect()
+    const popupHeight = this.picker.getBoundingClientRect().height
     const viewport = window.innerHeight || document.documentElement.clientHeight || 0
-    if (viewport === 0 || popup.height === 0) {
-      this.picker.removeAttribute('data-placement')
-      return
-    }
-    const below = viewport - trigger.bottom
-    const above = trigger.top
-    const flipUp = below < popup.height && above > below
-    if (flipUp) this.picker.setAttribute('data-placement', 'up')
+    if (shouldFlipUp(trigger, popupHeight, viewport)) this.picker.setAttribute('data-placement', 'up')
     else this.picker.removeAttribute('data-placement')
   }
 
@@ -717,9 +704,14 @@ export class OASInvoice extends OASElement {
     }
     if (this.savedTitleItems.length === 0) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const next = resolveRovingMove(e.key, {
+        count: this.savedTitleItems.length,
+        current: this.activeIndex,
+        keys: ['ArrowDown', 'ArrowUp'],
+      })
+      if (next === null) return
       e.preventDefault()
-      const delta = e.key === 'ArrowDown' ? 1 : -1
-      this.activeIndex = (this.activeIndex + delta + this.savedTitleItems.length) % this.savedTitleItems.length
+      this.activeIndex = next
       this.syncActive()
       this.pickerList?.querySelectorAll<HTMLElement>('[role="option"]')[this.activeIndex]?.focus()
       return

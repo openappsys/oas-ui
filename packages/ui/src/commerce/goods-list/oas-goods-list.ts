@@ -1,8 +1,9 @@
 import { OASElement } from '@oas-ui/core/oas-element'
+import { createBottomReach, isHiddenInTree, renderMoreState, watchBottomReach } from '../../shared/bottom-reach.js'
 import { devWarn } from '../../shared/dev-warn.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import '../price/index.js'
-import { assignColumns, resolveColumns, shouldRequestMore } from './column-assign.js'
+import { assignColumns, resolveColumns } from './column-assign.js'
 
 export { assignColumns, resolveAutoColumns, resolveColumns, shouldRequestMore } from './column-assign.js'
 
@@ -318,8 +319,31 @@ export class OASGoodsList extends OASElement {
   private loadPending = false
   /** items attribute 原文签名（变化即解除触底待应答） */
   private itemsSignature = ''
-  /** rAF 节流句柄（scroll/resize 共用） */
-  private scrollRaf = 0
+  /** 触底内核（shared/bottom-reach）：解除信号源 = items attribute 签名，内容源 = 插槽卡 / items */
+  private readonly bottomReach = createBottomReach({
+    sentinel: () => this.sentinelEl,
+    hasContent: () => this.captureSlotCards().length > 0 || this.parseItems().length > 0,
+    hidden: () => isHiddenInTree(this),
+    state: () => ({
+      loading: this.hasAttr('loading'),
+      noMore: this.hasAttr('no-more'),
+      pending: this.loadPending,
+    }),
+    release: () => {
+      const itemsRaw = this.getAttr('items')
+      if (itemsRaw === this.itemsSignature) return false
+      this.itemsSignature = itemsRaw
+      return true
+    },
+    setPending: (pending) => {
+      this.loadPending = pending
+    },
+    request: () => this.emit('load-more', {}),
+  })
+  /** 触底监听解绑句柄（连接 / 重连挂载，断连经 onCleanup 摘） */
+  private unbindBottomReach: (() => void) | null = null
+  /** 容器宽监听（auto 列数跨断点重排） */
+  private resizeObserver: ResizeObserver | null = null
   /** 已捕获的插槽卡（搬运进 shadow 列后 assignedElements 变空，靠此保持插槽模式） */
   private capturedCards: HTMLElement[] = []
 
@@ -474,12 +498,7 @@ export class OASGoodsList extends OASElement {
 
   protected override update(): void {
     if (!this.gridEl) return
-    // items 签名变化（宿主只追加数据的分页场景）解除触底待应答——与置 loading 等价
-    const itemsRaw = this.getAttr('items')
-    if (itemsRaw !== this.itemsSignature) {
-      this.itemsSignature = itemsRaw
-      this.loadPending = false
-    }
+    // 触底待应答的解除由内核 release 通道承担（items 签名变化）；此处不再重复判定
     this.gridEl.setAttribute('aria-label', this.t('goodsList.label'))
     this.syncCards()
     this.syncMore()
@@ -629,20 +648,20 @@ export class OASGoodsList extends OASElement {
 
   /** 加载更多区：loading / no-more / 缺省（哨兵常驻）三态；空列表时整区隐藏 */
   private syncMore(): void {
-    const more = this.moreEl
-    if (!more) return
     const loading = this.hasAttr('loading')
     const noMore = this.hasAttr('no-more')
-    const hasCards = this.captureSlotCards().length > 0 || this.parseItems().length > 0
-    more.hidden = !hasCards
-    if (this.spinnerEl) this.spinnerEl.hidden = !loading
-    if (this.moreTextEl) {
-      this.moreTextEl.textContent = loading ? this.t('goodsList.loading') : noMore ? this.t('goodsList.noMore') : ''
-      this.moreTextEl.hidden = !loading && !noMore
-    }
+    renderMoreState({
+      more: this.moreEl,
+      spinner: this.spinnerEl,
+      text: this.moreTextEl,
+      labels: { loading: this.t('goodsList.loading'), noMore: this.t('goodsList.noMore') },
+      hasContent: this.captureSlotCards().length > 0 || this.parseItems().length > 0,
+      loading,
+      noMore,
+    })
     // loading 置位 = 宿主应答本轮触底，解除待应答
     if (loading) this.loadPending = false
-    this.checkLoadMore()
+    this.bottomReach.check()
   }
 
   private syncEmpty(): void {
@@ -667,68 +686,19 @@ export class OASGoodsList extends OASElement {
   }
 
   // -------------------------------------------------------------------------
-  // 加载更多（触底）
+  // 加载更多（触底；内核见 shared/bottom-reach.ts）
   // -------------------------------------------------------------------------
-
-  /** 检查哨兵可见性：rAF 节流由监听端承担，这里做纯判定 + 派发（空列表 / 不可见不触发） */
-  private checkLoadMore(): void {
-    const sentinel = this.sentinelEl
-    if (!sentinel) return
-    const hasCards = this.captureSlotCards().length > 0 || this.parseItems().length > 0
-    if (!hasCards) return
-    // 可见性守卫：display:none 链路（如挂载在未激活的宿主容器里）几何值无意义，
-    // 不派发——否则首帧误派 load-more（rect.top=0 恒 ≤ 阈值）
-    if (this.isHiddenInTree()) return
-    const rect = sentinel.getBoundingClientRect()
-    const state = {
-      loading: this.hasAttr('loading'),
-      noMore: this.hasAttr('no-more'),
-      pending: this.loadPending,
-    }
-    if (!shouldRequestMore(rect.top, window.innerHeight, state)) return
-    this.loadPending = true
-    this.emit('load-more', {})
-  }
-
-  /**
-   * 组件是否处于 display:none 链路。真实浏览器：getClientRects 为空即全链不可见（一次调用判全链）；
-   * happy-dom 不实现布局（rects 恒 1 / rect 恒 0）：回退爬祖先链查 computed display。
-   */
-  private isHiddenInTree(): boolean {
-    if (this.getClientRects().length === 0) return true
-    let node: HTMLElement | null = this
-    while (node) {
-      if (getComputedStyle(node).display === 'none') return true
-      node = node.parentElement
-    }
-    return false
-  }
-
-  /** 容器宽变化（auto 列数重排）+ 触底检查的滚动监听（document capture 捕获子容器滚动） */
-  private resizeObserver: ResizeObserver | null = null
-
-  private readonly onScrollOrResize = (): void => {
-    if (this.scrollRaf) return
-    this.scrollRaf = requestAnimationFrame(() => {
-      this.scrollRaf = 0
-      this.checkLoadMore()
-    })
-  }
 
   /** 全局监听（滚动触底 + 容器宽自适应）：连接 / 重连时挂，断开时经 onCleanup 摘 */
   private bindLoadMoreListeners(): void {
-    document.addEventListener('scroll', this.onScrollOrResize, { capture: true, passive: true })
-    window.addEventListener('resize', this.onScrollOrResize)
+    if (this.unbindBottomReach) return
+    this.unbindBottomReach = watchBottomReach(() => this.bottomReach.check())
     this.onCleanup(() => this.unbindLoadMoreListeners())
   }
 
   private unbindLoadMoreListeners(): void {
-    document.removeEventListener('scroll', this.onScrollOrResize, { capture: true })
-    window.removeEventListener('resize', this.onScrollOrResize)
-    if (this.scrollRaf) {
-      cancelAnimationFrame(this.scrollRaf)
-      this.scrollRaf = 0
-    }
+    this.unbindBottomReach?.()
+    this.unbindBottomReach = null
   }
 
   private watchHostSize(): void {

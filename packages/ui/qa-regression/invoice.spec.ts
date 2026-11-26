@@ -140,3 +140,36 @@ test('invoice 已保存抬头弹层：视口下缘空间不足时向上翻转', 
   expect(state.pickerAboveTrigger, '弹层应渲染在触发器上方').toBe(true)
   expect(state.inViewport, '弹层不得溢出视口').toBe(true)
 })
+
+// 对称回归（翻转谓词下沉 shared/flip-up 后）：下方空间充足时必须保持向下展开，
+// 且弹层真实渲染在触发器下方（谓词误判成恒翻 / 恒不翻都会红）
+test('invoice 已保存抬头弹层：空间充足时保持向下展开（翻转谓词不误判）', async ({ page }) => {
+  await page.goto('/components/invoice.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-invoice#invoice-saved-demo')
+
+  const state = await page.evaluate(async () => {
+    const el = document.querySelector<HTMLElement>('oas-invoice#invoice-saved-demo')!
+    // 固定到视口顶部：触发器靠近上缘，下方空间充足
+    el.style.position = 'fixed'
+    el.style.insetInlineStart = '0'
+    el.style.insetBlockStart = '0'
+    el.style.zIndex = '1'
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    const trigger = el.shadowRoot!.querySelector<HTMLButtonElement>('.saved-trigger')!
+    trigger.click()
+    const picker = el.shadowRoot!.querySelector<HTMLElement>('.picker')!
+    const box = picker.getBoundingClientRect()
+    const tBox = trigger.getBoundingClientRect()
+    return {
+      placement: picker.getAttribute('data-placement'),
+      pickerBelowTrigger: box.top >= tBox.bottom - 2,
+      belowSpace: window.innerHeight - tBox.bottom,
+      pickerHeight: box.height,
+      inViewport: box.bottom <= window.innerHeight + 1,
+    }
+  })
+  expect(state.belowSpace, '前置条件：触发器下方空间充足').toBeGreaterThan(state.pickerHeight)
+  expect(state.placement, '空间充足时不得向上翻转').toBeNull()
+  expect(state.pickerBelowTrigger, '弹层应渲染在触发器下方').toBe(true)
+  expect(state.inViewport, '弹层不得溢出视口').toBe(true)
+})

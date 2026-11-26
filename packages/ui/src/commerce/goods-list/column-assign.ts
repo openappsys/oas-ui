@@ -1,9 +1,11 @@
 /**
- * oas-goods-list 纯函数内核 —— 列分配 / 自适应列数 / 触底判定。
+ * oas-goods-list 纯函数内核 —— 列分配 / 自适应列数。
  *
  * 与组件解耦（零 DOM 依赖）：瀑布流「列均衡分配」按累计高度最短列放置；
- * `columns="auto"` 按容器宽断点取列数；加载更多触底判定供单测直接覆盖
- * （happy-dom 无法真实滚动）。实现原创，不复制任何既有库。
+ * `columns="auto"` 按容器宽断点取列数。
+ *
+ * 触底判定 `shouldRequestMore` 已随触底协议内核下沉 `shared/bottom-reach.ts`
+ * （goods-list / order-list 共用单一真源），此处保留 re-export 以免破坏既有导入面。
  */
 
 /** 容器宽 → auto 列数断点：<640 → 2 列，<1024 → 3 列，其余 4 列；非法宽回落 2 列 */
@@ -50,13 +52,5 @@ export function resolveColumns(raw: string, hostWidth: number): { columns: numbe
   return { columns: resolveAutoColumns(hostWidth), mode: 'auto' }
 }
 
-/** 加载更多触底判定：哨兵顶边进入视口（含 240px 提前量）且不在 loading / 到底 / 待应答态 */
-export function shouldRequestMore(
-  sentinelTop: number,
-  viewportHeight: number,
-  state: { loading: boolean; noMore: boolean; pending: boolean },
-): boolean {
-  if (state.loading || state.noMore || state.pending) return false
-  if (!Number.isFinite(sentinelTop) || !Number.isFinite(viewportHeight) || viewportHeight <= 0) return false
-  return sentinelTop <= viewportHeight + 240
-}
+/** 加载更多触底判定（实现居 shared/bottom-reach.ts；此处 re-export 保留既有导入面） */
+export { shouldRequestMore } from '../../shared/bottom-reach.js'

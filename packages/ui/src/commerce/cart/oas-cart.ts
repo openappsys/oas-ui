@@ -3,6 +3,7 @@ import { closePath } from '@oas-ui/icons/icons/close'
 import { minusPath } from '@oas-ui/icons/icons/minus'
 import { plusPath } from '@oas-ui/icons/icons/plus'
 import { devWarn } from '../../shared/dev-warn.js'
+import { isRtl } from '../../shared/direction.js'
 import { parseJsonArray } from '../../shared/json-array.js'
 import '../price/index.js'
 
@@ -1188,15 +1189,10 @@ export class OASCart extends OASElement {
     if (refs) refs.inner.style.transform = `translateX(${this.swipeSign() * SWIPE_REVEAL}px)`
   }
 
-  /** LTR 向行首拖出（位移取负）；RTL 反向 */
+  /** LTR 向行首拖出（位移取负）；RTL 反向（方向判定收敛 shared/direction，
+   * computed 通道保留原先直读样式表的语义——本件滑动方向在指针事件里判） */
   private swipeSign(): number {
-    let rtl = false
-    try {
-      rtl = getComputedStyle(this).direction === 'rtl'
-    } catch {
-      rtl = this.getAttribute('dir') === 'rtl'
-    }
-    return rtl ? 1 : -1
+    return isRtl(this, { computed: true }) ? 1 : -1
   }
 
   // -------------------------------------------------------------------------

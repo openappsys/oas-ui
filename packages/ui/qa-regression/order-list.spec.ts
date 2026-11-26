@@ -112,6 +112,29 @@ test('order-list：触底真滚动——oas-load-more 派发 + 宿主协议追�
   await expect(host.locator('[part="more-text"]')).toContainText('没有更多了')
 })
 
+test('order-list：RTL 下水平方向键镜像——ArrowRight 向左移焦点（对齐 time-select 口径）', async ({ page }) => {
+  await page.goto('/components/order-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ol-basic')
+  const host = page.locator('#ol-basic')
+  await host.evaluate((el) => {
+    el.setAttribute('dir', 'rtl')
+    el.scrollIntoView({ block: 'center' })
+  })
+  const tabs = host.locator('[part="tab"]')
+  // 方向解析在 keydown 时读宿主方向（无需重渲染）
+  await tabs.nth(1).focus()
+  await page.keyboard.press('ArrowRight')
+  // RTL：视觉向右 = 前一个 tab（nth(0)）
+  await expect(tabs.nth(0)).toHaveAttribute('tabindex', '0')
+  await expect(tabs.nth(0)).toBeFocused()
+  await expect(tabs.nth(1)).toHaveAttribute('tabindex', '-1')
+  // 未激活（manual activation 不变）
+  await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'false')
+  // ArrowLeft 反向（视觉向左 = 下一个 tab）
+  await page.keyboard.press('ArrowLeft')
+  await expect(tabs.nth(1)).toBeFocused()
+})
+
 test('order-list：暗色下选中页签底色随主题翻转（token 驱动）', async ({ page }) => {
   await page.goto('/components/order-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ol-basic')
