@@ -751,6 +751,10 @@ const COMPONENT_ENTRIES = [
   { id: 'resourcePool', entry: 'data/resource/pool', spec: '@oas-ui/ui/data/resource/pool' },
   { id: 'resourceLoad', entry: 'data/resource/load', spec: '@oas-ui/ui/data/resource/load' },
   { id: 'resourceLevel', entry: 'data/resource/level', spec: '@oas-ui/ui/data/resource/level' },
+  // commerce 家族 helper 型 L3（2026-11-26 L3 能力包批；不进 L1/commerce 族包，显式 import）
+  { id: 'cartBatch', entry: 'commerce/cart/batch', spec: '@oas-ui/ui/commerce/cart/batch' },
+  { id: 'filterPersist', entry: 'commerce/filter/persist', spec: '@oas-ui/ui/commerce/filter/persist' },
+  { id: 'goodsListPaged', entry: 'commerce/goods-list/paged', spec: '@oas-ui/ui/commerce/goods-list/paged' },
   { id: 'form', entry: 'form/form', spec: '@oas-ui/ui/form/form' },
   // schema-form 受限表达式轨（parser + evaluator 独立预算档，L3 登记表驱动）
   { id: 'schemaFormExpr', entry: 'form/schema-form/expr', spec: '@oas-ui/ui/form/schema-form/expr' },
@@ -1337,6 +1341,39 @@ const BUDGETS = [
     limit: 19 * 1024,
     basis:
       '首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 16.4 KB / 10 文件（纯展示卡零事件——属性反射 + 两插槽显隐 + variant token 化底色；链只含 core + i18n，为 commerce 最轻链），上浮 ~15% 取整定档 19 KB；等级进度条 / 卡面二维码走 L3 能力子路径另立档',
+  },
+  // —— commerce 家族 helper 型 L3 三件（2026-11-26 L3 能力包批，实测 ×1.15 取整定档） ——
+  // helper 子路径（不进 L1/commerce 族包），按需显式 import；三账制首应用：
+  // 按需链 = 本档（batch 因注入禁用判定 import core/config-context，链含 core 一档；
+  // persist / paged 单文件零依赖）；CDN 族包增量 = 0（helper 无 HTML/属性触发面，
+  // 进 union 即死重——l3-registry familyInclusionViolations 断言「不在」）；
+  // 消费者共载概率见各组件 README 三账表。
+  {
+    name: '@oas-ui/ui/commerce/cart/batch 链 gzip',
+    kind: 'absolute',
+    componentId: 'cartBatch',
+    get: () => componentMeasures.cartBatch.gzipBytes,
+    limit: 4 * 1024, // 4 KB（2026-11-26 复核修复批重定：实测 3.2 KB ×1.15 取整）
+    basis:
+      'helper 编排子路径，按需引入；首档 2026-11-26 实测 gzip 1.1 KB / 2 文件（编排 + dev-warn）；真实浏览器复核修复批（C1 数据破坏：config-provider 注入禁用时 executeBatch 仍执行删除——只判 attribute 漏掉注入判定）引入 core 的 injectDisabled 同语义判定后链实测 gzip 3.2 KB / 3 文件（编排 + dev-warn + core/config-context 的 findConfigProvider/parseProviderConfig——禁用判定与本体 isDisabled 同一实现，注入禁用下 helper 与本体行为一致），按实测 ×1.15 取整定档 4 KB',
+  },
+  {
+    name: '@oas-ui/ui/commerce/filter/persist 链 gzip',
+    kind: 'absolute',
+    componentId: 'filterPersist',
+    get: () => componentMeasures.filterPersist.gzipBytes,
+    limit: 1.5 * 1024, // 1.5 KB（2026-11-26 首档：实测 0.7 KB 上浮；<1KB gz 目标达成）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.7 KB / 1 文件（conditions 编解码——URL encodeURIComponent 往返 + Storage try-catch 降级，单文件零依赖，<1KB gz 目标达成），上浮 ~15% 取整定档 1.5 KB',
+  },
+  {
+    name: '@oas-ui/ui/commerce/goods-list/paged 链 gzip',
+    kind: 'absolute',
+    componentId: 'goodsListPaged',
+    get: () => componentMeasures.goodsListPaged.gzipBytes,
+    limit: 2 * 1024, // 2 KB（2026-11-26 首档：实测 0.6 KB 上浮——余量留给状态机演进）
+    basis:
+      'helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.6 KB / 1 文件（createPagedSource cursor 状态机——代际守卫 reset / 在途防重 / 错误恢复，单文件零依赖；headless 先例同 layout/scroll-area/infinite），上浮 ~15% 取整定档 2 KB',
   },
   // —— 复用决策基线五链（2026-11-25 复用基建配套批补齐，实测 ×1.15 取整定档） ——
   // 背景：2026-11-25 复用权衡框架 review——select 链从未计量是估算错 3 倍的根因，

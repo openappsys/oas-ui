@@ -150,6 +150,38 @@ This component only owns the list and the subtotal: put checkout buttons in the 
   </div>
 </DemoBlock>
 
+## Batch operations (capability subpath)
+
+Batch remove / batch favorite goes through the **capability subpath** `@oas-ui/ui/commerce/cart/batch` (helper: import on demand, not shipped with the base component — the base API is unchanged). Targets = the selected set (`items[].selected === true`); disabled entries and unknown ids are skipped automatically. After execution the helper writes `items` back and dispatches `oas-batch` (`detail` = `{ op, items, succeeded, skipped, changed }`) for host feedback:
+
+<DemoBlock title="Batch remove / batch favorite (executeBatch)">
+  <div style="display: grid; gap: var(--oas-space-3); width: 100%">
+    <oas-cart
+      id="cart-batch-en"
+      items='[{"id":"a","title":"Cotton tee","spec":"White / M","price":99,"quantity":2,"selected":true,"image":"/assets/demo-square-1.svg"},{"id":"b","title":"Canvas sneakers","spec":"42 / Ivory","price":199,"quantity":1,"selected":true,"image":"/assets/demo-square-2.svg"},{"id":"c","title":"Cotton bucket hat","spec":"One size","price":59,"quantity":1,"image":"/assets/demo-square-3.svg"},{"id":"d","title":"Delisted product","spec":"Out of stock","price":29,"quantity":1,"selected":true,"disabled":true,"image":"/assets/demo-square-6.svg"}]'
+    >
+      <oas-button id="cart-batch-remove-en" slot="actions" size="small">Remove selected</oas-button>
+      <oas-button id="cart-batch-favorite-en" slot="actions" size="small">Favorite selected</oas-button>
+    </oas-cart>
+    <p id="cart-batch-out-en" style="margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      Select items, then click "Remove / Favorite selected"; the delisted product (disabled, cannot be checked) is never touched by the batch orchestration.
+    </p>
+  </div>
+</DemoBlock>
+
+Host glue (same as the demo):
+
+```js
+import { executeBatch } from '@oas-ui/ui/commerce/cart/batch'
+
+removeBtn.addEventListener('click', () => {
+  const outcome = executeBatch(cart, { type: 'remove' })
+  // outcome.skipped carries skip reasons (disabled / not-found) for host messaging
+})
+// Batch favorite: `favorite` is a host-level convention field (true/false written back into items)
+executeBatch(cart, { type: 'favorite' })
+```
+
 ## Styling notes
 
 A row is `::part(item)` (the `li`) → `::part(item-inner)` (the content layer) plus, in swipe mode, `::part(swipe-remove)`. The content layer paints its own background above the delete button, so when overriding the `::part(item)` background or radius keep the swipe reveal (which shows `::part(swipe-remove)`) in mind. Clicking an item body (title / spec / price) dispatches `oas-item-click` with `{ id, item }` — use it to open the product page.
@@ -192,6 +224,7 @@ A row is `::part(item)` (the `li`) → `::part(item-inner)` (the content layer) 
 
 <script setup>
 import { onMounted } from 'vue'
+import { executeBatch } from '@oas-ui/ui/commerce/cart/batch'
 onMounted(() => {
   customElements.whenDefined('oas-cart').then(() => {
     const out = document.getElementById('cart-basic-out-en')
@@ -216,6 +249,21 @@ onMounted(() => {
     cart?.addEventListener('oas-change', (e) => {
       bar.setAttribute('total', String(e.detail.total))
       checkoutOut.textContent = 'oas-change: total ' + e.detail.total + ' (synced to the submit bar)'
+    })
+
+    // —— Batch operations demo (capability subpath helper) ——
+    const batchCart = document.getElementById('cart-batch-en')
+    const batchOut = document.getElementById('cart-batch-out-en')
+    batchCart?.addEventListener('oas-batch', (e) => {
+      const d = e.detail
+      const skipped = d.skipped.length > 0 ? `, skipped ${d.skipped.length} (${d.skipped.map((s) => s.reason === 'disabled' ? 'disabled' : 'not found').join('/')})` : ''
+      batchOut.textContent = `oas-batch (${d.op.type}): ${d.succeeded.length} succeeded${skipped}; ${d.items.length} items left`
+    })
+    document.getElementById('cart-batch-remove-en')?.addEventListener('click', () => {
+      executeBatch(batchCart, { type: 'remove' })
+    })
+    document.getElementById('cart-batch-favorite-en')?.addEventListener('click', () => {
+      executeBatch(batchCart, { type: 'favorite' })
     })
   })
 })

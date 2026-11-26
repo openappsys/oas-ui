@@ -123,7 +123,7 @@ i18n 死键**不在此重复建设**：`packages/i18n/src/slices/completeness.te
 
 ### 跨族依赖门禁（CI 强制）
 
-`pnpm family-deps:check`（自测 `pnpm family-deps:test`，node --test；`.github/workflows/ci.yml` test job 已接线，紧随 `qa:audit:check`）。扫描 `packages/ui/src` 生产文件的相对 import 面（含副作用与动态 import；`import type` 与值 import 不区分口径），断言登记表 `scripts/family-deps-registry.json` 之外的跨族 import 一律红灯——「先全量扫描现状登记为合法边，再拦新增反边」；登记条目现状零命中 = 事实已消失，同样红灯（登记表须随现状收缩）。方向语义：`@oas-ui/*` 基座与各族 → `shared` 叶子方向放行；`shared →` 族反向边与族 → 族依赖逐条登记；入口层（`families/` 目录 + 根级 `index.ts` / `ssr.ts`）出边不入图、不被反向依赖。环检测对登记边图求强连通分量（环簇），现状环簇在 knownCycles 留名，环簇扩大/新增/留名失效均红灯；覆盖面声明：族→shared 叶子方向边不入图（不参与环检测），shared→族反向边在图但不闭合环——「叶子实现居 shared」是既定分层设计，非依赖异味。判定函数纯函数化（fixtures 单测覆盖红绿两侧），结构性覆盖违规（族包缺档/残档/入口层反向依赖）除自身报红外不阻塞其他门禁；新增跨族依赖先登记（附 reason）再实现。
+`pnpm family-deps:check`（自测 `pnpm family-deps:test`，node --test；`.github/workflows/ci.yml` test job 已接线，紧随 `qa:audit:check`）。扫描 `packages/ui/src` 生产文件的相对 import 面（含副作用与动态 import；`import type` 与值 import 不区分口径），断言登记表 `scripts/family-deps-registry.json` 之外的跨族 import 一律红灯——「先全量扫描现状登记为合法边，再拦新增反边」；登记条目现状零命中 = 事实已消失，同样红灯（登记表须随现状收缩）。方向语义：`@oas-ui/*` 基座与各族 → `shared` 叶子方向放行；`shared →` 族反向边与族 → 族依赖逐条登记；入口层（`families/` 目录 + 根级 `index.ts` / `ssr.ts`）出边不入图、不被反向依赖。环检测对登记边图求强连通分量（环簇），现状环簇在 knownCycles 留名，环簇扩大/新增/留名失效均红灯；覆盖面声明：族→shared 叶子方向边不入图（不参与环检测），shared→族反向边在图但不闭合环——「叶子实现居 shared」是既定分层设计，非依赖异味。判定函数纯函数化（fixtures 单测覆盖红绿两侧）；结构性违规（入口层反向依赖、登记脏态）各自报红即有可操作文案（CI 顺序执行，任一步失败即 job 失败）。新增跨族依赖先登记（附 reason）再实现。
 
 ### 性能基准（vision §5.8 性能领先）
 

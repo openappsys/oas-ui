@@ -87,6 +87,44 @@ Reaching the bottom emits `oas-load-more` (a sentinel enters the viewport 240px 
   </oas-goods-list>
 </DemoBlock>
 
+## Server-side pagination protocol (capability subpath)
+
+For server-side cursor pagination over the bottom-reach protocol, use the capability subpath `@oas-ui/ui/commerce/goods-list/paged` (helper: headless cursor state machine, import on demand — the base API is unchanged; the integration rides entirely on the existing bottom-reach protocol). `createPagedSource` owns the state: the first page carries no cursor, later pages carry the previous page's trailing cursor; in-flight calls are deduplicated; a failed load leaves the cursor untouched (retry = call `loadPage()` again); `reset()` covers the filter-switch scenario (clears the accumulation with an epoch guard — a stale in-flight page is discarded once it resolves, so old responses never pollute the new list):
+
+<DemoBlock title="Server pagination closed loop (mocked cursor backend, real bottom-reach triggers)">
+  <div style="display: grid; gap: var(--oas-space-2); width: 100%">
+    <oas-goods-list id="gl-paged-en" columns="3"></oas-goods-list>
+    <div style="display: flex; gap: var(--oas-space-2); align-items: center">
+      <oas-button id="gl-paged-reset-en" size="small">Reset (filter-switch scenario)</oas-button>
+      <span id="gl-paged-out-en" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Scroll to the bottom of the list to load (240px sentinel lead) and watch the cursor advance page by page until the end of the list.</span>
+    </div>
+  </div>
+</DemoBlock>
+
+Host glue (the demo's complete loop — bottom reach → `loadPage` → append → cursor advance → `no-more` end):
+
+```js
+import { createPagedSource } from '@oas-ui/ui/commerce/goods-list/paged'
+
+const source = createPagedSource({
+  load: ({ cursor, page }) => fetch(`/api/goods?cursor=${cursor ?? ''}&page=${page}`).then((r) => r.json()),
+  getItems: (res) => res.data.list,         // default reads res.items
+  getCursor: (res) => res.data.nextCursor,  // default reads res.cursor
+})
+list.addEventListener('oas-load-more', async () => {
+  if (source.pending) return                        // in-flight dedup
+  if (source.done) { list.setAttribute('no-more', ''); return }
+  list.setAttribute('loading', '')                  // answers the bottom reach
+  try {
+    await source.loadPage()
+    list.items = source.items                       // append
+  } catch { /* failure rendering is the host's job; cursor untouched, just call loadPage again */ } finally {
+    list.removeAttribute('loading')
+    if (source.done) list.setAttribute('no-more', '')
+  }
+})
+```
+
 ## Keyboard and accessibility
 
 - The card grid container carries `role="list"` + built-in cards as `role="listitem"` (column divs are `presentation` so the list semantics stay unbroken), with `aria-label` "Product list"; the load-more region is an `aria-live="polite"` `role="status"` region (loading / end-of-list changes are announced) and sits outside the list semantics, along with the empty state and the sentinel.
@@ -100,6 +138,7 @@ Reaching the bottom emits `oas-load-more` (a sentinel enters the viewport 240px 
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { createPagedSource } from '@oas-ui/ui/commerce/goods-list/paged'
 
 // Demo script convention (do not move): (1) page-level script setup only — VitePress does not extract
 // a script setup written inside a DemoBlock, so it is emitted as page text (Cannot use import statement /
@@ -153,6 +192,72 @@ onMounted(() => {
     document.getElementById('gl-done')?.addEventListener('click', () => {
       more.setAttribute('no-more', '')
       moreOut.textContent = 'no-more set: end-of-list shown, no further emission'
+    })
+
+    // —— Server pagination demo (capability subpath helper; mocked cursor backend) ——
+    const paged = document.getElementById('gl-paged-en')!
+    const pagedOut = document.getElementById('gl-paged-out-en')!
+    // Mock server: 3 pages (p1→c2→p2→c3→p3→no cursor), 600ms latency
+    const SERVER: Record<string, { list: { title: string; price: number; image?: string }[]; next?: string | null }> = {
+      first: {
+        list: [
+          { title: 'Page 1 · item A', price: 10, image: '/assets/demo-square-1.svg' },
+          { title: 'Page 1 · item B', price: 20 },
+          { title: 'Page 1 · item C', price: 30, image: '/assets/demo-square-2.svg' },
+        ],
+        next: 'c2',
+      },
+      c2: {
+        list: [
+          { title: 'Page 2 · item D', price: 40, image: '/assets/demo-square-3.svg' },
+          { title: 'Page 2 · item E', price: 50 },
+          { title: 'Page 2 · item F', price: 60, image: '/assets/demo-square-4.svg' },
+        ],
+        next: 'c3',
+      },
+      c3: {
+        list: [
+          { title: 'Page 3 (last) · item G', price: 70, image: '/assets/demo-square-5.svg' },
+          { title: 'Page 3 (last) · item H', price: 80 },
+        ],
+        next: null,
+      },
+    }
+    const pagedSource = createPagedSource<{ title: string; price: number; image?: string }, { list: { title: string; price: number; image?: string }[]; next?: string | null }>({
+      load: async ({ cursor }) => {
+        await new Promise((r) => setTimeout(r, 600))
+        return SERVER[cursor ?? 'first']!
+      },
+      getItems: (res) => res.list,
+      getCursor: (res) => res.next ?? null,
+    })
+    const pagedFetch = async () => {
+      if (pagedSource.pending) return
+      if (pagedSource.done) {
+        paged.setAttribute('no-more', '')
+        return
+      }
+      paged.setAttribute('loading', '')
+      pagedOut.textContent = `oas-load-more: loading page ${pagedSource.page + 1} (cursor=${pagedSource.cursor ?? 'null'})…`
+      try {
+        await pagedSource.loadPage()
+        ;(paged as unknown as { items: unknown }).items = pagedSource.items
+        if (pagedSource.done) paged.setAttribute('no-more', '')
+        pagedOut.textContent = `Page ${pagedSource.page} appended (${pagedSource.items.length} items total, cursor=${pagedSource.cursor ?? '—'}${pagedSource.done ? ', end of list' : ''})`
+      } catch {
+        pagedOut.textContent = 'Load failed (the mock server never fails; in real usage the error lands in source.error and retrying means calling loadPage again)'
+      } finally {
+        paged.removeAttribute('loading')
+      }
+    }
+    paged.addEventListener('oas-load-more', pagedFetch)
+    pagedFetch() // first page
+    document.getElementById('gl-paged-reset-en')?.addEventListener('click', async () => {
+      paged.removeAttribute('no-more')
+      pagedOut.textContent = 'reset: clearing the accumulation and reloading page 1 (stale in-flight pages are dropped by the epoch guard)'
+      await pagedSource.reset()
+      ;(paged as unknown as { items: unknown }).items = pagedSource.items
+      pagedOut.textContent = `reset done: page 1 has ${pagedSource.items.length} items (cursor=${pagedSource.cursor ?? '—'})`
     })
   })
 })

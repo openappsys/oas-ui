@@ -4,12 +4,12 @@
     "method": "gzip = zlib gzipSync；brotli = zlib.brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计；2026-11-03 起 core 内部消费走模块子路径，barrel 不再连带入链——非表单链因此普遍 -5.9~-6.7 KB，而子路径拆分使逐文件求和口径微涨属正常）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 51677126,
+        "distTotalBytes": 51731761,
         "browserJs": {
-          "files": 606,
-          "rawBytes": 12716257,
-          "gzipBytes": 3180695,
-          "brotliBytes": 2493771
+          "files": 609,
+          "rawBytes": 12721578,
+          "gzipBytes": 3183099,
+          "brotliBytes": 2495836
         },
         "fullEntry": {
           "files": 623,
@@ -1104,6 +1104,37 @@
           "packages/core/dist/translator.js",
           "packages/ui/dist/data/resource/hints.js"
         ]
+      },
+      "cartBatch": {
+        "entry": "commerce/cart/batch",
+        "spec": "@oas-ui/ui/commerce/cart/batch",
+        "files": 3,
+        "rawBytes": 7199,
+        "gzipBytes": 3245,
+        "brotliBytes": 2706,
+        "fileList": [
+          "packages/ui/dist/commerce/cart/batch/index.js",
+          "packages/core/dist/config-context.js",
+          "packages/ui/dist/shared/dev-warn.js"
+        ]
+      },
+      "filterPersist": {
+        "entry": "commerce/filter/persist",
+        "spec": "@oas-ui/ui/commerce/filter/persist",
+        "files": 1,
+        "rawBytes": 1772,
+        "gzipBytes": 748,
+        "brotliBytes": 648,
+        "fileList": ["packages/ui/dist/commerce/filter/persist/index.js"]
+      },
+      "goodsListPaged": {
+        "entry": "commerce/goods-list/paged",
+        "spec": "@oas-ui/ui/commerce/goods-list/paged",
+        "files": 1,
+        "rawBytes": 1481,
+        "gzipBytes": 637,
+        "brotliBytes": 554,
+        "fileList": ["packages/ui/dist/commerce/goods-list/paged/index.js"]
       },
       "form": {
         "entry": "form/form",
@@ -2439,6 +2470,39 @@
         "pass": true,
         "warn": false,
         "basis": "首档 2026-11-25（电商扩容二波随批定档）：实测 gzip 16.4 KB / 10 文件（纯展示卡零事件——属性反射 + 两插槽显隐 + variant token 化底色；链只含 core + i18n，为 commerce 最轻链），上浮 ~15% 取整定档 19 KB；等级进度条 / 卡面二维码走 L3 能力子路径另立档"
+      },
+      {
+        "name": "@oas-ui/ui/commerce/cart/batch 链 gzip",
+        "kind": "absolute",
+        "componentId": "cartBatch",
+        "actualBytes": 3245,
+        "limitBytes": 4096,
+        "warnAtBytes": 3686,
+        "pass": true,
+        "warn": false,
+        "basis": "helper 编排子路径，按需引入；首档 2026-11-26 实测 gzip 1.1 KB / 2 文件（编排 + dev-warn）；真实浏览器复核修复批（C1 数据破坏：config-provider 注入禁用时 executeBatch 仍执行删除——只判 attribute 漏掉注入判定）引入 core 的 injectDisabled 同语义判定后链实测 gzip 3.2 KB / 4 文件（编排 + dev-warn + core/config-context 的 findConfigProvider/parseProviderConfig——禁用判定与本体 isDisabled 同一实现，注入禁用下 helper 与本体行为一致），按实测 ×1.15 取整定档 4 KB"
+      },
+      {
+        "name": "@oas-ui/ui/commerce/filter/persist 链 gzip",
+        "kind": "absolute",
+        "componentId": "filterPersist",
+        "actualBytes": 748,
+        "limitBytes": 1536,
+        "warnAtBytes": 1382,
+        "pass": true,
+        "warn": false,
+        "basis": "helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.7 KB / 1 文件（conditions 编解码——URL encodeURIComponent 往返 + Storage try-catch 降级，单文件零依赖，<1KB gz 目标达成），上浮 ~15% 取整定档 1.5 KB"
+      },
+      {
+        "name": "@oas-ui/ui/commerce/goods-list/paged 链 gzip",
+        "kind": "absolute",
+        "componentId": "goodsListPaged",
+        "actualBytes": 637,
+        "limitBytes": 2048,
+        "warnAtBytes": 1843,
+        "pass": true,
+        "warn": false,
+        "basis": "helper 纯函数子路径，按需引入；首档 2026-11-26（L3 能力包三件随批定档）：实测 gzip ~0.6 KB / 1 文件（createPagedSource cursor 状态机——代际守卫 reset / 在途防重 / 错误恢复，单文件零依赖；headless 先例同 layout/scroll-area/infinite），上浮 ~15% 取整定档 2 KB"
       },
       {
         "name": "@oas-ui/ui/form/select 链 gzip",

@@ -47,3 +47,73 @@ cart.addEventListener('oas-remove', (e) => {
 
 - 行结构固定为 `::part(item)`（`li`）→ `::part(item-inner)`（内容层）+（滑动模式）`::part(swipe-remove)`（绝对定位删除钮）。覆写 `::part(item)` 的背景/圆角时注意内容层自带背景，滑动展开态才不会透出删除钮。
 - 滑动删除宽度固定 72px（与 `SWIPE_REVEAL` 一致）；改宽度需同时改样式与常量，宿主覆写 `::part(swipe-remove)` 宽度会导致露出不完全。
+
+## 能力子路径：批量操作编排（`commerce/cart/batch`）
+
+批量删除 / 批量移收藏的宿主侧编排——**helper 型能力子路径**（按需显式 import，
+不随本体进链；登记 `scripts/perf/lib/l3-registry.mjs` id `cartBatch`，独立预算档见
+`docs/perf-baseline.md` §4）：
+
+```js
+import { executeBatch } from '@oas-ui/ui/commerce/cart/batch'
+
+// 目标 = 勾选集（items[].selected === true）；disabled 条目跳过、不存在的 id 跳过
+const outcome = executeBatch(cart, { type: 'remove' })
+// outcome: { op, items, succeeded, skipped, changed }
+cart.addEventListener('oas-batch', (e) => {
+  // e.detail 同 outcome 形——宿主据此给反馈（toast「已删除 3 件、1 件失效商品已跳过」）
+})
+// 批量收藏：favorite 是宿主业务约定字段（executeBatch 写 favorite: true/false 回 items）
+executeBatch(cart, { type: 'favorite' })
+// 显式目标清单（绕开勾选集）：applyBatch(items, op, ids) 纯函数变体（零 DOM 零事件）
+```
+
+### 形态决策记录（注册型 vs helper 型）
+
+**选 helper 型**。判据（architecture §3.1「无状态即可完成的用 helper」）逐条核对：
+
+1. **编排是纯数据变换**：items + 目标集 → 结果清单 + 新 items，无生命周期、无实例
+   状态、不读组件内部（公开 `items` 访问器足够）。
+2. **注册型的前提不成立**：`<oas-cart batch>` 激活「批量 UI 模式」隐含两个本体改动——
+   复选框按模式显隐（本体复选框是常驻首交互，显隐开关反而破坏既有契约）+ 内建批量
+   操作栏按钮（「移收藏」语义必须宿主定义——CartItem 无收藏字段、收藏去向是宿主
+   业务接口，组件无从内建）。两者都违反 commerce「本体冻结在大众功能集」的族级分级。
+3. **交互面已齐**：勾选 / 全选 / 禁用不可勾是本体既有基础设施；批量操作按钮归宿主
+   （`actions` 插槽既有扩展位）；helper 只补「编排 + 汇总事件」两件事。
+4. **collision-guard**：helper 无 attribute / 无类成员（纯函数模块），本体 API 零变化，
+   无新增撞名面。
+
+### 三账表（三账制首次应用，实测数字）
+
+| 账 | 数字 | 说明 |
+| --- | --- | --- |
+| 按需链档 | 实测 **3.2 KB gz / 3 文件**，预算 **4 KB**（×1.15 取整） | `@oas-ui/ui/commerce/cart/batch` 链：编排本体 + dev-warn + **core 的 config-context**（`injectDisabled` 注入禁用判定——与本体 `isDisabled()` 同一实现；config-provider 包裹下 helper 与本体行为一致）。首版只判 attribute 时链 1.1 KB，为修「注入禁用下照删」的数据破坏（C1）引入 core 判定后重定档；oas-cart 本体仅 `import type`（构建期擦除），零本体运行时依赖 |
+| CDN 族包增量 | **0**（helper 不进 commerce 族包） | 无 HTML/属性触发面，进 union 即死重；`perf:size` 族包包含断言（`familyInclusionViolations`）红绿两侧把关 |
+| 消费者共载概率 | 高（结算页几乎必带 cart 本体 25.1 KB 链；batch 与其共载） | 但 helper 只有 3.2 KB，按需付费合理：不用批量的消费者零付出，用者 +3.2 KB 换整套编排、汇总事件与注入禁用一致性 |
+
+### 设计前必答（helper 面）
+
+1. **取消路径**：`applyBatch` 是纯函数（零副作用、零孤儿产物）；`executeBatch` 同步
+   完成回写与派发，无异步无计时器；不调用即零效果。
+2. **属性默认值/空态**：op 缺省 `value`（favorite 缺省 true）；目标缺省 = 勾选集；
+   空勾选集 → 零操作 outcome（succeeded/skipped/changed 全空）；items 空数组 → 同上。
+3. **多步交互失败点**：op.type 非法 → devWarn 一次 + 零操作短路（不回写不派发）；
+   禁用条目跳过（reason `disabled`，与勾选面一致——勾选 UI 本就勾不中，编排层再拦
+   一道防显式 ids 误伤）；id 不存在跳过（reason `not-found`，快照间隙防御）；购物车
+   整体禁用（attribute 或 config-provider 注入，经 core `injectDisabled` 与本体
+   `isDisabled()` 同语义判定）→ 全部跳过、不回写、仍派 `oas-batch`（宿主给「不可
+   操作」反馈）。
+4. **破坏性选项**：批量删除是破坏性动作，但**默认非破坏**——不调用不发生；调用前
+   的确认（确认框 / popconfirm）归宿主在按钮 handler 里做；`oas-batch` 是执行后的
+   汇总事件（detail.changed 含被删条目快照，宿主可做撤销）；与本体逐条 `oas-remove`
+   （cancelable）的关系：批量场景逐卡弹确认不合理，故不走逐条事件，宿主调用前自行
+   确认。
+5. **键盘/ARIA**：helper 零 UI；宿主批量按钮的可访问名、确认交互由宿主控件自带
+   （`actions` 插槽内容不搬运不包壳——本体插槽契约）。
+6. **受控/非受控与宿主桥接**：`executeBatch` 以宿主 attribute **原文为基座**回写
+   （仅成功项应用操作，未成功条目原文保留——零操作（succeeded 为空）**不回写**，
+   归一化整体回写会补写默认值并抹掉宿主手工设置的禁用条目 `selected:true` 等原文；
+   受控宿主监听 `oas-batch` 拿 outcome 自行 setState，attribute 会被框架下次渲染
+   覆盖——受控语义不受影响）；回写 JSON 与当前值相同时 attribute 写入为浏览器级
+   no-op，不触发多余 update。
+
