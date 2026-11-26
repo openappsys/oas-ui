@@ -256,8 +256,8 @@
 - **体积账**：四个内核随组件链进入既有预算档，新增 gz 实测见各模块头注；不新增门禁（族依赖门禁对「族→shared 叶子方向」放行）。
 **L3 能力包三件真实浏览器复核修复批（1C + 3I + 1 用户可见）**
 
-- **cart/batch 注入禁用下照删（C 级，数据破坏）**：`executeBatch` 只判 `cart.hasAttribute('disabled')`，而 config-provider 注入禁用是 provider 属性/JSON 级判定不写 attribute——`<oas-config-provider disabled>` 包裹下本体按钮全禁、helper 照删（items 4→0）。修复：改用 core 的 `injectDisabled`（与本体 `isDisabled()` 同一实现，attribute / 注入 / `disabled-skip` 豁免同语义），禁用时全部跳过（reason disabled）、不回写、仍派 `oas-batch`。链因 import core/config-context 从 1.1 KB 增至 3.2 KB，预算档重定 1.5 → 4 KB（×1.15）。单测 +1（注入禁用零变化 + skipped 全量 + skip 豁免）；qa-regression +1。
-- **cart/batch 零操作也回写 items（I 级）**：executeBatch 用归一后 items 整体回写——零操作补写默认值 + 抹掉宿主手工设置的禁用条目 `selected:true`。修复：回写以宿主 attribute **原文为基座**、仅成功项应用操作；`succeeded.length === 0` 时不回写只派事件。单测 +3（空勾选 attribute 不变 / 仅禁用被勾选原文不变 / 部分成功未成功条目原文保留）。
+- **cart/batch 注入禁用下照删（C 级，数据破坏）**：`executeBatch` 只判 `cart.hasAttribute('disabled')`，而 config-provider 注入禁用是 provider 属性/JSON 级判定不写 attribute——`<oas-config-provider disabled>` 包裹下本体按钮全禁、helper 照删（items 4→0）。修复：改用 core 的 `injectDisabled`（与本体 `isDisabled()` 同一实现，attribute / 注入 / `disabled-skip` 豁免同语义），禁用时全部跳过（reason disabled）、不回写、仍派 `oas-batch`。链因 import core/config-context 从 1.1 KB 增至 3.2 KB，预算档重定 1.5 → 4 KB（×1.15）。单测 +1（注入禁用零变化 + skipped 全量 + skip 豁免；已计入上文 cart/batch 条目的 +16，不另累计）；qa-regression +1。
+- **cart/batch 零操作也回写 items（I 级）**：executeBatch 用归一后 items 整体回写——零操作补写默认值 + 抹掉宿主手工设置的禁用条目 `selected:true`。修复：回写以宿主 attribute **原文为基座**、仅成功项应用操作；`succeeded.length === 0` 时不回写只派事件。单测 +3（空勾选 attribute 不变 / 仅禁用被勾选原文不变 / 部分成功未成功条目原文保留；已计入上文 cart/batch 条目的 +16，不另累计）。
 - **filter/persist fromQuery 对含裸 % 的值丢失/篡改（I 级）**：`decode` 无条件 `decodeURIComponent`——toQuery 存 JSON 原文后 `URLSearchParams.get()` 已解一层，再 decode 即对 JSON 内容二次解码（`%` 后非十六进制 → URIError → 整批 null；`%41` → 静默篡改 `A`）。修复：`fromQuery` 改「先直接解析原文，失败再 decode 回退」——原文形态优先、手工 encode 形态兼容。回归 3 组（非十六进制 % / 十六进制 %41 不经 URL 路径 / 加号与空格——URLSearchParams 层的合法 %XX 属转义语义，宿主经 toQuery 产生合法 query）。
 - **goods-list/paged 响应适配抛错 → 状态机永久卡死（I 级）**：`load(ctx)` 同步抛错逃出 Promise 契约；`getItems`/`getCursor` 在成功回调里抛错 → pending 恒 true / inflight 残留 / error=null → 宿主胶水 `if (source.pending) return` 永久阻断（`getItems: res => res.data.list` + 500 错误体是最常见分支）。修复：`run` 重构为 async IIFE——load 同步抛错与适配抛错统一走失败分支（error 落盘、pending 复位、状态不推进可重试）；修复中发现并同修 inflight 清理时序缺陷（清理链挂两跳会晚于宿主 await resume 执行，导致上一次完成后防重占位未清、下一页永不加载——改单跳注册，与调用方同队列且先执行）。回归 2 组（适配抛错后可重试成功 / load 同步抛错走失败分支）。
 - **demo（filter persist）面板遮挡操作按钮（用户可见）**：条件面板展开时（dropdown 绝对定位）完全覆盖下方「保存 / 还原 / 清空」按钮行——操作按钮移到筛选器上方，面板展开不再遮挡。
@@ -276,7 +276,7 @@
 - **demo（member-card）**：「升级下一档」primary 实底钮在 light 下与 gradient 卡面同色融合——改 default 表面按钮（不透明 surface 底 + primary 文字，light/dark 双态与卡面区分明确，不依赖卡面 surface 色）。
 - **文档同步（aria-label 所有权）**：member-card README / 组件 jsdoc / zh-en 文档「键盘与无障碍」补所有权三态说明（宿主显式命名优先 / 删除后恢复接管 / 巧合同串被视为接管属值型所有权固有限制）。
 - **a11y 基线**：本批新页与回退页的 `skipped.ci` 补 +4 跨 OS 字体排版余量（约定 ci = 实测 + 4；生成逻辑 ci = max(实测, 旧 ci) 不会回落）；债务台账入基线 note——goods-list `ratio=2` 为 oas-tag success/warning 色对 4.35:1 / 4.42:1 的**既有 token 债务**（非本批引入，修 tag 另立批次，基线登记保留只许降不许升）。
-- **内部轮次归属清理**：CHANGELOG 与组件注释里的内部审核轮次编号（如「R1 实测」类）改中性表述（「真实浏览器复核」）；本批提交 message 同步改写（未 push 安全，树内容不变仅 message 变）。历史批次的既有轮次编号不在本批范围（属各自批次的登记内容）。
+- **内部轮次归属清理**：CHANGELOG 与组件注释里的内部审核轮次编号（如「R1 实测」类）改中性表述（「真实浏览器复核」）；部分子批提交 message 同步改写（未 push 安全，树内容不变仅 message 变）。其余子批与历史批次的既有轮次编号不在清理范围（属各自批次的登记内容）。
 
 **commerce 二波（search-bar / logistics / order-list / member-card）真实浏览器复核修复批（2C + 7I + Minor）**
 

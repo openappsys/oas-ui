@@ -127,7 +127,8 @@ sku.addEventListener('oas-change', (e) => {
 action.addEventListener('oas-action-click', (e) => {
   // sku.value is a controlled getter that always returns an object (empty when nothing is picked) — test its keys, never write !sku.value (always truthy, the guard would never fire)
   if (e.detail.key === 'add' && Object.keys(sku.value ?? {}).length < 2) return sku.openOverlay() // combination incomplete (2 spec groups here, catches partial picks) → guide selection
-  // …business handling; rewrite items after mutating badge / favorite state
+  // the full demo below gates both add and buy; only add is shown here — buy works the same
+// …business handling; rewrite items after mutating badge / favorite state
 })
 ```
 

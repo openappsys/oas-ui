@@ -198,10 +198,10 @@ hover/active 为 `color-mix()` 派生值（随 primary 联动，light 掺黑压�
 决策树（按序判定，命中即停）：
 
 1. **组合可达**（页面级组装已有组件）→ 配方层 guide，0 体积
-2. **只需纯逻辑 / 常量 / 协议**（如触底判定、状态机）→ import 已导出**纯函数**或下沉 **shared 叶子模块**（全部 <1KB gz：`overlay-stack` / `outside-dismiss` / `stable-id` / `direction` / `json-array` / `choice`——跨族复用的实际主力）
+2. **只需纯逻辑 / 常量 / 协议**（如触底判定、状态机）→ import 已导出**纯函数**或下沉 **shared 叶子模块**（全部 <1KB gz：`overlay-stack` / `outside-dismiss` / `stable-id` / `direction` / `json-array` / `choice`，shared 下沉批新增 `bottom-reach` / `listbox` / `flip-up` / `direction-dom`——跨族复用的实际主力）
 3. **非模态轻浮层**（dropdown / listbox / 筛选面板 / inline 下拉）→ **自绘 + shared 原语**（`outside-dismiss` + `stable-id`；filter / invoice / search-bar 三例成熟，全套 a11y ≈6.7KB 含在链内）。若多组件重复实现同形浮层 → 先抽 **shared 叶子内核**（键盘/翻转/外点，预计 <1.5KB）再各组件薄壳
 4. **模态 / 多层协同**（需要滚动锁 + Esc LIFO + 焦点陷阱 + 遮罩）→ **复用承载件**（bottom-sheet / drawer / modal）——此类复用增量小（sku→bottom-sheet 实测 +3.4KB gz）且重复实现风险高（自绘 drawer 已实证缺口：无滚动锁、未接 overlay-stack）
-5. **目标组件闭包 >15KB**（form/select 46.0 / combobox 38.6 / input 31.4 / tabs 32.1 KB）→ 先找**闭包更小的等价控件**（picker +12.9 / toggle-group +11.5）或自绘；确需原组件时必须一次付**三账**：按需链档（perf 基线逐链）、CDN 族包增量估算、消费者共载概率，并**在组件 README 记录实测数字**（禁用「组件自身 gz + 基座」的粗估——曾致 3 倍误差）
+5. **目标组件闭包 >15KB**（form/select 46.9 / combobox 38.6 / input 31.6 / tabs 32.1 KB，随 perf 基线刷新）→ 先找**闭包更小的等价控件**（picker +12.9 / toggle-group +11.5）或自绘；确需原组件时必须一次付**三账**：按需链档（perf 基线逐链）、CDN 族包增量估算、消费者共载概率，并**在组件 README 记录实测数字**（禁用「组件自身 gz + 基座」的粗估——曾致 3 倍误差）
 6. **语义 / API 错配**（如 inspector-section vs collapse、questionnaire 进度 vs progress）→ 自绘，不算违规
 
 **跨族复用三条准入**（替代模糊的「避免跨组件依赖」注记——同文档 sku 的跨族依赖为设计内）：

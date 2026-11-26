@@ -127,7 +127,8 @@ sku.addEventListener('oas-change', (e) => {
 action.addEventListener('oas-action-click', (e) => {
   // sku.value 是受控镜像 getter，恒返回对象（未选 = 空对象）——判组合要用键数，别写 !sku.value（恒 truthy，守卫永不触发）
   if (e.detail.key === 'add' && Object.keys(sku.value ?? {}).length < 2) return sku.openOverlay() // 组合未选完（本例 2 组规格，拦半选）→ 引导补选
-  // …业务处理；角标 / 收藏态改 items 后整体回写
+  // 下方完整 demo 对 add / buy 都做半选拦截；此处仅以 add 示例，buy 同理
+// …业务处理；角标 / 收藏态改 items 后整体回写
 })
 ```
 
