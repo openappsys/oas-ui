@@ -118,7 +118,7 @@ test('time-select：模式组方向键可切换模式并迁移焦点（另一模
   expect(after.feedback).toContain('oas-change')
 })
 
-test('time-select：RTL 下模式组方向键镜像（ArrowLeft 前进 / ArrowRight 后退）且焦点落位', async ({ page }) => {
+test('time-select：RTL 键盘镜像（模式组标记/焦点 + 日期组方向与 LTR 相反）', async ({ page }) => {
   await page.goto('/components/time-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-express')
   // 进入 RTL（宿主在页面内，方向由祖先 dir 计算）：组件据此镜像方向键
@@ -130,7 +130,9 @@ test('time-select：RTL 下模式组方向键镜像（ArrowLeft 前进 / ArrowRi
     root.querySelector<HTMLElement>('.mode')!.focus()
   })
 
-  // RTL：ArrowLeft = 前进（express → schedule），焦点跟到新钮
+  // 模式组：RTL 生效标记 + 方向键切换 + 焦点落位 + 单一 roving tab stop。
+  // ⚠️ 模式只有 2 个且默认回绕——左右键的终态同为「另一个模式」，单看终态无法区分方向；
+  // 真正能证明镜像的是下面的日期组（4 天、非边界起点）。
   await page.keyboard.press('ArrowLeft')
   const forward = await page.evaluate(() => {
     const host = document.querySelector('#ts-express') as HTMLElement
@@ -145,12 +147,10 @@ test('time-select：RTL 下模式组方向键镜像（ArrowLeft 前进 / ArrowRi
     }
   })
   expect(forward.rtlFlag, 'RTL 生效时宿主应标记 data-rtl').toBe(true)
-  expect(forward.mode, 'RTL 下 ArrowLeft 前进到预约配送').toBe('schedule')
+  expect(forward.mode, 'RTL 下 ArrowLeft 切到预约配送').toBe('schedule')
   expect(forward.focused, '焦点必须跟到新选中的模式钮').toBe('schedule')
   expect(forward.checked).toBe('schedule')
   expect(forward.tabStops, '模式组保持单一 roving tab stop').toBe(1)
-
-  // RTL：ArrowRight = 后退（schedule → express），焦点回到 express
   await page.keyboard.press('ArrowRight')
   const backward = await page.evaluate(() => {
     const host = document.querySelector('#ts-express') as HTMLElement
@@ -158,11 +158,37 @@ test('time-select：RTL 下模式组方向键镜像（ArrowLeft 前进 / ArrowRi
     const active = root.activeElement as HTMLButtonElement | null
     return { mode: host.getAttribute('mode'), focused: active?.dataset.mode ?? null }
   })
-  expect(backward.mode, 'RTL 下 ArrowRight 后退回尽快送达').toBe('express')
+  expect(backward.mode, 'RTL 下 ArrowRight 切回尽快送达').toBe('express')
   expect(backward.focused).toBe('express')
 
-  // 恢复 LTR，避免影响同页其它用例（worker 内同一 page 复用）
+  // 日期组（#ts-schedule，4 天）：从第 2 个可用日期出发，RTL 下 ArrowRight = 后退到第 1 个；
+  // LTR 同键 = 前进到第 3 个——终态相反，镜像失效必红（不依赖模式组的回绕巧合）。
+  const dateButtons = page.locator('#ts-schedule .date:not([disabled])')
+  const readDates = () =>
+    page.evaluate(() => {
+      const root = (document.querySelector('#ts-schedule') as HTMLElement).shadowRoot!
+      const dates = [...root.querySelectorAll<HTMLButtonElement>('.date')].filter((b) => !b.disabled)
+      const active = root.activeElement as HTMLButtonElement | null
+      return {
+        selected: dates.findIndex((b) => b.getAttribute('aria-selected') === 'true'),
+        focused: dates.indexOf(active!),
+      }
+    })
+  await dateButtons.nth(1).click()
+  await dateButtons.nth(1).focus()
+  await page.keyboard.press('ArrowRight')
+  const rtlMove = await readDates()
+  expect(rtlMove.selected, 'RTL 下 ArrowRight 必须后退到第 1 个可用日期').toBe(0)
+  expect(rtlMove.focused, '焦点必须跟到 RTL 后退后的日期钮').toBe(0)
+
+  // 恢复 LTR，同键方向反转（前进），证明镜像真的由 dir 驱动
   await page.evaluate(() => document.documentElement.removeAttribute('dir'))
+  await dateButtons.nth(0).click()
+  await dateButtons.nth(0).focus()
+  await page.keyboard.press('ArrowRight')
+  const ltrMove = await readDates()
+  expect(ltrMove.selected, 'LTR 下 ArrowRight 必须前进到第 2 个可用日期').toBe(1)
+  expect(ltrMove.focused, '焦点必须跟到 LTR 前进后的日期钮').toBe(1)
 })
 
 test('time-select：次要文字（相对日 / 尽快送达详情）在浅色下满足 4.5:1', async ({ page }) => {

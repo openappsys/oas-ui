@@ -241,7 +241,7 @@
 
 - **a11y 基线生成器断言重构**：`a11y.spec.ts` 的页数硬编码（历史 219/221 与实测 233 脱节，导致官方 `CONTRAST_BASELINE=update` 最后一步必红）改为**结构断言**——只校「totals 与逐页求和一致（含 skipped 双环境）+ 页数下限 + 页数不超过『页数 × 2 主题』上界」；基线口径维持按页合并（light/dark 各一条）。基线文件同批按 `CONTRAST_BASELINE=update` 重实测刷新。
 - **drag 真实拖拽 `oas-drag-start` 断言**：qa-regression 补真实鼠标路径——阈值内（2px）点击不派发、越过 4px 的真实拖拽恰好派发一次且 `detail` 为起点坐标 + `source: 'pointer'`。
-- **time-select RTL 模式组键盘 e2e**：`dir=rtl` 下 `ArrowLeft` 前进（express → schedule）、`ArrowRight` 后退，焦点落位到新选中的模式钮，roving tab stop 保持唯一；同时断言宿主 `data-rtl` 标记。
+- **time-select RTL 键盘镜像 e2e**：`dir=rtl` 下模式组方向键切换、焦点落位到新选中的模式钮，roving tab stop 保持唯一，并断言宿主 `data-rtl` 标记；**方向镜像的区分性断言落在 4 天日期组**——第 2 个可用日期起步时 RTL `ArrowRight` 后退到第 1 个、LTR 同键前进到第 3 个（模式组只有 2 项且默认回绕，左右键终态同为另一个模式，单看终态无法证明镜像）。
 
 **组件级转正（批 6）**
 
