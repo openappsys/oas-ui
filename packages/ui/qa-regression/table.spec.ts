@@ -6377,7 +6377,8 @@ test('table 打印视图：emulateMedia print → 虚拟表全量行进 DOM + �
   // 打印媒体：matchMedia('print') change → 重渲染全量（Playwright emulateMedia 不派发 beforeprint，
   // 断言的是 matchMedia change 通道——与真实浏览器打印预览的感知通道一致）
   await page.emulateMedia({ media: 'print' })
-  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(100)
+  // 满载 runner 上 print 重渲染（100 行全量进 DOM）可能超默认 5s（CI run 1774 实发）——放宽等待
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(100, { timeout: 20000 })
   // 打印几何：占位行隐藏（windowed 绝对铺位/虚拟 spacer 不占纸面）+ sticky 复位（static）
   const spacerDisplay = await t.evaluate((el) => getComputedStyle(el.shadowRoot!.querySelector('tr.spacer')!).display)
   expect(spacerDisplay, '打印下占位行不占纸面').toBe('none')
@@ -6424,7 +6425,8 @@ test('table 打印视图 × column-virtual：print 下窗口外列真实渲染�
   // 屏显：列窗口外归并为占位格（print=0 的对比即精确锁，此处只断「存在」下界）
   expect(await t.locator('.col-virtual-placeholder').count(), '屏显有占位归并格').toBeGreaterThanOrEqual(1)
   await page.emulateMedia({ media: 'print' })
-  await expect(t.locator('.col-virtual-placeholder')).toHaveCount(0)
+  // 列占位归并的清除同为 print 重渲染通道，满载下放宽等待（同 run 1774 实发）
+  await expect(t.locator('.col-virtual-placeholder')).toHaveCount(0, { timeout: 20000 })
   const cellText = await t.evaluate((el) => {
     const lastRow = el.shadowRoot!.querySelectorAll('tbody tr[part="row"]')[0]!
     const cells = [...lastRow.querySelectorAll('td')]
@@ -6501,11 +6503,12 @@ test('table 打印视图 × render-chunk：print 下全量行进 DOM（不分批
   await expect(t.locator('tbody tr[part="row"]').last()).toContainText('行99')
   // print 媒体：matchMedia change → 重渲染全量同步（分批旁路）——300 行一次性进 DOM
   await page.emulateMedia({ media: 'print' })
-  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(300)
+  // 满载 runner 上 300 行全量进 DOM 可能超默认 5s（CI run 1774 实发）——放宽等待
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(300, { timeout: 20000 })
   await expect(t.locator('tbody tr[part="row"]').last()).toContainText('行299')
   // 退出打印回 screen：恢复 render-chunk 分批配置（首帧 100 行重新定格，陈旧代次不得泄漏追加）
   await page.emulateMedia({ media: 'screen' })
-  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(100)
+  await expect(t.locator('tbody tr[part="row"]')).toHaveCount(100, { timeout: 20000 })
   await expect(t.locator('tbody tr[part="row"]').last()).toContainText('行99')
   expect(errors, 'console 零 error').toEqual([])
 })

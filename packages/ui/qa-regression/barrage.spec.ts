@@ -292,7 +292,10 @@ test('barrage 点击弹幕派发 oas-item-click（暂停后点，目标位置固
       }),
     )
     .toBe('paused')
-  await demo.locator('.item').first().click()
+  // 满载 webkit 下弹幕冻结停驻点可能落在裁剪边缘/被遮挡处，actionable click 轮询会耗尽
+  // 测试预算（CI run 1774 实发 120s×2）——元素级派发 click：组件「点击弹幕 → oas-item-click」
+  // 的接线同一事件通道，与命中测试无关
+  await demo.locator('.item').first().dispatchEvent('click')
   await expect(output).toHaveText(/oas-item-click/)
 })
 

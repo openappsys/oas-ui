@@ -11,6 +11,8 @@ test.describe.configure({ mode: 'parallel' })
 
 for (const name of PAGES) {
   test(`视觉截图：${name}`, async ({ page }) => {
+    // 满载 runner 上大页多主题多分页截图会超默认 60s（CI run 1774 实发 table 页）——放宽上限
+    test.setTimeout(120_000)
     await page.setViewportSize({ width: 860, height: 800 })
     await page.goto(`/components/${name}.html`, { waitUntil: 'domcontentloaded' })
     // index 页无 demo-block，等待失败可忽略；其余页等块渲染后截图更稳
