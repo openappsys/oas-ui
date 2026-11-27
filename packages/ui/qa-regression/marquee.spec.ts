@@ -285,16 +285,23 @@ test('marquee 相位连续：内容追加触发时长重写时位移序列无跳
     host.remove()
     return out
   })
-  // 相邻帧速度序列；dx > shift/2 是周期回绕帧（wrap 正常形态），剔除后断言恒速
-  const deltas: Array<{ v: number; wrap: boolean }> = []
+  // 相邻帧速度序列；dx > shift/2 是周期回绕帧（wrap 正常形态），剔除后断言恒速。
+  // 满载 webkit 下渲染帧合并/布局滞后会产生两类不可信采样对：微小 dt 对（rAF 亚帧抖动，
+  // 分母失真 → 速度尖刺）与失速长间隔对（渲染停滞 → 位移塌陷 → 速度凹陷）。二者均按
+  // dt 过滤（< max(8ms, 中位 × 0.35) 或 > 中位 × 2.5）；原缺陷（时长重写无补偿）在正常
+  // 间隔对上逐帧震荡，不受滤网影响，回归判别力不变。
+  const deltas: Array<{ v: number; wrap: boolean; dt: number }> = []
   for (let i = 1; i < samples.length; i++) {
     const dt = (samples[i]!.t - samples[i - 1]!.t) / 1000
     if (dt <= 0) continue
     const dx = samples[i]!.x - samples[i - 1]!.x
     const shift = samples[i]!.shift
-    deltas.push({ v: dx / dt, wrap: shift > 0 && dx > shift / 2 })
+    deltas.push({ v: dx / dt, wrap: shift > 0 && dx > shift / 2, dt })
   }
-  const speeds = deltas.filter((d) => !d.wrap).map((d) => d.v)
+  const dtSorted = [...deltas.map((d) => d.dt)].sort((a, b) => a - b)
+  const medDt = dtSorted[Math.floor(dtSorted.length / 2)]!
+  const dtFloor = Math.max(0.008, medDt * 0.35)
+  const speeds = deltas.filter((d) => !d.wrap && d.dt >= dtFloor && d.dt <= medDt * 2.5).map((d) => d.v)
   expect(speeds.length, '采样应覆盖足够多常规帧').toBeGreaterThanOrEqual(12)
   const sorted = [...speeds].sort((a, b) => a - b)
   const median = sorted[Math.floor(sorted.length / 2)]!
@@ -528,7 +535,11 @@ function expectSegmentContinuous(
     // 该帧的 dx 跨越了多帧动画，用单帧 dt 反解速度必然失真——不是组件顿挫证据。
     // 真缺陷（delay 重映射/重启）是「正常 dt 下 dx 巨跳」，速度照样被下方极值断言抓住。
     const dctMedian = mqMedian(candidateDct)
-    for (const c of candidate) if (c.dct <= dctMedian * 2.5) segVs.push(c.v)
+    // 亚帧抖动对（dct 极小，如 webkit 满载下相邻 rAF 间隔 2~6ms）的 x 像素量化噪声会被
+    // 小分母放大成速度尖刺（CI 实测单对 733px/s vs 中位 400）；与上方上限滤网同源使用，
+    // 下限取 max(8ms, 中位 × 0.35)。真缺陷（delay 重映射/重启）发生在正常间隔对上，不受影响。
+    const dctFloor = Math.max(8, dctMedian * 0.35)
+    for (const c of candidate) if (c.dct >= dctFloor && c.dct <= dctMedian * 2.5) segVs.push(c.v)
     // 帧密度是环境量（headless WebKit 在 12 路并发下 rAF 只有 ~8Hz，实测同一段 4~13 帧；
     // Chromium 60Hz 通常 40+ 帧）。此处只守「中位/极值有意义」的下界，不锁定渲染节奏。
     expect(segVs.length, `${seg.label}：段内采样帧数足够`).toBeGreaterThanOrEqual(3)

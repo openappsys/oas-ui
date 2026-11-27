@@ -280,8 +280,18 @@ test('barrage 点击弹幕派发 oas-item-click（暂停后点，目标位置固
   const output = page.locator('#bg-output')
   await page.click('#bg-add')
   await expect(demo.locator('.item')).toHaveCount(1)
-  // 冻结动画：漂移中的弹幕点击目标不稳定（demo 自己也有暂停按钮）
-  await page.click('#bg-pause')
+  // 冻结动画：漂移中的弹幕点击目标不稳定（demo 自己也有暂停按钮）。
+  // 满载 webkit 下点暂停按钮后动画收尾有延迟，actionable click 轮询会一直重试直至测试
+  // 超时——改为直接置 paused 属性（与 RTL 用例同通道）并轮询冻结生效，再元素级点击
+  await demo.evaluate((el) => el.setAttribute('paused', ''))
+  await expect
+    .poll(() =>
+      demo.evaluate((el) => {
+        const item = el.shadowRoot!.querySelector('.item') as HTMLElement
+        return getComputedStyle(item).animationPlayState
+      }),
+    )
+    .toBe('paused')
   await demo.locator('.item').first().click()
   await expect(output).toHaveText(/oas-item-click/)
 })

@@ -21,13 +21,14 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
     )
     .toBe(true)
   await area.scrollIntoViewIfNeeded()
-  const r = await area.evaluate((el) => {
-    const vp = el.shadowRoot!.querySelector('[part=viewport]')!
-    const br = vp.getBoundingClientRect()
-    return { x: br.x, y: br.y, w: br.width, h: br.height }
+  // 满载 webkit 下 CDP mouse.wheel 的落点可能因页面布局滞后漂移（滚到别处，viewport
+  // scrollLeft 恒 0 → 谓词超时）——改为向 viewport 直接派发 WheelEvent：组件「纵向增量
+  // 转译横向」监听同一事件通道，事件链路等价且与指针落点无关
+  await area.evaluate((el) => {
+    el.shadowRoot!.querySelector('[part=viewport]')!.dispatchEvent(
+      new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }),
+    )
   })
-  await page.mouse.move(r.x + r.w / 2, r.y + r.h / 2)
-  await page.mouse.wheel(0, 120)
   // 滚轮纵向增量转译为横向滚动：轮询至 scrollLeft 真实变化（scroll 事件异步到达）
   await expect
     .poll(() => area.evaluate((el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft > 0))

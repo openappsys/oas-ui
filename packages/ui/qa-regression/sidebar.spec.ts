@@ -1088,15 +1088,24 @@ test('sidebar 键盘重排：真实 Alt+↓ 交换相邻项 + 焦点跟随 + dis
     ;(el.shadowRoot!.querySelector('[part="item"]') as HTMLElement).focus()
   })
   await page.keyboard.press('Alt+ArrowDown')
+  // 满载 webkit 下会读到 DOM 搬移中途快照（被移项已删未插，received 少一项）——
+  // 轮询至重排终态，再断言焦点跟随 / 属性回写 / 状态反馈
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.querySelector('#sidebar-kbd-reorder')!.shadowRoot!.querySelectorAll('[part="item"]')].map(
+          (b) => (b as HTMLElement).dataset.value,
+        ),
+      ),
+    )
+    .toEqual(['data', 'home', 'settings', 'archive'])
   const r = await page.evaluate(() => {
     const el = document.querySelector('#sidebar-kbd-reorder')!
-    const values = [...el.shadowRoot!.querySelectorAll('[part="item"]')].map((b) => (b as HTMLElement).dataset.value)
     const activeValue = (el.shadowRoot!.activeElement as HTMLElement | null)?.dataset?.value ?? null
     const itemsAttr = JSON.parse(el.getAttribute('items') || '[]').map((i: { value?: string }) => i.value)
     const status = document.querySelector('#sidebar-kbd-reorder-status')?.textContent ?? ''
-    return { values, activeValue, itemsAttr, status }
+    return { activeValue, itemsAttr, status }
   })
-  expect(r.values).toEqual(['data', 'home', 'settings', 'archive'])
   expect(r.activeValue, '焦点跟随被移项（防失焦）').toBe('home')
   expect(r.itemsAttr, 'items 属性回写新序（受控持久化）').toEqual(['data', 'home', 'settings', 'archive'])
   expect(r.status).toContain('home')

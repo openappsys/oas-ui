@@ -129,7 +129,21 @@ test('auto-complete virtual（D3）：千级建议窗口渲染 + 键盘导航跟
     }
   })
   expect(keyed.descendant, 'aria-activedescendant 应指向第 25 项').toBe('opt-25')
-  expect(keyed.activeVisible, '键盘导航后高亮行滚入视口（窗口已随导航滚动）').toBe(true)
+  // 满载 webkit 下滚动事件驱动的窗口重渲染晚于断言到达——轮询至高亮行落入视口
+  await expect
+    .poll(() =>
+      ac.evaluate((el) => {
+        const vl = el.shadowRoot!.querySelector('oas-virtual-list')!
+        const active = [...vl.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')].find((r) =>
+          r.classList.contains('active'),
+        )
+        const vp = vl.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+        const vRect = vp.getBoundingClientRect()
+        const aRect = active?.getBoundingClientRect()
+        return !!aRect && aRect.top >= vRect.top - 1 && aRect.bottom <= vRect.bottom + 1
+      }),
+    )
+    .toBe(true)
   // 窗口重算后高亮行可见（真实浏览器 scroll 事件驱动重渲染）
   await page.waitForFunction(() => {
     const vl = document.querySelector('#ac-virtual')!.shadowRoot!.querySelector('oas-virtual-list')!
