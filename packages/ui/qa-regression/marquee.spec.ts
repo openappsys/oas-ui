@@ -235,6 +235,23 @@ test('marquee fade-edges：mask 挂内层 viewport 而非 :host（宿主 border/
   expect(r.viewportMask, '渐隐 mask 应在内层 viewport（尺寸=宿主内容区，渐隐贴可视边缘）').toContain('linear-gradient')
 })
 
+/** 展开回绕后的位移轨迹：向左运动 u 单调不增（渲染停滞只会冻结轨迹，不会回涨）。
+ * maxRise = u 的最大回涨量——「时长重写/速度切换无补偿」类缺陷的本征信号，
+ * 对满载饥饿（渲染合并、停滞、像素量化）天然免疫。 */
+function unwrapTrajectory(samples: Array<{ x: number; shift: number }>): { u: number[]; maxRise: number } {
+  const u: number[] = [samples[0]!.x]
+  let maxRise = 0
+  for (let i = 1; i < samples.length; i++) {
+    let dx = samples[i]!.x - samples[i - 1]!.x
+    const shift = samples[i]!.shift
+    if (shift > 0 && dx > shift / 2) dx -= shift
+    else if (shift > 0 && dx < -shift / 2) dx += shift
+    maxRise = Math.max(maxRise, dx)
+    u.push(u[u.length - 1]! + dx)
+  }
+  return { u, maxRise }
+}
+
 test('marquee 相位连续：内容追加触发时长重写时位移序列无跳变（等位移补偿，周期性顿挫回归）', async ({ page }) => {
   await page.goto('/components/marquee.html', {
     waitUntil: 'domcontentloaded',
@@ -285,36 +302,27 @@ test('marquee 相位连续：内容追加触发时长重写时位移序列无跳
     host.remove()
     return out
   })
-  // 窗口化速度：逐帧对差分在三类引擎上都会抖出离群——webkit CI 满载的渲染帧合并/布局
-  // 滞后产生单帧速度尖刺或塌陷；firefox headless 高频 rAF 的亚帧对被像素量化噪声放大
-  // （CI 双双实发）。窗口化后端点位移/时间同步放大，恒速段速度稳定。
-  // 窗长自适应：必须短于「半程位移时间」（shift × 0.4 / speed），否则窗内跨越回绕点时
-  // 位移与回绕在模 shift 意义下不可区分（CI 实发：speed=1000 + 窗 200ms → 真位移 -200px
-  // 被误读作 +50px → 速度塌为 223）。
-  const repShift = mqMedian(samples.map((s) => s.shift).filter((v) => v > 0))
-  const winSec = Math.max(0.06, Math.min(0.2, (repShift * 0.4) / 400))
+  // 断言走「展开回绕后的位移轨迹 u」：向左运动 u 单调不增——满载下渲染停滞/合并只会让
+  // 轨迹冻结，绝不会回涨；「时长重写无补偿」缺陷的本征形态恰是位移回涨（跳变）。u 回涨
+  // 断言对饥饿天然免疫，且以更强形式抓住原缺陷（修复前实测 ±130~300px 震荡 / -7821px/s）。
+  // 采样有效性以窗口中位速度守（u 展开后无回绕歧义，窗长恒 200ms）。
+  const { u, maxRise } = unwrapTrajectory(samples)
+  expect(
+    maxRise,
+    `位移轨迹不得回涨（时长重写必须等位移补偿；渲染停滞只冻结不回涨，maxRise=${maxRise.toFixed(1)}px）`,
+  ).toBeLessThanOrEqual(8)
   const speeds: number[] = []
   let anchor = 0
   for (let i = 1; i < samples.length; i++) {
     const dt = (samples[i]!.t - samples[anchor]!.t) / 1000
-    if (dt < winSec) continue
-    let dx = samples[i]!.x - samples[anchor]!.x
-    const shift = samples[i]!.shift
-    if (shift > 0 && dx > shift / 2) dx -= shift
-    speeds.push(dx / dt)
+    if (dt < 0.2) continue
+    speeds.push(Math.abs(u[i]! - u[anchor]!) / dt)
     anchor = i
   }
-  expect(speeds.length, `采样应覆盖足够多常规帧（≥${(winSec * 1000).toFixed(0)}ms 窗口）`).toBeGreaterThanOrEqual(5)
-  const sorted = [...speeds].sort((a, b) => a - b)
-  const median = sorted[Math.floor(sorted.length / 2)]!
-  expect(Math.abs(median), '中位速度 ≈ 400px/s（采样有效性）').toBeGreaterThan(300)
-  // 缺陷回归断言：timing 变更（内容追加 → 时长重写）帧的位移速度不得偏离恒速
-  // （修复前实测 -7821px/s 震荡；容差 40% + 5px/s 下限，覆盖帧时钟抖动）
-  const worst = speeds.reduce((m, v) => Math.max(m, Math.abs(v - median)), 0)
-  expect(
-    worst,
-    `位移速度偏离中位不得超过 40%（worst=${worst.toFixed(1)}px/s, median=${median.toFixed(1)}px/s）`,
-  ).toBeLessThanOrEqual(Math.max(5, Math.abs(median) * 0.4))
+  expect(speeds.length, '采样应覆盖足够多常规帧（≥200ms 窗口）').toBeGreaterThanOrEqual(5)
+  const median = mqMedian(speeds)
+  expect(median, '中位速度 ≈ 400px/s（采样有效性）').toBeGreaterThan(300)
+  expect(median, '中位速度不得超 500px/s（恒速上界）').toBeLessThan(500)
 })
 
 // ===== 三条「等价路径」回归：速度变更 / auto-fill 重算 / 悬停暂停 =====
@@ -516,19 +524,23 @@ function expectSegmentContinuous(
     const seg = segments[s]!
     const from = s === 0 ? -1 : marks[s - 1]!
     const to = s === segments.length - 1 ? Number.POSITIVE_INFINITY : marks[s]!
-    // ≥自适应窗口速度（机理与窗长公式见「相位连续」用例注释）：逐帧对差分在满载引擎上
-    // 必然抖出离群；窗长按段期望速度收缩（速度越快窗越短，防窗跨回绕的模歧义）。dt 取
-    // 动画时钟差（ct）——暂停跨窗（ct 未走）挪锚点重来；窗口不跨段边界（b.t ≥ to 收口），
-    // 避免速度切换窗混入两段速度造成假离群。段尾不足整窗的残余以 ≥max(60ms, 窗长×0.6)
-    // 补一窗。等位移连续性由中位贴近期望与极值断言守。
-    const repShift = mqMedian(samples.map((s) => s.shift).filter((v) => v > 0))
-    const winSec = Math.max(0.06, Math.min(0.2, (repShift * 0.4) / seg.expected))
+    // 等位移连续性的本征信号：展开回绕后的位移轨迹 u 单调不增——满载下渲染停滞/合并只会
+    // 让轨迹冻结，绝不会回涨；「无补偿」类缺陷的本征形态恰是回涨（跳变）。对饥饿天然免疫。
+    const { u, maxRise } = unwrapTrajectory(samples)
+    expect(
+      maxRise,
+      `${seg.label}：位移轨迹不得回涨（速度切换必须等位移连续；停滞只冻结不回涨，maxRise=${maxRise.toFixed(1)}px）`,
+    ).toBeLessThanOrEqual(8)
+    // 段内样本索引（段归属按样本自身时刻；触发帧已反映新时序，归入新段）
     const segIdx: number[] = []
     for (let i = 0; i < samples.length; i++) {
       const t = samples[i]!.t
       if (samples[i]!.ct == null) continue
       if (t >= from && t < to) segIdx.push(i)
     }
+    // 窗口化段速度：du/dct（u 已展开回绕，无模歧义；ct 为分母，暂停跨窗挪锚点重来）。
+    // 段中位速度贴近期望即守住「该段真实速度正确」；跳变类缺陷已由上方 u 回涨断言以
+    // 更强形式抓住，故不再设逐窗极值断言（那是满载误报源）。
     const segVs: number[] = []
     let anchor = -1
     for (const i of segIdx) {
@@ -536,48 +548,31 @@ function expectSegmentContinuous(
         anchor = i
         continue
       }
-      const a = samples[anchor]!
-      const b = samples[i]!
-      const dtw = (b.t - a.t) / 1000
-      if (dtw < winSec) continue
-      const dct = (b.ct! - a.ct!) / 1000
+      const dtw = (samples[i]!.t - samples[anchor]!.t) / 1000
+      if (dtw < 0.2) continue
+      const dct = (samples[i]!.ct! - samples[anchor]!.ct!) / 1000
       if (dct <= 0) {
         anchor = i
         continue
       }
-      let dx = b.x - a.x
-      if (b.shift > 0 && dx > b.shift / 2) dx -= b.shift
-      else if (b.shift > 0 && dx < -b.shift / 2) dx += b.shift
-      segVs.push(Math.abs(dx) / dct)
+      segVs.push(Math.abs(u[i]! - u[anchor]!) / dct)
       anchor = i
     }
     if (anchor >= 0) {
       const last = segIdx[segIdx.length - 1]!
       const tailDt = (samples[last]!.t - samples[anchor]!.t) / 1000
       const tailDct = ((samples[last]!.ct ?? 0) - (samples[anchor]!.ct ?? 0)) / 1000
-      if (tailDt >= Math.max(0.06, winSec * 0.6) && tailDct > 0) {
-        let dx = samples[last]!.x - samples[anchor]!.x
-        const shift = samples[last]!.shift
-        if (shift > 0 && dx > shift / 2) dx -= shift
-        else if (shift > 0 && dx < -shift / 2) dx += shift
-        segVs.push(Math.abs(dx) / tailDct)
-      }
+      if (tailDt >= 0.12 && tailDct > 0) segVs.push(Math.abs(u[last]! - u[anchor]!) / tailDct)
     }
     // 帧密度是环境量（headless WebKit 在 12 路并发下 rAF 只有 ~8Hz，实测同一段 4~13 帧；
     // Chromium 60Hz 通常 40+ 帧）。此处只守「中位/极值有意义」的下界，不锁定渲染节奏。
     expect(segVs.length, `${seg.label}：段内采样帧数足够`).toBeGreaterThanOrEqual(2)
-    const sorted = [...segVs].sort((a, b) => a - b)
-    const median = sorted[Math.floor(sorted.length / 2)]!
+    const median = mqMedian(segVs)
     expect(
       median,
       `${seg.label}：中位速度 ${median.toFixed(1)}px/s 应贴近期望 ${seg.expected}px/s`,
     ).toBeGreaterThanOrEqual(seg.expected * 0.6)
     expect(median).toBeLessThanOrEqual(seg.expected * 1.45)
-    const worst = segVs.reduce((m, v) => Math.max(m, Math.abs(v - median)), 0)
-    expect(
-      worst,
-      `${seg.label}：段内速度偏离中位 ≤ max(40%, 30px/s)（worst=${worst.toFixed(1)}, median=${median.toFixed(1)}）`,
-    ).toBeLessThanOrEqual(Math.max(median * 0.4, 30))
   }
 }
 
